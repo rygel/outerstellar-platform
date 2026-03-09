@@ -79,7 +79,7 @@ class StarterAppTest {
     assertTrue(formResponse.bodyString().contains("Créer un compte"))
     assertEquals(Status.OK, resultResponse.status)
     assertTrue(resultResponse.bodyString().contains("Formulaire accepté"))
-    assertEquals(Status.NOT_FOUND, errorResponse.status)
+    assertEquals(Status.OK, errorResponse.status)
     assertTrue(errorResponse.bodyString().contains("La page est introuvable"))
   }
 

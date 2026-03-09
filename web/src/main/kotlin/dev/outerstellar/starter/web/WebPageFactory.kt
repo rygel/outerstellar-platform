@@ -47,12 +47,7 @@ data class HomePage(
   val contentPlaceholder: String,
   val submitLabel: String,
   val submitUrl: String,
-  val messagesHeading: String,
-  val messages: List<MessageSummary>,
-  val searchQuery: String?,
-  val nextOffset: Int?,
-  val prevOffset: Int?,
-  val limit: Int,
+  val messageList: MessageListViewModel,
 ) : ViewModel
 
 data class AuthModeTab(val key: String, val label: String, val url: String)
@@ -123,14 +118,12 @@ data class SidebarSelector(
 
 @Suppress("TooManyFunctions")
 class WebPageFactory(private val repository: MessageRepository) {
+    private val messageListComponent = MessageListComponent(repository)
 
     fun buildHomePage(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0): HomePage {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.home"), "/")
-        val messages = repository.listMessages(query, limit, offset)
-
-        val nextOffset = if (messages.size == limit) offset + limit else null
-        val prevOffset = if (offset > 0) (offset - limit).coerceAtLeast(0) else null
+        val messageList = messageListComponent.build(ctx, query, limit, offset)
 
         return HomePage(
             shell = shell,
@@ -148,12 +141,7 @@ class WebPageFactory(private val repository: MessageRepository) {
             contentPlaceholder = i18n.translate("web.home.composer.content"),
             submitLabel = i18n.translate("web.home.composer.submit"),
             submitUrl = ctx.url("/messages"),
-            messagesHeading = i18n.translate("web.home.messages"),
-            messages = messages,
-            searchQuery = query,
-            nextOffset = nextOffset,
-            prevOffset = prevOffset,
-            limit = limit
+            messageList = messageList
         )
     }
 

@@ -6,7 +6,8 @@ import dev.outerstellar.starter.sync.SyncMessage
 import dev.outerstellar.starter.sync.SyncPullResponse
 import dev.outerstellar.starter.sync.SyncPushRequest
 import dev.outerstellar.starter.sync.SyncPushResponse
-import org.http4k.contract.contract
+import org.http4k.contract.ContractRoute
+import org.http4k.contract.bindContract
 import org.http4k.contract.meta
 import org.http4k.contract.openapi.ApiInfo
 import org.http4k.contract.openapi.v3.OpenApi3
@@ -20,18 +21,15 @@ import org.http4k.format.Jackson
 import org.http4k.format.Jackson.auto
 import org.http4k.lens.Query
 import org.http4k.lens.long
-import org.http4k.routing.RoutingHttpHandler
 
-class SyncApi(private val messageService: MessageService) {
+class SyncApi(private val messageService: MessageService) : ServerRoutes {
   private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
   private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
   private val pullResponseLens = Body.auto<SyncPullResponse>().toLens()
   private val sinceLens = Query.long().optional("since")
 
-  val routes: RoutingHttpHandler = contract {
-    renderer = OpenApi3(ApiInfo("Outerstellar Sync API", "v1.0"), Jackson)
-    descriptionPath = "/api/v1/openapi.json"
-    routes += "/api/v1/sync" meta {
+  override val routes: List<ContractRoute> = listOf(
+    "/api/v1/sync" meta {
       summary = "Pull changes from server"
       queries += sinceLens
       returning(Status.OK, pullResponseLens to SyncPullResponse(emptyList<SyncMessage>(), 0L))
@@ -39,9 +37,8 @@ class SyncApi(private val messageService: MessageService) {
       val since = sinceLens(request) ?: 0L
       val response = messageService.getChangesSince(since)
       Response(Status.OK).with(pullResponseLens of response)
-    }
-
-    routes += "/api/v1/sync" meta {
+    },
+    "/api/v1/sync" meta {
       summary = "Push changes to server"
       receiving(pushRequestLens)
       returning(Status.OK, pushResponseLens to SyncPushResponse(0, emptyList<SyncConflict>()))
@@ -50,5 +47,5 @@ class SyncApi(private val messageService: MessageService) {
       val syncResponse = messageService.processPushRequest(syncRequest)
       Response(Status.OK).with(pushResponseLens of syncResponse)
     }
-  }
+  )
 }

@@ -1,0 +1,35 @@
+@import dev.outerstellar.starter.web.MessageListViewModel
+@param model: MessageListViewModel
+
+<section class="panel">
+    <div class="flex justify-between items-center mb-6">
+        <h2>${model.messagesHeading}</h2>
+        <form method="get" action="/" class="flex gap-2">
+            <input type="text" name="q" value="${model.searchQuery}" placeholder="Search messages..." class="px-3 py-1 border rounded">
+            <button type="submit" class="px-4 py-1 bg-blue-600 text-white rounded">Search</button>
+        </form>
+    </div>
+    <div class="message-list">
+        @for (message in model.messages)
+            <article class="message-card">
+                <div class="message-meta">
+                    <strong>${message.author}</strong>
+                    <span>${message.updatedAtLabel()}</span>
+                </div>
+                <p>${message.content}</p>
+                <span class="status-badge">${message.syncStatusLabel()}</span>
+            </article>
+        @endfor
+    </div>
+    <div class="flex justify-between mt-6">
+        @if(model.prevOffset != null)
+            <a href="/?q=${if (model.searchQuery != null) model.searchQuery else ""}&offset=${model.prevOffset}&limit=${model.limit}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Previous</a>
+        @else
+            <span></span>
+        @endif
+
+        @if(model.nextOffset != null)
+            <a href="/?q=${if (model.searchQuery != null) model.searchQuery else ""}&offset=${model.nextOffset}&limit=${model.limit}" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Next</a>
+        @endif
+    </div>
+</section>

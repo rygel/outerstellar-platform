@@ -2,196 +2,54 @@ package dev.outerstellar.starter
 
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
-import dev.outerstellar.starter.web.Filters
-import dev.outerstellar.starter.web.SyncApi
-import dev.outerstellar.starter.web.WebContext
-import dev.outerstellar.starter.web.WebPageFactory
-import org.http4k.core.ContentType
+import dev.outerstellar.starter.web.*
+import org.http4k.contract.contract
+import org.http4k.contract.openapi.ApiInfo
+import org.http4k.contract.openapi.v3.OpenApi3
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
-import org.http4k.core.Method.POST
 import org.http4k.core.Response
 import org.http4k.core.Status
-import org.http4k.core.body.form
-import org.http4k.core.getFirst
 import org.http4k.core.then
-import org.http4k.core.toParametersMap
+import org.http4k.format.Jackson
 import org.http4k.routing.ResourceLoader
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 import org.http4k.routing.static
 import org.http4k.template.TemplateRenderer
+import org.slf4j.LoggerFactory
 
-private const val defaultAuthor = "Server"
-private const val contentRequiredMessage = "Content is required."
-private val htmlContentType = ContentType.TEXT_HTML.toHeaderValue()
+private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.App")
 
 fun app(messageService: MessageService, repository: MessageRepository, renderer: TemplateRenderer): HttpHandler {
-  val syncApi = SyncApi(messageService)
+  logger.info("Initializing Outerstellar application")
   val pageFactory = WebPageFactory(repository)
+
+  val serverRoutes = listOf(
+    SyncApi(messageService),
+    HomeRoutes(messageService, pageFactory, renderer),
+    AuthRoutes(pageFactory, renderer),
+    ErrorRoutes(pageFactory, renderer),
+    ComponentRoutes(pageFactory, renderer)
+  )
+
+  val apiContract = contract {
+    this.renderer = OpenApi3(ApiInfo("Outerstellar Web API", "v1.0"), Jackson)
+    descriptionPath = "/openapi.json"
+    routes += serverRoutes.flatMap { it.routes }
+  }
+
+  logger.info("Contract routes: {}", apiContract)
+
+  val baseApp: HttpHandler = routes(
+    static(ResourceLoader.Classpath("static")),
+    apiContract,
+    "/health" bind GET to { Response(Status.OK).body("ok") },
+    "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
+  )
 
   return Filters.requestLogging
     .then(Filters.serverMetrics)
     .then(Filters.globalErrorHandler(pageFactory, renderer))
-    .then(
-      routes(
-        static(ResourceLoader.Classpath("static")),
-        syncApi.routes,
-        homeRoutes(messageService, pageFactory, renderer),
-        authRoutes(pageFactory, renderer),
-        errorRoutes(pageFactory, renderer),
-        footerRoutes(pageFactory, renderer),
-        sidebarRoutes(pageFactory, renderer),
-        "/health" bind GET to { Response(Status.OK).body("ok") },
-        "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
-      )
-    )
+    .then(baseApp)
 }
-
-private fun homeRoutes(
-  messageService: MessageService,
-  pageFactory: WebPageFactory,
-  renderer: TemplateRenderer,
-) =
-  routes(
-    "/" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        val query = request.query("q")
-        val limit = request.query("limit")?.toIntOrNull() ?: 10
-        val offset = request.query("offset")?.toIntOrNull() ?: 0
-        htmlResponse(Status.OK, renderer(pageFactory.buildHomePage(ctx, query, limit, offset)))
-      },
-    "/messages" bind
-      POST to
-      { request ->
-        val ctx = WebContext(request)
-        val parameters = request.form().toParametersMap()
-        val author =
-          parameters.getFirst("author").takeUnless { it.isNullOrBlank() } ?: defaultAuthor
-        val content = parameters.getFirst("content")?.trim().orEmpty()
-
-        if (content.isBlank()) {
-          Response(Status.BAD_REQUEST).body(contentRequiredMessage)
-        } else {
-          messageService.createServerMessage(author, content)
-          Response(Status.FOUND).header("location", ctx.url("/"))
-        }
-      },
-  )
-
-private fun authRoutes(pageFactory: WebPageFactory, renderer: TemplateRenderer) =
-  routes(
-    "/auth" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        htmlResponse(Status.OK, renderer(pageFactory.buildAuthPage(ctx)))
-      },
-    "/auth/components/forms/{mode}" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        htmlResponse(
-          Status.OK,
-          renderer(pageFactory.buildAuthForm(ctx, request.uri.path.substringAfterLast("/"))),
-        )
-      },
-    "/auth/components/result" bind
-      POST to
-      { request ->
-        val ctx = WebContext(request)
-        val parameters = request.form().toParametersMap()
-        htmlResponse(
-          Status.OK,
-          renderer(
-            pageFactory.buildAuthResult(
-              ctx,
-              mapOf(
-                "mode" to parameters.getFirst("mode"),
-                "email" to parameters.getFirst("email"),
-                "password" to parameters.getFirst("password"),
-                "confirmPassword" to parameters.getFirst("confirmPassword"),
-              ),
-            )
-          ),
-        )
-      },
-  )
-
-private fun errorRoutes(pageFactory: WebPageFactory, renderer: TemplateRenderer) =
-  routes(
-    "/errors/not-found" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        htmlResponse(Status.NOT_FOUND, renderer(pageFactory.buildErrorPage(ctx, "not-found")))
-      },
-    "/errors/server-error" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        htmlResponse(
-          Status.INTERNAL_SERVER_ERROR,
-          renderer(pageFactory.buildErrorPage(ctx, "server-error")),
-        )
-      },
-    "/errors/components/help/{kind}" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        htmlResponse(
-          Status.OK,
-          renderer(pageFactory.buildErrorHelp(ctx, request.uri.path.substringAfterLast("/"))),
-        )
-      },
-  )
-
-private fun footerRoutes(pageFactory: WebPageFactory, renderer: TemplateRenderer) =
-  routes(
-    "/components/footer-status" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        htmlResponse(Status.OK, renderer(pageFactory.buildFooterStatus(ctx)))
-      }
-  )
-
-private fun sidebarRoutes(pageFactory: WebPageFactory, renderer: TemplateRenderer) =
-  routes(
-    "/components/navigation/page" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        val pagePath = request.query("pagePath").orEmpty()
-        val location = ctx.url(pagePath)
-        
-        if (request.header("HX-Request") == "true") {
-          Response(Status.OK).header("HX-Redirect", location)
-        } else {
-          Response(Status.FOUND).header("location", location)
-        }
-      },
-    "/components/sidebar/theme-selector" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        htmlResponse(Status.OK, renderer(pageFactory.buildThemeSelector(ctx)))
-      },
-    "/components/sidebar/language-selector" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        htmlResponse(Status.OK, renderer(pageFactory.buildLanguageSelector(ctx)))
-      },
-    "/components/sidebar/layout-selector" bind
-      GET to
-      { request ->
-        val ctx = WebContext(request)
-        htmlResponse(Status.OK, renderer(pageFactory.buildLayoutSelector(ctx)))
-      },
-  )
-
-private fun htmlResponse(status: Status, body: String): Response =
-  Response(status).header("content-type", htmlContentType).body(body)

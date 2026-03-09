@@ -1,0 +1,4 @@
+port: 8080
+jdbcUrl: "jdbc:h2:file:./data/outerstellar-starter;MODE=PostgreSQL;AUTO_SERVER=TRUE"
+jdbcUser: "sa"
+jdbcPassword: ""

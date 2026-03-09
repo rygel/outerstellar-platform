@@ -2,7 +2,7 @@ package dev.outerstellar.starter
 
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addEnvironmentSource
-import com.sksamuel.hoplite.addMapSource
+import com.sksamuel.hoplite.addResourceSource
 
 data class AppConfig(
   val port: Int = 8080,
@@ -11,11 +11,19 @@ data class AppConfig(
   val jdbcPassword: String = "",
 ) {
   companion object {
-    fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig =
-      ConfigLoaderBuilder.default()
-        .addMapSource(environment)
+    fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
+      val profile = environment["APP_PROFILE"] ?: "default"
+      val builder = ConfigLoaderBuilder.default()
         .addEnvironmentSource()
+        .addResourceSource("/application.yaml", optional = true)
+
+      if (profile != "default") {
+        builder.addResourceSource("/application-$profile.yaml", optional = true)
+      }
+
+      return builder
         .build()
         .loadConfigOrThrow<AppConfig>()
+    }
   }
 }

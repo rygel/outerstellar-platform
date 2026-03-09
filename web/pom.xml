@@ -21,6 +21,11 @@
             <artifactId>api-client</artifactId>
         </dependency>
         <dependency>
+            <groupId>dev.outerstellar</groupId>
+            <artifactId>security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.http4k</groupId>
             <artifactId>http4k-core</artifactId>
         </dependency>
@@ -54,7 +59,11 @@
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
