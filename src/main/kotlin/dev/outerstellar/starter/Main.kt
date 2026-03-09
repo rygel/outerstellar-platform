@@ -1,6 +1,7 @@
 package dev.outerstellar.starter
 
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.service.MessageService
 import gg.jte.ContentType
 import gg.jte.TemplateEngine
 import gg.jte.output.StringOutput
@@ -31,7 +32,9 @@ fun main() {
   val repository = JooqMessageRepository(DSL.using(dataSource, SQLDialect.H2))
   repository.seedStarterMessages()
 
-  val server = app(repository, createRenderer()).asServer(Jetty(config.port)).start()
+  val messageService = MessageService(repository)
+
+  val server = app(messageService, repository, createRenderer()).asServer(Jetty(config.port)).start()
   logger.info("Outerstellar starter running on http://localhost:{}", server.port())
 }
 

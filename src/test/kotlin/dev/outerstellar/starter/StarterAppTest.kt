@@ -1,6 +1,7 @@
 package dev.outerstellar.starter
 
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.service.MessageService
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -28,7 +29,9 @@ class StarterAppTest {
     val repository = JooqMessageRepository(DSL.using(dataSource, SQLDialect.H2))
     repository.seedStarterMessages()
 
-    val response = app(repository, createRenderer())(Request(GET, "/"))
+    val messageService = MessageService(repository)
+
+    val response = app(messageService, repository, createRenderer())(Request(GET, "/"))
 
     assertEquals(Status.OK, response.status)
     assertTrue(response.bodyString().contains("Outerstellar Starter"))
@@ -51,7 +54,8 @@ class StarterAppTest {
 
     val repository = JooqMessageRepository(DSL.using(dataSource, SQLDialect.H2))
     repository.seedStarterMessages()
-    val app = app(repository, createRenderer())
+    val messageService = MessageService(repository)
+    val app = app(messageService, repository, createRenderer())
 
     val authResponse = app(Request(GET, "/auth?lang=fr&theme=bootstrap"))
     val formResponse = app(Request(GET, "/auth/components/forms/register?lang=fr&theme=bootstrap"))

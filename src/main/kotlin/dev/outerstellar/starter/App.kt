@@ -1,6 +1,7 @@
 package dev.outerstellar.starter
 
 import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncApi
 import dev.outerstellar.starter.web.WebPageFactory
 import org.http4k.core.ContentType
@@ -22,14 +23,14 @@ private const val defaultAuthor = "Server"
 private const val contentRequiredMessage = "Content is required."
 private val htmlContentType = ContentType.TEXT_HTML.toHeaderValue()
 
-fun app(repository: MessageRepository, renderer: TemplateRenderer): HttpHandler {
-  val syncApi = SyncApi(repository)
+fun app(messageService: MessageService, repository: MessageRepository, renderer: TemplateRenderer): HttpHandler {
+  val syncApi = SyncApi(messageService)
   val pageFactory = WebPageFactory(repository)
 
   return routes(
     static(ResourceLoader.Classpath("static")),
     syncApi.routes,
-    homeRoutes(repository, pageFactory, renderer),
+    homeRoutes(messageService, pageFactory, renderer),
     authRoutes(pageFactory, renderer),
     errorRoutes(pageFactory, renderer),
     footerRoutes(pageFactory, renderer),
@@ -39,7 +40,7 @@ fun app(repository: MessageRepository, renderer: TemplateRenderer): HttpHandler 
 }
 
 private fun homeRoutes(
-  repository: MessageRepository,
+  messageService: MessageService,
   pageFactory: WebPageFactory,
   renderer: TemplateRenderer,
 ) =
@@ -60,7 +61,7 @@ private fun homeRoutes(
         if (content.isBlank()) {
           Response(Status.BAD_REQUEST).body(contentRequiredMessage)
         } else {
-          repository.createServerMessage(author, content)
+          messageService.createServerMessage(author, content)
           val location =
             pageFactory.url("/", pageFactory.langTag(request), pageFactory.themeId(request), pageFactory.layoutId(request))
           Response(Status.FOUND).header("location", location)

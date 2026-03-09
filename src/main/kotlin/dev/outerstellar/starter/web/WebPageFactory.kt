@@ -1,4 +1,4 @@
-package dev.outerstellar.starter.web
+﻿package dev.outerstellar.starter.web
 
 import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.model.MessageSummary
@@ -389,7 +389,9 @@ class WebPageFactory(private val repository: MessageRepository) {
     return if (listOf("nice", "cozy", "compact").any { it == layout }) layout else "nice"
   }
 
-
+  private fun shell(request: Request, pageTitle: String, activeSection: String): ShellView {
+    val lang = langTag(request)
+    val i18n = i18n(request)
     val theme = themeId(request)
     val layout = layoutId(request)
     val currentPath = normalizePagePath(request.uri.path)
@@ -431,6 +433,19 @@ class WebPageFactory(private val repository: MessageRepository) {
       footerStatusUrl = url("/components/footer-status", lang, theme, layout),
     )
   }
+
+  fun url(path: String, lang: String, theme: String, layout: String): String =
+    "$path?lang=$lang&theme=$theme&layout=$layout"
+
+  private fun componentUrl(
+    path: String,
+    pagePath: String,
+    lang: String,
+    theme: String,
+    layout: String,
+  ): String = "${url(path, lang, theme, layout)}&pagePath=$pagePath"
+
+  private fun normalizePagePath(path: String): String = if (path.isBlank()) "/" else path
 
   private fun i18n(request: Request): I18nService =
     I18nService.create("web-messages").also {

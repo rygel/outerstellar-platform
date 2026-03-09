@@ -6,7 +6,7 @@ import dev.outerstellar.starter.createDataSource
 import dev.outerstellar.starter.migrate
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.persistence.JooqMessageRepository
-import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -50,17 +50,18 @@ fun main() {
   migrate(dataSource)
 
   val repository = JooqMessageRepository(DSL.using(dataSource, SQLDialect.H2))
+  val messageService = MessageService(repository)
   val syncService = SyncService(repository, config.serverBaseUrl)
   val i18nService = I18nService.create("swing-messages").also { it.setLocale(Locale.getDefault()) }
 
   SwingUtilities.invokeLater {
     FlatLightLaf.setup()
-    SyncWindow(repository, syncService, ThemeManager(), i18nService).show()
+    SyncWindow(messageService, syncService, ThemeManager(), i18nService).show()
   }
 }
 
 private class SyncWindow(
-  private val repository: MessageRepository,
+  private val messageService: MessageService,
   private val syncService: SyncService,
   private val themeManager: ThemeManager,
   private val i18nService: I18nService,
@@ -168,7 +169,7 @@ private class SyncWindow(
       return
     }
 
-    repository.createLocalMessage(author, content)
+    messageService.createLocalMessage(author, content)
     contentArea.text = ""
     refreshMessages(i18nService.translate("swing.status.created"))
   }
@@ -211,13 +212,13 @@ private class SyncWindow(
 
   private fun refreshMessages(status: String) {
     messagesModel.clear()
-    repository.listMessages().forEach(messagesModel::addElement)
+    messageService.listMessages().forEach(messagesModel::addElement)
     statusLabel.text =
       i18nService.translate(
         "swing.status.summary",
         status,
         messagesModel.size,
-        repository.listDirtyMessages().size,
+        messageService.listDirtyMessages().size,
       )
   }
 }

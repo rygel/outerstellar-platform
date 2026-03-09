@@ -1,6 +1,7 @@
 package dev.outerstellar.starter
 
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.service.MessageService
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -29,7 +30,8 @@ class HomePageEndToEndTest {
     val repository = JooqMessageRepository(DSL.using(dataSource, SQLDialect.H2))
     repository.seedStarterMessages()
 
-    val appHandler = app(repository, createRenderer())
+    val messageService = MessageService(repository)
+    val appHandler = app(messageService, repository, createRenderer())
     val server = appHandler.asServer(Jetty(0)).start()
 
     try {

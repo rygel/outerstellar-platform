@@ -1,6 +1,7 @@
 package dev.outerstellar.starter
 
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,7 +24,7 @@ class SyncIntegrationTest {
       SyncService(
         repository = clientRepository,
         serverBaseUrl = "http://localhost:8080",
-        httpClient = app(serverRepository, createRenderer()),
+        httpClient = app(MessageService(serverRepository), serverRepository, createRenderer()),
       )
 
     val stats = syncService.sync()
