@@ -1,0 +1,249 @@
+Command finished with exit code 0.
+Command output:
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ------------------------< dev.outerstellar:web >------------------------
+[INFO] Building web 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- enforcer:3.6.2:enforce (require-java-21) @ web ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
+[INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
+[INFO] 
+[INFO] --- jte:3.2.3:generate (jte-generate) @ web ---
+[INFO] Generating jte templates found in C:\Develop\Claude\projects\outerstellar-starter\web\src\main\jte
+[INFO] Successfully generated 10 jte files in 0s to C:\Develop\Claude\projects\outerstellar-starter\web\target\generated-sources\jte
+[INFO] 
+[INFO] --- exec:3.5.0:exec (npm-build-css) @ web ---
+[INFO] skipping execute as per configuration
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ web ---
+[INFO] Copying 5 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:copy-resources (copy-jte-templates) @ web ---
+[INFO] Copying 11 resources from src\main\jte to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.0:compile (default-compile) @ web ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- kotlin:2.3.10:compile (compile) @ web ---
+[INFO] Options for KOTLIN DAEMON: CompilationOptions(compilerMode=NON_INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[], kotlinScriptExtensions=null)
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ web ---
+[INFO] skip non existing resourceDirectory C:\Develop\Claude\projects\outerstellar-starter\web\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ web ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] 
+[INFO] --- kotlin:2.3.10:test-compile (test-compile) @ web ---
+[INFO] Options for KOTLIN DAEMON: CompilationOptions(compilerMode=NON_INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[], kotlinScriptExtensions=null)
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ web ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running dev.outerstellar.starter.HomePageEndToEndTest
+22:13:36.144 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:e2e-home-test (H2 2.2)
+22:13:36.243 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+22:13:36.248 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 3 migrations (execution time 00:00.017s)
+22:13:36.257 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+22:13:36.296 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+22:13:36.302 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
+22:13:36.324 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
+22:13:36.350 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "3 - create outbox"
+22:13:36.359 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 3 migrations to schema "PUBLIC", now at version v3 (execution time 00:00.029s)
+22:13:37.070 [main] INFO  org.jooq.Constants - 
+                                      
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@  @@@@  @@  @@    @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@    @@  @@  @@@@  @@@@@@@@@@
+@@@@@@@@@@        @@  @  @  @@@@@@@@@@
+@@@@@@@@@@        @@        @@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@  @@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  Thank you for using jOOQ 3.19.7 (Build date: 2024-04-04T12:53:41Z)
+                                      
+22:13:37.070 [main] INFO  org.jooq.Constants - 
+
+jOOQ tip of the day: Keyset pagination is usually a faster and more useful way to paginate than OFFSET, and jOOQ supports it out of the box via the synthetic SEEK clause: https://www.jooq.org/doc/latest/manual/sql-building/sql-statements/select-statement/seek-clause/
+
+22:13:37.111 [main] INFO  o.j.i.D.logVersionSupport - Version                  : Database version is supported by dialect H2: 2.2.224 (2023-09-17)
+22:13:37.219 [main] INFO  dev.outerstellar.starter.App - Initializing Outerstellar application
+22:13:38.412 [main] INFO  dev.outerstellar.starter.App - Contract routes: 
+GET: /api/v1/sync
+POST: /api/v1/sync
+GET: 
+POST: /messages
+GET: /auth
+GET: /auth/components/forms/{mode}
+POST: /auth/components/result
+GET: /errors/not-found
+GET: /errors/server-error
+GET: /errors/components/help/{kind}
+GET: /components/message-list
+GET: /components/footer-status
+GET: /components/navigation/page
+GET: /components/sidebar/theme-selector
+GET: /components/sidebar/language-selector
+GET: /components/sidebar/layout-selector
+22:13:38.879 [main] INFO  org.eclipse.jetty.server.Server - jetty-12.1.6; built: 2026-01-27T18:53:19.182Z; git: 88ca559572b1c8858b3c5684bb0293fa64e5e90f; jvm 21.0.9+10-LTS
+22:13:38.977 [main] INFO  o.e.jetty.server.AbstractConnector - Started oejs.ServerConnector@190f8c7d{HTTP/1.1, (http/1.1)}{0.0.0.0:8309}
+22:13:38.978 [main] INFO  org.eclipse.jetty.server.Server - Started oejs.Server@484b5a21{STARTING}[12.1.6,sto=5000] @101ms
+22:13:45.290 [qtp629289362-78] INFO  d.outerstellar.starter.web.Filters - GET / -> 200 OK (6058ms)
+22:13:45.324 [main] INFO  org.eclipse.jetty.server.Server - Stopped oejs.Server@484b5a21{STOPPING}[12.1.6,sto=5000]
+22:13:45.324 [main] INFO  org.eclipse.jetty.server.Server - Shutdown oejs.Server@484b5a21{STOPPING}[12.1.6,sto=5000]
+22:13:46.315 [main] INFO  o.e.jetty.server.AbstractConnector - Stopped oejs.ServerConnector@190f8c7d{HTTP/1.1, (http/1.1)}{0.0.0.0:0}
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.97 s -- in dev.outerstellar.starter.HomePageEndToEndTest
+[INFO] Running dev.outerstellar.starter.StarterAppTest
+22:13:46.349 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:starter-auth-test (H2 2.2)
+22:13:46.361 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+22:13:46.362 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 3 migrations (execution time 00:00.003s)
+22:13:46.363 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+22:13:46.368 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+22:13:46.370 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
+22:13:46.379 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
+22:13:46.395 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "3 - create outbox"
+22:13:46.398 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 3 migrations to schema "PUBLIC", now at version v3 (execution time 00:00.015s)
+22:13:46.414 [main] INFO  dev.outerstellar.starter.App - Initializing Outerstellar application
+22:13:46.416 [main] INFO  dev.outerstellar.starter.App - Contract routes: 
+GET: /api/v1/sync
+POST: /api/v1/sync
+GET: 
+POST: /messages
+GET: /auth
+GET: /auth/components/forms/{mode}
+POST: /auth/components/result
+GET: /errors/not-found
+GET: /errors/server-error
+GET: /errors/components/help/{kind}
+GET: /components/message-list
+GET: /components/footer-status
+GET: /components/navigation/page
+GET: /components/sidebar/theme-selector
+GET: /components/sidebar/language-selector
+GET: /components/sidebar/layout-selector
+22:13:47.328 [main] INFO  d.outerstellar.starter.web.Filters - GET /auth?lang=fr&theme=bootstrap -> 200 OK (911ms)
+22:13:47.959 [main] INFO  d.outerstellar.starter.web.Filters - GET /auth/components/forms/register?lang=fr&theme=bootstrap -> 200 OK (630ms)
+22:13:48.482 [main] INFO  d.outerstellar.starter.web.Filters - POST /auth/components/result?lang=fr&theme=bootstrap -> 200 OK (522ms)
+22:13:49.167 [main] INFO  d.outerstellar.starter.web.Filters - GET /errors/not-found?lang=fr&theme=bootstrap -> 200 OK (685ms)
+22:13:49.197 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:starter-test (H2 2.2)
+22:13:49.209 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+22:13:49.210 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 3 migrations (execution time 00:00.004s)
+22:13:49.212 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+22:13:49.217 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+22:13:49.219 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
+22:13:49.226 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
+22:13:49.239 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "3 - create outbox"
+22:13:49.246 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 3 migrations to schema "PUBLIC", now at version v3 (execution time 00:00.012s)
+22:13:49.266 [main] INFO  dev.outerstellar.starter.App - Initializing Outerstellar application
+22:13:49.268 [main] INFO  dev.outerstellar.starter.App - Contract routes: 
+GET: /api/v1/sync
+POST: /api/v1/sync
+GET: 
+POST: /messages
+GET: /auth
+GET: /auth/components/forms/{mode}
+POST: /auth/components/result
+GET: /errors/not-found
+GET: /errors/server-error
+GET: /errors/components/help/{kind}
+GET: /components/message-list
+GET: /components/footer-status
+GET: /components/navigation/page
+GET: /components/sidebar/theme-selector
+GET: /components/sidebar/language-selector
+GET: /components/sidebar/layout-selector
+22:13:50.265 [main] INFO  d.outerstellar.starter.web.Filters - GET / -> 200 OK (997ms)
+22:13:50.281 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:starter-metrics-test (H2 2.2)
+22:13:50.290 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+22:13:50.291 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 3 migrations (execution time 00:00.003s)
+22:13:50.292 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+22:13:50.296 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+22:13:50.298 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
+22:13:50.302 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
+22:13:50.314 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "3 - create outbox"
+22:13:50.316 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 3 migrations to schema "PUBLIC", now at version v3 (execution time 00:00.010s)
+22:13:50.331 [main] INFO  dev.outerstellar.starter.App - Initializing Outerstellar application
+22:13:50.332 [main] INFO  dev.outerstellar.starter.App - Contract routes: 
+GET: /api/v1/sync
+POST: /api/v1/sync
+GET: 
+POST: /messages
+GET: /auth
+GET: /auth/components/forms/{mode}
+POST: /auth/components/result
+GET: /errors/not-found
+GET: /errors/server-error
+GET: /errors/components/help/{kind}
+GET: /components/message-list
+GET: /components/footer-status
+GET: /components/navigation/page
+GET: /components/sidebar/theme-selector
+GET: /components/sidebar/language-selector
+GET: /components/sidebar/layout-selector
+22:13:51.184 [main] INFO  d.outerstellar.starter.web.Filters - GET / -> 200 OK (851ms)
+22:13:51.212 [main] INFO  d.outerstellar.starter.web.Filters - GET /metrics -> 200 OK (27ms)
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.883 s -- in dev.outerstellar.starter.StarterAppTest
+[INFO] Running dev.outerstellar.starter.web.SyncIntegrationTest
+22:13:51.229 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:server-sync (H2 2.2)
+22:13:51.241 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+22:13:51.241 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 3 migrations (execution time 00:00.004s)
+22:13:51.243 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+22:13:51.246 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+22:13:51.247 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
+22:13:51.252 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
+22:13:51.264 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "3 - create outbox"
+22:13:51.266 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 3 migrations to schema "PUBLIC", now at version v3 (execution time 00:00.009s)
+22:13:51.284 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:client-sync (H2 2.2)
+22:13:51.292 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+22:13:51.293 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 3 migrations (execution time 00:00.002s)
+22:13:51.294 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+22:13:51.296 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+22:13:51.298 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
+22:13:51.305 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
+22:13:51.314 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "3 - create outbox"
+22:13:51.316 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 3 migrations to schema "PUBLIC", now at version v3 (execution time 00:00.007s)
+22:13:51.329 [main] INFO  dev.outerstellar.starter.App - Initializing Outerstellar application
+22:13:51.330 [main] INFO  dev.outerstellar.starter.App - Contract routes: 
+GET: /api/v1/sync
+POST: /api/v1/sync
+GET: 
+POST: /messages
+GET: /auth
+GET: /auth/components/forms/{mode}
+POST: /auth/components/result
+GET: /errors/not-found
+GET: /errors/server-error
+GET: /errors/components/help/{kind}
+GET: /components/message-list
+GET: /components/footer-status
+GET: /components/navigation/page
+GET: /components/sidebar/theme-selector
+GET: /components/sidebar/language-selector
+GET: /components/sidebar/layout-selector
+22:13:51.404 [main] INFO  d.outerstellar.starter.web.Filters - POST http://localhost:8080/api/v1/sync -> 200 OK (27ms)
+22:13:51.432 [main] INFO  d.outerstellar.starter.web.Filters - GET http://localhost:8080/api/v1/sync?since=0 -> 200 OK (9ms)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.235 s -- in dev.outerstellar.starter.web.SyncIntegrationTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  28.624 s
+[INFO] Finished at: 2026-03-09T22:13:58+02:00
+[INFO] ------------------------------------------------------------------------

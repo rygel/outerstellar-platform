@@ -12,31 +12,34 @@ import org.http4k.template.ViewModel
 import org.http4k.template.ViewNotFound
 
 fun createRenderer(): TemplateRenderer {
-  val projectDirectory = Path.of(System.getProperty("user.dir"))
-  // In a multi-module project, the templates are in the 'web' module
-  val sourceTemplates = projectDirectory.resolve(Path.of("web", "src", "main", "jte"))
-  val generatedTemplateClasses = projectDirectory.resolve(Path.of("web", "target", "jte-classes"))
+  val isProduction = System.getProperty("jte.production") == "true" || System.getenv("JTE_PRODUCTION") == "true"
   val applicationClassLoader = Thread.currentThread().contextClassLoader
 
-  return if (Files.isDirectory(sourceTemplates)) {
-    renderUsing {
+  val templateEngine = if (isProduction) {
+    TemplateEngine.createPrecompiled(ContentType.Html)
+  } else {
+    val projectDirectory = Path.of(System.getProperty("user.dir"))
+    val sourceTemplates = projectDirectory.resolve(Path.of("web", "src", "main", "jte"))
+    val generatedTemplateClasses = projectDirectory.resolve(Path.of("web", "target", "jte-classes"))
+
+    if (Files.isDirectory(sourceTemplates)) {
       TemplateEngine.create(
         DirectoryCodeResolver(sourceTemplates),
         generatedTemplateClasses,
         ContentType.Html,
         applicationClassLoader,
       )
-    }
-  } else {
-    val classpathEngine =
+    } else {
       TemplateEngine.create(
         ResourceCodeResolver("."),
         generatedTemplateClasses,
         ContentType.Html,
         applicationClassLoader,
       )
-    renderUsing { classpathEngine }
+    }
   }
+
+  return renderUsing { templateEngine }
 }
 
 private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer =
