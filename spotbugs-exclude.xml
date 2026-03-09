@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Package name="~dev\.outerstellar\.starter\.jooq(\..*)?"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/>
+    </Match>
+    <Match>
+        <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
+    </Match>
+    <Match>
+        <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+    </Match>
+    <Match>
+        <Bug pattern="BC_BAD_CAST_TO_ABSTRACT_COLLECTION"/>
+    </Match>
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+    </Match>
+    <Match>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+    </Match>
+    <Match>
+        <Bug pattern="SA_LOCAL_SELF_ASSIGNMENT"/>
+    </Match>
+</FindBugsFilter>

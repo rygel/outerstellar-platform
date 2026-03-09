@@ -1,0 +1,36 @@
+@import dev.outerstellar.starter.web.AuthFormFragment
+@param model: AuthFormFragment
+
+<div>
+    <h2>${model.title}</h2>
+    <p>${model.description}</p>
+    <form class="form-grid"
+          hx-post="${model.submitUrl}"
+          hx-target="#auth-result-slot"
+          hx-swap="innerHTML">
+        <input type="hidden" name="mode" value="${model.mode}">
+        <input type="hidden" name="lang" value="${model.language}">
+        <input type="hidden" name="theme" value="${model.theme}">
+        @if (model.includeNameField)
+            <label>${model.nameLabel}</label>
+            <input type="text" name="displayName" placeholder="${model.namePlaceholder}">
+        @endif
+        <label>${model.emailLabel}</label>
+        <input type="email" name="email" placeholder="${model.emailPlaceholder}">
+        @if (model.mode != "recover")
+            <label>${model.passwordLabel}</label>
+            <input type="password" name="password" placeholder="${model.passwordPlaceholder}">
+        @endif
+        @if (model.includeConfirmPasswordField)
+            <label>${model.confirmPasswordLabel}</label>
+            <input type="password" name="confirmPassword" placeholder="${model.confirmPasswordPlaceholder}">
+        @endif
+        @if (model.includeRememberField)
+            <label>
+                <input type="checkbox" name="rememberMe">
+                ${model.rememberLabel}
+            </label>
+        @endif
+        <button type="submit">${model.submitLabel}</button>
+    </form>
+</div>

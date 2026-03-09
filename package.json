@@ -1,0 +1,22 @@
+{
+  "name": "outerstellar-starter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "build:css": "tailwindcss -i src/main/resources/static/input.css -o src/main/resources/static/site.css --minify",
+    "watch:css": "tailwindcss -i src/main/resources/static/input.css -o src/main/resources/static/site.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1"
+  }
+}

@@ -1,0 +1,117 @@
+@import dev.outerstellar.starter.web.HomePage
+@param model: HomePage
+
+<!DOCTYPE html>
+<html lang="${model.shell.localeTag}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${model.shell.pageTitle} - ${model.shell.appTitle}</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/site.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <style>${model.shell.themeCss}</style>
+</head>
+<body class="${model.shell.layoutClass}">
+<div class="shell">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <a href="/" class="logo">
+                <i class="ri-planet-fill"></i>
+                ${model.shell.appTitle}
+            </a>
+        </div>
+        <nav class="nav-links">
+            @for (link in model.shell.navLinks)
+                <a class="nav-link@if (link.active) active@endif" href="${link.url}">
+                    <i class="${link.icon}" style="font-size: 1.1rem; opacity: 0.8; margin-right: 0.5rem; width: 20px; text-align: center;"></i>
+                    ${link.label}
+                </a>
+            @endfor
+        </nav>
+        <div class="sidebar-footer">
+            <section class="sidebar-section">
+                <div id="theme-selector"
+                     hx-get="${model.shell.themeSelectorUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </section>
+            <section class="sidebar-section">
+                <div id="language-selector"
+                     hx-get="${model.shell.languageSelectorUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </section>
+            <section class="sidebar-section" style="padding-bottom: 0;">
+                <div id="layout-selector"
+                     hx-get="${model.shell.layoutSelectorUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </section>
+        </div>
+    </aside>
+    <div class="main-shell">
+        <header class="topbar">
+            <div>
+                <p class="topbar-label">${model.shell.pageTitle}</p>
+                <strong>${model.shell.appTagline}</strong>
+            </div>
+            <span class="status-badge">${model.shell.themeId} / ${model.shell.localeTag}</span>
+        </header>
+        <main class="content">
+            <section class="panel hero-grid">
+                <div>
+                    <p class="status-badge">${model.eyebrow}</p>
+                    <h1>${model.shell.appTitle}</h1>
+                    <p>${model.intro}</p>
+                </div>
+                <div class="card-grid">
+                    @for (feature in model.features)
+                        <article class="panel panel-muted">
+                            <strong>${feature.label}</strong>
+                            <p>${feature.value}</p>
+                        </article>
+                    @endfor
+                </div>
+            </section>
+            <section class="panel">
+                <h2>${model.composerTitle}</h2>
+                <p>${model.composerIntro}</p>
+                <form class="form-grid" method="post" action="${model.submitUrl}">
+                    <input type="text" name="author" placeholder="${model.authorPlaceholder}">
+                    <textarea name="content" rows="4" placeholder="${model.contentPlaceholder}" required></textarea>
+                    <button type="submit">${model.submitLabel}</button>
+                </form>
+            </section>
+            <section class="panel">
+                <h2>${model.messagesHeading}</h2>
+                <div class="message-list">
+                    @for (message in model.messages)
+                        <article class="message-card">
+                            <div class="message-meta">
+                                <strong>${message.author}</strong>
+                                <span>${message.updatedAtLabel()}</span>
+                            </div>
+                            <p>${message.content}</p>
+                            <span class="status-badge">${message.syncStatusLabel()}</span>
+                        </article>
+                    @endfor
+                </div>
+            </section>
+        </main>
+        <footer class="footer">
+            <span>${model.shell.footerCopy}</span>
+            <div id="footer-status"
+                 class="chip"
+                 hx-get="${model.shell.footerStatusUrl}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+            </div>
+        </footer>
+    </div>
+</div>
+</body>
+</html>
