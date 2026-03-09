@@ -27,4 +27,21 @@ class CaffeineMessageCache(registry: MeterRegistry? = null) : MessageCache {
     override fun invalidateAll() {
         cache.invalidateAll()
     }
+
+    override fun getStats(): Map<String, Any> {
+        val stats = cache.stats()
+        return mapOf(
+            "estimatedSize" to cache.estimatedSize(),
+            "hitCount" to stats.hitCount(),
+            "missCount" to stats.missCount(),
+            "loadSuccessCount" to stats.loadSuccessCount(),
+            "loadFailureCount" to stats.loadFailureCount(),
+            "totalLoadTime" to stats.totalLoadTime(),
+            "evictionCount" to stats.evictionCount(),
+            "evictionWeight" to stats.evictionWeight(),
+            "hitRate" to stats.hitRate(),
+            "missRate" to stats.missRate(),
+            "averageLoadPenalty" to stats.averageLoadPenalty()
+        )
+    }
 }

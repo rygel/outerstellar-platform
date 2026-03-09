@@ -9,6 +9,7 @@ data class AppConfig(
   val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-starter;MODE=PostgreSQL;AUTO_SERVER=TRUE",
   val jdbcUser: String = "sa",
   val jdbcPassword: String = "",
+  val devDashboardEnabled: Boolean = true,
 ) {
   companion object {
     fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {

@@ -1,6 +1,9 @@
 package dev.outerstellar.starter
 
+import dev.outerstellar.starter.AppConfig
+import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.web.*
 import org.http4k.contract.contract
@@ -21,16 +24,24 @@ import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.App")
 
-fun app(messageService: MessageService, repository: MessageRepository, renderer: TemplateRenderer): HttpHandler {
+fun app(
+    messageService: MessageService,
+    repository: MessageRepository,
+    outboxRepository: OutboxRepository,
+    cache: MessageCache,
+    renderer: TemplateRenderer,
+    config: AppConfig
+): HttpHandler {
   logger.info("Initializing Outerstellar application")
-  val pageFactory = WebPageFactory(repository)
+  val pageFactory = WebPageFactory(repository, config.devDashboardEnabled)
 
   val serverRoutes = listOf(
     SyncApi(messageService),
     HomeRoutes(messageService, pageFactory, renderer),
     AuthRoutes(pageFactory, renderer),
     ErrorRoutes(pageFactory, renderer),
-    ComponentRoutes(pageFactory, renderer)
+    ComponentRoutes(pageFactory, renderer),
+    DevDashboardRoutes(outboxRepository, cache, pageFactory, renderer, config.devDashboardEnabled)
   )
 
   val apiContract = contract {

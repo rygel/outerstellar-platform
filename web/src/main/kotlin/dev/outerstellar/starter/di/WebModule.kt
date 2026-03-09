@@ -13,7 +13,7 @@ val webModule = module {
     single { AppConfig.fromEnvironment() }
     single { get<AppConfig>().jdbcUrl }
     single<TemplateRenderer> { createRenderer() }
-    single { WebPageFactory(get()) }
+    single { WebPageFactory(get(), get<AppConfig>().devDashboardEnabled) }
     single { SyncApi(get()) }
-    single<HttpHandler> { app(get(), get(), get()) }
+    single<HttpHandler> { app(get(), get(), get(), get(), get(), get()) }
 }

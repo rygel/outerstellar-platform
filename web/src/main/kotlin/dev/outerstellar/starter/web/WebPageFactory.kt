@@ -104,6 +104,14 @@ data class ErrorHelpFragment(val title: String, val items: List<String>) : ViewM
 
 data class FooterStatusFragment(val text: String) : ViewModel
 
+data class DevDashboardPage(
+  val shell: ShellView,
+  val metrics: String,
+  val cacheStats: Map<String, Any>,
+  val pendingOutboxCount: Int,
+  val telemetryStatus: String,
+) : ViewModel
+
 data class SidebarSelector(
   val heading: String,
   val label: String,
@@ -117,7 +125,10 @@ data class SidebarSelector(
 }
 
 @Suppress("TooManyFunctions")
-class WebPageFactory(private val repository: MessageRepository) {
+class WebPageFactory(
+    private val repository: MessageRepository,
+    private val devDashboardEnabled: Boolean = false
+) {
     private val messageListComponent = MessageListComponent(repository)
 
     fun buildHomePage(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0, year: Int? = null): HomePage {
@@ -263,6 +274,25 @@ class WebPageFactory(private val repository: MessageRepository) {
         val i18n = ctx.i18n
         return FooterStatusFragment(
             text = i18n.translate("web.footer.status", repository.listMessages().size, repository.listDirtyMessages().size)
+        )
+    }
+
+    fun buildDevDashboardPage(
+        ctx: WebContext,
+        metrics: String,
+        cacheStats: Map<String, Any>,
+        pendingOutboxCount: Int,
+        telemetryStatus: String
+    ): DevDashboardPage {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.nav.dev"), "/dev")
+
+        return DevDashboardPage(
+            shell = shell,
+            metrics = metrics,
+            cacheStats = cacheStats,
+            pendingOutboxCount = pendingOutboxCount,
+            telemetryStatus = telemetryStatus
         )
     }
 

@@ -4,7 +4,7 @@ import com.outerstellar.i18n.I18nService
 import java.util.Locale
 import org.http4k.core.Request
 
-class WebContext(val request: Request) {
+class WebContext(val request: Request, private val devDashboardEnabled: Boolean = false) {
     val lang: String by lazy {
         val language = request.query("lang")?.lowercase() ?: Locale.getDefault().language.lowercase()
         if (language == "fr") "fr" else "en"
@@ -36,6 +36,16 @@ class WebContext(val request: Request) {
         val themeCss = ThemeCatalog.toCssVariables(theme)
         val layoutClass = if (layout == "nice") "" else "layout-$layout"
 
+        val navLinks = mutableListOf(
+            ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
+            ShellLink(i18n.translate("web.nav.auth"), url("/auth"), "ri-shield-keyhole-line", activeSection == "/auth"),
+            ShellLink(i18n.translate("web.nav.errors"), url("/errors/not-found"), "ri-error-warning-line", activeSection == "/errors")
+        )
+
+        if (devDashboardEnabled) {
+            navLinks.add(ShellLink(i18n.translate("web.nav.dev"), url("/dev"), "ri-dashboard-line", activeSection == "/dev"))
+        }
+
         return ShellView(
             pageTitle = pageTitle,
             appTitle = i18n.translate("web.app.title"),
@@ -45,11 +55,7 @@ class WebContext(val request: Request) {
             themeId = theme,
             themeCss = themeCss,
             layoutClass = layoutClass,
-            navLinks = listOf(
-                ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
-                ShellLink(i18n.translate("web.nav.auth"), url("/auth"), "ri-shield-keyhole-line", activeSection == "/auth"),
-                ShellLink(i18n.translate("web.nav.errors"), url("/errors/not-found"), "ri-error-warning-line", activeSection == "/errors")
-            ),
+            navLinks = navLinks,
             themeSelectorUrl = componentUrl("/components/sidebar/theme-selector", currentPath),
             languageSelectorUrl = componentUrl("/components/sidebar/language-selector", currentPath),
             layoutSelectorUrl = componentUrl("/components/sidebar/layout-selector", currentPath),
