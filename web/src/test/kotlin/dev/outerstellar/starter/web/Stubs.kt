@@ -10,8 +10,9 @@ class StubOutboxRepository : OutboxRepository {
     override fun save(entry: OutboxEntry) {}
     override fun fetchUnprocessed(limit: Int): List<OutboxEntry> = emptyList()
     override fun markProcessed(id: UUID) {}
-    override fun markFailed(id: UUID, error: String) {}
+    override fun markFailed(id: UUID, error: String, maxRetries: Int) {}
     override fun softDelete(id: UUID) {}
+    override fun countByStatus(status: String): Int = 0
 }
 
 class StubMessageCache : MessageCache {

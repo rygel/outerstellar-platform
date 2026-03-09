@@ -7,6 +7,7 @@ import dev.outerstellar.starter.web.PostgresWebTest
 import dev.outerstellar.starter.web.StubMessageCache
 import dev.outerstellar.starter.web.StubOutboxRepository
 import dev.outerstellar.starter.web.StubTransactionManager
+import dev.outerstellar.starter.web.WebPageFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -26,7 +27,8 @@ class StarterAppTest : PostgresWebTest() {
     val transactionManager = StubTransactionManager()
     val messageService = MessageService(repository, outbox, transactionManager, cache)
 
-    val response = app(messageService, repository, outbox, cache, createRenderer(), testConfig)(Request(GET, "/"))
+    val pageFactory = WebPageFactory(repository, true)
+    val response = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, testConfig)(Request(GET, "/"))
 
     assertEquals(Status.OK, response.status)
     assertTrue(response.bodyString().contains("Outerstellar Starter"))
@@ -42,7 +44,8 @@ class StarterAppTest : PostgresWebTest() {
     val cache = StubMessageCache()
     val transactionManager = StubTransactionManager()
     val messageService = MessageService(repository, outbox, transactionManager, cache)
-    val app = app(messageService, repository, outbox, cache, createRenderer(), testConfig)
+    val pageFactory = WebPageFactory(repository, true)
+    val app = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, testConfig)
 
     val authResponse = app(Request(GET, "/auth?lang=fr&theme=bootstrap"))
     val formResponse = app(Request(GET, "/auth/components/forms/register?lang=fr&theme=bootstrap"))
@@ -74,7 +77,8 @@ class StarterAppTest : PostgresWebTest() {
     val cache = StubMessageCache()
     val transactionManager = StubTransactionManager()
     val messageService = MessageService(repository, outbox, transactionManager, cache)
-    val app = app(messageService, repository, outbox, cache, createRenderer(), testConfig)
+    val pageFactory = WebPageFactory(repository, true)
+    val app = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, testConfig)
 
     // Initial call
     app(Request(GET, "/"))

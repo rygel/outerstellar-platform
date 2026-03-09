@@ -30,10 +30,10 @@ fun app(
     outboxRepository: OutboxRepository,
     cache: MessageCache,
     renderer: TemplateRenderer,
+    pageFactory: WebPageFactory,
     config: AppConfig
 ): HttpHandler {
   logger.info("Initializing Outerstellar application")
-  val pageFactory = WebPageFactory(repository, config.devDashboardEnabled)
 
   val serverRoutes = listOf(
     SyncApi(messageService),

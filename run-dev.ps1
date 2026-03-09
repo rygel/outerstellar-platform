@@ -8,13 +8,13 @@ $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $watcherJob = Start-Job -Name "OuterstellarWatcher" -ScriptBlock {
     param($root)
     Set-Location $root
-    mvn fizzed-watcher:run
+    mvn -pl web fizzed-watcher:run
 } -ArgumentList $projectRoot
 
 try {
     Write-Host "Watcher started in the background. Launching application..." -ForegroundColor Green
     Set-Location $projectRoot
-    mvn compile exec:java
+    mvn -pl web compile exec:java
 }
 finally {
     if (Get-Job -Name "OuterstellarWatcher" -ErrorAction SilentlyContinue) {

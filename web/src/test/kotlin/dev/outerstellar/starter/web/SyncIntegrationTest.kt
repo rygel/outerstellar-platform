@@ -7,6 +7,7 @@ import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.persistence.JooqMessageRepository
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
+import dev.outerstellar.starter.web.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -37,11 +38,12 @@ class SyncIntegrationTest : PostgresWebTest() {
     serverRepository.createServerMessage("Server", "Created on the server")
     clientRepository.createLocalMessage("Swing Client", "Created on the desktop")
 
+    val pageFactory = WebPageFactory(serverRepository, true)
     val syncService =
       SyncService(
         repository = clientRepository,
         serverBaseUrl = "http://localhost:8080",
-        httpClient = app(MessageService(serverRepository, outbox, transactionManager, cache), serverRepository, outbox, cache, createRenderer(), testConfig),
+        httpClient = app(MessageService(serverRepository, outbox, transactionManager, cache), serverRepository, outbox, cache, createRenderer(), pageFactory, testConfig),
       )
 
     val stats = syncService.sync()

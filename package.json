@@ -7,8 +7,8 @@
     "doc": "doc"
   },
   "scripts": {
-    "build:css": "tailwindcss -i src/main/resources/static/input.css -o src/main/resources/static/site.css --minify",
-    "watch:css": "tailwindcss -i src/main/resources/static/input.css -o src/main/resources/static/site.css --watch"
+    "build:css": "tailwindcss -i web/src/main/resources/static/input.css -o web/src/main/resources/static/site.css --minify",
+    "watch:css": "tailwindcss -i web/src/main/resources/static/input.css -o web/src/main/resources/static/site.css --watch"
   },
   "keywords": [],
   "author": "",

@@ -7,6 +7,7 @@ import dev.outerstellar.starter.web.PostgresWebTest
 import dev.outerstellar.starter.web.StubMessageCache
 import dev.outerstellar.starter.web.StubOutboxRepository
 import dev.outerstellar.starter.web.StubTransactionManager
+import dev.outerstellar.starter.web.WebPageFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -26,7 +27,8 @@ class HomePageEndToEndTest : PostgresWebTest() {
     val cache = StubMessageCache()
     val transactionManager = StubTransactionManager()
     val messageService = MessageService(repository, outbox, transactionManager, cache)
-    val appHandler = app(messageService, repository, outbox, cache, createRenderer(), testConfig)
+    val pageFactory = WebPageFactory(repository, true)
+    val appHandler = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, testConfig)
     val server = appHandler.asServer(Jetty(0)).start()
 
     try {

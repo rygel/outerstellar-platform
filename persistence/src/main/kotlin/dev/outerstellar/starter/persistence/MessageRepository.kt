@@ -185,7 +185,7 @@ class JooqMessageRepository(
   }
 
   override fun seedStarterMessages() {
-    if (replicaDsl.fetchCount(MESSAGES, MESSAGES.DELETED.eq(false).and(MESSAGES.field("deleted_at")!!.isNull)) > 0) {
+    if (replicaDsl.fetchCount(MESSAGES, MESSAGES.DELETED.eq(false).and(MESSAGES.DELETED_AT.isNull)) > 0) {
       return
     }
 
@@ -195,7 +195,7 @@ class JooqMessageRepository(
 
   override fun softDelete(syncId: String) {
     primaryDsl.update(MESSAGES)
-      .set(MESSAGES.field("deleted_at", java.time.LocalDateTime::class.java), java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toLocalDateTime())
+      .set(MESSAGES.DELETED_AT, java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toLocalDateTime())
       .set(MESSAGES.VERSION, MESSAGES.VERSION.plus(1))
       .where(MESSAGES.SYNC_ID.eq(syncId))
       .execute()
