@@ -2,16 +2,20 @@ package dev.outerstellar.starter.swing
 
 import com.formdev.flatlaf.FlatLightLaf
 import com.outerstellar.i18n.I18nService
-import dev.outerstellar.starter.infra.createDataSource
+import dev.outerstellar.starter.di.apiClientModule
+import dev.outerstellar.starter.di.coreModule
+import dev.outerstellar.starter.di.desktopModule
+import dev.outerstellar.starter.di.persistenceModule
 import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.model.MessageSummary
-import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.util.Locale
 import java.util.concurrent.ExecutionException
+import javax.sql.DataSource
 import javax.swing.DefaultListCellRenderer
 import javax.swing.DefaultListModel
 import javax.swing.JButton
@@ -29,8 +33,9 @@ import javax.swing.JTextField
 import javax.swing.ListSelectionModel
 import javax.swing.SwingUtilities
 import javax.swing.SwingWorker
-import org.jooq.SQLDialect
-import org.jooq.impl.DSL
+import org.koin.core.context.startKoin
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.SwingSyncApp")
@@ -41,22 +46,29 @@ private const val frameHeight = 700
 private const val frameGap = 16
 private const val panelGap = 8
 
+object DesktopComponent : KoinComponent {
+  val config: SwingAppConfig by inject()
+  val dataSource: DataSource by inject()
+  val messageService: MessageService by inject()
+  val syncService: SyncService by inject()
+}
+
 fun main() {
   System.setProperty("swing.aatext", "true")
   System.setProperty("awt.useSystemAAFontSettings", "lcd")
 
-  val config = SwingAppConfig.fromEnvironment()
-  val dataSource = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
-  migrate(dataSource)
+  startKoin {
+    modules(persistenceModule, coreModule, apiClientModule, desktopModule)
+  }
 
-  val repository = JooqMessageRepository(DSL.using(dataSource, SQLDialect.H2))
-  val messageService = MessageService(repository)
-  val syncService = SyncService(repository, config.serverBaseUrl)
+  val desktop = DesktopComponent
+  migrate(desktop.dataSource)
+
   val i18nService = I18nService.create("swing-messages").also { it.setLocale(Locale.getDefault()) }
 
   SwingUtilities.invokeLater {
     FlatLightLaf.setup()
-    SyncWindow(messageService, syncService, ThemeManager(), i18nService).show()
+    SyncWindow(desktop.messageService, desktop.syncService, ThemeManager(), i18nService).show()
   }
 }
 

@@ -24,6 +24,18 @@
             <groupId>com.outerstellar</groupId>
             <artifactId>outerstellar-i18n</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.sksamuel.hoplite</groupId>
+            <artifactId>hoplite-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sksamuel.hoplite</groupId>
+            <artifactId>hoplite-yaml</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.insert-koin</groupId>
+            <artifactId>koin-core-jvm</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
