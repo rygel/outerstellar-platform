@@ -32,6 +32,18 @@
             <groupId>io.insert-koin</groupId>
             <artifactId>koin-core-jvm</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-ops-resilience4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-circuitbreaker</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-retry</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

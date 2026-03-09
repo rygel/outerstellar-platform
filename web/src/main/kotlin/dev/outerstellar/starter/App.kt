@@ -30,18 +30,22 @@ fun app(messageService: MessageService, repository: MessageRepository, renderer:
   val syncApi = SyncApi(messageService)
   val pageFactory = WebPageFactory(repository)
 
-  return Filters.globalErrorHandler(pageFactory, renderer).then(
-    routes(
-      static(ResourceLoader.Classpath("static")),
-      syncApi.routes,
-      homeRoutes(messageService, pageFactory, renderer),
-      authRoutes(pageFactory, renderer),
-      errorRoutes(pageFactory, renderer),
-      footerRoutes(pageFactory, renderer),
-      sidebarRoutes(pageFactory, renderer),
-      "/health" bind GET to { Response(Status.OK).body("ok") },
+  return Filters.requestLogging
+    .then(Filters.serverMetrics)
+    .then(Filters.globalErrorHandler(pageFactory, renderer))
+    .then(
+      routes(
+        static(ResourceLoader.Classpath("static")),
+        syncApi.routes,
+        homeRoutes(messageService, pageFactory, renderer),
+        authRoutes(pageFactory, renderer),
+        errorRoutes(pageFactory, renderer),
+        footerRoutes(pageFactory, renderer),
+        sidebarRoutes(pageFactory, renderer),
+        "/health" bind GET to { Response(Status.OK).body("ok") },
+        "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
+      )
     )
-  )
 }
 
 private fun homeRoutes(

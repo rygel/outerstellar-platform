@@ -1,6 +1,10 @@
 package dev.outerstellar.starter.sync
 
 import dev.outerstellar.starter.persistence.MessageRepository
+import io.github.resilience4j.circuitbreaker.CircuitBreaker
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
+import io.github.resilience4j.retry.Retry
+import io.github.resilience4j.retry.RetryConfig
 import org.http4k.client.ApacheClient
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
@@ -8,14 +12,32 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
+import org.http4k.core.then
 import org.http4k.core.with
+import org.http4k.filter.ResilienceFilters
 import org.http4k.format.Jackson.auto
+import java.time.Duration
 
 class SyncService(
   private val repository: MessageRepository,
   private val serverBaseUrl: String,
-  private val httpClient: HttpHandler = ApacheClient(),
+  httpClient: HttpHandler = ApacheClient(),
 ) {
+  private val retry = Retry.of("sync-retry", RetryConfig.custom<RetryConfig>()
+    .maxAttempts(3)
+    .waitDuration(Duration.ofMillis(100))
+    .build())
+
+  private val circuitBreaker = CircuitBreaker.of("sync-cb", CircuitBreakerConfig.custom()
+    .slidingWindowSize(10)
+    .failureRateThreshold(50f)
+    .waitDurationInOpenState(Duration.ofSeconds(5))
+    .build())
+
+  private val httpClient = ResilienceFilters.RetryFailures(retry)
+    .then(ResilienceFilters.CircuitBreak(circuitBreaker))
+    .then(httpClient)
+
   private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
   private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
   private val pullResponseLens = Body.auto<SyncPullResponse>().toLens()

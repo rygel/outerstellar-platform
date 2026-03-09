@@ -4,5 +4,5 @@ import dev.outerstellar.starter.service.MessageService
 import org.koin.dsl.module
 
 val coreModule = module {
-    single { MessageService(get()) }
+    single { MessageService(get(), get()) }
 }
