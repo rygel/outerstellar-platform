@@ -43,7 +43,7 @@ class WebContext(val request: Request, private val devDashboardEnabled: Boolean 
         )
 
         if (devDashboardEnabled) {
-            navLinks.add(ShellLink(i18n.translate("web.nav.dev"), url("/dev"), "ri-dashboard-line", activeSection == "/dev"))
+            navLinks.add(ShellLink(i18n.translate("web.nav.dev"), url("/admin/dev"), "ri-dashboard-line", activeSection == "/admin/dev"))
         }
 
         return ShellView(

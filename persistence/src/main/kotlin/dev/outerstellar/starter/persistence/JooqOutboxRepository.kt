@@ -17,15 +17,21 @@ class JooqOutboxRepository(
             .set(OUTBOX.PAYLOAD, entry.payload)
             .set(OUTBOX.CREATED_AT, entry.createdAt.atOffset(ZoneOffset.UTC).toLocalDateTime())
             .set(OUTBOX.RETRY_COUNT, entry.retryCount)
+            .set(OUTBOX.field("status", String::class.java), entry.status)
             .execute()
     }
 
     override fun fetchUnprocessed(limit: Int): List<OutboxEntry> {
-        return replicaDsl.selectFrom(OUTBOX)
-            .where(OUTBOX.PROCESSED_AT.isNull)
-            .and(OUTBOX.field("deleted_at")!!.isNull)
+        val statusField = OUTBOX.field("status", String::class.java)
+        val deletedAtField = OUTBOX.field("deleted_at", java.time.LocalDateTime::class.java)
+
+        return primaryDsl.selectFrom(OUTBOX)
+            .where(statusField?.eq("PENDING") ?: OUTBOX.PROCESSED_AT.isNull)
+            .and(deletedAtField?.isNull ?: org.jooq.impl.DSL.trueCondition())
             .orderBy(OUTBOX.CREATED_AT.asc())
             .limit(limit)
+            .forUpdate()
+            .skipLocked()
             .fetch { record ->
                 OutboxEntry(
                     id = record.id!!,
@@ -34,7 +40,8 @@ class JooqOutboxRepository(
                     createdAt = record.createdAt!!.toInstant(ZoneOffset.UTC),
                     processedAt = record.processedAt?.toInstant(ZoneOffset.UTC),
                     retryCount = record.retryCount!!,
-                    lastError = record.lastError
+                    lastError = record.lastError,
+                    status = record.get(statusField) ?: "PENDING"
                 )
             }
     }
@@ -42,14 +49,24 @@ class JooqOutboxRepository(
     override fun markProcessed(id: UUID) {
         primaryDsl.update(OUTBOX)
             .set(OUTBOX.PROCESSED_AT, Instant.now().atOffset(ZoneOffset.UTC).toLocalDateTime())
+            .set(OUTBOX.field("status", String::class.java), "PROCESSED")
             .where(OUTBOX.ID.eq(id))
             .execute()
     }
 
-    override fun markFailed(id: UUID, error: String) {
+    override fun markFailed(id: UUID, error: String, maxRetries: Int) {
+        val currentRetryCount = primaryDsl.select(OUTBOX.RETRY_COUNT)
+            .from(OUTBOX)
+            .where(OUTBOX.ID.eq(id))
+            .fetchOne(OUTBOX.RETRY_COUNT) ?: 0
+
+        val newRetryCount = currentRetryCount + 1
+        val newStatus = if (newRetryCount >= maxRetries) "FAILED" else "PENDING"
+
         primaryDsl.update(OUTBOX)
-            .set(OUTBOX.RETRY_COUNT, OUTBOX.RETRY_COUNT.plus(1))
+            .set(OUTBOX.RETRY_COUNT, newRetryCount)
             .set(OUTBOX.LAST_ERROR, error)
+            .set(OUTBOX.field("status", String::class.java), newStatus)
             .where(OUTBOX.ID.eq(id))
             .execute()
     }
@@ -59,6 +76,14 @@ class JooqOutboxRepository(
             .set(OUTBOX.field("deleted_at", java.time.LocalDateTime::class.java), Instant.now().atOffset(ZoneOffset.UTC).toLocalDateTime())
             .where(OUTBOX.ID.eq(id))
             .execute()
+    }
+
+    override fun countByStatus(status: String): Int {
+        val statusField = OUTBOX.field("status", String::class.java)
+        return replicaDsl.selectCount()
+            .from(OUTBOX)
+            .where(statusField?.eq(status) ?: if (status == "PENDING") OUTBOX.PROCESSED_AT.isNull else org.jooq.impl.DSL.falseCondition())
+            .fetchOne(0, Int::class.java) ?: 0
     }
 }
 

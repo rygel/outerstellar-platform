@@ -1,10 +1,12 @@
 package dev.outerstellar.starter
 
-import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.infra.createRenderer
-import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.persistence.JooqMessageRepository
 import dev.outerstellar.starter.service.MessageService
+import dev.outerstellar.starter.web.PostgresWebTest
+import dev.outerstellar.starter.web.StubMessageCache
+import dev.outerstellar.starter.web.StubOutboxRepository
+import dev.outerstellar.starter.web.StubTransactionManager
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -13,28 +15,18 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
-import org.jooq.SQLDialect
-import org.jooq.impl.DSL
 
-class HomePageEndToEndTest {
+class HomePageEndToEndTest : PostgresWebTest() {
   @Test
   fun `home page is available on running server`() {
-    val config =
-      AppConfig(
-        port = 0,
-        jdbcUrl = "jdbc:h2:mem:e2e-home-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-        jdbcUser = "sa",
-        jdbcPassword = "",
-      )
-    val dataSource = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
-
-    migrate(dataSource)
-
-    val repository = JooqMessageRepository(DSL.using(dataSource, SQLDialect.H2))
+    val repository = JooqMessageRepository(testDsl, testDsl)
     repository.seedStarterMessages()
 
-    val messageService = MessageService(repository)
-    val appHandler = app(messageService, repository, createRenderer())
+    val outbox = StubOutboxRepository()
+    val cache = StubMessageCache()
+    val transactionManager = StubTransactionManager()
+    val messageService = MessageService(repository, outbox, transactionManager, cache)
+    val appHandler = app(messageService, repository, outbox, cache, createRenderer(), testConfig)
     val server = appHandler.asServer(Jetty(0)).start()
 
     try {

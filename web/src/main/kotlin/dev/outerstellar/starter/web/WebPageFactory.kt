@@ -108,7 +108,9 @@ data class DevDashboardPage(
   val shell: ShellView,
   val metrics: String,
   val cacheStats: Map<String, Any>,
-  val pendingOutboxCount: Int,
+  val outboxPendingCount: Int,
+  val outboxProcessedCount: Int,
+  val outboxFailedCount: Int,
   val telemetryStatus: String,
 ) : ViewModel
 
@@ -281,17 +283,21 @@ class WebPageFactory(
         ctx: WebContext,
         metrics: String,
         cacheStats: Map<String, Any>,
-        pendingOutboxCount: Int,
+        outboxPendingCount: Int,
+        outboxProcessedCount: Int,
+        outboxFailedCount: Int,
         telemetryStatus: String
     ): DevDashboardPage {
         val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.nav.dev"), "/dev")
+        val shell = ctx.shell(i18n.translate("web.nav.dev"), "/admin/dev")
 
         return DevDashboardPage(
             shell = shell,
             metrics = metrics,
             cacheStats = cacheStats,
-            pendingOutboxCount = pendingOutboxCount,
+            outboxPendingCount = outboxPendingCount,
+            outboxProcessedCount = outboxProcessedCount,
+            outboxFailedCount = outboxFailedCount,
             telemetryStatus = telemetryStatus
         )
     }

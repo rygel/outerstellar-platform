@@ -19,7 +19,8 @@ data class SyncStats(
 class OutboxProcessor(
     private val outboxRepository: OutboxRepository,
     private val syncProvider: SyncProvider? = null,
-    private val intervalMs: Long = 5000
+    private val intervalMs: Long = 5000,
+    private val maxRetries: Int = 5
 ) {
     private val logger = LoggerFactory.getLogger(OutboxProcessor::class.java)
     private val executor = Executors.newSingleThreadScheduledExecutor()
@@ -55,7 +56,7 @@ class OutboxProcessor(
                     outboxRepository.markProcessed(entry.id)
                 } catch (e: Exception) {
                     logger.error("Failed to process outbox entry {}", entry.id, e)
-                    outboxRepository.markFailed(entry.id, e.message ?: "Unknown error")
+                    outboxRepository.markFailed(entry.id, e.message ?: "Unknown error", maxRetries)
                 }
             }
         } catch (e: Exception) {

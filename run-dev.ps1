@@ -1,4 +1,5 @@
 $env:DEV_MODE = "true"
+$env:APP_PROFILE = "dev"
 
 Write-Host "Starting outerstellar-starter development mode..." -ForegroundColor Cyan
 

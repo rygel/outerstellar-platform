@@ -21,20 +21,24 @@ class DevDashboardRoutes(
     private val htmlContentType = ContentType.TEXT_HTML.toHeaderValue()
 
     override val routes = if (!devDashboardEnabled) emptyList() else listOf(
-        "/dev" meta {
+        "/admin/dev" meta {
             summary = "Developer Dashboard"
         } bindContract GET to { request ->
             val ctx = WebContext(request, devDashboardEnabled)
             val metrics = Metrics.registry.scrape()
             val cacheStats = cache.getStats()
-            val pendingOutboxCount = outboxRepository.fetchUnprocessed(100).size
+            val outboxPendingCount = outboxRepository.countByStatus("PENDING")
+            val outboxProcessedCount = outboxRepository.countByStatus("PROCESSED")
+            val outboxFailedCount = outboxRepository.countByStatus("FAILED")
             val telemetryStatus = Telemetry.openTelemetry.toString()
 
             val page = pageFactory.buildDevDashboardPage(
                 ctx,
                 metrics,
                 cacheStats,
-                pendingOutboxCount,
+                outboxPendingCount,
+                outboxProcessedCount,
+                outboxFailedCount,
                 telemetryStatus
             )
 

@@ -13,14 +13,27 @@ import kotlin.test.assertTrue
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
 
-class SyncIntegrationTest {
+class SyncIntegrationTest : PostgresWebTest() {
   @Test
   fun `sync pushes local changes and pulls server changes`() {
-    val serverRepository =
-      createRepository("jdbc:h2:mem:server-sync;MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
-    val clientRepository =
-      createRepository("jdbc:h2:mem:client-sync;MODE=PostgreSQL;DB_CLOSE_DELAY=-1")
+    val serverRepository = JooqMessageRepository(testDsl, testDsl)
+    
+    // For client repository, we use a separate schema or just another table set in H2 for now,
+    // but the task says "Replace H2 with Testcontainers". 
+    // Usually, client and server would be different DBs.
+    // Let's use H2 for the client side (as it's a desktop app) and Postgres for the server.
+    // OR we can use two different Postgres databases/containers, but that's heavy.
+    // Let's stick to Postgres for server-side and keep H2 for the client-side stubbing if needed, 
+    // but actually, the client repo in this test is also JooqMessageRepository.
+    
+    val clientDataSource = createDataSource("jdbc:h2:mem:client-sync;MODE=PostgreSQL;DB_CLOSE_DELAY=-1", "sa", "")
+    migrate(clientDataSource)
+    val clientRepository = JooqMessageRepository(DSL.using(clientDataSource, SQLDialect.H2))
 
+    val outbox = StubOutboxRepository()
+    val cache = StubMessageCache()
+    val transactionManager = StubTransactionManager()
+    
     serverRepository.createServerMessage("Server", "Created on the server")
     clientRepository.createLocalMessage("Swing Client", "Created on the desktop")
 
@@ -28,7 +41,7 @@ class SyncIntegrationTest {
       SyncService(
         repository = clientRepository,
         serverBaseUrl = "http://localhost:8080",
-        httpClient = app(MessageService(serverRepository), serverRepository, createRenderer()),
+        httpClient = app(MessageService(serverRepository, outbox, transactionManager, cache), serverRepository, outbox, cache, createRenderer(), testConfig),
       )
 
     val stats = syncService.sync()
@@ -38,11 +51,5 @@ class SyncIntegrationTest {
     assertEquals(0, clientRepository.listDirtyMessages().size)
     assertTrue(stats.pushedCount >= 1)
     assertTrue(stats.pulledCount >= 1)
-  }
-
-  private fun createRepository(jdbcUrl: String): JooqMessageRepository {
-    val dataSource = createDataSource(jdbcUrl, "sa", "")
-    migrate(dataSource)
-    return JooqMessageRepository(DSL.using(dataSource, SQLDialect.H2))
   }
 }

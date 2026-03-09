@@ -3,29 +3,44 @@ package dev.outerstellar.starter.persistence
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.jooq.tables.references.MESSAGES
 import dev.outerstellar.starter.jooq.tables.references.OUTBOX
+import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
 
+@Testcontainers
 class PersistencePatternsTest {
+
+    @Container
+    val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
+        withDatabaseName("testdb")
+        withUsername("test")
+        withPassword("test")
+    }
+
     private lateinit var dataSource: DataSource
     private lateinit var repository: JooqMessageRepository
     private lateinit var outboxRepository: JooqOutboxRepository
-    private val dsl = DSL.using("jdbc:h2:mem:persistence_patterns_test;DB_CLOSE_DELAY=-1", "sa", "")
+    private lateinit var dsl: DSLContext
 
     @BeforeEach
     fun setup() {
-        dataSource = createDataSource("jdbc:h2:mem:persistence_patterns_test;DB_CLOSE_DELAY=-1", "sa", "")
+        dataSource = createDataSource(postgres.jdbcUrl, postgres.username, postgres.password)
         Flyway.configure()
             .dataSource(dataSource)
             .locations("classpath:db/migration")
             .load()
             .migrate()
+        
+        dsl = DSL.using(dataSource, SQLDialect.POSTGRES)
         
         // Clear tables for clean test
         dsl.deleteFrom(MESSAGES).execute()
@@ -63,10 +78,11 @@ class PersistencePatternsTest {
 
     @Test
     fun `database should have the new soft delete columns`() {
-        val messagesMeta = dsl.meta().getTables(MESSAGES.unqualifiedName).firstOrNull()
-        assertNotNull(messagesMeta?.field("deleted_at"))
+        // Table meta might differ between dialects, using unqualified check or simple field exists check
+        val messagesMeta = dsl.meta().getTables("messages").firstOrNull()
+        assertNotNull(messagesMeta?.field("deleted_at"), "messages table should have deleted_at field")
         
-        val outboxMeta = dsl.meta().getTables(OUTBOX.unqualifiedName).firstOrNull()
-        assertNotNull(outboxMeta?.field("deleted_at"))
+        val outboxMeta = dsl.meta().getTables("outbox").firstOrNull()
+        assertNotNull(outboxMeta?.field("deleted_at"), "outbox table should have deleted_at field")
     }
 }
