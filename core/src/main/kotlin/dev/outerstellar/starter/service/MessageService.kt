@@ -113,4 +113,22 @@ class MessageService(
 
         return SyncPushResponse(appliedCount = appliedCount, conflicts = conflicts)
     }
+
+    fun deleteMessage(syncId: String) {
+        if (transactionManager != null && outboxRepository != null) {
+            transactionManager.inTransaction {
+                repository.softDelete(syncId)
+                outboxRepository.save(
+                    OutboxEntry(
+                        id = UUID.randomUUID(),
+                        payloadType = "MESSAGE_DELETED",
+                        payload = syncId
+                    )
+                )
+            }
+        } else {
+            repository.softDelete(syncId)
+        }
+        cache.invalidateAll()
+    }
 }

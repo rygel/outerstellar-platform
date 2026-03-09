@@ -6,9 +6,12 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.util.*
 
-class JooqOutboxRepository(private val dsl: DSLContext) : OutboxRepository {
+class JooqOutboxRepository(
+    private val primaryDsl: DSLContext,
+    private val replicaDsl: DSLContext = primaryDsl
+) : OutboxRepository {
     override fun save(entry: OutboxEntry) {
-        dsl.insertInto(OUTBOX)
+        primaryDsl.insertInto(OUTBOX)
             .set(OUTBOX.ID, entry.id)
             .set(OUTBOX.PAYLOAD_TYPE, entry.payloadType)
             .set(OUTBOX.PAYLOAD, entry.payload)
@@ -18,8 +21,9 @@ class JooqOutboxRepository(private val dsl: DSLContext) : OutboxRepository {
     }
 
     override fun fetchUnprocessed(limit: Int): List<OutboxEntry> {
-        return dsl.selectFrom(OUTBOX)
+        return replicaDsl.selectFrom(OUTBOX)
             .where(OUTBOX.PROCESSED_AT.isNull)
+            .and(OUTBOX.field("deleted_at")!!.isNull)
             .orderBy(OUTBOX.CREATED_AT.asc())
             .limit(limit)
             .fetch { record ->
@@ -36,16 +40,23 @@ class JooqOutboxRepository(private val dsl: DSLContext) : OutboxRepository {
     }
 
     override fun markProcessed(id: UUID) {
-        dsl.update(OUTBOX)
+        primaryDsl.update(OUTBOX)
             .set(OUTBOX.PROCESSED_AT, Instant.now().atOffset(ZoneOffset.UTC).toLocalDateTime())
             .where(OUTBOX.ID.eq(id))
             .execute()
     }
 
     override fun markFailed(id: UUID, error: String) {
-        dsl.update(OUTBOX)
+        primaryDsl.update(OUTBOX)
             .set(OUTBOX.RETRY_COUNT, OUTBOX.RETRY_COUNT.plus(1))
             .set(OUTBOX.LAST_ERROR, error)
+            .where(OUTBOX.ID.eq(id))
+            .execute()
+    }
+
+    override fun softDelete(id: UUID) {
+        primaryDsl.update(OUTBOX)
+            .set(OUTBOX.field("deleted_at", java.time.LocalDateTime::class.java), Instant.now().atOffset(ZoneOffset.UTC).toLocalDateTime())
             .where(OUTBOX.ID.eq(id))
             .execute()
     }

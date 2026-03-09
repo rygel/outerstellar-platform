@@ -10,9 +10,12 @@ import org.jooq.DSLContext
 import org.jooq.Record
 
 @Suppress("TooManyFunctions")
-class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
+class JooqMessageRepository(
+  private val primaryDsl: DSLContext,
+  private val replicaDsl: DSLContext = primaryDsl
+) : MessageRepository {
   override fun listMessages(query: String?, year: Int?, limit: Int, offset: Int): List<MessageSummary> {
-    val results = dsl
+    val results = replicaDsl
       .select(
         MESSAGES.SYNC_ID,
         MESSAGES.AUTHOR,
@@ -23,6 +26,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
       )
       .from(MESSAGES)
       .where(MESSAGES.DELETED.eq(false))
+      .and(MESSAGES.field("deleted_at")!!.isNull)
       .let {
         if (!query.isNullOrBlank()) {
           it.and(MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query)))
@@ -50,7 +54,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
   }
 
   override fun listDirtyMessages(): List<StoredMessage> =
-    dsl
+    primaryDsl
       .select(
         MESSAGES.SYNC_ID,
         MESSAGES.AUTHOR,
@@ -61,10 +65,11 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
       )
       .from(MESSAGES)
       .where(MESSAGES.DIRTY.eq(true))
+      .and(MESSAGES.field("deleted_at")!!.isNull)
       .fetch(::toStoredMessage)
 
   override fun findBySyncId(syncId: String): StoredMessage? =
-    dsl
+    replicaDsl
       .select(
         MESSAGES.SYNC_ID,
         MESSAGES.AUTHOR,
@@ -75,10 +80,11 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
       )
       .from(MESSAGES)
       .where(MESSAGES.SYNC_ID.eq(syncId))
+      .and(MESSAGES.field("deleted_at")!!.isNull)
       .fetchOne(::toStoredMessage)
 
   override fun findChangesSince(updatedAtEpochMs: Long): List<StoredMessage> =
-    dsl
+    replicaDsl
       .select(
         MESSAGES.SYNC_ID,
         MESSAGES.AUTHOR,
@@ -89,6 +95,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
       )
       .from(MESSAGES)
       .where(MESSAGES.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs))
+      .and(MESSAGES.field("deleted_at")!!.isNull)
       .fetch(::toStoredMessage)
 
   override fun createServerMessage(author: String, content: String): StoredMessage =
@@ -100,7 +107,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
   override fun upsertSyncedMessage(message: SyncMessage, dirty: Boolean): StoredMessage {
     val existing = findBySyncId(message.syncId)
     if (existing == null) {
-      dsl
+      primaryDsl
         .insertInto(MESSAGES)
         .set(MESSAGES.SYNC_ID, message.syncId)
         .set(MESSAGES.AUTHOR, message.author)
@@ -110,7 +117,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
         .set(MESSAGES.DELETED, message.deleted)
         .execute()
     } else {
-      dsl
+      primaryDsl
         .update(MESSAGES)
         .set(MESSAGES.AUTHOR, message.author)
         .set(MESSAGES.CONTENT, message.content)
@@ -129,26 +136,26 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
       return
     }
 
-    dsl.update(MESSAGES).set(MESSAGES.DIRTY, false).where(MESSAGES.SYNC_ID.`in`(syncIds)).execute()
+    primaryDsl.update(MESSAGES).set(MESSAGES.DIRTY, false).where(MESSAGES.SYNC_ID.`in`(syncIds)).execute()
   }
 
   override fun getLastSyncEpochMs(): Long =
-    dsl
+    replicaDsl
       .select(SYNC_STATE.STATE_VALUE)
       .from(SYNC_STATE)
       .where(SYNC_STATE.STATE_KEY.eq(lastSyncStateKey))
       .fetchOne(SYNC_STATE.STATE_VALUE) ?: 0L
 
   override fun setLastSyncEpochMs(value: Long) {
-    val hasState = dsl.fetchCount(SYNC_STATE, SYNC_STATE.STATE_KEY.eq(lastSyncStateKey)) > 0
+    val hasState = primaryDsl.fetchCount(SYNC_STATE, SYNC_STATE.STATE_KEY.eq(lastSyncStateKey)) > 0
     if (hasState) {
-      dsl
+      primaryDsl
         .update(SYNC_STATE)
         .set(SYNC_STATE.STATE_VALUE, value)
         .where(SYNC_STATE.STATE_KEY.eq(lastSyncStateKey))
         .execute()
     } else {
-      dsl
+      primaryDsl
         .insertInto(SYNC_STATE)
         .set(SYNC_STATE.STATE_KEY, lastSyncStateKey)
         .set(SYNC_STATE.STATE_VALUE, value)
@@ -157,7 +164,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
   }
 
   override fun seedStarterMessages() {
-    if (dsl.fetchCount(MESSAGES, MESSAGES.DELETED.eq(false)) > 0) {
+    if (replicaDsl.fetchCount(MESSAGES, MESSAGES.DELETED.eq(false).and(MESSAGES.field("deleted_at")!!.isNull)) > 0) {
       return
     }
 
@@ -165,9 +172,16 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
     createServerMessage("http4k", "The home page is rendered with a Kotlin .kte JTE template.")
   }
 
+  override fun softDelete(syncId: String) {
+    primaryDsl.update(MESSAGES)
+      .set(MESSAGES.field("deleted_at", java.time.LocalDateTime::class.java), java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toLocalDateTime())
+      .where(MESSAGES.SYNC_ID.eq(syncId))
+      .execute()
+  }
+
   private fun insertMessage(author: String, content: String, dirty: Boolean): StoredMessage {
     val syncId = UUID.randomUUID().toString()
-    dsl
+    primaryDsl
       .insertInto(MESSAGES)
       .set(MESSAGES.SYNC_ID, syncId)
       .set(MESSAGES.AUTHOR, author)

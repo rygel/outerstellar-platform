@@ -26,4 +26,6 @@ interface MessageRepository {
   fun setLastSyncEpochMs(value: Long)
 
   fun seedStarterMessages()
+
+  fun softDelete(syncId: String)
 }

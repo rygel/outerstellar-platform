@@ -11,9 +11,15 @@ import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
+import dev.outerstellar.starter.swing.DesktopState
+import dev.outerstellar.starter.swing.DesktopStateProvider
+import dev.outerstellar.starter.swing.SystemTrayNotifier
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import java.awt.BorderLayout
 import java.awt.Dimension
+import java.awt.Rectangle
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
 import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.util.Locale
@@ -71,7 +77,8 @@ fun main() {
 
   SwingUtilities.invokeLater {
     FlatLightLaf.setup()
-    val viewModel = SyncViewModel(desktop.messageService, desktop.syncService, i18nService)
+    val notifier = SystemTrayNotifier(i18nService)
+    val viewModel = SyncViewModel(desktop.messageService, desktop.syncService, i18nService, notifier)
     SyncWindow(viewModel, ThemeManager(), i18nService).show()
   }
 }
@@ -86,14 +93,39 @@ private class SyncWindow(
   private val messagesList = JList(messagesModel)
   private val statusLabel = JLabel()
   private val authorField = JTextField()
+  private val searchField = JTextField()
   private val contentArea = JTextArea(defaultComposerRows, defaultComposerColumns)
   private val syncButton = JButton(i18nService.translate("swing.button.sync"))
 
   fun show() {
     configureFrame()
     setupBinding()
+    restoreState()
     viewModel.loadMessages()
     frame.isVisible = true
+  }
+
+  private fun restoreState() {
+    DesktopStateProvider.loadState()?.let { state ->
+        if (state.isMaximized) {
+            frame.extendedState = JFrame.MAXIMIZED_BOTH
+        } else {
+            frame.bounds = state.windowBounds
+        }
+        state.lastSearchQuery?.let {
+            viewModel.searchQuery = it
+            searchField.text = it
+        }
+    }
+  }
+
+  private fun saveState() {
+    val state = DesktopState(
+        windowBounds = frame.bounds,
+        isMaximized = (frame.extendedState and JFrame.MAXIMIZED_BOTH) != 0,
+        lastSearchQuery = viewModel.searchQuery.takeIf { it.isNotBlank() }
+    )
+    DesktopStateProvider.saveState(state)
   }
 
   private fun setupBinding() {
@@ -115,6 +147,12 @@ private class SyncWindow(
     
     authorField.text = viewModel.author
     contentArea.text = viewModel.content
+    
+    searchField.document.addDocumentListener(object : DocumentListener {
+      override fun insertUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
+      override fun removeUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
+      override fun changedUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
+    })
   }
 
   private fun updateUI() {
@@ -135,6 +173,11 @@ private class SyncWindow(
 
   private fun configureFrame() {
     frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+    frame.addWindowListener(object : WindowAdapter() {
+        override fun windowClosing(e: WindowEvent?) {
+            saveState()
+        }
+    })
     frame.minimumSize = Dimension(frameWidth, frameHeight)
     frame.setLocationRelativeTo(null)
     frame.layout = BorderLayout(frameGap, frameGap)
@@ -183,8 +226,13 @@ private class SyncWindow(
   }
 
   private fun createToolbar(): JPanel {
-    val panel = JPanel(BorderLayout())
+    val panel = JPanel(BorderLayout(panelGap, panelGap))
+    val searchPanel = JPanel(BorderLayout(panelGap, panelGap))
+    searchPanel.add(JLabel(i18nService.translate("swing.label.search")), BorderLayout.WEST)
+    searchPanel.add(searchField, BorderLayout.CENTER)
+    
     syncButton.addActionListener { viewModel.sync() }
+    panel.add(searchPanel, BorderLayout.NORTH)
     panel.add(statusLabel, BorderLayout.CENTER)
     panel.add(syncButton, BorderLayout.EAST)
     return panel

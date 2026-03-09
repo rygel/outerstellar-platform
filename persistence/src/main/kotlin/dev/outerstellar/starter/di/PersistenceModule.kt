@@ -6,6 +6,7 @@ import io.micrometer.core.instrument.Metrics
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import javax.sql.DataSource
 
@@ -15,8 +16,20 @@ val persistenceModule = module {
         // jdbcUrl is expected to be provided via a property or another single
         createDataSource(get(), "sa", "")
     }
-    single<DSLContext> { DSL.using(get<DataSource>(), SQLDialect.POSTGRES) }
-    single<MessageRepository> { JooqMessageRepository(get()) }
-    single<OutboxRepository> { JooqOutboxRepository(get()) }
-    single<TransactionManager> { JooqTransactionManager(get()) }
+    single<DSLContext>(named("primaryDsl")) { DSL.using(get<DataSource>(), SQLDialect.POSTGRES) }
+    single<DSLContext>(named("replicaDsl")) { DSL.using(get<DataSource>(), SQLDialect.POSTGRES) }
+    
+    single<MessageRepository> { 
+        JooqMessageRepository(
+            primaryDsl = get(named("primaryDsl")), 
+            replicaDsl = get(named("replicaDsl"))
+        ) 
+    }
+    single<OutboxRepository> { 
+        JooqOutboxRepository(
+            primaryDsl = get(named("primaryDsl")), 
+            replicaDsl = get(named("replicaDsl"))
+        ) 
+    }
+    single<TransactionManager> { JooqTransactionManager(get(named("primaryDsl"))) }
 }

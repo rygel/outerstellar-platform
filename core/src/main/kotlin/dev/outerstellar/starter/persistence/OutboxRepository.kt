@@ -18,6 +18,7 @@ interface OutboxRepository {
     fun fetchUnprocessed(limit: Int = 10): List<OutboxEntry>
     fun markProcessed(id: UUID)
     fun markFailed(id: UUID, error: String)
+    fun softDelete(id: UUID)
 }
 
 interface TransactionManager {
