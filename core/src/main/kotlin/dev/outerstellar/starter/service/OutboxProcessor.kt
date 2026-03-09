@@ -6,8 +6,19 @@ import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+interface SyncProvider {
+    fun sync(): SyncStats
+}
+
+data class SyncStats(
+    val pushedCount: Int,
+    val pulledCount: Int,
+    val conflictCount: Int
+)
+
 class OutboxProcessor(
     private val outboxRepository: OutboxRepository,
+    private val syncProvider: SyncProvider? = null,
     private val intervalMs: Long = 5000
 ) {
     private val logger = LoggerFactory.getLogger(OutboxProcessor::class.java)
@@ -34,8 +45,13 @@ class OutboxProcessor(
             logger.debug("Processing {} outbox entries", entries.size)
             entries.forEach { entry ->
                 try {
-                    // Simulate processing (e.g., sending a notification, sync event, etc.)
-                    logger.info("Processed outbox entry: {} (Type: {})", entry.id, entry.payloadType)
+                    when (entry.payloadType) {
+                        "MESSAGE_CREATED", "MESSAGE_UPDATED", "MESSAGE_DELETED" -> {
+                            logger.info("Outbox entry {} triggered sync check", entry.id)
+                            syncProvider?.sync()
+                        }
+                        else -> logger.info("Processed outbox entry: {} (Type: {})", entry.id, entry.payloadType)
+                    }
                     outboxRepository.markProcessed(entry.id)
                 } catch (e: Exception) {
                     logger.error("Failed to process outbox entry {}", entry.id, e)

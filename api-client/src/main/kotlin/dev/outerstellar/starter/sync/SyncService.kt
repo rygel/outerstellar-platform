@@ -1,6 +1,10 @@
 package dev.outerstellar.starter.sync
 
 import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.persistence.OutboxRepository
+import dev.outerstellar.starter.persistence.TransactionManager
+import dev.outerstellar.starter.service.SyncProvider
+import dev.outerstellar.starter.service.SyncStats
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.retry.Retry
@@ -21,8 +25,10 @@ import java.time.Duration
 class SyncService(
   private val repository: MessageRepository,
   private val serverBaseUrl: String,
+  private val outboxRepository: OutboxRepository? = null,
+  private val transactionManager: TransactionManager? = null,
   httpClient: HttpHandler = ApacheClient(),
-) {
+) : SyncProvider {
   private val retry = Retry.of("sync-retry", RetryConfig.custom<RetryConfig>()
     .maxAttempts(3)
     .waitDuration(Duration.ofMillis(100))
@@ -42,7 +48,7 @@ class SyncService(
   private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
   private val pullResponseLens = Body.auto<SyncPullResponse>().toLens()
 
-  fun sync(): SyncStats {
+  override fun sync(): SyncStats {
     val dirtyMessages = repository.listDirtyMessages().map { it.toSyncMessage() }
     var pushedCount = 0
     var conflictCount = 0
@@ -57,7 +63,22 @@ class SyncService(
 
       val pushBody = pushResponseLens(pushResponse)
       val conflictIds = pushBody.conflicts.map { it.syncId }.toSet()
-      repository.markClean(dirtyMessages.map { it.syncId }.filterNot { it in conflictIds })
+      
+      if (transactionManager != null && outboxRepository != null) {
+        transactionManager.inTransaction {
+          repository.markClean(dirtyMessages.map { it.syncId }.filterNot { it in conflictIds })
+          outboxRepository.save(
+            dev.outerstellar.starter.persistence.OutboxEntry(
+              id = java.util.UUID.randomUUID(),
+              payloadType = "SYNC_PUSH_SUCCESS",
+              payload = "Pushed ${pushBody.appliedCount} messages, ${pushBody.conflicts.size} conflicts"
+            )
+          )
+        }
+      } else {
+        repository.markClean(dirtyMessages.map { it.syncId }.filterNot { it in conflictIds })
+      }
+
       pushedCount = pushBody.appliedCount
       conflictCount = pushBody.conflicts.size
     }
@@ -74,7 +95,20 @@ class SyncService(
       if (
         current == null || incoming.updatedAtEpochMs >= current.updatedAtEpochMs || !current.dirty
       ) {
-        repository.upsertSyncedMessage(incoming, dirty = false)
+        if (transactionManager != null && outboxRepository != null) {
+          transactionManager.inTransaction {
+            repository.upsertSyncedMessage(incoming, dirty = false)
+            outboxRepository.save(
+              dev.outerstellar.starter.persistence.OutboxEntry(
+                id = java.util.UUID.randomUUID(),
+                payloadType = "SYNC_PULL_UPSERT",
+                payload = incoming.syncId
+              )
+            )
+          }
+        } else {
+          repository.upsertSyncedMessage(incoming, dirty = false)
+        }
       }
     }
     repository.setLastSyncEpochMs(pullBody.serverTimestamp)

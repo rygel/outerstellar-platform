@@ -147,4 +147,25 @@ class MessageService(
         cache.invalidate("entity:$syncId")
         cache.invalidateAll()
     }
+
+    fun updateMessage(message: StoredMessage): StoredMessage {
+        val updated = if (transactionManager != null && outboxRepository != null) {
+            transactionManager.inTransaction {
+                val up = repository.updateMessage(message)
+                outboxRepository.save(
+                    OutboxEntry(
+                        id = UUID.randomUUID(),
+                        payloadType = "MESSAGE_UPDATED",
+                        payload = up.syncId
+                    )
+                )
+                up
+            }
+        } else {
+            repository.updateMessage(message)
+        }
+        cache.put("entity:${updated.syncId}", updated)
+        cache.invalidateAll()
+        return updated
+    }
 }

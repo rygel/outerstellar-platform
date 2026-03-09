@@ -10,6 +10,7 @@ data class MessageSummary(
   val content: String,
   val updatedAtEpochMs: Long,
   val dirty: Boolean,
+  val version: Long = 1,
 ) {
   fun updatedAtLabel(): String =
     messageTimestampFormatter.format(

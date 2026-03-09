@@ -9,8 +9,9 @@ data class StoredMessage(
   val updatedAtEpochMs: Long,
   val dirty: Boolean,
   val deleted: Boolean,
+  val version: Long = 1,
 ) {
-  fun toSummary(): MessageSummary = MessageSummary(syncId, author, content, updatedAtEpochMs, dirty)
+  fun toSummary(): MessageSummary = MessageSummary(syncId, author, content, updatedAtEpochMs, dirty, version)
 
   fun toSyncMessage(): SyncMessage =
     SyncMessage(

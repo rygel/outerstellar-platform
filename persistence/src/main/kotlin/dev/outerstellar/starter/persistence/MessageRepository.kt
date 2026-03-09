@@ -24,6 +24,7 @@ class JooqMessageRepository(
         MESSAGES.UPDATED_AT_EPOCH_MS,
         MESSAGES.DIRTY,
         MESSAGES.DELETED,
+        MESSAGES.VERSION,
       )
       .from(MESSAGES)
       .where(MESSAGES.DELETED.eq(false))
@@ -77,6 +78,7 @@ class JooqMessageRepository(
         MESSAGES.UPDATED_AT_EPOCH_MS,
         MESSAGES.DIRTY,
         MESSAGES.DELETED,
+        MESSAGES.VERSION,
       )
       .from(MESSAGES)
       .where(MESSAGES.DIRTY.eq(true))
@@ -92,6 +94,7 @@ class JooqMessageRepository(
         MESSAGES.UPDATED_AT_EPOCH_MS,
         MESSAGES.DIRTY,
         MESSAGES.DELETED,
+        MESSAGES.VERSION,
       )
       .from(MESSAGES)
       .where(MESSAGES.SYNC_ID.eq(syncId))
@@ -107,6 +110,7 @@ class JooqMessageRepository(
         MESSAGES.UPDATED_AT_EPOCH_MS,
         MESSAGES.DIRTY,
         MESSAGES.DELETED,
+        MESSAGES.VERSION,
       )
       .from(MESSAGES)
       .where(MESSAGES.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs))
@@ -130,6 +134,7 @@ class JooqMessageRepository(
         .set(MESSAGES.UPDATED_AT_EPOCH_MS, message.updatedAtEpochMs)
         .set(MESSAGES.DIRTY, dirty)
         .set(MESSAGES.DELETED, message.deleted)
+        .set(MESSAGES.VERSION, 1L)
         .execute()
     } else {
       primaryDsl
@@ -139,6 +144,7 @@ class JooqMessageRepository(
         .set(MESSAGES.UPDATED_AT_EPOCH_MS, message.updatedAtEpochMs)
         .set(MESSAGES.DIRTY, dirty)
         .set(MESSAGES.DELETED, message.deleted)
+        .set(MESSAGES.VERSION, existing.version + 1)
         .where(MESSAGES.SYNC_ID.eq(message.syncId))
         .execute()
     }
@@ -190,8 +196,28 @@ class JooqMessageRepository(
   override fun softDelete(syncId: String) {
     primaryDsl.update(MESSAGES)
       .set(MESSAGES.field("deleted_at", java.time.LocalDateTime::class.java), java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toLocalDateTime())
+      .set(MESSAGES.VERSION, MESSAGES.VERSION.plus(1))
       .where(MESSAGES.SYNC_ID.eq(syncId))
       .execute()
+  }
+
+  override fun updateMessage(message: StoredMessage): StoredMessage {
+    val rows = primaryDsl.update(MESSAGES)
+      .set(MESSAGES.AUTHOR, message.author)
+      .set(MESSAGES.CONTENT, message.content)
+      .set(MESSAGES.UPDATED_AT_EPOCH_MS, System.currentTimeMillis())
+      .set(MESSAGES.DIRTY, message.dirty)
+      .set(MESSAGES.DELETED, message.deleted)
+      .set(MESSAGES.VERSION, message.version + 1)
+      .where(MESSAGES.SYNC_ID.eq(message.syncId))
+      .and(MESSAGES.VERSION.eq(message.version))
+      .execute()
+
+    if (rows == 0) {
+      throw IllegalStateException("Optimistic locking failure for message ${message.syncId}")
+    }
+
+    return requireNotNull(findBySyncId(message.syncId))
   }
 
   private fun insertMessage(author: String, content: String, dirty: Boolean): StoredMessage {
@@ -204,6 +230,7 @@ class JooqMessageRepository(
       .set(MESSAGES.UPDATED_AT_EPOCH_MS, System.currentTimeMillis())
       .set(MESSAGES.DIRTY, dirty)
       .set(MESSAGES.DELETED, false)
+      .set(MESSAGES.VERSION, 1L)
       .execute()
     return requireNotNull(findBySyncId(syncId))
   }
@@ -216,6 +243,7 @@ class JooqMessageRepository(
       updatedAtEpochMs = record.get(MESSAGES.UPDATED_AT_EPOCH_MS)!!,
       dirty = record.get(MESSAGES.DIRTY)!!,
       deleted = record.get(MESSAGES.DELETED)!!,
+      version = record.get(MESSAGES.VERSION)!!,
     )
 
   companion object {

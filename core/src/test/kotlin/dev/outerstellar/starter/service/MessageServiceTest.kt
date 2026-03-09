@@ -78,4 +78,34 @@ class MessageServiceTest {
         verify { repository.createServerMessage(author, content) }
         verify { outboxRepository.save(match { it.payload == syncId && it.payloadType == "MESSAGE_CREATED" }) }
     }
+
+    @Test
+    fun `updateMessage handles optimistic locking failure`() {
+        val syncId = "123"
+        val message = StoredMessage(syncId, "author", "content", 100L, false, false, version = 1)
+        
+        every { repository.updateMessage(message) } throws IllegalStateException("Optimistic locking failure for message $syncId")
+
+        val error = kotlin.runCatching {
+            service.updateMessage(message)
+        }.exceptionOrNull()
+
+        assertTrue(error is IllegalStateException)
+        assertEquals("Optimistic locking failure for message $syncId", error.message)
+    }
+
+    @Test
+    fun `updateMessage increments version and records to outbox`() {
+        val syncId = "123"
+        val message = StoredMessage(syncId, "author", "content", 100L, false, false, version = 1)
+        val updated = message.copy(version = 2)
+
+        every { repository.updateMessage(message) } returns updated
+
+        val result = service.updateMessage(message)
+
+        assertEquals(2, result.version)
+        verify { repository.updateMessage(message) }
+        verify { outboxRepository.save(match { it.payload == syncId && it.payloadType == "MESSAGE_UPDATED" }) }
+    }
 }
