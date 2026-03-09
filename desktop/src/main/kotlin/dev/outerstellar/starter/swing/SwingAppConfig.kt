@@ -9,6 +9,8 @@ data class SwingAppConfig(
   val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-swing-client;MODE=PostgreSQL;AUTO_SERVER=TRUE",
   val jdbcUser: String = "sa",
   val jdbcPassword: String = "",
+  val version: String = "1.0.0",
+  val updateUrl: String = ""
 ) {
   companion object {
     fun fromEnvironment(environment: Map<String, String> = System.getenv()): SwingAppConfig =

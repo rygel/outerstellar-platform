@@ -75,11 +75,40 @@ fun main() {
 
   val i18nService = I18nService.create("swing-messages").also { it.setLocale(Locale.getDefault()) }
 
-  SwingUtilities.invokeLater {
+    SwingUtilities.invokeLater {
     FlatLightLaf.setup()
     val notifier = SystemTrayNotifier(i18nService)
     val viewModel = SyncViewModel(desktop.messageService, desktop.syncService, i18nService, notifier)
-    SyncWindow(viewModel, ThemeManager(), i18nService).show()
+    
+    val window = SyncWindow(viewModel, ThemeManager(), i18nService)
+
+    DeepLinkHandler.setup(
+        onSearch = { query ->
+            SwingUtilities.invokeLater {
+                viewModel.searchQuery = query
+                window.updateSearchField(query)
+            }
+        },
+        onSync = {
+            SwingUtilities.invokeLater {
+                viewModel.sync()
+            }
+        }
+    )
+
+    val updateService = UpdateService(
+        currentVersion = desktop.config.version,
+        updateUrl = desktop.config.updateUrl,
+        i18nService = i18nService,
+        onUpdateAvailable = { latestVersion ->
+            SwingUtilities.invokeLater {
+                window.showUpdateNotification(latestVersion)
+            }
+        }
+    )
+
+    window.show()
+    updateService.checkForUpdates()
   }
 }
 
@@ -169,6 +198,23 @@ private class SyncWindow(
     if (contentArea.text != viewModel.content) {
         contentArea.text = viewModel.content
     }
+
+    if (searchField.text != viewModel.searchQuery) {
+        searchField.text = viewModel.searchQuery
+    }
+  }
+
+  fun updateSearchField(query: String) {
+    searchField.text = query
+  }
+
+  fun showUpdateNotification(latestVersion: String) {
+    JOptionPane.showMessageDialog(
+        frame,
+        i18nService.translate("swing.update.available", latestVersion),
+        i18nService.translate("swing.update.title"),
+        JOptionPane.INFORMATION_MESSAGE
+    )
   }
 
   private fun configureFrame() {
