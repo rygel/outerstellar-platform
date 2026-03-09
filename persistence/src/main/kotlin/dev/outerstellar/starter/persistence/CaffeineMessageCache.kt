@@ -7,10 +7,10 @@ import java.util.concurrent.TimeUnit
 
 class CaffeineMessageCache(registry: MeterRegistry? = null) : MessageCache {
     private val cache = Caffeine.newBuilder()
-        .maximumSize(100)
-        .expireAfterWrite(1, TimeUnit.MINUTES)
+        .maximumSize(1000)
+        .expireAfterWrite(10, TimeUnit.MINUTES)
         .recordStats()
-        .build<String, List<Any>>()
+        .build<String, Any>()
 
     init {
         if (registry != null) {
@@ -18,10 +18,14 @@ class CaffeineMessageCache(registry: MeterRegistry? = null) : MessageCache {
         }
     }
 
-    override fun get(key: String): List<Any>? = cache.getIfPresent(key)
+    override fun get(key: String): Any? = cache.getIfPresent(key)
 
-    override fun put(key: String, value: List<Any>) {
+    override fun put(key: String, value: Any) {
         cache.put(key, value)
+    }
+
+    override fun invalidate(key: String) {
+        cache.invalidate(key)
     }
 
     override fun invalidateAll() {

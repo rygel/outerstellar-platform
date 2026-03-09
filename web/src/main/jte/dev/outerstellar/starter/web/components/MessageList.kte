@@ -10,6 +10,7 @@
               hx-target="#message-list-panel" 
               hx-swap="outerHTML" 
               hx-push-url="true"
+              hx-indicator="#search-indicator"
               hx-trigger="submit, change from:select[name='year']"
               class="flex flex-wrap gap-2">
             
@@ -20,7 +21,10 @@
                 @endfor
             </select>
 
-            <input type="text" name="q" value="${model.searchQuery}" placeholder="Search messages..." class="px-3 py-1 border rounded">
+            <div class="relative flex items-center">
+                <input type="text" name="q" value="${model.searchQuery}" placeholder="Search messages..." class="px-3 py-1 border rounded">
+                <i id="search-indicator" class="ri-loader-4-line ri-spin htmx-indicator absolute right-2 text-gray-400"></i>
+            </div>
             <input type="hidden" name="limit" value="${model.limit}">
             <button type="submit" class="px-4 py-1 bg-blue-600 text-white rounded">Search</button>
         </form>

@@ -13,8 +13,51 @@
     <link rel="stylesheet" href="/site.css">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <style>${shell.themeCss}</style>
+    <style>
+        .htmx-indicator { display: none; }
+        .htmx-request .htmx-indicator { display: inline-block; }
+        .htmx-request.htmx-indicator { display: inline-block; }
+
+        #toast-container {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+        .toast {
+            background: #f44336;
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
 </head>
-<body class="${shell.layoutClass}">
+<body class="${shell.layoutClass}" hx-on::after-request="if(!event.detail.successful) showToast('An error occurred while processing your request.')">
+<div id="toast-container"></div>
+<script>
+    fun showToast(message) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = '<i class="ri-error-warning-line"></i> <span>' + message + '</span>';
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.5s ease-out';
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    }
+</script>
 <div class="shell">
     <aside class="sidebar">
         <div class="sidebar-brand">

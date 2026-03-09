@@ -39,6 +39,18 @@ class MessageService(
         return results
     }
 
+    fun findBySyncId(syncId: String): StoredMessage? {
+        val cacheKey = "entity:$syncId"
+        val cached = cache.get(cacheKey) as? StoredMessage
+        if (cached != null) return cached
+
+        val message = repository.findBySyncId(syncId)
+        if (message != null) {
+            cache.put(cacheKey, message)
+        }
+        return message
+    }
+
     fun listDirtyMessages(): List<StoredMessage> = repository.listDirtyMessages()
 
     fun createServerMessage(author: String, content: String): StoredMessage {
@@ -61,7 +73,8 @@ class MessageService(
             repository.createServerMessage(author, content)
         }
 
-        cache.invalidateAll()
+        cache.put("entity:${message.syncId}", message)
+        cache.invalidateAll() // Still need to invalidate lists as they might be affected
         return message
     }
 
@@ -69,6 +82,7 @@ class MessageService(
         require(author.isNotBlank()) { "Author cannot be blank" }
         require(content.isNotBlank()) { "Content cannot be blank" }
         val message = repository.createLocalMessage(author, content)
+        cache.put("entity:${message.syncId}", message)
         cache.invalidateAll()
         return message
     }
@@ -91,10 +105,11 @@ class MessageService(
         var appliedCount = 0
 
         request.messages.forEach { incoming ->
-            val current = repository.findBySyncId(incoming.syncId)
+            val current = findBySyncId(incoming.syncId)
             when {
                 current == null || incoming.updatedAtEpochMs > current.updatedAtEpochMs -> {
-                    repository.upsertSyncedMessage(incoming, dirty = false)
+                    val updated = repository.upsertSyncedMessage(incoming, dirty = false)
+                    cache.put("entity:${updated.syncId}", updated)
                     appliedCount++
                 }
                 incoming.updatedAtEpochMs < current.updatedAtEpochMs -> {
@@ -129,6 +144,7 @@ class MessageService(
         } else {
             repository.softDelete(syncId)
         }
+        cache.invalidate("entity:$syncId")
         cache.invalidateAll()
     }
 }

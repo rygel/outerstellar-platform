@@ -1,4 +1,4 @@
-Command finished with exit code 0.
+Command finished with exit code 1.
 Command output:
 [INFO] Scanning for projects...
 [WARNING] 
@@ -12,29 +12,17 @@ Command output:
 [INFO] ------------------------------------------------------------------------
 [INFO] Reactor Build Order:
 [INFO] 
-[INFO] outerstellar-starter-parent                                        [pom]
 [INFO] core                                                               [jar]
 [INFO] persistence                                                        [jar]
-[INFO] api-client                                                         [jar]
-[INFO] security                                                           [jar]
-[INFO] web                                                                [jar]
-[INFO] desktop                                                            [jar]
-[INFO] 
-[INFO] ------------< dev.outerstellar:outerstellar-starter-parent >------------
-[INFO] Building outerstellar-starter-parent 0.1.0-SNAPSHOT                [1/7]
-[INFO]   from pom.xml
-[INFO] --------------------------------[ pom ]---------------------------------
-[INFO] 
-[INFO] --- enforcer:3.6.2:enforce (require-java-21) @ outerstellar-starter-parent ---
-[INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
-[INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
 [INFO] 
 [INFO] -----------------------< dev.outerstellar:core >------------------------
-[INFO] Building core 0.1.0-SNAPSHOT                                       [2/7]
-[INFO]   from core\pom.xml
+[INFO] Building core 0.1.0-SNAPSHOT                                       [1/2]
+[INFO]   from pom.xml
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO] 
 [INFO] --- enforcer:3.6.2:enforce (require-java-21) @ core ---
+[INFO] Rule 0: org.apache.maven.enforcer.rules.version.RequireMavenVersion passed
+[INFO] Rule 1: org.apache.maven.enforcer.rules.version.RequireJavaVersion passed
 [INFO] 
 [INFO] --- resources:3.3.1:resources (default-resources) @ core ---
 [INFO] Copying 3 resources from src\main\resources to target\classes
@@ -48,17 +36,50 @@ Command output:
 [WARNING] file:///C:/Develop/Claude/projects/outerstellar-starter/core/src/main/kotlin/dev/outerstellar/starter/sync/SyncModels.kt:17:35 'fun ValidationBuilder<String>.minLength(length: Int): Constraint<String>' is deprecated. Moved to io.konform.validation.constraints.
 [WARNING] file:///C:/Develop/Claude/projects/outerstellar-starter/core/src/main/kotlin/dev/outerstellar/starter/sync/SyncModels.kt:18:36 'fun ValidationBuilder<String>.minLength(length: Int): Constraint<String>' is deprecated. Moved to io.konform.validation.constraints.
 [INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ core ---
+[INFO] skip non existing resourceDirectory C:\Develop\Claude\projects\outerstellar-starter\core\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ core ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] 
+[INFO] --- kotlin:2.3.10:test-compile (test-compile) @ core ---
+[INFO] Options for KOTLIN DAEMON: CompilationOptions(compilerMode=NON_INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[], kotlinScriptExtensions=null)
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ core ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running dev.outerstellar.starter.arch.ArchitectureTest
+22:58:59.014 [main] INFO  c.tngtech.archunit.core.PluginLoader - Detected Java version 21.0.9
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.820 s -- in dev.outerstellar.starter.arch.ArchitectureTest
+[INFO] Running dev.outerstellar.starter.service.MessageCacheTest
+WARNING: A Java agent has been loaded dynamically (C:\Users\Alexander\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.17\byte-buddy-agent-1.14.17.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.111 s -- in dev.outerstellar.starter.service.MessageCacheTest
+[INFO] Running dev.outerstellar.starter.service.MessageServiceTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.087 s -- in dev.outerstellar.starter.service.MessageServiceTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 9, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
 [INFO] --------------------< dev.outerstellar:persistence >--------------------
-[INFO] Building persistence 0.1.0-SNAPSHOT                                [3/7]
-[INFO]   from persistence\pom.xml
+[INFO] Building persistence 0.1.0-SNAPSHOT                                [2/2]
+[INFO]   from C:\Develop\Claude\projects\outerstellar-starter\persistence\pom.xml
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO] 
 [INFO] --- enforcer:3.6.2:enforce (require-java-21) @ persistence ---
 [INFO] 
 [INFO] --- flyway:12.0.3:migrate (migrate-codegen-schema) @ persistence ---
 [INFO] Database: jdbc:h2:file:C:\Develop\Claude\projects\outerstellar-starter\persistence\target/jooq-codegen/db/starter (H2 2.2)
-[INFO] Successfully validated 4 migrations (execution time 00:00.025s)
-[INFO] Current version of schema "PUBLIC": 4
+[INFO] Successfully validated 5 migrations (execution time 00:00.021s)
+[INFO] Current version of schema "PUBLIC": 5
 [INFO] Schema "PUBLIC" is up to date. No migration necessary.
 [INFO] Database: jdbc:h2:file:C:\Develop\Claude\projects\outerstellar-starter\persistence\target/jooq-codegen/db/starter (H2 2.2)
 [INFO] 
@@ -85,7 +106,7 @@ Command output:
                                       
 [INFO] 
 
-jOOQ tip of the day: Need a random value from a group? Use the ANY_VALUE aggregate function, which is supported natively in a few dialects: https://www.jooq.org/doc/latest/manual/sql-building/column-expressions/aggregate-functions/any-value-function/
+jOOQ tip of the day: Client side computed columns are very useful if you have redundant behaviour in your queries and data: https://www.jooq.org/doc/latest/manual/code-generation/codegen-advanced/codegen-config-database/codegen-database-forced-types/codegen-database-forced-types-computed/
 
 [INFO] No <inputCatalog/> was provided. Generating ALL available catalogs instead.
 [INFO] License parameters       
@@ -179,8 +200,7 @@ jOOQ tip of the day: Need a random value from a group? Use the ANY_VALUE aggrega
 [INFO] Embeddables fetched      : 0 (0 included, 0 excluded)
 [INFO] Enums fetched            : 0 (0 included, 0 excluded)
 [INFO] Packages fetched         : 0 (0 included, 0 excluded)
-[INFO] Routines fetched         : 0 (0 included, 0 excluded)
-[INFO] Sequences fetched        : 0 (0 included, 0 excluded)
+[INFO] Routines fetched         : 7 (7 included, 0 excluded)
 [INFO] No schema version is applied for catalog . Regenerating.
 [INFO]                          
 [INFO] Generating catalog       : DefaultCatalog.kt
@@ -190,6 +210,7 @@ jOOQ tip of the day: Need a random value from a group? Use the ANY_VALUE aggrega
 [INFO] No schema version is applied for schema PUBLIC. Regenerating.
 [INFO] Generating schema        : Public.kt
 [INFO] ----------------------------------------------------------
+[INFO] Sequences fetched        : 0 (0 included, 0 excluded)
 [INFO] UDTs fetched             : 0 (0 included, 0 excluded)
 [INFO] Generating tables        
 [INFO] Computed columns         : Computed columns are a commercial only jOOQ feature. If you wish to profit from this feature, please upgrade to the jOOQ Professional Edition
@@ -198,28 +219,37 @@ jOOQ tip of the day: Need a random value from a group? Use the ANY_VALUE aggrega
 [INFO] Generating table         : Messages.kt [input=MESSAGES, pk=CONSTRAINT_1]
 [INFO] Generating table         : Outbox.kt [input=OUTBOX, pk=CONSTRAINT_8]
 [INFO] Generating table         : SyncState.kt [input=SYNC_STATE, pk=CONSTRAINT_E]
-[INFO] Tables generated         : Total: 344.218ms
+[INFO] Tables generated         : Total: 354.241ms
 [INFO] Generating table records 
 [INFO] Generating record        : FlywaySchemaHistoryRecord.kt
 [INFO] Generating record        : MessagesRecord.kt
 [INFO] Generating record        : OutboxRecord.kt
 [INFO] Generating record        : SyncStateRecord.kt
-[INFO] Table records generated  : Total: 373.157ms, +28.938ms
+[INFO] Table records generated  : Total: 380.726ms, +26.484ms
 [INFO] Generating table references
-[INFO] Table refs generated     : Total: 374.225ms, +1.068ms
+[INFO] Table refs generated     : Total: 381.661ms, +0.935ms
 [INFO] Generating Keys          
-[INFO] Keys generated           : Total: 375.45ms, +1.224ms
+[INFO] Keys generated           : Total: 382.732ms, +1.071ms
 [INFO] Generating Indexes       
-[INFO] Indexes generated        : Total: 376.887ms, +1.437ms
-[INFO] Generation finished: PUBLIC: Total: 377.048ms, +0.161ms
+[INFO] Indexes generated        : Total: 383.693ms, +0.96ms
+[INFO] Generating routines and table-valued functions
+[INFO] Generating routine       : FtCreateIndex.kt
+[INFO] Generating routine       : FtDropAll.kt
+[INFO] Generating routine       : FtDropIndex.kt
+[INFO] Generating routine       : FtInit.kt
+[INFO] Generating routine       : FtReindex.kt
+[INFO] Generating routine       : FtSearch.kt
+[INFO] Generating routine       : FtSearchData.kt
+[INFO] Routines generated       : Total: 419.737ms, +36.044ms
+[INFO] Generation finished: PUBLIC: Total: 419.871ms, +0.133ms
 [INFO]                          
-[INFO] Affected files: 13       
+[INFO] Affected files: 21       
 [INFO] Modified files: 0        
 [INFO] No modified files        : This code generation run has not produced any file modifications.
 This means, the schema has not changed, and no other parameters (jOOQ version, driver version, database version,
 and any configuration elements) have changed either.
 
-In automated builds, it is recommended to prevent unnecessary code generation runs. This run took: 360.283ms
+In automated builds, it is recommended to prevent unnecessary code generation runs. This run took: 403.563ms
 Possible means to prevent this:
 - Use manual code generation and check in generated sources: https://www.jooq.org/doc/latest/manual/code-generation/codegen-version-control/
 - Use schema version providers: https://www.jooq.org/doc/latest/manual/code-generation/codegen-advanced/codegen-config-database/codegen-database-version-providers/
@@ -227,7 +257,7 @@ Possible means to prevent this:
 [INFO] Removing excess files    
 [INFO] 
 [INFO] --- resources:3.3.1:resources (default-resources) @ persistence ---
-[INFO] Copying 4 resources from src\main\resources to target\classes
+[INFO] Copying 5 resources from src\main\resources to target\classes
 [INFO] 
 [INFO] --- compiler:3.14.0:compile (default-compile) @ persistence ---
 [INFO] Recompiling the module because of changed dependency.
@@ -240,99 +270,85 @@ Possible means to prevent this:
 [WARNING] Duplicate source root: C:\Develop\Claude\projects\outerstellar-starter\persistence\src\main\kotlin\dev\outerstellar\starter\persistence\JooqOutboxRepository.kt
 [WARNING] Duplicate source root: C:\Develop\Claude\projects\outerstellar-starter\persistence\src\main\kotlin\dev\outerstellar\starter\persistence\MessageRepository.kt
 [INFO] 
-[INFO] --------------------< dev.outerstellar:api-client >---------------------
-[INFO] Building api-client 0.1.0-SNAPSHOT                                 [4/7]
-[INFO]   from api-client\pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ persistence ---
+[INFO] skip non existing resourceDirectory C:\Develop\Claude\projects\outerstellar-starter\persistence\src\test\resources
 [INFO] 
-[INFO] --- enforcer:3.6.2:enforce (require-java-21) @ api-client ---
-[INFO] 
-[INFO] --- resources:3.3.1:resources (default-resources) @ api-client ---
-[INFO] skip non existing resourceDirectory C:\Develop\Claude\projects\outerstellar-starter\api-client\src\main\resources
-[INFO] 
-[INFO] --- compiler:3.14.0:compile (default-compile) @ api-client ---
+[INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ persistence ---
 [INFO] Recompiling the module because of changed dependency.
 [INFO] 
-[INFO] --- kotlin:2.3.10:compile (compile) @ api-client ---
+[INFO] --- kotlin:2.3.10:test-compile (test-compile) @ persistence ---
 [INFO] Options for KOTLIN DAEMON: CompilationOptions(compilerMode=NON_INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[], kotlinScriptExtensions=null)
 [INFO] 
-[INFO] ---------------------< dev.outerstellar:security >----------------------
-[INFO] Building security 0.1.0-SNAPSHOT                                   [5/7]
-[INFO]   from security\pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] --- surefire:3.2.5:test (default-test) @ persistence ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
 [INFO] 
-[INFO] --- enforcer:3.6.2:enforce (require-java-21) @ security ---
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[ERROR] TestEngine with ID 'junit-jupiter' failed to discover tests
 [INFO] 
-[INFO] --- resources:3.3.1:resources (default-resources) @ security ---
-[INFO] skip non existing resourceDirectory C:\Develop\Claude\projects\outerstellar-starter\security\src\main\resources
+[INFO] Results:
 [INFO] 
-[INFO] --- compiler:3.14.0:compile (default-compile) @ security ---
-[INFO] Recompiling the module because of changed dependency.
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0
 [INFO] 
-[INFO] --- kotlin:2.3.10:compile (compile) @ security ---
-[INFO] Options for KOTLIN DAEMON: CompilationOptions(compilerMode=NON_INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[], kotlinScriptExtensions=null)
-[WARNING] file:///C:/Develop/Claude/projects/outerstellar-starter/security/src/main/kotlin/dev/outerstellar/starter/security/SecurityRules.kt:3:8 'typealias Security = Security' is deprecated. Moved module.
-[WARNING] file:///C:/Develop/Claude/projects/outerstellar-starter/security/src/main/kotlin/dev/outerstellar/starter/security/SecurityRules.kt:5:8 'class RequestContexts : Store<RequestContext>' is deprecated. Replaced with RequestKey mechanism.
-[WARNING] file:///C:/Develop/Claude/projects/outerstellar-starter/security/src/main/kotlin/dev/outerstellar/starter/security/SecurityRules.kt:8:8 'object RequestContextKey : Any' is deprecated. Replaced with RequestKey mechanism.
-[WARNING] file:///C:/Develop/Claude/projects/outerstellar-starter/security/src/main/kotlin/dev/outerstellar/starter/security/SecurityRules.kt:11:28 'constructor(storeId: String? = ...): RequestContexts' is deprecated. Replaced with RequestKey mechanism.
-[WARNING] file:///C:/Develop/Claude/projects/outerstellar-starter/security/src/main/kotlin/dev/outerstellar/starter/security/SecurityRules.kt:12:19 'object RequestContextKey : Any' is deprecated. Replaced with RequestKey mechanism.
-[WARNING] file:///C:/Develop/Claude/projects/outerstellar-starter/security/src/main/kotlin/dev/outerstellar/starter/security/SecurityRules.kt:25:21 'typealias Security = Security' is deprecated. Moved module.
-[WARNING] file:///C:/Develop/Claude/projects/outerstellar-starter/security/src/main/kotlin/dev/outerstellar/starter/security/SecurityRules.kt:25:32 'typealias Security = Security' is deprecated. Moved module.
-[INFO] 
-[INFO] ------------------------< dev.outerstellar:web >------------------------
-[INFO] Building web 0.1.0-SNAPSHOT                                        [6/7]
-[INFO]   from web\pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
-[INFO] --- enforcer:3.6.2:enforce (require-java-21) @ web ---
-[INFO] 
-[INFO] --- jte:3.2.3:generate (jte-generate) @ web ---
-[INFO] Generating jte templates found in C:\Develop\Claude\projects\outerstellar-starter\web\src\main\jte
-[INFO] Successfully generated 11 jte files in 0s to C:\Develop\Claude\projects\outerstellar-starter\web\target\generated-sources\jte
-[INFO] 
-[INFO] --- exec:3.5.0:exec (npm-build-css) @ web ---
-[INFO] skipping execute as per configuration
-[INFO] 
-[INFO] --- resources:3.3.1:resources (default-resources) @ web ---
-[INFO] Copying 5 resources from src\main\resources to target\classes
-[INFO] 
-[INFO] --- resources:3.3.1:copy-resources (copy-jte-templates) @ web ---
-[INFO] Copying 12 resources from src\main\jte to target\classes
-[INFO] 
-[INFO] --- compiler:3.14.0:compile (default-compile) @ web ---
-[INFO] Recompiling the module because of changed dependency.
-[INFO] 
-[INFO] --- kotlin:2.3.10:compile (compile) @ web ---
-[INFO] Options for KOTLIN DAEMON: CompilationOptions(compilerMode=NON_INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[], kotlinScriptExtensions=null)
-[INFO] 
-[INFO] ----------------------< dev.outerstellar:desktop >----------------------
-[INFO] Building desktop 0.1.0-SNAPSHOT                                    [7/7]
-[INFO]   from desktop\pom.xml
-[INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
-[INFO] --- enforcer:3.6.2:enforce (require-java-21) @ desktop ---
-[INFO] 
-[INFO] --- resources:3.3.1:resources (default-resources) @ desktop ---
-[INFO] Copying 3 resources from src\main\resources to target\classes
-[INFO] 
-[INFO] --- compiler:3.14.0:compile (default-compile) @ desktop ---
-[INFO] Recompiling the module because of changed dependency.
-[INFO] 
-[INFO] --- kotlin:2.3.10:compile (compile) @ desktop ---
-[INFO] Options for KOTLIN DAEMON: CompilationOptions(compilerMode=NON_INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[], kotlinScriptExtensions=null)
 [INFO] ------------------------------------------------------------------------
-[INFO] Reactor Summary for outerstellar-starter-parent 0.1.0-SNAPSHOT:
+[INFO] Reactor Summary for core 0.1.0-SNAPSHOT:
 [INFO] 
-[INFO] outerstellar-starter-parent ........................ SUCCESS [  0.235 s]
-[INFO] core ............................................... SUCCESS [  1.672 s]
-[INFO] persistence ........................................ SUCCESS [  2.501 s]
-[INFO] api-client ......................................... SUCCESS [  0.202 s]
-[INFO] security ........................................... SUCCESS [  0.131 s]
-[INFO] web ................................................ SUCCESS [  1.028 s]
-[INFO] desktop ............................................ SUCCESS [  0.335 s]
+[INFO] core ............................................... SUCCESS [  7.520 s]
+[INFO] persistence ........................................ FAILURE [  3.204 s]
 [INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
+[INFO] BUILD FAILURE
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  6.232 s
-[INFO] Finished at: 2026-03-09T22:43:54+02:00
+[INFO] Total time:  10.857 s
+[INFO] Finished at: 2026-03-09T22:59:06+02:00
 [INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project persistence: 
+[ERROR] 
+[ERROR] Please refer to C:\Develop\Claude\projects\outerstellar-starter\persistence\target\surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] There was an error in the forked process
+[ERROR] TestEngine with ID 'junit-jupiter' failed to discover tests
+[ERROR] org.apache.maven.surefire.booter.SurefireBooterForkException: There was an error in the forked process
+[ERROR] TestEngine with ID 'junit-jupiter' failed to discover tests
+[ERROR] 	at org.apache.maven.plugin.surefire.booterclient.ForkStarter.fork(ForkStarter.java:628)
+[ERROR] 	at org.apache.maven.plugin.surefire.booterclient.ForkStarter.run(ForkStarter.java:285)
+[ERROR] 	at org.apache.maven.plugin.surefire.booterclient.ForkStarter.run(ForkStarter.java:250)
+[ERROR] 	at org.apache.maven.plugin.surefire.AbstractSurefireMojo.executeProvider(AbstractSurefireMojo.java:1241)
+[ERROR] 	at org.apache.maven.plugin.surefire.AbstractSurefireMojo.executeAfterPreconditionsChecked(AbstractSurefireMojo.java:1090)
+[ERROR] 	at org.apache.maven.plugin.surefire.AbstractSurefireMojo.execute(AbstractSurefireMojo.java:910)
+[ERROR] 	at org.apache.maven.plugin.DefaultBuildPluginManager.executeMojo(DefaultBuildPluginManager.java:126)
+[ERROR] 	at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute2(MojoExecutor.java:328)
+[ERROR] 	at org.apache.maven.lifecycle.internal.MojoExecutor.doExecute(MojoExecutor.java:316)
+[ERROR] 	at org.apache.maven.lifecycle.internal.MojoExecutor.execute(MojoExecutor.java:212)
+[ERROR] 	at org.apache.maven.lifecycle.internal.MojoExecutor.execute(MojoExecutor.java:174)
+[ERROR] 	at org.apache.maven.lifecycle.internal.MojoExecutor.access$000(MojoExecutor.java:75)
+[ERROR] 	at org.apache.maven.lifecycle.internal.MojoExecutor$1.run(MojoExecutor.java:162)
+[ERROR] 	at org.apache.maven.plugin.DefaultMojosExecutionStrategy.execute(DefaultMojosExecutionStrategy.java:39)
+[ERROR] 	at org.apache.maven.lifecycle.internal.MojoExecutor.execute(MojoExecutor.java:159)
+[ERROR] 	at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject(LifecycleModuleBuilder.java:105)
+[ERROR] 	at org.apache.maven.lifecycle.internal.LifecycleModuleBuilder.buildProject(LifecycleModuleBuilder.java:73)
+[ERROR] 	at org.apache.maven.lifecycle.internal.builder.singlethreaded.SingleThreadedBuilder.build(SingleThreadedBuilder.java:53)
+[ERROR] 	at org.apache.maven.lifecycle.internal.LifecycleStarter.execute(LifecycleStarter.java:118)
+[ERROR] 	at org.apache.maven.DefaultMaven.doExecute(DefaultMaven.java:261)
+[ERROR] 	at org.apache.maven.DefaultMaven.doExecute(DefaultMaven.java:173)
+[ERROR] 	at org.apache.maven.DefaultMaven.execute(DefaultMaven.java:101)
+[ERROR] 	at org.apache.maven.cli.MavenCli.execute(MavenCli.java:919)
+[ERROR] 	at org.apache.maven.cli.MavenCli.doMain(MavenCli.java:285)
+[ERROR] 	at org.apache.maven.cli.MavenCli.main(MavenCli.java:207)
+[ERROR] 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+[ERROR] 	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+[ERROR] 	at org.codehaus.plexus.classworlds.launcher.Launcher.launchEnhanced(Launcher.java:255)
+[ERROR] 	at org.codehaus.plexus.classworlds.launcher.Launcher.launch(Launcher.java:201)
+[ERROR] 	at org.codehaus.plexus.classworlds.launcher.Launcher.mainWithExitCode(Launcher.java:361)
+[ERROR] 	at org.codehaus.plexus.classworlds.launcher.Launcher.main(Launcher.java:314)
+[ERROR] 
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :persistence

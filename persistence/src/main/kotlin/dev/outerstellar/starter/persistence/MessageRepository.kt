@@ -8,6 +8,7 @@ import dev.outerstellar.starter.sync.SyncMessage
 import java.util.UUID
 import org.jooq.DSLContext
 import org.jooq.Record
+import org.jooq.impl.DSL
 
 @Suppress("TooManyFunctions")
 class JooqMessageRepository(
@@ -29,7 +30,21 @@ class JooqMessageRepository(
       .and(MESSAGES.field("deleted_at")!!.isNull)
       .let {
         if (!query.isNullOrBlank()) {
-          it.and(MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query)))
+          // Use H2 Full-Text Search if possible, falling back to LIKE
+          // FT_SEARCH_DATA returns a result set with SCHEMA, TABLE, COLUMNS, KEYS
+          // We can join with it.
+          try {
+            val ftsTable = DSL.table("FT_SEARCH_DATA({0}, 0, 0)", DSL.`val`(query))
+            val keyField = DSL.field("KEYS[1]", String::class.java)
+            it.and(
+              MESSAGES.SYNC_ID.`in`(
+                replicaDsl.select(keyField).from(ftsTable)
+              )
+            )
+          } catch (e: Exception) {
+            // Fallback to standard LIKE if FT_SEARCH is not available or fails
+            it.and(MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query)))
+          }
         } else {
           it
         }

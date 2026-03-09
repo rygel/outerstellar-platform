@@ -38,15 +38,39 @@ class MessageCacheTest {
     }
 
     @Test
-    fun `write operations invalidate cache`() {
-        service.createServerMessage("author", "content")
+    fun `write operations invalidate cache and use entity cache`() {
+        val msg = service.createServerMessage("author", "content")
         verify { cache.invalidateAll() }
+        verify { cache.put("entity:${msg.syncId}", msg) }
 
-        service.createLocalMessage("author", "content")
+        val localMsg = service.createLocalMessage("author", "content")
         verify(exactly = 2) { cache.invalidateAll() }
+        verify { cache.put("entity:${localMsg.syncId}", localMsg) }
 
         service.processPushRequest(SyncPushRequest(emptyList()))
         // SyncPushRequest with empty list appliedCount is 0, no invalidation
         verify(exactly = 2) { cache.invalidateAll() }
+    }
+
+    @Test
+    fun `findBySyncId uses entity cache`() {
+        val syncIdValue = "id-1"
+        val msg = mockk<dev.outerstellar.starter.model.StoredMessage>(relaxed = true)
+        every { msg.syncId } returns syncIdValue
+        
+        every { cache.get("entity:$syncIdValue") } returns null
+        every { repository.findBySyncId(syncIdValue) } returns msg
+        
+        // Cache miss
+        val firstResult = service.findBySyncId(syncIdValue)
+        assertEquals(msg, firstResult)
+        verify { repository.findBySyncId(syncIdValue) }
+        verify { cache.put("entity:$syncIdValue", msg) }
+        
+        // Cache hit
+        every { cache.get("entity:$syncIdValue") } returns msg
+        val secondResult = service.findBySyncId(syncIdValue)
+        assertEquals(msg, secondResult)
+        verify(exactly = 1) { repository.findBySyncId(syncIdValue) }
     }
 }

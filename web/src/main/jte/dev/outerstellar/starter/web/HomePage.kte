@@ -21,9 +21,12 @@
         <h2>${model.composerTitle}</h2>
         <p>${model.composerIntro}</p>
         <form class="form-grid" method="post" action="${model.submitUrl}">
-            <input type="text" name="author" placeholder="${model.authorPlaceholder}">
-            <textarea name="content" rows="4" placeholder="${model.contentPlaceholder}" required></textarea>
-            <button type="submit">${model.submitLabel}</button>
+            <input type="text" name="author" placeholder="${model.authorPlaceholder}" minlength="2" maxlength="50" required>
+            <textarea name="content" rows="4" placeholder="${model.contentPlaceholder}" minlength="5" maxlength="1000" required></textarea>
+            <button type="submit">
+                <i class="ri-send-plane-fill htmx-indicator"></i>
+                ${model.submitLabel}
+            </button>
         </form>
     </section>
     @template.dev.outerstellar.starter.web.components.MessageList(model = model.messageList)
