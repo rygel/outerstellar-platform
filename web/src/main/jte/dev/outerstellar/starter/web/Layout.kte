@@ -1,0 +1,81 @@
+@import dev.outerstellar.starter.web.ShellView
+@import gg.jte.Content
+@param shell: ShellView
+@param content: Content
+
+<!DOCTYPE html>
+<html lang="${shell.localeTag}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${shell.pageTitle} - ${shell.appTitle}</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/site.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <style>${shell.themeCss}</style>
+</head>
+<body class="${shell.layoutClass}">
+<div class="shell">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <a href="/" class="logo">
+                <i class="ri-planet-fill"></i>
+                ${shell.appTitle}
+            </a>
+        </div>
+        <nav class="nav-links">
+            @for (link in shell.navLinks)
+                <a class="nav-link@if (link.active) active@endif" href="${link.url}">
+                    <i class="${link.icon}" style="font-size: 1.1rem; opacity: 0.8; margin-right: 0.5rem; width: 20px; text-align: center;"></i>
+                    ${link.label}
+                </a>
+            @endfor
+        </nav>
+        <div class="sidebar-footer">
+            <section class="sidebar-section">
+                <div id="theme-selector"
+                     hx-get="${shell.themeSelectorUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </section>
+            <section class="sidebar-section">
+                <div id="language-selector"
+                     hx-get="${shell.languageSelectorUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </section>
+            <section class="sidebar-section" style="padding-bottom: 0;">
+                <div id="layout-selector"
+                     hx-get="${shell.layoutSelectorUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </section>
+        </div>
+    </aside>
+    <div class="main-shell">
+        <header class="topbar">
+            <div>
+                <p class="topbar-label">${shell.pageTitle}</p>
+                <strong>${shell.appTagline}</strong>
+            </div>
+            <span class="status-badge">${shell.themeId} / ${shell.localeTag}</span>
+        </header>
+        <main class="content">
+            ${content}
+        </main>
+        <footer class="footer">
+            <span>${shell.footerCopy}</span>
+            <div id="footer-status"
+                 class="chip"
+                 hx-get="${shell.footerStatusUrl}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+            </div>
+        </footer>
+    </div>
+</div>
+</body>
+</html>

@@ -1,108 +1,35 @@
 @import dev.outerstellar.starter.web.AuthPage
 @param model: AuthPage
 
-<!DOCTYPE html>
-<html lang="${model.shell.localeTag}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${model.shell.pageTitle} - ${model.shell.appTitle}</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/site.css">
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <style>${model.shell.themeCss}</style>
-</head>
-<body class="${model.shell.layoutClass}">
-<div class="shell">
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <a href="/" class="logo">
-                <i class="ri-planet-fill"></i>
-                ${model.shell.appTitle}
-            </a>
+@template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
+    <section class="panel hero-grid">
+        <div>
+            <p class="status-badge">${model.shell.pageTitle}</p>
+            <h1>${model.heading}</h1>
+            <p>${model.intro}</p>
         </div>
-        <nav class="nav-links">
-            @for (link in model.shell.navLinks)
-                <a class="nav-link@if (link.active) active@endif" href="${link.url}">
-                    <i class="${link.icon}" style="font-size: 1.1rem; opacity: 0.8; margin-right: 0.5rem; width: 20px; text-align: center;"></i>
-                    ${link.label}
-                </a>
+        <div class="panel panel-muted">
+            <strong>HTMX</strong>
+            <p>${model.helperText}</p>
+        </div>
+    </section>
+    <section class="panel">
+        <div class="tabs">
+            @for (tab in model.tabs)
+                <button class="chip"
+                        hx-get="${tab.url}"
+                        hx-target="#auth-form-slot"
+                        hx-swap="innerHTML">
+                    ${tab.label}
+                </button>
             @endfor
-        </nav>
-        <div class="sidebar-footer">
-            <section class="sidebar-section">
-                <div id="theme-selector"
-                     hx-get="${model.shell.themeSelectorUrl}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
-            </div>
-            </section>
-            <section class="sidebar-section">
-                <div id="language-selector"
-                     hx-get="${model.shell.languageSelectorUrl}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
-                </div>
-            </section>
-            <section class="sidebar-section" style="padding-bottom: 0;">
-                <div id="layout-selector"
-                     hx-get="${model.shell.layoutSelectorUrl}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
-                </div>
-            </section>
         </div>
-    </aside>
-    <div class="main-shell">
-        <header class="topbar">
-            <div>
-                <p class="topbar-label">${model.shell.pageTitle}</p>
-                <strong>${model.intro}</strong>
-            </div>
-            <span class="status-badge">${model.shell.themeId} / ${model.shell.localeTag}</span>
-        </header>
-        <main class="content">
-            <section class="panel hero-grid">
-                <div>
-                    <p class="status-badge">${model.shell.pageTitle}</p>
-                    <h1>${model.heading}</h1>
-                    <p>${model.intro}</p>
-                </div>
-                <div class="panel panel-muted">
-                    <strong>HTMX</strong>
-                    <p>${model.helperText}</p>
-                </div>
-            </section>
-            <section class="panel">
-                <div class="tabs">
-                    @for (tab in model.tabs)
-                        <button class="chip"
-                                hx-get="${tab.url}"
-                                hx-target="#auth-form-slot"
-                                hx-swap="innerHTML">
-                            ${tab.label}
-                        </button>
-                    @endfor
-                </div>
-                <div id="auth-form-slot"
-                     class="panel panel-muted"
-                     hx-get="${model.defaultFormUrl}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
-                </div>
-                <div id="auth-result-slot" class="panel panel-muted"></div>
-            </section>
-        </main>
-        <footer class="footer">
-            <span>${model.shell.footerCopy}</span>
-            <div id="footer-status"
-                 class="chip"
-                 hx-get="${model.shell.footerStatusUrl}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-            </div>
-        </footer>
-    </div>
-</div>
-</body>
-</html>
+        <div id="auth-form-slot"
+             class="panel panel-muted"
+             hx-get="${model.defaultFormUrl}"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+        </div>
+        <div id="auth-result-slot" class="panel panel-muted"></div>
+    </section>
+`)

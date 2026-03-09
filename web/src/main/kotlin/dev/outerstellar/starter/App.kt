@@ -2,6 +2,7 @@ package dev.outerstellar.starter
 
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
+import dev.outerstellar.starter.web.Filters
 import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.WebContext
 import dev.outerstellar.starter.web.WebPageFactory
@@ -13,6 +14,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.http4k.core.getFirst
+import org.http4k.core.then
 import org.http4k.core.toParametersMap
 import org.http4k.routing.ResourceLoader
 import org.http4k.routing.bind
@@ -28,15 +30,17 @@ fun app(messageService: MessageService, repository: MessageRepository, renderer:
   val syncApi = SyncApi(messageService)
   val pageFactory = WebPageFactory(repository)
 
-  return routes(
-    static(ResourceLoader.Classpath("static")),
-    syncApi.routes,
-    homeRoutes(messageService, pageFactory, renderer),
-    authRoutes(pageFactory, renderer),
-    errorRoutes(pageFactory, renderer),
-    footerRoutes(pageFactory, renderer),
-    sidebarRoutes(pageFactory, renderer),
-    "/health" bind GET to { Response(Status.OK).body("ok") },
+  return Filters.globalErrorHandler(pageFactory, renderer).then(
+    routes(
+      static(ResourceLoader.Classpath("static")),
+      syncApi.routes,
+      homeRoutes(messageService, pageFactory, renderer),
+      authRoutes(pageFactory, renderer),
+      errorRoutes(pageFactory, renderer),
+      footerRoutes(pageFactory, renderer),
+      sidebarRoutes(pageFactory, renderer),
+      "/health" bind GET to { Response(Status.OK).body("ok") },
+    )
   )
 }
 
