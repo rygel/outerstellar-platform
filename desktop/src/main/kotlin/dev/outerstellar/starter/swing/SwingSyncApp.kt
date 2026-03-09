@@ -11,10 +11,12 @@ import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
+import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import java.awt.BorderLayout
 import java.awt.Dimension
+import java.awt.event.KeyAdapter
+import java.awt.event.KeyEvent
 import java.util.Locale
-import java.util.concurrent.ExecutionException
 import javax.sql.DataSource
 import javax.swing.DefaultListCellRenderer
 import javax.swing.DefaultListModel
@@ -32,7 +34,8 @@ import javax.swing.JTextArea
 import javax.swing.JTextField
 import javax.swing.ListSelectionModel
 import javax.swing.SwingUtilities
-import javax.swing.SwingWorker
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 import org.koin.core.context.startKoin
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -68,13 +71,13 @@ fun main() {
 
   SwingUtilities.invokeLater {
     FlatLightLaf.setup()
-    SyncWindow(desktop.messageService, desktop.syncService, ThemeManager(), i18nService).show()
+    val viewModel = SyncViewModel(desktop.messageService, desktop.syncService, i18nService)
+    SyncWindow(viewModel, ThemeManager(), i18nService).show()
   }
 }
 
 private class SyncWindow(
-  private val messageService: MessageService,
-  private val syncService: SyncService,
+  private val viewModel: SyncViewModel,
   private val themeManager: ThemeManager,
   private val i18nService: I18nService,
 ) {
@@ -82,13 +85,52 @@ private class SyncWindow(
   private val messagesModel = DefaultListModel<MessageSummary>()
   private val messagesList = JList(messagesModel)
   private val statusLabel = JLabel()
-  private val authorField = JTextField(i18nService.translate("swing.author.default"))
+  private val authorField = JTextField()
   private val contentArea = JTextArea(defaultComposerRows, defaultComposerColumns)
+  private val syncButton = JButton(i18nService.translate("swing.button.sync"))
 
   fun show() {
     configureFrame()
-    refreshMessages(i18nService.translate("swing.status.ready"))
+    setupBinding()
+    viewModel.loadMessages()
     frame.isVisible = true
+  }
+
+  private fun setupBinding() {
+    viewModel.addObserver {
+      updateUI()
+    }
+
+    authorField.document.addDocumentListener(object : DocumentListener {
+      override fun insertUpdate(e: DocumentEvent?) { viewModel.author = authorField.text }
+      override fun removeUpdate(e: DocumentEvent?) { viewModel.author = authorField.text }
+      override fun changedUpdate(e: DocumentEvent?) { viewModel.author = authorField.text }
+    })
+
+    contentArea.document.addDocumentListener(object : DocumentListener {
+      override fun insertUpdate(e: DocumentEvent?) { viewModel.content = contentArea.text }
+      override fun removeUpdate(e: DocumentEvent?) { viewModel.content = contentArea.text }
+      override fun changedUpdate(e: DocumentEvent?) { viewModel.content = contentArea.text }
+    })
+    
+    authorField.text = viewModel.author
+    contentArea.text = viewModel.content
+  }
+
+  private fun updateUI() {
+    val selectedIndex = messagesList.selectedIndex
+    messagesModel.clear()
+    viewModel.messages.forEach(messagesModel::addElement)
+    if (selectedIndex >= 0 && selectedIndex < messagesModel.size) {
+        messagesList.selectedIndex = selectedIndex
+    }
+
+    statusLabel.text = viewModel.status
+    syncButton.isEnabled = !viewModel.isSyncing
+    
+    if (contentArea.text != viewModel.content) {
+        contentArea.text = viewModel.content
+    }
   }
 
   private fun configureFrame() {
@@ -142,8 +184,7 @@ private class SyncWindow(
 
   private fun createToolbar(): JPanel {
     val panel = JPanel(BorderLayout())
-    val syncButton = JButton(i18nService.translate("swing.button.sync"))
-    syncButton.addActionListener { syncNow(syncButton) }
+    syncButton.addActionListener { viewModel.sync() }
     panel.add(statusLabel, BorderLayout.CENTER)
     panel.add(syncButton, BorderLayout.EAST)
     return panel
@@ -160,77 +201,19 @@ private class SyncWindow(
     fieldsPanel.add(authorField, BorderLayout.NORTH)
     fieldsPanel.add(JScrollPane(contentArea), BorderLayout.CENTER)
 
-    saveButton.addActionListener { createLocalMessage() }
+    saveButton.addActionListener { 
+        viewModel.createMessage { errorMessage ->
+            JOptionPane.showMessageDialog(
+                frame,
+                errorMessage,
+                i18nService.translate("swing.validation.title"),
+                JOptionPane.WARNING_MESSAGE,
+            )
+        }
+    }
 
     panel.add(fieldsPanel, BorderLayout.CENTER)
     panel.add(saveButton, BorderLayout.EAST)
     return panel
-  }
-
-  private fun createLocalMessage() {
-    val author = authorField.text.ifBlank { i18nService.translate("swing.author.default") }
-    val content = contentArea.text.trim()
-
-    if (content.isEmpty()) {
-      JOptionPane.showMessageDialog(
-        frame,
-        i18nService.translate("swing.validation.messageRequired"),
-        i18nService.translate("swing.validation.title"),
-        JOptionPane.WARNING_MESSAGE,
-      )
-      return
-    }
-
-    messageService.createLocalMessage(author, content)
-    contentArea.text = ""
-    refreshMessages(i18nService.translate("swing.status.created"))
-  }
-
-  private fun syncNow(syncButton: JButton) {
-    syncButton.isEnabled = false
-    statusLabel.text = i18nService.translate("swing.status.syncing")
-
-    object : SwingWorker<String, Unit>() {
-        override fun doInBackground(): String {
-          val stats = syncService.sync()
-          return i18nService.translate(
-            "swing.status.complete",
-            stats.pushedCount,
-            stats.pulledCount,
-            stats.conflictCount,
-          )
-        }
-
-        override fun done() {
-          syncButton.isEnabled = true
-          try {
-            refreshMessages(get())
-          } catch (exception: InterruptedException) {
-            Thread.currentThread().interrupt()
-            logger.warn("Sync was interrupted.", exception)
-            statusLabel.text = i18nService.translate("swing.status.interrupted")
-          } catch (exception: ExecutionException) {
-            logger.error("Sync failed.", exception.cause)
-            statusLabel.text =
-              i18nService.translate(
-                "swing.status.failed",
-                exception.cause?.message ?: exception.message ?: "unknown error",
-              )
-          }
-        }
-      }
-      .execute()
-  }
-
-  private fun refreshMessages(status: String) {
-    messagesModel.clear()
-    messageService.listMessages().forEach(messagesModel::addElement)
-    statusLabel.text =
-      i18nService.translate(
-        "swing.status.summary",
-        status,
-        messagesModel.size,
-        messageService.listDirtyMessages().size,
-      )
   }
 }
