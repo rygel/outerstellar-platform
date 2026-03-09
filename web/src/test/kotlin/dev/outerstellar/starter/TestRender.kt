@@ -2,6 +2,7 @@ package dev.outerstellar.starter
 
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.web.WebContext
 import dev.outerstellar.starter.web.WebPageFactory
 import org.http4k.core.Method
 import org.http4k.core.Request
@@ -13,7 +14,8 @@ fun main() {
     
     val factory = WebPageFactory(repository)
     val req = Request(Method.GET, "/?theme=dracula")
-    val page = factory.buildHomePage(req)
+    val ctx = WebContext(req)
+    val page = factory.buildHomePage(ctx)
     
     println(page.shell.themeCss)
 }

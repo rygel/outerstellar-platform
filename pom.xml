@@ -34,6 +34,8 @@
         <koin.version>4.0.2</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
+        <mockk.version>1.13.17</mockk.version>
+        <archunit.version>1.4.0</archunit.version>
     </properties>
 
     <dependencyManagement>
@@ -169,6 +171,18 @@
                 <groupId>io.insert-koin</groupId>
                 <artifactId>koin-test-jvm</artifactId>
                 <version>${koin.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.mockk</groupId>
+                <artifactId>mockk-jvm</artifactId>
+                <version>${mockk.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

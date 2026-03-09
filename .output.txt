@@ -40,13 +40,34 @@ Command output:
 [INFO] skip non existing resourceDirectory C:\Develop\Claude\projects\outerstellar-starter\core\src\test\resources
 [INFO] 
 [INFO] --- compiler:3.14.0:testCompile (default-testCompile) @ core ---
-[INFO] No sources to compile
+[INFO] Recompiling the module because of changed dependency.
 [INFO] 
 [INFO] --- kotlin:2.3.10:test-compile (test-compile) @ core ---
-[INFO] No sources to compile
+[INFO] Options for KOTLIN DAEMON: CompilationOptions(compilerMode=NON_INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0, 3], reportSeverity=2, requestedCompilationResults=[], kotlinScriptExtensions=null)
 [INFO] 
 [INFO] --- surefire:3.2.5:test (default-test) @ core ---
-[INFO] No tests to run.
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+[INFO] Running dev.outerstellar.starter.arch.ArchitectureTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.965 s -- in dev.outerstellar.starter.arch.ArchitectureTest
+[INFO] Running dev.outerstellar.starter.service.MessageServiceTest
+WARNING: A Java agent has been loaded dynamically (C:\Users\Alexander\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.17\byte-buddy-agent-1.14.17.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.826 s -- in dev.outerstellar.starter.service.MessageServiceTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
 [INFO] 
 [INFO] --------------------< dev.outerstellar:persistence >--------------------
 [INFO] Building persistence 0.1.0-SNAPSHOT                                [3/6]
@@ -57,7 +78,7 @@ Command output:
 [INFO] 
 [INFO] --- flyway:12.0.3:migrate (migrate-codegen-schema) @ persistence ---
 [INFO] Database: jdbc:h2:file:C:\Develop\Claude\projects\outerstellar-starter\persistence\target/jooq-codegen/db/starter (H2 2.2)
-[INFO] Successfully validated 2 migrations (execution time 00:00.021s)
+[INFO] Successfully validated 2 migrations (execution time 00:00.019s)
 [INFO] Current version of schema "PUBLIC": 2
 [INFO] Schema "PUBLIC" is up to date. No migration necessary.
 [INFO] Database: jdbc:h2:file:C:\Develop\Claude\projects\outerstellar-starter\persistence\target/jooq-codegen/db/starter (H2 2.2)
@@ -85,7 +106,7 @@ Command output:
                                       
 [INFO] 
 
-jOOQ tip of the day: To version control jOOQ generated code or not? There are pros and cons to both approaches: https://www.jooq.org/doc/latest/manual/code-generation/codegen-version-control/
+jOOQ tip of the day: When creating dynamic SQL Conditions, the DSL.trueCondition(), DSL.falseCondition(), DSL.noCondition(): https://blog.jooq.org/create-empty-optional-sql-clauses-with-jooq/
 
 [INFO] No <inputCatalog/> was provided. Generating ALL available catalogs instead.
 [INFO] License parameters       
@@ -196,19 +217,19 @@ jOOQ tip of the day: To version control jOOQ generated code or not? There are pr
 [INFO] Indexes fetched          : 2 (2 included, 0 excluded)
 [INFO] Generating table         : Messages.kt [input=MESSAGES, pk=CONSTRAINT_1]
 [INFO] Generating table         : SyncState.kt [input=SYNC_STATE, pk=CONSTRAINT_E]
-[INFO] Tables generated         : Total: 378.686ms
+[INFO] Tables generated         : Total: 349.803ms
 [INFO] Generating table records 
 [INFO] Generating record        : FlywaySchemaHistoryRecord.kt
 [INFO] Generating record        : MessagesRecord.kt
 [INFO] Generating record        : SyncStateRecord.kt
-[INFO] Table records generated  : Total: 401.312ms, +22.626ms
+[INFO] Table records generated  : Total: 376.58ms, +26.776ms
 [INFO] Generating table references
-[INFO] Table refs generated     : Total: 402.843ms, +1.531ms
+[INFO] Table refs generated     : Total: 377.358ms, +0.777ms
 [INFO] Generating Keys          
-[INFO] Keys generated           : Total: 404.835ms, +1.992ms
+[INFO] Keys generated           : Total: 378.361ms, +1.003ms
 [INFO] Generating Indexes       
-[INFO] Indexes generated        : Total: 405.714ms, +0.878ms
-[INFO] Generation finished: PUBLIC: Total: 405.918ms, +0.204ms
+[INFO] Indexes generated        : Total: 379.067ms, +0.706ms
+[INFO] Generation finished: PUBLIC: Total: 379.159ms, +0.091ms
 [INFO]                          
 [INFO] Affected files: 11       
 [INFO] Modified files: 0        
@@ -216,7 +237,7 @@ jOOQ tip of the day: To version control jOOQ generated code or not? There are pr
 This means, the schema has not changed, and no other parameters (jOOQ version, driver version, database version,
 and any configuration elements) have changed either.
 
-In automated builds, it is recommended to prevent unnecessary code generation runs. This run took: 387.5ms
+In automated builds, it is recommended to prevent unnecessary code generation runs. This run took: 363.682ms
 Possible means to prevent this:
 - Use manual code generation and check in generated sources: https://www.jooq.org/doc/latest/manual/code-generation/codegen-version-control/
 - Use schema version providers: https://www.jooq.org/doc/latest/manual/code-generation/codegen-advanced/codegen-config-database/codegen-database-version-providers/
@@ -315,7 +336,7 @@ Possible means to prevent this:
 [INFO] Running dev.outerstellar.starter.HomePageEndToEndTest
 [main] INFO org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:e2e-home-test (H2 2.2)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
-[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.022s)
+[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.023s)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
@@ -343,16 +364,16 @@ Possible means to prevent this:
                                       
 [main] INFO org.jooq.Constants - 
 
-jOOQ tip of the day: You don't have to use jOOQ's DSL. You can use all of jOOQ's API with native SQL as well: https://blog.jooq.org/using-java-13-text-blocks-for-plain-sql-with-jooq/
+jOOQ tip of the day: Using jOOQ's parsers, and can't parse some vendor specific syntax? The ParseListener SPI will help you: https://www.jooq.org/doc/latest/manual/sql-building/sql-parser/sql-parser-listener/
 
 [main] INFO org.jooq.impl.DefaultExecuteContext.logVersionSupport - Version                  : Database version is supported by dialect H2: 2.2.224 (2023-09-17)
 [main] INFO org.eclipse.jetty.server.Server - jetty-12.1.6; built: 2026-01-27T18:53:19.182Z; git: 88ca559572b1c8858b3c5684bb0293fa64e5e90f; jvm 21.0.9+10-LTS
-[main] INFO org.eclipse.jetty.server.AbstractConnector - Started oejs.ServerConnector@5c76fce4{HTTP/1.1, (http/1.1)}{0.0.0.0:11708}
-[main] INFO org.eclipse.jetty.server.Server - Started oejs.Server@5aab5b31{STARTING}[12.1.6,sto=5000] @123ms
+[main] INFO org.eclipse.jetty.server.AbstractConnector - Started oejs.ServerConnector@5c76fce4{HTTP/1.1, (http/1.1)}{0.0.0.0:13973}
+[main] INFO org.eclipse.jetty.server.Server - Started oejs.Server@5aab5b31{STARTING}[12.1.6,sto=5000] @97ms
 [main] INFO org.eclipse.jetty.server.Server - Stopped oejs.Server@5aab5b31{STOPPING}[12.1.6,sto=5000]
 [main] INFO org.eclipse.jetty.server.Server - Shutdown oejs.Server@5aab5b31{STOPPING}[12.1.6,sto=5000]
 [main] INFO org.eclipse.jetty.server.AbstractConnector - Stopped oejs.ServerConnector@5c76fce4{HTTP/1.1, (http/1.1)}{0.0.0.0:0}
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.352 s -- in dev.outerstellar.starter.HomePageEndToEndTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.939 s -- in dev.outerstellar.starter.HomePageEndToEndTest
 [INFO] Running dev.outerstellar.starter.StarterAppTest
 [main] INFO org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:starter-auth-test (H2 2.2)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
@@ -361,7 +382,7 @@ jOOQ tip of the day: You don't have to use jOOQ's DSL. You can use all of jOOQ's
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
-[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.015s)
+[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.010s)
 [main] INFO org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:starter-test (H2 2.2)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
 [main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.002s)
@@ -369,8 +390,8 @@ jOOQ tip of the day: You don't have to use jOOQ's DSL. You can use all of jOOQ's
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
-[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.010s)
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.919 s -- in dev.outerstellar.starter.StarterAppTest
+[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.011s)
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.778 s -- in dev.outerstellar.starter.StarterAppTest
 [INFO] Running dev.outerstellar.starter.web.SyncIntegrationTest
 [main] INFO org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:server-sync (H2 2.2)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
@@ -387,8 +408,8 @@ jOOQ tip of the day: You don't have to use jOOQ's DSL. You can use all of jOOQ's
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
-[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.005s)
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.223 s -- in dev.outerstellar.starter.web.SyncIntegrationTest
+[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.007s)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.191 s -- in dev.outerstellar.starter.web.SyncIntegrationTest
 [INFO] 
 [INFO] Results:
 [INFO] 
@@ -425,15 +446,15 @@ jOOQ tip of the day: You don't have to use jOOQ's DSL. You can use all of jOOQ's
 [INFO] ------------------------------------------------------------------------
 [INFO] Reactor Summary for outerstellar-starter-parent 0.1.0-SNAPSHOT:
 [INFO] 
-[INFO] outerstellar-starter-parent ........................ SUCCESS [  0.280 s]
-[INFO] core ............................................... SUCCESS [  1.963 s]
-[INFO] persistence ........................................ SUCCESS [  2.519 s]
-[INFO] api-client ......................................... SUCCESS [  0.316 s]
-[INFO] web ................................................ SUCCESS [ 14.178 s]
-[INFO] desktop ............................................ SUCCESS [  0.332 s]
+[INFO] outerstellar-starter-parent ........................ SUCCESS [  0.283 s]
+[INFO] core ............................................... SUCCESS [  7.112 s]
+[INFO] persistence ........................................ SUCCESS [  2.449 s]
+[INFO] api-client ......................................... SUCCESS [  0.246 s]
+[INFO] web ................................................ SUCCESS [ 13.532 s]
+[INFO] desktop ............................................ SUCCESS [  0.355 s]
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  19.713 s
-[INFO] Finished at: 2026-03-09T20:14:00+02:00
+[INFO] Total time:  24.110 s
+[INFO] Finished at: 2026-03-09T20:20:43+02:00
 [INFO] ------------------------------------------------------------------------

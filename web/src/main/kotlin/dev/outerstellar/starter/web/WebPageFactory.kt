@@ -119,339 +119,195 @@ data class SidebarSelector(
 
 @Suppress("TooManyFunctions")
 class WebPageFactory(private val repository: MessageRepository) {
-  fun buildHomePage(request: Request): HomePage {
-    val i18n = i18n(request)
-    val shell = shell(request, i18n.translate("web.nav.home"), "/")
 
-    return HomePage(
-      shell = shell,
-      eyebrow = i18n.translate("web.home.eyebrow"),
-      intro = i18n.translate("web.home.intro"),
-      features =
-        listOf(
-          HomeFeature(
-            i18n.translate("web.feature.http.label"),
-            i18n.translate("web.feature.http.value"),
-          ),
-          HomeFeature(
-            i18n.translate("web.feature.db.label"),
-            i18n.translate("web.feature.db.value"),
-          ),
-          HomeFeature(
-            i18n.translate("web.feature.sync.label"),
-            i18n.translate("web.feature.sync.value"),
-          ),
-          HomeFeature(
-            i18n.translate("web.feature.desktop.label"),
-            i18n.translate("web.feature.desktop.value"),
-          ),
-        ),
-      composerTitle = i18n.translate("web.home.composer.title"),
-      composerIntro = i18n.translate("web.home.composer.intro"),
-      authorPlaceholder = i18n.translate("web.home.composer.author"),
-      contentPlaceholder = i18n.translate("web.home.composer.content"),
-      submitLabel = i18n.translate("web.home.composer.submit"),
-      submitUrl = url("/messages", shell.localeTag, shell.themeId, layoutId(request)),
-      messagesHeading = i18n.translate("web.home.messages"),
-      messages = repository.listMessages(),
-    )
-  }
+    fun buildHomePage(ctx: WebContext): HomePage {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.nav.home"), "/")
 
-  fun buildAuthPage(request: Request): AuthPage {
-    val i18n = i18n(request)
-    val shell = shell(request, i18n.translate("web.nav.auth"), "/auth")
-    val lang = shell.localeTag
-    val theme = shell.themeId
-    val layout = layoutId(request)
-
-    return AuthPage(
-      shell = shell,
-      heading = i18n.translate("web.auth.heading"),
-      intro = i18n.translate("web.auth.intro"),
-      helperText = i18n.translate("web.auth.helper"),
-      tabs =
-        listOf(
-          AuthModeTab(
-            "sign-in",
-            i18n.translate("web.auth.signin"),
-            url("/auth/components/forms/sign-in", lang, theme, layout),
-          ),
-          AuthModeTab(
-            "register",
-            i18n.translate("web.auth.register"),
-            url("/auth/components/forms/register", lang, theme, layout),
-          ),
-          AuthModeTab(
-            "recover",
-            i18n.translate("web.auth.recover"),
-            url("/auth/components/forms/recover", lang, theme, layout),
-          ),
-        ),
-      defaultFormUrl = url("/auth/components/forms/sign-in", lang, theme, layout),
-    )
-  }
-
-  fun buildAuthForm(request: Request, mode: String): AuthFormFragment {
-    val i18n = i18n(request)
-    val lang = langTag(request)
-    val theme = themeId(request)
-    val layout = layoutId(request)
-    val normalizedMode =
-      when (mode) {
-        "register",
-        "recover" -> mode
-        else -> "sign-in"
-      }
-
-    return AuthFormFragment(
-      mode = normalizedMode,
-      title = i18n.translate("web.auth.$normalizedMode.title"),
-      description = i18n.translate("web.auth.$normalizedMode.description"),
-      submitUrl = url("/auth/components/result", lang, theme, layout),
-      submitLabel = i18n.translate("web.auth.$normalizedMode.submit"),
-      language = lang,
-      theme = theme,
-      layout = layout,
-      nameLabel = i18n.translate("web.auth.field.name"),
-      emailLabel = i18n.translate("web.auth.field.email"),
-      passwordLabel = i18n.translate("web.auth.field.password"),
-      confirmPasswordLabel = i18n.translate("web.auth.field.confirm"),
-      rememberLabel = i18n.translate("web.auth.field.remember"),
-      emailPlaceholder = i18n.translate("web.auth.placeholder.email"),
-      passwordPlaceholder = i18n.translate("web.auth.placeholder.password"),
-      confirmPasswordPlaceholder = i18n.translate("web.auth.placeholder.confirm"),
-      namePlaceholder = i18n.translate("web.auth.placeholder.name"),
-      includeNameField = normalizedMode == "register",
-      includeConfirmPasswordField = normalizedMode == "register",
-      includeRememberField = normalizedMode == "sign-in",
-    )
-  }
-
-  fun buildAuthResult(request: Request, formValues: Map<String, String?>): AuthResultFragment {
-    val i18n = i18n(request)
-    val mode = formValues["mode"] ?: "sign-in"
-    val email = formValues["email"].orEmpty()
-    val password = formValues["password"].orEmpty()
-    val confirmPassword = formValues["confirmPassword"].orEmpty()
-    val errors = mutableListOf<String>()
-
-    if (email.isBlank()) {
-      errors += i18n.translate("web.auth.error.email")
-    }
-    if (mode != "recover" && password.length < minimumPasswordLength) {
-      errors += i18n.translate("web.auth.error.password")
-    }
-    if (mode == "register" && confirmPassword != password) {
-      errors += i18n.translate("web.auth.error.confirm")
-    }
-
-    return if (errors.isEmpty()) {
-      AuthResultFragment(
-        title = i18n.translate("web.auth.result.success.title"),
-        message = i18n.translate("web.auth.result.success.body", email),
-        toneClass = "panel-success",
-      )
-    } else {
-      AuthResultFragment(
-        title = i18n.translate("web.auth.result.error.title"),
-        message = errors.joinToString(" "),
-        toneClass = "panel-danger",
-      )
-    }
-  }
-
-  fun buildErrorPage(request: Request, kind: String): ErrorPage {
-    val i18n = i18n(request)
-    val shell = shell(request, i18n.translate("web.nav.errors"), "/errors")
-    val layout = layoutId(request)
-    val normalizedKind = if (kind == "server-error") "server-error" else "not-found"
-    val statusCode =
-      if (normalizedKind == "server-error") serverErrorStatusCode else notFoundStatusCode
-
-    return ErrorPage(
-      shell = shell,
-      statusCode = statusCode,
-      heading = i18n.translate("web.error.$normalizedKind.title"),
-      message = i18n.translate("web.error.$normalizedKind.message"),
-      primaryActionLabel = i18n.translate("web.error.primary"),
-      primaryActionUrl = url("/", shell.localeTag, shell.themeId, layout),
-      secondaryActionLabel = i18n.translate("web.error.secondary"),
-      secondaryActionUrl = url("/auth", shell.localeTag, shell.themeId, layout),
-      helpButtonLabel = i18n.translate("web.error.help"),
-      helpUrl = url("/errors/components/help/$normalizedKind", shell.localeTag, shell.themeId, layout),
-    )
-  }
-
-  fun buildErrorHelp(request: Request, kind: String): ErrorHelpFragment {
-    val i18n = i18n(request)
-    val normalizedKind = if (kind == "server-error") "server-error" else "not-found"
-
-    return ErrorHelpFragment(
-      title = i18n.translate("web.error.$normalizedKind.help.title"),
-      items =
-        listOf(
-          i18n.translate("web.error.$normalizedKind.help.item1"),
-          i18n.translate("web.error.$normalizedKind.help.item2"),
-          i18n.translate("web.error.$normalizedKind.help.item3"),
-        ),
-    )
-  }
-
-  fun buildFooterStatus(request: Request): FooterStatusFragment {
-    val i18n = i18n(request)
-    return FooterStatusFragment(
-      text =
-        i18n.translate(
-          "web.footer.status",
-          repository.listMessages().size,
-          repository.listDirtyMessages().size,
+        return HomePage(
+            shell = shell,
+            eyebrow = i18n.translate("web.home.eyebrow"),
+            intro = i18n.translate("web.home.intro"),
+            features = listOf(
+                HomeFeature(i18n.translate("web.feature.http.label"), i18n.translate("web.feature.http.value")),
+                HomeFeature(i18n.translate("web.feature.db.label"), i18n.translate("web.feature.db.value")),
+                HomeFeature(i18n.translate("web.feature.sync.label"), i18n.translate("web.feature.sync.value")),
+                HomeFeature(i18n.translate("web.feature.desktop.label"), i18n.translate("web.feature.desktop.value"))
+            ),
+            composerTitle = i18n.translate("web.home.composer.title"),
+            composerIntro = i18n.translate("web.home.composer.intro"),
+            authorPlaceholder = i18n.translate("web.home.composer.author"),
+            contentPlaceholder = i18n.translate("web.home.composer.content"),
+            submitLabel = i18n.translate("web.home.composer.submit"),
+            submitUrl = ctx.url("/messages"),
+            messagesHeading = i18n.translate("web.home.messages"),
+            messages = repository.listMessages()
         )
-    )
-  }
-
-  fun buildThemeSelector(request: Request): SidebarSelector {
-    val i18n = i18n(request)
-    val pagePath = normalizePagePath(request.query("pagePath").orEmpty())
-    val lang = langTag(request)
-    val theme = themeId(request)
-    val layout = layoutId(request)
-
-    return SidebarSelector(
-      heading = i18n.translate("web.sidebar.themes"),
-      label = i18n.translate("web.sidebar.theme.label"),
-      selectId = "theme-selector",
-      selectName = "theme",
-      options =
-        ThemeCatalog.allThemes().map { definition ->
-          ShellOption(definition.id, definition.name, definition.id, definition.id == theme)
-        },
-      hiddenFields = listOf(HiddenField("pagePath", pagePath), HiddenField("lang", lang), HiddenField("layout", layout)),
-      refreshUrl = "/components/navigation/page",
-    )
-  }
-
-  fun buildLanguageSelector(request: Request): SidebarSelector {
-    val i18n = i18n(request)
-    val pagePath = normalizePagePath(request.query("pagePath").orEmpty())
-    val theme = themeId(request)
-    val lang = langTag(request)
-    val layout = layoutId(request)
-
-    return SidebarSelector(
-      heading = i18n.translate("web.sidebar.language"),
-      label = i18n.translate("web.sidebar.language.label"),
-      selectId = "language-selector",
-      selectName = "lang",
-      options =
-        supportedLanguages().map { (localeId, labelKey) ->
-          ShellOption(localeId, i18n.translate(labelKey), localeId, localeId == lang)
-        },
-      hiddenFields = listOf(HiddenField("pagePath", pagePath), HiddenField("theme", theme), HiddenField("layout", layout)),
-      refreshUrl = "/components/navigation/page",
-    )
-  }
-
-  fun buildLayoutSelector(request: Request): SidebarSelector {
-    val i18n = i18n(request)
-    val pagePath = normalizePagePath(request.query("pagePath").orEmpty())
-    val theme = themeId(request)
-    val lang = langTag(request)
-    val layout = layoutId(request)
-
-    return SidebarSelector(
-      heading = i18n.translate("web.sidebar.layout"),
-      label = i18n.translate("web.sidebar.layout.label"),
-      selectId = "layout-selector",
-      selectName = "layout",
-      options =
-        listOf(
-          ShellOption("nice", i18n.translate("web.layout.nice"), "nice", layout == "nice"),
-          ShellOption("cozy", i18n.translate("web.layout.cozy"), "cozy", layout == "cozy"),
-          ShellOption("compact", i18n.translate("web.layout.compact"), "compact", layout == "compact")
-        ),
-      hiddenFields = listOf(HiddenField("pagePath", pagePath), HiddenField("theme", theme), HiddenField("lang", lang)),
-      refreshUrl = "/components/navigation/page",
-    )
-  }
-
-  fun langTag(request: Request): String {
-    val language = request.query("lang")?.lowercase() ?: Locale.getDefault().language.lowercase()
-    return if (language == "fr") "fr" else "en"
-  }
-
-  fun themeId(request: Request): String {
-    val theme = request.query("theme")?.lowercase() ?: "dark"
-    return if (ThemeCatalog.allThemes().any { it.id == theme }) theme else "dark"
-  }
-
-  fun layoutId(request: Request): String {
-    val layout = request.query("layout")?.lowercase() ?: "nice"
-    return if (listOf("nice", "cozy", "compact").any { it == layout }) layout else "nice"
-  }
-
-  private fun shell(request: Request, pageTitle: String, activeSection: String): ShellView {
-    val lang = langTag(request)
-    val i18n = i18n(request)
-    val theme = themeId(request)
-    val layout = layoutId(request)
-    val currentPath = normalizePagePath(request.uri.path)
-    val themeCss = ThemeCatalog.toCssVariables(theme)
-    val layoutClass = if (layout == "nice") "" else "layout-$layout"
-
-    return ShellView(
-      pageTitle = pageTitle,
-      appTitle = i18n.translate("web.app.title"),
-      appTagline = i18n.translate("web.app.tagline"),
-      currentPath = currentPath,
-      localeTag = lang,
-      themeId = theme,
-      themeCss = themeCss,
-      layoutClass = layoutClass,
-      navLinks =
-        listOf(
-          ShellLink(i18n.translate("web.nav.home"), url("/", lang, theme, layout), "ri-home-5-line", activeSection == "/"),
-          ShellLink(
-            i18n.translate("web.nav.auth"),
-            url("/auth", lang, theme, layout),
-            "ri-shield-keyhole-line",
-            activeSection == "/auth",
-          ),
-          ShellLink(
-            i18n.translate("web.nav.errors"),
-            url("/errors/not-found", lang, theme, layout),
-            "ri-error-warning-line",
-            activeSection == "/errors",
-          ),
-        ),
-      themeSelectorUrl =
-        componentUrl("/components/sidebar/theme-selector", currentPath, lang, theme, layout),
-      languageSelectorUrl =
-        componentUrl("/components/sidebar/language-selector", currentPath, lang, theme, layout),
-      layoutSelectorUrl =
-        componentUrl("/components/sidebar/layout-selector", currentPath, lang, theme, layout),
-      footerCopy = i18n.translate("web.footer.copy"),
-      footerStatusUrl = url("/components/footer-status", lang, theme, layout),
-    )
-  }
-
-  fun url(path: String, lang: String, theme: String, layout: String): String =
-    "$path?lang=$lang&theme=$theme&layout=$layout"
-
-  private fun componentUrl(
-    path: String,
-    pagePath: String,
-    lang: String,
-    theme: String,
-    layout: String,
-  ): String = "${url(path, lang, theme, layout)}&pagePath=$pagePath"
-
-  private fun normalizePagePath(path: String): String = if (path.isBlank()) "/" else path
-
-  private fun i18n(request: Request): I18nService =
-    I18nService.create("web-messages").also {
-      it.setLocale(Locale.forLanguageTag(langTag(request)))
     }
 
-  private fun supportedLanguages(): List<Pair<String, String>> =
-    listOf("en" to "web.language.english", "fr" to "web.language.french")
+    fun buildAuthPage(ctx: WebContext): AuthPage {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.nav.auth"), "/auth")
+
+        return AuthPage(
+            shell = shell,
+            heading = i18n.translate("web.auth.heading"),
+            intro = i18n.translate("web.auth.intro"),
+            helperText = i18n.translate("web.auth.helper"),
+            tabs = listOf(
+                AuthModeTab("sign-in", i18n.translate("web.auth.signin"), ctx.url("/auth/components/forms/sign-in")),
+                AuthModeTab("register", i18n.translate("web.auth.register"), ctx.url("/auth/components/forms/register")),
+                AuthModeTab("recover", i18n.translate("web.auth.recover"), ctx.url("/auth/components/forms/recover"))
+            ),
+            defaultFormUrl = ctx.url("/auth/components/forms/sign-in")
+        )
+    }
+
+    fun buildAuthForm(ctx: WebContext, mode: String): AuthFormFragment {
+        val i18n = ctx.i18n
+        val normalizedMode = when (mode) {
+            "register", "recover" -> mode
+            else -> "sign-in"
+        }
+
+        return AuthFormFragment(
+            mode = normalizedMode,
+            title = i18n.translate("web.auth.$normalizedMode.title"),
+            description = i18n.translate("web.auth.$normalizedMode.description"),
+            submitUrl = ctx.url("/auth/components/result"),
+            submitLabel = i18n.translate("web.auth.$normalizedMode.submit"),
+            language = ctx.lang,
+            theme = ctx.theme,
+            layout = ctx.layout,
+            nameLabel = i18n.translate("web.auth.field.name"),
+            emailLabel = i18n.translate("web.auth.field.email"),
+            passwordLabel = i18n.translate("web.auth.field.password"),
+            confirmPasswordLabel = i18n.translate("web.auth.field.confirm"),
+            rememberLabel = i18n.translate("web.auth.field.remember"),
+            emailPlaceholder = i18n.translate("web.auth.placeholder.email"),
+            passwordPlaceholder = i18n.translate("web.auth.placeholder.password"),
+            confirmPasswordPlaceholder = i18n.translate("web.auth.placeholder.confirm"),
+            namePlaceholder = i18n.translate("web.auth.placeholder.name"),
+            includeNameField = normalizedMode == "register",
+            includeConfirmPasswordField = normalizedMode == "register",
+            includeRememberField = normalizedMode == "sign-in"
+        )
+    }
+
+    fun buildAuthResult(ctx: WebContext, formValues: Map<String, String?>): AuthResultFragment {
+        val i18n = ctx.i18n
+        val mode = formValues["mode"] ?: "sign-in"
+        val email = formValues["email"].orEmpty()
+        val password = formValues["password"].orEmpty()
+        val confirmPassword = formValues["confirmPassword"].orEmpty()
+        val errors = mutableListOf<String>()
+
+        if (email.isBlank()) errors += i18n.translate("web.auth.error.email")
+        if (mode != "recover" && password.length < 8) errors += i18n.translate("web.auth.error.password")
+        if (mode == "register" && confirmPassword != password) errors += i18n.translate("web.auth.error.confirm")
+
+        return if (errors.isEmpty()) {
+            AuthResultFragment(
+                title = i18n.translate("web.auth.result.success.title"),
+                message = i18n.translate("web.auth.result.success.body", email),
+                toneClass = "panel-success"
+            )
+        } else {
+            AuthResultFragment(
+                title = i18n.translate("web.auth.result.error.title"),
+                message = errors.joinToString(" "),
+                toneClass = "panel-danger"
+            )
+        }
+    }
+
+    fun buildErrorPage(ctx: WebContext, kind: String): ErrorPage {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.nav.errors"), "/errors")
+        val normalizedKind = if (kind == "server-error") "server-error" else "not-found"
+        val statusCode = if (normalizedKind == "server-error") 500 else 404
+
+        return ErrorPage(
+            shell = shell,
+            statusCode = statusCode,
+            heading = i18n.translate("web.error.$normalizedKind.title"),
+            message = i18n.translate("web.error.$normalizedKind.message"),
+            primaryActionLabel = i18n.translate("web.error.primary"),
+            primaryActionUrl = ctx.url("/"),
+            secondaryActionLabel = i18n.translate("web.error.secondary"),
+            secondaryActionUrl = ctx.url("/auth"),
+            helpButtonLabel = i18n.translate("web.error.help"),
+            helpUrl = ctx.url("/errors/components/help/$normalizedKind")
+        )
+    }
+
+    fun buildErrorHelp(ctx: WebContext, kind: String): ErrorHelpFragment {
+        val i18n = ctx.i18n
+        val normalizedKind = if (kind == "server-error") "server-error" else "not-found"
+
+        return ErrorHelpFragment(
+            title = i18n.translate("web.error.$normalizedKind.help.title"),
+            items = listOf(
+                i18n.translate("web.error.$normalizedKind.help.item1"),
+                i18n.translate("web.error.$normalizedKind.help.item2"),
+                i18n.translate("web.error.$normalizedKind.help.item3")
+            )
+        )
+    }
+
+    fun buildFooterStatus(ctx: WebContext): FooterStatusFragment {
+        val i18n = ctx.i18n
+        return FooterStatusFragment(
+            text = i18n.translate("web.footer.status", repository.listMessages().size, repository.listDirtyMessages().size)
+        )
+    }
+
+    fun buildThemeSelector(ctx: WebContext): SidebarSelector {
+        val i18n = ctx.i18n
+        val pagePath = ctx.request.query("pagePath").orEmpty()
+
+        return SidebarSelector(
+            heading = i18n.translate("web.sidebar.themes"),
+            label = i18n.translate("web.sidebar.theme.label"),
+            selectId = "theme-selector",
+            selectName = "theme",
+            options = ThemeCatalog.allThemes().map { ShellOption(it.id, it.name, it.id, it.id == ctx.theme) },
+            hiddenFields = listOf(HiddenField("pagePath", pagePath), HiddenField("lang", ctx.lang), HiddenField("layout", ctx.layout)),
+            refreshUrl = "/components/navigation/page"
+        )
+    }
+
+    fun buildLanguageSelector(ctx: WebContext): SidebarSelector {
+        val i18n = ctx.i18n
+        val pagePath = ctx.request.query("pagePath").orEmpty()
+
+        return SidebarSelector(
+            heading = i18n.translate("web.sidebar.language"),
+            label = i18n.translate("web.sidebar.language.label"),
+            selectId = "language-selector",
+            selectName = "lang",
+            options = listOf("en" to "web.language.english", "fr" to "web.language.french").map { (id, key) ->
+                ShellOption(id, i18n.translate(key), id, id == ctx.lang)
+            },
+            hiddenFields = listOf(HiddenField("pagePath", pagePath), HiddenField("theme", ctx.theme), HiddenField("layout", ctx.layout)),
+            refreshUrl = "/components/navigation/page"
+        )
+    }
+
+    fun buildLayoutSelector(ctx: WebContext): SidebarSelector {
+        val i18n = ctx.i18n
+        val pagePath = ctx.request.query("pagePath").orEmpty()
+
+        return SidebarSelector(
+            heading = i18n.translate("web.sidebar.layout"),
+            label = i18n.translate("web.sidebar.layout.label"),
+            selectId = "layout-selector",
+            selectName = "layout",
+            options = listOf("nice" to "web.layout.nice", "cozy" to "web.layout.cozy", "compact" to "web.layout.compact").map { (id, key) ->
+                ShellOption(id, i18n.translate(key), id, id == ctx.layout)
+            },
+            hiddenFields = listOf(HiddenField("pagePath", pagePath), HiddenField("theme", ctx.theme), HiddenField("lang", ctx.lang)),
+            refreshUrl = "/components/navigation/page"
+        )
+    }
 }

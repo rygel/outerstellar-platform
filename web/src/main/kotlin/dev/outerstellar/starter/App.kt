@@ -3,6 +3,7 @@ package dev.outerstellar.starter
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.web.SyncApi
+import dev.outerstellar.starter.web.WebContext
 import dev.outerstellar.starter.web.WebPageFactory
 import org.http4k.core.ContentType
 import org.http4k.core.HttpHandler
@@ -48,11 +49,13 @@ private fun homeRoutes(
     "/" bind
       GET to
       { request ->
-        htmlResponse(Status.OK, renderer(pageFactory.buildHomePage(request)))
+        val ctx = WebContext(request)
+        htmlResponse(Status.OK, renderer(pageFactory.buildHomePage(ctx)))
       },
     "/messages" bind
       POST to
       { request ->
+        val ctx = WebContext(request)
         val parameters = request.form().toParametersMap()
         val author =
           parameters.getFirst("author").takeUnless { it.isNullOrBlank() } ?: defaultAuthor
@@ -62,9 +65,7 @@ private fun homeRoutes(
           Response(Status.BAD_REQUEST).body(contentRequiredMessage)
         } else {
           messageService.createServerMessage(author, content)
-          val location =
-            pageFactory.url("/", pageFactory.langTag(request), pageFactory.themeId(request), pageFactory.layoutId(request))
-          Response(Status.FOUND).header("location", location)
+          Response(Status.FOUND).header("location", ctx.url("/"))
         }
       },
   )
@@ -74,25 +75,28 @@ private fun authRoutes(pageFactory: WebPageFactory, renderer: TemplateRenderer) 
     "/auth" bind
       GET to
       { request ->
-        htmlResponse(Status.OK, renderer(pageFactory.buildAuthPage(request)))
+        val ctx = WebContext(request)
+        htmlResponse(Status.OK, renderer(pageFactory.buildAuthPage(ctx)))
       },
     "/auth/components/forms/{mode}" bind
       GET to
       { request ->
+        val ctx = WebContext(request)
         htmlResponse(
           Status.OK,
-          renderer(pageFactory.buildAuthForm(request, request.uri.path.substringAfterLast("/"))),
+          renderer(pageFactory.buildAuthForm(ctx, request.uri.path.substringAfterLast("/"))),
         )
       },
     "/auth/components/result" bind
       POST to
       { request ->
+        val ctx = WebContext(request)
         val parameters = request.form().toParametersMap()
         htmlResponse(
           Status.OK,
           renderer(
             pageFactory.buildAuthResult(
-              request,
+              ctx,
               mapOf(
                 "mode" to parameters.getFirst("mode"),
                 "email" to parameters.getFirst("email"),
@@ -110,22 +114,25 @@ private fun errorRoutes(pageFactory: WebPageFactory, renderer: TemplateRenderer)
     "/errors/not-found" bind
       GET to
       { request ->
-        htmlResponse(Status.NOT_FOUND, renderer(pageFactory.buildErrorPage(request, "not-found")))
+        val ctx = WebContext(request)
+        htmlResponse(Status.NOT_FOUND, renderer(pageFactory.buildErrorPage(ctx, "not-found")))
       },
     "/errors/server-error" bind
       GET to
       { request ->
+        val ctx = WebContext(request)
         htmlResponse(
           Status.INTERNAL_SERVER_ERROR,
-          renderer(pageFactory.buildErrorPage(request, "server-error")),
+          renderer(pageFactory.buildErrorPage(ctx, "server-error")),
         )
       },
     "/errors/components/help/{kind}" bind
       GET to
       { request ->
+        val ctx = WebContext(request)
         htmlResponse(
           Status.OK,
-          renderer(pageFactory.buildErrorHelp(request, request.uri.path.substringAfterLast("/"))),
+          renderer(pageFactory.buildErrorHelp(ctx, request.uri.path.substringAfterLast("/"))),
         )
       },
   )
@@ -135,7 +142,8 @@ private fun footerRoutes(pageFactory: WebPageFactory, renderer: TemplateRenderer
     "/components/footer-status" bind
       GET to
       { request ->
-        htmlResponse(Status.OK, renderer(pageFactory.buildFooterStatus(request)))
+        val ctx = WebContext(request)
+        htmlResponse(Status.OK, renderer(pageFactory.buildFooterStatus(ctx)))
       }
   )
 
@@ -144,11 +152,9 @@ private fun sidebarRoutes(pageFactory: WebPageFactory, renderer: TemplateRendere
     "/components/navigation/page" bind
       GET to
       { request ->
+        val ctx = WebContext(request)
         val pagePath = request.query("pagePath").orEmpty()
-        val lang = request.query("lang") ?: pageFactory.langTag(request)
-        val theme = request.query("theme") ?: pageFactory.themeId(request)
-        val layout = request.query("layout") ?: pageFactory.layoutId(request)
-        val location = pageFactory.url(pagePath, lang, theme, layout)
+        val location = ctx.url(pagePath)
         
         if (request.header("HX-Request") == "true") {
           Response(Status.OK).header("HX-Redirect", location)
@@ -159,17 +165,20 @@ private fun sidebarRoutes(pageFactory: WebPageFactory, renderer: TemplateRendere
     "/components/sidebar/theme-selector" bind
       GET to
       { request ->
-        htmlResponse(Status.OK, renderer(pageFactory.buildThemeSelector(request)))
+        val ctx = WebContext(request)
+        htmlResponse(Status.OK, renderer(pageFactory.buildThemeSelector(ctx)))
       },
     "/components/sidebar/language-selector" bind
       GET to
       { request ->
-        htmlResponse(Status.OK, renderer(pageFactory.buildLanguageSelector(request)))
+        val ctx = WebContext(request)
+        htmlResponse(Status.OK, renderer(pageFactory.buildLanguageSelector(ctx)))
       },
     "/components/sidebar/layout-selector" bind
       GET to
       { request ->
-        htmlResponse(Status.OK, renderer(pageFactory.buildLayoutSelector(request)))
+        val ctx = WebContext(request)
+        htmlResponse(Status.OK, renderer(pageFactory.buildLayoutSelector(ctx)))
       },
   )
 
