@@ -55,14 +55,14 @@ SLF4J(W): No SLF4J providers were found.
 SLF4J(W): Defaulting to no-operation (NOP) logger implementation
 SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
 [INFO] Running dev.outerstellar.starter.arch.ArchitectureTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.694 s -- in dev.outerstellar.starter.arch.ArchitectureTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.695 s -- in dev.outerstellar.starter.arch.ArchitectureTest
 [INFO] Running dev.outerstellar.starter.service.MessageServiceTest
 WARNING: A Java agent has been loaded dynamically (C:\Users\Alexander\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.17\byte-buddy-agent-1.14.17.jar)
 WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
 WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
 WARNING: Dynamic loading of agents will be disallowed by default in a future release
 OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.623 s -- in dev.outerstellar.starter.service.MessageServiceTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.671 s -- in dev.outerstellar.starter.service.MessageServiceTest
 [INFO] 
 [INFO] Results:
 [INFO] 
@@ -78,7 +78,7 @@ OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader clas
 [INFO] 
 [INFO] --- flyway:12.0.3:migrate (migrate-codegen-schema) @ persistence ---
 [INFO] Database: jdbc:h2:file:C:\Develop\Claude\projects\outerstellar-starter\persistence\target/jooq-codegen/db/starter (H2 2.2)
-[INFO] Successfully validated 2 migrations (execution time 00:00.017s)
+[INFO] Successfully validated 2 migrations (execution time 00:00.022s)
 [INFO] Current version of schema "PUBLIC": 2
 [INFO] Schema "PUBLIC" is up to date. No migration necessary.
 [INFO] Database: jdbc:h2:file:C:\Develop\Claude\projects\outerstellar-starter\persistence\target/jooq-codegen/db/starter (H2 2.2)
@@ -106,7 +106,7 @@ OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader clas
                                       
 [INFO] 
 
-jOOQ tip of the day: jOOQ offers out of the box functionality for common scenarios related to audit columns: https://www.jooq.org/doc/latest/manual/code-generation/codegen-advanced/codegen-config-database/codegen-database-forced-types/codegen-database-forced-types-audit/
+jOOQ tip of the day: Move logic to your data, not data to your logic, by running procedural code as a stored function: https://www.jooq.org/doc/latest/manual/sql-building/ddl-statements/create-statement/create-function-statement/
 
 [INFO] No <inputCatalog/> was provided. Generating ALL available catalogs instead.
 [INFO] License parameters       
@@ -217,19 +217,19 @@ jOOQ tip of the day: jOOQ offers out of the box functionality for common scenari
 [INFO] Indexes fetched          : 2 (2 included, 0 excluded)
 [INFO] Generating table         : Messages.kt [input=MESSAGES, pk=CONSTRAINT_1]
 [INFO] Generating table         : SyncState.kt [input=SYNC_STATE, pk=CONSTRAINT_E]
-[INFO] Tables generated         : Total: 325.972ms
+[INFO] Tables generated         : Total: 353.578ms
 [INFO] Generating table records 
 [INFO] Generating record        : FlywaySchemaHistoryRecord.kt
 [INFO] Generating record        : MessagesRecord.kt
 [INFO] Generating record        : SyncStateRecord.kt
-[INFO] Table records generated  : Total: 347.754ms, +21.782ms
+[INFO] Table records generated  : Total: 378.28ms, +24.701ms
 [INFO] Generating table references
-[INFO] Table refs generated     : Total: 348.765ms, +1.01ms
+[INFO] Table refs generated     : Total: 379.21ms, +0.929ms
 [INFO] Generating Keys          
-[INFO] Keys generated           : Total: 349.932ms, +1.167ms
+[INFO] Keys generated           : Total: 380.24ms, +1.03ms
 [INFO] Generating Indexes       
-[INFO] Indexes generated        : Total: 350.887ms, +0.955ms
-[INFO] Generation finished: PUBLIC: Total: 351.006ms, +0.118ms
+[INFO] Indexes generated        : Total: 381.763ms, +1.523ms
+[INFO] Generation finished: PUBLIC: Total: 381.987ms, +0.223ms
 [INFO]                          
 [INFO] Affected files: 11       
 [INFO] Modified files: 0        
@@ -237,7 +237,7 @@ jOOQ tip of the day: jOOQ offers out of the box functionality for common scenari
 This means, the schema has not changed, and no other parameters (jOOQ version, driver version, database version,
 and any configuration elements) have changed either.
 
-In automated builds, it is recommended to prevent unnecessary code generation runs. This run took: 332.755ms
+In automated builds, it is recommended to prevent unnecessary code generation runs. This run took: 364.287ms
 Possible means to prevent this:
 - Use manual code generation and check in generated sources: https://www.jooq.org/doc/latest/manual/code-generation/codegen-version-control/
 - Use schema version providers: https://www.jooq.org/doc/latest/manual/code-generation/codegen-advanced/codegen-config-database/codegen-database-version-providers/
@@ -336,12 +336,12 @@ Possible means to prevent this:
 [INFO] Running dev.outerstellar.starter.HomePageEndToEndTest
 [main] INFO org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:e2e-home-test (H2 2.2)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
-[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.019s)
+[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.015s)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
-[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.031s)
+[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.029s)
 [main] INFO org.jooq.Constants - 
                                       
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -364,25 +364,25 @@ Possible means to prevent this:
                                       
 [main] INFO org.jooq.Constants - 
 
-jOOQ tip of the day: 
- 
+jOOQ tip of the day: There's no easier way to nest collections directly in SQL than using MULTISET, e.g. to collect your to-many relationships: https://www.jooq.org/doc/latest/manual/sql-building/column-expressions/multiset-value-constructor/
+
 [main] INFO org.jooq.impl.DefaultExecuteContext.logVersionSupport - Version                  : Database version is supported by dialect H2: 2.2.224 (2023-09-17)
 [main] INFO org.eclipse.jetty.server.Server - jetty-12.1.6; built: 2026-01-27T18:53:19.182Z; git: 88ca559572b1c8858b3c5684bb0293fa64e5e90f; jvm 21.0.9+10-LTS
-[main] INFO org.eclipse.jetty.server.AbstractConnector - Started oejs.ServerConnector@eded048{HTTP/1.1, (http/1.1)}{0.0.0.0:1825}
-[main] INFO org.eclipse.jetty.server.Server - Started oejs.Server@65a48cab{STARTING}[12.1.6,sto=5000] @91ms
+[main] INFO org.eclipse.jetty.server.AbstractConnector - Started oejs.ServerConnector@eded048{HTTP/1.1, (http/1.1)}{0.0.0.0:2654}
+[main] INFO org.eclipse.jetty.server.Server - Started oejs.Server@65a48cab{STARTING}[12.1.6,sto=5000] @93ms
 [main] INFO org.eclipse.jetty.server.Server - Stopped oejs.Server@65a48cab{STOPPING}[12.1.6,sto=5000]
 [main] INFO org.eclipse.jetty.server.Server - Shutdown oejs.Server@65a48cab{STOPPING}[12.1.6,sto=5000]
 [main] INFO org.eclipse.jetty.server.AbstractConnector - Stopped oejs.ServerConnector@eded048{HTTP/1.1, (http/1.1)}{0.0.0.0:0}
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.167 s -- in dev.outerstellar.starter.HomePageEndToEndTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.656 s -- in dev.outerstellar.starter.HomePageEndToEndTest
 [INFO] Running dev.outerstellar.starter.StarterAppTest
 [main] INFO org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:starter-auth-test (H2 2.2)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
-[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.003s)
+[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.002s)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
-[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.011s)
+[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.012s)
 [main] INFO org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:starter-test (H2 2.2)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
 [main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.002s)
@@ -391,25 +391,25 @@ jOOQ tip of the day:
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.011s)
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.123 s -- in dev.outerstellar.starter.StarterAppTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.796 s -- in dev.outerstellar.starter.StarterAppTest
 [INFO] Running dev.outerstellar.starter.web.SyncIntegrationTest
 [main] INFO org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:server-sync (H2 2.2)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
-[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.002s)
+[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.003s)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
-[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.009s)
+[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.007s)
 [main] INFO org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:client-sync (H2 2.2)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
-[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.002s)
+[main] INFO org.flywaydb.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.001s)
 [main] INFO org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create messages"
 [main] INFO org.flywaydb.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - add sync support"
-[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.006s)
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.194 s -- in dev.outerstellar.starter.web.SyncIntegrationTest
+[main] INFO org.flywaydb.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.005s)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.177 s -- in dev.outerstellar.starter.web.SyncIntegrationTest
 [INFO] 
 [INFO] Results:
 [INFO] 
@@ -446,15 +446,15 @@ jOOQ tip of the day:
 [INFO] ------------------------------------------------------------------------
 [INFO] Reactor Summary for outerstellar-starter-parent 0.1.0-SNAPSHOT:
 [INFO] 
-[INFO] outerstellar-starter-parent ........................ SUCCESS [  0.272 s]
-[INFO] core ............................................... SUCCESS [  6.403 s]
-[INFO] persistence ........................................ SUCCESS [  2.264 s]
-[INFO] api-client ......................................... SUCCESS [  0.205 s]
-[INFO] web ................................................ SUCCESS [ 13.965 s]
-[INFO] desktop ............................................ SUCCESS [  0.343 s]
+[INFO] outerstellar-starter-parent ........................ SUCCESS [  0.274 s]
+[INFO] core ............................................... SUCCESS [  6.333 s]
+[INFO] persistence ........................................ SUCCESS [  2.442 s]
+[INFO] api-client ......................................... SUCCESS [  0.211 s]
+[INFO] web ................................................ SUCCESS [ 13.185 s]
+[INFO] desktop ............................................ SUCCESS [  0.319 s]
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  23.603 s
-[INFO] Finished at: 2026-03-09T20:26:42+02:00
+[INFO] Total time:  22.888 s
+[INFO] Finished at: 2026-03-09T20:29:47+02:00
 [INFO] ------------------------------------------------------------------------
