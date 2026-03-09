@@ -4,16 +4,22 @@ import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.StoredMessage
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.persistence.OutboxRepository
+import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.persistence.NoOpMessageCache
 import dev.outerstellar.starter.sync.SyncConflict
 import dev.outerstellar.starter.sync.SyncMessage
 import dev.outerstellar.starter.sync.SyncPushRequest
 import dev.outerstellar.starter.sync.SyncPushResponse
 import dev.outerstellar.starter.sync.SyncPullResponse
+import dev.outerstellar.starter.persistence.OutboxEntry
 import io.konform.validation.Invalid
+import java.util.*
 
 class MessageService(
     private val repository: MessageRepository,
+    private val outboxRepository: OutboxRepository? = null,
+    private val transactionManager: TransactionManager? = null,
     private val cache: MessageCache = NoOpMessageCache
 ) {
 
@@ -37,7 +43,23 @@ class MessageService(
     fun createServerMessage(author: String, content: String): StoredMessage {
         require(author.isNotBlank()) { "Author cannot be blank" }
         require(content.isNotBlank()) { "Content cannot be blank" }
-        val message = repository.createServerMessage(author, content)
+
+        val message = if (transactionManager != null && outboxRepository != null) {
+            transactionManager.inTransaction {
+                val msg = repository.createServerMessage(author, content)
+                outboxRepository.save(
+                    OutboxEntry(
+                        id = UUID.randomUUID(),
+                        payloadType = "MESSAGE_CREATED",
+                        payload = msg.syncId
+                    )
+                )
+                msg
+            }
+        } else {
+            repository.createServerMessage(author, content)
+        }
+
         cache.invalidateAll()
         return message
     }

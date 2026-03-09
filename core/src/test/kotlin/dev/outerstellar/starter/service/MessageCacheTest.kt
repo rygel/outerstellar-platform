@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
 class MessageCacheTest {
     private val repository = mockk<MessageRepository>(relaxed = true)
     private val cache = mockk<MessageCache>(relaxed = true)
-    private val service = MessageService(repository, cache)
+    private val service = MessageService(repository, cache = cache)
 
     @Test
     fun `listMessages uses cache`() {

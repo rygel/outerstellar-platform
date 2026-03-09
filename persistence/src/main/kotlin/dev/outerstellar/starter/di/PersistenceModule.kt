@@ -1,10 +1,7 @@
 package dev.outerstellar.starter.di
 
 import dev.outerstellar.starter.infra.createDataSource
-import dev.outerstellar.starter.persistence.CaffeineMessageCache
-import dev.outerstellar.starter.persistence.JooqMessageRepository
-import dev.outerstellar.starter.persistence.MessageCache
-import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.persistence.*
 import io.micrometer.core.instrument.Metrics
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
@@ -20,4 +17,6 @@ val persistenceModule = module {
     }
     single<DSLContext> { DSL.using(get<DataSource>(), SQLDialect.POSTGRES) }
     single<MessageRepository> { JooqMessageRepository(get()) }
+    single<OutboxRepository> { JooqOutboxRepository(get()) }
+    single<TransactionManager> { JooqTransactionManager(get()) }
 }

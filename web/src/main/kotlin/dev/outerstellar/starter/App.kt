@@ -48,7 +48,8 @@ fun app(messageService: MessageService, repository: MessageRepository, renderer:
     "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
   )
 
-  return Filters.requestLogging
+  return Filters.telemetry
+    .then(Filters.requestLogging)
     .then(Filters.serverMetrics)
     .then(Filters.globalErrorHandler(pageFactory, renderer))
     .then(baseApp)
