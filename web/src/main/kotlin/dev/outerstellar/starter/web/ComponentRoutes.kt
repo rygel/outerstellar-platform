@@ -8,6 +8,8 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.lens.Header
 import org.http4k.lens.Query
+import org.http4k.lens.int
+import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
 
 class ComponentRoutes(
@@ -15,10 +17,28 @@ class ComponentRoutes(
     private val renderer: TemplateRenderer
 ) : ServerRoutes {
     private val htmlContentType = ContentType.TEXT_HTML.toHeaderValue()
+    private val queryLens = Query.string().optional("q")
+    private val yearLens = Query.int().optional("year")
+    private val limitLens = Query.int().defaulted("limit", 10)
+    private val offsetLens = Query.int().defaulted("offset", 0)
     private val pagePathLens = Query.optional("pagePath")
     private val hxRequestLens = Header.optional("HX-Request")
 
     override val routes = listOf(
+        "/components/message-list" meta {
+            summary = "Message list fragment"
+            queries += queryLens
+            queries += yearLens
+            queries += limitLens
+            queries += offsetLens
+        } bindContract GET to { request ->
+            val ctx = WebContext(request)
+            val query = queryLens(request)
+            val year = yearLens(request)
+            val limit = limitLens(request)
+            val offset = offsetLens(request)
+            htmlResponse(Status.OK, renderer(pageFactory.buildMessageList(ctx, query, limit, offset, year)))
+        },
         "/components/footer-status" meta {
             summary = "Footer status component"
         } bindContract GET to { request ->

@@ -24,6 +24,7 @@ class HomeRoutes(
     private val renderer: TemplateRenderer
 ) : ServerRoutes {
     private val queryLens = Query.string().optional("q")
+    private val yearLens = Query.int().optional("year")
     private val limitLens = Query.int().defaulted("limit", 10)
     private val offsetLens = Query.int().defaulted("offset", 0)
 
@@ -35,14 +36,16 @@ class HomeRoutes(
         "/" meta {
             summary = "Home page"
             queries += queryLens
+            queries += yearLens
             queries += limitLens
             queries += offsetLens
         } bindContract GET to { request ->
             val ctx = WebContext(request)
             val query = queryLens(request)
+            val year = yearLens(request)
             val limit = limitLens(request)
             val offset = offsetLens(request)
-            htmlResponse(Status.OK, renderer(pageFactory.buildHomePage(ctx, query, limit, offset)))
+            htmlResponse(Status.OK, renderer(pageFactory.buildHomePage(ctx, query, limit, offset, year)))
         },
         "/messages" meta {
             summary = "Create message"

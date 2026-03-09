@@ -46,7 +46,7 @@ object Filters {
                     response
                 }
             } catch (e: Exception) {
-                logger.error("Unhandled exception", e)
+                logger.error("Unhandled exception for ${request.uri}", e)
                 if (request.uri.path.startsWith("/api/")) {
                     jsonErrorResponse(Status.INTERNAL_SERVER_ERROR, e.message ?: "An unexpected error occurred")
                 } else {

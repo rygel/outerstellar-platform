@@ -8,9 +8,11 @@ data class MessageListViewModel(
     val messages: List<MessageSummary>,
     val messagesHeading: String,
     val searchQuery: String?,
+    val selectedYear: Int?,
     val nextOffset: Int?,
     val prevOffset: Int?,
-    val limit: Int
+    val limit: Int,
+    val fragmentUrl: String
 ) : ViewModel
 
 class MessageListComponent(private val repository: MessageRepository) : WebComponent<MessageListViewModel> {
@@ -19,8 +21,9 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
         val query = args.getOrNull(0) as? String
         val limit = args.getOrNull(1) as? Int ?: 10
         val offset = args.getOrNull(2) as? Int ?: 0
+        val year = args.getOrNull(3) as? Int
 
-        val messages = repository.listMessages(query, limit, offset)
+        val messages = repository.listMessages(query, year, limit, offset)
         val nextOffset = if (messages.size == limit) offset + limit else null
         val prevOffset = if (offset > 0) (offset - limit).coerceAtLeast(0) else null
 
@@ -28,9 +31,11 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
             messages = messages,
             messagesHeading = i18n.translate("web.home.messages"),
             searchQuery = query,
+            selectedYear = year,
             nextOffset = nextOffset,
             prevOffset = prevOffset,
-            limit = limit
+            limit = limit,
+            fragmentUrl = ctx.url("/components/message-list")
         )
     }
 }

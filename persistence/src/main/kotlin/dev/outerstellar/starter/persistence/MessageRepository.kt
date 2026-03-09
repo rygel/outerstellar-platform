@@ -11,7 +11,7 @@ import org.jooq.Record
 
 @Suppress("TooManyFunctions")
 class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
-  override fun listMessages(query: String?, limit: Int, offset: Int): List<MessageSummary> {
+  override fun listMessages(query: String?, year: Int?, limit: Int, offset: Int): List<MessageSummary> {
     val results = dsl
       .select(
         MESSAGES.SYNC_ID,
@@ -22,11 +22,23 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
         MESSAGES.DELETED,
       )
       .from(MESSAGES)
-      .let { 
+      .where(MESSAGES.DELETED.eq(false))
+      .let {
         if (!query.isNullOrBlank()) {
-          it.where(MESSAGES.DELETED.eq(false).and(MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query))))
+          it.and(MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query)))
         } else {
-          it.where(MESSAGES.DELETED.eq(false))
+          it
+        }
+      }
+      .let {
+        if (year != null) {
+          // In H2/SQLite/standard SQL we can use strftime or just divide the epoch.
+          // Since it's epoch ms, we can calculate the range for the year.
+          val startOfYear = java.time.ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+          val endOfYear = java.time.ZonedDateTime.of(year + 1, 1, 1, 0, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli() - 1
+          it.and(MESSAGES.UPDATED_AT_EPOCH_MS.between(startOfYear, endOfYear))
+        } else {
+          it
         }
       }
       .orderBy(MESSAGES.UPDATED_AT_EPOCH_MS.desc(), MESSAGES.ID.desc())

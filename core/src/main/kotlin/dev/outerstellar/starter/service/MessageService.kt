@@ -25,15 +25,16 @@ class MessageService(
 
     fun listMessages(
         query: String? = null,
+        year: Int? = null,
         limit: Int = 100,
         offset: Int = 0
     ): List<MessageSummary> {
-        val cacheKey = "list:$query:$limit:$offset"
+        val cacheKey = "list:$query:$year:$limit:$offset"
         @Suppress("UNCHECKED_CAST")
         val cached = cache.get(cacheKey) as? List<MessageSummary>
         if (cached != null) return cached
-
-        val results = repository.listMessages(query, limit, offset)
+        
+        val results = repository.listMessages(query, year, limit, offset)
         cache.put(cacheKey, results)
         return results
     }

@@ -120,10 +120,10 @@ data class SidebarSelector(
 class WebPageFactory(private val repository: MessageRepository) {
     private val messageListComponent = MessageListComponent(repository)
 
-    fun buildHomePage(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0): HomePage {
+    fun buildHomePage(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0, year: Int? = null): HomePage {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.home"), "/")
-        val messageList = messageListComponent.build(ctx, query, limit, offset)
+        val messageList = messageListComponent.build(ctx, query, limit, offset, year)
 
         return HomePage(
             shell = shell,
@@ -253,6 +253,10 @@ class WebPageFactory(private val repository: MessageRepository) {
                 i18n.translate("web.error.$normalizedKind.help.item3")
             )
         )
+    }
+
+    fun buildMessageList(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0, year: Int? = null): MessageListViewModel {
+        return messageListComponent.build(ctx, query, limit, offset, year)
     }
 
     fun buildFooterStatus(ctx: WebContext): FooterStatusFragment {

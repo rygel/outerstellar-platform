@@ -21,20 +21,20 @@ class MessageCacheTest {
         val results = listOf(summary)
         
         every { cache.get(any()) } returns null
-        every { repository.listMessages(any(), any(), any()) } returns results
+        every { repository.listMessages(any(), any(), any(), any()) } returns results
         
         // First call - cache miss
         val firstResult = service.listMessages("test")
         assertEquals(results, firstResult)
-        verify { repository.listMessages("test", 100, 0) }
-        verify { cache.put("list:test:100:0", results) }
+        verify { repository.listMessages("test", null, 100, 0) }
+        verify { cache.put("list:test:null:100:0", results) }
         
         // Second call - cache hit
-        every { cache.get("list:test:100:0") } returns results
+        every { cache.get("list:test:null:100:0") } returns results
         val secondResult = service.listMessages("test")
         assertEquals(results, secondResult)
         // Verify repository was not called again
-        verify(exactly = 1) { repository.listMessages(any(), any(), any()) }
+        verify(exactly = 1) { repository.listMessages(any(), any(), any(), any()) }
     }
 
     @Test
