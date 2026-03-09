@@ -5,7 +5,7 @@ import dev.outerstellar.starter.model.StoredMessage
 import dev.outerstellar.starter.sync.SyncMessage
 
 interface MessageRepository {
-  fun listMessages(): List<MessageSummary>
+  fun listMessages(query: String? = null, limit: Int = 100, offset: Int = 0): List<MessageSummary>
 
   fun listDirtyMessages(): List<StoredMessage>
 

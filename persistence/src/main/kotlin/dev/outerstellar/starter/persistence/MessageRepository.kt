@@ -11,8 +11,8 @@ import org.jooq.Record
 
 @Suppress("TooManyFunctions")
 class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
-  override fun listMessages(): List<MessageSummary> =
-    dsl
+  override fun listMessages(query: String?, limit: Int, offset: Int): List<MessageSummary> {
+    var baseQuery = dsl
       .select(
         MESSAGES.SYNC_ID,
         MESSAGES.AUTHOR,
@@ -23,9 +23,20 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
       )
       .from(MESSAGES)
       .where(MESSAGES.DELETED.eq(false))
+
+    if (!query.isNullOrBlank()) {
+      baseQuery = baseQuery.and(
+        MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query))
+      )
+    }
+
+    return baseQuery
       .orderBy(MESSAGES.UPDATED_AT_EPOCH_MS.desc(), MESSAGES.ID.desc())
+      .limit(limit)
+      .offset(offset)
       .fetch(::toStoredMessage)
       .map(StoredMessage::toSummary)
+  }
 
   override fun listDirtyMessages(): List<StoredMessage> =
     dsl

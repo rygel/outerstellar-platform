@@ -1,5 +1,8 @@
 package dev.outerstellar.starter.sync
 
+import io.konform.validation.Validation
+import io.konform.validation.jsonschema.minLength
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncMessage(
   val syncId: String,
@@ -7,10 +10,26 @@ data class SyncMessage(
   val content: String,
   val updatedAtEpochMs: Long,
   val deleted: Boolean = false,
-)
+) {
+    companion object {
+        val validate = Validation<SyncMessage> {
+            SyncMessage::syncId { minLength(1) }
+            SyncMessage::author { minLength(1) }
+            SyncMessage::content { minLength(1) }
+        }
+    }
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncPushRequest(val messages: List<SyncMessage> = emptyList())
+data class SyncPushRequest(val messages: List<SyncMessage> = emptyList()) {
+    companion object {
+        val validate = Validation<SyncPushRequest> {
+            SyncPushRequest::messages onEach {
+                run(SyncMessage.validate)
+            }
+        }
+    }
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncConflict(

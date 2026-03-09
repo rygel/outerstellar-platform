@@ -54,7 +54,10 @@ private fun homeRoutes(
       GET to
       { request ->
         val ctx = WebContext(request)
-        htmlResponse(Status.OK, renderer(pageFactory.buildHomePage(ctx)))
+        val query = request.query("q")
+        val limit = request.query("limit")?.toIntOrNull() ?: 10
+        val offset = request.query("offset")?.toIntOrNull() ?: 0
+        htmlResponse(Status.OK, renderer(pageFactory.buildHomePage(ctx, query, limit, offset)))
       },
     "/messages" bind
       POST to

@@ -8,19 +8,26 @@ import dev.outerstellar.starter.sync.SyncMessage
 import dev.outerstellar.starter.sync.SyncPushRequest
 import dev.outerstellar.starter.sync.SyncPushResponse
 import dev.outerstellar.starter.sync.SyncPullResponse
+import io.konform.validation.Invalid
 
 class MessageService(private val repository: MessageRepository) {
 
-    fun listMessages(): List<MessageSummary> = repository.listMessages()
+    fun listMessages(
+        query: String? = null,
+        limit: Int = 100,
+        offset: Int = 0
+    ): List<MessageSummary> = repository.listMessages(query, limit, offset)
 
     fun listDirtyMessages(): List<StoredMessage> = repository.listDirtyMessages()
 
     fun createServerMessage(author: String, content: String): StoredMessage {
+        require(author.isNotBlank()) { "Author cannot be blank" }
         require(content.isNotBlank()) { "Content cannot be blank" }
         return repository.createServerMessage(author, content)
     }
 
     fun createLocalMessage(author: String, content: String): StoredMessage {
+        require(author.isNotBlank()) { "Author cannot be blank" }
         require(content.isNotBlank()) { "Content cannot be blank" }
         return repository.createLocalMessage(author, content)
     }
@@ -34,6 +41,11 @@ class MessageService(private val repository: MessageRepository) {
     }
 
     fun processPushRequest(request: SyncPushRequest): SyncPushResponse {
+        val validationResult = SyncPushRequest.validate(request)
+        if (validationResult is Invalid) {
+            throw IllegalArgumentException("Invalid sync request: ${validationResult.errors.joinToString { "${it.dataPath}: ${it.message}" }}")
+        }
+
         val conflicts = mutableListOf<SyncConflict>()
         var appliedCount = 0
 
