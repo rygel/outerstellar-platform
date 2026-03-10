@@ -5,6 +5,7 @@ import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqMessageRepository
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
+import dev.outerstellar.starter.security.PasswordEncoder
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.web.*
 import io.mockk.mockk
@@ -32,8 +33,9 @@ class HomePageEndToEndTest : PostgresWebTest() {
     
     val securityService = mockk<SecurityService>(relaxed = true)
     val userRepository = mockk<UserRepository>(relaxed = true)
+    val passwordEncoder = mockk<PasswordEncoder>(relaxed = true)
     
-    val appHandler = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, testConfig, i18n, securityService, userRepository)
+    val appHandler = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, testConfig, i18n, securityService, userRepository, passwordEncoder)
     val server = appHandler.asServer(Jetty(0)).start()
 
     try {

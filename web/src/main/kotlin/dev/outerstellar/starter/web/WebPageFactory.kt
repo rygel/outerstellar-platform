@@ -169,6 +169,7 @@ class WebPageFactory(
     fun buildAuthPage(ctx: WebContext): Page<AuthPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.auth"), "/auth")
+        val returnTo = ctx.request.query("returnTo") ?: "/"
 
         return Page(
             shell = shell,
@@ -177,11 +178,11 @@ class WebPageFactory(
                 intro = i18n.translate("web.auth.intro"),
                 helperText = i18n.translate("web.auth.helper"),
                 tabs = listOf(
-                    AuthModeTab("sign-in", i18n.translate("web.auth.signin"), ctx.url("/auth/components/forms/sign-in")),
-                    AuthModeTab("register", i18n.translate("web.auth.register"), ctx.url("/auth/components/forms/register")),
-                    AuthModeTab("recover", i18n.translate("web.auth.recover"), ctx.url("/auth/components/forms/recover"))
+                    AuthModeTab("sign-in", i18n.translate("web.auth.signin"), ctx.url("/auth/components/forms/sign-in?returnTo=$returnTo")),
+                    AuthModeTab("register", i18n.translate("web.auth.register"), ctx.url("/auth/components/forms/register?returnTo=$returnTo")),
+                    AuthModeTab("recover", i18n.translate("web.auth.recover"), ctx.url("/auth/components/forms/recover?returnTo=$returnTo"))
                 ),
-                defaultFormUrl = ctx.url("/auth/components/forms/sign-in")
+                defaultFormUrl = ctx.url("/auth/components/forms/sign-in?returnTo=$returnTo")
             )
         )
     }
@@ -192,12 +193,13 @@ class WebPageFactory(
             "register", "recover" -> mode
             else -> "sign-in"
         }
+        val returnTo = ctx.request.query("returnTo") ?: "/"
 
         return AuthFormFragment(
             mode = normalizedMode,
             title = i18n.translate("web.auth.$normalizedMode.title"),
             description = i18n.translate("web.auth.$normalizedMode.description"),
-            submitUrl = ctx.url("/auth/components/result"),
+            submitUrl = ctx.url("/auth/components/result?returnTo=$returnTo"),
             submitLabel = i18n.translate("web.auth.$normalizedMode.submit"),
             language = ctx.lang,
             theme = ctx.theme,

@@ -13,6 +13,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
+@org.junit.jupiter.api.Disabled("Requires Docker environment")
 abstract class PostgresWebTest {
     companion object {
         @Container

@@ -4,6 +4,7 @@ import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.service.MessageService
@@ -28,6 +29,7 @@ class StatePersistenceE2ETest : PostgresWebTest() {
         
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
+        val encoder = BCryptPasswordEncoder(logRounds = 4)
 
         val app = app(
             messageService, 
@@ -39,7 +41,8 @@ class StatePersistenceE2ETest : PostgresWebTest() {
             testConfig, 
             i18n,
             securityService,
-            userRepository
+            userRepository,
+            encoder
         )
         
         val response = app.http!!(Request(GET, "/?lang=fr"))

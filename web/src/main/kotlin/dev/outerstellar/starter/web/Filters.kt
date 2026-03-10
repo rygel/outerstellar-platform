@@ -17,6 +17,7 @@ import java.time.Duration
 import dev.outerstellar.starter.model.OuterstellarException
 import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.security.UserRepository
+import dev.outerstellar.starter.security.SecurityRules
 
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
@@ -54,6 +55,14 @@ object Filters {
             }
             
             updatedResponse
+        }
+    }
+
+    // New: Bridge WebContext user into SecurityRules
+    val securityFilter: Filter = Filter { next: HttpHandler ->
+        { request ->
+            val user = try { request.webContext.user } catch (e: Exception) { null }
+            next(request.with(SecurityRules.USER_KEY of user))
         }
     }
 

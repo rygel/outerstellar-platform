@@ -14,6 +14,7 @@ import dev.outerstellar.starter.web.WebPageFactory
 import dev.outerstellar.starter.web.SyncWebSocket
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
+import dev.outerstellar.starter.security.User
 import org.http4k.core.HttpHandler
 import org.http4k.server.PolyHandler
 import org.http4k.template.TemplateRenderer
@@ -27,6 +28,8 @@ val webModule = module {
     single<TemplateRenderer> { createRenderer() }
     single { WebPageFactory(get(), get<AppConfig>().devDashboardEnabled) }
     single { SyncApi(get()) }
+    single<MessageCache> { dev.outerstellar.starter.persistence.NoOpMessageCache }
+    
     single<I18nService> { I18nService.fromResourceBundle("messages") }
     single<EventPublisher> { SyncWebSocket }
     single<PolyHandler>(named("webServer")) { 
@@ -40,7 +43,8 @@ val webModule = module {
             get<AppConfig>(),
             get<I18nService>(),
             get<SecurityService>(),
-            get<UserRepository>()
+            get<UserRepository>(),
+            get<dev.outerstellar.starter.security.PasswordEncoder>()
         ) 
     }
 }

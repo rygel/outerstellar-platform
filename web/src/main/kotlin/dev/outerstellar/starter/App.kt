@@ -7,6 +7,9 @@ import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.security.SecurityService
+import dev.outerstellar.starter.security.PasswordEncoder
+import dev.outerstellar.starter.security.SecurityRules
+import dev.outerstellar.starter.security.UserRole
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.web.*
 import org.http4k.contract.contract
@@ -42,7 +45,8 @@ fun app(
     config: AppConfig,
     i18nService: I18nService,
     securityService: SecurityService,
-    userRepository: UserRepository
+    userRepository: UserRepository,
+    passwordEncoder: PasswordEncoder
 ): PolyHandler {
   logger.info("Initializing Outerstellar application")
 
@@ -58,9 +62,8 @@ fun app(
     renderer = OpenApi3(ApiInfo("Outerstellar UI", "v1.0"), Jackson)
     descriptionPath = "/ui/openapi.json"
     routes += HomeRoutes(messageService, repository, pageFactory, jteRenderer, i18nService).routes
-    routes += AuthRoutes(pageFactory, jteRenderer, securityService).routes
+    routes += AuthRoutes(pageFactory, jteRenderer, securityService, userRepository, passwordEncoder).routes
     routes += ErrorRoutes(pageFactory, jteRenderer).routes
-    routes += DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
     
     // Global Logout
     routes += ("/logout" bindContract GET).to { request: org.http4k.core.Request ->
@@ -70,20 +73,37 @@ fun app(
     }
   }
 
-  // 3. HTMX Components (HTML Fragments)
+  // 3. Protected Admin Routes
+  val adminRoutes = contract {
+    renderer = OpenApi3(ApiInfo("Outerstellar Admin", "v1.0"), Jackson)
+    descriptionPath = "/admin/openapi.json"
+    routes += DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
+  }
+
+  // 4. HTMX Components (HTML Fragments)
   val componentRoutes = contract {
     renderer = OpenApi3(ApiInfo("Outerstellar Components", "v1.0"), Jackson)
     descriptionPath = "/components/openapi.json"
     routes += ComponentRoutes(pageFactory, jteRenderer).routes
   }
 
+  // Filtered admin handler
+  val filteredAdminHandler = SecurityRules.authenticated(
+      SecurityRules.hasRole(UserRole.ADMIN, adminRoutes)
+  )
+
   val baseApp: HttpHandler = routes(
     static(ResourceLoader.Classpath("static")),
     apiRoutes,
-    // Inject WebContext into UI and Component routes
+    // Inject WebContext and Security context into UI and Component routes
     ServerFilters.InitialiseRequestContext(WebContext.contexts)
         .then(Filters.stateFilter(config.devDashboardEnabled, userRepository))
-        .then(routes(uiRoutes, componentRoutes)),
+        .then(Filters.securityFilter)
+        .then(routes(
+            uiRoutes, 
+            componentRoutes,
+            "/" bind filteredAdminHandler
+        )),
     "/health" bind GET to { Response(Status.OK).body("ok") },
     "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
   )
