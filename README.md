@@ -117,3 +117,12 @@ To prevent common Kotlin type-inference issues and library conflicts, follow the
         3. **Breaks Locality of Behavior**: It violates the core HTMX principle by spreading the consequences of an action across disparate parts of the DOM.
         4. **Initialization Logic Duplication**: OOB updates only happen on specific actions; ensuring the "Initial Load" logic matches the "Action Result" logic requires repetitive code.
     Prefer standard `hx-target` swaps to keep the flow predictable and maintainable.
+
+---
+
+### Desktop Architecture
+
+The desktop application is built with **Swing** following the **MVVM** pattern and uses **FlatLaf** for a modern, themed look and feel.
+
+*   **No WebSockets for Desktop**: The desktop application explicitly **does not use WebSockets** for synchronization.
+    *   **Reasons**: To keep the desktop client's architecture lean and focused on its primary role as a standalone synchronization tool. Standard HTTP-based sync provides a reliable, firewall-friendly connection model that is easier to debug and maintain for a desktop environment. Real-time updates are prioritized for the Web UI, while the desktop app maintains a robust manual or background polling-based sync model.
