@@ -85,6 +85,12 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.insert-koin</groupId>
+            <artifactId>koin-test-junit5</artifactId>
+            <version>${koin.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -1,5 +1,6 @@
 package dev.outerstellar.starter
 
+import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.AppConfig
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
@@ -31,13 +32,14 @@ fun app(
     cache: MessageCache,
     renderer: TemplateRenderer,
     pageFactory: WebPageFactory,
-    config: AppConfig
+    config: AppConfig,
+    i18nService: I18nService
 ): HttpHandler {
   logger.info("Initializing Outerstellar application")
 
   val serverRoutes = listOf(
     SyncApi(messageService),
-    HomeRoutes(messageService, pageFactory, renderer),
+    HomeRoutes(messageService, pageFactory, renderer, i18nService),
     AuthRoutes(pageFactory, renderer),
     ErrorRoutes(pageFactory, renderer),
     ComponentRoutes(pageFactory, renderer),

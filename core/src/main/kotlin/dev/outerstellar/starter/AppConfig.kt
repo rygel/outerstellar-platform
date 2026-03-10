@@ -1,6 +1,7 @@
 package dev.outerstellar.starter
 
 import com.sksamuel.hoplite.ConfigLoaderBuilder
+import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addEnvironmentSource
 import com.sksamuel.hoplite.addResourceSource
 
@@ -12,9 +13,11 @@ data class AppConfig(
   val devDashboardEnabled: Boolean = false,
 ) {
   companion object {
+    @OptIn(ExperimentalHoplite::class)
     fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
       val profile = environment["APP_PROFILE"] ?: "default"
       val builder = ConfigLoaderBuilder.default()
+        .withExplicitSealedTypes()
         .addEnvironmentSource()
         .addResourceSource("/application.yaml", optional = true)
 

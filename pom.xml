@@ -24,7 +24,7 @@
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.0</outerstellar.version>
         <http4k.version>6.31.1.0</http4k.version>
-        <flyway.version>12.0.3</flyway.version>
+        <flyway.version>11.3.4</flyway.version>
         <jooq.version>3.19.7</jooq.version>
         <h2.version>2.2.224</h2.version>
         <jte.version>3.2.3</jte.version>
@@ -212,6 +212,12 @@
             <dependency>
                 <groupId>io.insert-koin</groupId>
                 <artifactId>koin-test-jvm</artifactId>
+                <version>${koin.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.insert-koin</groupId>
+                <artifactId>koin-test-junit5</artifactId>
                 <version>${koin.version}</version>
                 <scope>test</scope>
             </dependency>

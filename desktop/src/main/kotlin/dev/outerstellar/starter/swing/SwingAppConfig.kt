@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.swing
 
 import com.sksamuel.hoplite.ConfigLoaderBuilder
+import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addEnvironmentSource
 import com.sksamuel.hoplite.addMapSource
 
@@ -13,8 +14,10 @@ data class SwingAppConfig(
   val updateUrl: String = ""
 ) {
   companion object {
+    @OptIn(ExperimentalHoplite::class)
     fun fromEnvironment(environment: Map<String, String> = System.getenv()): SwingAppConfig =
       ConfigLoaderBuilder.default()
+        .withExplicitSealedTypes()
         .addMapSource(environment)
         .addEnvironmentSource()
         .build()

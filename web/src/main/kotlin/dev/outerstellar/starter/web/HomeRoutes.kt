@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.web
 
+import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.service.MessageService
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
@@ -21,15 +22,16 @@ import org.http4k.template.TemplateRenderer
 class HomeRoutes(
     private val messageService: MessageService,
     private val pageFactory: WebPageFactory,
-    private val renderer: TemplateRenderer
+    private val renderer: TemplateRenderer,
+    private val i18nService: I18nService
 ) : ServerRoutes {
     private val queryLens = Query.string().optional("q")
     private val yearLens = Query.int().optional("year")
     private val limitLens = Query.int().defaulted("limit", 10)
     private val offsetLens = Query.int().defaulted("offset", 0)
 
-    private val defaultAuthor = "Server"
-    private val contentRequiredMessage = "Content is required."
+    private val defaultAuthor = i18nService.translate("web.author.default")
+    private val contentRequiredMessage = i18nService.translate("web.validation.contentRequired")
     private val htmlContentType = ContentType.TEXT_HTML.toHeaderValue()
 
     override val routes = listOf(

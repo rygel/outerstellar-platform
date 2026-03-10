@@ -13,8 +13,7 @@ import javax.sql.DataSource
 val persistenceModule = module {
     single<MessageCache> { CaffeineMessageCache(Metrics.globalRegistry) }
     single<DataSource> {
-        // jdbcUrl is expected to be provided via a property or another single
-        createDataSource(get(), "sa", "")
+        createDataSource(get(named("jdbcUrl")), "sa", "")
     }
     single<DSLContext>(named("primaryDsl")) { DSL.using(get<DataSource>(), SQLDialect.POSTGRES) }
     single<DSLContext>(named("replicaDsl")) { DSL.using(get<DataSource>(), SQLDialect.POSTGRES) }

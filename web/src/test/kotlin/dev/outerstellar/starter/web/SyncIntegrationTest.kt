@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.web
 
+import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.infra.createRenderer
@@ -39,11 +40,21 @@ class SyncIntegrationTest : PostgresWebTest() {
     clientRepository.createLocalMessage("Swing Client", "Created on the desktop")
 
     val pageFactory = WebPageFactory(serverRepository, true)
+    val i18n = I18nService.fromResourceBundle("web-messages")
     val syncService =
       SyncService(
         repository = clientRepository,
         serverBaseUrl = "http://localhost:8080",
-        httpClient = app(MessageService(serverRepository, outbox, transactionManager, cache), serverRepository, outbox, cache, createRenderer(), pageFactory, testConfig),
+        httpClient = app(
+            messageService = MessageService(serverRepository, outbox, transactionManager, cache), 
+            repository = serverRepository, 
+            outboxRepository = outbox, 
+            cache = cache, 
+            renderer = createRenderer(), 
+            pageFactory = pageFactory, 
+            config = testConfig, 
+            i18nService = i18n
+        ),
       )
 
     val stats = syncService.sync()
