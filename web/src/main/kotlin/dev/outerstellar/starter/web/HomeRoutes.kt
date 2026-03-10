@@ -63,6 +63,22 @@ class HomeRoutes(
             val offset = offsetLens(request)
             renderer.render(pageFactory.buildHomePage(request.webContext, query, limit, offset, year))
         },
+        "/messages/trash" meta {
+            summary = "Trash page"
+            queries += queryLens
+            queries += limitLens
+            queries += offsetLens
+        } bindContract GET to { request: org.http4k.core.Request ->
+            val query = queryLens(request)
+            val limit = limitLens(request)
+            val offset = offsetLens(request)
+            val ctx = request.webContext
+            renderer.render(pageFactory.buildDevDashboardPage(ctx, "", emptyMap(), 0, 0, 0, "Fake for logic check"))
+            // Proper fix: Render the trash view using the existing factory pattern
+            val shell = ctx.shell("Trash", "/messages/trash")
+            val messageList = pageFactory.buildMessageList(ctx, query, limit, offset, null, true)
+            renderer.render(Page(shell, messageList))
+        },
         "/messages" meta {
             summary = "Create message"
             receiving(messageFormLens)
@@ -80,7 +96,15 @@ class HomeRoutes(
             { request: org.http4k.core.Request ->
                 val ctx = request.webContext
                 repository.softDelete(syncId)
-                // Return the updated list fragment directly
+                renderer.render(pageFactory.buildMessageList(ctx))
+            }
+        },
+        "/messages/restore" / syncIdPath meta {
+            summary = "Restore message"
+        } bindContract POST to { syncId ->
+            { request: org.http4k.core.Request ->
+                val ctx = request.webContext
+                repository.restore(syncId)
                 renderer.render(pageFactory.buildMessageList(ctx))
             }
         }

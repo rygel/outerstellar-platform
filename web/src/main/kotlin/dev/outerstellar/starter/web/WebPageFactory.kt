@@ -299,14 +299,13 @@ class WebPageFactory(
         )
     }
 
-    fun buildMessageList(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0, year: Int? = null): MessageListViewModel {
-        return messageListComponent.build(ctx, query, limit, offset, year)
+    fun buildMessageList(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0, year: Int? = null, isTrash: Boolean = false): MessageListViewModel {
+        return messageListComponent.build(ctx, query, limit, offset, year, isTrash)
     }
 
     fun buildFooterStatus(ctx: WebContext): FooterStatusFragment {
         val i18n = ctx.i18n
         return FooterStatusFragment(
-            // In a real app we'd use MessageService here too, keeping it simple for status line
             text = i18n.translate("web.footer.status", repository.listMessages().size, repository.listDirtyMessages().size)
         )
     }

@@ -384,6 +384,26 @@
                     <artifactId>fizzed-watcher-maven-plugin</artifactId>
                     <version>1.0.6</version>
                 </plugin>
+                <plugin>
+                    <groupId>com.github.ozsie</groupId>
+                    <artifactId>detekt-maven-plugin</artifactId>
+                    <version>1.23.8</version>
+                    <executions>
+                        <execution>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <configuration>
+                                <config>detekt.yml</config>
+                                <report>
+                                    <report>xml:target/detekt-reports/detekt.xml</report>
+                                    <report>html:target/detekt-reports/detekt.html</report>
+                                </report>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
 

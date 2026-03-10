@@ -17,7 +17,7 @@ class JooqMessageRepository(
   private val replicaDsl: DSLContext = primaryDsl
 ) : MessageRepository {
 
-  private fun getFilterConditions(query: String?, year: Int?): Condition {
+  private fun getFilterConditions(query: String?, year: Int?, includeDeleted: Boolean = false): Condition {
     var condition = DSL.noCondition()
       .let { 
          val deletedField = MESSAGES.field("DELETED", Boolean::class.java)
@@ -25,8 +25,10 @@ class JooqMessageRepository(
       }
       .let {
         val deletedAtField = MESSAGES.field("DELETED_AT")
-        if (deletedAtField != null) {
+        if (deletedAtField != null && !includeDeleted) {
           it.and(deletedAtField.isNull)
+        } else if (deletedAtField != null && includeDeleted) {
+          it.and(deletedAtField.isNotNull)
         } else {
           it
         }
@@ -59,6 +61,14 @@ class JooqMessageRepository(
   }
 
   override fun listMessages(query: String?, year: Int?, limit: Int, offset: Int): List<MessageSummary> {
+    return listMessagesInternal(query, year, limit, offset, includeDeleted = false)
+  }
+
+  fun listDeletedMessages(query: String?, year: Int?, limit: Int, offset: Int): List<MessageSummary> {
+    return listMessagesInternal(query, year, limit, offset, includeDeleted = true)
+  }
+
+  private fun listMessagesInternal(query: String?, year: Int?, limit: Int, offset: Int, includeDeleted: Boolean): List<MessageSummary> {
     val results = replicaDsl
       .select(
         MESSAGES.ID,
@@ -71,7 +81,7 @@ class JooqMessageRepository(
         MESSAGES.VERSION
       )
       .from(MESSAGES)
-      .where(getFilterConditions(query, year))
+      .where(getFilterConditions(query, year, includeDeleted))
       .orderBy(
         (MESSAGES.field("UPDATED_AT_EPOCH_MS") ?: MESSAGES.field("ID") ?: DSL.field("ID")).desc(),
         (MESSAGES.field("ID") ?: DSL.field("ID")).desc()
@@ -84,7 +94,11 @@ class JooqMessageRepository(
   }
 
   override fun countMessages(query: String?, year: Int?): Long {
-    return replicaDsl.fetchCount(MESSAGES, getFilterConditions(query, year)).toLong()
+    return replicaDsl.fetchCount(MESSAGES, getFilterConditions(query, year, false)).toLong()
+  }
+
+  fun countDeletedMessages(query: String?, year: Int?): Long {
+    return replicaDsl.fetchCount(MESSAGES, getFilterConditions(query, year, true)).toLong()
   }
 
   override fun listDirtyMessages(): List<StoredMessage> =
@@ -268,6 +282,21 @@ class JooqMessageRepository(
         val deletedAtField = MESSAGES.field("DELETED_AT", java.time.LocalDateTime::class.java)
         if (deletedAtField != null) {
           it.set(deletedAtField, java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toLocalDateTime())
+        } else {
+          it
+        }
+      }
+      .set(MESSAGES.VERSION, MESSAGES.VERSION.plus(1))
+      .where(MESSAGES.SYNC_ID.eq(syncId))
+      .execute()
+  }
+
+  override fun restore(syncId: String) {
+    primaryDsl.update(MESSAGES)
+      .let {
+        val deletedAtField = MESSAGES.field("DELETED_AT", java.time.LocalDateTime::class.java)
+        if (deletedAtField != null) {
+          it.setNull(deletedAtField)
         } else {
           it
         }

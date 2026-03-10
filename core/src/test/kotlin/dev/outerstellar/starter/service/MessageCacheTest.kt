@@ -1,6 +1,8 @@
 package dev.outerstellar.starter.service
 
 import dev.outerstellar.starter.model.MessageSummary
+import dev.outerstellar.starter.model.PagedResult
+import dev.outerstellar.starter.model.PaginationMetadata
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.sync.SyncPushRequest
@@ -18,10 +20,12 @@ class MessageCacheTest {
     @Test
     fun `listMessages uses cache`() {
         val summary = MessageSummary("id", "author", "content", 1000L, false)
-        val results = listOf(summary)
+        val items = listOf(summary)
+        val results = PagedResult(items, PaginationMetadata(1, 100, 1))
         
         every { cache.get(any()) } returns null
-        every { repository.listMessages(any(), any(), any(), any()) } returns results
+        every { repository.listMessages(any(), any(), any(), any()) } returns items
+        every { repository.countMessages(any(), any()) } returns 1L
         
         // First call - cache miss
         val firstResult = service.listMessages("test")

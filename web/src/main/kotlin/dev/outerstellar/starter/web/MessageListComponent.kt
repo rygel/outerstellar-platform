@@ -9,7 +9,9 @@ data class MessageListViewModel(
     val messages: List<MessageSummary>,
     val emptyMessage: String,
     val deleteUrl: String,
-    val pagination: PaginationViewModel? = null
+    val restoreUrl: String? = null,
+    val pagination: PaginationViewModel? = null,
+    val isTrashView: Boolean = false
 ) : ViewModel
 
 class MessageListComponent(private val repository: MessageRepository) : WebComponent<MessageListViewModel> {
@@ -19,10 +21,16 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
         val limit = args.getOrNull(1) as? Int ?: 10
         val offset = args.getOrNull(2) as? Int ?: 0
         val year = args.getOrNull(3) as? Int
+        val isTrash = args.getOrNull(4) as? Boolean ?: false
         
         val i18n = ctx.i18n
-        val items = repository.listMessages(query, year, limit, offset)
-        val total = repository.countMessages(query, year)
+        
+        val repo = repository as? dev.outerstellar.starter.persistence.JooqMessageRepository
+        val items = if (isTrash && repo != null) repo.listDeletedMessages(query, year, limit, offset) 
+                    else repository.listMessages(query, year, limit, offset)
+        
+        val total = if (isTrash && repo != null) repo.countDeletedMessages(query, year)
+                    else repository.countMessages(query, year)
         
         val metadata = PaginationMetadata(
             currentPage = (offset / limit) + 1,
@@ -32,7 +40,8 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
 
         fun createUrl(page: Int): String {
             val newOffset = (page - 1) * limit
-            return ctx.url("/?limit=$limit&offset=$newOffset" + 
+            val baseUrl = if (isTrash) "/messages/trash" else "/"
+            return ctx.url("$baseUrl?limit=$limit&offset=$newOffset" + 
                 (if (query != null) "&query=$query" else "") + 
                 (if (year != null) "&year=$year" else ""))
         }
@@ -53,9 +62,11 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
 
         return MessageListViewModel(
             messages = items,
-            emptyMessage = i18n.translate("web.home.list.empty"),
-            deleteUrl = ctx.url("/messages/delete"),
-            pagination = pagination
+            emptyMessage = if (isTrash) "No deleted messages found." else i18n.translate("web.home.list.empty"),
+            deleteUrl = ctx.url("/messages"),
+            restoreUrl = ctx.url("/messages/restore"),
+            pagination = pagination,
+            isTrashView = isTrash
         )
     }
 }

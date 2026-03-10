@@ -30,6 +30,8 @@ interface MessageRepository {
   fun seedStarterMessages()
 
   fun softDelete(syncId: String)
+
+  fun restore(syncId: String)
   
   fun updateMessage(message: StoredMessage): StoredMessage
 }
