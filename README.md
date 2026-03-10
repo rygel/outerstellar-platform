@@ -93,6 +93,18 @@ The web application uses **http4k** with **JTE** templates and **HTMX** for inte
 4. **Register the Route**: Add the route to the appropriate route class (e.g., `HomeRoutes.kt`) and bind it in `App.kt`.
 5. **Access State**: Use `WebContext.KEY(request)` or the helper property `request.webContext` to access the current theme, language, and layout state without manual extraction.
 
+#### Native Image Support (GraalVM)
+
+The web application is ready for Ahead-of-Time (AOT) compilation using GraalVM. This produces a standalone native binary with extremely fast startup times and low memory footprint.
+
+To build the native image (requires GraalVM installed and `JAVA_HOME` set correctly):
+
+```bash
+mvn package -Pnative -pl web -DskipTests
+```
+
+The resulting binary will be located in `web/target/outerstellar-web`.
+
 #### Development Best Practices & Safety Rules
 
 To prevent common Kotlin type-inference issues and library conflicts, follow these rules:
