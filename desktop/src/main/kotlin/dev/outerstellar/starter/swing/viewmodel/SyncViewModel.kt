@@ -59,7 +59,7 @@ class SyncViewModel(
     }
 
     fun loadMessages() {
-        messages = messageService.listMessages(searchQuery.takeIf { it.isNotBlank() })
+        messages = messageService.listMessages(searchQuery.takeIf { it.isNotBlank() }).items
         notifyObservers()
     }
 

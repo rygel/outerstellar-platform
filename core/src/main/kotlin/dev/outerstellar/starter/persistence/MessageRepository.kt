@@ -7,6 +7,8 @@ import dev.outerstellar.starter.sync.SyncMessage
 interface MessageRepository {
   fun listMessages(query: String? = null, year: Int? = null, limit: Int = 100, offset: Int = 0): List<MessageSummary>
 
+  fun countMessages(query: String? = null, year: Int? = null): Long
+
   fun listDirtyMessages(): List<StoredMessage>
 
   fun findBySyncId(syncId: String): StoredMessage?

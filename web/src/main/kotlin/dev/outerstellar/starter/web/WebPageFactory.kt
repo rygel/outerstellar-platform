@@ -2,6 +2,7 @@ package dev.outerstellar.starter.web
 
 import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.model.MessageSummary
+import dev.outerstellar.starter.model.PaginationMetadata
 import dev.outerstellar.starter.persistence.MessageRepository
 import java.util.Locale
 import org.http4k.core.Request
@@ -58,6 +59,22 @@ data class HomePage(
   val submitUrl: String,
   val messageList: MessageListViewModel,
 ) : ViewModel
+
+data class PaginationViewModel(
+    val currentPage: Int,
+    val totalPages: Int,
+    val hasPrevious: Boolean,
+    val hasNext: Boolean,
+    val previousUrl: String?,
+    val nextUrl: String?,
+    val pages: List<PageNumberViewModel>
+)
+
+data class PageNumberViewModel(
+    val number: Int,
+    val url: String,
+    val isActive: Boolean
+)
 
 data class AuthModeTab(val key: String, val label: String, val url: String)
 
@@ -289,6 +306,7 @@ class WebPageFactory(
     fun buildFooterStatus(ctx: WebContext): FooterStatusFragment {
         val i18n = ctx.i18n
         return FooterStatusFragment(
+            // In a real app we'd use MessageService here too, keeping it simple for status line
             text = i18n.translate("web.footer.status", repository.listMessages().size, repository.listDirtyMessages().size)
         )
     }

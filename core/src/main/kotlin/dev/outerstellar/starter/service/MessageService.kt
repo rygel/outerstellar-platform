@@ -30,15 +30,26 @@ class MessageService(
         year: Int? = null,
         limit: Int = 100,
         offset: Int = 0
-    ): List<MessageSummary> {
+    ): PagedResult<MessageSummary> {
         val cacheKey = "list:$query:$year:$limit:$offset"
         @Suppress("UNCHECKED_CAST")
-        val cached = cache.get(cacheKey) as? List<MessageSummary>
+        val cached = cache.get(cacheKey) as? PagedResult<MessageSummary>
         if (cached != null) return cached
         
-        val results = repository.listMessages(query, year, limit, offset)
-        cache.put(cacheKey, results)
-        return results
+        val items = repository.listMessages(query, year, limit, offset)
+        val total = repository.countMessages(query, year)
+        
+        val result = PagedResult(
+            items = items,
+            metadata = PaginationMetadata(
+                currentPage = (offset / limit) + 1,
+                pageSize = limit,
+                totalItems = total
+            )
+        )
+        
+        cache.put(cacheKey, result)
+        return result
     }
 
     fun findBySyncId(syncId: String): StoredMessage? {
