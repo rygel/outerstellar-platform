@@ -8,6 +8,8 @@ import dev.outerstellar.starter.di.desktopModule
 import dev.outerstellar.starter.di.persistenceModule
 import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.model.MessageSummary
+import dev.outerstellar.starter.model.ThemeDefinition
+import dev.outerstellar.starter.model.ThemeCatalog
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
@@ -24,22 +26,7 @@ import java.awt.event.KeyAdapter
 import java.awt.event.KeyEvent
 import java.util.Locale
 import javax.sql.DataSource
-import javax.swing.DefaultListCellRenderer
-import javax.swing.DefaultListModel
-import javax.swing.JButton
-import javax.swing.JFrame
-import javax.swing.JLabel
-import javax.swing.JList
-import javax.swing.JMenu
-import javax.swing.JMenuBar
-import javax.swing.JMenuItem
-import javax.swing.JOptionPane
-import javax.swing.JPanel
-import javax.swing.JScrollPane
-import javax.swing.JTextArea
-import javax.swing.JTextField
-import javax.swing.ListSelectionModel
-import javax.swing.SwingUtilities
+import javax.swing.*
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import org.koin.core.context.startKoin
@@ -112,19 +99,25 @@ fun main() {
   }
 }
 
-private class SyncWindow(
+internal class SyncWindow(
   private val viewModel: SyncViewModel,
   private val themeManager: ThemeManager,
-  private val i18nService: I18nService,
+  private var i18nService: I18nService,
 ) {
-  private val frame = JFrame(i18nService.translate("swing.app.title"))
+  val frame = JFrame(i18nService.translate("swing.app.title"))
   private val messagesModel = DefaultListModel<MessageSummary>()
-  private val messagesList = JList(messagesModel)
-  private val statusLabel = JLabel()
-  private val authorField = JTextField()
-  private val searchField = JTextField()
-  private val contentArea = JTextArea(defaultComposerRows, defaultComposerColumns)
-  private val syncButton = JButton(i18nService.translate("swing.button.sync"))
+  private val messagesList = JList(messagesModel).apply { name = "messagesList" }
+  private val statusLabel = JLabel().apply { name = "statusLabel" }
+  private val searchLabel = JLabel(i18nService.translate("swing.label.search"))
+  private val authorField = JTextField().apply { name = "authorField" }
+  private val searchField = JTextField().apply { name = "searchField" }
+  private val contentArea = JTextArea(defaultComposerRows, defaultComposerColumns).apply { name = "contentArea" }
+  private val syncButton = JButton(i18nService.translate("swing.button.sync")).apply { name = "syncButton" }
+  private val createButton = JButton(i18nService.translate("swing.button.create")).apply { name = "createButton" }
+  
+  private val appMenu = JMenu(i18nService.translate("swing.menu.application")).apply { name = "appMenu" }
+  private val themeMenu = JMenu(i18nService.translate("swing.theme.menu")).apply { name = "themeMenu" }
+  private val settingsItem = JMenuItem(i18nService.translate("swing.menu.settings")).apply { name = "settingsItem" }
 
   fun show() {
     configureFrame()
@@ -132,6 +125,20 @@ private class SyncWindow(
     restoreState()
     viewModel.loadMessages()
     frame.isVisible = true
+  }
+
+  fun refreshTranslations(newI18n: I18nService) {
+    this.i18nService = newI18n
+    frame.title = i18nService.translate("swing.app.title")
+    syncButton.text = i18nService.translate("swing.button.sync")
+    createButton.text = i18nService.translate("swing.button.create")
+    searchLabel.text = i18nService.translate("swing.label.search")
+    appMenu.text = i18nService.translate("swing.menu.application")
+    themeMenu.text = i18nService.translate("swing.theme.menu")
+    settingsItem.text = i18nService.translate("swing.menu.settings")
+    
+    viewModel.refreshTranslations(newI18n)
+    updateUI()
   }
 
   private fun restoreState() {
@@ -255,26 +262,91 @@ private class SyncWindow(
 
   private fun createMenuBar(): JMenuBar {
     val menuBar = JMenuBar()
-    val themeMenu = JMenu(i18nService.translate("swing.theme.menu"))
+    
+    settingsItem.addActionListener { showSettingsDialog() }
+    appMenu.add(settingsItem)
+    
+    val standardThemes = JMenu("Standard")
     val lightItem = JMenuItem(i18nService.translate("swing.theme.light"))
     val darkItem = JMenuItem(i18nService.translate("swing.theme.dark"))
-    val outerstellarItem = JMenuItem(i18nService.translate("swing.theme.outerstellar"))
-
     lightItem.addActionListener { themeManager.setLightTheme() }
     darkItem.addActionListener { themeManager.setDarkTheme() }
-    outerstellarItem.addActionListener { themeManager.setOuterstellarTheme() }
+    standardThemes.add(lightItem)
+    standardThemes.add(darkItem)
+    themeMenu.add(standardThemes)
+    
+    themeMenu.addSeparator()
 
-    themeMenu.add(lightItem)
-    themeMenu.add(darkItem)
-    themeMenu.add(outerstellarItem)
+    val outerstellarThemes: List<ThemeDefinition> = themeManager.availableThemes().sortedBy { it.name }
+    outerstellarThemes.forEach { theme: ThemeDefinition ->
+        val item = JMenuItem(theme.name)
+        item.addActionListener { themeManager.applyTheme(theme) }
+        themeMenu.add(item)
+    }
+
+    menuBar.add(appMenu)
     menuBar.add(themeMenu)
     return menuBar
+  }
+
+  private fun showSettingsDialog() {
+    val dialog = JDialog(frame, i18nService.translate("swing.settings.title"), true)
+    dialog.name = "settingsDialog"
+    dialog.layout = BorderLayout(10, 10)
+    
+    val formPanel = JPanel(java.awt.GridLayout(2, 2, 10, 10))
+    formPanel.border = BorderFactory.createEmptyBorder(20, 20, 20, 20)
+    
+    formPanel.add(JLabel(i18nService.translate("swing.settings.language")))
+    val languages = arrayOf(
+        "en" to i18nService.translate("swing.language.en"),
+        "fr" to i18nService.translate("swing.language.fr")
+    )
+    val langNames = languages.map { it.second }.toTypedArray()
+    val langCombo = JComboBox<String>(langNames).apply { name = "langCombo" }
+    val currentLang = if (Locale.getDefault().language == "fr") "fr" else "en"
+    langCombo.selectedIndex = languages.indexOfFirst { it.first == currentLang }
+    formPanel.add(langCombo)
+    
+    formPanel.add(JLabel(i18nService.translate("swing.settings.theme")))
+    val allThemes: List<ThemeDefinition> = themeManager.availableThemes().sortedBy { it.name }
+    val themeNames = allThemes.map { it.name }.toTypedArray()
+    val themeCombo = JComboBox<String>(themeNames).apply { name = "themeCombo" }
+    formPanel.add(themeCombo)
+    
+    val buttonPanel = JPanel(java.awt.FlowLayout(java.awt.FlowLayout.RIGHT))
+    val applyButton = JButton(i18nService.translate("swing.settings.button.apply")).apply { name = "applyButton" }
+    val cancelButton = JButton(i18nService.translate("swing.settings.button.cancel")).apply { name = "cancelButton" }
+    
+    applyButton.addActionListener {
+        val selectedLang = languages[langCombo.selectedIndex].first
+        val newLocale = Locale(selectedLang)
+        Locale.setDefault(newLocale)
+        val newI18n = I18nService.create("swing-messages").also { it.setLocale(newLocale) }
+        refreshTranslations(newI18n)
+        
+        val selectedTheme = allThemes[themeCombo.selectedIndex]
+        themeManager.applyTheme(selectedTheme)
+        
+        dialog.dispose()
+    }
+    
+    cancelButton.addActionListener { dialog.dispose() }
+    
+    buttonPanel.add(cancelButton)
+    buttonPanel.add(applyButton)
+    
+    dialog.add(formPanel, BorderLayout.CENTER)
+    dialog.add(buttonPanel, BorderLayout.SOUTH)
+    dialog.pack()
+    dialog.setLocationRelativeTo(frame)
+    dialog.isVisible = true
   }
 
   private fun createToolbar(): JPanel {
     val panel = JPanel(BorderLayout(panelGap, panelGap))
     val searchPanel = JPanel(BorderLayout(panelGap, panelGap))
-    searchPanel.add(JLabel(i18nService.translate("swing.label.search")), BorderLayout.WEST)
+    searchPanel.add(searchLabel, BorderLayout.WEST)
     searchPanel.add(searchField, BorderLayout.CENTER)
     
     syncButton.addActionListener { viewModel.sync() }
@@ -287,7 +359,6 @@ private class SyncWindow(
   private fun createComposer(): JPanel {
     val panel = JPanel(BorderLayout(panelGap, panelGap))
     val fieldsPanel = JPanel(BorderLayout(panelGap, panelGap))
-    val saveButton = JButton(i18nService.translate("swing.button.create"))
 
     contentArea.lineWrap = true
     contentArea.wrapStyleWord = true
@@ -295,7 +366,7 @@ private class SyncWindow(
     fieldsPanel.add(authorField, BorderLayout.NORTH)
     fieldsPanel.add(JScrollPane(contentArea), BorderLayout.CENTER)
 
-    saveButton.addActionListener { 
+    createButton.addActionListener { 
         viewModel.createMessage { errorMessage ->
             JOptionPane.showMessageDialog(
                 frame,
@@ -307,7 +378,7 @@ private class SyncWindow(
     }
 
     panel.add(fieldsPanel, BorderLayout.CENTER)
-    panel.add(saveButton, BorderLayout.EAST)
+    panel.add(createButton, BorderLayout.EAST)
     return panel
   }
 }

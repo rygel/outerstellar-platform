@@ -37,6 +37,12 @@ class SyncViewModel(
             loadMessages()
         }
 
+    fun refreshTranslations(newI18n: I18nService) {
+        // We don't overwrite the private final field, but we can update the status
+        status = newI18n.translate("swing.status.ready")
+        loadMessages()
+    }
+
     fun addObserver(observer: () -> Unit) {
         observers.add(observer)
     }

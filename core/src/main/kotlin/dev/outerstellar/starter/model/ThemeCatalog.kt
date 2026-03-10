@@ -1,8 +1,7 @@
-package dev.outerstellar.starter.web
+package dev.outerstellar.starter.model
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import dev.outerstellar.starter.model.ThemeDefinition
 
 object ThemeCatalog {
   private val objectMapper = jacksonObjectMapper()
@@ -20,22 +19,4 @@ object ThemeCatalog {
 
   fun findTheme(themeId: String): ThemeDefinition =
     themes.firstOrNull { it.id == themeId } ?: themes.first { it.id == "dark" }
-
-  fun toCssVariables(themeId: String): String {
-    val theme = findTheme(themeId)
-
-    return buildString {
-      append(":root {")
-      theme.colors.forEach { (key, value) ->
-        append("--color-")
-        append(key)
-        append(": ")
-        append(value)
-        append(";")
-      }
-      append("} body { color-scheme: ")
-      append(if (theme.type == "light") "light" else "dark")
-      append("; }")
-    }
-  }
 }
