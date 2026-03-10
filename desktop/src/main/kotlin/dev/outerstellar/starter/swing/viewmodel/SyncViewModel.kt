@@ -2,23 +2,20 @@ package dev.outerstellar.starter.swing.viewmodel
 
 import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.model.MessageSummary
+import dev.outerstellar.starter.model.OuterstellarException
+import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
 import dev.outerstellar.starter.swing.SystemTrayNotifier
-import java.util.concurrent.CopyOnWriteArrayList
-import javax.swing.SwingUtilities
 import javax.swing.SwingWorker
-import org.slf4j.LoggerFactory
-
-private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.viewmodel.SyncViewModel")
 
 class SyncViewModel(
     private val messageService: MessageService,
     private val syncService: SyncService,
-    private val i18nService: I18nService,
+    private var i18nService: I18nService,
     private val notifier: SystemTrayNotifier? = null
 ) {
-    private val observers = CopyOnWriteArrayList<() -> Unit>()
+    private val observers = mutableListOf<() -> Unit>()
 
     var messages: List<MessageSummary> = emptyList()
         private set
@@ -37,79 +34,57 @@ class SyncViewModel(
             loadMessages()
         }
 
-    fun refreshTranslations(newI18n: I18nService) {
-        // We don't overwrite the private final field, but we can update the status
-        status = newI18n.translate("swing.status.ready")
-        loadMessages()
-    }
-
     fun addObserver(observer: () -> Unit) {
         observers.add(observer)
     }
 
-    fun removeObserver(observer: () -> Unit) {
-        observers.remove(observer)
-    }
-
     private fun notifyObservers() {
-        SwingUtilities.invokeLater {
-            observers.forEach { it() }
-        }
+        observers.forEach { it() }
     }
 
-    fun loadMessages(initialStatus: String? = null) {
-        messages = if (searchQuery.isBlank()) {
-            messageService.listMessages()
-        } else {
-            messageService.listMessages(query = searchQuery)
-        }
-        val dirtyCount = messageService.listDirtyMessages().size
-        val currentStatus = initialStatus ?: status
-        status = i18nService.translate("swing.status.summary", currentStatus, messages.size, dirtyCount)
+    fun refreshTranslations(newI18n: I18nService) {
+        this.i18nService = newI18n
+        status = i18nService.translate("swing.status.ready")
+        loadMessages()
+    }
+
+    fun loadMessages() {
+        messages = messageService.listMessages(searchQuery.takeIf { it.isNotBlank() })
         notifyObservers()
     }
 
     fun createMessage(onValidationError: (String) -> Unit) {
-        val trimmedContent = content.trim()
-        if (trimmedContent.isEmpty()) {
-            onValidationError(i18nService.translate("swing.validation.messageRequired"))
-            return
+        try {
+            messageService.createLocalMessage(author, content)
+            content = ""
+            status = i18nService.translate("swing.status.created")
+            loadMessages()
+        } catch (e: ValidationException) {
+            onValidationError(e.message ?: i18nService.translate("swing.validation.messageRequired"))
+        } catch (e: OuterstellarException) {
+            onValidationError(e.message ?: "Action failed")
         }
-
-        messageService.createLocalMessage(author.ifBlank { i18nService.translate("swing.author.default") }, trimmedContent)
-        content = ""
-        loadMessages(i18nService.translate("swing.status.created"))
     }
 
     fun sync() {
         if (isSyncing) return
 
-        isSyncing = true
-        status = i18nService.translate("swing.status.syncing")
-        notifyObservers()
+        object : SwingWorker<Unit, Unit>() {
+            override fun doInBackground() {
+                isSyncing = true
+                status = i18nService.translate("swing.status.syncing")
+                notifyObservers()
 
-        object : SwingWorker<String, Unit>() {
-            override fun doInBackground(): String {
-                val stats = syncService.sync()
-                return i18nService.translate(
-                    "swing.status.complete",
-                    stats.pushedCount,
-                    stats.pulledCount,
-                    stats.conflictCount
-                )
-            }
-
-            override fun done() {
-                isSyncing = false
                 try {
-                    val result = get()
-                    notifier?.notifySuccess(result)
-                    loadMessages(result)
+                    val stats = syncService.sync()
+                    status = i18nService.translate("swing.status.complete", stats.pushedCount, stats.pulledCount, stats.conflictCount)
+                    notifier?.notifySuccess(status)
                 } catch (e: Exception) {
-                    logger.error("Sync failed", e)
                     val errorMsg = i18nService.translate("swing.status.failed", e.cause?.message ?: e.message ?: "unknown error")
                     notifier?.notifyFailure(errorMsg)
                     status = errorMsg
+                } finally {
+                    isSyncing = false
                     loadMessages()
                 }
             }

@@ -14,6 +14,9 @@ import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
+import dev.outerstellar.starter.model.OuterstellarException
+import dev.outerstellar.starter.model.ValidationException
+
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
 
@@ -62,7 +65,6 @@ object Filters {
                     if (request.uri.path.startsWith("/api/")) {
                         jsonErrorResponse(Status.NOT_FOUND, "Resource not found")
                     } else {
-                        // Use request.webContext (from stateFilter) if available, otherwise fallback
                         val ctx = try { request.webContext } catch (e: Exception) { WebContext(request) }
                         val errorPage = pageFactory.buildErrorPage(ctx, "not-found")
                         Response(Status.NOT_FOUND)
@@ -73,13 +75,23 @@ object Filters {
                     response
                 }
             } catch (e: Exception) {
-                logger.error("Unhandled exception for ${request.uri}", e)
+                val status = when (e) {
+                    is ValidationException -> Status.BAD_REQUEST
+                    is OuterstellarException -> Status.BAD_REQUEST
+                    else -> Status.INTERNAL_SERVER_ERROR
+                }
+
+                logger.error("Error handling request ${request.uri}: ${e.message}")
+
                 if (request.uri.path.startsWith("/api/")) {
-                    jsonErrorResponse(Status.INTERNAL_SERVER_ERROR, e.message ?: "An unexpected error occurred")
+                    jsonErrorResponse(status, e.message ?: "An unexpected error occurred")
+                } else if (request.header("HX-Request") == "true") {
+                    // For HTMX, return a simple string that will be caught by our Toast listener
+                    Response(status).body(e.message ?: "Action failed")
                 } else {
-                    val ctx = try { request.webContext } catch (e: Exception) { WebContext(request) }
-                    val errorPage = pageFactory.buildErrorPage(ctx, "server-error")
-                    Response(Status.INTERNAL_SERVER_ERROR)
+                    val ctx = try { request.webContext } catch (ex: Exception) { WebContext(request) }
+                    val errorPage = pageFactory.buildErrorPage(ctx, if (status == Status.INTERNAL_SERVER_ERROR) "server-error" else "not-found")
+                    Response(status)
                         .header("content-type", "text/html; charset=utf-8")
                         .body(renderer(errorPage))
                 }

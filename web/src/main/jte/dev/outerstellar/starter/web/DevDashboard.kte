@@ -44,6 +44,16 @@
     </div>
 
     <section class="panel">
+        <h2>Custom Protocol Tester</h2>
+        <p class="opacity-70 mb-4">Test the <code>outerstellar://</code> deep link integration with the desktop application.</p>
+        <div class="button-row">
+            <a href="outerstellar://sync" class="button-link">Trigger Sync</a>
+            <a href="outerstellar://search?q=HTMX" class="button-link button-secondary">Search "HTMX"</a>
+            <a href="outerstellar://search?q=Dracula" class="button-link button-secondary">Search "Dracula"</a>
+        </div>
+    </section>
+
+    <section class="panel">
         <h2>OpenTelemetry</h2>
         <p class="status-badge">${model.data.telemetryStatus}</p>
     </section>

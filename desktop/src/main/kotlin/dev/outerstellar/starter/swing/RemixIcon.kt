@@ -2,13 +2,16 @@ package dev.outerstellar.starter.swing
 
 import com.formdev.flatlaf.extras.FlatSVGIcon
 import java.awt.Color
+import javax.swing.Icon
 import javax.swing.UIManager
 
 object RemixIcon {
-    private const val BASE_PATH = "META-INF/resources/webjars/remixicon/4.6.0/icons"
+    private const val BASE_PATH = "icons"
 
     fun get(name: String, size: Int = 18): Icon {
-        val path = if (name.contains("/")) "$BASE_PATH/$name.svg" else "$BASE_PATH/system/$name.svg"
+        // Flattened names for local resources
+        val fileName = if (name.contains("/")) name.substringAfterLast("/") else name
+        val path = "$BASE_PATH/$fileName.svg"
         
         return try {
             FlatSVGIcon(path, size, size).apply {
@@ -16,7 +19,6 @@ object RemixIcon {
                 setColorFilter(FlatSVGIcon.ColorFilter { color })
             }
         } catch (e: Exception) {
-            // Fallback to a simple circle or nothing if icon is missing from classpath
             object : Icon {
                 override fun paintIcon(c: java.awt.Component?, g: java.awt.Graphics?, x: Int, y: Int) {}
                 override fun getIconWidth() = size

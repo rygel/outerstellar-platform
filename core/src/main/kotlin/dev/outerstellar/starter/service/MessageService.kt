@@ -2,6 +2,7 @@ package dev.outerstellar.starter.service
 
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.StoredMessage
+import dev.outerstellar.starter.model.*
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
@@ -45,18 +46,18 @@ class MessageService(
         val cached = cache.get(cacheKey) as? StoredMessage
         if (cached != null) return cached
 
-        val message = repository.findBySyncId(syncId)
-        if (message != null) {
-            cache.put(cacheKey, message)
-        }
+        val message = repository.findBySyncId(syncId) ?: throw MessageNotFoundException(syncId)
+        cache.put(cacheKey, message)
         return message
     }
 
     fun listDirtyMessages(): List<StoredMessage> = repository.listDirtyMessages()
 
     fun createServerMessage(author: String, content: String): StoredMessage {
-        require(author.isNotBlank()) { "Author cannot be blank" }
-        require(content.isNotBlank()) { "Content cannot be blank" }
+        val errors = mutableListOf<String>()
+        if (author.isBlank()) errors += "Author is required."
+        if (content.isBlank()) errors += "Content is required."
+        if (errors.isNotEmpty()) throw ValidationException(errors)
 
         val message = if (transactionManager != null && outboxRepository != null) {
             transactionManager.inTransaction {
@@ -81,8 +82,8 @@ class MessageService(
     }
 
     fun createLocalMessage(author: String, content: String): StoredMessage {
-        require(author.isNotBlank()) { "Author cannot be blank" }
-        require(content.isNotBlank()) { "Content cannot be blank" }
+        if (author.isBlank() || content.isBlank()) throw ValidationException(listOf("Fields cannot be empty."))
+        
         val message = repository.createLocalMessage(author, content)
         cache.put("entity:${message.syncId}", message)
         cache.invalidateAll()
@@ -101,14 +102,14 @@ class MessageService(
     fun processPushRequest(request: SyncPushRequest): SyncPushResponse {
         val validationResult = SyncPushRequest.validate(request)
         if (validationResult is Invalid) {
-            throw IllegalArgumentException("Invalid sync request: ${validationResult.errors.joinToString { "${it.dataPath}: ${it.message}" }}")
+            throw ValidationException(validationResult.errors.map { "${it.dataPath}: ${it.message}" })
         }
 
         val conflicts = mutableListOf<SyncConflict>()
         var appliedCount = 0
 
         request.messages.forEach { incoming ->
-            val current = findBySyncId(incoming.syncId)
+            val current = try { findBySyncId(incoming.syncId) } catch (e: MessageNotFoundException) { null }
             when {
                 current == null || incoming.updatedAtEpochMs > current.updatedAtEpochMs -> {
                     val updated = repository.upsertSyncedMessage(incoming, dirty = false)
@@ -118,7 +119,7 @@ class MessageService(
                 incoming.updatedAtEpochMs < current.updatedAtEpochMs -> {
                     conflicts += SyncConflict(
                         syncId = incoming.syncId,
-                        reason = "Server has a newer version of this message.",
+                        reason = "Server has a newer version.",
                         serverMessage = current.toSyncMessage()
                     )
                 }
