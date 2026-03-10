@@ -12,12 +12,15 @@ import dev.outerstellar.starter.service.MessageService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.http4k.core.ContentType
 import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.body.form
+import org.http4k.core.with
+import org.http4k.lens.Header
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -41,18 +44,18 @@ class MessageActionE2ETest {
         val i18n = I18nService.fromResourceBundle("web-messages")
         val config = AppConfig(port = 0, jdbcUrl = "jdbc:h2:mem:test", devDashboardEnabled = true)
 
-        appHandler = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, config, i18n)
+        appHandler = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, config, i18n).http!!
     }
 
     @Test
     fun `creating a message using form lenses works correctly`() {
         val request = Request(POST, "/messages")
+            .with(Header.CONTENT_TYPE of ContentType.APPLICATION_FORM_URLENCODED)
             .form("author", "Tester")
             .form("content", "Hello World")
 
         val response = appHandler(request)
 
-        // Strict Form Lens allows this and it redirects back to home
         assertEquals(Status.FOUND, response.status)
         verify { repository.createServerMessage("Tester", "Hello World") }
     }
@@ -60,14 +63,10 @@ class MessageActionE2ETest {
     @Test
     fun `creating a message with missing content is rejected by the strict lens`() {
         val request = Request(POST, "/messages")
+            .with(Header.CONTENT_TYPE of ContentType.APPLICATION_FORM_URLENCODED)
             .form("author", "Tester")
-            // No content field
 
         val response = appHandler(request)
-
-        // http4k LensFailure results in a 400 Bad Request by default when using Meta meta-data handling
-        // But since we use bindContract directly, let's see how it behaves.
-        // Actually, contract automatically handles LensFailures.
         assertEquals(Status.BAD_REQUEST, response.status)
     }
 
@@ -90,11 +89,8 @@ class MessageActionE2ETest {
         val response = appHandler(request)
 
         assertEquals(Status.OK, response.status)
-        
-        // Verify softDelete was called on the repository
         verify { repository.softDelete("msg-123") }
         
-        // Verify it returned the message list fragment (contains the messages heading)
         assertTrue(response.bodyString().contains("Current synchronized messages"))
     }
 }

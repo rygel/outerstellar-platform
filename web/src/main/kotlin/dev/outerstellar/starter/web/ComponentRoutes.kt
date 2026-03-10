@@ -15,6 +15,18 @@ import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
 import org.http4k.template.ViewModel
 
+data class ModalViewModel(
+    val id: String,
+    val title: String,
+    val message: String,
+    val confirmLabel: String,
+    val cancelLabel: String,
+    val actionUrl: String,
+    val targetId: String
+) : ViewModel {
+    override fun template() = "dev/outerstellar/starter/web/components/Modal"
+}
+
 class ComponentRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer
@@ -34,16 +46,15 @@ class ComponentRoutes(
             { request: org.http4k.core.Request ->
                 val ctx = request.webContext
                 val i18n = ctx.i18n
-                renderer.render(object : ViewModel {
-                    override fun template() = "dev/outerstellar/starter/web/components/Modal"
-                    val id = "delete-modal-$syncId"
-                    val title = i18n.translate("web.modal.delete.title")
-                    val message = i18n.translate("web.modal.delete.message")
-                    val confirmLabel = i18n.translate("web.modal.delete.confirm")
-                    val cancelLabel = i18n.translate("web.modal.delete.cancel")
-                    val actionUrl = "/messages/$syncId"
-                    val targetId = "#message-list-panel"
-                })
+                renderer.render(ModalViewModel(
+                    id = "delete-modal-$syncId",
+                    title = i18n.translate("web.modal.delete.title"),
+                    message = i18n.translate("web.modal.delete.message"),
+                    confirmLabel = i18n.translate("web.modal.delete.confirm"),
+                    cancelLabel = i18n.translate("web.modal.delete.cancel"),
+                    actionUrl = "/messages/$syncId",
+                    targetId = "#message-list-panel"
+                ))
             }
         },
         "/components/message-list" meta {

@@ -20,7 +20,8 @@ class MessageService(
     private val repository: MessageRepository,
     private val outboxRepository: OutboxRepository? = null,
     private val transactionManager: TransactionManager? = null,
-    private val cache: MessageCache = NoOpMessageCache
+    private val cache: MessageCache = NoOpMessageCache,
+    private val eventPublisher: EventPublisher = NoOpEventPublisher
 ) {
 
     fun listMessages(
@@ -74,7 +75,8 @@ class MessageService(
         }
 
         cache.put("entity:${message.syncId}", message)
-        cache.invalidateAll() // Still need to invalidate lists as they might be affected
+        cache.invalidateAll() 
+        eventPublisher.publishRefresh("message-list-panel")
         return message
     }
 
@@ -84,6 +86,7 @@ class MessageService(
         val message = repository.createLocalMessage(author, content)
         cache.put("entity:${message.syncId}", message)
         cache.invalidateAll()
+        eventPublisher.publishRefresh("message-list-panel")
         return message
     }
 
@@ -124,6 +127,7 @@ class MessageService(
 
         if (appliedCount > 0) {
             cache.invalidateAll()
+            eventPublisher.publishRefresh("message-list-panel")
         }
 
         return SyncPushResponse(appliedCount = appliedCount, conflicts = conflicts)
@@ -146,6 +150,7 @@ class MessageService(
         }
         cache.invalidate("entity:$syncId")
         cache.invalidateAll()
+        eventPublisher.publishRefresh("message-list-panel")
     }
 
     fun updateMessage(message: StoredMessage): StoredMessage {
@@ -166,6 +171,7 @@ class MessageService(
         }
         cache.put("entity:${updated.syncId}", updated)
         cache.invalidateAll()
+        eventPublisher.publishRefresh("message-list-panel")
         return updated
     }
 }

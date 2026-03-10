@@ -8,10 +8,12 @@ import dev.outerstellar.starter.persistence.MessageRepository
 import javax.sql.DataSource
 import org.http4k.core.HttpHandler
 import org.http4k.server.Jetty
+import org.http4k.server.PolyHandler
 import org.http4k.server.asServer
 import org.koin.core.context.startKoin
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.Main")
@@ -20,7 +22,7 @@ object MainComponent : KoinComponent {
   val config: AppConfig by inject()
   val dataSource: DataSource by inject()
   val repository: MessageRepository by inject()
-  val app: HttpHandler by inject()
+  val app: PolyHandler by inject(named("webServer"))
 }
 
 fun main() {

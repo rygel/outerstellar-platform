@@ -12,6 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="/site.css">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="https://unpkg.com/htmx-ext-ws@2.0.1/ws.js"></script>
     <style>${shell.themeCss}</style>
     <style>
         .htmx-indicator { display: none; }
@@ -20,42 +21,49 @@
 
         #toast-container {
             position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            z-index: 1000;
-        }
-        .toast {
-            background: #f44336;
-            color: white;
-            padding: 0.75rem 1rem;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            margin-top: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            pointer-events: none;
+            width: 320px;
         }
     </style>
 </head>
-<body class="${shell.layoutClass}" hx-on::after-request="if(!event.detail.successful) showToast('An error occurred while processing your request.')">
+<body class="${shell.layoutClass}" hx-ext="ws" ws-connect="/ws/sync">
 <div id="toast-container"></div>
 <script>
-    fun showToast(message) {
+    document.addEventListener('htmx:responseError', function(event) {
+        const errorBody = event.detail.xhr.responseText || 'An unexpected error occurred';
+        showToast(errorBody, 'error');
+    });
+
+    function showToast(message, type) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = '<i class="ri-error-warning-line"></i> <span>' + message + '</span>';
+        toast.className = "panel animate-in slide-in-from-right-10 fade-in duration-300 " + (type === 'error' ? 'panel-danger' : 'panel-success');
+        toast.style.padding = '0.75rem 1.25rem';
+        toast.style.marginBottom = '0.75rem';
+        toast.style.pointerEvents = 'auto';
+        toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+        
+        const title = type === 'error' ? 'Error' : 'Success';
+        const icon = type === 'error' ? 'ri-error-warning-fill' : 'ri-checkbox-circle-fill';
+        
+        toast.innerHTML = '<div style="display: flex; align-items: center; gap: 0.75rem;">' +
+                '<i class="' + icon + '" style="font-size: 1.25rem;"></i>' +
+                '<div>' +
+                    '<strong style="display: block; font-size: 0.9rem;">' + title + '</strong>' +
+                    '<p style="margin:0; font-size: 0.85rem; opacity: 0.9;">' + message + '</p>' +
+                '</div>' +
+            '</div>';
+        
         container.appendChild(toast);
         setTimeout(() => {
             toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.5s ease-out';
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
+            toast.style.transform = 'translateX(20px)';
+            toast.style.transition = 'all 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
     }
 </script>
 <div class="shell">
@@ -74,7 +82,7 @@
                 </a>
             @endfor
         </nav>
-        <div class="sidebar-footer">
+        <div class="sidebar-footer" ws-subscribe>
             <section class="sidebar-section">
                 <div id="theme-selector"
                      hx-get="${shell.themeSelectorUrl}"
@@ -107,6 +115,7 @@
             <span class="status-badge">${shell.themeId} / ${shell.localeTag}</span>
         </header>
         <main class="content">
+            <div id="ws-updates" ws-subscribe></div>
             ${content}
         </main>
         <footer class="footer">

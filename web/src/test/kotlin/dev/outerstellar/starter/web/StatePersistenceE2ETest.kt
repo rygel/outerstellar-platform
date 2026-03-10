@@ -44,18 +44,16 @@ class StatePersistenceE2ETest {
         val i18n = I18nService.fromResourceBundle("web-messages")
         val config = AppConfig(port = 0, jdbcUrl = "jdbc:h2:mem:test", devDashboardEnabled = true)
 
-        appHandler = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, config, i18n)
+        appHandler = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, config, i18n).http!!
     }
 
     @Test
     fun `query parameters set preferences in cookies`() {
-        // Request a page with explicit theme and language
         val request = Request(GET, "/?theme=monokai-pro&lang=fr&layout=cozy")
         val response = appHandler(request)
 
         assertEquals(Status.OK, response.status)
 
-        // Verify cookies are set in the response
         val cookies = response.cookies()
         val themeCookie = cookies.find { it.name == WebContext.THEME_COOKIE }
         val langCookie = cookies.find { it.name == WebContext.LANG_COOKIE }
@@ -68,41 +66,31 @@ class StatePersistenceE2ETest {
 
     @Test
     fun `preferences persist from cookies in subsequent requests`() {
-        // First, set the cookies by mimicking a browser that already has them
         val requestWithCookies = Request(GET, "/")
             .cookie(Cookie(WebContext.THEME_COOKIE, "dracula"))
             .cookie(Cookie(WebContext.LANG_COOKIE, "fr"))
 
         val response = appHandler(requestWithCookies)
-
         val body = response.bodyString()
         
-        // 1. Verify Dracula theme CSS variables are in the body
-        // Dracula background is #282A36 (uppercase in JSON)
         assertTrue(body.contains("--color-background: #282A36"), "Should use Dracula theme from cookie")
-
-        // 2. Verify French language is used
-        // French Home Nav is "Accueil"
         assertTrue(body.contains("Accueil"), "Should use French language from cookie")
     }
 
     @Test
-    fun `navigation links are clean and do not contain state query parameters`() {
-        // Even if we provide state via cookies, the links generated in the sidebar should be clean
+    fun `navigation links are clean`() {
         val request = Request(GET, "/auth")
             .cookie(Cookie(WebContext.THEME_COOKIE, "nord"))
         
         val response = appHandler(request)
         val body = response.bodyString()
 
-        // Verify the Home link in navigation is just "/" and not "/?theme=nord..."
         assertTrue(body.contains("href=\"/\""), "Navigation links should be clean URLs")
         assertTrue(body.contains("href=\"/auth\""), "Auth link should be clean")
     }
 
     @Test
     fun `error pages respect stored preferences`() {
-        // Access a non-existent page with a stored theme cookie
         val request = Request(GET, "/some-garbage-page")
             .cookie(Cookie(WebContext.THEME_COOKIE, "monokai-pro"))
             .cookie(Cookie(WebContext.LANG_COOKIE, "fr"))
@@ -112,12 +100,7 @@ class StatePersistenceE2ETest {
         assertEquals(Status.NOT_FOUND, response.status)
         val body = response.bodyString()
 
-        // 1. Verify theme persistence on error page
-        // Monokai Pro background is #2D2A2E (uppercase in JSON)
         assertTrue(body.contains("--color-background: #2D2A2E"), "Error page should respect theme cookie")
-
-        // 2. Verify language persistence on error page
-        // French 44 Heading uses "La page est introuvable"
         assertTrue(body.contains("La page est introuvable"), "Error page should respect language cookie (French)")
     }
 }

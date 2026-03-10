@@ -46,7 +46,7 @@ class SyncIntegrationTest : PostgresWebTest() {
         repository = clientRepository,
         serverBaseUrl = "http://localhost:8080",
         httpClient = app(
-            messageService = MessageService(serverRepository, outbox, transactionManager, cache), 
+            messageService = MessageService(serverRepository, outbox, transactionManager, cache, SyncWebSocket), 
             repository = serverRepository, 
             outboxRepository = outbox, 
             cache = cache, 
@@ -54,7 +54,7 @@ class SyncIntegrationTest : PostgresWebTest() {
             pageFactory = pageFactory, 
             config = testConfig, 
             i18nService = i18n
-        ),
+        ).http!!,
       )
 
     val stats = syncService.sync()

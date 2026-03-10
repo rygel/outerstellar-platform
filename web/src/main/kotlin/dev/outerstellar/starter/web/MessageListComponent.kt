@@ -16,7 +16,9 @@ data class MessageListViewModel(
     val prevPageUrl: String?,
     val nextPageUrl: String?,
     val searchActionUrl: String
-) : ViewModel
+) : ViewModel {
+    override fun template() = "dev/outerstellar/starter/web/components/MessageList"
+}
 
 class MessageListComponent(private val repository: MessageRepository) : WebComponent<MessageListViewModel> {
     override fun build(ctx: WebContext, vararg args: Any?): MessageListViewModel {

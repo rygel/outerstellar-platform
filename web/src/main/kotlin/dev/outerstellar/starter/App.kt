@@ -12,6 +12,7 @@ import org.http4k.contract.openapi.ApiInfo
 import org.http4k.contract.openapi.v3.OpenApi3
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
+import org.http4k.core.PolyHandler
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
@@ -21,6 +22,8 @@ import org.http4k.routing.ResourceLoader
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 import org.http4k.routing.static
+import org.http4k.routing.websockets
+import org.http4k.routing.websocket.bind as wsBind
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 
@@ -35,7 +38,7 @@ fun app(
     pageFactory: WebPageFactory,
     config: AppConfig,
     i18nService: I18nService
-): HttpHandler {
+): PolyHandler {
   logger.info("Initializing Outerstellar application")
 
   // 1. Data/Sync API (JSON)
@@ -73,9 +76,15 @@ fun app(
     "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
   )
 
-  return Filters.telemetry
+  val httpHandler = Filters.telemetry
     .then(Filters.requestLogging)
     .then(Filters.serverMetrics)
     .then(Filters.globalErrorHandler(pageFactory, jteRenderer))
     .then(baseApp)
+
+  val wsHandler = websockets(
+    "/ws/sync" wsBind SyncWebSocket.handler
+  )
+
+  return PolyHandler(httpHandler, wsHandler)
 }
