@@ -1,11 +1,11 @@
-name: Outerstellar CI
+name: Outerstellar CI (Local Only)
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+  workflow_dispatch: # Allows manual trigger if ever needed, but prevents automatic runs on GitHub
 
 jobs:
   build:
