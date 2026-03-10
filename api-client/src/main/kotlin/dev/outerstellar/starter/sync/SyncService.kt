@@ -1,23 +1,20 @@
 package dev.outerstellar.starter.sync
 
-import dev.outerstellar.starter.model.OuterstellarException
+import dev.outerstellar.starter.model.SyncException
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.service.SyncProvider
 import dev.outerstellar.starter.web.AuthTokenResponse
 import dev.outerstellar.starter.web.LoginRequest
 import org.http4k.client.JavaHttpClient
+import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.core.header
-import org.http4k.format.Jackson.asA
-import org.http4k.format.Jackson.asJsonString
-import org.slf4j.LoggerFactory
-
-class SyncException(message: String) : OuterstellarException(message)
+import org.http4k.core.with
+import org.http4k.format.Jackson.auto
 
 class SyncService(
   private val baseUrl: String,
@@ -25,16 +22,22 @@ class SyncService(
   private val transactionManager: TransactionManager,
   private val client: HttpHandler = JavaHttpClient(),
 ) : SyncProvider {
-  private val logger = LoggerFactory.getLogger(SyncService::class.java)
   private var apiToken: String? = null
 
+  private val loginRequestLens = Body.auto<LoginRequest>().toLens()
+  private val authTokenLens = Body.auto<AuthTokenResponse>().toLens()
+  private val pullResponseLens = Body.auto<SyncPullResponse>().toLens()
+  private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
+  private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
+
   fun login(username: String, pass: String): AuthTokenResponse {
-      val response = client(Request(POST, "$baseUrl/api/v1/auth/login")
-          .header("content-type", "application/json")
-          .body(asJsonString(LoginRequest(username, pass))))
+      val request = Request(POST, "$baseUrl/api/v1/auth/login")
+          .with(loginRequestLens of LoginRequest(username, pass))
+      
+      val response = client(request)
       
       if (response.status == Status.OK) {
-          val auth = asA(response.bodyString(), AuthTokenResponse::class)
+          val auth = authTokenLens(response)
           this.apiToken = auth.token
           return auth
       } else {
@@ -48,9 +51,6 @@ class SyncService(
 
   override fun sync(): SyncStats {
     val lastSync = repository.getLastSyncEpochMs()
-    logger.info("Starting sync since {}", lastSync)
-
-    // 1. Pull
     val pullRequest = Request(GET, "$baseUrl/api/v1/sync?since=$lastSync")
     val authenticatedPullRequest = apiToken?.let { 
         pullRequest.header("Authorization", "Bearer $it") 
@@ -58,18 +58,16 @@ class SyncService(
     
     val pullResponse = client(authenticatedPullRequest)
     if (pullResponse.status != Status.OK) {
-        throw SyncException("Pull failed: ${pullResponse.status} - ${pullResponse.bodyString()}")
+        throw SyncException("Pull failed: ${pullResponse.status}")
     }
     
-    val pullBody = asA(pullResponse.bodyString(), SyncPullResponse::class)
+    val pullBody = pullResponseLens(pullResponse)
 
-    // 2. Push
     val dirtyMessages = repository.listDirtyMessages()
-    val pushRequest = SyncPushRequest(dirtyMessages.map { it.toSyncMessage() })
+    val pushRequestData = SyncPushRequest(dirtyMessages.map { it.toSyncMessage() })
     
     val httpRequest = Request(POST, "$baseUrl/api/v1/sync")
-        .header("content-type", "application/json")
-        .body(asJsonString(pushRequest))
+        .with(pushRequestLens of pushRequestData)
     
     val authPushRequest = apiToken?.let { 
         httpRequest.header("Authorization", "Bearer $it") 
@@ -77,31 +75,23 @@ class SyncService(
     
     val pushResponse = client(authPushRequest)
     if (pushResponse.status != Status.OK) {
-        throw SyncException("Push failed: ${pushResponse.status} - ${pushResponse.bodyString()}")
+        throw SyncException("Push failed: ${pushResponse.status}")
     }
     
-    val pushBody = asA(pushResponse.bodyString(), SyncPushResponse::class)
-
-    // 3. Process results
-    val conflictCount = pushBody.conflicts.size
-    val pushedCount = pushBody.appliedCount
+    val pushBody = pushResponseLens(pushResponse)
 
     transactionManager.inTransaction {
-      pullBody.messages.forEach { incoming ->
-        repository.upsertSyncedMessage(incoming, dirty = false)
-      }
+      pullBody.messages.forEach { repository.upsertSyncedMessage(it, false) }
       pushBody.conflicts.forEach { conflict ->
-        if (conflict.serverMessage != null) {
-            repository.upsertSyncedMessage(conflict.serverMessage!!, dirty = false)
-        }
+        conflict.serverMessage?.let { repository.upsertSyncedMessage(it, false) }
       }
     }
     repository.setLastSyncEpochMs(pullBody.serverTimestamp)
 
     return SyncStats(
-      pushedCount = pushedCount,
+      pushedCount = pushBody.appliedCount,
       pulledCount = pullBody.messages.size,
-      conflictCount = conflictCount,
+      conflictCount = pushBody.conflicts.size,
     )
   }
 }

@@ -21,6 +21,7 @@ import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.SyncWebSocket
 import dev.outerstellar.starter.web.WebContext
 import dev.outerstellar.starter.web.WebPageFactory
+import dev.outerstellar.starter.web.webContext
 import org.http4k.contract.bindContract
 import org.http4k.contract.contract
 import org.http4k.contract.openapi.ApiInfo
@@ -56,7 +57,6 @@ fun app(
     jteRenderer: TemplateRenderer,
     pageFactory: WebPageFactory,
     config: AppConfig,
-    i18nService: I18nService,
     securityService: SecurityService,
     userRepository: UserRepository,
     passwordEncoder: PasswordEncoder
@@ -101,7 +101,7 @@ fun app(
   val uiRoutes = contract {
     renderer = OpenApi3(ApiInfo("Outerstellar UI", "v1.0"), Jackson)
     descriptionPath = "/ui/openapi.json"
-    routes += HomeRoutes(messageService, repository, pageFactory, jteRenderer, i18nService).routes
+    routes += HomeRoutes(messageService, repository, pageFactory, jteRenderer).routes
     routes += AuthRoutes(pageFactory, jteRenderer, securityService, userRepository, passwordEncoder).routes
     routes += ErrorRoutes(pageFactory, jteRenderer).routes
     

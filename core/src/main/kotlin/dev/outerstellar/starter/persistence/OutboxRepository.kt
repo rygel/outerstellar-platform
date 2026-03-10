@@ -1,26 +1,23 @@
 package dev.outerstellar.starter.persistence
 
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 
 data class OutboxEntry(
     val id: UUID,
     val payloadType: String,
     val payload: String,
-    val createdAt: Instant = Instant.now(),
-    val processedAt: Instant? = null,
-    val retryCount: Int = 0,
-    val lastError: String? = null,
-    val status: String = "PENDING"
+    val status: String,
+    val createdAt: Instant = Instant.now()
 )
 
 interface OutboxRepository {
     fun save(entry: OutboxEntry)
-    fun fetchUnprocessed(limit: Int = 10): List<OutboxEntry>
+    fun listPending(limit: Int): List<OutboxEntry>
     fun markProcessed(id: UUID)
-    fun markFailed(id: UUID, error: String, maxRetries: Int = 5)
-    fun softDelete(id: UUID)
-    fun countByStatus(status: String): Int
+    fun markFailed(id: UUID, error: String)
+    fun getStats(): Map<String, Int>
+    fun listFailed(): List<OutboxEntry>
 }
 
 interface TransactionManager {

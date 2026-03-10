@@ -43,7 +43,6 @@ class ReproductionTest {
             createRenderer(), 
             pageFactory, 
             PostgresWebTest.testConfig, 
-            i18n,
             securityService,
             userRepository,
             passwordEncoder

@@ -45,7 +45,7 @@ class JooqOutboxRepository(
     override fun markFailed(id: UUID, error: String) {
         primaryDsl.update(OUTBOX)
             .set(OUTBOX.STATUS, "FAILED")
-            .set(OUTBOX.ERROR_MESSAGE, error)
+            .set(OUTBOX.LAST_ERROR, error)
             .where(OUTBOX.ID.eq(id))
             .execute()
     }

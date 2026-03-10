@@ -81,7 +81,8 @@ class MessageService(
                     OutboxEntry(
                         id = UUID.randomUUID(),
                         payloadType = "MESSAGE_CREATED",
-                        payload = msg.syncId
+                        payload = msg.syncId,
+                        status = "PENDING"
                     )
                 )
                 msg
@@ -160,7 +161,8 @@ class MessageService(
                     OutboxEntry(
                         id = UUID.randomUUID(),
                         payloadType = "MESSAGE_DELETED",
-                        payload = syncId
+                        payload = syncId,
+                        status = "PENDING"
                     )
                 )
             }
@@ -180,7 +182,8 @@ class MessageService(
                     OutboxEntry(
                         id = UUID.randomUUID(),
                         payloadType = "MESSAGE_UPDATED",
-                        payload = up.syncId
+                        payload = up.syncId,
+                        status = "PENDING"
                     )
                 )
                 up

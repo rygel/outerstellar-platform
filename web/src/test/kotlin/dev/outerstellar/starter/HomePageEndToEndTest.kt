@@ -34,7 +34,6 @@ class HomePageEndToEndTest {
     val transactionManager = StubTransactionManager()
     val messageService = MessageService(repository, outbox, transactionManager, cache)
     val pageFactory = WebPageFactory(repository)
-    val i18n = I18nService.fromResourceBundle("messages")
     
     val securityService = mockk<SecurityService>(relaxed = true)
     val userRepository = mockk<UserRepository>(relaxed = true)
@@ -48,7 +47,6 @@ class HomePageEndToEndTest {
         createRenderer(), 
         pageFactory, 
         PostgresWebTest.testConfig, 
-        i18n, 
         securityService, 
         userRepository, 
         passwordEncoder

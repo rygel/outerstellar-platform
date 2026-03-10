@@ -17,15 +17,15 @@
             <div class="message-list">
                 <div class="message-meta">
                     <span>Pending</span>
-                    <strong>${model.data.outboxPendingCount}</strong>
+                    <strong>${model.data.outboxStats.pending}</strong>
                 </div>
                 <div class="message-meta">
                     <span>Processed</span>
-                    <strong>${model.data.outboxProcessedCount}</strong>
+                    <strong>${model.data.outboxStats.processed}</strong>
                 </div>
                 <div class="message-meta">
                     <span>Failed</span>
-                    <strong>${model.data.outboxFailedCount}</strong>
+                    <strong>${model.data.outboxStats.failed}</strong>
                 </div>
             </div>
         </section>

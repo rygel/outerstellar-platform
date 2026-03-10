@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.web
 
+import dev.outerstellar.starter.infra.render
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
 import org.http4k.core.Method.GET
@@ -18,14 +19,12 @@ class ComponentRoutes(
     private val limitLens = Query.int().defaulted("limit", DEFAULT_LIMIT)
     private val offsetLens = Query.int().defaulted("offset", 0)
     private val yearLens = Query.int().optional("year")
-    private val pagePathLens = Query.string().defaulted("pagePath", "/")
 
     override val routes = listOf(
         "/components/navigation/page" meta {
             summary = "Theme/Lang/Layout refresh"
         } bindContract GET to { request: org.http4k.core.Request ->
-            val pagePath = pagePathLens(request)
-            renderer.render(pageFactory.buildNavigationRefresh(request.webContext, pagePath))
+            renderer.render(pageFactory.buildNavigationRefresh(request.webContext))
         },
         "/components/sidebar/theme-selector" meta {
             summary = "Sidebar theme selector fragment"

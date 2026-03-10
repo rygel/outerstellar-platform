@@ -14,9 +14,7 @@ import dev.outerstellar.starter.web.WebPageFactory
 import dev.outerstellar.starter.web.SyncWebSocket
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
-import dev.outerstellar.starter.security.User
-import org.http4k.core.HttpHandler
-import org.http4k.server.PolyHandler
+import org.http4k.core.PolyHandler
 import org.http4k.template.TemplateRenderer
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -26,7 +24,7 @@ val webModule = module {
     single(named("jdbcUrl")) { get<AppConfig>().jdbcUrl }
     single(named("serverBaseUrl")) { "http://localhost:8080" }
     single<TemplateRenderer> { createRenderer() }
-    single { WebPageFactory(get(), get<AppConfig>().devDashboardEnabled) }
+    single { WebPageFactory(get()) }
     single { SyncApi(get()) }
     single<MessageCache> { dev.outerstellar.starter.persistence.NoOpMessageCache }
     
@@ -41,7 +39,6 @@ val webModule = module {
             get<TemplateRenderer>(), 
             get<WebPageFactory>(),
             get<AppConfig>(),
-            get<I18nService>(),
             get<SecurityService>(),
             get<UserRepository>(),
             get<dev.outerstellar.starter.security.PasswordEncoder>()

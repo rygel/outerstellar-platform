@@ -11,29 +11,32 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @org.junit.jupiter.api.Disabled("Requires Docker environment")
-object PostgresWebTest {
-    @Container
-    val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
-        withDatabaseName("webtestdb")
-        withUsername("test")
-        withPassword("test")
-    }
+@Suppress("UtilityClassWithPublicConstructor")
+abstract class PostgresWebTest {
+    companion object {
+        @Container
+        val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
+            withDatabaseName("webtestdb")
+            withUsername("test")
+            withPassword("test")
+        }
 
-    val testConfig = dev.outerstellar.starter.AppConfig(
-        port = 0,
-        jdbcUrl = "jdbc:postgresql://localhost:5432/webtestdb",
-        devDashboardEnabled = true
-    )
+        val testConfig = dev.outerstellar.starter.AppConfig(
+            port = 0,
+            jdbcUrl = "jdbc:postgresql://localhost:5432/webtestdb",
+            devDashboardEnabled = true
+        )
 
-    lateinit var testDsl: DSLContext
-    lateinit var ctx: WebContext
+        lateinit var testDsl: DSLContext
+        lateinit var ctx: WebContext
 
-    fun setup() {
-        if (!this::testDsl.isInitialized) {
-            val dataSource = createDataSource(postgres.jdbcUrl, postgres.username, postgres.password)
-            migrate(dataSource)
-            testDsl = DSL.using(dataSource, SQLDialect.POSTGRES)
-            ctx = WebContext(org.http4k.core.Request(org.http4k.core.Method.GET, "/"), true)
+        fun setup() {
+            if (!this::testDsl.isInitialized) {
+                val dataSource = createDataSource(postgres.jdbcUrl, postgres.username, postgres.password)
+                migrate(dataSource)
+                testDsl = DSL.using(dataSource, SQLDialect.POSTGRES)
+                ctx = WebContext(org.http4k.core.Request(org.http4k.core.Method.GET, "/"), true)
+            }
         }
     }
 }

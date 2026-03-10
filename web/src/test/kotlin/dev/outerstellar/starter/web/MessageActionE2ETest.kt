@@ -25,7 +25,7 @@ class MessageActionE2ETest : PostgresWebTest() {
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, transactionManager, cache)
-        val pageFactory = WebPageFactory(repository, true)
+        val pageFactory = WebPageFactory(repository)
         val i18n = I18nService.fromResourceBundle("messages")
         
         val securityService = mockk<SecurityService>(relaxed = true)
@@ -40,7 +40,6 @@ class MessageActionE2ETest : PostgresWebTest() {
             createRenderer(), 
             pageFactory, 
             testConfig, 
-            i18n,
             securityService,
             userRepository,
             encoder

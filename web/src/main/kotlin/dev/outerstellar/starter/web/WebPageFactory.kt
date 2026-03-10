@@ -135,6 +135,18 @@ data class OutboxStatsViewModel(
     val failed: Int
 )
 
+data class ModalViewModel(
+    val id: String,
+    val title: String,
+    val message: String,
+    val confirmLabel: String,
+    val cancelLabel: String,
+    val actionUrl: String,
+    val targetId: String
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/components/Modal"
+}
+
 data class SidebarSelector(
   val heading: String,
   val label: String,

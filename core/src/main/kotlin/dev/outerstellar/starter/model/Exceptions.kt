@@ -13,3 +13,6 @@ class SyncConflictException(syncId: String, val reason: String) :
 
 class ValidationException(val errors: List<String>) : 
     OuterstellarException("Validation failed: ${errors.joinToString(", ")}")
+
+class SyncException(message: String, cause: Throwable? = null) : 
+    OuterstellarException(message, cause)

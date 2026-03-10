@@ -3,6 +3,7 @@ package dev.outerstellar.starter.swing.viewmodel
 import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.OuterstellarException
+import dev.outerstellar.starter.model.SyncException
 import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
@@ -84,7 +85,7 @@ class SyncViewModel(
                     userName = result.username
                     isLoggedIn = true
                     true to null
-                } catch (e: dev.outerstellar.starter.sync.SyncException) {
+                } catch (e: SyncException) {
                     false to e.message
                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                     false to (e.cause?.message ?: e.message ?: "Unknown error")

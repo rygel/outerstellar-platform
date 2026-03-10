@@ -31,14 +31,14 @@ class AuthenticationWorkflowTest : PostgresWebTest() {
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val messageService = MessageService(repository, outbox, null, cache)
-        val pageFactory = WebPageFactory(repository, true)
+        val pageFactory = WebPageFactory(repository)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
         val i18n = I18nService.fromResourceBundle("messages")
 
         val app = app(
             messageService, repository, outbox, cache, createRenderer(), 
-            pageFactory, testConfig, i18n, securityService, userRepository, encoder
+            pageFactory, testConfig, securityService, userRepository, encoder
         ).http!!
 
         // 1. Try to access admin dashboard -> should redirect to auth with returnTo
@@ -89,14 +89,14 @@ class AuthenticationWorkflowTest : PostgresWebTest() {
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val messageService = MessageService(repository, outbox, null, cache)
-        val pageFactory = WebPageFactory(repository, true)
+        val pageFactory = WebPageFactory(repository)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
         val i18n = I18nService.fromResourceBundle("messages")
 
         val app = app(
             messageService, repository, outbox, cache, createRenderer(), 
-            pageFactory, testConfig, i18n, securityService, userRepository, encoder
+            pageFactory, testConfig, securityService, userRepository, encoder
         ).http!!
 
         // Register standard user

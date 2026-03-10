@@ -9,6 +9,8 @@ import org.http4k.core.with
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.filter.ServerFilters
+import org.http4k.filter.MicrometerMetrics
+import org.http4k.filter.OpenTelemetryTracing
 import org.http4k.format.Jackson
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory

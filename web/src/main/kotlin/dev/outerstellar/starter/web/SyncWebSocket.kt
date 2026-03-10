@@ -1,9 +1,10 @@
 package dev.outerstellar.starter.web
 
-import org.http4k.routing.websockets
+import org.http4k.core.Request
 import org.http4k.websocket.Websocket
 import org.http4k.websocket.WsHandler
 import org.http4k.websocket.WsMessage
+import org.http4k.websocket.WsResponse
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
@@ -11,8 +12,8 @@ object SyncWebSocket : WebComponent<Nothing>, dev.outerstellar.starter.service.E
     private val logger = LoggerFactory.getLogger(SyncWebSocket::class.java)
     private val connections = ConcurrentHashMap.newKeySet<Websocket>()
 
-    val handler: WsHandler = websockets(
-        "/" bind { ws: Websocket ->
+    val handler: WsHandler = { _: Request ->
+        WsResponse { ws: Websocket ->
             connections.add(ws)
             logger.info("New WebSocket connection established. Total: {}", connections.size)
 
@@ -30,14 +31,14 @@ object SyncWebSocket : WebComponent<Nothing>, dev.outerstellar.starter.service.E
                 connections.remove(ws)
             }
         }
-    )
+    }
 
     override fun publishRefresh(targetId: String) {
         val message = WsMessage("refresh:$targetId")
         connections.forEach { ws ->
             try {
                 ws.send(message)
-            } catch (e: org.http4k.websocket.WsException) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 logger.warn("Failed to send refresh message to websocket: {}", e.message)
                 connections.remove(ws)
             }

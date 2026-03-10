@@ -20,10 +20,6 @@ object RemixIcon {
                 val color = UIManager.getColor("Label.foreground") ?: Color.WHITE
                 setColorFilter(FlatSVGIcon.ColorFilter { color })
             }
-        } catch (e: org.http4k.core.Http4kException) {
-            // Placeholder for Http4k related errors if any
-            logger.warn("Http4k error loading icon: {}", e.message)
-            createEmptyIcon(size)
         } catch (e: IllegalArgumentException) {
             logger.warn("Failed to load icon {}: {}", path, e.message)
             createEmptyIcon(size)

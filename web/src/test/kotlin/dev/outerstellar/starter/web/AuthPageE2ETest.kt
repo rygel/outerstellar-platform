@@ -39,7 +39,6 @@ class AuthPageE2ETest : PostgresWebTest() {
             createRenderer(), 
             pageFactory, 
             testConfig, 
-            i18n,
             securityService,
             userRepository,
             encoder
