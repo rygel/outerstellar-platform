@@ -1,25 +1,34 @@
 package dev.outerstellar.starter
 
 import com.outerstellar.i18n.I18nService
-import dev.outerstellar.starter.AppConfig
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
-import dev.outerstellar.starter.security.UserRepository
-import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.PasswordEncoder
 import dev.outerstellar.starter.security.SecurityRules
+import dev.outerstellar.starter.security.SecurityService
+import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.security.UserRole
 import dev.outerstellar.starter.service.MessageService
-import dev.outerstellar.starter.web.*
-import org.http4k.contract.contract
+import dev.outerstellar.starter.web.AuthApi
+import dev.outerstellar.starter.web.AuthRoutes
+import dev.outerstellar.starter.web.ComponentRoutes
+import dev.outerstellar.starter.web.DevDashboardRoutes
+import dev.outerstellar.starter.web.ErrorRoutes
+import dev.outerstellar.starter.web.Filters
+import dev.outerstellar.starter.web.HomeRoutes
+import dev.outerstellar.starter.web.SyncApi
+import dev.outerstellar.starter.web.SyncWebSocket
+import dev.outerstellar.starter.web.WebContext
+import dev.outerstellar.starter.web.WebPageFactory
 import org.http4k.contract.bindContract
+import org.http4k.contract.contract
 import org.http4k.contract.openapi.ApiInfo
 import org.http4k.contract.openapi.v3.OpenApi3
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
-import org.http4k.server.PolyHandler
+import org.http4k.core.PolyHandler
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
@@ -38,6 +47,7 @@ import java.util.UUID
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.App")
 
+@Suppress("LongParameterList", "LongMethod", "TooGenericExceptionCaught", "SwallowedException")
 fun app(
     messageService: MessageService,
     repository: MessageRepository,
@@ -62,7 +72,11 @@ fun app(
     // Apply Bearer Auth to Sync routes via security filter
     val syncAuthFilter = Filter { next -> { req ->
         val token = req.header("Authorization")?.removePrefix("Bearer ")
-        val user = token?.let { try { userRepository.findByUsername("admin")?.takeIf { it.id == UUID.fromString(token) } } catch(e: Exception) { null } }
+        val user = token?.let { 
+            try { 
+                userRepository.findByUsername("admin")?.takeIf { it.id == UUID.fromString(token) } 
+            } catch(e: Exception) { null } 
+        }
         if (user != null) {
             next(req.with(SecurityRules.USER_KEY of user))
         } else {
@@ -79,12 +93,8 @@ fun app(
         routes += SyncApi(messageService).routes
     }
     
-    // Add all routes from sub-contract
-    routes += (syncContract as org.http4k.routing.RoutingHttpHandler).let { 
-        // This is tricky, but the routes are accessible via reflection or we just use the handler directly
-        // Instead of routes +=, we just bind the whole syncContract later
-        emptyList<org.http4k.contract.ContractRoute>()
-    }
+    // SyncContract is a RoutingHttpHandler, but we bind it separately below
+    routes += emptyList<org.http4k.contract.ContractRoute>()
   }
 
   // 2. Main UI (Full HTML Pages)
@@ -108,15 +118,21 @@ fun app(
     renderer = OpenApi3(ApiInfo("Outerstellar Admin", "v1.0"), Jackson)
     descriptionPath = "/admin/openapi.json"
     security = object : org.http4k.contract.security.Security {
-        override val filter = Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
+        override val filter = Filter { next -> 
+            SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) 
+        }
     }
     routes += DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
   }
 
   // Define Sync sub-contract separately to apply security
-  val syncAuthFilter = Filter { next -> { req ->
+  val bearerAuthFilter = Filter { next -> { req ->
       val token = req.header("Authorization")?.removePrefix("Bearer ")
-      val user = token?.let { try { userRepository.findByUsername("admin")?.takeIf { it.id == UUID.fromString(token) } } catch(e: Exception) { null } }
+      val user = token?.let { 
+          try { 
+              userRepository.findByUsername("admin")?.takeIf { it.id == UUID.fromString(token) } 
+          } catch(e: Exception) { null } 
+      }
       if (user != null) {
           next(req.with(SecurityRules.USER_KEY of user))
       } else {
@@ -127,7 +143,7 @@ fun app(
   val syncContract = contract {
       renderer = OpenApi3(ApiInfo("Sync", "v1.0"), Jackson)
       security = object : org.http4k.contract.security.Security {
-          override val filter = syncAuthFilter
+          override val filter = bearerAuthFilter
       }
       routes += SyncApi(messageService).routes
   }
@@ -138,6 +154,10 @@ fun app(
     descriptionPath = "/components/openapi.json"
     routes += ComponentRoutes(pageFactory, jteRenderer).routes
   }
+
+  // Filtered admin handler
+  val filteredAdminHandler = Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
+      .then(adminContract)
 
   val baseApp: HttpHandler = routes(
     static(ResourceLoader.Classpath("static")),
@@ -150,7 +170,7 @@ fun app(
         .then(routes(
             uiRoutes, 
             componentRoutes,
-            adminContract
+            "/" bind filteredAdminHandler
         )),
     "/health" bind GET to { Response(Status.OK).body("ok") },
     "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }

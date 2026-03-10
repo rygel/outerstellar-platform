@@ -4,20 +4,15 @@ import dev.outerstellar.starter.infra.render
 import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
-import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
 import org.http4k.contract.div
 import org.http4k.core.Body
-import org.http4k.core.ContentType
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Method.DELETE
 import org.http4k.core.Response
 import org.http4k.core.Status
-import org.http4k.core.body.form
-import org.http4k.core.getFirst
-import org.http4k.core.toParametersMap
 import org.http4k.lens.Query
 import org.http4k.lens.int
 import org.http4k.lens.string
@@ -28,6 +23,8 @@ import org.http4k.lens.FormField
 import org.http4k.lens.Validator
 import org.http4k.lens.webForm
 
+private const val DEFAULT_PAGE_SIZE = 10
+
 class HomeRoutes(
     private val messageService: MessageService,
     private val repository: MessageRepository,
@@ -37,7 +34,7 @@ class HomeRoutes(
 ) : ServerRoutes {
     private val queryLens = Query.string().optional("q")
     private val yearLens = Query.int().optional("year")
-    private val limitLens = Query.int().defaulted("limit", 10)
+    private val limitLens = Query.int().defaulted("limit", DEFAULT_PAGE_SIZE)
     private val offsetLens = Query.int().defaulted("offset", 0)
     private val syncIdPath = Path.string().of("syncId")
 
@@ -47,7 +44,6 @@ class HomeRoutes(
     private val messageFormLens = Body.webForm(Validator.Strict, authorField, contentField).toLens()
 
     private val defaultAuthor = i18nService.translate("web.author.default")
-    private val contentRequiredMessage = i18nService.translate("web.validation.contentRequired")
 
     override val routes = listOf(
         "/" meta {
@@ -73,8 +69,6 @@ class HomeRoutes(
             val limit = limitLens(request)
             val offset = offsetLens(request)
             val ctx = request.webContext
-            renderer.render(pageFactory.buildDevDashboardPage(ctx, "", emptyMap(), 0, 0, 0, "Fake for logic check"))
-            // Proper fix: Render the trash view using the existing factory pattern
             val shell = ctx.shell("Trash", "/messages/trash")
             val messageList = pageFactory.buildMessageList(ctx, query, limit, offset, null, true)
             renderer.render(Page(shell, messageList))

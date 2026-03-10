@@ -14,14 +14,21 @@ data class MessageListViewModel(
     val isTrashView: Boolean = false
 ) : ViewModel
 
+private const val DEFAULT_PAGE_SIZE = 10
+private const val ARG_QUERY = 0
+private const val ARG_LIMIT = 1
+private const val ARG_OFFSET = 2
+private const val ARG_YEAR = 3
+private const val ARG_IS_TRASH = 4
+
 class MessageListComponent(private val repository: MessageRepository) : WebComponent<MessageListViewModel> {
     
     override fun build(ctx: WebContext, vararg args: Any?): MessageListViewModel {
-        val query = args.getOrNull(0) as? String
-        val limit = args.getOrNull(1) as? Int ?: 10
-        val offset = args.getOrNull(2) as? Int ?: 0
-        val year = args.getOrNull(3) as? Int
-        val isTrash = args.getOrNull(4) as? Boolean ?: false
+        val query = args.getOrNull(ARG_QUERY) as? String
+        val limit = args.getOrNull(ARG_LIMIT) as? Int ?: DEFAULT_PAGE_SIZE
+        val offset = args.getOrNull(ARG_OFFSET) as? Int ?: 0
+        val year = args.getOrNull(ARG_YEAR) as? Int
+        val isTrash = args.getOrNull(ARG_IS_TRASH) as? Boolean ?: false
         
         val i18n = ctx.i18n
         
@@ -32,6 +39,21 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
         val total = if (isTrash && repo != null) repo.countDeletedMessages(query, year)
                     else repository.countMessages(query, year)
         
+        return buildViewModel(ctx, items, total, limit, offset, query, year, isTrash, i18n)
+    }
+
+    @Suppress("LongParameterList")
+    private fun buildViewModel(
+        ctx: WebContext,
+        items: List<MessageSummary>,
+        total: Long,
+        limit: Int,
+        offset: Int,
+        query: String?,
+        year: Int?,
+        isTrash: Boolean,
+        i18n: com.outerstellar.i18n.I18nService
+    ): MessageListViewModel {
         val metadata = PaginationMetadata(
             currentPage = (offset / limit) + 1,
             pageSize = limit,

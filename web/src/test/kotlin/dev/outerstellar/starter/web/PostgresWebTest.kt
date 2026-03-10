@@ -1,44 +1,39 @@
 package dev.outerstellar.starter.web
 
-import dev.outerstellar.starter.AppConfig
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.infra.migrate
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @org.junit.jupiter.api.Disabled("Requires Docker environment")
-abstract class PostgresWebTest {
-    companion object {
-        @Container
-        val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
-            withDatabaseName("webtestdb")
-            withUsername("test")
-            withPassword("test")
-        }
+object PostgresWebTest {
+    @Container
+    val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
+        withDatabaseName("webtestdb")
+        withUsername("test")
+        withPassword("test")
+    }
 
-        lateinit var testConfig: AppConfig
-        lateinit var testDsl: DSLContext
+    val testConfig = dev.outerstellar.starter.AppConfig(
+        port = 0,
+        jdbcUrl = "jdbc:postgresql://localhost:5432/webtestdb",
+        devDashboardEnabled = true
+    )
 
-        @JvmStatic
-        @BeforeAll
-        fun setupPostgres() {
-            postgres.start()
-            testConfig = AppConfig(
-                port = 0,
-                jdbcUrl = postgres.jdbcUrl,
-                jdbcUser = postgres.username,
-                jdbcPassword = postgres.password
-            )
-            val dataSource = createDataSource(testConfig.jdbcUrl, testConfig.jdbcUser, testConfig.jdbcPassword)
+    lateinit var testDsl: DSLContext
+    lateinit var ctx: WebContext
+
+    fun setup() {
+        if (!this::testDsl.isInitialized) {
+            val dataSource = createDataSource(postgres.jdbcUrl, postgres.username, postgres.password)
             migrate(dataSource)
             testDsl = DSL.using(dataSource, SQLDialect.POSTGRES)
+            ctx = WebContext(org.http4k.core.Request(org.http4k.core.Method.GET, "/"), true)
         }
     }
 }

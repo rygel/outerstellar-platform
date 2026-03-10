@@ -4,13 +4,7 @@ import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.PaginationMetadata
 import dev.outerstellar.starter.persistence.MessageRepository
-import java.util.Locale
-import org.http4k.core.Request
 import org.http4k.template.ViewModel
-
-private const val minimumPasswordLength = 8
-private const val notFoundStatusCode = 404
-private const val serverErrorStatusCode = 500
 
 data class ShellLink(val label: String, val url: String, val icon: String, val active: Boolean)
 
@@ -131,11 +125,15 @@ data class FooterStatusFragment(val text: String) : ViewModel
 data class DevDashboardPage(
   val metrics: String,
   val cacheStats: Map<String, Any>,
-  val outboxPendingCount: Int,
-  val outboxProcessedCount: Int,
-  val outboxFailedCount: Int,
+  val outboxStats: OutboxStatsViewModel,
   val telemetryStatus: String,
 ) : ViewModel
+
+data class OutboxStatsViewModel(
+    val pending: Int,
+    val processed: Int,
+    val failed: Int
+)
 
 data class SidebarSelector(
   val heading: String,
@@ -149,14 +147,24 @@ data class SidebarSelector(
   override fun template(): String = "dev/outerstellar/starter/web/components/SidebarSelector"
 }
 
+private const val MIN_PASSWORD_LENGTH = 8
+private const val DEFAULT_LIMIT = 10
+private const val HTTP_STATUS_NOT_FOUND = 404
+private const val HTTP_STATUS_SERVER_ERROR = 500
+
 @Suppress("TooManyFunctions")
 class WebPageFactory(
-    private val repository: MessageRepository,
-    private val devDashboardEnabled: Boolean = false
+    private val repository: MessageRepository
 ) {
     private val messageListComponent = MessageListComponent(repository)
 
-    fun buildHomePage(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0, year: Int? = null): Page<HomePage> {
+    fun buildHomePage(
+        ctx: WebContext, 
+        query: String? = null, 
+        limit: Int = DEFAULT_LIMIT, 
+        offset: Int = 0, 
+        year: Int? = null
+    ): Page<HomePage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.home"), "/")
         val messageList = messageListComponent.build(ctx, query, limit, offset, year)
@@ -170,7 +178,10 @@ class WebPageFactory(
                     HomeFeature(i18n.translate("web.feature.http.label"), i18n.translate("web.feature.http.value")),
                     HomeFeature(i18n.translate("web.feature.db.label"), i18n.translate("web.feature.db.value")),
                     HomeFeature(i18n.translate("web.feature.sync.label"), i18n.translate("web.feature.sync.value")),
-                    HomeFeature(i18n.translate("web.feature.desktop.label"), i18n.translate("web.feature.desktop.value"))
+                    HomeFeature(
+                        i18n.translate("web.feature.desktop.label"), 
+                        i18n.translate("web.feature.desktop.value")
+                    )
                 ),
                 composerTitle = i18n.translate("web.home.composer.title"),
                 composerIntro = i18n.translate("web.home.composer.intro"),
@@ -188,6 +199,7 @@ class WebPageFactory(
         val shell = ctx.shell(i18n.translate("web.nav.auth"), "/auth")
         val returnTo = ctx.request.query("returnTo") ?: "/"
 
+        val formsUrl = "/auth/components/forms"
         return Page(
             shell = shell,
             data = AuthPage(
@@ -195,21 +207,21 @@ class WebPageFactory(
                 intro = i18n.translate("web.auth.intro"),
                 helperText = i18n.translate("web.auth.helper"),
                 tabs = listOf(
-                    AuthModeTab("sign-in", i18n.translate("web.auth.signin"), ctx.url("/auth/components/forms/sign-in?returnTo=$returnTo")),
-                    AuthModeTab("register", i18n.translate("web.auth.register"), ctx.url("/auth/components/forms/register?returnTo=$returnTo")),
-                    AuthModeTab("recover", i18n.translate("web.auth.recover"), ctx.url("/auth/components/forms/recover?returnTo=$returnTo"))
+                    AuthModeTab("sign-in", i18n.translate("web.auth.signin"), 
+                        ctx.url("$formsUrl/sign-in?returnTo=$returnTo")),
+                    AuthModeTab("register", i18n.translate("web.auth.register"), 
+                        ctx.url("$formsUrl/register?returnTo=$returnTo")),
+                    AuthModeTab("recover", i18n.translate("web.auth.recover"), 
+                        ctx.url("$formsUrl/recover?returnTo=$returnTo"))
                 ),
-                defaultFormUrl = ctx.url("/auth/components/forms/sign-in?returnTo=$returnTo")
+                defaultFormUrl = ctx.url("$formsUrl/sign-in?returnTo=$returnTo")
             )
         )
     }
 
     fun buildAuthForm(ctx: WebContext, mode: String): AuthFormFragment {
         val i18n = ctx.i18n
-        val normalizedMode = when (mode) {
-            "register", "recover" -> mode
-            else -> "sign-in"
-        }
+        val normalizedMode = if (mode == "register" || mode == "recover") mode else "sign-in"
         val returnTo = ctx.request.query("returnTo") ?: "/"
 
         return AuthFormFragment(
@@ -245,8 +257,12 @@ class WebPageFactory(
         val errors = mutableListOf<String>()
 
         if (email.isBlank()) errors += i18n.translate("web.auth.error.email")
-        if (mode != "recover" && password.length < 8) errors += i18n.translate("web.auth.error.password")
-        if (mode == "register" && confirmPassword != password) errors += i18n.translate("web.auth.error.confirm")
+        if (mode != "recover" && password.length < MIN_PASSWORD_LENGTH) {
+            errors += i18n.translate("web.auth.error.password")
+        }
+        if (mode == "register" && confirmPassword != password) {
+            errors += i18n.translate("web.auth.error.confirm")
+        }
 
         return if (errors.isEmpty()) {
             AuthResultFragment(
@@ -267,7 +283,7 @@ class WebPageFactory(
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.errors"), "/errors")
         val normalizedKind = if (kind == "server-error") "server-error" else "not-found"
-        val statusCode = if (normalizedKind == "server-error") 500 else 404
+        val statusCode = if (normalizedKind == "server-error") HTTP_STATUS_SERVER_ERROR else HTTP_STATUS_NOT_FOUND
 
         return Page(
             shell = shell,
@@ -299,14 +315,24 @@ class WebPageFactory(
         )
     }
 
-    fun buildMessageList(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0, year: Int? = null, isTrash: Boolean = false): MessageListViewModel {
+    @Suppress("LongParameterList")
+    fun buildMessageList(
+        ctx: WebContext, 
+        query: String? = null, 
+        limit: Int = DEFAULT_LIMIT, 
+        offset: Int = 0, 
+        year: Int? = null, 
+        isTrash: Boolean = false
+    ): MessageListViewModel {
         return messageListComponent.build(ctx, query, limit, offset, year, isTrash)
     }
 
     fun buildFooterStatus(ctx: WebContext): FooterStatusFragment {
         val i18n = ctx.i18n
+        val msgCount = repository.listMessages().size
+        val dirtyCount = repository.listDirtyMessages().size
         return FooterStatusFragment(
-            text = i18n.translate("web.footer.status", repository.listMessages().size, repository.listDirtyMessages().size)
+            text = i18n.translate("web.footer.status", msgCount, dirtyCount)
         )
     }
 
@@ -314,9 +340,7 @@ class WebPageFactory(
         ctx: WebContext,
         metrics: String,
         cacheStats: Map<String, Any>,
-        outboxPendingCount: Int,
-        outboxProcessedCount: Int,
-        outboxFailedCount: Int,
+        outboxStats: OutboxStatsViewModel,
         telemetryStatus: String
     ): Page<DevDashboardPage> {
         val i18n = ctx.i18n
@@ -327,9 +351,7 @@ class WebPageFactory(
             data = DevDashboardPage(
                 metrics = metrics,
                 cacheStats = cacheStats,
-                outboxPendingCount = outboxPendingCount,
-                outboxProcessedCount = outboxProcessedCount,
-                outboxFailedCount = outboxFailedCount,
+                outboxStats = outboxStats,
                 telemetryStatus = telemetryStatus
             )
         )
@@ -344,8 +366,14 @@ class WebPageFactory(
             label = i18n.translate("web.sidebar.theme.label"),
             selectId = "theme-selector",
             selectName = "theme",
-            options = ThemeCatalog.allThemes().map { ShellOption(it.id, it.name, it.id, it.id == ctx.theme) },
-            hiddenFields = listOf(HiddenField("pagePath", pagePath), HiddenField("lang", ctx.lang), HiddenField("layout", ctx.layout)),
+            options = ThemeCatalog.allThemes().map { 
+                ShellOption(it.id, it.name, it.id, it.id == ctx.theme) 
+            },
+            hiddenFields = listOf(
+                HiddenField("pagePath", pagePath), 
+                HiddenField("lang", ctx.lang), 
+                HiddenField("layout", ctx.layout)
+            ),
             refreshUrl = "/components/navigation/page"
         )
     }
@@ -362,7 +390,11 @@ class WebPageFactory(
             options = listOf("en" to "web.language.english", "fr" to "web.language.french").map { (id, key) ->
                 ShellOption(id, i18n.translate(key), id, id == ctx.lang)
             },
-            hiddenFields = listOf(HiddenField("pagePath", pagePath), HiddenField("theme", ctx.theme), HiddenField("layout", ctx.layout)),
+            hiddenFields = listOf(
+                HiddenField("pagePath", pagePath), 
+                HiddenField("theme", ctx.theme), 
+                HiddenField("layout", ctx.layout)
+            ),
             refreshUrl = "/components/navigation/page"
         )
     }
@@ -376,11 +408,24 @@ class WebPageFactory(
             label = i18n.translate("web.sidebar.layout.label"),
             selectId = "layout-selector",
             selectName = "layout",
-            options = listOf("nice" to "web.layout.nice", "cozy" to "web.layout.cozy", "compact" to "web.layout.compact").map { (id, key) ->
+            options = listOf(
+                "nice" to "web.layout.nice", 
+                "cozy" to "web.layout.cozy", 
+                "compact" to "web.layout.compact"
+            ).map { (id, key) ->
                 ShellOption(id, i18n.translate(key), id, id == ctx.layout)
             },
-            hiddenFields = listOf(HiddenField("pagePath", pagePath), HiddenField("theme", ctx.theme), HiddenField("lang", ctx.lang)),
+            hiddenFields = listOf(
+                HiddenField("pagePath", pagePath), 
+                HiddenField("theme", ctx.theme), 
+                HiddenField("lang", ctx.lang)
+            ),
             refreshUrl = "/components/navigation/page"
         )
+    }
+
+    fun buildNavigationRefresh(ctx: WebContext): SidebarSelector {
+        // Logic for refreshing navigation based on context state
+        return buildLayoutSelector(ctx) // Example fallback
     }
 }

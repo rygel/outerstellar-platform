@@ -10,12 +10,14 @@ import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.impl.DSL
+import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
 class JooqMessageRepository(
   private val primaryDsl: DSLContext,
   private val replicaDsl: DSLContext = primaryDsl
 ) : MessageRepository {
+  private val logger = LoggerFactory.getLogger(JooqMessageRepository::class.java)
 
   private fun getFilterConditions(query: String?, year: Int?, includeDeleted: Boolean = false): Condition {
     var condition = DSL.noCondition()
@@ -43,14 +45,20 @@ class JooqMessageRepository(
             replicaDsl.select(keyField).from(ftsTable)
           )
         )
-      } catch (e: Exception) {
-        condition = condition.and(MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query)))
+      } catch (e: org.jooq.exception.DataAccessException) {
+        logger.debug("FTS failed for query: {}. Fallback to LIKE. Error: {}", query, e.message)
+        condition = condition.and(
+            MESSAGES.CONTENT.containsIgnoreCase(query)
+                .or(MESSAGES.AUTHOR.containsIgnoreCase(query))
+        )
       }
     }
 
     if (year != null) {
-      val startOfYear = java.time.ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
-      val endOfYear = java.time.ZonedDateTime.of(year + 1, 1, 1, 0, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli() - 1
+      val startOfYear = java.time.ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, java.time.ZoneOffset.UTC)
+          .toInstant().toEpochMilli()
+      val endOfYear = java.time.ZonedDateTime.of(year + 1, 1, 1, 0, 0, 0, 0, java.time.ZoneOffset.UTC)
+          .toInstant().toEpochMilli() - 1
       val updatedAtField = MESSAGES.field("UPDATED_AT_EPOCH_MS", Long::class.java)
       if (updatedAtField != null) {
         condition = condition.and(updatedAtField.between(startOfYear, endOfYear))
@@ -68,7 +76,13 @@ class JooqMessageRepository(
     return listMessagesInternal(query, year, limit, offset, includeDeleted = true)
   }
 
-  private fun listMessagesInternal(query: String?, year: Int?, limit: Int, offset: Int, includeDeleted: Boolean): List<MessageSummary> {
+  private fun listMessagesInternal(
+      query: String?, 
+      year: Int?, 
+      limit: Int, 
+      offset: Int, 
+      includeDeleted: Boolean
+  ): List<MessageSummary> {
     val results = replicaDsl
       .select(
         MESSAGES.ID,
@@ -318,9 +332,7 @@ class JooqMessageRepository(
       .and(MESSAGES.VERSION.eq(message.version))
       .execute()
 
-    if (rows == 0) {
-      throw IllegalStateException("Optimistic locking failure for message ${message.syncId}")
-    }
+    check(rows != 0) { "Optimistic locking failure for message ${message.syncId}" }
 
     return requireNotNull(findBySyncId(message.syncId))
   }

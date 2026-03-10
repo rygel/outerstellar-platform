@@ -10,7 +10,6 @@ val apiClientModule = module {
         SyncService(
             baseUrl = get(named("serverBaseUrl")),
             repository = get(),
-            outboxRepository = get(),
             transactionManager = get()
         )
     }

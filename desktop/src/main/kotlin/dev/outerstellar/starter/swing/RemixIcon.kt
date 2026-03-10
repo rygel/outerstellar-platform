@@ -4,8 +4,10 @@ import com.formdev.flatlaf.extras.FlatSVGIcon
 import java.awt.Color
 import javax.swing.Icon
 import javax.swing.UIManager
+import org.slf4j.LoggerFactory
 
 object RemixIcon {
+    private val logger = LoggerFactory.getLogger(RemixIcon::class.java)
     private const val BASE_PATH = "icons"
 
     fun get(name: String, size: Int = 18): Icon {
@@ -18,12 +20,24 @@ object RemixIcon {
                 val color = UIManager.getColor("Label.foreground") ?: Color.WHITE
                 setColorFilter(FlatSVGIcon.ColorFilter { color })
             }
-        } catch (e: Exception) {
-            object : Icon {
-                override fun paintIcon(c: java.awt.Component?, g: java.awt.Graphics?, x: Int, y: Int) {}
-                override fun getIconWidth() = size
-                override fun getIconHeight() = size
-            }
+        } catch (e: org.http4k.core.Http4kException) {
+            // Placeholder for Http4k related errors if any
+            logger.warn("Http4k error loading icon: {}", e.message)
+            createEmptyIcon(size)
+        } catch (e: IllegalArgumentException) {
+            logger.warn("Failed to load icon {}: {}", path, e.message)
+            createEmptyIcon(size)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            logger.error("Unexpected error loading icon {}: {}", path, e.message)
+            createEmptyIcon(size)
         }
+    }
+
+    private fun createEmptyIcon(size: Int): Icon = object : Icon {
+        override fun paintIcon(c: java.awt.Component?, g: java.awt.Graphics?, x: Int, y: Int) {
+            // No-op placeholder
+        }
+        override fun getIconWidth() = size
+        override fun getIconHeight() = size
     }
 }

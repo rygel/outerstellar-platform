@@ -1,106 +1,49 @@
 package dev.outerstellar.starter.web
 
-import dev.outerstellar.starter.infra.render
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
-import org.http4k.contract.div
 import org.http4k.core.Method.GET
-import org.http4k.core.Response
-import org.http4k.core.Status
-import org.http4k.lens.Header
-import org.http4k.lens.Path
 import org.http4k.lens.Query
 import org.http4k.lens.int
 import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
-import org.http4k.template.ViewModel
 
-data class ModalViewModel(
-    val id: String,
-    val title: String,
-    val message: String,
-    val confirmLabel: String,
-    val cancelLabel: String,
-    val actionUrl: String,
-    val targetId: String
-) : ViewModel {
-    override fun template() = "dev/outerstellar/starter/web/components/Modal"
-}
+private const val DEFAULT_LIMIT = 10
 
 class ComponentRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer
 ) : ServerRoutes {
     private val queryLens = Query.string().optional("q")
-    private val yearLens = Query.int().optional("year")
-    private val limitLens = Query.int().defaulted("limit", 10)
+    private val limitLens = Query.int().defaulted("limit", DEFAULT_LIMIT)
     private val offsetLens = Query.int().defaulted("offset", 0)
-    private val pagePathLens = Query.optional("pagePath")
-    private val hxRequestLens = Header.optional("HX-Request")
-    private val syncIdPath = Path.string().of("syncId")
+    private val yearLens = Query.int().optional("year")
+    private val pagePathLens = Query.string().defaulted("pagePath", "/")
 
     override val routes = listOf(
-        "/components/modals/confirm-delete" / syncIdPath meta {
-            summary = "Confirm delete modal"
-        } bindContract GET to { syncId ->
-            { request: org.http4k.core.Request ->
-                val ctx = request.webContext
-                val i18n = ctx.i18n
-                renderer.render(ModalViewModel(
-                    id = "delete-modal-$syncId",
-                    title = i18n.translate("web.modal.delete.title"),
-                    message = i18n.translate("web.modal.delete.message"),
-                    confirmLabel = i18n.translate("web.modal.delete.confirm"),
-                    cancelLabel = i18n.translate("web.modal.delete.cancel"),
-                    actionUrl = "/messages/$syncId",
-                    targetId = "#message-list-panel"
-                ))
-            }
+        "/components/navigation/page" meta {
+            summary = "Theme/Lang/Layout refresh"
+        } bindContract GET to { request: org.http4k.core.Request ->
+            val pagePath = pagePathLens(request)
+            renderer.render(pageFactory.buildNavigationRefresh(request.webContext, pagePath))
+        },
+        "/components/sidebar/theme-selector" meta {
+            summary = "Sidebar theme selector fragment"
+        } bindContract GET to { request: org.http4k.core.Request ->
+            renderer.render(pageFactory.buildThemeSelector(request.webContext))
         },
         "/components/message-list" meta {
             summary = "Message list fragment"
             queries += queryLens
-            queries += yearLens
             queries += limitLens
             queries += offsetLens
+            queries += yearLens
         } bindContract GET to { request: org.http4k.core.Request ->
             val query = queryLens(request)
-            val year = yearLens(request)
             val limit = limitLens(request)
             val offset = offsetLens(request)
+            val year = yearLens(request)
             renderer.render(pageFactory.buildMessageList(request.webContext, query, limit, offset, year))
-        },
-        "/components/footer-status" meta {
-            summary = "Footer status component"
-        } bindContract GET to { request: org.http4k.core.Request ->
-            renderer.render(pageFactory.buildFooterStatus(request.webContext))
-        },
-        "/components/navigation/page" meta {
-            summary = "Navigation page component"
-        } bindContract GET to { request: org.http4k.core.Request ->
-            val pagePath = pagePathLens(request).orEmpty()
-            val location = request.webContext.url(pagePath)
-
-            if (hxRequestLens(request) == "true") {
-                Response(Status.OK).header("HX-Redirect", location)
-            } else {
-                Response(Status.FOUND).header("location", location)
-            }
-        },
-        "/components/sidebar/theme-selector" meta {
-            summary = "Theme selector component"
-        } bindContract GET to { request: org.http4k.core.Request ->
-            renderer.render(pageFactory.buildThemeSelector(request.webContext))
-        },
-        "/components/sidebar/language-selector" meta {
-            summary = "Language selector component"
-        } bindContract GET to { request: org.http4k.core.Request ->
-            renderer.render(pageFactory.buildLanguageSelector(request.webContext))
-        },
-        "/components/sidebar/layout-selector" meta {
-            summary = "Layout selector component"
-        } bindContract GET to { request: org.http4k.core.Request ->
-            renderer.render(pageFactory.buildLayoutSelector(request.webContext))
         }
     )
 }

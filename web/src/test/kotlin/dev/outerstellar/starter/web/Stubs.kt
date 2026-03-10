@@ -1,28 +1,40 @@
 package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.persistence.MessageCache
+import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxEntry
 import dev.outerstellar.starter.persistence.OutboxRepository
-import dev.outerstellar.starter.persistence.TransactionManager
-import java.util.*
+import java.util.UUID
 
 class StubOutboxRepository : OutboxRepository {
-    override fun save(entry: OutboxEntry) {}
-    override fun fetchUnprocessed(limit: Int): List<OutboxEntry> = emptyList()
-    override fun markProcessed(id: UUID) {}
-    override fun markFailed(id: UUID, error: String, maxRetries: Int) {}
-    override fun softDelete(id: UUID) {}
-    override fun countByStatus(status: String): Int = 0
+    override fun save(entry: OutboxEntry) {
+        // Stub implementation
+    }
+    override fun listPending(limit: Int): List<OutboxEntry> = emptyList()
+    override fun markProcessed(id: UUID) {
+        // Stub implementation
+    }
+    override fun markFailed(id: UUID, error: String) {
+        // Stub implementation
+    }
+    override fun getStats(): Map<String, Int> = emptyMap()
+    override fun listFailed(): List<OutboxEntry> = emptyList()
 }
 
 class StubMessageCache : MessageCache {
     override fun get(key: String): Any? = null
-    override fun put(key: String, value: Any) {}
-    override fun invalidate(key: String) {}
-    override fun invalidateAll() {}
+    override fun put(key: String, value: Any) {
+        // Stub implementation
+    }
+    override fun invalidate(key: String) {
+        // Stub implementation
+    }
+    override fun invalidateAll() {
+        // Stub implementation
+    }
     override fun getStats(): Map<String, Any> = emptyMap()
 }
 
-class StubTransactionManager : TransactionManager {
+class StubTransactionManager : dev.outerstellar.starter.persistence.TransactionManager {
     override fun <T> inTransaction(block: () -> T): T = block()
 }

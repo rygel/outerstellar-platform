@@ -5,16 +5,19 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics
 import java.util.concurrent.TimeUnit
 
-class CaffeineMessageCache(registry: MeterRegistry? = null) : MessageCache {
+private const val DEFAULT_MAX_SIZE = 1000L
+private const val DEFAULT_TTL_MINUTES = 10L
+
+class CaffeineMessageCache(meterRegistry: MeterRegistry? = null) : MessageCache {
     private val cache = Caffeine.newBuilder()
-        .maximumSize(1000)
-        .expireAfterWrite(10, TimeUnit.MINUTES)
+        .maximumSize(DEFAULT_MAX_SIZE)
+        .expireAfterWrite(DEFAULT_TTL_MINUTES, TimeUnit.MINUTES)
         .recordStats()
         .build<String, Any>()
 
     init {
-        if (registry != null) {
-            CaffeineCacheMetrics.monitor(registry, cache, "message_cache")
+        if (meterRegistry != null) {
+            CaffeineCacheMetrics.monitor(meterRegistry, cache, "messageCache")
         }
     }
 
@@ -35,12 +38,8 @@ class CaffeineMessageCache(registry: MeterRegistry? = null) : MessageCache {
     override fun getStats(): Map<String, Any> {
         val stats = cache.stats()
         return mapOf(
-            "estimatedSize" to cache.estimatedSize(),
             "hitCount" to stats.hitCount(),
             "missCount" to stats.missCount(),
-            "loadSuccessCount" to stats.loadSuccessCount(),
-            "loadFailureCount" to stats.loadFailureCount(),
-            "totalLoadTime" to stats.totalLoadTime(),
             "evictionCount" to stats.evictionCount(),
             "evictionWeight" to stats.evictionWeight(),
             "hitRate" to stats.hitRate(),

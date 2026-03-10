@@ -1,27 +1,29 @@
 package com.outerstellar.i18n
 
-import java.util.Locale
-import java.util.ResourceBundle
+import org.slf4j.LoggerFactory
 import java.text.MessageFormat
+import java.util.*
 
-class I18nService private constructor(private val bundleName: String) {
-    private var locale: Locale = Locale.getDefault()
-    private var bundle: ResourceBundle = ResourceBundle.getBundle(bundleName, locale)
+class I18nService(private val bundleName: String) {
+    private val logger = LoggerFactory.getLogger(I18nService::class.java)
+    private var locale = Locale.getDefault()
+    private var bundle = ResourceBundle.getBundle(bundleName, locale)
 
     fun setLocale(newLocale: Locale) {
         this.locale = newLocale
         this.bundle = ResourceBundle.getBundle(bundleName, locale)
     }
 
-    fun translate(key: String, vararg args: Any?): String {
+    fun translate(key: String, vararg args: Any): String {
         return try {
-            val pattern = bundle.getString(key)
+            val message = bundle.getString(key)
             if (args.isEmpty()) {
-                pattern
+                message
             } else {
-                MessageFormat.format(pattern, *args)
+                MessageFormat.format(message, *args)
             }
-        } catch (e: Exception) {
+        } catch (e: MissingResourceException) {
+            logger.warn("Missing translation key: {} for locale: {}. Error: {}", key, locale, e.message)
             key
         }
     }
@@ -29,6 +31,6 @@ class I18nService private constructor(private val bundleName: String) {
     companion object {
         fun create(bundleName: String): I18nService = I18nService(bundleName)
         
-        fun fromResourceBundle(bundleName: String): I18nService = create(bundleName)
+        fun fromResourceBundle(bundleName: String): I18nService = I18nService(bundleName)
     }
 }

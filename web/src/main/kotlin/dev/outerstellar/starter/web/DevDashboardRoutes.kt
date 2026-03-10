@@ -1,15 +1,10 @@
 package dev.outerstellar.starter.web
 
-import dev.outerstellar.starter.infra.render
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.OutboxRepository
-import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
-import org.http4k.core.ContentType
 import org.http4k.core.Method.GET
-import org.http4k.core.Response
-import org.http4k.core.Status
 import org.http4k.template.TemplateRenderer
 
 class DevDashboardRoutes(
@@ -17,32 +12,32 @@ class DevDashboardRoutes(
     private val cache: MessageCache,
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
-    private val devDashboardEnabled: Boolean
+    private val enabled: Boolean
 ) : ServerRoutes {
-    private val htmlContentType = ContentType.TEXT_HTML.toHeaderValue()
 
-    override val routes = if (!devDashboardEnabled) emptyList() else listOf(
-        "/admin/dev" meta {
-            summary = "Developer Dashboard"
-        } bindContract GET to { request: org.http4k.core.Request ->
-            val metrics = Metrics.registry.scrape()
-            val cacheStats = cache.getStats()
-            val outboxPendingCount = outboxRepository.countByStatus("PENDING")
-            val outboxProcessedCount = outboxRepository.countByStatus("PROCESSED")
-            val outboxFailedCount = outboxRepository.countByStatus("FAILED")
-            val telemetryStatus = "Active (OTLP)"
-
-            val page = pageFactory.buildDevDashboardPage(
-                request.webContext,
-                metrics,
-                cacheStats,
-                outboxPendingCount,
-                outboxProcessedCount,
-                outboxFailedCount,
-                telemetryStatus
-            )
-
-            renderer.render(page)
-        }
-    )
+    override val routes = if (enabled) {
+        listOf(
+            "/admin/dev" meta {
+                summary = "Developer dashboard"
+            } bindContract GET to { request: org.http4k.core.Request ->
+                val outboxStats = outboxRepository.getStats()
+                val stats = OutboxStatsViewModel(
+                    pending = outboxStats["PENDING"] ?: 0,
+                    processed = outboxStats["PROCESSED"] ?: 0,
+                    failed = outboxStats["FAILED"] ?: 0
+                )
+                
+                val view = pageFactory.buildDevDashboardPage(
+                    ctx = request.webContext,
+                    metrics = "Active connections and cache performance",
+                    cacheStats = cache.getStats(),
+                    outboxStats = stats,
+                    telemetryStatus = "Enabled"
+                )
+                renderer.render(view)
+            }
+        )
+    } else {
+        emptyList()
+    }
 }

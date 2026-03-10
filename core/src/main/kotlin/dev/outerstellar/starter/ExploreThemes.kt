@@ -1,8 +1,9 @@
 package dev.outerstellar.starter
 
-import com.outerstellar.theme.ThemeService
+import com.outerstellar.starter.model.ThemeCatalog
 
 fun main() {
-    val service = ThemeService.create()
-    println(service.javaClass.methods.map { it.name })
+    ThemeCatalog.allThemes().forEach { theme ->
+        println("Theme: ${theme.name} (${theme.id}) - bg: ${theme.palette.bgPrimary}")
+    }
 }

@@ -10,8 +10,14 @@ interface MessageCache {
 
 object NoOpMessageCache : MessageCache {
     override fun get(key: String): Any? = null
-    override fun put(key: String, value: Any) {}
-    override fun invalidate(key: String) {}
-    override fun invalidateAll() {}
+    override fun put(key: String, value: Any) {
+        // No-op
+    }
+    override fun invalidate(key: String) {
+        // No-op
+    }
+    override fun invalidateAll() {
+        // No-op
+    }
     override fun getStats(): Map<String, Any> = emptyMap()
 }

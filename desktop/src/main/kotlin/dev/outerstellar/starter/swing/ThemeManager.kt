@@ -4,12 +4,14 @@ import com.formdev.flatlaf.FlatDarkLaf
 import com.formdev.flatlaf.FlatLightLaf
 import dev.outerstellar.starter.model.ThemeDefinition
 import dev.outerstellar.starter.model.ThemeCatalog
+import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.awt.Window
 import javax.swing.SwingUtilities
 import javax.swing.UIManager
 
 class ThemeManager {
+  private val logger = LoggerFactory.getLogger(ThemeManager::class.java)
   
   fun availableThemes(): List<ThemeDefinition> = ThemeCatalog.allThemes()
 
@@ -33,14 +35,6 @@ class ThemeManager {
     UIManager.put("current_theme_name", theme.name)
 
     val palette: Map<String, String> = theme.colors
-
-    fun decodeSafe(hex: String?): Color? {
-        return try {
-            if (hex != null && hex.startsWith("#")) Color.decode(hex) else null
-        } catch (e: Exception) {
-            null
-        }
-    }
 
     decodeSafe(palette["background"])?.let { color: Color ->
         UIManager.put("Panel.background", color)
@@ -81,11 +75,23 @@ class ThemeManager {
     Window.getWindows().forEach { SwingUtilities.updateComponentTreeUI(it) }
   }
 
+  private fun decodeSafe(hex: String?): Color? {
+      return try {
+          if (hex != null && hex.startsWith("#")) Color.decode(hex) else null
+      } catch (e: NumberFormatException) {
+          logger.warn("Failed to decode hex color {}: {}", hex, e.message)
+          null
+      }
+  }
+
   private fun applyLookAndFeel(lookAndFeel: javax.swing.LookAndFeel) {
     try {
         UIManager.setLookAndFeel(lookAndFeel)
         Window.getWindows().forEach { SwingUtilities.updateComponentTreeUI(it) }
-    } catch (e: Exception) {
+    } catch (e: javax.swing.UnsupportedLookAndFeelException) {
+        logger.error("Look and feel not supported: {}", e.message)
+    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        logger.error("Unexpected error applying look and feel: {}", e.message)
     }
   }
 }

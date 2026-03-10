@@ -10,12 +10,15 @@ import org.http4k.core.Request
 import org.http4k.core.RequestContexts
 import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestContextKey
+import org.slf4j.LoggerFactory
 
 class WebContext(
     val request: Request, 
     private val devDashboardEnabled: Boolean = false,
     private val userRepository: UserRepository? = null
 ) {
+    private val logger = LoggerFactory.getLogger(WebContext::class.java)
+
     companion object {
         val contexts = RequestContexts()
         val KEY = RequestContextKey.required<WebContext>(contexts)
@@ -46,9 +49,9 @@ class WebContext(
         request.cookie(SESSION_COOKIE)?.value?.let { sessionUserId ->
             try {
                 val uid = UUID.fromString(sessionUserId)
-                // For demo, we just return admin if session cookie exists and valid UUID
                 userRepository?.findByUsername("admin")?.takeIf { it.id == uid }
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
+                logger.debug("Invalid session cookie format: {}", e.message)
                 null
             }
         }
@@ -74,11 +77,13 @@ class WebContext(
             ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
             ShellLink("Trash", url("/messages/trash"), "ri-delete-bin-7-line", activeSection == "/messages/trash"),
             ShellLink(i18n.translate("web.nav.auth"), url("/auth"), "ri-shield-keyhole-line", activeSection == "/auth"),
-            ShellLink(i18n.translate("web.nav.errors"), url("/errors/not-found"), "ri-error-warning-line", activeSection == "/errors")
+            ShellLink(i18n.translate("web.nav.errors"), url("/errors/not-found"), 
+                "ri-error-warning-line", activeSection == "/errors")
         )
 
         if (devDashboardEnabled && user?.role == UserRole.ADMIN) {
-            navLinks.add(ShellLink(i18n.translate("web.nav.dev"), url("/admin/dev"), "ri-dashboard-line", activeSection == "/admin/dev"))
+            navLinks.add(ShellLink(i18n.translate("web.nav.dev"), url("/admin/dev"), 
+                "ri-dashboard-line", activeSection == "/admin/dev"))
         }
 
         return ShellView(

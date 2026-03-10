@@ -1,61 +1,46 @@
 package dev.outerstellar.starter.service
 
+import dev.outerstellar.starter.persistence.OutboxEntry
 import dev.outerstellar.starter.persistence.OutboxRepository
-import dev.outerstellar.starter.sync.SyncStats
+import dev.outerstellar.starter.persistence.TransactionManager
 import org.slf4j.LoggerFactory
-import java.util.*
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
-interface SyncProvider {
-    fun sync(): dev.outerstellar.starter.sync.SyncStats
-}
+private const val MAX_BATCH_SIZE = 10
 
 class OutboxProcessor(
     private val outboxRepository: OutboxRepository,
-    private val syncProvider: SyncProvider? = null,
-    private val intervalMs: Long = 5000,
-    private val maxRetries: Int = 5
+    private val transactionManager: TransactionManager? = null
 ) {
     private val logger = LoggerFactory.getLogger(OutboxProcessor::class.java)
-    private val executor = Executors.newSingleThreadScheduledExecutor()
 
-    fun start() {
-        executor.scheduleAtFixedRate(::processEntries, intervalMs, intervalMs, TimeUnit.MILLISECONDS)
-        logger.info("Outbox processor started with interval {}ms", intervalMs)
+    fun processPending() {
+        val entries = outboxRepository.listPending(MAX_BATCH_SIZE)
+        if (entries.isEmpty()) return
+
+        logger.info("Processing {} outbox entries", entries.size)
+        processEntries(entries)
     }
 
-    fun stop() {
-        executor.shutdown()
-        if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-            executor.shutdownNow()
-        }
-        logger.info("Outbox processor stopped")
-    }
-
-    private fun processEntries() {
-        try {
-            val entries = outboxRepository.fetchUnprocessed()
-            if (entries.isEmpty()) return
-
-            logger.debug("Processing {} outbox entries", entries.size)
-            entries.forEach { entry ->
-                try {
-                    when (entry.payloadType) {
-                        "MESSAGE_CREATED", "MESSAGE_UPDATED", "MESSAGE_DELETED" -> {
-                            logger.info("Outbox entry {} triggered sync check", entry.id)
-                            syncProvider?.sync()
-                        }
-                        else -> logger.info("Processed outbox entry: {} (Type: {})", entry.id, entry.payloadType)
+    private fun processEntries(entries: List<OutboxEntry>) {
+        entries.forEach { entry ->
+            try {
+                // Here we would normally sync to external systems
+                logger.debug("Processing entry: {} ({})", entry.id, entry.payloadType)
+                
+                if (transactionManager != null) {
+                    transactionManager.inTransaction {
+                        outboxRepository.markProcessed(entry.id)
                     }
+                } else {
                     outboxRepository.markProcessed(entry.id)
-                } catch (e: Exception) {
-                    logger.error("Failed to process outbox entry {}", entry.id, e)
-                    outboxRepository.markFailed(entry.id, e.message ?: "Unknown error", maxRetries)
                 }
+            } catch (e: IllegalStateException) {
+                logger.error("Known error processing outbox entry {}: {}", entry.id, e.message)
+                outboxRepository.markFailed(entry.id, e.message ?: "Illegal state")
+            } catch (e: IllegalArgumentException) {
+                logger.error("Validation error for outbox entry {}: {}", entry.id, e.message)
+                outboxRepository.markFailed(entry.id, e.message ?: "Invalid argument")
             }
-        } catch (e: Exception) {
-            logger.error("Error fetching outbox entries", e)
         }
     }
 }

@@ -2,6 +2,7 @@ package dev.outerstellar.starter.swing
 
 import java.awt.Desktop
 import java.net.URI
+import java.net.URISyntaxException
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.DeepLinkHandler")
@@ -24,8 +25,10 @@ object DeepLinkHandler {
             } else {
                 logger.warn("DeepLinkHandler: APP_OPEN_URI not supported on this platform")
             }
-        } catch (e: Exception) {
-            logger.error("Failed to setup DeepLinkHandler", e)
+        } catch (e: UnsupportedOperationException) {
+            logger.warn("DeepLink setup not supported: {}", e.message)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            logger.error("Unexpected error setting up DeepLinkHandler: {}", e.message)
         }
     }
 
@@ -58,8 +61,10 @@ object DeepLinkHandler {
             if (arg.startsWith("outerstellar://")) {
                 try {
                     handleUri(URI(arg))
-                } catch (e: Exception) {
-                    logger.error("Failed to parse deep link arg: $arg", e)
+                } catch (e: URISyntaxException) {
+                    logger.error("Failed to parse deep link arg {}: {}", arg, e.message)
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    logger.error("Unexpected error processing deep link {}: {}", arg, e.message)
                 }
             }
         }

@@ -1,16 +1,17 @@
 package dev.outerstellar.starter.swing
 
-import com.outerstellar.i18n.I18nService
-import org.slf4j.LoggerFactory
+import java.io.IOException
+import java.net.MalformedURLException
+import java.net.URI
 import java.net.URL
 import javax.swing.SwingWorker
+import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.UpdateService")
 
 class UpdateService(
     private val currentVersion: String,
     private val updateUrl: String,
-    private val i18nService: I18nService,
     private val onUpdateAvailable: (String) -> Unit
 ) {
     fun checkForUpdates() {
@@ -20,24 +21,23 @@ class UpdateService(
         }
 
         object : SwingWorker<String?, Unit>() {
+            @Suppress("TooGenericExceptionCaught")
             override fun doInBackground(): String? {
                 return try {
                     logger.info("Checking for updates at $updateUrl")
-                    // In a real app, this would be an HTTP request to get the latest version
-                    // For this starter project, we simulate the check
-                    // We can also try to read from the URL if it's a real file/endpoint
                     val latestVersion = readLatestVersion()
-                    if (isNewer(latestVersion, currentVersion)) {
-                        latestVersion
-                    } else {
-                        null
-                    }
+                    if (isNewer(latestVersion, currentVersion)) latestVersion
+                    else null
+                } catch (e: IOException) {
+                    logger.error("IO error checking for updates: {}", e.message)
+                    null
                 } catch (e: Exception) {
-                    logger.error("Failed to check for updates", e)
+                    logger.error("Unexpected error checking for updates: {}", e.message)
                     null
                 }
             }
 
+            @Suppress("TooGenericExceptionCaught")
             override fun done() {
                 try {
                     val latestVersion = get()
@@ -47,35 +47,39 @@ class UpdateService(
                     } else {
                         logger.info("No update available or check failed")
                     }
+                } catch (e: java.util.concurrent.ExecutionException) {
+                    logger.error("Execution error processing update check result: {}", e.message)
                 } catch (e: Exception) {
-                    logger.error("Error processing update check result", e)
+                    logger.error("Error processing update check result: {}", e.message)
                 }
             }
         }.execute()
     }
 
     private fun readLatestVersion(): String {
-        // Simulation: If updateUrl is "local", return current version.
-        // Otherwise try to fetch.
         if (updateUrl == "local") return currentVersion
 
         return try {
-            URL(updateUrl).readText().trim()
-        } catch (e: Exception) {
-            // Fallback for simulation/testing
-            logger.warn("Could not read from $updateUrl, returning current version")
+            val url: URL = URI.create(updateUrl).toURL()
+            url.readText().trim()
+        } catch (e: MalformedURLException) {
+            logger.warn("Invalid update URL {}: {}", updateUrl, e.message)
+            currentVersion
+        } catch (e: IOException) {
+            logger.warn("Could not read from {}, returning current version. Error: {}", updateUrl, e.message)
             currentVersion
         }
     }
 
     private fun isNewer(latest: String, current: String): Boolean {
-        // Simple version comparison (e.g. 1.1.0 > 1.0.0)
         val latestParts = latest.split('.').mapNotNull { it.toIntOrNull() }
         val currentParts = current.split('.').mapNotNull { it.toIntOrNull() }
 
-        for (i in 0 until minOf(latestParts.size, currentParts.size)) {
-            if (latestParts[i] > currentParts[i]) return true
-            if (latestParts[i] < currentParts[i]) return false
+        val size = minOf(latestParts.size, currentParts.size)
+        for (i in 0 until size) {
+            if (latestParts[i] != currentParts[i]) {
+                return latestParts[i] > currentParts[i]
+            }
         }
         return latestParts.size > currentParts.size
     }

@@ -4,6 +4,7 @@ import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.StoredMessage
 import dev.outerstellar.starter.sync.SyncMessage
 
+@Suppress("TooManyFunctions")
 interface MessageRepository {
   fun listMessages(query: String? = null, year: Int? = null, limit: Int = 100, offset: Int = 0): List<MessageSummary>
 

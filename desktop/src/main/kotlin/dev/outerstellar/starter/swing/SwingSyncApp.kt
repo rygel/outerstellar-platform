@@ -8,14 +8,10 @@ import dev.outerstellar.starter.di.desktopModule
 import dev.outerstellar.starter.di.persistenceModule
 import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.model.MessageSummary
-import dev.outerstellar.starter.model.ThemeDefinition
 import dev.outerstellar.starter.model.ThemeCatalog
-import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.model.ThemeDefinition
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
-import dev.outerstellar.starter.swing.DesktopState
-import dev.outerstellar.starter.swing.DesktopStateProvider
-import dev.outerstellar.starter.swing.SystemTrayNotifier
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import net.miginfocom.swing.MigLayout
 import java.awt.BorderLayout
@@ -27,17 +23,35 @@ import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import java.util.Locale
 import javax.sql.DataSource
-import javax.swing.*
+import javax.swing.DefaultListCellRenderer
+import javax.swing.DefaultListModel
+import javax.swing.JButton
+import javax.swing.JComboBox
+import javax.swing.JDialog
+import javax.swing.JFrame
+import javax.swing.JLabel
+import javax.swing.JList
+import javax.swing.JMenu
+import javax.swing.JMenuBar
+import javax.swing.JMenuItem
+import javax.swing.JOptionPane
+import javax.swing.JPanel
+import javax.swing.JPasswordField
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
+import javax.swing.JTextField
+import javax.swing.JWindow
+import javax.swing.SwingConstants
+import javax.swing.SwingUtilities
+import javax.swing.UIManager
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import org.koin.core.context.startKoin
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import org.slf4j.LoggerFactory
 
-private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.SwingSyncApp")
-private const val frameWidth = 1000
-private const val frameHeight = 750
+private const val FRAME_WIDTH = 1000
+private const val FRAME_HEIGHT = 750
 
 object DesktopComponent : KoinComponent {
   val config: SwingAppConfig by inject()
@@ -99,6 +113,40 @@ fun main() {
   }
 }
 
+private const val SPLASH_WIDTH = 400
+private const val SPLASH_HEIGHT = 300
+private const val SPLASH_LOGO_SIZE = 64
+private const val SPLASH_TITLE_SIZE = 28
+private const val SPLASH_STATUS_SIZE = 14
+private const val LAYOUT_GAP = 20
+
+private fun showSplash(): JWindow {
+    val window = JWindow()
+    val content = JPanel(BorderLayout(LAYOUT_GAP, LAYOUT_GAP))
+    content.border = javax.swing.BorderFactory.createLineBorder(Color.GRAY)
+    content.background = Color.WHITE
+    
+    val logo = RemixIcon.get("system/planet-fill", SPLASH_LOGO_SIZE)
+    val label = JLabel("Outerstellar", logo, SwingConstants.CENTER)
+    label.font = Font("Inter", Font.BOLD, SPLASH_TITLE_SIZE)
+    label.verticalTextPosition = SwingConstants.BOTTOM
+    label.horizontalTextPosition = SwingConstants.CENTER
+    
+    val status = JLabel("Starting application...", SwingConstants.CENTER)
+    status.font = Font("Inter", Font.PLAIN, SPLASH_STATUS_SIZE)
+    status.foreground = Color.DARK_GRAY
+    
+    content.add(label, BorderLayout.CENTER)
+    content.add(status, BorderLayout.SOUTH)
+    
+    window.contentPane = content
+    window.size = Dimension(SPLASH_WIDTH, SPLASH_HEIGHT)
+    window.setLocationRelativeTo(null)
+    window.isVisible = true
+    return window
+}
+
+@Suppress("TooManyFunctions")
 class SyncWindow(
   private val viewModel: SyncViewModel,
   private val themeManager: ThemeManager,
@@ -174,11 +222,12 @@ class SyncWindow(
   }
 
   private fun saveState() {
+    val themeName = UIManager.get("current_theme_name") as? String
     val state = DesktopState(
         windowBounds = frame.bounds,
         isMaximized = (frame.extendedState and JFrame.MAXIMIZED_BOTH) != 0,
         lastSearchQuery = viewModel.searchQuery.takeIf { it.isNotBlank() },
-        themeId = ThemeCatalog.allThemes().find { it.name == (UIManager.get("current_theme_name") as? String) }?.id,
+        themeId = ThemeCatalog.allThemes().find { it.name == themeName }?.id,
         language = Locale.getDefault().language
     )
     DesktopStateProvider.saveState(state)
@@ -189,17 +238,19 @@ class SyncWindow(
       updateUI()
     }
 
-    authorField.document.addDocumentListener(object : DocumentListener {
-      override fun insertUpdate(e: DocumentEvent?) { viewModel.author = authorField.text }
-      override fun removeUpdate(e: DocumentEvent?) { viewModel.author = authorField.text }
-      override fun changedUpdate(e: DocumentEvent?) { viewModel.author = authorField.text }
-    })
+    val docListener = object : DocumentListener {
+      override fun insertUpdate(e: DocumentEvent?) { updateViewModel() }
+      override fun removeUpdate(e: DocumentEvent?) { updateViewModel() }
+      override fun changedUpdate(e: DocumentEvent?) { updateViewModel() }
+      
+      private fun updateViewModel() {
+          viewModel.author = authorField.text
+          viewModel.content = contentArea.text
+      }
+    }
 
-    contentArea.document.addDocumentListener(object : DocumentListener {
-      override fun insertUpdate(e: DocumentEvent?) { viewModel.content = contentArea.text }
-      override fun removeUpdate(e: DocumentEvent?) { viewModel.content = contentArea.text }
-      override fun changedUpdate(e: DocumentEvent?) { viewModel.content = contentArea.text }
-    })
+    authorField.document.addDocumentListener(docListener)
+    contentArea.document.addDocumentListener(docListener)
     
     authorField.text = viewModel.author
     contentArea.text = viewModel.content
@@ -239,7 +290,7 @@ class SyncWindow(
             viewModel.stopAutoSync()
         }
     })
-    frame.minimumSize = Dimension(frameWidth, frameHeight)
+    frame.minimumSize = Dimension(FRAME_WIDTH, FRAME_HEIGHT)
     frame.setLocationRelativeTo(null)
     frame.jMenuBar = createMenuBar()
 
@@ -255,10 +306,16 @@ class SyncWindow(
 
     // 2. Message List
     messagesList.cellRenderer = object : DefaultListCellRenderer() {
-        override fun getListCellRendererComponent(list: JList<*>?, value: Any?, index: Int, isSelected: Boolean, cellHasFocus: Boolean) =
-          super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).also { c ->
+        override fun getListCellRendererComponent(
+            list: javax.swing.JList<*>?, 
+            value: Any?, 
+            index: Int, 
+            isSelected: Boolean, 
+            cellHasFocus: Boolean
+        ) = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).also { c ->
             val msg = value as MessageSummary
-            (c as JLabel).text = "<html><b>${msg.author}</b> &mdash; ${msg.updatedAtLabel()}<br/>${msg.content}</html>"
+            (c as JLabel).text = "<html><b>${msg.author}</b> &mdash; " +
+                "${msg.updatedAtLabel()}<br/>${msg.content}</html>"
           }
     }
     mainPanel.add(JScrollPane(messagesList), "grow, wrap")
@@ -297,8 +354,8 @@ class SyncWindow(
     themeMenu.add(standardThemes)
     themeMenu.addSeparator()
 
-    val outerstellarThemes: List<ThemeDefinition> = ThemeCatalog.allThemes().sortedBy { it.name }
-    outerstellarThemes.forEach { theme ->
+    val themes: List<ThemeDefinition> = ThemeCatalog.allThemes().sortedBy { it.name }
+    themes.forEach { theme ->
         val item = JMenuItem(theme.name)
         item.addActionListener { 
             themeManager.applyTheme(theme)
@@ -344,7 +401,10 @@ class SyncWindow(
     dialog.layout = MigLayout("fillx, ins 20, gap 10", "[][grow]", "[][][]")
     
     dialog.add(JLabel(i18nService.translate("swing.settings.language")))
-    val languages = arrayOf("en" to i18nService.translate("swing.language.en"), "fr" to i18nService.translate("swing.language.fr"))
+    val languages = arrayOf(
+        "en" to i18nService.translate("swing.language.en"), 
+        "fr" to i18nService.translate("swing.language.fr")
+    )
     val langCombo = JComboBox<String>(languages.map { it.second }.toTypedArray()).apply { name = "langCombo" }
     langCombo.selectedIndex = languages.indexOfFirst { it.first == Locale.getDefault().language }.coerceAtLeast(0)
     dialog.add(langCombo, "growx, wrap")
@@ -377,29 +437,4 @@ class SyncWindow(
     dialog.setLocationRelativeTo(frame)
     dialog.isVisible = true
   }
-}
-
-private fun showSplash(): JWindow {
-    val window = JWindow()
-    val content = JPanel(BorderLayout(20, 20))
-    content.border = BorderFactory.createLineBorder(Color.GRAY)
-    content.background = Color.WHITE
-    
-    val label = JLabel("Outerstellar", RemixIcon.get("system/planet-fill", 64), SwingConstants.CENTER)
-    label.font = Font("Inter", Font.BOLD, 28)
-    label.verticalTextPosition = SwingConstants.BOTTOM
-    label.horizontalTextPosition = SwingConstants.CENTER
-    
-    val status = JLabel("Starting application...", SwingConstants.CENTER)
-    status.font = Font("Inter", Font.PLAIN, 14)
-    status.foreground = Color.DARK_GRAY
-    
-    content.add(label, BorderLayout.CENTER)
-    content.add(status, BorderLayout.SOUTH)
-    
-    window.contentPane = content
-    window.size = Dimension(400, 300)
-    window.setLocationRelativeTo(null)
-    window.isVisible = true
-    return window
 }

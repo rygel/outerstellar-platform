@@ -1,61 +1,50 @@
 package dev.outerstellar.starter.web
 
-import dev.outerstellar.starter.service.EventPublisher
+import org.http4k.routing.websockets
 import org.http4k.websocket.Websocket
 import org.http4k.websocket.WsHandler
 import org.http4k.websocket.WsMessage
-import org.http4k.websocket.WsResponse
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 
-object SyncWebSocket : EventPublisher {
+object SyncWebSocket : WebComponent<Nothing>, dev.outerstellar.starter.service.EventPublisher {
     private val logger = LoggerFactory.getLogger(SyncWebSocket::class.java)
-    private val connectedClients = ConcurrentHashMap.newKeySet<Websocket>()
+    private val connections = ConcurrentHashMap.newKeySet<Websocket>()
 
-    val handler: WsHandler = { _ ->
-        WsResponse { ws: Websocket ->
-            connectedClients.add(ws)
-            logger.info("New WebSocket client connected. Total clients: ${connectedClients.size}")
+    val handler: WsHandler = websockets(
+        "/" bind { ws: Websocket ->
+            connections.add(ws)
+            logger.info("New WebSocket connection established. Total: {}", connections.size)
 
             ws.onMessage { msg ->
-                logger.info("Received WebSocket message: ${msg.bodyString()}")
+                logger.debug("Received message: {}", msg.bodyString())
             }
 
             ws.onClose {
-                connectedClients.remove(ws)
-                logger.info("WebSocket client disconnected. Total clients: ${connectedClients.size}")
+                connections.remove(ws)
+                logger.info("WebSocket connection closed. Total: {}", connections.size)
+            }
+
+            ws.onError { e ->
+                logger.error("WebSocket error: {}", e.message)
+                connections.remove(ws)
             }
         }
-    }
+    )
 
     override fun publishRefresh(targetId: String) {
-        broadcastRefresh(targetId)
+        val message = WsMessage("refresh:$targetId")
+        connections.forEach { ws ->
+            try {
+                ws.send(message)
+            } catch (e: org.http4k.websocket.WsException) {
+                logger.warn("Failed to send refresh message to websocket: {}", e.message)
+                connections.remove(ws)
+            }
+        }
     }
 
-    fun broadcastUpdate(targetId: String, html: String) {
-        val payload = """<div id="$targetId" hx-swap-oob="true">$html</div>"""
-        val message = WsMessage(payload)
-        
-        connectedClients.forEach { ws ->
-            try {
-                ws.send(message)
-            } catch (e: Exception) {
-                logger.warn("Failed to send WebSocket message to client, removing from list.")
-                connectedClients.remove(ws)
-            }
-        }
-    }
-    
-    fun broadcastRefresh(targetId: String) {
-        val payload = """<div id="$targetId" hx-get="/components/message-list" hx-trigger="load" hx-swap="outerHTML"></div>"""
-        val message = WsMessage(payload)
-        
-        connectedClients.forEach { ws ->
-            try {
-                ws.send(message)
-            } catch (e: Exception) {
-                connectedClients.remove(ws)
-            }
-        }
+    override fun build(ctx: WebContext, vararg args: Any?): Nothing {
+        throw UnsupportedOperationException("SyncWebSocket is a handler, not a view component")
     }
 }

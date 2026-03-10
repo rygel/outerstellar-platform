@@ -1,21 +1,24 @@
 package dev.outerstellar.starter.service
 
+import dev.outerstellar.starter.model.MessageNotFoundException
 import dev.outerstellar.starter.model.MessageSummary
+import dev.outerstellar.starter.model.PagedResult
+import dev.outerstellar.starter.model.PaginationMetadata
 import dev.outerstellar.starter.model.StoredMessage
-import dev.outerstellar.starter.model.*
+import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.persistence.NoOpMessageCache
+import dev.outerstellar.starter.persistence.OutboxEntry
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.persistence.TransactionManager
-import dev.outerstellar.starter.persistence.NoOpMessageCache
 import dev.outerstellar.starter.sync.SyncConflict
-import dev.outerstellar.starter.sync.SyncMessage
+import dev.outerstellar.starter.sync.SyncPullResponse
 import dev.outerstellar.starter.sync.SyncPushRequest
 import dev.outerstellar.starter.sync.SyncPushResponse
-import dev.outerstellar.starter.sync.SyncPullResponse
-import dev.outerstellar.starter.persistence.OutboxEntry
 import io.konform.validation.Invalid
-import java.util.*
+import org.slf4j.LoggerFactory
+import java.util.UUID
 
 class MessageService(
     private val repository: MessageRepository,
@@ -24,6 +27,7 @@ class MessageService(
     private val cache: MessageCache = NoOpMessageCache,
     private val eventPublisher: EventPublisher = NoOpEventPublisher
 ) {
+    private val logger = LoggerFactory.getLogger(MessageService::class.java)
 
     fun listMessages(
         query: String? = null,
@@ -120,7 +124,10 @@ class MessageService(
         var appliedCount = 0
 
         request.messages.forEach { incoming ->
-            val current = try { findBySyncId(incoming.syncId) } catch (e: MessageNotFoundException) { null }
+            val current = try { findBySyncId(incoming.syncId) } catch (e: MessageNotFoundException) {
+                logger.trace("No existing message found for syncId: {}. Exception: {}", incoming.syncId, e.message)
+                null
+            }
             when {
                 current == null || incoming.updatedAtEpochMs > current.updatedAtEpochMs -> {
                     val updated = repository.upsertSyncedMessage(incoming, dirty = false)

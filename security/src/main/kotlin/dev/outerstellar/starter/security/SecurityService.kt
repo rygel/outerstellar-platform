@@ -10,22 +10,24 @@ class SecurityService(
 
     fun authenticate(username: String, password: String): User? {
         val user = userRepository.findByUsername(username)
-        if (user == null) {
-            logger.warn("Authentication failed: User $username not found")
-            return null
-        }
-
-        if (!user.enabled) {
-            logger.warn("Authentication failed: User $username is disabled")
-            return null
-        }
-
-        return if (passwordEncoder.matches(password, user.passwordHash)) {
-            logger.info("Authentication successful for user $username")
-            user
-        } else {
-            logger.warn("Authentication failed: Invalid password for user $username")
-            null
+        
+        return when {
+            user == null -> {
+                logger.warn("Authentication failed: User $username not found")
+                null
+            }
+            !user.enabled -> {
+                logger.warn("Authentication failed: User $username is disabled")
+                null
+            }
+            passwordEncoder.matches(password, user.passwordHash) -> {
+                logger.info("Authentication successful for user $username")
+                user
+            }
+            else -> {
+                logger.warn("Authentication failed: Invalid password for user $username")
+                null
+            }
         }
     }
 }

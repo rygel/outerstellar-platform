@@ -84,7 +84,9 @@ class SyncViewModel(
                     userName = result.username
                     isLoggedIn = true
                     true to null
-                } catch (e: Exception) {
+                } catch (e: dev.outerstellar.starter.sync.SyncException) {
+                    false to e.message
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                     false to (e.cause?.message ?: e.message ?: "Unknown error")
                 }
             }
@@ -94,7 +96,7 @@ class SyncViewModel(
                 if (success) {
                     status = "Logged in as $userName"
                     author = userName
-                    startAutoSync() // Start auto-sync on successful login
+                    startAutoSync()
                 }
                 onResult(success, error)
                 notifyObservers()
@@ -140,12 +142,20 @@ class SyncViewModel(
 
                 try {
                     val stats = syncService.sync()
-                    status = i18nService.translate("swing.status.complete", stats.pushedCount, stats.pulledCount, stats.conflictCount)
+                    status = i18nService.translate(
+                        "swing.status.complete", 
+                        stats.pushedCount, 
+                        stats.pulledCount, 
+                        stats.conflictCount
+                    )
                     if (!isAuto) {
                         notifier?.notifySuccess(status)
                     }
-                } catch (e: Exception) {
-                    val errorMsg = i18nService.translate("swing.status.failed", e.cause?.message ?: e.message ?: "unknown error")
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    val errorMsg = i18nService.translate(
+                        "swing.status.failed", 
+                        e.cause?.message ?: e.message ?: "unknown error"
+                    )
                     if (!isAuto) {
                         notifier?.notifyFailure(errorMsg)
                     }
