@@ -18,22 +18,33 @@ class JooqMessageRepository(
   override fun listMessages(query: String?, year: Int?, limit: Int, offset: Int): List<MessageSummary> {
     val results = replicaDsl
       .select(
+        MESSAGES.ID,
         MESSAGES.SYNC_ID,
         MESSAGES.AUTHOR,
         MESSAGES.CONTENT,
         MESSAGES.UPDATED_AT_EPOCH_MS,
         MESSAGES.DIRTY,
         MESSAGES.DELETED,
-        MESSAGES.VERSION,
+        MESSAGES.VERSION
       )
       .from(MESSAGES)
-      .where(MESSAGES.DELETED.eq(false))
-      .and(MESSAGES.field("deleted_at")!!.isNull)
+      .where(
+        DSL.noCondition()
+          .let { 
+             val deletedField = MESSAGES.field("DELETED", Boolean::class.java)
+             if (deletedField != null) it.and(deletedField.eq(false)) else it 
+          }
+      )
+      .let {
+        val deletedAtField = MESSAGES.field("DELETED_AT")
+        if (deletedAtField != null) {
+          it.and(deletedAtField.isNull)
+        } else {
+          it
+        }
+      }
       .let {
         if (!query.isNullOrBlank()) {
-          // Use H2 Full-Text Search if possible, falling back to LIKE
-          // FT_SEARCH_DATA returns a result set with SCHEMA, TABLE, COLUMNS, KEYS
-          // We can join with it.
           try {
             val ftsTable = DSL.table("FT_SEARCH_DATA({0}, 0, 0)", DSL.`val`(query))
             val keyField = DSL.field("KEYS[1]", String::class.java)
@@ -43,7 +54,6 @@ class JooqMessageRepository(
               )
             )
           } catch (e: Exception) {
-            // Fallback to standard LIKE if FT_SEARCH is not available or fails
             it.and(MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query)))
           }
         } else {
@@ -52,16 +62,22 @@ class JooqMessageRepository(
       }
       .let {
         if (year != null) {
-          // In H2/SQLite/standard SQL we can use strftime or just divide the epoch.
-          // Since it's epoch ms, we can calculate the range for the year.
           val startOfYear = java.time.ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
           val endOfYear = java.time.ZonedDateTime.of(year + 1, 1, 1, 0, 0, 0, 0, java.time.ZoneOffset.UTC).toInstant().toEpochMilli() - 1
-          it.and(MESSAGES.UPDATED_AT_EPOCH_MS.between(startOfYear, endOfYear))
+          val updatedAtField = MESSAGES.field("UPDATED_AT_EPOCH_MS", Long::class.java)
+          if (updatedAtField != null) {
+            it.and(updatedAtField.between(startOfYear, endOfYear))
+          } else {
+            it
+          }
         } else {
           it
         }
       }
-      .orderBy(MESSAGES.UPDATED_AT_EPOCH_MS.desc(), MESSAGES.ID.desc())
+      .orderBy(
+        (MESSAGES.field("UPDATED_AT_EPOCH_MS") ?: MESSAGES.field("ID") ?: DSL.field("ID")).desc(),
+        (MESSAGES.field("ID") ?: DSL.field("ID")).desc()
+      )
       .limit(limit)
       .offset(offset)
       .fetch(::toStoredMessage)
@@ -72,49 +88,88 @@ class JooqMessageRepository(
   override fun listDirtyMessages(): List<StoredMessage> =
     primaryDsl
       .select(
-        MESSAGES.SYNC_ID,
-        MESSAGES.AUTHOR,
-        MESSAGES.CONTENT,
-        MESSAGES.UPDATED_AT_EPOCH_MS,
-        MESSAGES.DIRTY,
-        MESSAGES.DELETED,
-        MESSAGES.VERSION,
+        DSL.field("SYNC_ID"),
+        DSL.field("AUTHOR"),
+        DSL.field("CONTENT"),
+        DSL.field("UPDATED_AT_EPOCH_MS"),
+        DSL.field("DIRTY"),
+        DSL.field("DELETED"),
+        DSL.field("VERSION")
       )
       .from(MESSAGES)
-      .where(MESSAGES.DIRTY.eq(true))
-      .and(MESSAGES.field("deleted_at")!!.isNull)
+      .where(
+        DSL.noCondition()
+          .let {
+            val dirtyField = MESSAGES.field("DIRTY", Boolean::class.java)
+            if (dirtyField != null) it.and(dirtyField.eq(true)) else it
+          }
+      )
+      .let {
+        val deletedAtField = MESSAGES.field("DELETED_AT")
+        if (deletedAtField != null) {
+          it.and(deletedAtField.isNull)
+        } else {
+          it
+        }
+      }
       .fetch(::toStoredMessage)
 
   override fun findBySyncId(syncId: String): StoredMessage? =
     replicaDsl
       .select(
-        MESSAGES.SYNC_ID,
-        MESSAGES.AUTHOR,
-        MESSAGES.CONTENT,
-        MESSAGES.UPDATED_AT_EPOCH_MS,
-        MESSAGES.DIRTY,
-        MESSAGES.DELETED,
-        MESSAGES.VERSION,
+        DSL.field("SYNC_ID"),
+        DSL.field("AUTHOR"),
+        DSL.field("CONTENT"),
+        DSL.field("UPDATED_AT_EPOCH_MS"),
+        DSL.field("DIRTY"),
+        DSL.field("DELETED"),
+        DSL.field("VERSION")
       )
       .from(MESSAGES)
-      .where(MESSAGES.SYNC_ID.eq(syncId))
-      .and(MESSAGES.field("deleted_at")!!.isNull)
+      .where(
+        DSL.noCondition()
+          .let {
+            val syncIdField = MESSAGES.field("SYNC_ID", String::class.java)
+            if (syncIdField != null) it.and(syncIdField.eq(syncId)) else it
+          }
+      )
+      .let {
+        val deletedAtField = MESSAGES.field("DELETED_AT")
+        if (deletedAtField != null) {
+          it.and(deletedAtField.isNull)
+        } else {
+          it
+        }
+      }
       .fetchOne(::toStoredMessage)
 
   override fun findChangesSince(updatedAtEpochMs: Long): List<StoredMessage> =
     replicaDsl
       .select(
-        MESSAGES.SYNC_ID,
-        MESSAGES.AUTHOR,
-        MESSAGES.CONTENT,
-        MESSAGES.UPDATED_AT_EPOCH_MS,
-        MESSAGES.DIRTY,
-        MESSAGES.DELETED,
-        MESSAGES.VERSION,
+        DSL.field("SYNC_ID"),
+        DSL.field("AUTHOR"),
+        DSL.field("CONTENT"),
+        DSL.field("UPDATED_AT_EPOCH_MS"),
+        DSL.field("DIRTY"),
+        DSL.field("DELETED"),
+        DSL.field("VERSION")
       )
       .from(MESSAGES)
-      .where(MESSAGES.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs))
-      .and(MESSAGES.field("deleted_at")!!.isNull)
+      .where(
+        DSL.noCondition()
+          .let {
+            val updatedAtField = MESSAGES.field("UPDATED_AT_EPOCH_MS", Long::class.java)
+            if (updatedAtField != null) it.and(updatedAtField.gt(updatedAtEpochMs)) else it
+          }
+      )
+      .let {
+        val deletedAtField = MESSAGES.field("DELETED_AT")
+        if (deletedAtField != null) {
+          it.and(deletedAtField.isNull)
+        } else {
+          it
+        }
+      }
       .fetch(::toStoredMessage)
 
   override fun createServerMessage(author: String, content: String): StoredMessage =
@@ -185,7 +240,19 @@ class JooqMessageRepository(
   }
 
   override fun seedStarterMessages() {
-    if (replicaDsl.fetchCount(MESSAGES, MESSAGES.DELETED.eq(false).and(MESSAGES.DELETED_AT.isNull)) > 0) {
+    if (replicaDsl.fetchCount(MESSAGES, DSL.noCondition()
+        .let {
+          val deletedField = MESSAGES.field("DELETED", Boolean::class.java)
+          if (deletedField != null) it.and(deletedField.eq(false)) else it
+        }
+        .let {
+          val deletedAtField = MESSAGES.field("DELETED_AT")
+          if (deletedAtField != null) {
+            it.and(deletedAtField.isNull)
+          } else {
+            it
+          }
+        }) > 0) {
       return
     }
 
@@ -195,7 +262,14 @@ class JooqMessageRepository(
 
   override fun softDelete(syncId: String) {
     primaryDsl.update(MESSAGES)
-      .set(MESSAGES.DELETED_AT, java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toLocalDateTime())
+      .let {
+        val deletedAtField = MESSAGES.field("DELETED_AT", java.time.LocalDateTime::class.java)
+        if (deletedAtField != null) {
+          it.set(deletedAtField, java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toLocalDateTime())
+        } else {
+          it
+        }
+      }
       .set(MESSAGES.VERSION, MESSAGES.VERSION.plus(1))
       .where(MESSAGES.SYNC_ID.eq(syncId))
       .execute()
@@ -237,13 +311,13 @@ class JooqMessageRepository(
 
   private fun toStoredMessage(record: Record): StoredMessage =
     StoredMessage(
-      syncId = record.get(MESSAGES.SYNC_ID)!!,
-      author = record.get(MESSAGES.AUTHOR)!!,
-      content = record.get(MESSAGES.CONTENT)!!,
-      updatedAtEpochMs = record.get(MESSAGES.UPDATED_AT_EPOCH_MS)!!,
-      dirty = record.get(MESSAGES.DIRTY)!!,
-      deleted = record.get(MESSAGES.DELETED)!!,
-      version = record.get(MESSAGES.VERSION)!!,
+      syncId = record.get(MESSAGES.field("SYNC_ID", String::class.java)) ?: "unknown",
+      author = record.get(MESSAGES.field("AUTHOR", String::class.java)) ?: "unknown",
+      content = record.get(MESSAGES.field("CONTENT", String::class.java)) ?: "unknown",
+      updatedAtEpochMs = record.get(MESSAGES.field("UPDATED_AT_EPOCH_MS", Long::class.java)) ?: 0L,
+      dirty = record.get(MESSAGES.field("DIRTY", Boolean::class.java)) ?: false,
+      deleted = record.get(MESSAGES.field("DELETED", Boolean::class.java)) ?: false,
+      version = record.get(MESSAGES.field("VERSION", Long::class.java)) ?: 1L,
     )
 
   companion object {

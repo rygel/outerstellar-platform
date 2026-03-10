@@ -1,21 +1,22 @@
 @import dev.outerstellar.starter.web.AuthPage
-@param model: AuthPage
+@import dev.outerstellar.starter.web.Page
+@param model: Page<AuthPage>
 
 @template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
     <section class="panel hero-grid">
         <div>
             <p class="status-badge">${model.shell.pageTitle}</p>
-            <h1>${model.heading}</h1>
-            <p>${model.intro}</p>
+            <h1>${model.data.heading}</h1>
+            <p>${model.data.intro}</p>
         </div>
         <div class="panel panel-muted">
             <strong>HTMX</strong>
-            <p>${model.helperText}</p>
+            <p>${model.data.helperText}</p>
         </div>
     </section>
     <section class="panel">
         <div class="tabs">
-            @for (tab in model.tabs)
+            @for (tab in model.data.tabs)
                 <button class="chip"
                         hx-get="${tab.url}"
                         hx-target="#auth-form-slot"
@@ -26,7 +27,7 @@
         </div>
         <div id="auth-form-slot"
              class="panel panel-muted"
-             hx-get="${model.defaultFormUrl}"
+             hx-get="${model.data.defaultFormUrl}"
              hx-trigger="load"
              hx-swap="innerHTML">
         </div>

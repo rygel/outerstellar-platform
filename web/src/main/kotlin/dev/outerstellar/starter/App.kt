@@ -15,6 +15,7 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
+import org.http4k.filter.ServerFilters
 import org.http4k.format.Jackson
 import org.http4k.routing.ResourceLoader
 import org.http4k.routing.bind
@@ -30,33 +31,44 @@ fun app(
     repository: MessageRepository,
     outboxRepository: OutboxRepository,
     cache: MessageCache,
-    renderer: TemplateRenderer,
+    jteRenderer: TemplateRenderer,
     pageFactory: WebPageFactory,
     config: AppConfig,
     i18nService: I18nService
 ): HttpHandler {
   logger.info("Initializing Outerstellar application")
 
-  val serverRoutes = listOf(
-    SyncApi(messageService),
-    HomeRoutes(messageService, pageFactory, renderer, i18nService),
-    AuthRoutes(pageFactory, renderer),
-    ErrorRoutes(pageFactory, renderer),
-    ComponentRoutes(pageFactory, renderer),
-    DevDashboardRoutes(outboxRepository, cache, pageFactory, renderer, config.devDashboardEnabled)
-  )
-
-  val apiContract = contract {
-    this.renderer = OpenApi3(ApiInfo("Outerstellar Web API", "v1.0"), Jackson)
-    descriptionPath = "/openapi.json"
-    routes += serverRoutes.flatMap { it.routes }
+  // 1. Data/Sync API (JSON)
+  val apiRoutes = contract {
+    renderer = OpenApi3(ApiInfo("Outerstellar Sync API", "v1.0"), Jackson)
+    descriptionPath = "/api/openapi.json"
+    routes += SyncApi(messageService).routes
   }
 
-  logger.info("Contract routes: {}", apiContract)
+  // 2. Main UI (Full HTML Pages)
+  val uiRoutes = contract {
+    renderer = OpenApi3(ApiInfo("Outerstellar UI", "v1.0"), Jackson)
+    descriptionPath = "/ui/openapi.json"
+    routes += HomeRoutes(messageService, repository, pageFactory, jteRenderer, i18nService).routes
+    routes += AuthRoutes(pageFactory, jteRenderer).routes
+    routes += ErrorRoutes(pageFactory, jteRenderer).routes
+    routes += DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
+  }
+
+  // 3. HTMX Components (HTML Fragments)
+  val componentRoutes = contract {
+    renderer = OpenApi3(ApiInfo("Outerstellar Components", "v1.0"), Jackson)
+    descriptionPath = "/components/openapi.json"
+    routes += ComponentRoutes(pageFactory, jteRenderer).routes
+  }
 
   val baseApp: HttpHandler = routes(
     static(ResourceLoader.Classpath("static")),
-    apiContract,
+    apiRoutes,
+    // Inject WebContext into UI and Component routes
+    ServerFilters.InitialiseRequestContext(WebContext.contexts)
+        .then(Filters.stateFilter(config.devDashboardEnabled))
+        .then(routes(uiRoutes, componentRoutes)),
     "/health" bind GET to { Response(Status.OK).body("ok") },
     "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
   )
@@ -64,6 +76,6 @@ fun app(
   return Filters.telemetry
     .then(Filters.requestLogging)
     .then(Filters.serverMetrics)
-    .then(Filters.globalErrorHandler(pageFactory, renderer))
+    .then(Filters.globalErrorHandler(pageFactory, jteRenderer))
     .then(baseApp)
 }

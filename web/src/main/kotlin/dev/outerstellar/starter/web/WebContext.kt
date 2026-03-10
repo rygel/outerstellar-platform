@@ -3,21 +3,34 @@ package dev.outerstellar.starter.web
 import com.outerstellar.i18n.I18nService
 import java.util.Locale
 import org.http4k.core.Request
+import org.http4k.core.RequestContexts
+import org.http4k.core.cookie.cookie
+import org.http4k.lens.RequestContextKey
 
 class WebContext(val request: Request, private val devDashboardEnabled: Boolean = false) {
+    companion object {
+        val contexts = RequestContexts()
+        val KEY = RequestContextKey.required<WebContext>(contexts)
+        
+        const val LANG_COOKIE = "app_lang"
+        const val THEME_COOKIE = "app_theme"
+        const val LAYOUT_COOKIE = "app_layout"
+    }
+    
     val lang: String by lazy {
-        val language = request.query("lang")?.lowercase() ?: Locale.getDefault().language.lowercase()
-        if (language == "fr") "fr" else "en"
+        request.query("lang") 
+            ?: request.cookie(LANG_COOKIE)?.value 
+            ?: Locale.getDefault().language.lowercase().let { if (it == "fr") "fr" else "en" }
     }
 
     val theme: String by lazy {
-        val theme = request.query("theme")?.lowercase() ?: "dark"
-        if (ThemeCatalog.allThemes().any { it.id == theme }) theme else "dark"
+        val value = request.query("theme") ?: request.cookie(THEME_COOKIE)?.value ?: "dark"
+        if (ThemeCatalog.allThemes().any { it.id == value }) value else "dark"
     }
 
     val layout: String by lazy {
-        val layout = request.query("layout")?.lowercase() ?: "nice"
-        if (listOf("nice", "cozy", "compact").any { it == layout }) layout else "nice"
+        val value = request.query("layout") ?: request.cookie(LAYOUT_COOKIE)?.value ?: "nice"
+        if (listOf("nice", "cozy", "compact").any { it == value }) value else "nice"
     }
 
     val i18n: I18nService by lazy {
@@ -26,10 +39,13 @@ class WebContext(val request: Request, private val devDashboardEnabled: Boolean 
         }
     }
 
-    fun url(path: String): String = "$path?lang=$lang&theme=$theme&layout=$layout"
+    /**
+     * Build a clean URL. Since settings are in cookies, we no longer need query params!
+     */
+    fun url(path: String): String = path
 
     fun componentUrl(path: String, pagePath: String): String =
-        "${url(path)}&pagePath=${if (pagePath.isBlank()) "/" else pagePath}"
+        "$path?pagePath=${if (pagePath.isBlank()) "/" else pagePath}"
 
     fun shell(pageTitle: String, activeSection: String): ShellView {
         val currentPath = if (request.uri.path.isBlank()) "/" else request.uri.path

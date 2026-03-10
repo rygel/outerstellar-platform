@@ -42,6 +42,7 @@
         <caffeine.version>3.2.0</caffeine.version>
         <opentelemetry.version>1.41.0</opentelemetry.version>
         <testcontainers.version>1.20.4</testcontainers.version>
+        <kotlin.compiler.daemon>false</kotlin.compiler.daemon>
     </properties>
 
     <dependencyManagement>
@@ -303,6 +304,10 @@
                     <groupId>org.jetbrains.kotlin</groupId>
                     <artifactId>kotlin-maven-plugin</artifactId>
                     <version>${kotlin.version}</version>
+                    <configuration>
+                        <jvmTarget>${java.version}</jvmTarget>
+                        <useDaemon>false</useDaemon>
+                    </configuration>
                     <executions>
                         <execution>
                             <id>compile</id>
@@ -310,9 +315,6 @@
                             <goals>
                                 <goal>compile</goal>
                             </goals>
-                            <configuration>
-                                <jvmTarget>${java.version}</jvmTarget>
-                            </configuration>
                         </execution>
                         <execution>
                             <id>test-compile</id>
@@ -320,9 +322,6 @@
                             <goals>
                                 <goal>test-compile</goal>
                             </goals>
-                            <configuration>
-                                <jvmTarget>${java.version}</jvmTarget>
-                            </configuration>
                         </execution>
                     </executions>
                 </plugin>

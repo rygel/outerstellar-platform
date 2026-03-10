@@ -18,6 +18,8 @@ data class MessageSummary(
     )
 
   fun syncStatusLabel(): String = if (dirty) "Pending sync" else "Synced"
+
+  fun confirmDeleteUrl(): String = "/components/modals/confirm-delete/$syncId"
 }
 
 private val messageTimestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")

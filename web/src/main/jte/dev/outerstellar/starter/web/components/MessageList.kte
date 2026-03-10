@@ -3,66 +3,73 @@
 @param model: MessageListViewModel
 
 <section class="panel" id="message-list-panel">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h2>${model.messagesHeading}</h2>
-        <form method="get" action="/" 
-              hx-get="${model.fragmentUrl}" 
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+        <h2 class="mb-0">${model.messagesHeading}</h2>
+        
+        <form hx-get="${model.searchActionUrl}" 
               hx-target="#message-list-panel" 
               hx-swap="outerHTML" 
+              hx-trigger="keyup changed delay:500ms from:input, change from:select"
               hx-push-url="true"
-              hx-indicator="#search-indicator"
-              hx-trigger="submit, change from:select[name='year']"
-              class="flex flex-wrap gap-2">
+              class="flex gap-2 items-center">
+            <div class="relative">
+                <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 opacity-50"></i>
+                <input type="text" name="q" value="${model.searchQuery}" placeholder="Search messages..." 
+                       class="pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-accent outline-none transition-all">
+            </div>
             
-            <select name="year" class="px-3 py-1 border rounded bg-white">
-                <option value="">All Years</option>
-                @for(year in LocalDate.now().getYear() downTo 2024)
+            <select name="year" class="px-4 py-2 border rounded-lg bg-transparent outline-none cursor-pointer">
+                <option value="">All years</option>
+                @for (year in (LocalDate.now().year downTo 2024))
                     <option value="${year}" selected="${model.selectedYear == year}">${year}</option>
                 @endfor
             </select>
-
-            <div class="relative flex items-center">
-                <input type="text" name="q" value="${model.searchQuery}" placeholder="Search messages..." class="px-3 py-1 border rounded">
-                <i id="search-indicator" class="ri-loader-4-line ri-spin htmx-indicator absolute right-2 text-gray-400"></i>
-            </div>
-            <input type="hidden" name="limit" value="${model.limit}">
-            <button type="submit" class="px-4 py-1 bg-blue-600 text-white rounded">Search</button>
+            
+            <i class="ri-loader-4-line animate-spin htmx-indicator ml-2 text-accent text-xl"></i>
         </form>
     </div>
+
     <div class="message-list">
-        @if(model.messages.isEmpty())
-            <div class="py-10 text-center text-gray-500">
-                No messages found.
-            </div>
+        @if (model.messages.isEmpty())
+            <p class="text-center py-12 opacity-50 italic">No messages found matching your criteria.</p>
         @else
             @for (message in model.messages)
-                <article class="message-card">
-                    <div class="message-meta">
-                        <strong>${message.author}</strong>
-                        <span>${message.updatedAtLabel()}</span>
+                <div class="message-card p-4 border rounded-xl hover:shadow-lg transition-all group relative">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <i class="ri-user-smile-line text-accent"></i>
+                            <strong class="text-lg">${message.author}</strong>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs opacity-40 group-hover:opacity-100 transition-opacity">${message.updatedAtLabel()}</span>
+                            <button class="text-danger opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                                    hx-get="${message.confirmDeleteUrl()}"
+                                    hx-target="body"
+                                    hx-swap="beforeend">
+                                <i class="ri-delete-bin-7-line"></i>
+                            </button>
+                        </div>
                     </div>
-                    <p>${message.content}</p>
-                    <span class="status-badge">${message.syncStatusLabel()}</span>
-                </article>
+                    <p class="opacity-80 leading-relaxed">${message.content}</p>
+                </div>
             @endfor
         @endif
     </div>
-    <div class="flex justify-between mt-6">
-        @if(model.prevOffset != null)
-            <a href="/?q=${if (model.searchQuery != null) model.searchQuery else ""}&year=${if (model.selectedYear != null) model.selectedYear.toString() else ""}&offset=${model.prevOffset}&limit=${model.limit}" 
-               hx-get="${model.fragmentUrl}?q=${if (model.searchQuery != null) model.searchQuery else ""}&year=${if (model.selectedYear != null) model.selectedYear.toString() else ""}&offset=${model.prevOffset}&limit=${model.limit}"
-               hx-target="#message-list-panel"
+
+    <div class="mt-8 flex justify-center gap-4">
+        @if (model.prevPageUrl != null)
+            <a href="${model.prevPageUrl}" 
+               hx-get="${model.prevPageUrl}" 
+               hx-target="#message-list-panel" 
                hx-swap="outerHTML"
                hx-push-url="true"
                class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Previous</a>
-        @else
-            <span></span>
         @endif
-
-        @if(model.nextOffset != null)
-            <a href="/?q=${if (model.searchQuery != null) model.searchQuery else ""}&year=${if (model.selectedYear != null) model.selectedYear.toString() else ""}&offset=${model.nextOffset}&limit=${model.limit}" 
-               hx-get="${model.fragmentUrl}?q=${if (model.searchQuery != null) model.searchQuery else ""}&year=${if (model.selectedYear != null) model.selectedYear.toString() else ""}&offset=${model.nextOffset}&limit=${model.limit}"
-               hx-target="#message-list-panel"
+        
+        @if (model.nextPageUrl != null)
+            <a href="${model.nextPageUrl}" 
+               hx-get="${model.nextPageUrl}" 
+               hx-target="#message-list-panel" 
                hx-swap="outerHTML"
                hx-push-url="true"
                class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Next</a>

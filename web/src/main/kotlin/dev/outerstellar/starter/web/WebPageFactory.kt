@@ -1,4 +1,4 @@
-﻿package dev.outerstellar.starter.web
+package dev.outerstellar.starter.web
 
 import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.model.MessageSummary
@@ -36,8 +36,14 @@ data class ShellView(
 
 data class HomeFeature(val label: String, val value: String)
 
-data class HomePage(
+data class Page<T : ViewModel>(
   val shell: ShellView,
+  val data: T
+) : ViewModel {
+  override fun template(): String = data.template()
+}
+
+data class HomePage(
   val eyebrow: String,
   val intro: String,
   val features: List<HomeFeature>,
@@ -53,7 +59,6 @@ data class HomePage(
 data class AuthModeTab(val key: String, val label: String, val url: String)
 
 data class AuthPage(
-  val shell: ShellView,
   val heading: String,
   val intro: String,
   val helperText: String,
@@ -88,7 +93,6 @@ data class AuthResultFragment(val title: String, val message: String, val toneCl
   ViewModel
 
 data class ErrorPage(
-  val shell: ShellView,
   val statusCode: Int,
   val heading: String,
   val message: String,
@@ -105,7 +109,6 @@ data class ErrorHelpFragment(val title: String, val items: List<String>) : ViewM
 data class FooterStatusFragment(val text: String) : ViewModel
 
 data class DevDashboardPage(
-  val shell: ShellView,
   val metrics: String,
   val cacheStats: Map<String, Any>,
   val outboxPendingCount: Int,
@@ -133,46 +136,50 @@ class WebPageFactory(
 ) {
     private val messageListComponent = MessageListComponent(repository)
 
-    fun buildHomePage(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0, year: Int? = null): HomePage {
+    fun buildHomePage(ctx: WebContext, query: String? = null, limit: Int = 10, offset: Int = 0, year: Int? = null): Page<HomePage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.home"), "/")
         val messageList = messageListComponent.build(ctx, query, limit, offset, year)
 
-        return HomePage(
+        return Page(
             shell = shell,
-            eyebrow = i18n.translate("web.home.eyebrow"),
-            intro = i18n.translate("web.home.intro"),
-            features = listOf(
-                HomeFeature(i18n.translate("web.feature.http.label"), i18n.translate("web.feature.http.value")),
-                HomeFeature(i18n.translate("web.feature.db.label"), i18n.translate("web.feature.db.value")),
-                HomeFeature(i18n.translate("web.feature.sync.label"), i18n.translate("web.feature.sync.value")),
-                HomeFeature(i18n.translate("web.feature.desktop.label"), i18n.translate("web.feature.desktop.value"))
-            ),
-            composerTitle = i18n.translate("web.home.composer.title"),
-            composerIntro = i18n.translate("web.home.composer.intro"),
-            authorPlaceholder = i18n.translate("web.home.composer.author"),
-            contentPlaceholder = i18n.translate("web.home.composer.content"),
-            submitLabel = i18n.translate("web.home.composer.submit"),
-            submitUrl = ctx.url("/messages"),
-            messageList = messageList
+            data = HomePage(
+                eyebrow = i18n.translate("web.home.eyebrow"),
+                intro = i18n.translate("web.home.intro"),
+                features = listOf(
+                    HomeFeature(i18n.translate("web.feature.http.label"), i18n.translate("web.feature.http.value")),
+                    HomeFeature(i18n.translate("web.feature.db.label"), i18n.translate("web.feature.db.value")),
+                    HomeFeature(i18n.translate("web.feature.sync.label"), i18n.translate("web.feature.sync.value")),
+                    HomeFeature(i18n.translate("web.feature.desktop.label"), i18n.translate("web.feature.desktop.value"))
+                ),
+                composerTitle = i18n.translate("web.home.composer.title"),
+                composerIntro = i18n.translate("web.home.composer.intro"),
+                authorPlaceholder = i18n.translate("web.home.composer.author"),
+                contentPlaceholder = i18n.translate("web.home.composer.content"),
+                submitLabel = i18n.translate("web.home.composer.submit"),
+                submitUrl = ctx.url("/messages"),
+                messageList = messageList
+            )
         )
     }
 
-    fun buildAuthPage(ctx: WebContext): AuthPage {
+    fun buildAuthPage(ctx: WebContext): Page<AuthPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.auth"), "/auth")
 
-        return AuthPage(
+        return Page(
             shell = shell,
-            heading = i18n.translate("web.auth.heading"),
-            intro = i18n.translate("web.auth.intro"),
-            helperText = i18n.translate("web.auth.helper"),
-            tabs = listOf(
-                AuthModeTab("sign-in", i18n.translate("web.auth.signin"), ctx.url("/auth/components/forms/sign-in")),
-                AuthModeTab("register", i18n.translate("web.auth.register"), ctx.url("/auth/components/forms/register")),
-                AuthModeTab("recover", i18n.translate("web.auth.recover"), ctx.url("/auth/components/forms/recover"))
-            ),
-            defaultFormUrl = ctx.url("/auth/components/forms/sign-in")
+            data = AuthPage(
+                heading = i18n.translate("web.auth.heading"),
+                intro = i18n.translate("web.auth.intro"),
+                helperText = i18n.translate("web.auth.helper"),
+                tabs = listOf(
+                    AuthModeTab("sign-in", i18n.translate("web.auth.signin"), ctx.url("/auth/components/forms/sign-in")),
+                    AuthModeTab("register", i18n.translate("web.auth.register"), ctx.url("/auth/components/forms/register")),
+                    AuthModeTab("recover", i18n.translate("web.auth.recover"), ctx.url("/auth/components/forms/recover"))
+                ),
+                defaultFormUrl = ctx.url("/auth/components/forms/sign-in")
+            )
         )
     }
 
@@ -234,23 +241,25 @@ class WebPageFactory(
         }
     }
 
-    fun buildErrorPage(ctx: WebContext, kind: String): ErrorPage {
+    fun buildErrorPage(ctx: WebContext, kind: String): Page<ErrorPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.errors"), "/errors")
         val normalizedKind = if (kind == "server-error") "server-error" else "not-found"
         val statusCode = if (normalizedKind == "server-error") 500 else 404
 
-        return ErrorPage(
+        return Page(
             shell = shell,
-            statusCode = statusCode,
-            heading = i18n.translate("web.error.$normalizedKind.title"),
-            message = i18n.translate("web.error.$normalizedKind.message"),
-            primaryActionLabel = i18n.translate("web.error.primary"),
-            primaryActionUrl = ctx.url("/"),
-            secondaryActionLabel = i18n.translate("web.error.secondary"),
-            secondaryActionUrl = ctx.url("/auth"),
-            helpButtonLabel = i18n.translate("web.error.help"),
-            helpUrl = ctx.url("/errors/components/help/$normalizedKind")
+            data = ErrorPage(
+                statusCode = statusCode,
+                heading = i18n.translate("web.error.$normalizedKind.title"),
+                message = i18n.translate("web.error.$normalizedKind.message"),
+                primaryActionLabel = i18n.translate("web.error.primary"),
+                primaryActionUrl = ctx.url("/"),
+                secondaryActionLabel = i18n.translate("web.error.secondary"),
+                secondaryActionUrl = ctx.url("/auth"),
+                helpButtonLabel = i18n.translate("web.error.help"),
+                helpUrl = ctx.url("/errors/components/help/$normalizedKind")
+            )
         )
     }
 
@@ -287,18 +296,20 @@ class WebPageFactory(
         outboxProcessedCount: Int,
         outboxFailedCount: Int,
         telemetryStatus: String
-    ): DevDashboardPage {
+    ): Page<DevDashboardPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.dev"), "/admin/dev")
 
-        return DevDashboardPage(
+        return Page(
             shell = shell,
-            metrics = metrics,
-            cacheStats = cacheStats,
-            outboxPendingCount = outboxPendingCount,
-            outboxProcessedCount = outboxProcessedCount,
-            outboxFailedCount = outboxFailedCount,
-            telemetryStatus = telemetryStatus
+            data = DevDashboardPage(
+                metrics = metrics,
+                cacheStats = cacheStats,
+                outboxPendingCount = outboxPendingCount,
+                outboxProcessedCount = outboxProcessedCount,
+                outboxFailedCount = outboxFailedCount,
+                telemetryStatus = telemetryStatus
+            )
         )
     }
 

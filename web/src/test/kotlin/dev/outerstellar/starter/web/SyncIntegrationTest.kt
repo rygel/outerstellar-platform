@@ -50,7 +50,7 @@ class SyncIntegrationTest : PostgresWebTest() {
             repository = serverRepository, 
             outboxRepository = outbox, 
             cache = cache, 
-            renderer = createRenderer(), 
+            jteRenderer = createRenderer(), 
             pageFactory = pageFactory, 
             config = testConfig, 
             i18nService = i18n

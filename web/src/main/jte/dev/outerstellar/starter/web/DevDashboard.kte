@@ -1,86 +1,57 @@
 @import dev.outerstellar.starter.web.DevDashboardPage
+@import dev.outerstellar.starter.web.Page
+@param model: Page<DevDashboardPage>
 
-@param page: DevDashboardPage
-
-@template.dev.outerstellar.starter.web.Layout(shell = page.shell, content = @`
-    <div class="flex flex-col gap-8 p-6">
-        <header class="flex flex-col gap-2">
-            <h1 class="text-3xl font-bold tracking-tight text-white">Developer Dashboard</h1>
-            <p class="text-zinc-400">Internal system state and performance metrics.</p>
-        </header>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Cache Stats -->
-            <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-                        <i class="ri-database-2-line text-xl"></i>
-                    </div>
-                    <h2 class="text-lg font-semibold text-white">Message Cache</h2>
-                </div>
-                <div class="space-y-2">
-                    @for(entry in page.cacheStats.entries)
-                        <div class="flex justify-between text-sm">
-                            <span class="text-zinc-400">${entry.key}</span>
-                            <span class="text-zinc-100 font-mono">${entry.value.toString()}</span>
-                        </div>
-                    @endfor
-                </div>
-            </section>
-
-            <!-- Outbox Stats -->
-            <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-                        <i class="ri-mail-send-line text-xl"></i>
-                    </div>
-                    <h2 class="text-lg font-semibold text-white">Sync Outbox</h2>
-                </div>
-                <div class="space-y-4">
-                    <div class="flex flex-col items-center justify-center py-2">
-                        <span class="text-4xl font-bold text-white">${page.outboxPendingCount}</span>
-                        <span class="text-sm text-zinc-400">Pending entries</span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4 border-t border-zinc-800 pt-4">
-                        <div class="flex flex-col items-center">
-                            <span class="text-xl font-semibold text-green-500">${page.outboxProcessedCount}</span>
-                            <span class="text-xs text-zinc-500">Processed</span>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <span class="text-xl font-semibold text-red-500">${page.outboxFailedCount}</span>
-                            <span class="text-xs text-zinc-500">Failed (DLQ)</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Telemetry Status -->
-            <section class="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500">
-                        <i class="ri-radar-line text-xl"></i>
-                    </div>
-                    <h2 class="text-lg font-semibold text-white">Observability</h2>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-zinc-400">OpenTelemetry</span>
-                        <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20">Active</span>
-                    </div>
-                    <p class="text-xs text-zinc-500 mt-2">SDK Status: ${page.telemetryStatus}</p>
-                </div>
-            </section>
+@template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
+    <section class="panel hero-grid">
+        <div>
+            <p class="status-badge">System Diagnostics</p>
+            <h1>Developer Dashboard</h1>
+            <p>Real-time metrics and system state for local development.</p>
         </div>
+    </section>
 
-        <!-- Metrics Raw -->
-        <section class="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-            <div class="p-5 border-b border-zinc-800 flex justify-between items-center">
-                <h2 class="text-lg font-semibold text-white">Raw Prometheus Metrics</h2>
-                <a href="/metrics" target="_blank" class="text-xs text-blue-400 hover:text-blue-300 transition-colors">Open /metrics <i class="ri-external-link-line"></i></a>
+    <div class="card-grid">
+        <section class="panel">
+            <h2>Transactional Outbox</h2>
+            <div class="message-list">
+                <div class="message-meta">
+                    <span>Pending</span>
+                    <strong>${model.data.outboxPendingCount}</strong>
+                </div>
+                <div class="message-meta">
+                    <span>Processed</span>
+                    <strong>${model.data.outboxProcessedCount}</strong>
+                </div>
+                <div class="message-meta">
+                    <span>Failed</span>
+                    <strong>${model.data.outboxFailedCount}</strong>
+                </div>
             </div>
-            <div class="p-5 overflow-auto max-h-[400px]">
-                <pre class="text-xs font-mono text-zinc-300 whitespace-pre-wrap">${page.metrics}</pre>
+        </section>
+
+        <section class="panel">
+            <h2>Cache Statistics</h2>
+            <div class="message-list">
+                @for(entry in model.data.cacheStats)
+                    <div class="message-meta">
+                        <span>${entry.key}</span>
+                        <strong>${entry.value.toString()}</strong>
+                    </div>
+                @endfor
             </div>
         </section>
     </div>
+
+    <section class="panel">
+        <h2>OpenTelemetry</h2>
+        <p class="status-badge">${model.data.telemetryStatus}</p>
+    </section>
+
+    <section class="panel">
+        <h2>Application Metrics</h2>
+        <pre class="panel panel-muted" style="overflow: auto; max-height: 400px; font-size: 12px; font-family: monospace;">
+${model.data.metrics}
+        </pre>
+    </section>
 `)

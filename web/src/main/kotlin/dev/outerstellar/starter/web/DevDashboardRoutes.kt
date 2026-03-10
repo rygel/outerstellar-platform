@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.web
 
+import dev.outerstellar.starter.infra.render
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.OutboxRepository
 import org.http4k.contract.ContractRoute
@@ -23,17 +24,16 @@ class DevDashboardRoutes(
     override val routes = if (!devDashboardEnabled) emptyList() else listOf(
         "/admin/dev" meta {
             summary = "Developer Dashboard"
-        } bindContract GET to { request ->
-            val ctx = WebContext(request, devDashboardEnabled)
+        } bindContract GET to { request: org.http4k.core.Request ->
             val metrics = Metrics.registry.scrape()
             val cacheStats = cache.getStats()
             val outboxPendingCount = outboxRepository.countByStatus("PENDING")
             val outboxProcessedCount = outboxRepository.countByStatus("PROCESSED")
             val outboxFailedCount = outboxRepository.countByStatus("FAILED")
-            val telemetryStatus = Telemetry.openTelemetry.toString()
+            val telemetryStatus = "Active (OTLP)"
 
             val page = pageFactory.buildDevDashboardPage(
-                ctx,
+                request.webContext,
                 metrics,
                 cacheStats,
                 outboxPendingCount,
@@ -42,9 +42,7 @@ class DevDashboardRoutes(
                 telemetryStatus
             )
 
-            Response(Status.OK)
-                .header("content-type", htmlContentType)
-                .body(renderer(page))
+            renderer.render(page)
         }
     )
 }

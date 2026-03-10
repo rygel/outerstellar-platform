@@ -1,22 +1,29 @@
 package dev.outerstellar.starter.infra
 
-import gg.jte.ContentType
 import gg.jte.TemplateEngine
 import gg.jte.output.StringOutput
 import gg.jte.resolve.DirectoryCodeResolver
 import gg.jte.resolve.ResourceCodeResolver
 import java.nio.file.Files
 import java.nio.file.Path
+import org.http4k.core.ContentType
+import org.http4k.core.Response
+import org.http4k.core.Status
 import org.http4k.template.TemplateRenderer
 import org.http4k.template.ViewModel
 import org.http4k.template.ViewNotFound
+
+fun TemplateRenderer.render(viewModel: ViewModel, status: Status = Status.OK): Response =
+  Response(status)
+    .header("content-type", ContentType.TEXT_HTML.toHeaderValue() + "; charset=utf-8")
+    .body(this(viewModel))
 
 fun createRenderer(): TemplateRenderer {
   val isProduction = System.getProperty("jte.production") == "true" || System.getenv("JTE_PRODUCTION") == "true"
   val applicationClassLoader = Thread.currentThread().contextClassLoader
 
   val templateEngine = if (isProduction) {
-    TemplateEngine.createPrecompiled(ContentType.Html)
+    TemplateEngine.createPrecompiled(gg.jte.ContentType.Html)
   } else {
     val projectDirectory = Path.of(System.getProperty("user.dir"))
     val sourceTemplates = projectDirectory.resolve(Path.of("web", "src", "main", "jte"))
@@ -26,14 +33,14 @@ fun createRenderer(): TemplateRenderer {
       TemplateEngine.create(
         DirectoryCodeResolver(sourceTemplates),
         generatedTemplateClasses,
-        ContentType.Html,
+        gg.jte.ContentType.Html,
         applicationClassLoader,
       )
     } else {
       TemplateEngine.create(
         ResourceCodeResolver("."),
         generatedTemplateClasses,
-        ContentType.Html,
+        gg.jte.ContentType.Html,
         applicationClassLoader,
       )
     }

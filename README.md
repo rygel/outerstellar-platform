@@ -65,3 +65,55 @@ To run all tests:
 ```bash
 mvn test
 ```
+
+---
+
+### Web Architecture & Adding Routes
+
+The web application uses **http4k** with **JTE** templates and **HTMX** for interactivity. Routes are organized into three logical groups in `App.kt`:
+
+1. **UI Routes**: Full HTML pages (e.g., Home, Auth).
+2. **Component Routes**: HTMX fragments (e.g., `/components/message-list`).
+3. **API Routes**: JSON-based synchronization API.
+
+#### How to Add a New Page:
+
+1. **Create a ViewModel**: Define a Kotlin `data class` implementing `ViewModel` in `WebPageFactory.kt`.
+2. **Create a Template**: Add a corresponding `.kte` file in `web/src/main/jte`. Wrap your content using the `Page<T>` wrapper to inherit the global shell:
+   ```html
+   @import dev.outerstellar.starter.web.MyPage
+   @import dev.outerstellar.starter.web.Page
+   @param model: Page<MyPage>
+   
+   @template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
+       <h1>${model.data.title}</h1>
+   `)
+   ```
+3. **Update the Factory**: Add a `buildMyPage` method to `WebPageFactory.kt` that returns `Page<MyPage>`.
+4. **Register the Route**: Add the route to the appropriate route class (e.g., `HomeRoutes.kt`) and bind it in `App.kt`.
+5. **Access State**: Use `WebContext.KEY(request)` or the helper property `request.webContext` to access the current theme, language, and layout state without manual extraction.
+
+#### Development Best Practices & Safety Rules
+
+To prevent common Kotlin type-inference issues and library conflicts, follow these rules:
+
+*   **Explicit Request Typing**: In route handlers (`bindContract`), always explicitly type the request parameter. This prevents `ClassCastException` where the compiler might confuse a `Request` with a `ViewModel`.
+    ```kotlin
+    // ALWAYS DO THIS:
+    bindContract GET to { request: Request -> 
+        renderer.render(pageFactory.buildAuthPage(request.webContext))
+    }
+    ```
+*   **Fully Qualified Template Types**: JTE and http4k both have a `ContentType` class. Always use the fully qualified name `gg.jte.ContentType.Html` when configuring the template engine to avoid import ambiguity.
+*   **Use the Render Extension**: Never manually construct HTML responses. Use `renderer.render(viewModel)` which automatically handles content-type headers and UTF-8 encoding.
+*   **Contextual Helpers**: Prefer `request.webContext` over manually creating a `WebContext` instance. This ensures you are using the state already extracted by the global filters.
+
+#### HTMX Patterns & Constraints
+
+*   **Discourage OOB Swaps**: The use of HTMX **Out-of-Band (OOB) swaps is discouraged** by default. They should only be implemented if strictly necessary and only after careful consideration.
+    *   **Reasons for avoidance**:
+        1. **Increased Server Complexity**: It requires route handlers to wrap multiple unrelated fragments in a single response, bloating template logic.
+        2. **Risk of State Desync**: Updating elements far away from the trigger can lead to unpredictable UI states across different tabs or sessions.
+        3. **Breaks Locality of Behavior**: It violates the core HTMX principle by spreading the consequences of an action across disparate parts of the DOM.
+        4. **Initialization Logic Duplication**: OOB updates only happen on specific actions; ensuring the "Initial Load" logic matches the "Action Result" logic requires repetitive code.
+    Prefer standard `hx-target` swaps to keep the flow predictable and maintainable.

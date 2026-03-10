@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.web
 
+import dev.outerstellar.starter.infra.render
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
 import org.http4k.contract.div
@@ -19,46 +20,36 @@ class AuthRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer
 ) : ServerRoutes {
-    private val htmlContentType = ContentType.TEXT_HTML.toHeaderValue()
     private val modePath = Path.string().of("mode")
 
     override val routes = listOf(
         "/auth" meta {
             summary = "Auth page"
-        } bindContract GET to { request ->
-            val ctx = WebContext(request)
-            htmlResponse(Status.OK, renderer(pageFactory.buildAuthPage(ctx)))
+        } bindContract GET to { request: org.http4k.core.Request ->
+            renderer.render(pageFactory.buildAuthPage(request.webContext))
         },
         "/auth/components/forms" / modePath meta {
             summary = "Auth form component"
         } bindContract GET to { mode ->
-            { request ->
-                val ctx = WebContext(request)
-                htmlResponse(Status.OK, renderer(pageFactory.buildAuthForm(ctx, mode)))
+            { request: org.http4k.core.Request ->
+                renderer.render(pageFactory.buildAuthForm(request.webContext, mode))
             }
         },
         "/auth/components/result" meta {
             summary = "Auth result component"
-        } bindContract POST to { request ->
-            val ctx = WebContext(request)
+        } bindContract POST to { request: org.http4k.core.Request ->
             val parameters = request.form().toParametersMap()
-            htmlResponse(
-                Status.OK,
-                renderer(
-                    pageFactory.buildAuthResult(
-                        ctx,
-                        mapOf(
-                            "mode" to parameters.getFirst("mode"),
-                            "email" to parameters.getFirst("email"),
-                            "password" to parameters.getFirst("password"),
-                            "confirmPassword" to parameters.getFirst("confirmPassword"),
-                        ),
-                    )
-                ),
+            renderer.render(
+                pageFactory.buildAuthResult(
+                    request.webContext,
+                    mapOf(
+                        "mode" to parameters.getFirst("mode"),
+                        "email" to parameters.getFirst("email"),
+                        "password" to parameters.getFirst("password"),
+                        "confirmPassword" to parameters.getFirst("confirmPassword"),
+                    ),
+                )
             )
         }
     )
-
-    private fun htmlResponse(status: Status, body: String): Response =
-        Response(status).header("content-type", htmlContentType).body(body)
 }

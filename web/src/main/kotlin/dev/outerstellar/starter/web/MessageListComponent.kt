@@ -12,7 +12,10 @@ data class MessageListViewModel(
     val nextOffset: Int?,
     val prevOffset: Int?,
     val limit: Int,
-    val fragmentUrl: String
+    val fragmentUrl: String,
+    val prevPageUrl: String?,
+    val nextPageUrl: String?,
+    val searchActionUrl: String
 ) : ViewModel
 
 class MessageListComponent(private val repository: MessageRepository) : WebComponent<MessageListViewModel> {
@@ -27,6 +30,15 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
         val nextOffset = if (messages.size == limit) offset + limit else null
         val prevOffset = if (offset > 0) (offset - limit).coerceAtLeast(0) else null
 
+        fun buildUrl(newOffset: Int?): String? {
+            if (newOffset == null) return null
+            val base = ctx.url("/components/message-list")
+            val params = mutableListOf("offset=$newOffset", "limit=$limit")
+            if (query != null) params.add("q=$query")
+            if (year != null) params.add("year=$year")
+            return "$base&${params.joinToString("&")}"
+        }
+
         return MessageListViewModel(
             messages = messages,
             messagesHeading = i18n.translate("web.home.messages"),
@@ -35,7 +47,10 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
             nextOffset = nextOffset,
             prevOffset = prevOffset,
             limit = limit,
-            fragmentUrl = ctx.url("/components/message-list")
+            fragmentUrl = ctx.url("/components/message-list"),
+            prevPageUrl = buildUrl(prevOffset),
+            nextPageUrl = buildUrl(nextOffset),
+            searchActionUrl = ctx.url("/components/message-list")
         )
     }
 }
