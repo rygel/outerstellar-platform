@@ -236,6 +236,7 @@ class SyncWindow(
     frame.addWindowListener(object : WindowAdapter() {
         override fun windowClosing(e: WindowEvent?) {
             saveState()
+            viewModel.stopAutoSync()
         }
     })
     frame.minimumSize = Dimension(frameWidth, frameHeight)

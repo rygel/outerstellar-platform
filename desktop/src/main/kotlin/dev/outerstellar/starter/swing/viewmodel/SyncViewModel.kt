@@ -7,6 +7,9 @@ import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncService
 import dev.outerstellar.starter.swing.SystemTrayNotifier
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import javax.swing.SwingWorker
 
 class SyncViewModel(
@@ -16,6 +19,7 @@ class SyncViewModel(
     private val notifier: SystemTrayNotifier? = null
 ) {
     private val observers = mutableListOf<() -> Unit>()
+    private var autoSyncExecutor: ScheduledExecutorService? = null
 
     var messages: List<MessageSummary> = emptyList()
         private set
@@ -90,6 +94,7 @@ class SyncViewModel(
                 if (success) {
                     status = "Logged in as $userName"
                     author = userName
+                    startAutoSync() // Start auto-sync on successful login
                 }
                 onResult(success, error)
                 notifyObservers()
@@ -98,6 +103,7 @@ class SyncViewModel(
     }
 
     fun logout() {
+        stopAutoSync()
         syncService.logout()
         isLoggedIn = false
         userName = ""
@@ -106,22 +112,43 @@ class SyncViewModel(
         notifyObservers()
     }
 
-    fun sync() {
+    fun startAutoSync() {
+        if (autoSyncExecutor != null) return
+        
+        autoSyncExecutor = Executors.newSingleThreadScheduledExecutor().apply {
+            scheduleAtFixedRate({
+                if (!isSyncing && isLoggedIn) {
+                    sync(isAuto = true)
+                }
+            }, 1, 1, TimeUnit.MINUTES)
+        }
+    }
+
+    fun stopAutoSync() {
+        autoSyncExecutor?.shutdown()
+        autoSyncExecutor = null
+    }
+
+    fun sync(isAuto: Boolean = false) {
         if (isSyncing) return
 
         object : SwingWorker<Unit, Unit>() {
             override fun doInBackground() {
                 isSyncing = true
-                status = i18nService.translate("swing.status.syncing")
+                status = if (isAuto) "Auto-syncing..." else i18nService.translate("swing.status.syncing")
                 notifyObservers()
 
                 try {
                     val stats = syncService.sync()
                     status = i18nService.translate("swing.status.complete", stats.pushedCount, stats.pulledCount, stats.conflictCount)
-                    notifier?.notifySuccess(status)
+                    if (!isAuto) {
+                        notifier?.notifySuccess(status)
+                    }
                 } catch (e: Exception) {
                     val errorMsg = i18nService.translate("swing.status.failed", e.cause?.message ?: e.message ?: "unknown error")
-                    notifier?.notifyFailure(errorMsg)
+                    if (!isAuto) {
+                        notifier?.notifyFailure(errorMsg)
+                    }
                     status = errorMsg
                 } finally {
                     isSyncing = false
