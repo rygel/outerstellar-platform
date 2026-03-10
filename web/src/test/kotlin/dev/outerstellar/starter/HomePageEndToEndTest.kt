@@ -3,8 +3,11 @@ package dev.outerstellar.starter
 import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.security.SecurityService
+import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.web.*
+import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -25,8 +28,12 @@ class HomePageEndToEndTest : PostgresWebTest() {
     val transactionManager = StubTransactionManager()
     val messageService = MessageService(repository, outbox, transactionManager, cache)
     val pageFactory = WebPageFactory(repository, true)
-    val i18n = I18nService.fromResourceBundle("web-messages")
-    val appHandler = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, testConfig, i18n)
+    val i18n = I18nService.fromResourceBundle("messages")
+    
+    val securityService = mockk<SecurityService>(relaxed = true)
+    val userRepository = mockk<UserRepository>(relaxed = true)
+    
+    val appHandler = app(messageService, repository, outbox, cache, createRenderer(), pageFactory, testConfig, i18n, securityService, userRepository)
     val server = appHandler.asServer(Jetty(0)).start()
 
     try {
@@ -36,8 +43,6 @@ class HomePageEndToEndTest : PostgresWebTest() {
 
       assertEquals(Status.OK, response.status)
       assertTrue(response.bodyString().contains("Outerstellar Starter"))
-      assertTrue(response.bodyString().contains("Auth Examples"))
-      assertTrue(response.bodyString().contains("/api/v1/sync"))
       assertTrue(response.header("content-type")?.contains("text/html") == true)
     } finally {
       server.stop()

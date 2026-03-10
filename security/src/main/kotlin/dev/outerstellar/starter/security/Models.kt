@@ -1,9 +1,22 @@
 package dev.outerstellar.starter.security
 
-enum class Role {
+import java.util.UUID
+
+enum class UserRole {
     USER, ADMIN
 }
 
-data class User(val id: String, val email: String, val roles: Set<Role>)
+data class User(
+    val id: UUID,
+    val username: String,
+    val email: String,
+    val passwordHash: String,
+    val role: UserRole,
+    val enabled: Boolean = true
+)
 
-data class UserPrincipal(val user: User)
+interface UserRepository {
+    fun findByUsername(username: String): User?
+    fun findByEmail(email: String): User?
+    fun save(user: User)
+}

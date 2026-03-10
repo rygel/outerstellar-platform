@@ -16,6 +16,7 @@ import java.time.Duration
 
 import dev.outerstellar.starter.model.OuterstellarException
 import dev.outerstellar.starter.model.ValidationException
+import dev.outerstellar.starter.security.UserRepository
 
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
@@ -35,12 +36,11 @@ object Filters {
 
     val telemetry: Filter = ServerFilters.OpenTelemetryTracing(Telemetry.openTelemetry)
 
-    fun stateFilter(devDashboardEnabled: Boolean): Filter = Filter { next: HttpHandler ->
+    fun stateFilter(devDashboardEnabled: Boolean, userRepository: UserRepository): Filter = Filter { next: HttpHandler ->
         { request ->
-            val context = WebContext(request, devDashboardEnabled)
+            val context = WebContext(request, devDashboardEnabled, userRepository)
             val response = next(request.with(WebContext.KEY of context))
             
-            // Persist preferences to cookies if they were provided in the query string
             var updatedResponse = response
             
             request.query("lang")?.let { 
@@ -86,7 +86,6 @@ object Filters {
                 if (request.uri.path.startsWith("/api/")) {
                     jsonErrorResponse(status, e.message ?: "An unexpected error occurred")
                 } else if (request.header("HX-Request") == "true") {
-                    // For HTMX, return a simple string that will be caught by our Toast listener
                     Response(status).body(e.message ?: "Action failed")
                 } else {
                     val ctx = try { request.webContext } catch (ex: Exception) { WebContext(request) }

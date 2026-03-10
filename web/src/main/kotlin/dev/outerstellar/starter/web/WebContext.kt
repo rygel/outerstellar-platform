@@ -1,13 +1,21 @@
 package dev.outerstellar.starter.web
 
 import com.outerstellar.i18n.I18nService
+import dev.outerstellar.starter.security.User
+import dev.outerstellar.starter.security.UserRepository
+import dev.outerstellar.starter.security.UserRole
 import java.util.Locale
+import java.util.UUID
 import org.http4k.core.Request
 import org.http4k.core.RequestContexts
 import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestContextKey
 
-class WebContext(val request: Request, private val devDashboardEnabled: Boolean = false) {
+class WebContext(
+    val request: Request, 
+    private val devDashboardEnabled: Boolean = false,
+    private val userRepository: UserRepository? = null
+) {
     companion object {
         val contexts = RequestContexts()
         val KEY = RequestContextKey.required<WebContext>(contexts)
@@ -15,6 +23,7 @@ class WebContext(val request: Request, private val devDashboardEnabled: Boolean 
         const val LANG_COOKIE = "app_lang"
         const val THEME_COOKIE = "app_theme"
         const val LAYOUT_COOKIE = "app_layout"
+        const val SESSION_COOKIE = "app_session"
     }
     
     val lang: String by lazy {
@@ -33,19 +42,28 @@ class WebContext(val request: Request, private val devDashboardEnabled: Boolean 
         if (listOf("nice", "cozy", "compact").any { it == value }) value else "nice"
     }
 
+    val user: User? by lazy {
+        request.cookie(SESSION_COOKIE)?.value?.let { sessionUserId ->
+            try {
+                val uid = UUID.fromString(sessionUserId)
+                // For demo, we just return admin if session cookie exists and valid UUID
+                userRepository?.findByUsername("admin")?.takeIf { it.id == uid }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
     val i18n: I18nService by lazy {
         I18nService.create("messages").also {
             it.setLocale(Locale.forLanguageTag(lang))
         }
     }
 
-    /**
-     * Build a clean URL. Since settings are in cookies, we no longer need query params!
-     */
     fun url(path: String): String = path
 
     fun componentUrl(path: String, pagePath: String): String =
-        "$path?pagePath=${if (pagePath.isBlank()) "/" else pagePath}"
+        "${url(path)}?pagePath=${if (pagePath.isBlank()) "/" else pagePath}"
 
     fun shell(pageTitle: String, activeSection: String): ShellView {
         val currentPath = if (request.uri.path.isBlank()) "/" else request.uri.path
@@ -58,7 +76,7 @@ class WebContext(val request: Request, private val devDashboardEnabled: Boolean 
             ShellLink(i18n.translate("web.nav.errors"), url("/errors/not-found"), "ri-error-warning-line", activeSection == "/errors")
         )
 
-        if (devDashboardEnabled) {
+        if (devDashboardEnabled && user?.role == UserRole.ADMIN) {
             navLinks.add(ShellLink(i18n.translate("web.nav.dev"), url("/admin/dev"), "ri-dashboard-line", activeSection == "/admin/dev"))
         }
 
@@ -76,7 +94,10 @@ class WebContext(val request: Request, private val devDashboardEnabled: Boolean 
             languageSelectorUrl = componentUrl("/components/sidebar/language-selector", currentPath),
             layoutSelectorUrl = componentUrl("/components/sidebar/layout-selector", currentPath),
             footerCopy = i18n.translate("web.footer.copy"),
-            footerStatusUrl = url("/components/footer-status")
+            footerStatusUrl = url("/components/footer-status"),
+            userName = user?.username,
+            isLoggedIn = user != null,
+            logoutUrl = url("/logout")
         )
     }
 }

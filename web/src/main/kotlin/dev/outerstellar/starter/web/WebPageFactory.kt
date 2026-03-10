@@ -32,6 +32,9 @@ data class ShellView(
   val layoutSelectorUrl: String,
   val footerCopy: String,
   val footerStatusUrl: String,
+  val userName: String? = null,
+  val isLoggedIn: Boolean = false,
+  val logoutUrl: String? = null
 )
 
 data class HomeFeature(val label: String, val value: String)

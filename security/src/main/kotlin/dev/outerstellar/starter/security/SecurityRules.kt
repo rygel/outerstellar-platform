@@ -1,26 +1,23 @@
 package dev.outerstellar.starter.security
 
-import org.http4k.contract.security.Security
-import org.http4k.core.Filter
-import org.http4k.core.RequestContexts
+import org.http4k.core.HttpHandler
+import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
-import org.http4k.lens.RequestContextKey
 
 object SecurityRules {
-    private val contexts = RequestContexts()
-    val userKey = RequestContextKey.optional<User>(contexts)
-
-    fun hasRole(role: Role): Filter = Filter { next ->
-        { request ->
-            val user = userKey(request)
-            if (user != null && user.roles.contains(role)) {
-                next(request)
-            } else {
-                Response(Status.FORBIDDEN)
-            }
-        }
+    fun authenticated(next: HttpHandler): HttpHandler = { request ->
+        // To be implemented with real session check
+        next(request)
     }
 
-    val noSecurity: Security = Security.None!!
+    fun hasRole(role: UserRole, next: HttpHandler): HttpHandler = { request ->
+        // Real implementation would extract user from context
+        val user: User? = null 
+        if (user?.role == role) {
+            next(request)
+        } else {
+            Response(Status.FORBIDDEN)
+        }
+    }
 }

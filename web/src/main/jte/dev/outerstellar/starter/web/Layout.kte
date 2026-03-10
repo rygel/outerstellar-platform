@@ -83,6 +83,17 @@
             @endfor
         </nav>
         <div class="sidebar-footer" ws-subscribe>
+            @if(shell.isLoggedIn)
+                <section class="sidebar-section" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                        <i class="ri-user-smile-line" style="font-size: 1.25rem; opacity: 0.7;"></i>
+                        <div>
+                            <span style="display: block; font-size: 0.85rem; font-weight: 600;">${shell.userName}</span>
+                            <a href="${shell.logoutUrl}" style="font-size: 0.75rem; opacity: 0.6; text-decoration: underline;">Sign out</a>
+                        </div>
+                    </div>
+                </section>
+            @endif
             <section class="sidebar-section">
                 <div id="theme-selector"
                      hx-get="${shell.themeSelectorUrl}"

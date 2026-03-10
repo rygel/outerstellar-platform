@@ -12,8 +12,10 @@ import dev.outerstellar.starter.service.EventPublisher
 import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.WebPageFactory
 import dev.outerstellar.starter.web.SyncWebSocket
+import dev.outerstellar.starter.security.SecurityService
+import dev.outerstellar.starter.security.UserRepository
 import org.http4k.core.HttpHandler
-import org.http4k.core.PolyHandler
+import org.http4k.server.PolyHandler
 import org.http4k.template.TemplateRenderer
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -36,7 +38,9 @@ val webModule = module {
             get<TemplateRenderer>(), 
             get<WebPageFactory>(),
             get<AppConfig>(),
-            get<I18nService>()
+            get<I18nService>(),
+            get<SecurityService>(),
+            get<UserRepository>()
         ) 
     }
 }

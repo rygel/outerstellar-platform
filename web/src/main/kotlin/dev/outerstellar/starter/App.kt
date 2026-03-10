@@ -5,14 +5,17 @@ import dev.outerstellar.starter.AppConfig
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
+import dev.outerstellar.starter.security.UserRepository
+import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.web.*
 import org.http4k.contract.contract
+import org.http4k.contract.bindContract
 import org.http4k.contract.openapi.ApiInfo
 import org.http4k.contract.openapi.v3.OpenApi3
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
-import org.http4k.core.PolyHandler
+import org.http4k.server.PolyHandler
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
@@ -37,7 +40,9 @@ fun app(
     jteRenderer: TemplateRenderer,
     pageFactory: WebPageFactory,
     config: AppConfig,
-    i18nService: I18nService
+    i18nService: I18nService,
+    securityService: SecurityService,
+    userRepository: UserRepository
 ): PolyHandler {
   logger.info("Initializing Outerstellar application")
 
@@ -53,9 +58,16 @@ fun app(
     renderer = OpenApi3(ApiInfo("Outerstellar UI", "v1.0"), Jackson)
     descriptionPath = "/ui/openapi.json"
     routes += HomeRoutes(messageService, repository, pageFactory, jteRenderer, i18nService).routes
-    routes += AuthRoutes(pageFactory, jteRenderer).routes
+    routes += AuthRoutes(pageFactory, jteRenderer, securityService).routes
     routes += ErrorRoutes(pageFactory, jteRenderer).routes
     routes += DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
+    
+    // Global Logout
+    routes += ("/logout" bindContract GET).to { request: org.http4k.core.Request ->
+        Response(Status.FOUND)
+            .header("location", request.webContext.url("/"))
+            .header("Set-Cookie", "app_session=; Path=/; Max-Age=0; HttpOnly")
+    }
   }
 
   // 3. HTMX Components (HTML Fragments)
@@ -70,7 +82,7 @@ fun app(
     apiRoutes,
     // Inject WebContext into UI and Component routes
     ServerFilters.InitialiseRequestContext(WebContext.contexts)
-        .then(Filters.stateFilter(config.devDashboardEnabled))
+        .then(Filters.stateFilter(config.devDashboardEnabled, userRepository))
         .then(routes(uiRoutes, componentRoutes)),
     "/health" bind GET to { Response(Status.OK).body("ok") },
     "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }

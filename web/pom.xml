@@ -19,6 +19,7 @@
         <dependency>
             <groupId>dev.outerstellar</groupId>
             <artifactId>api-client</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>dev.outerstellar</groupId>
