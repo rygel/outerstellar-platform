@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.service
 
+import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.model.StoredMessage
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
@@ -28,8 +29,8 @@ class MessageServiceTest {
             service.createServerMessage("author", " ")
         }.exceptionOrNull()
 
-        assertTrue(error is IllegalArgumentException)
-        assertEquals("Content cannot be blank", error.message)
+        assertTrue(error is ValidationException)
+        assertTrue(error.errors.contains("Content is required."))
     }
 
     @Test

@@ -117,21 +117,25 @@ class SyncWindow(
   }
   private val syncButton = JButton(i18nService.translate("swing.button.sync")).apply { 
       name = "syncButton"
-      icon = RemixIcon.get("refresh-line")
+      icon = RemixIcon.get("system/refresh-line")
   }
   private val createButton = JButton(i18nService.translate("swing.button.create")).apply { 
       name = "createButton"
-      icon = RemixIcon.get("add-box-line")
+      icon = RemixIcon.get("system/add-box-line")
   }
   
   private val appMenu = JMenu(i18nService.translate("swing.menu.application")).apply { name = "appMenu" }
   private val themeMenu = JMenu(i18nService.translate("swing.theme.menu")).apply { 
       name = "themeMenu"
-      icon = RemixIcon.get("palette-line")
+      icon = RemixIcon.get("others/palette-line")
   }
   private val settingsItem = JMenuItem(i18nService.translate("swing.menu.settings")).apply { 
       name = "settingsItem"
-      icon = RemixIcon.get("settings-3-line")
+      icon = RemixIcon.get("system/settings-3-line")
+  }
+  private val loginItem = JMenuItem("Login").apply {
+      name = "loginItem"
+      icon = RemixIcon.get("system/lock-password-line")
   }
 
   fun show() {
@@ -219,19 +223,12 @@ class SyncWindow(
     if (searchField.text != viewModel.searchQuery) {
         searchField.text = viewModel.searchQuery
     }
+    
+    loginItem.text = if (viewModel.isLoggedIn) "Logout (${viewModel.userName})" else "Login"
   }
 
   fun updateSearchField(query: String) {
     searchField.text = query
-  }
-
-  fun showUpdateNotification(latestVersion: String) {
-    JOptionPane.showMessageDialog(
-        frame,
-        i18nService.translate("swing.update.available", latestVersion),
-        i18nService.translate("swing.update.title"),
-        JOptionPane.INFORMATION_MESSAGE
-    )
   }
 
   private fun configureFrame() {
@@ -280,6 +277,13 @@ class SyncWindow(
   private fun createMenuBar(): JMenuBar {
     val menuBar = JMenuBar()
     settingsItem.addActionListener { showSettingsDialog() }
+    loginItem.addActionListener { 
+        if (viewModel.isLoggedIn) viewModel.logout()
+        else showLoginDialog() 
+    }
+    
+    appMenu.add(loginItem)
+    appMenu.addSeparator()
     appMenu.add(settingsItem)
     
     val standardThemes = JMenu("Standard")
@@ -292,8 +296,8 @@ class SyncWindow(
     themeMenu.add(standardThemes)
     themeMenu.addSeparator()
 
-    val allThemes: List<ThemeDefinition> = themeManager.availableThemes().sortedBy { it.name }
-    allThemes.forEach { theme ->
+    val outerstellarThemes: List<ThemeDefinition> = ThemeCatalog.allThemes().sortedBy { it.name }
+    outerstellarThemes.forEach { theme ->
         val item = JMenuItem(theme.name)
         item.addActionListener { 
             themeManager.applyTheme(theme)
@@ -305,6 +309,32 @@ class SyncWindow(
     menuBar.add(appMenu)
     menuBar.add(themeMenu)
     return menuBar
+  }
+
+  private fun showLoginDialog() {
+    val dialog = JDialog(frame, "Login", true)
+    dialog.layout = MigLayout("fillx, ins 20, gap 10", "[][grow]", "[][][]")
+    
+    dialog.add(JLabel("Username:"))
+    val userField = JTextField().apply { name = "username" }
+    dialog.add(userField, "growx, wrap")
+    
+    dialog.add(JLabel("Password:"))
+    val passField = JPasswordField().apply { name = "password" }
+    dialog.add(passField, "growx, wrap")
+    
+    val loginBtn = JButton("Sign In").apply { name = "loginBtn" }
+    loginBtn.addActionListener {
+        viewModel.login(userField.text, String(passField.password)) { success, error ->
+            if (success) dialog.dispose()
+            else JOptionPane.showMessageDialog(dialog, error, "Login Failed", JOptionPane.ERROR_MESSAGE)
+        }
+    }
+    
+    dialog.add(loginBtn, "span, center")
+    dialog.pack()
+    dialog.setLocationRelativeTo(frame)
+    dialog.isVisible = true
   }
 
   private fun showSettingsDialog() {
@@ -319,7 +349,7 @@ class SyncWindow(
     dialog.add(langCombo, "growx, wrap")
     
     dialog.add(JLabel(i18nService.translate("swing.settings.theme")))
-    val allThemes = themeManager.availableThemes().sortedBy { it.name }
+    val allThemes = ThemeCatalog.allThemes().sortedBy { it.name }
     val themeCombo = JComboBox<String>(allThemes.map { it.name }.toTypedArray()).apply { name = "themeCombo" }
     val currentThemeName = UIManager.get("current_theme_name") as? String
     themeCombo.selectedIndex = allThemes.indexOfFirst { it.name == currentThemeName }.coerceAtLeast(0)
@@ -354,7 +384,7 @@ private fun showSplash(): JWindow {
     content.border = BorderFactory.createLineBorder(Color.GRAY)
     content.background = Color.WHITE
     
-    val label = JLabel("Outerstellar", RemixIcon.get("planet-fill", 64), SwingConstants.CENTER)
+    val label = JLabel("Outerstellar", RemixIcon.get("system/planet-fill", 64), SwingConstants.CENTER)
     label.font = Font("Inter", Font.BOLD, 28)
     label.verticalTextPosition = SwingConstants.BOTTOM
     label.horizontalTextPosition = SwingConstants.CENTER

@@ -1,20 +1,15 @@
 package dev.outerstellar.starter.service
 
 import dev.outerstellar.starter.persistence.OutboxRepository
+import dev.outerstellar.starter.sync.SyncStats
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 interface SyncProvider {
-    fun sync(): SyncStats
+    fun sync(): dev.outerstellar.starter.sync.SyncStats
 }
-
-data class SyncStats(
-    val pushedCount: Int,
-    val pulledCount: Int,
-    val conflictCount: Int
-)
 
 class OutboxProcessor(
     private val outboxRepository: OutboxRepository,

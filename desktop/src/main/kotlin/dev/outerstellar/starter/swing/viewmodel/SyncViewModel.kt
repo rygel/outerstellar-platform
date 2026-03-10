@@ -26,6 +26,12 @@ class SyncViewModel(
     var isSyncing: Boolean = false
         private set
 
+    var userName: String = ""
+        private set
+    
+    var isLoggedIn: Boolean = false
+        private set
+
     var author: String = i18nService.translate("swing.author.default")
     var content: String = ""
     var searchQuery: String = ""
@@ -64,6 +70,40 @@ class SyncViewModel(
         } catch (e: OuterstellarException) {
             onValidationError(e.message ?: "Action failed")
         }
+    }
+
+    fun login(user: String, pass: String, onResult: (Boolean, String?) -> Unit) {
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+            override fun doInBackground(): Pair<Boolean, String?> {
+                return try {
+                    val result = syncService.login(user, pass)
+                    userName = result.username
+                    isLoggedIn = true
+                    true to null
+                } catch (e: Exception) {
+                    false to (e.cause?.message ?: e.message ?: "Unknown error")
+                }
+            }
+
+            override fun done() {
+                val (success, error) = get()
+                if (success) {
+                    status = "Logged in as $userName"
+                    author = userName
+                }
+                onResult(success, error)
+                notifyObservers()
+            }
+        }.execute()
+    }
+
+    fun logout() {
+        syncService.logout()
+        isLoggedIn = false
+        userName = ""
+        author = i18nService.translate("swing.author.default")
+        status = "Logged out"
+        notifyObservers()
     }
 
     fun sync() {

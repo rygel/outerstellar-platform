@@ -65,10 +65,14 @@ class AuthRoutes(
                             message = "Welcome back, ${user.username}! Redirecting...",
                             toneClass = "panel-success"
                         )
+                        
+                        val remember = parameters.getFirst("remember") == "on"
+                        val maxAge = if (remember) 365 * 24 * 60 * 60L else null
+                        
                         Response(Status.OK)
                             .header("content-type", "text/html; charset=utf-8")
                             .header("HX-Redirect", returnTo) // Redirect HTMX to target
-                            .cookie(Cookie("app_session", user.id.toString(), path = "/", httpOnly = true))
+                            .cookie(Cookie("app_session", user.id.toString(), path = "/", httpOnly = true, maxAge = maxAge))
                             .body(renderer(result))
                     } else {
                         val result = AuthResultFragment(
