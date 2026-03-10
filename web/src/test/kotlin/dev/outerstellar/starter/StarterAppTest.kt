@@ -30,7 +30,6 @@ class StarterAppTest {
     val cache = StubMessageCache()
     val pageFactory = WebPageFactory(repository)
     val config = AppConfig(port = 8080, jdbcUrl = "jdbc:h2:mem:test", devDashboardEnabled = true)
-    val i18n = I18nService.fromResourceBundle("messages")
     
     val securityService = mockk<SecurityService>(relaxed = true)
     val userRepository = mockk<UserRepository>(relaxed = true)
@@ -49,7 +48,7 @@ class StarterAppTest {
       passwordEncoder
     )    
     // Simple verification - app is a PolyHandler, we just need to ensure it's not null
-    // Full E2E logic is tested in PostgresWebTest (when docker is available)
+    // Full E2E logic is tested in H2WebTest (when docker is available)
     assert(app.http != null)
   }
 }

@@ -21,7 +21,7 @@ class MessageCacheTest {
     fun `listMessages uses cache`() {
         val summary = MessageSummary("id", "author", "content", 1000L, false)
         val items = listOf(summary)
-        val results = PagedResult(items, PaginationMetadata(1, 100, 1))
+        val results = PagedResult(items, PaginationMetadata(1, 100, 1L))
         
         every { cache.get(any()) } returns null
         every { repository.listMessages(any(), any(), any(), any()) } returns items

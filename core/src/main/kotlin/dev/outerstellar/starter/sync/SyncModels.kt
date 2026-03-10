@@ -1,7 +1,7 @@
 package dev.outerstellar.starter.sync
 
 import io.konform.validation.Validation
-import io.konform.validation.jsonschema.minLength
+import io.konform.validation.constraints.minLength
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncMessage(

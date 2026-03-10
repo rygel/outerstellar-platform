@@ -1,78 +1,110 @@
 @import dev.outerstellar.starter.web.MessageListViewModel
 @param model: MessageListViewModel
 
-<div id="message-list-panel">
-    <div class="message-list">
-        @if(model.messages.isEmpty())
-            <div class="empty-state panel">
-                <p>${model.emptyMessage}</p>
-            </div>
-        @else
-            @for(message in model.messages)
-                <div class="message-card panel ${if(model.isTrashView) "opacity-70" else ""}">
-                    <div class="message-header">
-                        <span class="message-author">${message.author}</span>
-                        <span class="message-time">${message.updatedAtLabel()}</span>
-                    </div>
-                    <div class="message-content">
-                        ${message.content}
-                    </div>
-                    <div class="message-actions">
-                        @if(model.isTrashView)
-                            <button class="button-icon button-primary"
-                                    hx-post="${model.restoreUrl}/${message.syncId}"
-                                    hx-target="#message-list-panel"
-                                    hx-swap="outerHTML"
-                                    title="Restore Message">
-                                <i class="ri-restart-line"></i>
+<div id="message-list-container" class="message-list" hx-get="${model.refreshUrl}" hx-trigger="refresh from:body" hx-swap="outerHTML">
+    @if(model.messages.isEmpty())
+        <p class="panel panel-muted text-center py-8 opacity-60">No messages found matching your criteria.</p>
+    @else
+        @for(msg in model.messages)
+            <article class="panel message-item @if(msg.dirty) border-accent @endif">
+                <header class="message-header">
+                    <div class="flex items-center gap-2">
+                        <span class="message-author">${msg.author}</span>
+                        @if(msg.dirty)
+                            <span class="status-badge" title="Pending synchronization">
+                                <i class="ri-refresh-line"></i> Local
+                            </span>
+                        @endif
+                        @if(msg.hasConflict)
+                            <button class="status-badge panel-danger cursor-pointer border-none hover:brightness-110" 
+                                    hx-get="/messages/resolve/${msg.syncId}" 
+                                    hx-target="body" 
+                                    hx-swap="beforeend"
+                                    title="Sync conflict! Click to resolve">
+                                <i class="ri-error-warning-line"></i> Conflict
                             </button>
+                        @endif
+                    </div>
+                    <time class="message-time">${msg.updatedAtLabel()}</time>
+                </header>
+                <div class="message-content">
+                    ${msg.content}
+                </div>
+                <footer class="message-footer">
+                    <div class="message-meta">
+                        <span>ID: ${msg.syncId.take(8)}...</span>
+                        <span>v${msg.version}</span>
+                    </div>
+                    <div class="button-row">
+                        @if(model.isTrash)
+                            <form hx-post="/messages/restore/${msg.syncId}" hx-target="#message-list-container" hx-swap="outerHTML">
+                                <button type="submit" class="button-icon" title="Restore message">
+                                    <i class="ri-restart-line"></i>
+                                </button>
+                            </form>
                         @else
-                            <button class="button-icon button-danger"
-                                    hx-delete="${model.deleteUrl}/${message.syncId}"
+                            <button class="button-icon" title="Edit message (Local only)">
+                                <i class="ri-edit-line"></i>
+                            </button>
+                            <button class="button-icon text-danger" title="Delete message"
+                                    hx-delete="/messages/${msg.syncId}"
                                     hx-confirm="Are you sure you want to delete this message?"
-                                    hx-target="#message-list-panel"
-                                    hx-swap="outerHTML"
-                                    title="Delete Message">
+                                    hx-target="closest article"
+                                    hx-swap="outerHTML">
                                 <i class="ri-delete-bin-line"></i>
                             </button>
                         @endif
                     </div>
+                </footer>
+            </article>
+        @endfor
+
+        <!-- Traditional Pagination Bar -->
+        @if(model.pagination != null && model.pagination.totalPages > 1)
+            <nav class="pagination-bar mt-6">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="pagination-info">
+                        Showing page <strong>${model.pagination.currentPage}</strong> of <strong>${model.pagination.totalPages}</strong>
+                    </div>
+                    
+                    <div class="pagination-controls flex gap-1">
+                        @if(model.pagination.hasPrevious)
+                            <button class="button-link button-cozy" 
+                                    hx-get="${model.pagination.previousUrl}" 
+                                    hx-target="#message-list-container" 
+                                    hx-push-url="true">
+                                <i class="ri-arrow-left-s-line"></i>
+                            </button>
+                        @else
+                            <button class="button-link button-cozy opacity-30 cursor-not-allowed" disabled>
+                                <i class="ri-arrow-left-s-line"></i>
+                            </button>
+                        @endif
+
+                        @for(page in model.pagination.pages)
+                            <button class="button-link button-cozy @if(page.isActive) border-accent text-accent font-bold @endif"
+                                    hx-get="${page.url}"
+                                    hx-target="#message-list-container"
+                                    hx-push-url="true">
+                                ${page.number}
+                            </button>
+                        @endfor
+
+                        @if(model.pagination.hasNext)
+                            <button class="button-link button-cozy" 
+                                    hx-get="${model.pagination.nextUrl}" 
+                                    hx-target="#message-list-container" 
+                                    hx-push-url="true">
+                                <i class="ri-arrow-right-s-line"></i>
+                            </button>
+                        @else
+                            <button class="button-link button-cozy opacity-30 cursor-not-allowed" disabled>
+                                <i class="ri-arrow-right-s-line"></i>
+                            </button>
+                        @endif
+                    </div>
                 </div>
-            @endfor
+            </nav>
         @endif
-    </div>
-
-    @if(model.pagination != null)
-        <nav class="pagination-bar" style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem;">
-            @if(model.pagination.hasPrevious)
-                <button class="button-secondary"
-                        hx-get="${model.pagination.previousUrl}"
-                        hx-target="#message-list-panel"
-                        hx-swap="outerHTML"
-                        hx-push-url="true">
-                    <i class="ri-arrow-left-s-line"></i>
-                </button>
-            @endif
-
-            @for(page in model.pagination.pages)
-                <button class="${if (page.isActive) "button-primary" else "button-secondary"}"
-                        hx-get="${page.url}"
-                        hx-target="#message-list-panel"
-                        hx-swap="outerHTML"
-                        hx-push-url="true">
-                    ${page.number}
-                </button>
-            @endfor
-
-            @if(model.pagination.hasNext)
-                <button class="button-secondary"
-                        hx-get="${model.pagination.nextUrl}"
-                        hx-target="#message-list-panel"
-                        hx-swap="outerHTML"
-                        hx-push-url="true">
-                    <i class="ri-arrow-right-s-line"></i>
-                </button>
-            @endif
-        </nav>
     @endif
 </div>

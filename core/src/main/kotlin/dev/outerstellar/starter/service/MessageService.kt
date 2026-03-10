@@ -16,10 +16,13 @@ import dev.outerstellar.starter.sync.SyncConflict
 import dev.outerstellar.starter.sync.SyncPullResponse
 import dev.outerstellar.starter.sync.SyncPushRequest
 import dev.outerstellar.starter.sync.SyncPushResponse
+import dev.outerstellar.starter.sync.SyncMessage
 import io.konform.validation.Invalid
+import org.http4k.format.Jackson
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 class MessageService(
     private val repository: MessageRepository,
     private val outboxRepository: OutboxRepository? = null,
@@ -54,6 +57,25 @@ class MessageService(
         
         cache.put(cacheKey, result)
         return result
+    }
+
+    fun listDeletedMessages(
+        query: String? = null,
+        year: Int? = null,
+        limit: Int = 100,
+        offset: Int = 0
+    ): PagedResult<MessageSummary> {
+        val items = repository.listMessages(query, year, limit, offset, includeDeleted = true)
+        val total = repository.countMessages(query, year, includeDeleted = true)
+        
+        return PagedResult(
+            items = items,
+            metadata = PaginationMetadata(
+                currentPage = (offset / limit) + 1,
+                pageSize = limit,
+                totalItems = total
+            )
+        )
     }
 
     fun findBySyncId(syncId: String): StoredMessage? {
@@ -136,6 +158,7 @@ class MessageService(
                     appliedCount++
                 }
                 incoming.updatedAtEpochMs < current.updatedAtEpochMs -> {
+                    repository.markConflict(incoming.syncId, incoming)
                     conflicts += SyncConflict(
                         syncId = incoming.syncId,
                         reason = "Server has a newer version.",
@@ -145,7 +168,7 @@ class MessageService(
             }
         }
 
-        if (appliedCount > 0) {
+        if (appliedCount > 0 || conflicts.isNotEmpty()) {
             cache.invalidateAll()
             eventPublisher.publishRefresh("message-list-panel")
         }
@@ -195,5 +218,31 @@ class MessageService(
         cache.invalidateAll()
         eventPublisher.publishRefresh("message-list-panel")
         return updated
+    }
+
+    fun resolveConflict(syncId: String, strategy: String) {
+        val current = repository.findBySyncId(syncId) ?: throw MessageNotFoundException(syncId)
+        if (current.syncConflict == null) return
+
+        val serverVersion = Jackson.asA(
+            current.syncConflict, 
+            SyncMessage::class
+        )
+
+        val resolved = if (strategy == "mine") {
+            current.copy(dirty = true, syncConflict = null)
+        } else {
+            current.copy(
+                author = serverVersion.author,
+                content = serverVersion.content,
+                updatedAtEpochMs = serverVersion.updatedAtEpochMs,
+                dirty = false,
+                syncConflict = null
+            )
+        }
+
+        repository.resolveConflict(syncId, resolved)
+        cache.invalidateAll()
+        eventPublisher.publishRefresh("message-list-panel")
     }
 }

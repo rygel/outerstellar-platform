@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import javax.swing.SwingWorker
 
+@Suppress("TooManyFunctions")
 class SyncViewModel(
     private val messageService: MessageService,
     private val syncService: SyncService,
@@ -167,5 +168,16 @@ class SyncViewModel(
                 }
             }
         }.execute()
+    }
+
+    fun resolveConflict(syncId: String, strategy: String) {
+        try {
+            messageService.resolveConflict(syncId, strategy)
+            status = "Conflict resolved using $strategy strategy"
+            loadMessages()
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            status = "Failed to resolve conflict: ${e.message}"
+            notifyObservers()
+        }
     }
 }

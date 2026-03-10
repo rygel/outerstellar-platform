@@ -6,8 +6,8 @@ data class PaginationMetadata(
     val currentPage: Int,
     val pageSize: Int,
     val totalItems: Long,
-    val totalPages: Int = ceil(totalItems.toDouble() / pageSize).toInt()
 ) {
+    val totalPages: Int = ceil(totalItems.toDouble() / pageSize).toInt()
     val hasPrevious = currentPage > 1
     val hasNext = currentPage < totalPages
     val previousPage = if (hasPrevious) currentPage - 1 else null

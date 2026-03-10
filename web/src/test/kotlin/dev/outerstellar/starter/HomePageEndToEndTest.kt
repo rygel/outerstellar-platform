@@ -7,12 +7,13 @@ import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.security.PasswordEncoder
 import dev.outerstellar.starter.service.MessageService
-import dev.outerstellar.starter.web.PostgresWebTest
+import dev.outerstellar.starter.web.H2WebTest
 import dev.outerstellar.starter.web.StubMessageCache
 import dev.outerstellar.starter.web.StubOutboxRepository
 import dev.outerstellar.starter.web.StubTransactionManager
 import dev.outerstellar.starter.web.WebPageFactory
 import io.mockk.mockk
+import org.junit.jupiter.api.AfterEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -23,10 +24,15 @@ import org.http4k.server.Jetty
 import org.http4k.server.asServer
 
 class HomePageEndToEndTest {
+  @AfterEach
+  fun teardown() {
+    H2WebTest.cleanup()
+  }
+
   @Test
   fun `home page is available on running server`() {
-    PostgresWebTest.setup()
-    val repository = JooqMessageRepository(PostgresWebTest.testDsl, PostgresWebTest.testDsl)
+    H2WebTest.setup()
+    val repository = JooqMessageRepository(H2WebTest.testDsl, H2WebTest.testDsl)
     repository.seedStarterMessages()
 
     val outbox = StubOutboxRepository()
@@ -46,7 +52,7 @@ class HomePageEndToEndTest {
         cache, 
         createRenderer(), 
         pageFactory, 
-        PostgresWebTest.testConfig, 
+        H2WebTest.testConfig, 
         securityService, 
         userRepository, 
         passwordEncoder

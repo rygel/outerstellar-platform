@@ -10,8 +10,9 @@ data class MessageListViewModel(
     val emptyMessage: String,
     val deleteUrl: String,
     val restoreUrl: String? = null,
+    val refreshUrl: String,
     val pagination: PaginationViewModel? = null,
-    val isTrashView: Boolean = false
+    val isTrash: Boolean = false
 ) : ViewModel
 
 private const val DEFAULT_PAGE_SIZE = 10
@@ -32,12 +33,8 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
         
         val i18n = ctx.i18n
         
-        val repo = repository as? dev.outerstellar.starter.persistence.JooqMessageRepository
-        val items = if (isTrash && repo != null) repo.listDeletedMessages(query, year, limit, offset) 
-                    else repository.listMessages(query, year, limit, offset)
-        
-        val total = if (isTrash && repo != null) repo.countDeletedMessages(query, year)
-                    else repository.countMessages(query, year)
+        val items = repository.listMessages(query, year, limit, offset, includeDeleted = isTrash)
+        val total = repository.countMessages(query, year, includeDeleted = isTrash)
         
         return buildViewModel(ctx, items, total, limit, offset, query, year, isTrash, i18n)
     }
@@ -82,13 +79,16 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
             )
         } else null
 
+        val currentUrl = createUrl(metadata.currentPage)
+
         return MessageListViewModel(
             messages = items,
             emptyMessage = if (isTrash) "No deleted messages found." else i18n.translate("web.home.list.empty"),
             deleteUrl = ctx.url("/messages"),
             restoreUrl = ctx.url("/messages/restore"),
+            refreshUrl = currentUrl,
             pagination = pagination,
-            isTrashView = isTrash
+            isTrash = isTrash
         )
     }
 }

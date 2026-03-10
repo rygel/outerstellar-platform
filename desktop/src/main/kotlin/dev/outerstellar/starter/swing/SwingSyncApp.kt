@@ -18,7 +18,8 @@ import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
-import java.awt.Rectangle
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 import java.util.Locale
@@ -52,6 +53,9 @@ import org.koin.core.component.inject
 
 private const val FRAME_WIDTH = 1000
 private const val FRAME_HEIGHT = 750
+private const val CONFLICT_ICON_SIZE = 16
+private const val DIALOG_WIDTH = 600
+private const val DIALOG_HEIGHT = 400
 
 object DesktopComponent : KoinComponent {
   val config: SwingAppConfig by inject()
@@ -64,7 +68,6 @@ fun main() {
   System.setProperty("swing.aatext", "true")
   System.setProperty("awt.useSystemAAFontSettings", "lcd")
 
-  // Show Programmatic Splash Screen
   val splash = showSplash()
 
   startKoin {
@@ -109,7 +112,7 @@ fun main() {
     )
 
     window.show()
-    splash.dispose() // Hide splash once main window is ready
+    splash.dispose()
   }
 }
 
@@ -260,6 +263,20 @@ class SyncWindow(
       override fun removeUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
       override fun changedUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
     })
+
+    messagesList.addMouseListener(object : MouseAdapter() {
+        override fun mouseClicked(e: MouseEvent) {
+            if (e.clickCount == 2) {
+                val index = messagesList.locationToIndex(e.point)
+                if (index >= 0) {
+                    val msg = messagesModel.getElementAt(index)
+                    if (msg.hasConflict) {
+                        showConflictDialog(msg)
+                    }
+                }
+            }
+        }
+    })
   }
 
   private fun updateUI() {
@@ -294,17 +311,14 @@ class SyncWindow(
     frame.setLocationRelativeTo(null)
     frame.jMenuBar = createMenuBar()
 
-    // --- Main Layout with MigLayout ---
     val mainPanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][grow][]"))
     
-    // 1. Search Bar
     val searchPanel = JPanel(MigLayout("fillx, ins 0", "[][grow][]", "[]"))
     searchPanel.add(JLabel(i18nService.translate("swing.label.search")))
     searchPanel.add(searchField, "growx")
     searchPanel.add(syncButton, "w 120!")
     mainPanel.add(searchPanel, "growx, wrap")
 
-    // 2. Message List
     messagesList.cellRenderer = object : DefaultListCellRenderer() {
         override fun getListCellRendererComponent(
             list: javax.swing.JList<*>?, 
@@ -314,13 +328,19 @@ class SyncWindow(
             cellHasFocus: Boolean
         ) = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).also { c ->
             val msg = value as MessageSummary
-            (c as JLabel).text = "<html><b>${msg.author}</b> &mdash; " +
+            val conflictMarker = if (msg.hasConflict) " <font color='red'>[CONFLICT]</font>" else ""
+            val localMarker = if (msg.dirty) " <font color='blue'>(Local)</font>" else ""
+            (c as JLabel).text = "<html><b>${msg.author}</b>$localMarker$conflictMarker &mdash; " +
                 "${msg.updatedAtLabel()}<br/>${msg.content}</html>"
+            if (msg.hasConflict) {
+                c.icon = RemixIcon.get("system/error-warning-line", CONFLICT_ICON_SIZE)
+            } else {
+                c.icon = null
+            }
           }
     }
     mainPanel.add(JScrollPane(messagesList), "grow, wrap")
 
-    // 3. Composer & Status
     val footerPanel = JPanel(MigLayout("fillx, ins 0", "[grow][]", "[][]"))
     footerPanel.add(JLabel("Author:"), "split 2")
     footerPanel.add(authorField, "growx, wrap")
@@ -393,6 +413,52 @@ class SyncWindow(
     dialog.pack()
     dialog.setLocationRelativeTo(frame)
     dialog.isVisible = true
+  }
+
+  private fun showConflictDialog(msg: MessageSummary) {
+      val dialog = JDialog(frame, "Resolve Sync Conflict", true)
+      dialog.layout = MigLayout("fill, ins 20, gap 10", "[grow][grow]", "[][grow][]")
+      
+      val introText = "<html>A sync conflict was detected for this message.<br/>" +
+          "Please choose which version to keep:</html>"
+      dialog.add(JLabel(introText), "span, wrap, gapbottom 15")
+      
+      val localPanel = JPanel(MigLayout("fillx, ins 10", "[grow]", "[][]"))
+      localPanel.border = javax.swing.BorderFactory.createTitledBorder("My Local Version")
+      localPanel.add(JLabel("Author: ${msg.author}"), "wrap")
+      localPanel.add(JScrollPane(JTextArea(msg.content).apply { 
+          isEditable = false
+          lineWrap = true
+          wrapStyleWord = true 
+      }), "grow, h 100!")
+      
+      val serverPanel = JPanel(MigLayout("fillx, ins 10", "[grow]", "[][]"))
+      serverPanel.border = javax.swing.BorderFactory.createTitledBorder("Server Version")
+      serverPanel.add(JLabel("Server has a newer version."), "wrap")
+      serverPanel.add(JLabel("Accepting it will overwrite your local changes."), "grow, wrap")
+
+      dialog.add(localPanel, "grow")
+      dialog.add(serverPanel, "grow, wrap")
+      
+      val mineBtn = JButton("Keep My Version")
+      val serverBtn = JButton("Accept Server Version")
+      
+      mineBtn.addActionListener {
+          viewModel.resolveConflict(msg.syncId, "mine")
+          dialog.dispose()
+      }
+      serverBtn.addActionListener {
+          viewModel.resolveConflict(msg.syncId, "server")
+          dialog.dispose()
+      }
+      
+      dialog.add(mineBtn, "split 2, span, center")
+      dialog.add(serverBtn)
+      
+      dialog.pack()
+      dialog.setSize(DIALOG_WIDTH, DIALOG_HEIGHT)
+      dialog.setLocationRelativeTo(frame)
+      dialog.isVisible = true
   }
 
   private fun showSettingsDialog() {

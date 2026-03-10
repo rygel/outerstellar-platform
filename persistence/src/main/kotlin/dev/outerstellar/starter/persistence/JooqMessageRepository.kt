@@ -11,6 +11,7 @@ import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.impl.DSL
 import org.slf4j.LoggerFactory
+import org.http4k.format.Jackson
 
 @Suppress("TooManyFunctions")
 class JooqMessageRepository(
@@ -68,21 +69,14 @@ class JooqMessageRepository(
     return condition
   }
 
-  override fun listMessages(query: String?, year: Int?, limit: Int, offset: Int): List<MessageSummary> {
-    return listMessagesInternal(query, year, limit, offset, includeDeleted = false)
-  }
-
-  fun listDeletedMessages(query: String?, year: Int?, limit: Int, offset: Int): List<MessageSummary> {
-    return listMessagesInternal(query, year, limit, offset, includeDeleted = true)
-  }
-
-  private fun listMessagesInternal(
-      query: String?, 
-      year: Int?, 
-      limit: Int, 
-      offset: Int, 
-      includeDeleted: Boolean
+  override fun listMessages(
+    query: String?, 
+    year: Int?, 
+    limit: Int, 
+    offset: Int, 
+    includeDeleted: Boolean
   ): List<MessageSummary> {
+    val syncConflictField = MESSAGES.field("SYNC_CONFLICT", String::class.java)
     val results = replicaDsl
       .select(
         MESSAGES.ID,
@@ -92,7 +86,8 @@ class JooqMessageRepository(
         MESSAGES.UPDATED_AT_EPOCH_MS,
         MESSAGES.DIRTY,
         MESSAGES.DELETED,
-        MESSAGES.VERSION
+        MESSAGES.VERSION,
+        syncConflictField
       )
       .from(MESSAGES)
       .where(getFilterConditions(query, year, includeDeleted))
@@ -107,33 +102,19 @@ class JooqMessageRepository(
     return results.map(StoredMessage::toSummary)
   }
 
-  override fun countMessages(query: String?, year: Int?): Long {
-    return replicaDsl.fetchCount(MESSAGES, getFilterConditions(query, year, false)).toLong()
+  override fun countMessages(query: String?, year: Int?, includeDeleted: Boolean): Long {
+    return replicaDsl.fetchCount(MESSAGES, getFilterConditions(query, year, includeDeleted)).toLong()
   }
 
   fun countDeletedMessages(query: String?, year: Int?): Long {
-    return replicaDsl.fetchCount(MESSAGES, getFilterConditions(query, year, true)).toLong()
+    return countMessages(query, year, true)
   }
 
   override fun listDirtyMessages(): List<StoredMessage> =
     primaryDsl
-      .select(
-        DSL.field("SYNC_ID"),
-        DSL.field("AUTHOR"),
-        DSL.field("CONTENT"),
-        DSL.field("UPDATED_AT_EPOCH_MS"),
-        DSL.field("DIRTY"),
-        DSL.field("DELETED"),
-        DSL.field("VERSION")
-      )
+      .select(MESSAGES.fields().toList())
       .from(MESSAGES)
-      .where(
-        DSL.noCondition()
-          .let {
-            val dirtyField = MESSAGES.field("DIRTY", Boolean::class.java)
-            if (dirtyField != null) it.and(dirtyField.eq(true)) else it
-          }
-      )
+      .where(MESSAGES.DIRTY.eq(true))
       .let {
         val deletedAtField = MESSAGES.field("DELETED_AT")
         if (deletedAtField != null) {
@@ -146,52 +127,16 @@ class JooqMessageRepository(
 
   override fun findBySyncId(syncId: String): StoredMessage? =
     replicaDsl
-      .select(
-        DSL.field("SYNC_ID"),
-        DSL.field("AUTHOR"),
-        DSL.field("CONTENT"),
-        DSL.field("UPDATED_AT_EPOCH_MS"),
-        DSL.field("DIRTY"),
-        DSL.field("DELETED"),
-        DSL.field("VERSION")
-      )
+      .select(MESSAGES.fields().toList())
       .from(MESSAGES)
-      .where(
-        DSL.noCondition()
-          .let {
-            val syncIdField = MESSAGES.field("SYNC_ID", String::class.java)
-            if (syncIdField != null) it.and(syncIdField.eq(syncId)) else it
-          }
-      )
-      .let {
-        val deletedAtField = MESSAGES.field("DELETED_AT")
-        if (deletedAtField != null) {
-          it.and(deletedAtField.isNull)
-        } else {
-          it
-        }
-      }
+      .where(MESSAGES.SYNC_ID.eq(syncId))
       .fetchOne(::toStoredMessage)
 
   override fun findChangesSince(updatedAtEpochMs: Long): List<StoredMessage> =
     replicaDsl
-      .select(
-        DSL.field("SYNC_ID"),
-        DSL.field("AUTHOR"),
-        DSL.field("CONTENT"),
-        DSL.field("UPDATED_AT_EPOCH_MS"),
-        DSL.field("DIRTY"),
-        DSL.field("DELETED"),
-        DSL.field("VERSION")
-      )
+      .select(MESSAGES.fields().toList())
       .from(MESSAGES)
-      .where(
-        DSL.noCondition()
-          .let {
-            val updatedAtField = MESSAGES.field("UPDATED_AT_EPOCH_MS", Long::class.java)
-            if (updatedAtField != null) it.and(updatedAtField.gt(updatedAtEpochMs)) else it
-          }
-      )
+      .where(MESSAGES.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs))
       .let {
         val deletedAtField = MESSAGES.field("DELETED_AT")
         if (deletedAtField != null) {
@@ -337,6 +282,30 @@ class JooqMessageRepository(
     return requireNotNull(findBySyncId(message.syncId))
   }
 
+  override fun markConflict(syncId: String, serverVersion: SyncMessage) {
+    val syncConflictField = MESSAGES.field("SYNC_CONFLICT", String::class.java)
+    if (syncConflictField != null) {
+        val json = Jackson.asFormatString(serverVersion)
+        primaryDsl.update(MESSAGES)
+            .set(syncConflictField, json)
+            .where(MESSAGES.SYNC_ID.eq(syncId))
+            .execute()
+    }
+  }
+
+  override fun resolveConflict(syncId: String, resolvedMessage: StoredMessage) {
+    val syncConflictField = MESSAGES.field("SYNC_CONFLICT", String::class.java)
+    primaryDsl.update(MESSAGES)
+      .set(MESSAGES.AUTHOR, resolvedMessage.author)
+      .set(MESSAGES.CONTENT, resolvedMessage.content)
+      .set(MESSAGES.UPDATED_AT_EPOCH_MS, resolvedMessage.updatedAtEpochMs)
+      .set(MESSAGES.DIRTY, resolvedMessage.dirty)
+      .set(MESSAGES.VERSION, MESSAGES.VERSION.plus(1))
+      .let { if (syncConflictField != null) it.setNull(syncConflictField) else it }
+      .where(MESSAGES.SYNC_ID.eq(syncId))
+      .execute()
+  }
+
   private fun insertMessage(author: String, content: String, dirty: Boolean): StoredMessage {
     val syncId = UUID.randomUUID().toString()
     primaryDsl
@@ -352,8 +321,9 @@ class JooqMessageRepository(
     return requireNotNull(findBySyncId(syncId))
   }
 
-  private fun toStoredMessage(record: Record): StoredMessage =
-    StoredMessage(
+  private fun toStoredMessage(record: Record): StoredMessage {
+    val syncConflictField = MESSAGES.field("SYNC_CONFLICT", String::class.java)
+    return StoredMessage(
       syncId = record.get(MESSAGES.field("SYNC_ID", String::class.java)) ?: "unknown",
       author = record.get(MESSAGES.field("AUTHOR", String::class.java)) ?: "unknown",
       content = record.get(MESSAGES.field("CONTENT", String::class.java)) ?: "unknown",
@@ -361,7 +331,9 @@ class JooqMessageRepository(
       dirty = record.get(MESSAGES.field("DIRTY", Boolean::class.java)) ?: false,
       deleted = record.get(MESSAGES.field("DELETED", Boolean::class.java)) ?: false,
       version = record.get(MESSAGES.field("VERSION", Long::class.java)) ?: 1L,
+      syncConflict = if (syncConflictField != null) record.get(syncConflictField) else null
     )
+  }
 
   companion object {
     private const val lastSyncStateKey = "last_sync_epoch_ms"

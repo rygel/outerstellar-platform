@@ -9,6 +9,7 @@ import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRole
 import dev.outerstellar.starter.service.MessageService
+import org.junit.jupiter.api.AfterEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -22,7 +23,12 @@ import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
 
-class AuthenticationWorkflowTest : PostgresWebTest() {
+class AuthenticationWorkflowTest : H2WebTest() {
+
+    @AfterEach
+    fun teardown() {
+        cleanup()
+    }
 
     @Test
     fun `user registration and login with redirect workflow`() {
@@ -34,7 +40,6 @@ class AuthenticationWorkflowTest : PostgresWebTest() {
         val pageFactory = WebPageFactory(repository)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
-        val i18n = I18nService.fromResourceBundle("messages")
 
         val app = app(
             messageService, repository, outbox, cache, createRenderer(), 
@@ -92,7 +97,6 @@ class AuthenticationWorkflowTest : PostgresWebTest() {
         val pageFactory = WebPageFactory(repository)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
-        val i18n = I18nService.fromResourceBundle("messages")
 
         val app = app(
             messageService, repository, outbox, cache, createRenderer(), 

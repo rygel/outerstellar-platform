@@ -18,7 +18,7 @@ class MessageServiceTest {
     fun `listMessages returns items from repository`() {
         val summary = MessageSummary("id-1", "author", "content", 1000L, false)
         val items = listOf(summary)
-        val paged = PagedResult(items, PaginationMetadata(1, 10, 1))
+        val paged = PagedResult(items, PaginationMetadata(1, 10, 1L))
         
         every { repository.listMessages("test", null, 10, 0) } returns items
         every { repository.countMessages("test", null) } returns 1L

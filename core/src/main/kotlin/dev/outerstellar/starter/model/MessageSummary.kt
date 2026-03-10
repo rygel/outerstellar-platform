@@ -11,15 +11,12 @@ data class MessageSummary(
   val updatedAtEpochMs: Long,
   val dirty: Boolean,
   val version: Long = 1,
+  val hasConflict: Boolean = false,
 ) {
-  fun updatedAtLabel(): String =
-    messageTimestampFormatter.format(
-      Instant.ofEpochMilli(updatedAtEpochMs).atZone(ZoneId.systemDefault())
-    )
-
-  fun syncStatusLabel(): String = if (dirty) "Pending sync" else "Synced"
-
-  fun confirmDeleteUrl(): String = "/components/modals/confirm-delete/$syncId"
+  fun updatedAtLabel(): String {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    return Instant.ofEpochMilli(updatedAtEpochMs)
+      .atZone(ZoneId.systemDefault())
+      .format(formatter)
+  }
 }
-
-private val messageTimestampFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")

@@ -68,6 +68,23 @@ class HomeRoutes(
                 Response(Status.FOUND).header("location", request.webContext.url("/messages/trash"))
             }
         },
+        "/messages/resolve" / syncIdPath meta {
+            summary = "Show conflict resolution modal"
+        } bindContract GET to { syncId ->
+            { request: org.http4k.core.Request ->
+                val viewModel = pageFactory.buildConflictResolveModal(request.webContext, syncId)
+                renderer.render(viewModel)
+            }
+        },
+        "/messages/resolve" / syncIdPath meta {
+            summary = "Resolve sync conflict"
+        } bindContract POST to { syncId ->
+            { request: org.http4k.core.Request ->
+                val strategy = request.form("strategy") ?: "server"
+                messageService.resolveConflict(syncId, strategy)
+                Response(Status.OK).header("HX-Trigger", "refresh")
+            }
+        },
         "/components/footer-status" meta {
             summary = "Footer status fragment"
         } bindContract GET to { request ->

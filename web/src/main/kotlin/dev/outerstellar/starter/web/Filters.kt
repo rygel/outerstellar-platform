@@ -49,22 +49,22 @@ object Filters {
             val context = WebContext(request, devDashboardEnabled, userRepository)
             val response = next(request.with(WebContext.KEY of context))
             
-            var updatedResponse = response
-            
             val cookieMaxAge = Duration.ofDays(COOKIE_MAX_AGE_DAYS).toSeconds()
 
-            request.query("lang")?.let { 
-                val cookie = Cookie(WebContext.LANG_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                updatedResponse = updatedResponse.cookie(cookie)
+            val langCookie = request.query("lang")?.let { 
+                Cookie(WebContext.LANG_COOKIE, it, maxAge = cookieMaxAge, path = "/")
             }
-            request.query("theme")?.let { 
-                val cookie = Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                updatedResponse = updatedResponse.cookie(cookie)
+            val themeCookie = request.query("theme")?.let { 
+                Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/")
             }
-            request.query("layout")?.let { 
-                val cookie = Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                updatedResponse = updatedResponse.cookie(cookie)
+            val layoutCookie = request.query("layout")?.let { 
+                Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/")
             }
+            
+            var updatedResponse = response
+            if (langCookie != null) updatedResponse = updatedResponse.cookie(langCookie)
+            if (themeCookie != null) updatedResponse = updatedResponse.cookie(themeCookie)
+            if (layoutCookie != null) updatedResponse = updatedResponse.cookie(layoutCookie)
             
             updatedResponse
         }

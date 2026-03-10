@@ -9,6 +9,7 @@ import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.service.MessageService
 import io.mockk.mockk
+import org.junit.jupiter.api.AfterEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -17,7 +18,12 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.body.form
 
-class MessageActionE2ETest : PostgresWebTest() {
+class MessageActionE2ETest : H2WebTest() {
+    @AfterEach
+    fun teardown() {
+        cleanup()
+    }
+
     @Test
     fun `can create a message via form`() {
         val repository = JooqMessageRepository(testDsl, testDsl)
@@ -26,7 +32,6 @@ class MessageActionE2ETest : PostgresWebTest() {
         val transactionManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, transactionManager, cache)
         val pageFactory = WebPageFactory(repository)
-        val i18n = I18nService.fromResourceBundle("messages")
         
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)

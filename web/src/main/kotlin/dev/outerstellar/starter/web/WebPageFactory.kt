@@ -4,6 +4,7 @@ import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.PaginationMetadata
 import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.sync.SyncMessage
 import org.http4k.template.ViewModel
 
 data class ShellLink(val label: String, val url: String, val icon: String, val active: Boolean)
@@ -146,6 +147,15 @@ data class ModalViewModel(
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/components/Modal"
 }
+
+data class ConflictResolveViewModel(
+    val syncId: String,
+    val myAuthor: String,
+    val myContent: String,
+    val serverAuthor: String,
+    val serverContent: String,
+    val resolveUrl: String
+) : ViewModel
 
 data class SidebarSelector(
   val heading: String,
@@ -366,6 +376,24 @@ class WebPageFactory(
                 outboxStats = outboxStats,
                 telemetryStatus = telemetryStatus
             )
+        )
+    }
+
+    fun buildConflictResolveModal(ctx: WebContext, syncId: String): ConflictResolveViewModel {
+        val message = repository.findBySyncId(syncId) 
+            ?: throw dev.outerstellar.starter.model.MessageNotFoundException(syncId)
+        val serverVersion = org.http4k.format.Jackson.asA(
+            message.syncConflict!!, 
+            SyncMessage::class
+        )
+
+        return ConflictResolveViewModel(
+            syncId = syncId,
+            myAuthor = message.author,
+            myContent = message.content,
+            serverAuthor = serverVersion.author,
+            serverContent = serverVersion.content,
+            resolveUrl = ctx.url("/messages/resolve/$syncId")
         )
     }
 

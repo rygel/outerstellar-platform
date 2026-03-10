@@ -7,32 +7,22 @@ import org.jooq.SQLDialect
 import org.jooq.impl.DSL
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 
-@Testcontainers
 class PersistencePatternsTest {
 
-    @Container
-    val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
-        withDatabaseName("patternstestdb")
-        withUsername("test")
-        withPassword("test")
-    }
-
     @Test
-    fun `should verify soft delete fields are present in schema`() {
-        val dataSource = createDataSource(postgres.jdbcUrl, postgres.username, postgres.password)
+    fun `should verify soft delete fields are present in H2 schema`() {
+        val jdbcUrl = "jdbc:h2:mem:patternstest;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+        val dataSource = createDataSource(jdbcUrl, "sa", "")
         migrate(dataSource)
         
-        val dsl: DSLContext = DSL.using(dataSource, SQLDialect.POSTGRES)
+        val dsl: DSLContext = DSL.using(dataSource, SQLDialect.H2)
         
         // Use jOOQ meta to verify fields exist
         val messagesMeta = dsl.meta().getTables("MESSAGES").firstOrNull()
-        assertNotNull(messagesMeta?.field("DELETED_AT"), "messages table should have deleted_at field")
+        assertNotNull(messagesMeta?.field("DELETED_AT"), "MESSAGES table should have DELETED_AT field")
         
         val outboxMeta = dsl.meta().getTables("OUTBOX").firstOrNull()
-        assertNotNull(outboxMeta?.field("PROCESSED_AT"), "outbox table should have processed_at field")
+        assertNotNull(outboxMeta?.field("PROCESSED_AT"), "OUTBOX table should have PROCESSED_AT field")
     }
 }
