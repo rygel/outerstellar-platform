@@ -25,6 +25,15 @@
             <artifactId>flatlaf</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf-extras</artifactId>
+            <version>3.5.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>remixicon</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.outerstellar</groupId>
             <artifactId>outerstellar-theme</artifactId>
         </dependency>

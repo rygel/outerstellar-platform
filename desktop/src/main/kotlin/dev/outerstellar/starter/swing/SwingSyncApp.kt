@@ -60,14 +60,26 @@ fun main() {
   val desktop = DesktopComponent
   migrate(desktop.dataSource)
 
-  val i18nService = I18nService.create("swing-messages").also { it.setLocale(Locale.getDefault()) }
+  val savedState = DesktopStateProvider.loadState()
+  val initialLocale = savedState?.language?.let { Locale(it) } ?: Locale.getDefault()
+  Locale.setDefault(initialLocale)
+
+  val i18nService = I18nService.create("messages").also { it.setLocale(initialLocale) }
 
     SwingUtilities.invokeLater {
     FlatLightLaf.setup()
+    
+    val themeManager = ThemeManager()
+    savedState?.themeId?.let { themeId ->
+        ThemeCatalog.allThemes().find { it.id == themeId }?.let { theme ->
+            themeManager.applyTheme(theme)
+        }
+    }
+
     val notifier = SystemTrayNotifier(i18nService)
     val viewModel = SyncViewModel(desktop.messageService, desktop.syncService, i18nService, notifier)
     
-    val window = SyncWindow(viewModel, ThemeManager(), i18nService)
+    val window = SyncWindow(viewModel, themeManager, i18nService)
 
     DeepLinkHandler.setup(
         onSearch = { query ->
@@ -112,12 +124,24 @@ internal class SyncWindow(
   private val authorField = JTextField().apply { name = "authorField" }
   private val searchField = JTextField().apply { name = "searchField" }
   private val contentArea = JTextArea(defaultComposerRows, defaultComposerColumns).apply { name = "contentArea" }
-  private val syncButton = JButton(i18nService.translate("swing.button.sync")).apply { name = "syncButton" }
-  private val createButton = JButton(i18nService.translate("swing.button.create")).apply { name = "createButton" }
+  private val syncButton = JButton(i18nService.translate("swing.button.sync")).apply { 
+      name = "syncButton"
+      icon = RemixIcon.get("system/refresh-line")
+  }
+  private val createButton = JButton(i18nService.translate("swing.button.create")).apply { 
+      name = "createButton"
+      icon = RemixIcon.get("system/add-box-line")
+  }
   
   private val appMenu = JMenu(i18nService.translate("swing.menu.application")).apply { name = "appMenu" }
-  private val themeMenu = JMenu(i18nService.translate("swing.theme.menu")).apply { name = "themeMenu" }
-  private val settingsItem = JMenuItem(i18nService.translate("swing.menu.settings")).apply { name = "settingsItem" }
+  private val themeMenu = JMenu(i18nService.translate("swing.theme.menu")).apply { 
+      name = "themeMenu"
+      icon = RemixIcon.get("others/palette-line")
+  }
+  private val settingsItem = JMenuItem(i18nService.translate("swing.menu.settings")).apply { 
+      name = "settingsItem"
+      icon = RemixIcon.get("system/settings-3-line")
+  }
 
   fun show() {
     configureFrame()
@@ -159,7 +183,9 @@ internal class SyncWindow(
     val state = DesktopState(
         windowBounds = frame.bounds,
         isMaximized = (frame.extendedState and JFrame.MAXIMIZED_BOTH) != 0,
-        lastSearchQuery = viewModel.searchQuery.takeIf { it.isNotBlank() }
+        lastSearchQuery = viewModel.searchQuery.takeIf { it.isNotBlank() },
+        themeId = ThemeCatalog.allThemes().find { it.name == (UIManager.get("current_theme_name") as? String) }?.id,
+        language = Locale.getDefault().language
     )
     DesktopStateProvider.saveState(state)
   }
@@ -280,7 +306,10 @@ internal class SyncWindow(
     val outerstellarThemes: List<ThemeDefinition> = themeManager.availableThemes().sortedBy { it.name }
     outerstellarThemes.forEach { theme: ThemeDefinition ->
         val item = JMenuItem(theme.name)
-        item.addActionListener { themeManager.applyTheme(theme) }
+        item.addActionListener { 
+            themeManager.applyTheme(theme)
+            saveState() // Save immediately on theme change
+        }
         themeMenu.add(item)
     }
 
@@ -304,14 +333,16 @@ internal class SyncWindow(
     )
     val langNames = languages.map { it.second }.toTypedArray()
     val langCombo = JComboBox<String>(langNames).apply { name = "langCombo" }
-    val currentLang = if (Locale.getDefault().language == "fr") "fr" else "en"
-    langCombo.selectedIndex = languages.indexOfFirst { it.first == currentLang }
+    val currentLang = Locale.getDefault().language
+    langCombo.selectedIndex = languages.indexOfFirst { it.first == currentLang }.coerceAtLeast(0)
     formPanel.add(langCombo)
     
     formPanel.add(JLabel(i18nService.translate("swing.settings.theme")))
     val allThemes: List<ThemeDefinition> = themeManager.availableThemes().sortedBy { it.name }
     val themeNames = allThemes.map { it.name }.toTypedArray()
     val themeCombo = JComboBox<String>(themeNames).apply { name = "themeCombo" }
+    val currentThemeName = UIManager.get("current_theme_name") as? String
+    themeCombo.selectedIndex = allThemes.indexOfFirst { it.name == currentThemeName }.coerceAtLeast(0)
     formPanel.add(themeCombo)
     
     val buttonPanel = JPanel(java.awt.FlowLayout(java.awt.FlowLayout.RIGHT))
@@ -322,12 +353,13 @@ internal class SyncWindow(
         val selectedLang = languages[langCombo.selectedIndex].first
         val newLocale = Locale(selectedLang)
         Locale.setDefault(newLocale)
-        val newI18n = I18nService.create("swing-messages").also { it.setLocale(newLocale) }
+        val newI18n = I18nService.create("messages").also { it.setLocale(newLocale) }
         refreshTranslations(newI18n)
         
         val selectedTheme = allThemes[themeCombo.selectedIndex]
         themeManager.applyTheme(selectedTheme)
         
+        saveState()
         dialog.dispose()
     }
     

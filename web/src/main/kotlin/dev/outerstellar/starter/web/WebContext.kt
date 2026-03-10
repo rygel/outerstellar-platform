@@ -34,7 +34,7 @@ class WebContext(val request: Request, private val devDashboardEnabled: Boolean 
     }
 
     val i18n: I18nService by lazy {
-        I18nService.create("web-messages").also {
+        I18nService.create("messages").also {
             it.setLocale(Locale.forLanguageTag(lang))
         }
     }

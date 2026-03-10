@@ -25,7 +25,7 @@ val webModule = module {
     single<TemplateRenderer> { createRenderer() }
     single { WebPageFactory(get(), get<AppConfig>().devDashboardEnabled) }
     single { SyncApi(get()) }
-    single<I18nService> { I18nService.fromResourceBundle("web-messages") }
+    single<I18nService> { I18nService.fromResourceBundle("messages") }
     single<EventPublisher> { SyncWebSocket }
     single<PolyHandler>(named("webServer")) { 
         app(

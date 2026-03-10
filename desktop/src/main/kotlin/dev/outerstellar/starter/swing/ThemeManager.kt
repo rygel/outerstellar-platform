@@ -15,10 +15,12 @@ class ThemeManager {
 
   fun setLightTheme() {
     applyLookAndFeel(FlatLightLaf())
+    UIManager.put("current_theme_name", "Light")
   }
 
   fun setDarkTheme() {
     applyLookAndFeel(FlatDarkLaf())
+    UIManager.put("current_theme_name", "Dark")
   }
 
   fun applyTheme(theme: ThemeDefinition) {
@@ -27,6 +29,8 @@ class ThemeManager {
     } else {
         applyLookAndFeel(FlatDarkLaf())
     }
+
+    UIManager.put("current_theme_name", theme.name)
 
     val palette: Map<String, String> = theme.colors
 
