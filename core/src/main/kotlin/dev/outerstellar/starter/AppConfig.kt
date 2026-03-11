@@ -11,6 +11,7 @@ data class AppConfig(
     val jdbcUser: String = "sa",
     val jdbcPassword: String = "",
     val devDashboardEnabled: Boolean = false,
+    val sessionCookieSecure: Boolean = false,
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)

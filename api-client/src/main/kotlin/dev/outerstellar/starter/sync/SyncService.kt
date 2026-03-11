@@ -6,6 +6,7 @@ import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.service.SyncProvider
 import dev.outerstellar.starter.web.AuthTokenResponse
 import dev.outerstellar.starter.web.LoginRequest
+import dev.outerstellar.starter.web.RegisterRequest
 import org.http4k.client.JavaHttpClient
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
@@ -25,6 +26,7 @@ class SyncService(
     private var apiToken: String? = null
 
     private val loginRequestLens = Body.auto<LoginRequest>().toLens()
+    private val registerRequestLens = Body.auto<RegisterRequest>().toLens()
     private val authTokenLens = Body.auto<AuthTokenResponse>().toLens()
     private val pullResponseLens = Body.auto<SyncPullResponse>().toLens()
     private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
@@ -42,6 +44,21 @@ class SyncService(
             return auth
         } else {
             throw SyncException("Login failed: ${response.status}")
+        }
+    }
+
+    fun register(username: String, pass: String): AuthTokenResponse {
+        val request = Request(POST, "$baseUrl/api/v1/auth/register")
+            .with(registerRequestLens of RegisterRequest(username, pass))
+
+        val response = client(request)
+
+        if (response.status == Status.OK) {
+            val auth = authTokenLens(response)
+            this.apiToken = auth.token
+            return auth
+        } else {
+            throw SyncException("Registration failed: ${response.status}")
         }
     }
 

@@ -136,5 +136,16 @@ To prevent common Kotlin type-inference issues and library conflicts, follow the
 
 The desktop application is built with **Swing** following the **MVVM** pattern and uses **FlatLaf** for a modern, themed look and feel.
 
+#### Design Notes
+
+*   **Theme Consistency is Mandatory**: Every Swing UI surface (main windows, dialogs, popups, and transient overlays) must use centralized theming. Do not ship unthemed or partially themed screens.
+*   **FlatLaf as Source of Truth**: Use FlatLaf/UI defaults (`UIManager` keys and shared theme tokens) for colors, typography, borders, and component states. Avoid hardcoded colors, fonts, and ad-hoc styling in individual windows.
+*   **MigLayout as Standard Layout System**: Use **MigLayout** for all new/updated Swing windows and dialogs to keep spacing, alignment, and responsiveness consistent across the app.
+*   **Themed Dialog Rule**: Authentication and settings dialogs must apply the same background, foreground, and component style rules as primary windows so there is no visual drift.
+*   **Localization Rule**: All user-visible Swing text (window titles, labels, buttons, menu items, and dialog messages) must come from i18n keys. Avoid hardcoded UI strings in production code.
+*   **Runtime Language Switch Rule**: Changing language at runtime must refresh currently mounted UI text in-place, not only newly opened windows/dialogs.
+*   **Language Regression Test Rule**: Any change touching Swing text or settings flow must include/update an automated language-switch test that verifies key UI labels and menus update correctly.
+*   **Design Review Check**: UI work is incomplete until all affected screens are verified for theme parity (light/dark if supported), readable contrast, and consistent spacing.
+
 *   **No WebSockets for Desktop**: The desktop application explicitly **does not use WebSockets** for synchronization.
     *   **Reasons**: To keep the desktop client's architecture lean and focused on its primary role as a standalone synchronization tool. Standard HTTP-based sync provides a reliable, firewall-friendly connection model that is easier to debug and maintain for a desktop environment. Real-time updates are prioritized for the Web UI, while the desktop app maintains a robust manual or background polling-based sync model.

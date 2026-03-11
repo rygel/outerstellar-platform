@@ -84,13 +84,14 @@ class AuthenticationWorkflowTest : H2WebTest() {
                 .form("password", "password123")
         )
 
-        // Login redirects to / (default if returnTo is not handled in POST result yet)
-        // or potentially directly to returnTo if we implemented it.
-        // Looking at current AuthRoutes, it redirects to /
         assertEquals(Status.FOUND, loginResponse.status)
+        assertEquals("/admin/dev", loginResponse.header("location"))
 
         val sessionCookie = loginResponse.cookies().find { it.name == "app_session" }
         assertNotNull(sessionCookie, "Session cookie should be present in response")
+        val setCookieHeader = loginResponse.header("Set-Cookie").orEmpty()
+        assertTrue(setCookieHeader.contains("HttpOnly"))
+        assertTrue(setCookieHeader.contains("SameSite=Lax"))
 
         // 4. Access admin dashboard with session
         val adminResponse = app(Request(GET, "/admin/dev").cookie(sessionCookie))
@@ -121,5 +122,28 @@ class AuthenticationWorkflowTest : H2WebTest() {
         // Try to access admin dashboard -> should be Forbidden (403)
         val adminResponse = app(Request(GET, "/admin/dev").cookie(sessionCookie))
         assertEquals(Status.FORBIDDEN, adminResponse.status)
+    }
+
+    @Test
+    fun `sign-in blocks external returnTo redirects`() {
+        app(
+            Request(POST, "/auth/components/result")
+                .form("mode", "register")
+                .form("name", "safeuser")
+                .form("email", "safe@test.com")
+                .form("password", "password123")
+                .form("confirmPassword", "password123")
+        )
+
+        val loginResponse = app(
+            Request(POST, "/auth/components/result")
+                .query("returnTo", "//evil.example/path")
+                .form("mode", "sign-in")
+                .form("email", "safe@test.com")
+                .form("password", "password123")
+        )
+
+        assertEquals(Status.FOUND, loginResponse.status)
+        assertEquals("/", loginResponse.header("location"))
     }
 }

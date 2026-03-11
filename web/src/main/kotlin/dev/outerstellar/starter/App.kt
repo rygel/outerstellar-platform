@@ -104,14 +104,21 @@ fun app(
         renderer = OpenApi3(ApiInfo("Outerstellar UI", "v1.0"), Jackson)
         descriptionPath = "/ui/openapi.json"
         routes += HomeRoutes(messageService, repository, pageFactory, jteRenderer).routes
-        routes += AuthRoutes(pageFactory, jteRenderer, securityService, userRepository, passwordEncoder).routes
+        routes += AuthRoutes(
+            pageFactory,
+            jteRenderer,
+            securityService,
+            userRepository,
+            passwordEncoder,
+            config.sessionCookieSecure,
+        ).routes
         routes += ErrorRoutes(pageFactory, jteRenderer).routes
 
         // Global Logout
         routes += ("/logout" bindContract GET).to { request: org.http4k.core.Request ->
             Response(Status.FOUND)
                 .header("location", request.webContext.url("/"))
-                .header("Set-Cookie", "app_session=; Path=/; Max-Age=0; HttpOnly")
+                .header("Set-Cookie", dev.outerstellar.starter.web.SessionCookie.clear(config.sessionCookieSecure))
         }
     }
 

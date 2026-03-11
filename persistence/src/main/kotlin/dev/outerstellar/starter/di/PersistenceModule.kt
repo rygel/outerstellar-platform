@@ -20,7 +20,7 @@ import javax.sql.DataSource
 val persistenceModule = module {
     single<DataSource> {
         val config = get<dev.outerstellar.starter.AppConfig>()
-        createDataSource(config.jdbcUrl, "sa", "")
+        createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
     }
 
     single(named("primaryDsl")) {

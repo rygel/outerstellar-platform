@@ -96,7 +96,35 @@ class SyncViewModel(
             override fun done() {
                 val (success, error) = get()
                 if (success) {
-                    status = "Logged in as $userName"
+                    status = i18nService.translate("swing.status.loggedIn", userName)
+                    author = userName
+                    startAutoSync()
+                }
+                onResult(success, error)
+                notifyObservers()
+            }
+        }.execute()
+    }
+
+    fun register(user: String, pass: String, onResult: (Boolean, String?) -> Unit) {
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+            override fun doInBackground(): Pair<Boolean, String?> {
+                return try {
+                    val result = syncService.register(user, pass)
+                    userName = result.username
+                    isLoggedIn = true
+                    true to null
+                } catch (e: SyncException) {
+                    false to e.message
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    false to (e.cause?.message ?: e.message ?: "Unknown error")
+                }
+            }
+
+            override fun done() {
+                val (success, error) = get()
+                if (success) {
+                    status = i18nService.translate("swing.status.registered", userName)
                     author = userName
                     startAutoSync()
                 }
@@ -112,7 +140,7 @@ class SyncViewModel(
         isLoggedIn = false
         userName = ""
         author = i18nService.translate("swing.author.default")
-        status = "Logged out"
+        status = i18nService.translate("swing.status.loggedOut")
         notifyObservers()
     }
 

@@ -24,7 +24,8 @@ class AuthRoutes(
     private val renderer: TemplateRenderer,
     private val securityService: SecurityService,
     private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder,
+    private val sessionCookieSecure: Boolean,
 ) : ServerRoutes {
     private val modePath = Path.string().of("mode")
 
@@ -48,13 +49,14 @@ class AuthRoutes(
             val mode = request.form("mode") ?: "sign-in"
             val email = request.form("email").orEmpty()
             val password = request.form("password").orEmpty()
+            val returnTo = safeReturnTo(request.query("returnTo") ?: request.form("returnTo"))
 
             if (mode == "sign-in") {
                 val user = securityService.authenticate(email, password)
                 if (user != null) {
                     Response(Status.FOUND)
-                        .header("location", request.webContext.url("/"))
-                        .header("Set-Cookie", "app_session=${user.id}; Path=/; HttpOnly")
+                        .header("location", request.webContext.url(returnTo))
+                        .header("Set-Cookie", SessionCookie.create(user.id.toString(), sessionCookieSecure))
                 } else {
                     val errorValues = mapOf("error" to "Invalid credentials")
                     renderer.render(pageFactory.buildAuthResult(request.webContext, errorValues))
@@ -78,4 +80,13 @@ class AuthRoutes(
             }
         }
     )
+
+    private fun safeReturnTo(returnTo: String?): String {
+        return when {
+            returnTo.isNullOrBlank() -> "/"
+            !returnTo.startsWith("/") -> "/"
+            returnTo.startsWith("//") -> "/"
+            else -> returnTo
+        }
+    }
 }

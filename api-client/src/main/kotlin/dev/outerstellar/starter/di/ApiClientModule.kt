@@ -6,11 +6,12 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val apiClientModule = module {
-    single<SyncProvider> {
+    single<SyncService> {
         SyncService(
             baseUrl = get(named("serverBaseUrl")),
             repository = get(),
             transactionManager = get(),
         )
     }
+    single<SyncProvider> { get<SyncService>() }
 }

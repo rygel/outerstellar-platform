@@ -30,4 +30,21 @@ class SecurityService(
             }
         }
     }
+
+    fun register(username: String, password: String): User {
+        require(username.isNotBlank()) { "Username is required" }
+        require(password.length >= 8) { "Password must be at least 8 characters" }
+        require(userRepository.findByUsername(username) == null) { "Username already exists" }
+
+        val created = User(
+            id = java.util.UUID.randomUUID(),
+            username = username,
+            email = username,
+            passwordHash = passwordEncoder.encode(password),
+            role = UserRole.USER
+        )
+        userRepository.save(created)
+        logger.info("Registration successful for user {}", username)
+        return created
+    }
 }

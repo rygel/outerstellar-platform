@@ -4,6 +4,8 @@ import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import dev.outerstellar.starter.sync.SyncService
+import dev.outerstellar.starter.web.AuthTokenResponse
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.swing.core.BasicRobot
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.awt.GraphicsEnvironment
 import java.util.Locale
+import java.util.function.BooleanSupplier
 
 class SwingAppE2ETest {
 
@@ -79,5 +82,51 @@ class SwingAppE2ETest {
         w.button("createButton").click()
 
         verify { messageService.createLocalMessage("AssertJ Author", "AssertJ Content") }
+    }
+
+    @Test
+    fun `ui auth flow updates menu state on login and logout`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping GUI interaction test in headless mode")
+
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
+
+        val w = window!!
+        assertEquals("Login", w.menuItem("loginItem").target().text)
+        w.menuItem("loginItem").click()
+
+        w.dialog().textBox("username").enterText("alice")
+        w.dialog().textBox("password").enterText("secret")
+        w.dialog().button("loginBtn").click()
+
+        waitUntil(2_000) { w.menuItem("logoutItem").target().isEnabled }
+
+        w.menuItem("logoutItem").click()
+        waitUntil(2_000) { !w.menuItem("logoutItem").target().isEnabled }
+    }
+
+    @Test
+    fun `ui register flow updates menu state`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping GUI interaction test in headless mode")
+
+        every { syncService.register("newuser", "secret123") } returns AuthTokenResponse("tok2", "newuser", "USER")
+
+        val w = window!!
+        w.menuItem("registerItem").click()
+
+        w.dialog().textBox("registerUsername").enterText("newuser")
+        w.dialog().textBox("registerPassword").enterText("secret123")
+        w.dialog().textBox("registerPasswordConfirm").enterText("secret123")
+        w.dialog().button("registerBtn").click()
+
+        waitUntil(2_000) { w.menuItem("logoutItem").target().isEnabled }
+    }
+
+    private fun waitUntil(timeoutMs: Long, condition: BooleanSupplier) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (condition.getAsBoolean()) return
+            Thread.sleep(25)
+        }
+        throw AssertionError("Condition not met within ${timeoutMs}ms")
     }
 }
