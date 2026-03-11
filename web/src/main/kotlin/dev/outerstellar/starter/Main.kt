@@ -10,7 +10,6 @@ import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.PasswordEncoder
 import dev.outerstellar.starter.security.UserRepository
 import javax.sql.DataSource
-import org.http4k.core.HttpHandler
 import org.http4k.server.Jetty
 import org.http4k.server.PolyHandler
 import org.http4k.server.asServer
