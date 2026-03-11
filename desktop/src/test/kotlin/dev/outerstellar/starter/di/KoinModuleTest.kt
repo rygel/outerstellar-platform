@@ -1,6 +1,9 @@
 package dev.outerstellar.starter.di
 
+import com.outerstellar.i18n.I18nService
+import dev.outerstellar.starter.swing.SystemTrayNotifier
 import dev.outerstellar.starter.persistence.MessageCache
+import dev.outerstellar.starter.persistence.NoOpMessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.persistence.TransactionManager
@@ -19,11 +22,9 @@ class KoinModuleTest : KoinTest {
             extraTypes = listOf(
                 MessageService::class,
                 SyncService::class,
-                MessageRepository::class,
-                TransactionManager::class,
-                MessageCache::class,
-                OutboxRepository::class,
-                AppConfig::class,
+                I18nService::class,
+                SystemTrayNotifier::class,
+                dev.outerstellar.starter.swing.SwingAppConfig::class,
                 java.lang.String::class
             )
         )

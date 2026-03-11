@@ -14,5 +14,5 @@ val desktopModule = module {
     
     single { SyncViewModel(get(), get(), get(), getOrNull()) }
     single { SystemTrayNotifier(get()) }
-    single { I18nService.fromResourceBundle("swing-messages") }
+    single { I18nService.fromResourceBundle("messages") }
 }

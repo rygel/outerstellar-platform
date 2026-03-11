@@ -5,6 +5,10 @@ import dev.outerstellar.starter.di.apiClientModule
 import dev.outerstellar.starter.di.coreModule
 import dev.outerstellar.starter.di.desktopModule
 import dev.outerstellar.starter.di.persistenceModule
+import dev.outerstellar.starter.service.SyncProvider
+import dev.outerstellar.starter.sync.SyncService
+import dev.outerstellar.starter.persistence.MessageCache
+import dev.outerstellar.starter.persistence.NoOpMessageCache
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -31,6 +35,9 @@ class SmokeE2ETest : KoinTest {
                 module {
                     single { AppConfig() }
                     single(named("jdbcUrl")) { "jdbc:h2:mem:test;MODE=PostgreSQL" }
+                    single<MessageCache> { NoOpMessageCache }
+                    single { SyncService(get(named("serverBaseUrl")), get(), get()) }
+                    single<SyncProvider> { get<SyncService>() }
                 }
             )
         }
