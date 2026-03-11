@@ -7,9 +7,8 @@ import dev.outerstellar.starter.security.UserRole
 import java.util.Locale
 import java.util.UUID
 import org.http4k.core.Request
-import org.http4k.core.RequestContexts
 import org.http4k.core.cookie.cookie
-import org.http4k.lens.RequestContextKey
+import org.http4k.lens.RequestKey
 import org.slf4j.LoggerFactory
 
 class WebContext(
@@ -20,8 +19,8 @@ class WebContext(
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
     companion object {
-        val contexts = RequestContexts()
-        val KEY = RequestContextKey.required<WebContext>(contexts)
+        val contexts = org.http4k.core.RequestContexts()
+        val KEY = RequestKey.required<WebContext>("web.context")
         
         const val LANG_COOKIE = "app_lang"
         const val THEME_COOKIE = "app_theme"
@@ -49,7 +48,7 @@ class WebContext(
         request.cookie(SESSION_COOKIE)?.value?.let { sessionUserId ->
             try {
                 val uid = UUID.fromString(sessionUserId)
-                userRepository?.findByUsername("admin")?.takeIf { it.id == uid }
+                userRepository?.findById(uid)
             } catch (e: IllegalArgumentException) {
                 logger.debug("Invalid session cookie format: {}", e.message)
                 null
@@ -59,7 +58,7 @@ class WebContext(
 
     val i18n: I18nService by lazy {
         I18nService.create("messages").also {
-            it.setLocale(Locale.forLanguageTag(lang))
+            it.setLocale(Locale.of(lang))
         }
     }
 
