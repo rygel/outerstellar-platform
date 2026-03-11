@@ -78,7 +78,7 @@ fun main() {
   migrate(desktop.dataSource)
 
   val savedState = DesktopStateProvider.loadState()
-  val initialLocale = savedState?.language?.let { Locale(it) } ?: Locale.getDefault()
+  val initialLocale = savedState?.language?.let { Locale.of(it) } ?: Locale.getDefault()
   Locale.setDefault(initialLocale)
 
   val i18nService = I18nService.create("messages").also { it.setLocale(initialLocale) }
@@ -487,7 +487,7 @@ class SyncWindow(
     
     applyButton.addActionListener {
         val selectedLang = languages[langCombo.selectedIndex].first
-        val newLocale = Locale(selectedLang)
+        val newLocale = Locale.of(selectedLang)
         Locale.setDefault(newLocale)
         refreshTranslations(I18nService.create("messages").also { it.setLocale(newLocale) })
         themeManager.applyTheme(allThemes[themeCombo.selectedIndex])
