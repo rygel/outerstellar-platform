@@ -41,6 +41,52 @@ A modern, full-stack Kotlin application designed as a starter template for build
 mvn clean install
 ```
 
+#### Maven Profiles
+
+Use these root-level profiles to separate concerns:
+
+- `coverage`: enables coverage collection/report generation for verification runs.
+- `tests-headless`: runs tests with desktop UI in headless mode.
+- `tests-headful`: runs tests with desktop UI in non-headless mode.
+- `runtime-dev`: optimized runtime profile for local development launches.
+- `runtime-prod`: optimized runtime profile for production-like launches.
+
+Examples:
+
+```bash
+# Coverage + tests
+mvn -Pcoverage verify
+
+# Desktop tests in headless mode (CI friendly)
+mvn -pl desktop -Ptests-headless test
+
+# Desktop tests with actual UI
+mvn -pl desktop -Ptests-headful test
+
+# Run web in dev runtime mode
+mvn -pl web -Pruntime-dev compile exec:java
+```
+
+#### Regenerate jOOQ Sources (Manual + Version Controlled)
+
+Generated jOOQ sources are checked in under:
+
+- `persistence/src/main/generated/jooq`
+
+Regenerate them manually when migrations change:
+
+```bash
+mvn -pl persistence -Pjooq-codegen generate-sources
+```
+
+PowerShell shortcut:
+
+```bash
+./generate-jooq.ps1
+```
+
+Then commit the updated generated files together with your migration changes.
+
 #### Run Web Application
 ```bash
 ./start-web.ps1

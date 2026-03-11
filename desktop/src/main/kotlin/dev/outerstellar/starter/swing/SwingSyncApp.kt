@@ -22,6 +22,7 @@ import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
@@ -35,6 +36,7 @@ import java.util.Locale
 import javax.sql.DataSource
 import javax.swing.DefaultListCellRenderer
 import javax.swing.DefaultListModel
+import javax.swing.Box
 import javax.swing.JButton
 import javax.swing.JComboBox
 import javax.swing.JDialog
@@ -50,6 +52,7 @@ import javax.swing.JPasswordField
 import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.JTextField
+import javax.swing.JToolBar
 import javax.swing.JWindow
 import javax.swing.KeyStroke
 import javax.swing.SwingConstants
@@ -171,12 +174,19 @@ class SyncWindow(
     val frame = JFrame(i18nService.translate("swing.app.title"))
     private val messagesModel = DefaultListModel<MessageSummary>()
     private val messagesList = JList(messagesModel).apply { name = "messagesList" }
-    private val statusLabel = JLabel().apply { name = "statusLabel" }
+    private val statusLabel = JLabel("Statusbar Test").apply {
+        name = "statusLabel"
+        toolTipText = "Statusbar Test"
+    }
     private val statusHintLabel = JLabel().apply { name = "statusHintLabel" }
+    private val statusMetaLabel = JLabel().apply { name = "statusMetaLabel" }
     private val searchLabel = JLabel().apply { name = "searchLabel" }
     private val authorLabel = JLabel().apply { name = "authorLabel" }
-    private val statusBarPanel = JPanel(MigLayout("ins 6 10 6 10, fillx", "[grow][][]", "[]")).apply { name = "statusBarPanel" }
-    private val statusMetaLabel = JLabel().apply { name = "statusMetaLabel" }
+    private val statusBar = JToolBar().apply {
+        name = "statusBarPanel"
+        isFloatable = false
+        isRollover = false
+    }
     private val searchField = JTextField().apply { name = "searchField" }
     private val authorField = JTextField().apply { name = "authorField" }
     private val contentArea = JTextArea().apply {
@@ -322,6 +332,7 @@ class SyncWindow(
         messagesModel.clear()
         viewModel.messages.forEach(messagesModel::addElement)
         statusLabel.text = viewModel.status
+        statusLabel.toolTipText = viewModel.status
         syncButton.isEnabled = !viewModel.isSyncing
 
         if (contentArea.text != viewModel.content) {
@@ -352,7 +363,7 @@ class SyncWindow(
         frame.setLocationRelativeTo(null)
         frame.jMenuBar = createMenuBar()
 
-        val mainPanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][grow][]"))
+        val mainPanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][grow]"))
 
         val searchPanel = JPanel(MigLayout("fillx, ins 0", "[][grow][]", "[]"))
         searchPanel.add(searchLabel)
@@ -389,12 +400,11 @@ class SyncWindow(
         footerPanel.add(createButton, "w 180!")
         mainPanel.add(footerPanel, "growx")
 
-        statusBarPanel.add(statusLabel, "growx")
-        statusBarPanel.add(statusHintLabel, "right")
-        statusBarPanel.add(statusMetaLabel, "right")
-        mainPanel.add(statusBarPanel, "growx")
-
-        frame.contentPane = mainPanel
+        configureStatusBar()
+        frame.contentPane = JPanel(BorderLayout()).apply {
+            add(mainPanel, BorderLayout.CENTER)
+            add(statusBar, BorderLayout.SOUTH)
+        }
         applyTranslations()
     }
 
@@ -717,6 +727,15 @@ class SyncWindow(
         dialog.isVisible = true
     }
 
+    private fun configureStatusBar() {
+        statusBar.removeAll()
+        statusBar.add(statusLabel)
+        statusBar.add(Box.createHorizontalGlue())
+        statusBar.add(statusHintLabel)
+        statusBar.addSeparator(Dimension(10, 0))
+        statusBar.add(statusMetaLabel)
+    }
+
     private fun applyTranslations() {
         frame.title = i18nService.translate("swing.app.title")
         syncButton.text = i18nService.translate("swing.button.sync")
@@ -738,12 +757,11 @@ class SyncWindow(
         aboutItem.text = i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))
         searchLabel.text = i18nService.translate("swing.label.search")
         authorLabel.text = i18nService.translate("swing.label.author")
-        statusHintLabel.text = i18nService.translate("swing.statusbar.hint")
+        statusHintLabel.text = ""
         statusMetaLabel.text = i18nService.translate("swing.statusbar.version", appVersion)
-
-        val borderColor = UIManager.getColor("Component.borderColor")
-        if (borderColor != null) {
-            statusBarPanel.border = javax.swing.BorderFactory.createMatteBorder(1, 0, 0, 0, borderColor)
+        if (statusLabel.text.isBlank()) {
+            statusLabel.text = "Statusbar Test"
+            statusLabel.toolTipText = statusLabel.text
         }
     }
 }

@@ -47,6 +47,7 @@ class SyncWindowI18nTest {
             assertEquals(fr.translate("swing.auth.login"), menuItem(window.frame, "loginItem"))
             assertEquals(fr.translate("swing.auth.logout.simple"), menuItem(window.frame, "logoutItem"))
             assertEquals(fr.translate("swing.auth.register"), menuItem(window.frame, "registerItem"))
+            assertEquals(fr.translate("swing.statusbar.version", "dev"), label(window.frame, "statusMetaLabel").text)
         }
     }
 

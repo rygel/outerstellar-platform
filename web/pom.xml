@@ -225,6 +225,10 @@
                 </executions>
                 <configuration>
                     <mainClass>dev.outerstellar.starter.MainKt</mainClass>
+                    <environmentVariables>
+                        <APP_PROFILE>${runtime.profile}</APP_PROFILE>
+                        <DEV_MODE>${runtime.dev.mode}</DEV_MODE>
+                    </environmentVariables>
                 </configuration>
             </plugin>
             <plugin>

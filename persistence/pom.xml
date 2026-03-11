@@ -85,74 +85,10 @@
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.h2database</groupId>
-                        <artifactId>h2</artifactId>
-                        <version>${h2.version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <id>migrate-codegen-schema</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>migrate</goal>
-                        </goals>
-                        <configuration>
-                            <url>${codegen.jdbc.url}</url>
-                            <user>sa</user>
-                            <password></password>
-                            <locations>
-                                <location>filesystem:${project.basedir}/src/main/resources/db/migration</location>
-                            </locations>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq-codegen-maven</artifactId>
-                <dependencies>
-                    <dependency>
-                        <groupId>com.h2database</groupId>
-                        <artifactId>h2</artifactId>
-                        <version>${h2.version}</version>
-                    </dependency>
-                </dependencies>
-                <executions>
-                    <execution>
-                        <id>generate-jooq-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <jdbc>
-                                <driver>org.h2.Driver</driver>
-                                <url>${codegen.jdbc.url}</url>
-                                <user>sa</user>
-                                <password></password>
-                            </jdbc>
-                            <generator>
-                                <name>org.jooq.codegen.KotlinGenerator</name>
-                                <database>
-                                    <name>org.jooq.meta.h2.H2Database</name>
-                                    <inputSchema>PUBLIC</inputSchema>
-                                    <includes>.*</includes>
-                                </database>
-                                <generate>
-                                    <records>true</records>
-                                    <deprecated>false</deprecated>
-                                </generate>
-                                <target>
-                                    <packageName>dev.outerstellar.starter.jooq</packageName>
-                                    <directory>${project.build.directory}/generated-sources/jooq</directory>
-                                </target>
-                            </generator>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -165,7 +101,8 @@
                         </goals>
                         <configuration>
                             <sourceDirs>
-                                <sourceDir>${project.build.directory}/generated-sources/jooq</sourceDir>
+                                <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
+                                <sourceDir>${project.basedir}/src/main/generated/jooq</sourceDir>
                             </sourceDirs>
                         </configuration>
                     </execution>
@@ -173,5 +110,87 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jooq-codegen</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-maven-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.h2database</groupId>
+                                <artifactId>h2</artifactId>
+                                <version>${h2.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>migrate-codegen-schema</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>migrate</goal>
+                                </goals>
+                                <configuration>
+                                    <url>${codegen.jdbc.url}</url>
+                                    <user>sa</user>
+                                    <password></password>
+                                    <locations>
+                                        <location>filesystem:${project.basedir}/src/main/resources/db/migration</location>
+                                    </locations>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.jooq</groupId>
+                        <artifactId>jooq-codegen-maven</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.h2database</groupId>
+                                <artifactId>h2</artifactId>
+                                <version>${h2.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>generate-jooq-sources</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>generate</goal>
+                                </goals>
+                                <configuration>
+                                    <jdbc>
+                                        <driver>org.h2.Driver</driver>
+                                        <url>${codegen.jdbc.url}</url>
+                                        <user>sa</user>
+                                        <password></password>
+                                    </jdbc>
+                                    <generator>
+                                        <name>org.jooq.codegen.KotlinGenerator</name>
+                                        <database>
+                                            <name>org.jooq.meta.h2.H2Database</name>
+                                            <inputSchema>PUBLIC</inputSchema>
+                                            <includes>.*</includes>
+                                        </database>
+                                        <generate>
+                                            <records>true</records>
+                                            <deprecated>false</deprecated>
+                                        </generate>
+                                        <target>
+                                            <packageName>dev.outerstellar.starter.jooq</packageName>
+                                            <directory>${project.basedir}/src/main/generated/jooq</directory>
+                                        </target>
+                                    </generator>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
 

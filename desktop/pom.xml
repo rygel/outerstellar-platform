@@ -11,10 +11,6 @@
 
     <artifactId>desktop</artifactId>
 
-    <properties>
-        <headless>true</headless>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>dev.outerstellar</groupId>
@@ -93,7 +89,7 @@
                 <configuration>
                     <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
                     <systemPropertyVariables>
-                        <java.awt.headless>${headless}</java.awt.headless>
+                        <java.awt.headless>${desktop.headless}</java.awt.headless>
                         <otel.traces.exporter>none</otel.traces.exporter>
                         <otel.metrics.exporter>none</otel.metrics.exporter>
                         <otel.logs.exporter>none</otel.logs.exporter>
@@ -111,6 +107,10 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>dev.outerstellar.starter.swing.SwingSyncAppKt</mainClass>
+                    <environmentVariables>
+                        <APP_PROFILE>${runtime.profile}</APP_PROFILE>
+                        <DEV_MODE>${runtime.dev.mode}</DEV_MODE>
+                    </environmentVariables>
                 </configuration>
             </plugin>
         </plugins>

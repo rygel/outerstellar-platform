@@ -26,7 +26,7 @@ $port = if ($env:PORT) { [int]$env:PORT } else { 8080 }
 Write-Host "Starting watcher..." -ForegroundColor Cyan
 $watcherProcess = Start-Process `
     -FilePath $mavenCommand.Source `
-    -ArgumentList "-pl", "web", "fizzed-watcher:run" `
+    -ArgumentList "-Pruntime-dev", "-pl", "web", "fizzed-watcher:run" `
     -WorkingDirectory $projectRoot `
     -RedirectStandardOutput $watcherLog `
     -RedirectStandardError $watcherErrorLog `
@@ -35,7 +35,7 @@ $watcherProcess = Start-Process `
 Write-Host "Starting web application..." -ForegroundColor Green
 $appProcess = Start-Process `
     -FilePath $mavenCommand.Source `
-    -ArgumentList "-pl", "web", "compile", "exec:java" `
+    -ArgumentList "-Pruntime-dev", "-pl", "web", "compile", "exec:java" `
     -WorkingDirectory $projectRoot `
     -RedirectStandardOutput $appLog `
     -RedirectStandardError $appErrorLog `

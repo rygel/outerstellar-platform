@@ -44,6 +44,7 @@ class ThemeManager {
             UIManager.put("MenuItem.background", color)
             UIManager.put("CheckBoxMenuItem.background", color)
             UIManager.put("RadioButtonMenuItem.background", color)
+            UIManager.put("ToolBar.background", color)
         }
 
         decodeSafe(palette["foreground"])?.let { color: Color ->
@@ -53,6 +54,7 @@ class ThemeManager {
             UIManager.put("MenuItem.foreground", color)
             UIManager.put("CheckBoxMenuItem.foreground", color)
             UIManager.put("RadioButtonMenuItem.foreground", color)
+            UIManager.put("ToolBar.foreground", color)
         }
 
         decodeSafe(palette["componentBackground"])?.let { color: Color ->
@@ -60,6 +62,7 @@ class ThemeManager {
             UIManager.put("TextArea.background", color)
             UIManager.put("TextField.background", color)
             UIManager.put("ScrollPane.background", color)
+            UIManager.put("Viewport.background", color)
         }
 
         decodeSafe(palette["selectionBackground"])?.let { color: Color ->

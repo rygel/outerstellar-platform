@@ -88,6 +88,17 @@ Why:
 
 The repository layer wraps jOOQ so the app uses a small domain-oriented API rather than scattered DSL calls.
 
+#### jOOQ code generation policy
+
+The project uses **manual jOOQ code generation** with generated sources checked into version control.
+
+- generated sources location: `persistence/src/main/generated/jooq`
+- generation profile: `jooq-codegen`
+- generation command: `mvn -pl persistence -Pjooq-codegen generate-sources`
+- PowerShell shortcut: `./generate-jooq.ps1`
+
+This keeps builds deterministic and removes implicit schema/codegen drift between environments.
+
 ## Sync design
 
 The current sync implementation is intentionally **message-focused** rather than a generic sync engine.
@@ -195,6 +206,14 @@ The build includes workbook-style quality tooling and project hygiene:
 
 These are included so the starter begins with the same quality expectations as downstream projects.
 
+### Build profile strategy
+
+The root Maven build uses explicit profiles to separate concerns:
+
+- `coverage` for coverage-oriented verification runs.
+- `tests-headless` and `tests-headful` for Swing/UI test mode selection.
+- `runtime-dev` and `runtime-prod` for launch-time defaults (faster runtime-oriented builds and runtime env flags).
+
 ## Operational scripts
 
 ### `run-dev.ps1`
@@ -215,17 +234,23 @@ Important behavior:
 
 Launches the Swing sync demo.
 
+### `generate-jooq.ps1`
+
+Regenerates jOOQ sources using the manual `jooq-codegen` profile.
+
+Use this whenever Flyway migrations or jOOQ generation config changes.
+
 ## Important findings and gotchas
 
 These are worth preserving because they caused real issues during implementation.
 
 ### 1. jOOQ/Flyway code generation against H2
 
-**Finding:** H2 file locking can occur when Flyway and jOOQ touch the same database during build generation.
+**Finding:** H2 file locking can occur when Flyway and jOOQ touch the same database during code generation.
 
-**Decision:** use `AUTO_SERVER=TRUE` on the codegen JDBC URL.
+**Decision:** use `AUTO_SERVER=TRUE` on the codegen JDBC URL and run generation manually via profile `jooq-codegen`.
 
-**Why:** it prevents code generation from tripping over the migrated schema file during the Maven lifecycle.
+**Why:** it prevents code generation lock contention while avoiding implicit generation during every build.
 
 ### 2. Kotlin/http4k compatibility
 
@@ -305,6 +330,8 @@ For this starter to remain healthy, these pieces are important:
 - Flyway remains the schema authority
 - Detekt ensures Kotlin code style and formatting (configured in `detekt.yml`)
 - jOOQ remains the database access layer
+- jOOQ generated sources remain checked in under `persistence/src/main/generated/jooq`
+- jOOQ sources are regenerated manually with `-Pjooq-codegen` when schema changes
 - JTE/KTE remains the server rendering path
 - `jte-runtime` stays on the runtime classpath
 - JTE hot-reload continues using the explicit application classloader
