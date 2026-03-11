@@ -1,10 +1,10 @@
 package dev.outerstellar.starter.swing
 
 import com.formdev.flatlaf.extras.FlatSVGIcon
+import org.slf4j.LoggerFactory
 import java.awt.Color
 import javax.swing.Icon
 import javax.swing.UIManager
-import org.slf4j.LoggerFactory
 
 object RemixIcon {
     private val logger = LoggerFactory.getLogger(RemixIcon::class.java)
@@ -14,7 +14,7 @@ object RemixIcon {
         // Flattened names for local resources
         val fileName = if (name.contains("/")) name.substringAfterLast("/") else name
         val path = "$BASE_PATH/$fileName.svg"
-        
+
         return try {
             FlatSVGIcon(path, size, size).apply {
                 val color = UIManager.getColor("Label.foreground") ?: Color.WHITE

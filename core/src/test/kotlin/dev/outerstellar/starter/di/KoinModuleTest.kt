@@ -15,12 +15,15 @@ class KoinModuleTest : KoinTest {
     @Test
     fun `core modules should be valid`() {
         checkModules {
-            modules(coreModule, module {
-                single { mockk<MessageRepository>(relaxed = true) }
-                single { mockk<OutboxRepository>(relaxed = true) }
-                single { mockk<MessageCache>(relaxed = true) }
-                single { mockk<TransactionManager>(relaxed = true) }
-            })
+            modules(
+                coreModule,
+                module {
+                    single { mockk<MessageRepository>(relaxed = true) }
+                    single { mockk<OutboxRepository>(relaxed = true) }
+                    single { mockk<MessageCache>(relaxed = true) }
+                    single { mockk<TransactionManager>(relaxed = true) }
+                }
+            )
         }
     }
 }

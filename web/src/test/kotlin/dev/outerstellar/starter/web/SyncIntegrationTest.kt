@@ -2,7 +2,6 @@ package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
-import dev.outerstellar.starter.model.StoredMessage
 import dev.outerstellar.starter.persistence.JooqMessageRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
@@ -41,16 +40,18 @@ class SyncIntegrationTest : H2WebTest() {
 
         // Pre-register an admin user for Bearer Auth
         val adminId = UUID.randomUUID()
-        userRepository.save(User(
-            id = adminId,
-            username = "admin",
-            email = "admin@test.com",
-            passwordHash = encoder.encode("password"),
-            role = UserRole.ADMIN
-        ))
+        userRepository.save(
+            User(
+                id = adminId,
+                username = "admin",
+                email = "admin@test.com",
+                passwordHash = encoder.encode("password"),
+                role = UserRole.ADMIN
+            )
+        )
 
         val app = app(
-            messageService, repository, outbox, cache, createRenderer(), 
+            messageService, repository, outbox, cache, createRenderer(),
             pageFactory, testConfig, securityService, userRepository, encoder
         ).http!!
 
@@ -59,8 +60,9 @@ class SyncIntegrationTest : H2WebTest() {
         repository.createServerMessage("Bob", "Hi")
 
         // Pull changes with Bearer Auth
-        val response = app(Request(GET, "/api/v1/sync?since=0")
-            .header("Authorization", "Bearer $adminId")
+        val response = app(
+            Request(GET, "/api/v1/sync?since=0")
+                .header("Authorization", "Bearer $adminId")
         )
 
         assertEquals(Status.OK, response.status)

@@ -26,7 +26,7 @@ class OutboxProcessor(
             try {
                 // Here we would normally sync to external systems
                 logger.debug("Processing entry: {} ({})", entry.id, entry.payloadType)
-                
+
                 if (transactionManager != null) {
                     transactionManager.inTransaction {
                         outboxRepository.markProcessed(entry.id)

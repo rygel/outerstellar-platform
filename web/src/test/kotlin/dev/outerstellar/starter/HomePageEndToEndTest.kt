@@ -20,41 +20,41 @@ import kotlin.test.assertTrue
 
 class HomePageEndToEndTest : H2WebTest() {
 
-  @Test
-  fun `home page is available on running server`() {
-    val userRepository = JooqUserRepository(testDsl)
-    val repository = JooqMessageRepository(testDsl, testDsl)
-    val outbox = StubOutboxRepository()
-    val cache = StubMessageCache()
-    val transactionManager = StubTransactionManager()
-    val messageService = MessageService(repository, outbox, transactionManager, cache)
-    val pageFactory = WebPageFactory(repository)
-    val passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
-    val securityService = SecurityService(userRepository, passwordEncoder)
+    @Test
+    fun `home page is available on running server`() {
+        val userRepository = JooqUserRepository(testDsl)
+        val repository = JooqMessageRepository(testDsl, testDsl)
+        val outbox = StubOutboxRepository()
+        val cache = StubMessageCache()
+        val transactionManager = StubTransactionManager()
+        val messageService = MessageService(repository, outbox, transactionManager, cache)
+        val pageFactory = WebPageFactory(repository)
+        val passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
+        val securityService = SecurityService(userRepository, passwordEncoder)
 
-    repository.seedStarterMessages()
+        repository.seedStarterMessages()
 
-    val appHandler = app(
-        messageService, 
-        repository, 
-        outbox, 
-        cache, 
-        createRenderer(), 
-        pageFactory, 
-        testConfig, 
-        securityService, 
-        userRepository, 
-        passwordEncoder
-    )
-    
-    val response = appHandler.http!!(Request(GET, "/"))
+        val appHandler = app(
+            messageService,
+            repository,
+            outbox,
+            cache,
+            createRenderer(),
+            pageFactory,
+            testConfig,
+            securityService,
+            userRepository,
+            passwordEncoder
+        )
 
-    if (response.status != Status.OK || !response.bodyString().contains("Outerstellar")) {
-        println("TEST FAILURE DEBUG: Status=${response.status}, Body=${response.bodyString()}")
+        val response = appHandler.http!!(Request(GET, "/"))
+
+        if (response.status != Status.OK || !response.bodyString().contains("Outerstellar")) {
+            println("TEST FAILURE DEBUG: Status=${response.status}, Body=${response.bodyString()}")
+        }
+
+        assertEquals(Status.OK, response.status)
+        assertTrue(response.bodyString().contains("Outerstellar Starter"), "Body should contain brand name")
+        assertTrue(response.header("content-type")?.contains("text/html") == true)
     }
-
-    assertEquals(Status.OK, response.status)
-    assertTrue(response.bodyString().contains("Outerstellar Starter"), "Body should contain brand name")
-    assertTrue(response.header("content-type")?.contains("text/html") == true)
-  }
 }

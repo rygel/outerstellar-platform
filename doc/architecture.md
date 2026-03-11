@@ -18,29 +18,18 @@ The goal is to start from a runnable platform, not just a dependency list.
 
 ## High-level shape
 
-The project is currently a **single Maven module** organized by package:
+The project is organized as a **multi-module Maven project**:
 
-- `dev.outerstellar.starter` - bootstrap, configuration, routing
-- `...persistence` - repository contract and jOOQ-backed implementation
-- `...sync` - shared sync DTOs, sync routes, client sync service
-- `...web` - page/view-model factory for JTE/KTE templates
-- `...swing` - desktop client, theme manager, launch config
-- `src/main/jte` - JTE Kotlin templates
-- `src/main/resources/db/migration` - Flyway migrations
+- `core` - shared domain models, services, and configuration
+- `persistence` - jOOQ-backed repository implementation and Flyway migrations
+- `api-client` - shared sync DTOs and client sync service
+- `web` - http4k web server, JTE templates, and HTMX interactions
+- `desktop` - Swing desktop client, theme manager, and UI tests
+- `security` - security-related utilities and configuration
 
-### Why a single module?
+### Why multiple modules?
 
-This was chosen to get to a complete, running starter quickly while keeping the wiring easy to follow.
-
-### What would likely change later?
-
-A future cleanup should split this into modules such as:
-
-- `shared-core`
-- `server-app`
-- `swing-app`
-
-That would improve separation, but the current single-module layout is intentional for bootstrap speed and demo clarity.
+This structure provides better separation of concerns, allows for independent testing, and keeps dependencies scoped to where they are actually needed (e.g., Swing-specific libraries are only in `desktop`).
 
 ## Runtime architecture
 
@@ -301,11 +290,20 @@ even though templates compiled.
 
 **Why:** shutdown should remain reliable even if a child disappears between discovery and termination.
 
+### 9. Headless Swing UI testing
+
+**Finding:** Running Swing UI tests in a local or CI environment can lead to unexpected window popups and mouse cursor capture, which can be disruptive and cause test failures in non-GUI environments.
+
+**Decision:** Enforce headless mode by default for all desktop tests using `java.awt.headless=true` in Maven, while providing a toggle switch (`-Dheadless=false`) for manual GUI verification.
+
+**Why:** This ensures tests are stable, non-intrusive, and compatible with headless CI pipelines, while still allowing developers to run full GUI tests when needed.
+
 ## What is necessary right now
 
 For this starter to remain healthy, these pieces are important:
 
 - Flyway remains the schema authority
+- Detekt ensures Kotlin code style and formatting (configured in `detekt.yml`)
 - jOOQ remains the database access layer
 - JTE/KTE remains the server rendering path
 - `jte-runtime` stays on the runtime classpath

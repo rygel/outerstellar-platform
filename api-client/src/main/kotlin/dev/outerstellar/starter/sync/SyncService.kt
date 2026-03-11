@@ -17,81 +17,81 @@ import org.http4k.core.with
 import org.http4k.format.Jackson.auto
 
 class SyncService(
-  private val baseUrl: String,
-  private val repository: MessageRepository,
-  private val transactionManager: TransactionManager,
-  private val client: HttpHandler = JavaHttpClient(),
+    private val baseUrl: String,
+    private val repository: MessageRepository,
+    private val transactionManager: TransactionManager,
+    private val client: HttpHandler = JavaHttpClient(),
 ) : SyncProvider {
-  private var apiToken: String? = null
+    private var apiToken: String? = null
 
-  private val loginRequestLens = Body.auto<LoginRequest>().toLens()
-  private val authTokenLens = Body.auto<AuthTokenResponse>().toLens()
-  private val pullResponseLens = Body.auto<SyncPullResponse>().toLens()
-  private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
-  private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
+    private val loginRequestLens = Body.auto<LoginRequest>().toLens()
+    private val authTokenLens = Body.auto<AuthTokenResponse>().toLens()
+    private val pullResponseLens = Body.auto<SyncPullResponse>().toLens()
+    private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
+    private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
 
-  fun login(username: String, pass: String): AuthTokenResponse {
-      val request = Request(POST, "$baseUrl/api/v1/auth/login")
-          .with(loginRequestLens of LoginRequest(username, pass))
-      
-      val response = client(request)
-      
-      if (response.status == Status.OK) {
-          val auth = authTokenLens(response)
-          this.apiToken = auth.token
-          return auth
-      } else {
-          throw SyncException("Login failed: ${response.status}")
-      }
-  }
+    fun login(username: String, pass: String): AuthTokenResponse {
+        val request = Request(POST, "$baseUrl/api/v1/auth/login")
+            .with(loginRequestLens of LoginRequest(username, pass))
 
-  fun logout() {
-      this.apiToken = null
-  }
+        val response = client(request)
 
-  override fun sync(): SyncStats {
-    val lastSync = repository.getLastSyncEpochMs()
-    val pullRequest = Request(GET, "$baseUrl/api/v1/sync?since=$lastSync")
-    val authenticatedPullRequest = apiToken?.let { 
-        pullRequest.header("Authorization", "Bearer $it") 
-    } ?: pullRequest
-    
-    val pullResponse = client(authenticatedPullRequest)
-    if (pullResponse.status != Status.OK) {
-        throw SyncException("Pull failed: ${pullResponse.status}")
+        if (response.status == Status.OK) {
+            val auth = authTokenLens(response)
+            this.apiToken = auth.token
+            return auth
+        } else {
+            throw SyncException("Login failed: ${response.status}")
+        }
     }
-    
-    val pullBody = pullResponseLens(pullResponse)
 
-    val dirtyMessages = repository.listDirtyMessages()
-    val pushRequestData = SyncPushRequest(dirtyMessages.map { it.toSyncMessage() })
-    
-    val httpRequest = Request(POST, "$baseUrl/api/v1/sync")
-        .with(pushRequestLens of pushRequestData)
-    
-    val authPushRequest = apiToken?.let { 
-        httpRequest.header("Authorization", "Bearer $it") 
-    } ?: httpRequest
-    
-    val pushResponse = client(authPushRequest)
-    if (pushResponse.status != Status.OK) {
-        throw SyncException("Push failed: ${pushResponse.status}")
+    fun logout() {
+        this.apiToken = null
     }
-    
-    val pushBody = pushResponseLens(pushResponse)
 
-    transactionManager.inTransaction {
-      pullBody.messages.forEach { repository.upsertSyncedMessage(it, false) }
-      pushBody.conflicts.forEach { conflict ->
-        conflict.serverMessage?.let { repository.upsertSyncedMessage(it, false) }
-      }
+    override fun sync(): SyncStats {
+        val lastSync = repository.getLastSyncEpochMs()
+        val pullRequest = Request(GET, "$baseUrl/api/v1/sync?since=$lastSync")
+        val authenticatedPullRequest = apiToken?.let {
+            pullRequest.header("Authorization", "Bearer $it")
+        } ?: pullRequest
+
+        val pullResponse = client(authenticatedPullRequest)
+        if (pullResponse.status != Status.OK) {
+            throw SyncException("Pull failed: ${pullResponse.status}")
+        }
+
+        val pullBody = pullResponseLens(pullResponse)
+
+        val dirtyMessages = repository.listDirtyMessages()
+        val pushRequestData = SyncPushRequest(dirtyMessages.map { it.toSyncMessage() })
+
+        val httpRequest = Request(POST, "$baseUrl/api/v1/sync")
+            .with(pushRequestLens of pushRequestData)
+
+        val authPushRequest = apiToken?.let {
+            httpRequest.header("Authorization", "Bearer $it")
+        } ?: httpRequest
+
+        val pushResponse = client(authPushRequest)
+        if (pushResponse.status != Status.OK) {
+            throw SyncException("Push failed: ${pushResponse.status}")
+        }
+
+        val pushBody = pushResponseLens(pushResponse)
+
+        transactionManager.inTransaction {
+            pullBody.messages.forEach { repository.upsertSyncedMessage(it, false) }
+            pushBody.conflicts.forEach { conflict ->
+                conflict.serverMessage?.let { repository.upsertSyncedMessage(it, false) }
+            }
+        }
+        repository.setLastSyncEpochMs(pullBody.serverTimestamp)
+
+        return SyncStats(
+            pushedCount = pushBody.appliedCount,
+            pulledCount = pullBody.messages.size,
+            conflictCount = pushBody.conflicts.size,
+        )
     }
-    repository.setLastSyncEpochMs(pullBody.serverTimestamp)
-
-    return SyncStats(
-      pushedCount = pushBody.appliedCount,
-      pulledCount = pullBody.messages.size,
-      conflictCount = pushBody.conflicts.size,
-    )
-  }
 }

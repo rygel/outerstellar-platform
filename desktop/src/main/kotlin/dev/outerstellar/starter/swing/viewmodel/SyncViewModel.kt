@@ -6,8 +6,8 @@ import dev.outerstellar.starter.model.OuterstellarException
 import dev.outerstellar.starter.model.SyncException
 import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.service.MessageService
-import dev.outerstellar.starter.sync.SyncService
 import dev.outerstellar.starter.swing.SystemTrayNotifier
+import dev.outerstellar.starter.sync.SyncService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -34,7 +34,7 @@ class SyncViewModel(
 
     var userName: String = ""
         private set
-    
+
     var isLoggedIn: Boolean = false
         private set
 
@@ -118,7 +118,7 @@ class SyncViewModel(
 
     fun startAutoSync() {
         if (autoSyncExecutor != null) return
-        
+
         autoSyncExecutor = Executors.newSingleThreadScheduledExecutor().apply {
             scheduleAtFixedRate({
                 if (!isSyncing && isLoggedIn) {
@@ -145,9 +145,9 @@ class SyncViewModel(
                 try {
                     val stats = syncService.sync()
                     status = i18nService.translate(
-                        "swing.status.complete", 
-                        stats.pushedCount, 
-                        stats.pulledCount, 
+                        "swing.status.complete",
+                        stats.pushedCount,
+                        stats.pulledCount,
                         stats.conflictCount
                     )
                     if (!isAuto) {
@@ -155,7 +155,7 @@ class SyncViewModel(
                     }
                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                     val errorMsg = i18nService.translate(
-                        "swing.status.failed", 
+                        "swing.status.failed",
                         e.cause?.message ?: e.message ?: "unknown error"
                     )
                     if (!isAuto) {

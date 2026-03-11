@@ -1,6 +1,6 @@
-@import dev.outerstellar.starter.web.AuthPage
+@import dev.outerstellar.starter.web.AuthViewModel
 @import dev.outerstellar.starter.web.Page
-@param model: Page<AuthPage>
+@param model: Page<AuthViewModel>
 
 @template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
     <section class="panel hero-grid">

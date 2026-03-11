@@ -4,15 +4,15 @@ import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.security.User
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.security.UserRole
-import java.util.Locale
-import java.util.UUID
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestKey
 import org.slf4j.LoggerFactory
+import java.util.Locale
+import java.util.UUID
 
 class WebContext(
-    val request: Request, 
+    val request: Request,
     private val devDashboardEnabled: Boolean = false,
     private val userRepository: UserRepository? = null
 ) {
@@ -21,16 +21,16 @@ class WebContext(
     companion object {
         val contexts = org.http4k.core.RequestContexts()
         val KEY = RequestKey.required<WebContext>("web.context")
-        
+
         const val LANG_COOKIE = "app_lang"
         const val THEME_COOKIE = "app_theme"
         const val LAYOUT_COOKIE = "app_layout"
         const val SESSION_COOKIE = "app_session"
     }
-    
+
     val lang: String by lazy {
-        request.query("lang") 
-            ?: request.cookie(LANG_COOKIE)?.value 
+        request.query("lang")
+            ?: request.cookie(LANG_COOKIE)?.value
             ?: Locale.getDefault().language.lowercase().let { if (it == "fr") "fr" else "en" }
     }
 
@@ -76,13 +76,23 @@ class WebContext(
             ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
             ShellLink("Trash", url("/messages/trash"), "ri-delete-bin-7-line", activeSection == "/messages/trash"),
             ShellLink(i18n.translate("web.nav.auth"), url("/auth"), "ri-shield-keyhole-line", activeSection == "/auth"),
-            ShellLink(i18n.translate("web.nav.errors"), url("/errors/not-found"), 
-                "ri-error-warning-line", activeSection == "/errors")
+            ShellLink(
+                i18n.translate("web.nav.errors"),
+                url("/errors/not-found"),
+                "ri-error-warning-line",
+                activeSection == "/errors"
+            )
         )
 
         if (devDashboardEnabled && user?.role == UserRole.ADMIN) {
-            navLinks.add(ShellLink(i18n.translate("web.nav.dev"), url("/admin/dev"), 
-                "ri-dashboard-line", activeSection == "/admin/dev"))
+            navLinks.add(
+                ShellLink(
+                    i18n.translate("web.nav.dev"),
+                    url("/admin/dev"),
+                    "ri-dashboard-line",
+                    activeSection == "/admin/dev"
+                )
+            )
         }
 
         return ShellView(

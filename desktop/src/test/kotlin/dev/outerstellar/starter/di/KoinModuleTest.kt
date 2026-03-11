@@ -1,14 +1,8 @@
 package dev.outerstellar.starter.di
 
 import com.outerstellar.i18n.I18nService
-import dev.outerstellar.starter.swing.SystemTrayNotifier
-import dev.outerstellar.starter.persistence.MessageCache
-import dev.outerstellar.starter.persistence.NoOpMessageCache
-import dev.outerstellar.starter.persistence.MessageRepository
-import dev.outerstellar.starter.persistence.OutboxRepository
-import dev.outerstellar.starter.persistence.TransactionManager
-import dev.outerstellar.starter.AppConfig
 import dev.outerstellar.starter.service.MessageService
+import dev.outerstellar.starter.swing.SystemTrayNotifier
 import dev.outerstellar.starter.sync.SyncService
 import org.junit.jupiter.api.Test
 import org.koin.test.KoinTest

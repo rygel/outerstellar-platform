@@ -22,17 +22,17 @@ class MessageCacheTest {
         val summary = MessageSummary("id", "author", "content", 1000L, false)
         val items = listOf(summary)
         val results = PagedResult(items, PaginationMetadata(1, 100, 1L))
-        
+
         every { cache.get(any()) } returns null
         every { repository.listMessages(any(), any(), any(), any()) } returns items
         every { repository.countMessages(any(), any()) } returns 1L
-        
+
         // First call - cache miss
         val firstResult = service.listMessages("test")
         assertEquals(results, firstResult)
         verify { repository.listMessages("test", null, 100, 0) }
         verify { cache.put("list:test:null:100:0", results) }
-        
+
         // Second call - cache hit
         every { cache.get("list:test:null:100:0") } returns results
         val secondResult = service.listMessages("test")
@@ -61,16 +61,16 @@ class MessageCacheTest {
         val syncIdValue = "id-1"
         val msg = mockk<dev.outerstellar.starter.model.StoredMessage>(relaxed = true)
         every { msg.syncId } returns syncIdValue
-        
+
         every { cache.get("entity:$syncIdValue") } returns null
         every { repository.findBySyncId(syncIdValue) } returns msg
-        
+
         // Cache miss
         val firstResult = service.findBySyncId(syncIdValue)
         assertEquals(msg, firstResult)
         verify { repository.findBySyncId(syncIdValue) }
         verify { cache.put("entity:$syncIdValue", msg) }
-        
+
         // Cache hit
         every { cache.get("entity:$syncIdValue") } returns msg
         val secondResult = service.findBySyncId(syncIdValue)

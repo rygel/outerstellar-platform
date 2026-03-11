@@ -10,7 +10,7 @@ class SecurityService(
 
     fun authenticate(username: String, password: String): User? {
         val user = userRepository.findByUsername(username)
-        
+
         return when {
             user == null -> {
                 logger.warn("Authentication failed: User $username not found")

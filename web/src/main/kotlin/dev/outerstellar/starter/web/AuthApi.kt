@@ -26,13 +26,15 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
         } bindContract POST to { request ->
             val login = loginRequestLens(request)
             val user = securityService.authenticate(login.username, login.password)
-            
+
             if (user != null) {
-                Response(Status.OK).with(tokenResponseLens of AuthTokenResponse(
-                    token = user.id.toString(),
-                    username = user.username,
-                    role = user.role.name
-                ))
+                Response(Status.OK).with(
+                    tokenResponseLens of AuthTokenResponse(
+                        token = user.id.toString(),
+                        username = user.username,
+                        role = user.role.name
+                    )
+                )
             } else {
                 Response(Status.UNAUTHORIZED).body("Invalid credentials")
             }

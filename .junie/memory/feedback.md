@@ -78,3 +78,19 @@
     "NEW INSTRUCTION": "WHEN executing or configuring Swing UI tests THEN set -Djava.awt.headless=true before any UI; abort otherwise"
 }
 
+[2026-03-11 09:02] - Updated by Junie
+{
+    "TYPE": "negative",
+    "CATEGORY": "Test verification scope",
+    "EXPECTATION": "Run the full test suite exactly as requested with `mvn test -Dheadless=false` and report real results; do not assume success from module-only runs.",
+    "NEW INSTRUCTION": "WHEN asked to run tests with a specific command THEN execute it exactly and report results"
+}
+
+[2026-03-11 09:10] - Updated by Junie
+{
+    "TYPE": "correction",
+    "CATEGORY": "Headless toggle behavior",
+    "EXPECTATION": "When running tests with -Dheadless=false, the Swing UI should open (not headless) and be visible.",
+    "NEW INSTRUCTION": "WHEN running tests with -Dheadless=false THEN set java.awt.headless=false and allow windows to display"
+}
+

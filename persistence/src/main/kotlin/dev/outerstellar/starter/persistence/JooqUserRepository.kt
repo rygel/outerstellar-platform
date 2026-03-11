@@ -74,13 +74,15 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     fun seedAdminUser(passwordHash: String) {
         if (findByUsername("admin") == null) {
             logger.info("Seeding default admin user")
-            save(User(
-                id = UUID.randomUUID(),
-                username = "admin",
-                email = "admin@outerstellar.de",
-                passwordHash = passwordHash,
-                role = UserRole.ADMIN
-            ))
+            save(
+                User(
+                    id = UUID.randomUUID(),
+                    username = "admin",
+                    email = "admin@outerstellar.de",
+                    passwordHash = passwordHash,
+                    role = UserRole.ADMIN
+                )
+            )
         }
     }
 }

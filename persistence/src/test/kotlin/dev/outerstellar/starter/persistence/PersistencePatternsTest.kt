@@ -15,13 +15,13 @@ class PersistencePatternsTest {
         val jdbcUrl = "jdbc:h2:mem:patternstest;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
         val dataSource = createDataSource(jdbcUrl, "sa", "")
         migrate(dataSource)
-        
+
         val dsl: DSLContext = DSL.using(dataSource, SQLDialect.H2)
-        
+
         // Use jOOQ meta to verify fields exist
         val messagesMeta = dsl.meta().getTables("MESSAGES").firstOrNull()
         assertNotNull(messagesMeta?.field("DELETED_AT"), "MESSAGES table should have DELETED_AT field")
-        
+
         val outboxMeta = dsl.meta().getTables("OUTBOX").firstOrNull()
         assertNotNull(outboxMeta?.field("PROCESSED_AT"), "OUTBOX table should have PROCESSED_AT field")
     }

@@ -5,11 +5,11 @@ import dev.outerstellar.starter.di.apiClientModule
 import dev.outerstellar.starter.di.coreModule
 import dev.outerstellar.starter.di.desktopModule
 import dev.outerstellar.starter.di.persistenceModule
-import dev.outerstellar.starter.service.SyncProvider
-import dev.outerstellar.starter.sync.SyncService
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.NoOpMessageCache
+import dev.outerstellar.starter.service.SyncProvider
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
+import dev.outerstellar.starter.sync.SyncService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -51,7 +51,7 @@ class SmokeE2ETest : KoinTest {
     @Test
     fun `desktop application starts up and initializes viewmodel`() {
         val viewModel: SyncViewModel by inject()
-        
+
         assertNotNull(viewModel)
         assertNotNull(viewModel.messages)
     }

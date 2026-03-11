@@ -16,13 +16,16 @@ class KoinModuleTest : KoinTest {
     @Test
     fun `api-client modules should be valid`() {
         checkModules {
-            modules(apiClientModule, module {
-                single(named("serverBaseUrl")) { "http://localhost:8080" }
-                single { mockk<MessageRepository>(relaxed = true) }
-                single { mockk<OutboxRepository>(relaxed = true) }
-                single { mockk<MessageCache>(relaxed = true) }
-                single { mockk<TransactionManager>(relaxed = true) }
-            })
+            modules(
+                apiClientModule,
+                module {
+                    single(named("serverBaseUrl")) { "http://localhost:8080" }
+                    single { mockk<MessageRepository>(relaxed = true) }
+                    single { mockk<OutboxRepository>(relaxed = true) }
+                    single { mockk<MessageCache>(relaxed = true) }
+                    single { mockk<TransactionManager>(relaxed = true) }
+                },
+            )
         }
     }
 }

@@ -4,8 +4,8 @@ import dev.outerstellar.starter.infra.render
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
 import org.http4k.contract.bindContract
-import org.http4k.contract.meta
 import org.http4k.contract.div
+import org.http4k.contract.meta
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Response
@@ -63,7 +63,8 @@ class HomeRoutes(
         "/messages/restore" / syncIdPath meta {
             summary = "Restore deleted message"
         } bindContract POST to { syncId ->
-            { request: org.http4k.core.Request ->
+            {
+                    request: org.http4k.core.Request ->
                 repository.restore(syncId)
                 Response(Status.FOUND).header("location", request.webContext.url("/messages/trash"))
             }
@@ -71,7 +72,8 @@ class HomeRoutes(
         "/messages/resolve" / syncIdPath meta {
             summary = "Show conflict resolution modal"
         } bindContract GET to { syncId ->
-            { request: org.http4k.core.Request ->
+            {
+                    request: org.http4k.core.Request ->
                 val viewModel = pageFactory.buildConflictResolveModal(request.webContext, syncId)
                 renderer.render(viewModel)
             }
@@ -79,7 +81,8 @@ class HomeRoutes(
         "/messages/resolve" / syncIdPath meta {
             summary = "Resolve sync conflict"
         } bindContract POST to { syncId ->
-            { request: org.http4k.core.Request ->
+            {
+                    request: org.http4k.core.Request ->
                 val strategy = request.form("strategy") ?: "server"
                 messageService.resolveConflict(syncId, strategy)
                 Response(Status.OK).header("HX-Trigger", "refresh")

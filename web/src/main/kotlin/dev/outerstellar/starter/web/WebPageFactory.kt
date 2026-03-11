@@ -1,8 +1,5 @@
 package dev.outerstellar.starter.web
 
-import com.outerstellar.i18n.I18nService
-import dev.outerstellar.starter.model.MessageSummary
-import dev.outerstellar.starter.model.PaginationMetadata
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.sync.SyncMessage
 import org.http4k.template.ViewModel
@@ -14,45 +11,45 @@ data class ShellOption(val id: String, val label: String, val url: String, val a
 data class HiddenField(val name: String, val value: String)
 
 data class ShellView(
-  val pageTitle: String,
-  val appTitle: String,
-  val appTagline: String,
-  val currentPath: String,
-  val localeTag: String,
-  val themeId: String,
-  val themeCss: String,
-  val layoutClass: String,
-  val navLinks: List<ShellLink>,
-  val themeSelectorUrl: String,
-  val languageSelectorUrl: String,
-  val layoutSelectorUrl: String,
-  val footerCopy: String,
-  val footerStatusUrl: String,
-  val userName: String? = null,
-  val isLoggedIn: Boolean = false,
-  val logoutUrl: String? = null
+    val pageTitle: String,
+    val appTitle: String,
+    val appTagline: String,
+    val currentPath: String,
+    val localeTag: String,
+    val themeId: String,
+    val themeCss: String,
+    val layoutClass: String,
+    val navLinks: List<ShellLink>,
+    val themeSelectorUrl: String,
+    val languageSelectorUrl: String,
+    val layoutSelectorUrl: String,
+    val footerCopy: String,
+    val footerStatusUrl: String,
+    val userName: String? = null,
+    val isLoggedIn: Boolean = false,
+    val logoutUrl: String? = null
 )
 
 data class HomeFeature(val label: String, val value: String)
 
 data class Page<T : ViewModel>(
-  val shell: ShellView,
-  val data: T
+    val shell: ShellView,
+    val data: T
 ) : ViewModel {
-  override fun template(): String = data.template()
+    override fun template(): String = data.template()
 }
 
 data class HomePage(
-  val eyebrow: String,
-  val intro: String,
-  val features: List<HomeFeature>,
-  val composerTitle: String,
-  val composerIntro: String,
-  val authorPlaceholder: String,
-  val contentPlaceholder: String,
-  val submitLabel: String,
-  val submitUrl: String,
-  val messageList: MessageListViewModel,
+    val eyebrow: String,
+    val intro: String,
+    val features: List<HomeFeature>,
+    val composerTitle: String,
+    val composerIntro: String,
+    val authorPlaceholder: String,
+    val contentPlaceholder: String,
+    val submitLabel: String,
+    val submitUrl: String,
+    val messageList: MessageListViewModel,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/HomePage"
 }
@@ -75,52 +72,52 @@ data class PageNumberViewModel(
 
 data class AuthModeTab(val key: String, val label: String, val url: String)
 
-data class AuthPage(
-  val heading: String,
-  val intro: String,
-  val helperText: String,
-  val tabs: List<AuthModeTab>,
-  val defaultFormUrl: String,
+data class AuthViewModel(
+    val heading: String,
+    val intro: String,
+    val helperText: String,
+    val tabs: List<AuthModeTab>,
+    val defaultFormUrl: String,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/AuthPage"
 }
 
 data class AuthFormFragment(
-  val mode: String,
-  val title: String,
-  val description: String,
-  val submitUrl: String,
-  val submitLabel: String,
-  val language: String,
-  val theme: String,
-  val layout: String,
-  val nameLabel: String,
-  val emailLabel: String,
-  val passwordLabel: String,
-  val confirmPasswordLabel: String,
-  val rememberLabel: String,
-  val emailPlaceholder: String,
-  val passwordPlaceholder: String,
-  val confirmPasswordPlaceholder: String,
-  val namePlaceholder: String,
-  val includeNameField: Boolean,
-  val includeConfirmPasswordField: Boolean,
-  val includeRememberField: Boolean,
+    val mode: String,
+    val title: String,
+    val description: String,
+    val submitUrl: String,
+    val submitLabel: String,
+    val language: String,
+    val theme: String,
+    val layout: String,
+    val nameLabel: String,
+    val emailLabel: String,
+    val passwordLabel: String,
+    val confirmPasswordLabel: String,
+    val rememberLabel: String,
+    val emailPlaceholder: String,
+    val passwordPlaceholder: String,
+    val confirmPasswordPlaceholder: String,
+    val namePlaceholder: String,
+    val includeNameField: Boolean,
+    val includeConfirmPasswordField: Boolean,
+    val includeRememberField: Boolean,
 ) : ViewModel
 
 data class AuthResultFragment(val title: String, val message: String, val toneClass: String) :
-  ViewModel
+    ViewModel
 
 data class ErrorPage(
-  val statusCode: Int,
-  val heading: String,
-  val message: String,
-  val primaryActionLabel: String,
-  val primaryActionUrl: String,
-  val secondaryActionLabel: String,
-  val secondaryActionUrl: String,
-  val helpButtonLabel: String,
-  val helpUrl: String,
+    val statusCode: Int,
+    val heading: String,
+    val message: String,
+    val primaryActionLabel: String,
+    val primaryActionUrl: String,
+    val secondaryActionLabel: String,
+    val secondaryActionUrl: String,
+    val helpButtonLabel: String,
+    val helpUrl: String,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/ErrorPage"
 }
@@ -130,10 +127,10 @@ data class ErrorHelpFragment(val title: String, val items: List<String>) : ViewM
 data class FooterStatusFragment(val text: String) : ViewModel
 
 data class DevDashboardPage(
-  val metrics: String,
-  val cacheStats: Map<String, Any>,
-  val outboxStats: OutboxStatsViewModel,
-  val telemetryStatus: String,
+    val metrics: String,
+    val cacheStats: Map<String, Any>,
+    val outboxStats: OutboxStatsViewModel,
+    val telemetryStatus: String,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/DevDashboard"
 }
@@ -166,15 +163,15 @@ data class ConflictResolveViewModel(
 ) : ViewModel
 
 data class SidebarSelector(
-  val heading: String,
-  val label: String,
-  val selectId: String,
-  val selectName: String,
-  val options: List<ShellOption>,
-  val hiddenFields: List<HiddenField>,
-  val refreshUrl: String,
+    val heading: String,
+    val label: String,
+    val selectId: String,
+    val selectName: String,
+    val options: List<ShellOption>,
+    val hiddenFields: List<HiddenField>,
+    val refreshUrl: String,
 ) : ViewModel {
-  override fun template(): String = "dev/outerstellar/starter/web/components/SidebarSelector"
+    override fun template(): String = "dev/outerstellar/starter/web/components/SidebarSelector"
 }
 
 private const val MIN_PASSWORD_LENGTH = 8
@@ -189,10 +186,10 @@ class WebPageFactory(
     private val messageListComponent = MessageListComponent(repository)
 
     fun buildHomePage(
-        ctx: WebContext, 
-        query: String? = null, 
-        limit: Int = DEFAULT_LIMIT, 
-        offset: Int = 0, 
+        ctx: WebContext,
+        query: String? = null,
+        limit: Int = DEFAULT_LIMIT,
+        offset: Int = 0,
         year: Int? = null
     ): Page<HomePage> {
         val i18n = ctx.i18n
@@ -209,7 +206,7 @@ class WebPageFactory(
                     HomeFeature(i18n.translate("web.feature.db.label"), i18n.translate("web.feature.db.value")),
                     HomeFeature(i18n.translate("web.feature.sync.label"), i18n.translate("web.feature.sync.value")),
                     HomeFeature(
-                        i18n.translate("web.feature.desktop.label"), 
+                        i18n.translate("web.feature.desktop.label"),
                         i18n.translate("web.feature.desktop.value")
                     )
                 ),
@@ -224,7 +221,7 @@ class WebPageFactory(
         )
     }
 
-    fun buildAuthPage(ctx: WebContext): Page<AuthPage> {
+    fun buildAuthPage(ctx: WebContext): Page<AuthViewModel> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.auth"), "/auth")
         val returnTo = ctx.request.query("returnTo") ?: "/"
@@ -232,17 +229,26 @@ class WebPageFactory(
         val formsUrl = "/auth/components/forms"
         return Page(
             shell = shell,
-            data = AuthPage(
+            data = AuthViewModel(
                 heading = i18n.translate("web.auth.heading"),
                 intro = i18n.translate("web.auth.intro"),
                 helperText = i18n.translate("web.auth.helper"),
                 tabs = listOf(
-                    AuthModeTab("sign-in", i18n.translate("web.auth.signin"), 
-                        ctx.url("$formsUrl/sign-in?returnTo=$returnTo")),
-                    AuthModeTab("register", i18n.translate("web.auth.register"), 
-                        ctx.url("$formsUrl/register?returnTo=$returnTo")),
-                    AuthModeTab("recover", i18n.translate("web.auth.recover"), 
-                        ctx.url("$formsUrl/recover?returnTo=$returnTo"))
+                    AuthModeTab(
+                        "sign-in",
+                        i18n.translate("web.auth.signin"),
+                        ctx.url("$formsUrl/sign-in?returnTo=$returnTo")
+                    ),
+                    AuthModeTab(
+                        "register",
+                        i18n.translate("web.auth.register"),
+                        ctx.url("$formsUrl/register?returnTo=$returnTo")
+                    ),
+                    AuthModeTab(
+                        "recover",
+                        i18n.translate("web.auth.recover"),
+                        ctx.url("$formsUrl/recover?returnTo=$returnTo")
+                    )
                 ),
                 defaultFormUrl = ctx.url("$formsUrl/sign-in?returnTo=$returnTo")
             )
@@ -347,11 +353,11 @@ class WebPageFactory(
 
     @Suppress("LongParameterList")
     fun buildMessageList(
-        ctx: WebContext, 
-        query: String? = null, 
-        limit: Int = DEFAULT_LIMIT, 
-        offset: Int = 0, 
-        year: Int? = null, 
+        ctx: WebContext,
+        query: String? = null,
+        limit: Int = DEFAULT_LIMIT,
+        offset: Int = 0,
+        year: Int? = null,
         isTrash: Boolean = false
     ): MessageListViewModel {
         return messageListComponent.build(ctx, query, limit, offset, year, isTrash)
@@ -388,10 +394,10 @@ class WebPageFactory(
     }
 
     fun buildConflictResolveModal(ctx: WebContext, syncId: String): ConflictResolveViewModel {
-        val message = repository.findBySyncId(syncId) 
+        val message = repository.findBySyncId(syncId)
             ?: throw dev.outerstellar.starter.model.MessageNotFoundException(syncId)
         val serverVersion = org.http4k.format.Jackson.asA(
-            message.syncConflict!!, 
+            message.syncConflict!!,
             SyncMessage::class
         )
 
@@ -414,12 +420,12 @@ class WebPageFactory(
             label = i18n.translate("web.sidebar.theme.label"),
             selectId = "theme-selector",
             selectName = "theme",
-            options = ThemeCatalog.allThemes().map { 
-                ShellOption(it.id, it.name, it.id, it.id == ctx.theme) 
+            options = ThemeCatalog.allThemes().map {
+                ShellOption(it.id, it.name, it.id, it.id == ctx.theme)
             },
             hiddenFields = listOf(
-                HiddenField("pagePath", pagePath), 
-                HiddenField("lang", ctx.lang), 
+                HiddenField("pagePath", pagePath),
+                HiddenField("lang", ctx.lang),
                 HiddenField("layout", ctx.layout)
             ),
             refreshUrl = "/components/navigation/page"
@@ -439,8 +445,8 @@ class WebPageFactory(
                 ShellOption(id, i18n.translate(key), id, id == ctx.lang)
             },
             hiddenFields = listOf(
-                HiddenField("pagePath", pagePath), 
-                HiddenField("theme", ctx.theme), 
+                HiddenField("pagePath", pagePath),
+                HiddenField("theme", ctx.theme),
                 HiddenField("layout", ctx.layout)
             ),
             refreshUrl = "/components/navigation/page"
@@ -457,15 +463,15 @@ class WebPageFactory(
             selectId = "layout-selector",
             selectName = "layout",
             options = listOf(
-                "nice" to "web.layout.nice", 
-                "cozy" to "web.layout.cozy", 
+                "nice" to "web.layout.nice",
+                "cozy" to "web.layout.cozy",
                 "compact" to "web.layout.compact"
             ).map { (id, key) ->
                 ShellOption(id, i18n.translate(key), id, id == ctx.layout)
             },
             hiddenFields = listOf(
-                HiddenField("pagePath", pagePath), 
-                HiddenField("theme", ctx.theme), 
+                HiddenField("pagePath", pagePath),
+                HiddenField("theme", ctx.theme),
                 HiddenField("lang", ctx.lang)
             ),
             refreshUrl = "/components/navigation/page"

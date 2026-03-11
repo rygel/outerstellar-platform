@@ -12,10 +12,13 @@ class KoinModuleTest : KoinTest {
     @Test
     fun `persistence modules should be valid`() {
         checkModules {
-            modules(persistenceModule, module {
-                single { AppConfig(jdbcUrl = "jdbc:h2:mem:test;MODE=PostgreSQL") }
-                single(named("jdbcUrl")) { "jdbc:h2:mem:test;MODE=PostgreSQL" }
-            })
+            modules(
+                persistenceModule,
+                module {
+                    single { AppConfig(jdbcUrl = "jdbc:h2:mem:test;MODE=PostgreSQL") }
+                    single(named("jdbcUrl")) { "jdbc:h2:mem:test;MODE=PostgreSQL" }
+                }
+            )
         }
     }
 }

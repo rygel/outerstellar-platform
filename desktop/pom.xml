@@ -91,8 +91,12 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
                 <configuration>
+                    <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
                     <systemPropertyVariables>
                         <java.awt.headless>${headless}</java.awt.headless>
+                        <otel.traces.exporter>none</otel.traces.exporter>
+                        <otel.metrics.exporter>none</otel.metrics.exporter>
+                        <otel.logs.exporter>none</otel.logs.exporter>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

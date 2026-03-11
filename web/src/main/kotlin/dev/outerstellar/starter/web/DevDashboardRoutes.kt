@@ -15,23 +15,27 @@ class DevDashboardRoutes(
     private val renderer: TemplateRenderer,
     private val enabled: Boolean
 ) : ServerRoutes {
-    override val routes = if (!enabled) emptyList() else listOf(
-        "/admin/dev" meta {
-            summary = "Developer Dashboard"
-        } bindContract GET to { request: org.http4k.core.Request ->
-            val outboxStats = outboxRepository.getStats()
-            val viewModel = pageFactory.buildDevDashboardPage(
-                ctx = request.webContext,
-                metrics = "Prometheus export would go here",
-                cacheStats = cache.getStats(),
-                outboxStats = OutboxStatsViewModel(
-                    pending = outboxStats["PENDING"] ?: 0,
-                    processed = outboxStats["PROCESSED"] ?: 0,
-                    failed = outboxStats["FAILED"] ?: 0
-                ),
-                telemetryStatus = "Enabled"
-            )
-            renderer.render(viewModel)
-        }
-    )
+    override val routes = if (!enabled) {
+        emptyList()
+    } else {
+        listOf(
+            "/admin/dev" meta {
+                summary = "Developer Dashboard"
+            } bindContract GET to { request: org.http4k.core.Request ->
+                val outboxStats = outboxRepository.getStats()
+                val viewModel = pageFactory.buildDevDashboardPage(
+                    ctx = request.webContext,
+                    metrics = "Prometheus export would go here",
+                    cacheStats = cache.getStats(),
+                    outboxStats = OutboxStatsViewModel(
+                        pending = outboxStats["PENDING"] ?: 0,
+                        processed = outboxStats["PROCESSED"] ?: 0,
+                        failed = outboxStats["FAILED"] ?: 0
+                    ),
+                    telemetryStatus = "Enabled"
+                )
+                renderer.render(viewModel)
+            }
+        )
+    }
 }

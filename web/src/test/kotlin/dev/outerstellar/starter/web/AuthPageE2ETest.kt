@@ -1,6 +1,5 @@
 package dev.outerstellar.starter.web
 
-import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqMessageRepository
@@ -31,19 +30,19 @@ class AuthPageE2ETest : H2WebTest() {
         val transactionManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, transactionManager, cache)
         val pageFactory = WebPageFactory(repository)
-        
+
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
 
         val app = app(
-            messageService, 
-            repository, 
-            outbox, 
-            cache, 
-            createRenderer(), 
-            pageFactory, 
-            testConfig, 
+            messageService,
+            repository,
+            outbox,
+            cache,
+            createRenderer(),
+            pageFactory,
+            testConfig,
             securityService,
             userRepository,
             encoder

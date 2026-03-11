@@ -23,19 +23,19 @@ private const val ARG_YEAR = 3
 private const val ARG_IS_TRASH = 4
 
 class MessageListComponent(private val repository: MessageRepository) : WebComponent<MessageListViewModel> {
-    
+
     override fun build(ctx: WebContext, vararg args: Any?): MessageListViewModel {
         val query = args.getOrNull(ARG_QUERY) as? String
         val limit = args.getOrNull(ARG_LIMIT) as? Int ?: DEFAULT_PAGE_SIZE
         val offset = args.getOrNull(ARG_OFFSET) as? Int ?: 0
         val year = args.getOrNull(ARG_YEAR) as? Int
         val isTrash = args.getOrNull(ARG_IS_TRASH) as? Boolean ?: false
-        
+
         val i18n = ctx.i18n
-        
+
         val items = repository.listMessages(query, year, limit, offset, includeDeleted = isTrash)
         val total = repository.countMessages(query, year, includeDeleted = isTrash)
-        
+
         return buildViewModel(ctx, items, total, limit, offset, query, year, isTrash, i18n)
     }
 
@@ -60,9 +60,11 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
         fun createUrl(page: Int): String {
             val newOffset = (page - 1) * limit
             val baseUrl = if (isTrash) "/messages/trash" else "/"
-            return ctx.url("$baseUrl?limit=$limit&offset=$newOffset" + 
-                (if (query != null) "&query=$query" else "") + 
-                (if (year != null) "&year=$year" else ""))
+            return ctx.url(
+                "$baseUrl?limit=$limit&offset=$newOffset" +
+                    (if (query != null) "&query=$query" else "") +
+                    (if (year != null) "&year=$year" else "")
+            )
         }
 
         val pagination = if (metadata.totalPages > 1) {
@@ -77,7 +79,9 @@ class MessageListComponent(private val repository: MessageRepository) : WebCompo
                     PageNumberViewModel(p, createUrl(p), p == metadata.currentPage)
                 }
             )
-        } else null
+        } else {
+            null
+        }
 
         val currentUrl = createUrl(metadata.currentPage)
 

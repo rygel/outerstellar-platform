@@ -6,21 +6,21 @@ import com.sksamuel.hoplite.addEnvironmentSource
 import com.sksamuel.hoplite.addMapSource
 
 data class SwingAppConfig(
-  val serverBaseUrl: String = "http://localhost:8080",
-  val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-swing-client;MODE=PostgreSQL;AUTO_SERVER=TRUE",
-  val jdbcUser: String = "sa",
-  val jdbcPassword: String = "",
-  val version: String = "1.0.0",
-  val updateUrl: String = ""
+    val serverBaseUrl: String = "http://localhost:8080",
+    val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-swing-client;MODE=PostgreSQL;AUTO_SERVER=TRUE",
+    val jdbcUser: String = "sa",
+    val jdbcPassword: String = "",
+    val version: String = "1.0.0",
+    val updateUrl: String = ""
 ) {
-  companion object {
-    @OptIn(ExperimentalHoplite::class)
-    fun fromEnvironment(environment: Map<String, String> = System.getenv()): SwingAppConfig =
-      ConfigLoaderBuilder.default()
-        .withExplicitSealedTypes()
-        .addMapSource(environment)
-        .addEnvironmentSource()
-        .build()
-        .loadConfigOrThrow<SwingAppConfig>()
-  }
+    companion object {
+        @OptIn(ExperimentalHoplite::class)
+        fun fromEnvironment(environment: Map<String, String> = System.getenv()): SwingAppConfig =
+            ConfigLoaderBuilder.default()
+                .withExplicitSealedTypes()
+                .addMapSource(environment)
+                .addEnvironmentSource()
+                .build()
+                .loadConfigOrThrow<SwingAppConfig>()
+    }
 }

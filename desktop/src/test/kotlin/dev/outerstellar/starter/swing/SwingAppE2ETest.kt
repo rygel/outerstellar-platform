@@ -2,8 +2,8 @@ package dev.outerstellar.starter.swing
 
 import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.service.MessageService
-import dev.outerstellar.starter.sync.SyncService
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
+import dev.outerstellar.starter.sync.SyncService
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.swing.core.BasicRobot
@@ -64,7 +64,7 @@ class SwingAppE2ETest {
         val viewModel = SyncViewModel(messageService, syncService, i18nService)
         viewModel.author = "E2E Tester"
         viewModel.content = "Test content from E2E"
-        
+
         assertEquals("E2E Tester", viewModel.author)
         assertEquals("Test content from E2E", viewModel.content)
     }

@@ -30,7 +30,7 @@ class I18nService(private val bundleName: String) {
 
     companion object {
         fun create(bundleName: String): I18nService = I18nService(bundleName)
-        
+
         fun fromResourceBundle(bundleName: String): I18nService = I18nService(bundleName)
     }
 }

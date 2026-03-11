@@ -1,11 +1,11 @@
 package dev.outerstellar.starter.swing
 
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.MalformedURLException
 import java.net.URI
 import java.net.URL
 import javax.swing.SwingWorker
-import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.UpdateService")
 
@@ -26,8 +26,11 @@ class UpdateService(
                 return try {
                     logger.info("Checking for updates at $updateUrl")
                     val latestVersion = readLatestVersion()
-                    if (isNewer(latestVersion, currentVersion)) latestVersion
-                    else null
+                    if (isNewer(latestVersion, currentVersion)) {
+                        latestVersion
+                    } else {
+                        null
+                    }
                 } catch (e: IOException) {
                     logger.error("IO error checking for updates: {}", e.message)
                     null

@@ -8,12 +8,6 @@ import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRole
 import dev.outerstellar.starter.service.MessageService
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -22,6 +16,12 @@ import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class AuthenticationWorkflowTest : H2WebTest() {
 
@@ -41,7 +41,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
         val securityService = SecurityService(userRepository, encoder)
 
         app = app(
-            messageService, repository, outbox, cache, createRenderer(), 
+            messageService, repository, outbox, cache, createRenderer(),
             pageFactory, testConfig, securityService, userRepository, encoder
         ).http!!
     }
@@ -59,12 +59,13 @@ class AuthenticationWorkflowTest : H2WebTest() {
         assertTrue(initialResponse.header("location")!!.contains("/auth?returnTo=/admin/dev"))
 
         // 2. Register a new admin user
-        val regResponse = app(Request(POST, "/auth/components/result")
-            .form("mode", "register")
-            .form("name", "superadmin")
-            .form("email", "admin@test.com")
-            .form("password", "password123")
-            .form("confirmPassword", "password123")
+        val regResponse = app(
+            Request(POST, "/auth/components/result")
+                .form("mode", "register")
+                .form("name", "superadmin")
+                .form("email", "admin@test.com")
+                .form("password", "password123")
+                .form("confirmPassword", "password123")
         )
         // Registration redirects to /auth?registered=true
         assertEquals(Status.FOUND, regResponse.status)
@@ -75,18 +76,19 @@ class AuthenticationWorkflowTest : H2WebTest() {
         userRepository.save(user.copy(role = UserRole.ADMIN))
 
         // 3. Login with returnTo
-        val loginResponse = app(Request(POST, "/auth/components/result")
-            .query("returnTo", "/admin/dev")
-            .form("mode", "sign-in")
-            .form("email", "admin@test.com")
-            .form("password", "password123")
+        val loginResponse = app(
+            Request(POST, "/auth/components/result")
+                .query("returnTo", "/admin/dev")
+                .form("mode", "sign-in")
+                .form("email", "admin@test.com")
+                .form("password", "password123")
         )
 
-        // Login redirects to / (default if returnTo is not handled in POST result yet) 
+        // Login redirects to / (default if returnTo is not handled in POST result yet)
         // or potentially directly to returnTo if we implemented it.
         // Looking at current AuthRoutes, it redirects to /
         assertEquals(Status.FOUND, loginResponse.status)
-        
+
         val sessionCookie = loginResponse.cookies().find { it.name == "app_session" }
         assertNotNull(sessionCookie, "Session cookie should be present in response")
 
@@ -99,18 +101,20 @@ class AuthenticationWorkflowTest : H2WebTest() {
     @Test
     fun `standard user cannot access admin dashboard`() {
         // Register standard user
-        app(Request(POST, "/auth/components/result")
-            .form("mode", "register")
-            .form("name", "regular")
-            .form("email", "user@test.com")
-            .form("password", "password123")
-            .form("confirmPassword", "password123")
+        app(
+            Request(POST, "/auth/components/result")
+                .form("mode", "register")
+                .form("name", "regular")
+                .form("email", "user@test.com")
+                .form("password", "password123")
+                .form("confirmPassword", "password123")
         )
-        
-        val loginResponse = app(Request(POST, "/auth/components/result")
-            .form("mode", "sign-in")
-            .form("email", "user@test.com")
-            .form("password", "password123")
+
+        val loginResponse = app(
+            Request(POST, "/auth/components/result")
+                .form("mode", "sign-in")
+                .form("email", "user@test.com")
+                .form("password", "password123")
         )
         val sessionCookie = loginResponse.cookies().find { it.name == "app_session" }!!
 

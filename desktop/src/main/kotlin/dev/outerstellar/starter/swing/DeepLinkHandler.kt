@@ -1,9 +1,9 @@
 package dev.outerstellar.starter.swing
 
+import org.slf4j.LoggerFactory
 import java.awt.Desktop
 import java.net.URI
 import java.net.URISyntaxException
-import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.DeepLinkHandler")
 

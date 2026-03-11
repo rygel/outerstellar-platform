@@ -13,10 +13,10 @@ import dev.outerstellar.starter.persistence.OutboxEntry
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.sync.SyncConflict
+import dev.outerstellar.starter.sync.SyncMessage
 import dev.outerstellar.starter.sync.SyncPullResponse
 import dev.outerstellar.starter.sync.SyncPushRequest
 import dev.outerstellar.starter.sync.SyncPushResponse
-import dev.outerstellar.starter.sync.SyncMessage
 import io.konform.validation.Invalid
 import org.http4k.format.Jackson
 import org.slf4j.LoggerFactory
@@ -39,13 +39,14 @@ class MessageService(
         offset: Int = 0
     ): PagedResult<MessageSummary> {
         val cacheKey = "list:$query:$year:$limit:$offset"
+
         @Suppress("UNCHECKED_CAST")
         val cached = cache.get(cacheKey) as? PagedResult<MessageSummary>
         if (cached != null) return cached
-        
+
         val items = repository.listMessages(query, year, limit, offset)
         val total = repository.countMessages(query, year)
-        
+
         val result = PagedResult(
             items = items,
             metadata = PaginationMetadata(
@@ -54,7 +55,7 @@ class MessageService(
                 totalItems = total
             )
         )
-        
+
         cache.put(cacheKey, result)
         return result
     }
@@ -67,7 +68,7 @@ class MessageService(
     ): PagedResult<MessageSummary> {
         val items = repository.listMessages(query, year, limit, offset, includeDeleted = true)
         val total = repository.countMessages(query, year, includeDeleted = true)
-        
+
         return PagedResult(
             items = items,
             metadata = PaginationMetadata(
@@ -114,14 +115,14 @@ class MessageService(
         }
 
         cache.put("entity:${message.syncId}", message)
-        cache.invalidateAll() 
+        cache.invalidateAll()
         eventPublisher.publishRefresh("message-list-panel")
         return message
     }
 
     fun createLocalMessage(author: String, content: String): StoredMessage {
         if (author.isBlank() || content.isBlank()) throw ValidationException(listOf("Fields cannot be empty."))
-        
+
         val message = repository.createLocalMessage(author, content)
         cache.put("entity:${message.syncId}", message)
         cache.invalidateAll()
@@ -225,7 +226,7 @@ class MessageService(
         if (current.syncConflict == null) return
 
         val serverVersion = Jackson.asA(
-            current.syncConflict, 
+            current.syncConflict,
             SyncMessage::class
         )
 

@@ -1,7 +1,6 @@
 package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.persistence.MessageCache
-import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxEntry
 import dev.outerstellar.starter.persistence.OutboxRepository
 import java.util.UUID

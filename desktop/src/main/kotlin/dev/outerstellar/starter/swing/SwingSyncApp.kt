@@ -11,9 +11,12 @@ import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.ThemeCatalog
 import dev.outerstellar.starter.model.ThemeDefinition
 import dev.outerstellar.starter.service.MessageService
-import dev.outerstellar.starter.sync.SyncService
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
+import dev.outerstellar.starter.sync.SyncService
 import net.miginfocom.swing.MigLayout
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import org.koin.core.context.startKoin
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
@@ -47,9 +50,6 @@ import javax.swing.SwingUtilities
 import javax.swing.UIManager
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
-import org.koin.core.context.startKoin
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
 private const val FRAME_WIDTH = 1000
 private const val FRAME_HEIGHT = 750
@@ -58,62 +58,62 @@ private const val DIALOG_WIDTH = 600
 private const val DIALOG_HEIGHT = 400
 
 object DesktopComponent : KoinComponent {
-  val config: SwingAppConfig by inject()
-  val dataSource: DataSource by inject()
-  val messageService: MessageService by inject()
-  val syncService: SyncService by inject()
+    val config: SwingAppConfig by inject()
+    val dataSource: DataSource by inject()
+    val messageService: MessageService by inject()
+    val syncService: SyncService by inject()
 }
 
 fun main() {
-  System.setProperty("swing.aatext", "true")
-  System.setProperty("awt.useSystemAAFontSettings", "lcd")
+    System.setProperty("swing.aatext", "true")
+    System.setProperty("awt.useSystemAAFontSettings", "lcd")
 
-  val splash = showSplash()
+    val splash = showSplash()
 
-  startKoin {
-    modules(persistenceModule, coreModule, apiClientModule, desktopModule)
-  }
-
-  val desktop = DesktopComponent
-  migrate(desktop.dataSource)
-
-  val savedState = DesktopStateProvider.loadState()
-  val initialLocale = savedState?.language?.let { Locale.of(it) } ?: Locale.getDefault()
-  Locale.setDefault(initialLocale)
-
-  val i18nService = I18nService.create("messages").also { it.setLocale(initialLocale) }
-
-    SwingUtilities.invokeLater {
-    FlatLightLaf.setup()
-    
-    val themeManager = ThemeManager()
-    savedState?.themeId?.let { themeId ->
-        ThemeCatalog.allThemes().find { it.id == themeId }?.let { theme ->
-            themeManager.applyTheme(theme)
-        }
+    startKoin {
+        modules(persistenceModule, coreModule, apiClientModule, desktopModule)
     }
 
-    val notifier = SystemTrayNotifier(i18nService)
-    val viewModel = SyncViewModel(desktop.messageService, desktop.syncService, i18nService, notifier)
-    val window = SyncWindow(viewModel, themeManager, i18nService)
+    val desktop = DesktopComponent
+    migrate(desktop.dataSource)
 
-    DeepLinkHandler.setup(
-        onSearch = { query ->
-            SwingUtilities.invokeLater {
-                viewModel.searchQuery = query
-                window.updateSearchField(query)
-            }
-        },
-        onSync = {
-            SwingUtilities.invokeLater {
-                viewModel.sync()
+    val savedState = DesktopStateProvider.loadState()
+    val initialLocale = savedState?.language?.let { Locale.of(it) } ?: Locale.getDefault()
+    Locale.setDefault(initialLocale)
+
+    val i18nService = I18nService.create("messages").also { it.setLocale(initialLocale) }
+
+    SwingUtilities.invokeLater {
+        FlatLightLaf.setup()
+
+        val themeManager = ThemeManager()
+        savedState?.themeId?.let { themeId ->
+            ThemeCatalog.allThemes().find { it.id == themeId }?.let { theme ->
+                themeManager.applyTheme(theme)
             }
         }
-    )
 
-    window.show()
-    splash.dispose()
-  }
+        val notifier = SystemTrayNotifier(i18nService)
+        val viewModel = SyncViewModel(desktop.messageService, desktop.syncService, i18nService, notifier)
+        val window = SyncWindow(viewModel, themeManager, i18nService)
+
+        DeepLinkHandler.setup(
+            onSearch = { query ->
+                SwingUtilities.invokeLater {
+                    viewModel.searchQuery = query
+                    window.updateSearchField(query)
+                }
+            },
+            onSync = {
+                SwingUtilities.invokeLater {
+                    viewModel.sync()
+                }
+            }
+        )
+
+        window.show()
+        splash.dispose()
+    }
 }
 
 private const val SPLASH_WIDTH = 400
@@ -128,20 +128,20 @@ private fun showSplash(): JWindow {
     val content = JPanel(BorderLayout(LAYOUT_GAP, LAYOUT_GAP))
     content.border = javax.swing.BorderFactory.createLineBorder(Color.GRAY)
     content.background = Color.WHITE
-    
+
     val logo = RemixIcon.get("system/planet-fill", SPLASH_LOGO_SIZE)
     val label = JLabel("Outerstellar", logo, SwingConstants.CENTER)
     label.font = Font("Inter", Font.BOLD, SPLASH_TITLE_SIZE)
     label.verticalTextPosition = SwingConstants.BOTTOM
     label.horizontalTextPosition = SwingConstants.CENTER
-    
+
     val status = JLabel("Starting application...", SwingConstants.CENTER)
     status.font = Font("Inter", Font.PLAIN, SPLASH_STATUS_SIZE)
     status.foreground = Color.DARK_GRAY
-    
+
     content.add(label, BorderLayout.CENTER)
     content.add(status, BorderLayout.SOUTH)
-    
+
     window.contentPane = content
     window.size = Dimension(SPLASH_WIDTH, SPLASH_HEIGHT)
     window.setLocationRelativeTo(null)
@@ -151,364 +151,377 @@ private fun showSplash(): JWindow {
 
 @Suppress("TooManyFunctions")
 class SyncWindow(
-  private val viewModel: SyncViewModel,
-  private val themeManager: ThemeManager,
-  private var i18nService: I18nService,
+    private val viewModel: SyncViewModel,
+    private val themeManager: ThemeManager,
+    private var i18nService: I18nService,
 ) {
-  val frame = JFrame(i18nService.translate("swing.app.title"))
-  private val messagesModel = DefaultListModel<MessageSummary>()
-  private val messagesList = JList(messagesModel).apply { name = "messagesList" }
-  private val statusLabel = JLabel().apply { name = "statusLabel" }
-  private val searchField = JTextField().apply { name = "searchField" }
-  private val authorField = JTextField().apply { name = "authorField" }
-  private val contentArea = JTextArea().apply { 
-      name = "contentArea"
-      lineWrap = true
-      wrapStyleWord = true
-  }
-  private val syncButton = JButton(i18nService.translate("swing.button.sync")).apply { 
-      name = "syncButton"
-      icon = RemixIcon.get("system/refresh-line")
-  }
-  private val createButton = JButton(i18nService.translate("swing.button.create")).apply { 
-      name = "createButton"
-      icon = RemixIcon.get("system/add-box-line")
-      addActionListener {
-          viewModel.createMessage { }
-      }
-  }
-  
-  private val appMenu = JMenu(i18nService.translate("swing.menu.application")).apply { name = "appMenu" }
-  private val themeMenu = JMenu(i18nService.translate("swing.theme.menu")).apply { 
-      name = "themeMenu"
-      icon = RemixIcon.get("others/palette-line")
-  }
-  private val settingsItem = JMenuItem(i18nService.translate("swing.menu.settings")).apply { 
-      name = "settingsItem"
-      icon = RemixIcon.get("system/settings-3-line")
-  }
-  private val loginItem = JMenuItem("Login").apply {
-      name = "loginItem"
-      icon = RemixIcon.get("system/lock-password-line")
-  }
-
-  fun show() {
-    configureFrame()
-    setupBinding()
-    restoreState()
-    viewModel.loadMessages()
-    frame.isVisible = true
-  }
-
-  fun configureForTest() {
-    configureFrame()
-    setupBinding()
-  }
-
-  fun refreshTranslations(newI18n: I18nService) {
-    this.i18nService = newI18n
-    frame.title = i18nService.translate("swing.app.title")
-    syncButton.text = i18nService.translate("swing.button.sync")
-    createButton.text = i18nService.translate("swing.button.create")
-    appMenu.text = i18nService.translate("swing.menu.application")
-    themeMenu.text = i18nService.translate("swing.theme.menu")
-    settingsItem.text = i18nService.translate("swing.menu.settings")
-    
-    viewModel.refreshTranslations(newI18n)
-    updateUI()
-  }
-
-  private fun restoreState() {
-    DesktopStateProvider.loadState()?.let { state ->
-        if (state.isMaximized) {
-            frame.extendedState = JFrame.MAXIMIZED_BOTH
-        } else {
-            frame.bounds = state.windowBounds
-        }
-        state.lastSearchQuery?.let {
-            viewModel.searchQuery = it
-            searchField.text = it
+    val frame = JFrame(i18nService.translate("swing.app.title"))
+    private val messagesModel = DefaultListModel<MessageSummary>()
+    private val messagesList = JList(messagesModel).apply { name = "messagesList" }
+    private val statusLabel = JLabel().apply { name = "statusLabel" }
+    private val searchField = JTextField().apply { name = "searchField" }
+    private val authorField = JTextField().apply { name = "authorField" }
+    private val contentArea = JTextArea().apply {
+        name = "contentArea"
+        lineWrap = true
+        wrapStyleWord = true
+    }
+    private val syncButton = JButton(i18nService.translate("swing.button.sync")).apply {
+        name = "syncButton"
+        icon = RemixIcon.get("system/refresh-line")
+    }
+    private val createButton = JButton(i18nService.translate("swing.button.create")).apply {
+        name = "createButton"
+        icon = RemixIcon.get("system/add-box-line")
+        addActionListener {
+            viewModel.createMessage { }
         }
     }
-  }
 
-  private fun saveState() {
-    val themeName = UIManager.get("current_theme_name") as? String
-    val state = DesktopState(
-        windowBounds = frame.bounds,
-        isMaximized = (frame.extendedState and JFrame.MAXIMIZED_BOTH) != 0,
-        lastSearchQuery = viewModel.searchQuery.takeIf { it.isNotBlank() },
-        themeId = ThemeCatalog.allThemes().find { it.name == themeName }?.id,
-        language = Locale.getDefault().language
-    )
-    DesktopStateProvider.saveState(state)
-  }
-
-  private fun setupBinding() {
-    viewModel.addObserver {
-      updateUI()
+    private val appMenu = JMenu(i18nService.translate("swing.menu.application")).apply { name = "appMenu" }
+    private val themeMenu = JMenu(i18nService.translate("swing.theme.menu")).apply {
+        name = "themeMenu"
+        icon = RemixIcon.get("others/palette-line")
+    }
+    private val settingsItem = JMenuItem(i18nService.translate("swing.menu.settings")).apply {
+        name = "settingsItem"
+        icon = RemixIcon.get("system/settings-3-line")
+    }
+    private val loginItem = JMenuItem("Login").apply {
+        name = "loginItem"
+        icon = RemixIcon.get("system/lock-password-line")
     }
 
-    val docListener = object : DocumentListener {
-      override fun insertUpdate(e: DocumentEvent?) { updateViewModel() }
-      override fun removeUpdate(e: DocumentEvent?) { updateViewModel() }
-      override fun changedUpdate(e: DocumentEvent?) { updateViewModel() }
-      
-      private fun updateViewModel() {
-          viewModel.author = authorField.text
-          viewModel.content = contentArea.text
-      }
+    fun show() {
+        configureFrame()
+        setupBinding()
+        restoreState()
+        viewModel.loadMessages()
+        frame.isVisible = true
     }
 
-    authorField.document.addDocumentListener(docListener)
-    contentArea.document.addDocumentListener(docListener)
-    
-    authorField.text = viewModel.author
-    contentArea.text = viewModel.content
-    
-    searchField.document.addDocumentListener(object : DocumentListener {
-      override fun insertUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
-      override fun removeUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
-      override fun changedUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
-    })
+    fun configureForTest() {
+        configureFrame()
+        setupBinding()
+    }
 
-    messagesList.addMouseListener(object : MouseAdapter() {
-        override fun mouseClicked(e: MouseEvent) {
-            if (e.clickCount == 2) {
-                val index = messagesList.locationToIndex(e.point)
-                if (index >= 0) {
-                    val msg = messagesModel.getElementAt(index)
-                    if (msg.hasConflict) {
-                        showConflictDialog(msg)
+    fun refreshTranslations(newI18n: I18nService) {
+        this.i18nService = newI18n
+        frame.title = i18nService.translate("swing.app.title")
+        syncButton.text = i18nService.translate("swing.button.sync")
+        createButton.text = i18nService.translate("swing.button.create")
+        appMenu.text = i18nService.translate("swing.menu.application")
+        themeMenu.text = i18nService.translate("swing.theme.menu")
+        settingsItem.text = i18nService.translate("swing.menu.settings")
+
+        viewModel.refreshTranslations(newI18n)
+        updateUI()
+    }
+
+    private fun restoreState() {
+        DesktopStateProvider.loadState()?.let { state ->
+            if (state.isMaximized) {
+                frame.extendedState = JFrame.MAXIMIZED_BOTH
+            } else {
+                frame.bounds = state.windowBounds
+            }
+            state.lastSearchQuery?.let {
+                viewModel.searchQuery = it
+                searchField.text = it
+            }
+        }
+    }
+
+    private fun saveState() {
+        val themeName = UIManager.get("current_theme_name") as? String
+        val state = DesktopState(
+            windowBounds = frame.bounds,
+            isMaximized = (frame.extendedState and JFrame.MAXIMIZED_BOTH) != 0,
+            lastSearchQuery = viewModel.searchQuery.takeIf { it.isNotBlank() },
+            themeId = ThemeCatalog.allThemes().find { it.name == themeName }?.id,
+            language = Locale.getDefault().language
+        )
+        DesktopStateProvider.saveState(state)
+    }
+
+    private fun setupBinding() {
+        viewModel.addObserver {
+            updateUI()
+        }
+
+        val docListener = object : DocumentListener {
+            override fun insertUpdate(e: DocumentEvent?) { updateViewModel() }
+            override fun removeUpdate(e: DocumentEvent?) { updateViewModel() }
+            override fun changedUpdate(e: DocumentEvent?) { updateViewModel() }
+
+            private fun updateViewModel() {
+                viewModel.author = authorField.text
+                viewModel.content = contentArea.text
+            }
+        }
+
+        authorField.document.addDocumentListener(docListener)
+        contentArea.document.addDocumentListener(docListener)
+
+        authorField.text = viewModel.author
+        contentArea.text = viewModel.content
+
+        searchField.document.addDocumentListener(object : DocumentListener {
+            override fun insertUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
+            override fun removeUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
+            override fun changedUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
+        })
+
+        messagesList.addMouseListener(object : MouseAdapter() {
+            override fun mouseClicked(e: MouseEvent) {
+                if (e.clickCount == 2) {
+                    val index = messagesList.locationToIndex(e.point)
+                    if (index >= 0) {
+                        val msg = messagesModel.getElementAt(index)
+                        if (msg.hasConflict) {
+                            showConflictDialog(msg)
+                        }
                     }
                 }
             }
-        }
-    })
-  }
-
-  private fun updateUI() {
-    messagesModel.clear()
-    viewModel.messages.forEach(messagesModel::addElement)
-    statusLabel.text = viewModel.status
-    syncButton.isEnabled = !viewModel.isSyncing
-    
-    if (contentArea.text != viewModel.content) {
-        contentArea.text = viewModel.content
+        })
     }
-    if (searchField.text != viewModel.searchQuery) {
-        searchField.text = viewModel.searchQuery
-    }
-    
-    loginItem.text = if (viewModel.isLoggedIn) "Logout (${viewModel.userName})" else "Login"
-  }
 
-  fun updateSearchField(query: String) {
-    searchField.text = query
-  }
+    private fun updateUI() {
+        messagesModel.clear()
+        viewModel.messages.forEach(messagesModel::addElement)
+        statusLabel.text = viewModel.status
+        syncButton.isEnabled = !viewModel.isSyncing
 
-  private fun configureFrame() {
-    frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-    frame.addWindowListener(object : WindowAdapter() {
-        override fun windowClosing(e: WindowEvent?) {
-            saveState()
-            viewModel.stopAutoSync()
+        if (contentArea.text != viewModel.content) {
+            contentArea.text = viewModel.content
         }
-    })
-    frame.minimumSize = Dimension(FRAME_WIDTH, FRAME_HEIGHT)
-    frame.setLocationRelativeTo(null)
-    frame.jMenuBar = createMenuBar()
+        if (searchField.text != viewModel.searchQuery) {
+            searchField.text = viewModel.searchQuery
+        }
 
-    val mainPanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][grow][]"))
-    
-    val searchPanel = JPanel(MigLayout("fillx, ins 0", "[][grow][]", "[]"))
-    searchPanel.add(JLabel(i18nService.translate("swing.label.search")))
-    searchPanel.add(searchField, "growx")
-    searchPanel.add(syncButton, "w 120!")
-    mainPanel.add(searchPanel, "growx, wrap")
+        loginItem.text = if (viewModel.isLoggedIn) "Logout (${viewModel.userName})" else "Login"
+    }
 
-    messagesList.cellRenderer = object : DefaultListCellRenderer() {
-        override fun getListCellRendererComponent(
-            list: javax.swing.JList<*>?, 
-            value: Any?, 
-            index: Int, 
-            isSelected: Boolean, 
-            cellHasFocus: Boolean
-        ) = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).also { c ->
-            val msg = value as MessageSummary
-            val conflictMarker = if (msg.hasConflict) " <font color='red'>[CONFLICT]</font>" else ""
-            val localMarker = if (msg.dirty) " <font color='blue'>(Local)</font>" else ""
-            (c as JLabel).text = "<html><b>${msg.author}</b>$localMarker$conflictMarker &mdash; " +
-                "${msg.updatedAtLabel()}<br/>${msg.content}</html>"
-            if (msg.hasConflict) {
-                c.icon = RemixIcon.get("system/error-warning-line", CONFLICT_ICON_SIZE)
-            } else {
-                c.icon = null
+    fun updateSearchField(query: String) {
+        searchField.text = query
+    }
+
+    private fun configureFrame() {
+        frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+        frame.addWindowListener(object : WindowAdapter() {
+            override fun windowClosing(e: WindowEvent?) {
+                saveState()
+                viewModel.stopAutoSync()
             }
-          }
+        })
+        frame.minimumSize = Dimension(FRAME_WIDTH, FRAME_HEIGHT)
+        frame.setLocationRelativeTo(null)
+        frame.jMenuBar = createMenuBar()
+
+        val mainPanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][grow][]"))
+
+        val searchPanel = JPanel(MigLayout("fillx, ins 0", "[][grow][]", "[]"))
+        searchPanel.add(JLabel(i18nService.translate("swing.label.search")))
+        searchPanel.add(searchField, "growx")
+        searchPanel.add(syncButton, "w 120!")
+        mainPanel.add(searchPanel, "growx, wrap")
+
+        messagesList.cellRenderer = object : DefaultListCellRenderer() {
+            override fun getListCellRendererComponent(
+                list: javax.swing.JList<*>?,
+                value: Any?,
+                index: Int,
+                isSelected: Boolean,
+                cellHasFocus: Boolean
+            ) = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).also { c ->
+                val msg = value as MessageSummary
+                val conflictMarker = if (msg.hasConflict) " <font color='red'>[CONFLICT]</font>" else ""
+                val localMarker = if (msg.dirty) " <font color='blue'>(Local)</font>" else ""
+                (c as JLabel).text = "<html><b>${msg.author}</b>$localMarker$conflictMarker &mdash; " +
+                    "${msg.updatedAtLabel()}<br/>${msg.content}</html>"
+                if (msg.hasConflict) {
+                    c.icon = RemixIcon.get("system/error-warning-line", CONFLICT_ICON_SIZE)
+                } else {
+                    c.icon = null
+                }
+            }
+        }
+        mainPanel.add(JScrollPane(messagesList), "grow, wrap")
+
+        val footerPanel = JPanel(MigLayout("fillx, ins 0", "[grow][]", "[][]"))
+        footerPanel.add(JLabel("Author:"), "split 2")
+        footerPanel.add(authorField, "growx, wrap")
+        footerPanel.add(JScrollPane(contentArea), "grow, h 80!, span, wrap")
+        footerPanel.add(statusLabel, "growx")
+        footerPanel.add(createButton, "w 180!")
+        mainPanel.add(footerPanel, "growx")
+
+        frame.contentPane = mainPanel
     }
-    mainPanel.add(JScrollPane(messagesList), "grow, wrap")
 
-    val footerPanel = JPanel(MigLayout("fillx, ins 0", "[grow][]", "[][]"))
-    footerPanel.add(JLabel("Author:"), "split 2")
-    footerPanel.add(authorField, "growx, wrap")
-    footerPanel.add(JScrollPane(contentArea), "grow, h 80!, span, wrap")
-    footerPanel.add(statusLabel, "growx")
-    footerPanel.add(createButton, "w 180!")
-    mainPanel.add(footerPanel, "growx")
+    private fun createMenuBar(): JMenuBar {
+        val menuBar = JMenuBar()
+        settingsItem.addActionListener { showSettingsDialog() }
+        loginItem.addActionListener {
+            if (viewModel.isLoggedIn) {
+                viewModel.logout()
+            } else {
+                showLoginDialog()
+            }
+        }
 
-    frame.contentPane = mainPanel
-  }
+        appMenu.add(loginItem)
+        appMenu.addSeparator()
+        appMenu.add(settingsItem)
 
-  private fun createMenuBar(): JMenuBar {
-    val menuBar = JMenuBar()
-    settingsItem.addActionListener { showSettingsDialog() }
-    loginItem.addActionListener { 
-        if (viewModel.isLoggedIn) viewModel.logout()
-        else showLoginDialog() 
+        val standardThemes = JMenu("Standard")
+        val lightItem = JMenuItem(i18nService.translate("swing.theme.light"))
+        val darkItem = JMenuItem(i18nService.translate("swing.theme.dark"))
+        lightItem.addActionListener { themeManager.setLightTheme() }
+        darkItem.addActionListener { themeManager.setDarkTheme() }
+        standardThemes.add(lightItem)
+        standardThemes.add(darkItem)
+        themeMenu.add(standardThemes)
+        themeMenu.addSeparator()
+
+        val themes: List<ThemeDefinition> = ThemeCatalog.allThemes().sortedBy { it.name }
+        themes.forEach { theme ->
+            val item = JMenuItem(theme.name)
+            item.addActionListener {
+                themeManager.applyTheme(theme)
+                saveState()
+            }
+            themeMenu.add(item)
+        }
+
+        menuBar.add(appMenu)
+        menuBar.add(themeMenu)
+        return menuBar
     }
-    
-    appMenu.add(loginItem)
-    appMenu.addSeparator()
-    appMenu.add(settingsItem)
-    
-    val standardThemes = JMenu("Standard")
-    val lightItem = JMenuItem(i18nService.translate("swing.theme.light"))
-    val darkItem = JMenuItem(i18nService.translate("swing.theme.dark"))
-    lightItem.addActionListener { themeManager.setLightTheme() }
-    darkItem.addActionListener { themeManager.setDarkTheme() }
-    standardThemes.add(lightItem)
-    standardThemes.add(darkItem)
-    themeMenu.add(standardThemes)
-    themeMenu.addSeparator()
 
-    val themes: List<ThemeDefinition> = ThemeCatalog.allThemes().sortedBy { it.name }
-    themes.forEach { theme ->
-        val item = JMenuItem(theme.name)
-        item.addActionListener { 
-            themeManager.applyTheme(theme)
+    private fun showLoginDialog() {
+        val dialog = JDialog(frame, "Login", true)
+        dialog.layout = MigLayout("fillx, ins 20, gap 10", "[][grow]", "[][][]")
+
+        dialog.add(JLabel("Username:"))
+        val userField = JTextField().apply { name = "username" }
+        dialog.add(userField, "growx, wrap")
+
+        dialog.add(JLabel("Password:"))
+        val passField = JPasswordField().apply { name = "password" }
+        dialog.add(passField, "growx, wrap")
+
+        val loginBtn = JButton("Sign In").apply { name = "loginBtn" }
+        loginBtn.addActionListener {
+            viewModel.login(userField.text, String(passField.password)) { success, error ->
+                if (success) {
+                    dialog.dispose()
+                } else {
+                    JOptionPane.showMessageDialog(dialog, error, "Login Failed", JOptionPane.ERROR_MESSAGE)
+                }
+            }
+        }
+
+        dialog.add(loginBtn, "span, center")
+        dialog.pack()
+        dialog.setLocationRelativeTo(frame)
+        dialog.isVisible = true
+    }
+
+    private fun showConflictDialog(msg: MessageSummary) {
+        val dialog = JDialog(frame, "Resolve Sync Conflict", true)
+        dialog.layout = MigLayout("fill, ins 20, gap 10", "[grow][grow]", "[][grow][]")
+
+        val introText = "<html>A sync conflict was detected for this message.<br/>" +
+            "Please choose which version to keep:</html>"
+        dialog.add(JLabel(introText), "span, wrap, gapbottom 15")
+
+        val localPanel = JPanel(MigLayout("fillx, ins 10", "[grow]", "[][]"))
+        localPanel.border = javax.swing.BorderFactory.createTitledBorder("My Local Version")
+        localPanel.add(JLabel("Author: ${msg.author}"), "wrap")
+        localPanel.add(
+            JScrollPane(
+                JTextArea(msg.content).apply {
+                    isEditable = false
+                    lineWrap = true
+                    wrapStyleWord = true
+                }
+            ),
+            "grow, h 100!"
+        )
+
+        val serverPanel = JPanel(MigLayout("fillx, ins 10", "[grow]", "[][]"))
+        serverPanel.border = javax.swing.BorderFactory.createTitledBorder("Server Version")
+        serverPanel.add(JLabel("Server has a newer version."), "wrap")
+        serverPanel.add(JLabel("Accepting it will overwrite your local changes."), "grow, wrap")
+
+        dialog.add(localPanel, "grow")
+        dialog.add(serverPanel, "grow, wrap")
+
+        val mineBtn = JButton("Keep My Version")
+        val serverBtn = JButton("Accept Server Version")
+
+        mineBtn.addActionListener {
+            viewModel.resolveConflict(msg.syncId, "mine")
+            dialog.dispose()
+        }
+        serverBtn.addActionListener {
+            viewModel.resolveConflict(msg.syncId, "server")
+            dialog.dispose()
+        }
+
+        dialog.add(mineBtn, "split 2, span, center")
+        dialog.add(serverBtn)
+
+        dialog.pack()
+        dialog.setSize(DIALOG_WIDTH, DIALOG_HEIGHT)
+        dialog.setLocationRelativeTo(frame)
+        dialog.isVisible = true
+    }
+
+    private fun showSettingsDialog() {
+        val dialog = JDialog(frame, i18nService.translate("swing.settings.title"), true)
+        dialog.name = "settingsDialog"
+        dialog.layout = MigLayout("fillx, ins 20, gap 10", "[][grow]", "[][][]")
+
+        dialog.add(JLabel(i18nService.translate("swing.settings.language")))
+        val languages = arrayOf(
+            "en" to i18nService.translate("swing.language.en"),
+            "fr" to i18nService.translate("swing.language.fr")
+        )
+        val langCombo = JComboBox<String>(languages.map { it.second }.toTypedArray()).apply { name = "langCombo" }
+        langCombo.selectedIndex = languages.indexOfFirst { it.first == Locale.getDefault().language }.coerceAtLeast(0)
+        dialog.add(langCombo, "growx, wrap")
+
+        dialog.add(JLabel(i18nService.translate("swing.settings.theme")))
+        val allThemes = ThemeCatalog.allThemes().sortedBy { it.name }
+        val themeCombo = JComboBox<String>(allThemes.map { it.name }.toTypedArray()).apply { name = "themeCombo" }
+        val currentThemeName = UIManager.get("current_theme_name") as? String
+        themeCombo.selectedIndex = allThemes.indexOfFirst { it.name == currentThemeName }.coerceAtLeast(0)
+        dialog.add(themeCombo, "growx, wrap")
+
+        val applyButton = JButton(i18nService.translate("swing.settings.button.apply")).apply { name = "applyButton" }
+        val cancelButton = JButton(
+            i18nService.translate("swing.settings.button.cancel"),
+        ).apply { name = "cancelButton" }
+
+        applyButton.addActionListener {
+            val selectedLang = languages[langCombo.selectedIndex].first
+            val newLocale = Locale.of(selectedLang)
+            Locale.setDefault(newLocale)
+            refreshTranslations(I18nService.create("messages").also { it.setLocale(newLocale) })
+            themeManager.applyTheme(allThemes[themeCombo.selectedIndex])
             saveState()
+            dialog.dispose()
         }
-        themeMenu.add(item)
+        cancelButton.addActionListener { dialog.dispose() }
+
+        dialog.add(cancelButton, "tag cancel, span, split 2, right")
+        dialog.add(applyButton, "tag ok")
+
+        dialog.pack()
+        dialog.setLocationRelativeTo(frame)
+        dialog.isVisible = true
     }
-
-    menuBar.add(appMenu)
-    menuBar.add(themeMenu)
-    return menuBar
-  }
-
-  private fun showLoginDialog() {
-    val dialog = JDialog(frame, "Login", true)
-    dialog.layout = MigLayout("fillx, ins 20, gap 10", "[][grow]", "[][][]")
-    
-    dialog.add(JLabel("Username:"))
-    val userField = JTextField().apply { name = "username" }
-    dialog.add(userField, "growx, wrap")
-    
-    dialog.add(JLabel("Password:"))
-    val passField = JPasswordField().apply { name = "password" }
-    dialog.add(passField, "growx, wrap")
-    
-    val loginBtn = JButton("Sign In").apply { name = "loginBtn" }
-    loginBtn.addActionListener {
-        viewModel.login(userField.text, String(passField.password)) { success, error ->
-            if (success) dialog.dispose()
-            else JOptionPane.showMessageDialog(dialog, error, "Login Failed", JOptionPane.ERROR_MESSAGE)
-        }
-    }
-    
-    dialog.add(loginBtn, "span, center")
-    dialog.pack()
-    dialog.setLocationRelativeTo(frame)
-    dialog.isVisible = true
-  }
-
-  private fun showConflictDialog(msg: MessageSummary) {
-      val dialog = JDialog(frame, "Resolve Sync Conflict", true)
-      dialog.layout = MigLayout("fill, ins 20, gap 10", "[grow][grow]", "[][grow][]")
-      
-      val introText = "<html>A sync conflict was detected for this message.<br/>" +
-          "Please choose which version to keep:</html>"
-      dialog.add(JLabel(introText), "span, wrap, gapbottom 15")
-      
-      val localPanel = JPanel(MigLayout("fillx, ins 10", "[grow]", "[][]"))
-      localPanel.border = javax.swing.BorderFactory.createTitledBorder("My Local Version")
-      localPanel.add(JLabel("Author: ${msg.author}"), "wrap")
-      localPanel.add(JScrollPane(JTextArea(msg.content).apply { 
-          isEditable = false
-          lineWrap = true
-          wrapStyleWord = true 
-      }), "grow, h 100!")
-      
-      val serverPanel = JPanel(MigLayout("fillx, ins 10", "[grow]", "[][]"))
-      serverPanel.border = javax.swing.BorderFactory.createTitledBorder("Server Version")
-      serverPanel.add(JLabel("Server has a newer version."), "wrap")
-      serverPanel.add(JLabel("Accepting it will overwrite your local changes."), "grow, wrap")
-
-      dialog.add(localPanel, "grow")
-      dialog.add(serverPanel, "grow, wrap")
-      
-      val mineBtn = JButton("Keep My Version")
-      val serverBtn = JButton("Accept Server Version")
-      
-      mineBtn.addActionListener {
-          viewModel.resolveConflict(msg.syncId, "mine")
-          dialog.dispose()
-      }
-      serverBtn.addActionListener {
-          viewModel.resolveConflict(msg.syncId, "server")
-          dialog.dispose()
-      }
-      
-      dialog.add(mineBtn, "split 2, span, center")
-      dialog.add(serverBtn)
-      
-      dialog.pack()
-      dialog.setSize(DIALOG_WIDTH, DIALOG_HEIGHT)
-      dialog.setLocationRelativeTo(frame)
-      dialog.isVisible = true
-  }
-
-  private fun showSettingsDialog() {
-    val dialog = JDialog(frame, i18nService.translate("swing.settings.title"), true)
-    dialog.name = "settingsDialog"
-    dialog.layout = MigLayout("fillx, ins 20, gap 10", "[][grow]", "[][][]")
-    
-    dialog.add(JLabel(i18nService.translate("swing.settings.language")))
-    val languages = arrayOf(
-        "en" to i18nService.translate("swing.language.en"), 
-        "fr" to i18nService.translate("swing.language.fr")
-    )
-    val langCombo = JComboBox<String>(languages.map { it.second }.toTypedArray()).apply { name = "langCombo" }
-    langCombo.selectedIndex = languages.indexOfFirst { it.first == Locale.getDefault().language }.coerceAtLeast(0)
-    dialog.add(langCombo, "growx, wrap")
-    
-    dialog.add(JLabel(i18nService.translate("swing.settings.theme")))
-    val allThemes = ThemeCatalog.allThemes().sortedBy { it.name }
-    val themeCombo = JComboBox<String>(allThemes.map { it.name }.toTypedArray()).apply { name = "themeCombo" }
-    val currentThemeName = UIManager.get("current_theme_name") as? String
-    themeCombo.selectedIndex = allThemes.indexOfFirst { it.name == currentThemeName }.coerceAtLeast(0)
-    dialog.add(themeCombo, "growx, wrap")
-    
-    val applyButton = JButton(i18nService.translate("swing.settings.button.apply")).apply { name = "applyButton" }
-    val cancelButton = JButton(i18nService.translate("swing.settings.button.cancel")).apply { name = "cancelButton" }
-    
-    applyButton.addActionListener {
-        val selectedLang = languages[langCombo.selectedIndex].first
-        val newLocale = Locale.of(selectedLang)
-        Locale.setDefault(newLocale)
-        refreshTranslations(I18nService.create("messages").also { it.setLocale(newLocale) })
-        themeManager.applyTheme(allThemes[themeCombo.selectedIndex])
-        saveState()
-        dialog.dispose()
-    }
-    cancelButton.addActionListener { dialog.dispose() }
-    
-    dialog.add(cancelButton, "tag cancel, span, split 2, right")
-    dialog.add(applyButton, "tag ok")
-    
-    dialog.pack()
-    dialog.setLocationRelativeTo(frame)
-    dialog.isVisible = true
-  }
 }

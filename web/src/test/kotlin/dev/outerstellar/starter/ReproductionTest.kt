@@ -33,14 +33,15 @@ class ReproductionTest : H2WebTest() {
         val securityService = SecurityService(userRepository, passwordEncoder)
 
         val app = app(
-            messageService, repository, outbox, cache, createRenderer(), 
+            messageService, repository, outbox, cache, createRenderer(),
             pageFactory, testConfig, securityService, userRepository, passwordEncoder
         )
-        
+
         val response = app.http!!(Request(GET, "/?theme=dracula"))
         assertEquals(Status.OK, response.status)
         // Verify that the theme is applied in the body (CSS variables)
         // In Dracula theme, background color is #282A36
-        assertTrue(response.bodyString().contains("--color-background: #282A36"), "Should contain Dracula background color")
+        val body = response.bodyString()
+        assertTrue(body.contains("--color-background: #282A36"), "Should contain Dracula background color")
     }
 }

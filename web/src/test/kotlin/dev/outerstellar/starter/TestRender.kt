@@ -11,7 +11,7 @@ class TestRender {
         val renderer = createRenderer()
         val fragment = FooterStatusFragment("Everything is fine!")
         val result = renderer(fragment)
-        
+
         val expectedPart = "Everything is fine!"
         assertTrue(result.contains(expectedPart), "Result should contain: $expectedPart")
     }

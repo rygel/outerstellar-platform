@@ -1,9 +1,9 @@
 package dev.outerstellar.starter.swing
 
+import org.slf4j.LoggerFactory
 import java.awt.Rectangle
 import java.util.prefs.BackingStoreException
 import java.util.prefs.Preferences
-import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.DesktopStateProvider")
 

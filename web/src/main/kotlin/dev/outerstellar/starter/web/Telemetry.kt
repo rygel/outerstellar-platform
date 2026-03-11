@@ -1,7 +1,6 @@
 package dev.outerstellar.starter.web
 
 import io.opentelemetry.api.OpenTelemetry
-import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk
 
 object Telemetry {

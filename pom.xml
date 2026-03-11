@@ -32,6 +32,14 @@
         <junit.version>5.12.0</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
         <jacoco.version>0.8.14</jacoco.version>
+        <extra-enforcer-rules.version>1.8.0</extra-enforcer-rules.version>
+        <maven.jar.plugin.version>3.4.2</maven.jar.plugin.version>
+        <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
+        <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
+        <maven.install.plugin.version>3.1.2</maven.install.plugin.version>
+        <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
+        <maven.deploy.plugin.version>3.1.2</maven.deploy.plugin.version>
+        <bytebuddy.version>1.18.5</bytebuddy.version>
         <koin.version>4.0.2</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
@@ -40,7 +48,7 @@
         <micrometer.version>1.14.4</micrometer.version>
         <resilience4j.version>2.3.0</resilience4j.version>
         <caffeine.version>3.2.0</caffeine.version>
-        <opentelemetry.version>1.41.0</opentelemetry.version>
+        <opentelemetry.version>1.59.0</opentelemetry.version>
 
         <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
         <kotlin.compiler.daemon>false</kotlin.compiler.daemon>
@@ -91,6 +99,21 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-stdlib</artifactId>
                 <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-reflect</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>${bytebuddy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-agent</artifactId>
+                <version>${bytebuddy.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
@@ -350,6 +373,44 @@
                     </configuration>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>${maven.clean.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>${maven.install.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>${maven.site.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${maven.deploy.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>${maven.jar.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven.surefire.plugin.version}</version>
+                    <configuration>
+                        <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
+                        <systemPropertyVariables>
+                            <otel.traces.exporter>none</otel.traces.exporter>
+                            <otel.metrics.exporter>none</otel.metrics.exporter>
+                            <otel.logs.exporter>none</otel.logs.exporter>
+                        </systemPropertyVariables>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>org.flywaydb</groupId>
                     <artifactId>flyway-maven-plugin</artifactId>
                     <version>${flyway.version}</version>
@@ -395,14 +456,28 @@
                                 <goal>check</goal>
                             </goals>
                             <configuration>
-                                <config>detekt.yml</config>
+                                <config>${maven.multiModuleProjectDirectory}/detekt.yml</config>
                                 <report>
-                                    <report>xml:target/detekt-reports/detekt.xml</report>
-                                    <report>html:target/detekt-reports/detekt.html</report>
+                                    <report>xml:${project.build.directory}/detekt-reports/detekt.xml</report>
+                                    <report>html:${project.build.directory}/detekt-reports/detekt.html</report>
                                 </report>
+                                <autoCorrect>true</autoCorrect>
+                                <buildUponDefaultConfig>true</buildUponDefaultConfig>
                             </configuration>
                         </execution>
                     </executions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>io.gitlab.arturbosch.detekt</groupId>
+                            <artifactId>detekt-formatting</artifactId>
+                            <version>1.23.8</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -412,6 +487,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>${enforcer.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>extra-enforcer-rules</artifactId>
+                        <version>${extra-enforcer-rules.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>require-java-21</id>
@@ -426,6 +508,49 @@
                                 <requireJavaVersion>
                                     <version>[21,22)</version>
                                 </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>quality-guards</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <dependencyConvergence>
+                                    <excludes>
+                                        <exclude>org.jetbrains.kotlin:kotlin-reflect</exclude>
+                                        <exclude>org.jetbrains.kotlin:kotlin-stdlib-jdk7</exclude>
+                                        <exclude>org.jetbrains.kotlin:kotlin-stdlib-jdk8</exclude>
+                                        <exclude>org.jetbrains.kotlin:kotlin-stdlib-common</exclude>
+                                        <exclude>org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm</exclude>
+                                        <exclude>org.jetbrains.kotlinx:kotlinx-coroutines-jdk8</exclude>
+                                        <exclude>org.jetbrains:annotations</exclude>
+                                    </excludes>
+                                </dependencyConvergence>
+                                <requirePluginVersions/>
+                                <banDuplicateClasses>
+                                    <findAllDuplicates>true</findAllDuplicates>
+                                    <ignoreWhenIdentical>true</ignoreWhenIdentical>
+                                    <ignoreClasses>
+                                        <ignoreClass>kotlin.internal.jdk7.**</ignoreClass>
+                                        <ignoreClass>kotlin.internal.jdk8.**</ignoreClass>
+                                        <ignoreClass>kotlin.streams.jdk8.**</ignoreClass>
+                                        <ignoreClass>kotlin.collections.jdk8.**</ignoreClass>
+                                        <ignoreClass>kotlin.random.jdk8.**</ignoreClass>
+                                        <ignoreClass>kotlin.text.jdk8.**</ignoreClass>
+                                        <ignoreClass>kotlin.time.jdk8.**</ignoreClass>
+                                        <ignoreClass>kotlin.io.path.**</ignoreClass>
+                                        <ignoreClass>kotlin.jdk7.**</ignoreClass>
+                                        <ignoreClass>kotlin.jvm.jdk8.**</ignoreClass>
+                                        <ignoreClass>kotlinx.coroutines.future.**</ignoreClass>
+                                        <ignoreClass>kotlinx.coroutines.stream.**</ignoreClass>
+                                        <ignoreClass>kotlinx.coroutines.time.**</ignoreClass>
+                                        <ignoreClass>com.outerstellar.i18n.I18nService</ignoreClass>
+                                        <ignoreClass>com.outerstellar.i18n.I18nService$Companion</ignoreClass>
+                                    </ignoreClasses>
+                                </banDuplicateClasses>
                             </rules>
                         </configuration>
                     </execution>
@@ -453,6 +578,29 @@
                         <goal>compile</goal>
                     </goals>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.github.ozsie</groupId>
+                <artifactId>detekt-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

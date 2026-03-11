@@ -55,7 +55,7 @@ class JooqOutboxRepository(
             .from(OUTBOX)
             .groupBy(OUTBOX.STATUS)
             .fetch()
-        
+
         return results.associate { it.value1()!! to it.value2() }
     }
 

@@ -3,12 +3,12 @@ package dev.outerstellar.starter.web
 import dev.outerstellar.starter.infra.render
 import dev.outerstellar.starter.security.PasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
+import dev.outerstellar.starter.security.User
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.security.UserRole
-import dev.outerstellar.starter.security.User
 import org.http4k.contract.bindContract
-import org.http4k.contract.meta
 import org.http4k.contract.div
+import org.http4k.contract.meta
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Response
@@ -37,7 +37,8 @@ class AuthRoutes(
         "/auth/components/forms" / modePath meta {
             summary = "Auth form fragment"
         } bindContract GET to { mode ->
-            { request: org.http4k.core.Request ->
+            {
+                    request: org.http4k.core.Request ->
                 renderer.render(pageFactory.buildAuthForm(request.webContext, mode))
             }
         },
@@ -47,7 +48,7 @@ class AuthRoutes(
             val mode = request.form("mode") ?: "sign-in"
             val email = request.form("email").orEmpty()
             val password = request.form("password").orEmpty()
-            
+
             if (mode == "sign-in") {
                 val user = securityService.authenticate(email, password)
                 if (user != null) {
@@ -60,13 +61,15 @@ class AuthRoutes(
                 }
             } else if (mode == "register") {
                 // Simplified registration
-                userRepository.save(User(
-                    id = UUID.randomUUID(),
-                    username = email,
-                    email = email,
-                    passwordHash = passwordEncoder.encode(password),
-                    role = UserRole.USER
-                ))
+                userRepository.save(
+                    User(
+                        id = UUID.randomUUID(),
+                        username = email,
+                        email = email,
+                        passwordHash = passwordEncoder.encode(password),
+                        role = UserRole.USER
+                    )
+                )
                 val target = request.webContext.url("/auth?registered=true")
                 Response(Status.FOUND).header("location", target)
             } else {
