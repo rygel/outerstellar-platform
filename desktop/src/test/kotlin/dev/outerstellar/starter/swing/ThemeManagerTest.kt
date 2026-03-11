@@ -2,6 +2,7 @@ package dev.outerstellar.starter.swing
 
 import dev.outerstellar.starter.model.ThemeCatalog
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import java.awt.Color
 import javax.swing.UIManager
@@ -44,5 +45,23 @@ class ThemeManagerTest {
         assertEquals("Default", UIManager.get("current_theme_name"))
         assertEquals(expectedLightBg.rgb, UIManager.getColor("Panel.background").rgb)
         assertEquals(expectedLightBg.rgb, UIManager.getColor("ToolBar.background").rgb)
+    }
+
+    @Test
+    fun `all catalog themes can be applied and update critical ui keys`() {
+        ThemeCatalog.allThemes().forEach { theme ->
+            val expectedBackground = Color.decode(theme.colors.getValue("background"))
+            val expectedComponentBackground = Color.decode(theme.colors.getValue("componentBackground"))
+
+            themeManager.applyTheme(theme)
+
+            assertEquals(theme.name, UIManager.get("current_theme_name"))
+            assertNotNull(UIManager.getColor("Panel.background"))
+            assertNotNull(UIManager.getColor("ToolBar.background"))
+            assertNotNull(UIManager.getColor("TextField.background"))
+            assertEquals(expectedBackground.rgb, UIManager.getColor("Panel.background").rgb)
+            assertEquals(expectedBackground.rgb, UIManager.getColor("ToolBar.background").rgb)
+            assertEquals(expectedComponentBackground.rgb, UIManager.getColor("TextField.background").rgb)
+        }
     }
 }

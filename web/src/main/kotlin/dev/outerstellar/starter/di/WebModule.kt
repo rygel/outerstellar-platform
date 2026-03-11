@@ -25,7 +25,7 @@ val webModule = module {
     single(named("serverBaseUrl")) { "http://localhost:8080" }
     single<TemplateRenderer> { createRenderer() }
     single { WebPageFactory(get()) }
-    single { SyncApi(get()) }
+    single { SyncApi(get(), get()) }
     single<MessageCache> { dev.outerstellar.starter.persistence.NoOpMessageCache }
 
     single<I18nService> { I18nService.fromResourceBundle("messages") }
@@ -33,6 +33,7 @@ val webModule = module {
     single<PolyHandler>(named("webServer")) {
         app(
             get<MessageService>(),
+            get<dev.outerstellar.starter.service.ContactService>(),
             get<MessageRepository>(),
             get<OutboxRepository>(),
             get<MessageCache>(),

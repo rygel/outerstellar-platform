@@ -179,11 +179,54 @@ private const val DEFAULT_LIMIT = 10
 private const val HTTP_STATUS_NOT_FOUND = 404
 private const val HTTP_STATUS_SERVER_ERROR = 500
 
+data class ContactViewModel(
+    val name: String,
+    val emails: List<String>,
+    val phones: List<String>,
+    val company: String,
+    val companyAddress: String,
+    val department: String
+)
+
+data class ContactsPage(
+    val title: String,
+    val description: String,
+    val contacts: List<ContactViewModel>
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/ContactsPage"
+}
+
 @Suppress("TooManyFunctions")
 class WebPageFactory(
-    private val repository: MessageRepository
+    private val repository: MessageRepository,
+    private val contactService: dev.outerstellar.starter.service.ContactService? = null
 ) {
     private val messageListComponent = MessageListComponent(repository)
+
+    fun buildContactsPage(ctx: WebContext): Page<ContactsPage> {
+        val i18n = ctx.i18n
+        val shell = ctx.shell("Contacts", "/contacts")
+        
+        val dbContacts = contactService?.listContacts() ?: emptyList()
+
+        return Page(
+            shell = shell,
+            data = ContactsPage(
+                title = "Contacts Directory",
+                description = "A list of all your contacts.",
+                contacts = dbContacts.map { 
+                    ContactViewModel(
+                        name = it.name,
+                        emails = it.emails,
+                        phones = it.phones,
+                        company = it.company,
+                        companyAddress = it.companyAddress,
+                        department = it.department
+                    ) 
+                }
+            )
+        )
+    }
 
     fun buildHomePage(
         ctx: WebContext,

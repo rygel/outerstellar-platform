@@ -25,9 +25,11 @@ class StarterAppTest {
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
         val passwordEncoder = mockk<PasswordEncoder>(relaxed = true)
+        val contactService = io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
         val app = app(
             messageService,
+            contactService,
             repository,
             outbox,
             cache,

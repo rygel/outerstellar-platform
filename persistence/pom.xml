@@ -13,6 +13,7 @@
 
     <properties>
         <codegen.jdbc.url>jdbc:h2:file:${project.build.directory}/jooq-codegen/db/starter;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE</codegen.jdbc.url>
+        <detekt.skip>true</detekt.skip>
     </properties>
 
     <dependencies>

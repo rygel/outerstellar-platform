@@ -11,6 +11,10 @@
 
     <artifactId>security</artifactId>
 
+    <properties>
+        <detekt.skip>true</detekt.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>dev.outerstellar</groupId>

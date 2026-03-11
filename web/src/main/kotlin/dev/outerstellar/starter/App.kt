@@ -12,6 +12,7 @@ import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.web.AuthApi
 import dev.outerstellar.starter.web.AuthRoutes
 import dev.outerstellar.starter.web.ComponentRoutes
+import dev.outerstellar.starter.web.ContactsRoutes
 import dev.outerstellar.starter.web.DevDashboardRoutes
 import dev.outerstellar.starter.web.ErrorRoutes
 import dev.outerstellar.starter.web.Filters
@@ -50,6 +51,7 @@ private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.App")
 @Suppress("LongParameterList", "LongMethod", "TooGenericExceptionCaught", "SwallowedException")
 fun app(
     messageService: MessageService,
+    contactService: dev.outerstellar.starter.service.ContactService,
     repository: MessageRepository,
     outboxRepository: OutboxRepository,
     cache: MessageCache,
@@ -92,7 +94,7 @@ fun app(
             security = object : org.http4k.contract.security.Security {
                 override val filter = syncAuthFilter
             }
-            routes += SyncApi(messageService).routes
+            routes += SyncApi(messageService, contactService).routes
         }
 
         // SyncContract is a RoutingHttpHandler, but we bind it separately below
@@ -104,6 +106,7 @@ fun app(
         renderer = OpenApi3(ApiInfo("Outerstellar UI", "v1.0"), Jackson)
         descriptionPath = "/ui/openapi.json"
         routes += HomeRoutes(messageService, repository, pageFactory, jteRenderer).routes
+        routes += ContactsRoutes(pageFactory, jteRenderer).routes
         routes += AuthRoutes(
             pageFactory,
             jteRenderer,
@@ -164,7 +167,7 @@ fun app(
         security = object : org.http4k.contract.security.Security {
             override val filter = bearerAuthFilter
         }
-        routes += SyncApi(messageService).routes
+        routes += SyncApi(messageService, contactService).routes
     }
 
     // 4. HTMX Components (HTML Fragments)

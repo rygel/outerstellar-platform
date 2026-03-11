@@ -26,8 +26,8 @@ import java.awt.Container
 import java.awt.GraphicsEnvironment
 import java.util.Locale
 import java.util.function.BooleanSupplier
-import javax.swing.JFrame
 import javax.swing.JComponent
+import javax.swing.JFrame
 import javax.swing.UIManager
 
 class SwingAppE2ETest {
@@ -53,7 +53,7 @@ class SwingAppE2ETest {
         if (GraphicsEnvironment.isHeadless()) return
 
         robot = BasicRobot.robotWithNewAwtHierarchy()
-        val viewModel = SyncViewModel(messageService, syncService, i18nService)
+        val viewModel = SyncViewModel(messageService, null, syncService, i18nService)
         val syncWindow = GuiActionRunner.execute<SyncWindow> {
             val sw = SyncWindow(viewModel, ThemeManager(), i18nService)
             sw.configureForTest()
@@ -71,7 +71,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `viewmodel correctly holds author and content`() {
-        val viewModel = SyncViewModel(messageService, syncService, i18nService)
+        val viewModel = SyncViewModel(messageService, null, syncService, i18nService)
         viewModel.author = "E2E Tester"
         viewModel.content = "Test content from E2E"
 
@@ -145,6 +145,7 @@ class SwingAppE2ETest {
         }
 
         assertThemeColors(w, darkTheme)
+        assertThemeDiffersFrom(w, defaultTheme, darkTheme)
 
         w.menuItem("settingsItem").click()
         w.dialog().comboBox("themeCombo").selectItem("Default")
@@ -200,6 +201,20 @@ class SwingAppE2ETest {
         assertEquals(expectedComponentBg.rgb, rgbOf(authorBg))
         assertEquals(expectedComponentBg.rgb, rgbOf(contentBg))
         assertEquals(expectedWindowBg.rgb, rgbOf(statusBg))
+    }
+
+    private fun assertThemeDiffersFrom(
+        w: FrameFixture,
+        previous: dev.outerstellar.starter.model.ThemeDefinition,
+        current: dev.outerstellar.starter.model.ThemeDefinition
+    ) {
+        val prevWindowBg = Color.decode(previous.colors.getValue("background")).rgb
+        val currentWindowBg = Color.decode(current.colors.getValue("background")).rgb
+        val frameBg = GuiActionRunner.execute<Color> { requireNotNull((w.target() as JFrame).contentPane.background) }
+
+        if (prevWindowBg != currentWindowBg) {
+            assertEquals(currentWindowBg, rgbOf(frameBg))
+        }
     }
 
     private fun rgbOf(color: Color?): Int = requireNotNull(color).rgb

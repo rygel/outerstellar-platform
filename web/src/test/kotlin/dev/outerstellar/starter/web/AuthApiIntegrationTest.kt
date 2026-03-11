@@ -33,9 +33,10 @@ class AuthApiIntegrationTest : H2WebTest() {
         val pageFactory = WebPageFactory(repository)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
+        val contactService = io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
         app = app(
-            messageService, repository, outbox, cache, createRenderer(),
+            messageService, contactService, repository, outbox, cache, createRenderer(),
             pageFactory, testConfig, securityService, userRepository, encoder
         ).http!!
     }

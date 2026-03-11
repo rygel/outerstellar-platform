@@ -4,6 +4,7 @@
 package dev.outerstellar.starter.jooq.indexes
 
 
+import dev.outerstellar.starter.jooq.tables.Contacts
 import dev.outerstellar.starter.jooq.tables.FlywaySchemaHistory
 import dev.outerstellar.starter.jooq.tables.Messages
 import dev.outerstellar.starter.jooq.tables.Outbox
@@ -25,4 +26,5 @@ val IDX_MESSAGES_DELETED_AT: Index = Internal.createIndex(DSL.name("IDX_MESSAGES
 val IDX_MESSAGES_YEAR: Index = Internal.createIndex(DSL.name("IDX_MESSAGES_YEAR"), Messages.MESSAGES, arrayOf(Messages.MESSAGES.CREATED_YEAR), false)
 val IDX_OUTBOX_STATUS: Index = Internal.createIndex(DSL.name("IDX_OUTBOX_STATUS"), Outbox.OUTBOX, arrayOf(Outbox.OUTBOX.STATUS), false)
 val IDX_OUTBOX_UNPROCESSED: Index = Internal.createIndex(DSL.name("IDX_OUTBOX_UNPROCESSED"), Outbox.OUTBOX, arrayOf(Outbox.OUTBOX.CREATED_AT, Outbox.OUTBOX.PROCESSED_AT), false)
+val UX_CONTACTS_SYNC_ID: Index = Internal.createIndex(DSL.name("UX_CONTACTS_SYNC_ID"), Contacts.CONTACTS, arrayOf(Contacts.CONTACTS.SYNC_ID), true)
 val UX_MESSAGES_SYNC_ID: Index = Internal.createIndex(DSL.name("UX_MESSAGES_SYNC_ID"), Messages.MESSAGES, arrayOf(Messages.MESSAGES.SYNC_ID), true)

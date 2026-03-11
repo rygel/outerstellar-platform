@@ -1,11 +1,17 @@
 package dev.outerstellar.starter.web
 
+import dev.outerstellar.starter.service.ContactService
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncConflict
 import dev.outerstellar.starter.sync.SyncMessage
 import dev.outerstellar.starter.sync.SyncPullResponse
 import dev.outerstellar.starter.sync.SyncPushRequest
 import dev.outerstellar.starter.sync.SyncPushResponse
+import dev.outerstellar.starter.sync.SyncContact
+import dev.outerstellar.starter.sync.SyncPullContactResponse
+import dev.outerstellar.starter.sync.SyncPushContactRequest
+import dev.outerstellar.starter.sync.SyncPushContactResponse
+import dev.outerstellar.starter.sync.SyncContactConflict
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
@@ -19,10 +25,18 @@ import org.http4k.format.Jackson.auto
 import org.http4k.lens.Query
 import org.http4k.lens.long
 
-class SyncApi(private val messageService: MessageService) : ServerRoutes {
+class SyncApi(
+    private val messageService: MessageService,
+    private val contactService: ContactService
+) : ServerRoutes {
     private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
     private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
     private val pullResponseLens = Body.auto<SyncPullResponse>().toLens()
+    
+    private val pushContactRequestLens = Body.auto<SyncPushContactRequest>().toLens()
+    private val pushContactResponseLens = Body.auto<SyncPushContactResponse>().toLens()
+    private val pullContactResponseLens = Body.auto<SyncPullContactResponse>().toLens()
+    
     private val sinceLens = Query.long().optional("since")
 
     override val routes: List<ContractRoute> = listOf(
@@ -43,6 +57,25 @@ class SyncApi(private val messageService: MessageService) : ServerRoutes {
             val syncRequest = pushRequestLens(request)
             val syncResponse = messageService.processPushRequest(syncRequest)
             Response(Status.OK).with(pushResponseLens of syncResponse)
+        },
+        "/api/v1/sync/contacts" meta {
+            summary = "Pull contact changes from server"
+            queries += sinceLens
+            returning(Status.OK, pullContactResponseLens to SyncPullContactResponse(emptyList<SyncContact>(), 0L))
+        } bindContract GET to { request ->
+            val since = sinceLens(request) ?: 0L
+            val response = contactService.getChangesSince(since)
+            Response(Status.OK).with(pullContactResponseLens of response)
+        },
+        "/api/v1/sync/contacts" meta {
+            summary = "Push contact changes to server"
+            receiving(pushContactRequestLens)
+            returning(Status.OK, pushContactResponseLens to SyncPushContactResponse(0, emptyList<SyncContactConflict>()))
+        } bindContract POST to { request ->
+            val syncRequest = pushContactRequestLens(request)
+            val syncResponse = contactService.processPushRequest(syncRequest)
+            Response(Status.OK).with(pushContactResponseLens of syncResponse)
         }
     )
 }
+

@@ -1,6 +1,8 @@
 package dev.outerstellar.starter.di
 
 import dev.outerstellar.starter.infra.createDataSource
+import dev.outerstellar.starter.persistence.ContactRepository
+import dev.outerstellar.starter.persistence.JooqContactRepository
 import dev.outerstellar.starter.persistence.JooqMessageRepository
 import dev.outerstellar.starter.persistence.JooqOutboxRepository
 import dev.outerstellar.starter.persistence.JooqTransactionManager
@@ -35,6 +37,13 @@ val persistenceModule = module {
 
     single<MessageRepository> {
         JooqMessageRepository(
+            primaryDsl = get(named("primaryDsl")),
+            replicaDsl = get(named("replicaDsl"))
+        )
+    }
+
+    single<ContactRepository> {
+        JooqContactRepository(
             primaryDsl = get(named("primaryDsl")),
             replicaDsl = get(named("replicaDsl"))
         )

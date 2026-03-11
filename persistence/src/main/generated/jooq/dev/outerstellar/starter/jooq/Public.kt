@@ -4,6 +4,9 @@
 package dev.outerstellar.starter.jooq
 
 
+import dev.outerstellar.starter.jooq.tables.ContactEmails
+import dev.outerstellar.starter.jooq.tables.ContactPhones
+import dev.outerstellar.starter.jooq.tables.Contacts
 import dev.outerstellar.starter.jooq.tables.FlywaySchemaHistory
 import dev.outerstellar.starter.jooq.tables.Messages
 import dev.outerstellar.starter.jooq.tables.Outbox
@@ -29,6 +32,21 @@ open class Public : SchemaImpl("PUBLIC", DefaultCatalog.DEFAULT_CATALOG) {
          */
         val PUBLIC: Public = Public()
     }
+
+    /**
+     * The table <code>PUBLIC.CONTACT_EMAILS</code>.
+     */
+    val CONTACT_EMAILS: ContactEmails get() = ContactEmails.CONTACT_EMAILS
+
+    /**
+     * The table <code>PUBLIC.CONTACT_PHONES</code>.
+     */
+    val CONTACT_PHONES: ContactPhones get() = ContactPhones.CONTACT_PHONES
+
+    /**
+     * The table <code>PUBLIC.CONTACTS</code>.
+     */
+    val CONTACTS: Contacts get() = Contacts.CONTACTS
 
     /**
      * The table <code>PUBLIC.flyway_schema_history</code>.
@@ -58,6 +76,9 @@ open class Public : SchemaImpl("PUBLIC", DefaultCatalog.DEFAULT_CATALOG) {
     override fun getCatalog(): Catalog = DefaultCatalog.DEFAULT_CATALOG
 
     override fun getTables(): List<Table<*>> = listOf(
+        ContactEmails.CONTACT_EMAILS,
+        ContactPhones.CONTACT_PHONES,
+        Contacts.CONTACTS,
         FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY,
         Messages.MESSAGES,
         Outbox.OUTBOX,

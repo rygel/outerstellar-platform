@@ -15,6 +15,7 @@
         <module>web</module>
         <module>desktop</module>
         <module>security</module>
+        <module>seed</module>
     </modules>
 
     <properties>

@@ -1,10 +1,12 @@
 package dev.outerstellar.starter.swing.viewmodel
 
 import com.outerstellar.i18n.I18nService
+import dev.outerstellar.starter.model.ContactSummary
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.OuterstellarException
 import dev.outerstellar.starter.model.SyncException
 import dev.outerstellar.starter.model.ValidationException
+import dev.outerstellar.starter.service.ContactService
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.swing.SystemTrayNotifier
 import dev.outerstellar.starter.sync.SyncService
@@ -16,6 +18,7 @@ import javax.swing.SwingWorker
 @Suppress("TooManyFunctions")
 class SyncViewModel(
     private val messageService: MessageService,
+    private val contactService: ContactService? = null,
     private val syncService: SyncService,
     private var i18nService: I18nService,
     private val notifier: SystemTrayNotifier? = null
@@ -24,6 +27,9 @@ class SyncViewModel(
     private var autoSyncExecutor: ScheduledExecutorService? = null
 
     var messages: List<MessageSummary> = emptyList()
+        private set
+
+    var contacts: List<ContactSummary> = emptyList()
         private set
 
     var status: String = i18nService.translate("swing.status.ready")
@@ -62,6 +68,7 @@ class SyncViewModel(
 
     fun loadMessages() {
         messages = messageService.listMessages(searchQuery.takeIf { it.isNotBlank() }).items
+        contacts = contactService?.listContacts(searchQuery.takeIf { it.isNotBlank() }) ?: emptyList()
         notifyObservers()
     }
 

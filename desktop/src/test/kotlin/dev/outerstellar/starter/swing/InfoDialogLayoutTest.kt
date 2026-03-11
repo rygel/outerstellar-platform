@@ -23,7 +23,7 @@ class InfoDialogLayoutTest {
         assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping Swing layout test in headless mode")
 
         val i18n = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
-        val viewModel = SyncViewModel(messageService, syncService, i18n)
+        val viewModel = SyncViewModel(messageService, null, syncService, i18n)
         val window = SyncWindow(viewModel, ThemeManager(), i18n)
 
         runOnEdt { window.configureForTest() }
@@ -38,11 +38,20 @@ class InfoDialogLayoutTest {
             val messageArea = findByName<JTextArea>(dialog, "infoDialogMessageArea")
             val closeButton = findByName<JButton>(dialog, "infoDialogCloseButton")
 
-            assertTrue(closeButton.y > messageArea.y + (messageArea.height / 2), "Close button should be below message area")
-            assertTrue(closeButton.y + closeButton.height <= dialog.contentPane.height - 8, "Close button should sit near bottom")
+            assertTrue(
+                closeButton.y > messageArea.y + (messageArea.height / 2),
+                "Close button should be below message area"
+            )
+            assertTrue(
+                closeButton.y + closeButton.height <= dialog.contentPane.height - 8,
+                "Close button should sit near bottom"
+            )
         }
 
-        runOnEdt { dialog.dispose(); window.frame.dispose() }
+        runOnEdt {
+            dialog.dispose();
+            window.frame.dispose()
+        }
     }
 
     private inline fun <reified T> findByName(root: java.awt.Container, name: String): T {
@@ -69,4 +78,3 @@ class InfoDialogLayoutTest {
         return result as T
     }
 }
-

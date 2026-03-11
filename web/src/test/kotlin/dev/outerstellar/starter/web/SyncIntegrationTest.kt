@@ -49,9 +49,10 @@ class SyncIntegrationTest : H2WebTest() {
                 role = UserRole.ADMIN
             )
         )
+        val contactService = io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
         val app = app(
-            messageService, repository, outbox, cache, createRenderer(),
+            messageService, contactService, repository, outbox, cache, createRenderer(),
             pageFactory, testConfig, securityService, userRepository, encoder
         ).http!!
 

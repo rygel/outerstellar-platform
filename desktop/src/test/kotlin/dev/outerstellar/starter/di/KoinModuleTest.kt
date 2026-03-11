@@ -15,6 +15,7 @@ class KoinModuleTest : KoinTest {
         desktopModule.verify(
             extraTypes = listOf(
                 MessageService::class,
+                dev.outerstellar.starter.service.ContactService::class,
                 SyncService::class,
                 I18nService::class,
                 SystemTrayNotifier::class,

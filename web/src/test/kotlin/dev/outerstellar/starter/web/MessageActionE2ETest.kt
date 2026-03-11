@@ -36,9 +36,11 @@ class MessageActionE2ETest : H2WebTest() {
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
+        val contactService = io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
         val app = app(
             messageService,
+            contactService,
             repository,
             outbox,
             cache,

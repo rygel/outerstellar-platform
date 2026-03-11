@@ -2,8 +2,8 @@ package dev.outerstellar.starter.swing
 
 import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.service.MessageService
-import dev.outerstellar.starter.sync.SyncService
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
+import dev.outerstellar.starter.sync.SyncService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -52,4 +52,3 @@ class SwingStartupE2ETest : KoinTest {
         assertNotNull(get<SyncViewModel>())
     }
 }
-

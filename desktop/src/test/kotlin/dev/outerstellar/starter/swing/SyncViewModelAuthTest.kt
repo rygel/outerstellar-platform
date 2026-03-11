@@ -28,7 +28,7 @@ class SyncViewModelAuthTest {
     fun `login success updates auth state and author`() {
         every { syncService.login("alice", "secret") } returns AuthTokenResponse("t", "alice", "USER")
 
-        val vm = SyncViewModel(messageService, syncService, i18nService)
+        val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
         var callbackSuccess = false
         var callbackError: String? = null
@@ -52,7 +52,7 @@ class SyncViewModelAuthTest {
     fun `login failure preserves logged out state and returns error`() {
         every { syncService.login("alice", "bad") } throws RuntimeException("boom")
 
-        val vm = SyncViewModel(messageService, syncService, i18nService)
+        val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
         var callbackSuccess = true
         var callbackError: String? = null
@@ -76,7 +76,7 @@ class SyncViewModelAuthTest {
         every { syncService.login("alice", "secret") } returns AuthTokenResponse("t", "alice", "USER")
         every { syncService.logout() } just runs
 
-        val vm = SyncViewModel(messageService, syncService, i18nService)
+        val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
         vm.login("alice", "secret") { _, _ -> latch.countDown() }
         assertTrue(latch.await(3, TimeUnit.SECONDS), "login callback timed out")
@@ -94,7 +94,7 @@ class SyncViewModelAuthTest {
     fun `register success updates auth state and author`() {
         every { syncService.register("newuser", "secret123") } returns AuthTokenResponse("t", "newuser", "USER")
 
-        val vm = SyncViewModel(messageService, syncService, i18nService)
+        val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
         var callbackSuccess = false
         var callbackError: String? = null
@@ -118,7 +118,7 @@ class SyncViewModelAuthTest {
     fun `register failure preserves logged out state and returns error`() {
         every { syncService.register("newuser", "short") } throws RuntimeException("Registration failed: 409 CONFLICT")
 
-        val vm = SyncViewModel(messageService, syncService, i18nService)
+        val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
         var callbackSuccess = true
         var callbackError: String? = null

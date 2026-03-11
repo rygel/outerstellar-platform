@@ -25,6 +25,7 @@ object MainComponent : KoinComponent {
     val config: AppConfig by inject()
     val dataSource: DataSource by inject()
     val repository: MessageRepository by inject()
+    val contactRepository: dev.outerstellar.starter.persistence.ContactRepository by inject()
     val userRepository: UserRepository by inject()
     val passwordEncoder: PasswordEncoder by inject()
     val app: PolyHandler by inject(named("webServer"))
@@ -37,7 +38,6 @@ fun main() {
 
     val main = MainComponent
     migrate(main.dataSource)
-    main.repository.seedStarterMessages()
 
     (main.userRepository as JooqUserRepository).seedAdminUser(main.passwordEncoder.encode("admin123"))
 

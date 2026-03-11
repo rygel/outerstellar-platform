@@ -1,0 +1,43 @@
+@import dev.outerstellar.starter.web.ContactsPage
+@import dev.outerstellar.starter.web.Page
+@param model: Page<ContactsPage>
+
+@template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
+    <section class="panel">
+        <h1>${model.data.title}</h1>
+        <p>${model.data.description}</p>
+        
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Emails</th>
+                    <th>Phones</th>
+                    <th>Company</th>
+                    <th>Department</th>
+                    <th>Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (contact in model.data.contacts)
+                    <tr>
+                        <td>${contact.name}</td>
+                        <td>
+                            @for (email in contact.emails)
+                                <div>${email}</div>
+                            @endfor
+                        </td>
+                        <td>
+                            @for (phone in contact.phones)
+                                <div>${phone}</div>
+                            @endfor
+                        </td>
+                        <td>${contact.company}</td>
+                        <td>${contact.department}</td>
+                        <td>${contact.companyAddress}</td>
+                    </tr>
+                @endfor
+            </tbody>
+        </table>
+    </section>
+`)

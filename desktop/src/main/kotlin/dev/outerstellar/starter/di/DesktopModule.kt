@@ -12,7 +12,7 @@ val desktopModule = module {
     single(named("jdbcUrl")) { get<SwingAppConfig>().jdbcUrl }
     single(named("serverBaseUrl")) { get<SwingAppConfig>().serverBaseUrl }
 
-    single { SyncViewModel(get(), get(), get(), getOrNull()) }
+    single { SyncViewModel(get(), getOrNull(), get(), get(), getOrNull()) }
     single { SystemTrayNotifier(get()) }
     single { I18nService.fromResourceBundle("messages") }
 }

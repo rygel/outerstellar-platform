@@ -74,6 +74,7 @@ class WebContext(
 
         val navLinks = mutableListOf(
             ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
+            ShellLink("Contacts", url("/contacts"), "ri-user-3-line", activeSection == "/contacts"),
             ShellLink("Trash", url("/messages/trash"), "ri-delete-bin-7-line", activeSection == "/messages/trash"),
             ShellLink(i18n.translate("web.nav.auth"), url("/auth"), "ri-shield-keyhole-line", activeSection == "/auth"),
             ShellLink(

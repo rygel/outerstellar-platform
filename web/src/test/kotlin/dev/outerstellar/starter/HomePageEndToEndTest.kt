@@ -31,11 +31,13 @@ class HomePageEndToEndTest : H2WebTest() {
         val pageFactory = WebPageFactory(repository)
         val passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, passwordEncoder)
+        val contactService = io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
         repository.seedStarterMessages()
 
         val appHandler = app(
             messageService,
+            contactService,
             repository,
             outbox,
             cache,
