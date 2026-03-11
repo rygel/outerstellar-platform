@@ -1,14 +1,12 @@
 package dev.outerstellar.starter.security
 
 import org.http4k.core.HttpHandler
-import org.http4k.core.RequestContexts
 import org.http4k.core.Response
 import org.http4k.core.Status
-import org.http4k.lens.RequestContextKey
+import org.http4k.lens.RequestKey
 
 object SecurityRules {
-    val contexts = RequestContexts()
-    val USER_KEY = RequestContextKey.optional<User>(contexts)
+    val USER_KEY = RequestKey.optional<User>("security.user")
 
     fun authenticated(next: HttpHandler): HttpHandler = { request ->
         val user = USER_KEY(request)
