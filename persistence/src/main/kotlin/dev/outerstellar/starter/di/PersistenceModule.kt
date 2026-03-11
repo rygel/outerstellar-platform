@@ -25,7 +25,9 @@ val persistenceModule = module {
 
     single(named("primaryDsl")) {
         DSL.using(get<DataSource>(), SQLDialect.H2).also {
-            Metrics.globalRegistry.gauge("database.connections.active", 1)
+            if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
+                Metrics.globalRegistry.gauge("database.connections.active", 1)
+            }
         }
     }
 
