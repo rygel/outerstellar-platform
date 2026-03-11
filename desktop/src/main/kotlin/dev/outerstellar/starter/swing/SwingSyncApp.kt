@@ -173,6 +173,9 @@ class SyncWindow(
   private val createButton = JButton(i18nService.translate("swing.button.create")).apply { 
       name = "createButton"
       icon = RemixIcon.get("system/add-box-line")
+      addActionListener {
+          viewModel.createMessage { }
+      }
   }
   
   private val appMenu = JMenu(i18nService.translate("swing.menu.application")).apply { name = "appMenu" }
@@ -195,6 +198,11 @@ class SyncWindow(
     restoreState()
     viewModel.loadMessages()
     frame.isVisible = true
+  }
+
+  fun configureForTest() {
+    configureFrame()
+    setupBinding()
   }
 
   fun refreshTranslations(newI18n: I18nService) {

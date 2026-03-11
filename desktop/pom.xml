@@ -70,9 +70,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-swing-junit</artifactId>
-            <version>3.17.1</version>
+            <groupId>tokyo.northside</groupId>
+            <artifactId>assertj-swing-junit-jupiter</artifactId>
+            <version>4.0.0-beta-3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
