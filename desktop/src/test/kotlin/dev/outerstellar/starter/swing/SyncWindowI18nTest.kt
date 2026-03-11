@@ -43,14 +43,10 @@ class SyncWindowI18nTest {
             assertEquals(fr.translate("swing.button.create"), button(window.frame, "createButton"))
             assertEquals(fr.translate("swing.menu.file"), menu(window.frame, "appMenu").text)
             assertEquals(fr.translate("swing.menu.help"), menu(window.frame, "helpMenu").text)
-            assertEquals(fr.translate("swing.theme.menu"), menu(window.frame, "themeMenu").text)
             assertEquals(fr.translate("swing.menu.settings"), menuItem(window.frame, "settingsItem"))
             assertEquals(fr.translate("swing.auth.login"), menuItem(window.frame, "loginItem"))
             assertEquals(fr.translate("swing.auth.logout.simple"), menuItem(window.frame, "logoutItem"))
             assertEquals(fr.translate("swing.auth.register"), menuItem(window.frame, "registerItem"))
-            assertEquals(fr.translate("swing.theme.standard"), menu(window.frame, "standardThemesMenu").text)
-            assertEquals(fr.translate("swing.theme.light"), menuItem(window.frame, "themeLightItem"))
-            assertEquals(fr.translate("swing.theme.dark"), menuItem(window.frame, "themeDarkItem"))
         }
     }
 

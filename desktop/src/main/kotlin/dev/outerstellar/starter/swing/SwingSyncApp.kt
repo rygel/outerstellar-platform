@@ -9,7 +9,6 @@ import dev.outerstellar.starter.di.persistenceModule
 import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.ThemeCatalog
-import dev.outerstellar.starter.model.ThemeDefinition
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.NoOpMessageCache
 import dev.outerstellar.starter.service.MessageService
@@ -103,7 +102,7 @@ fun main() {
 
         val notifier = SystemTrayNotifier(i18nService)
         val viewModel = SyncViewModel(desktop.messageService, desktop.syncService, i18nService, notifier)
-        val window = SyncWindow(viewModel, themeManager, i18nService)
+        val window = SyncWindow(viewModel, themeManager, i18nService, desktop.config.version)
 
         DeepLinkHandler.setup(
             onSearch = { query ->
@@ -167,13 +166,17 @@ class SyncWindow(
     private val viewModel: SyncViewModel,
     private val themeManager: ThemeManager,
     private var i18nService: I18nService,
+    private val appVersion: String = "dev",
 ) {
     val frame = JFrame(i18nService.translate("swing.app.title"))
     private val messagesModel = DefaultListModel<MessageSummary>()
     private val messagesList = JList(messagesModel).apply { name = "messagesList" }
     private val statusLabel = JLabel().apply { name = "statusLabel" }
+    private val statusHintLabel = JLabel().apply { name = "statusHintLabel" }
     private val searchLabel = JLabel().apply { name = "searchLabel" }
     private val authorLabel = JLabel().apply { name = "authorLabel" }
+    private val statusBarPanel = JPanel(MigLayout("ins 6 10 6 10, fillx", "[grow][][]", "[]")).apply { name = "statusBarPanel" }
+    private val statusMetaLabel = JLabel().apply { name = "statusMetaLabel" }
     private val searchField = JTextField().apply { name = "searchField" }
     private val authorField = JTextField().apply { name = "authorField" }
     private val contentArea = JTextArea().apply {
@@ -195,10 +198,6 @@ class SyncWindow(
 
     private val appMenu = JMenu(i18nService.translate("swing.menu.file")).apply { name = "appMenu" }
     private val helpMenu = JMenu(i18nService.translate("swing.menu.help")).apply { name = "helpMenu" }
-    private val themeMenu = JMenu(i18nService.translate("swing.theme.menu")).apply {
-        name = "themeMenu"
-        icon = RemixIcon.get("others/palette-line")
-    }
     private val settingsItem = JMenuItem(i18nService.translate("swing.menu.settings")).apply {
         name = "settingsItem"
         icon = RemixIcon.get("system/settings-3-line")
@@ -230,12 +229,6 @@ class SyncWindow(
     private val aboutItem = JMenuItem(i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))).apply {
         name = "aboutItem"
     }
-    private val standardThemesMenu = JMenu(i18nService.translate("swing.theme.standard")).apply {
-        name = "standardThemesMenu"
-    }
-    private val lightThemeItem = JMenuItem(i18nService.translate("swing.theme.light")).apply { name = "themeLightItem" }
-    private val darkThemeItem = JMenuItem(i18nService.translate("swing.theme.dark")).apply { name = "themeDarkItem" }
-
     fun show() {
         configureFrame()
         setupBinding()
@@ -393,9 +386,13 @@ class SyncWindow(
         footerPanel.add(authorLabel, "split 2")
         footerPanel.add(authorField, "growx, wrap")
         footerPanel.add(JScrollPane(contentArea), "grow, h 80!, span, wrap")
-        footerPanel.add(statusLabel, "growx")
         footerPanel.add(createButton, "w 180!")
         mainPanel.add(footerPanel, "growx")
+
+        statusBarPanel.add(statusLabel, "growx")
+        statusBarPanel.add(statusHintLabel, "right")
+        statusBarPanel.add(statusMetaLabel, "right")
+        mainPanel.add(statusBarPanel, "growx")
 
         frame.contentPane = mainPanel
         applyTranslations()
@@ -413,8 +410,8 @@ class SyncWindow(
         saveAsItem.addActionListener { showMenuPlaceholder("swing.menu.file.saveAs") }
         exitItem.addActionListener { frame.dispatchEvent(WindowEvent(frame, WindowEvent.WINDOW_CLOSING)) }
         viewHelpItem.addActionListener { showHelpDialog() }
-        sendFeedbackItem.addActionListener { showMenuPlaceholder("swing.menu.help.feedback") }
-        checkUpdatesItem.addActionListener { showMenuPlaceholder("swing.menu.help.updates") }
+        sendFeedbackItem.addActionListener { showFeedbackDialog() }
+        checkUpdatesItem.addActionListener { showUpdateCheckDialog() }
         aboutItem.addActionListener { showAboutDialog() }
 
         val menuMask = InputEvent.CTRL_DOWN_MASK
@@ -438,23 +435,6 @@ class SyncWindow(
         appMenu.addSeparator()
         appMenu.add(exitItem)
 
-        lightThemeItem.addActionListener { themeManager.setLightTheme() }
-        darkThemeItem.addActionListener { themeManager.setDarkTheme() }
-        standardThemesMenu.add(lightThemeItem)
-        standardThemesMenu.add(darkThemeItem)
-        themeMenu.add(standardThemesMenu)
-        themeMenu.addSeparator()
-
-        val themes: List<ThemeDefinition> = ThemeCatalog.allThemes().sortedBy { it.name }
-        themes.forEach { theme ->
-            val item = JMenuItem(theme.name)
-            item.addActionListener {
-                themeManager.applyTheme(theme)
-                saveState()
-            }
-            themeMenu.add(item)
-        }
-
         helpMenu.add(viewHelpItem)
         helpMenu.add(sendFeedbackItem)
         helpMenu.add(checkUpdatesItem)
@@ -462,15 +442,12 @@ class SyncWindow(
         helpMenu.add(aboutItem)
 
         menuBar.add(appMenu)
-        menuBar.add(themeMenu)
         menuBar.add(helpMenu)
         return menuBar
     }
 
     private fun showLoginDialog() {
-        val dialog = JDialog(frame, i18nService.translate("swing.auth.dialog.title"), true)
-        dialog.layout = MigLayout("fillx, ins 20, gap 10", "[][grow]", "[][][]")
-        applyDialogTheme(dialog)
+        val dialog = createThemedDialog(i18nService.translate("swing.auth.dialog.title"), "[][grow]", "[][][]")
 
         dialog.add(JLabel(i18nService.translate("swing.auth.username")))
         val userField = JTextField().apply { name = "username" }
@@ -496,10 +473,8 @@ class SyncWindow(
             }
         }
 
-        dialog.add(loginBtn, "span, center")
-        dialog.pack()
-        dialog.setLocationRelativeTo(frame)
-        dialog.isVisible = true
+        dialog.add(createActionRow(loginBtn), "span, growx")
+        showDialog(dialog)
     }
 
     private fun showConflictDialog(msg: MessageSummary) {
@@ -555,10 +530,8 @@ class SyncWindow(
     }
 
     private fun showSettingsDialog() {
-        val dialog = JDialog(frame, i18nService.translate("swing.settings.title"), true)
+        val dialog = createThemedDialog(i18nService.translate("swing.settings.title"), "[][grow]", "[][][]")
         dialog.name = "settingsDialog"
-        dialog.layout = MigLayout("fillx, ins 20, gap 10", "[][grow]", "[][][]")
-        applyDialogTheme(dialog)
 
         dialog.add(JLabel(i18nService.translate("swing.settings.language")))
         val languages = arrayOf(
@@ -592,18 +565,12 @@ class SyncWindow(
         }
         cancelButton.addActionListener { dialog.dispose() }
 
-        dialog.add(cancelButton, "tag cancel, span, split 2, right")
-        dialog.add(applyButton, "tag ok")
-
-        dialog.pack()
-        dialog.setLocationRelativeTo(frame)
-        dialog.isVisible = true
+        dialog.add(createActionRow(cancelButton, applyButton), "span, growx")
+        showDialog(dialog)
     }
 
     private fun showRegisterDialog() {
-        val dialog = JDialog(frame, i18nService.translate("swing.auth.register.dialog.title"), true)
-        dialog.layout = MigLayout("fillx, ins 20, gap 10", "[][grow]", "[][][][]")
-        applyDialogTheme(dialog)
+        val dialog = createThemedDialog(i18nService.translate("swing.auth.register.dialog.title"), "[][grow]", "[][][][]")
 
         dialog.add(JLabel(i18nService.translate("swing.auth.username")))
         val userField = JTextField().apply { name = "registerUsername" }
@@ -644,10 +611,8 @@ class SyncWindow(
             }
         }
 
-        dialog.add(registerBtn, "span, center")
-        dialog.pack()
-        dialog.setLocationRelativeTo(frame)
-        dialog.isVisible = true
+        dialog.add(createActionRow(registerBtn), "span, growx")
+        showDialog(dialog)
     }
 
     private fun applyDialogTheme(dialog: JDialog) {
@@ -670,21 +635,86 @@ class SyncWindow(
     }
 
     private fun showHelpDialog() {
-        JOptionPane.showMessageDialog(
-            frame,
-            i18nService.translate("swing.help.message"),
-            i18nService.translate("swing.menu.help.view"),
-            JOptionPane.INFORMATION_MESSAGE
+        showInfoDialog(
+            title = i18nService.translate("swing.menu.help.view"),
+            message = i18nService.translate("swing.help.message"),
+            icon = RemixIcon.get("system/question-line", 24)
         )
     }
 
     private fun showAboutDialog() {
-        JOptionPane.showMessageDialog(
-            frame,
-            i18nService.translate("swing.about.message", i18nService.translate("swing.app.name")),
-            i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name")),
-            JOptionPane.INFORMATION_MESSAGE
+        showInfoDialog(
+            title = i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name")),
+            message = i18nService.translate("swing.about.message", i18nService.translate("swing.app.name"), appVersion),
+            icon = RemixIcon.get("system/information-line", 24)
         )
+    }
+
+    private fun showFeedbackDialog() {
+        showInfoDialog(
+            title = i18nService.translate("swing.menu.help.feedback"),
+            message = i18nService.translate("swing.feedback.message"),
+            icon = RemixIcon.get("communication/chat-smile-3-line", 24)
+        )
+    }
+
+    private fun showUpdateCheckDialog() {
+        showInfoDialog(
+            title = i18nService.translate("swing.menu.help.updates"),
+            message = i18nService.translate("swing.updates.message", appVersion),
+            icon = RemixIcon.get("system/refresh-line", 24)
+        )
+    }
+
+    private fun showInfoDialog(title: String, message: String, icon: javax.swing.Icon?) {
+        val dialog = buildInfoDialog(title, message, icon)
+        dialog.setLocationRelativeTo(frame)
+        dialog.isVisible = true
+    }
+
+    internal fun buildInfoDialog(title: String, message: String, icon: javax.swing.Icon?): JDialog {
+        val dialog = createThemedDialog(title, "[grow]", "[grow][]")
+
+        val contentPanel = JPanel(MigLayout("fill, ins 0, gap 12", "[][grow]", "[grow]"))
+        contentPanel.name = "infoDialogContentPanel"
+        contentPanel.isOpaque = false
+        contentPanel.add(JLabel(icon), "top")
+
+        val messageArea = JTextArea(message).apply {
+            name = "infoDialogMessageArea"
+            isEditable = false
+            isOpaque = false
+            lineWrap = true
+            wrapStyleWord = true
+            border = null
+        }
+        contentPanel.add(messageArea, "grow, push")
+        dialog.add(contentPanel, "grow, push, wrap")
+
+        val closeButton = JButton(i18nService.translate("swing.button.close")).apply { name = "infoDialogCloseButton" }
+        closeButton.addActionListener { dialog.dispose() }
+        dialog.add(createActionRow(closeButton), "growx")
+
+        dialog.setSize(460, 260)
+        return dialog
+    }
+
+    private fun createThemedDialog(title: String, columns: String, rows: String): JDialog =
+        JDialog(frame, title, true).apply {
+            layout = MigLayout("fillx, ins 20, gap 10", columns, rows)
+            applyDialogTheme(this)
+        }
+
+    private fun createActionRow(vararg buttons: JButton): JPanel =
+        JPanel(MigLayout("ins 0, fillx", "[grow]${"[]".repeat(buttons.size)}", "[]")).apply {
+            isOpaque = false
+            buttons.forEach { add(it, "right") }
+        }
+
+    private fun showDialog(dialog: JDialog) {
+        dialog.pack()
+        dialog.setLocationRelativeTo(frame)
+        dialog.isVisible = true
     }
 
     private fun applyTranslations() {
@@ -693,7 +723,6 @@ class SyncWindow(
         createButton.text = i18nService.translate("swing.button.create")
         appMenu.text = i18nService.translate("swing.menu.file")
         helpMenu.text = i18nService.translate("swing.menu.help")
-        themeMenu.text = i18nService.translate("swing.theme.menu")
         settingsItem.text = i18nService.translate("swing.menu.settings")
         loginItem.text = i18nService.translate("swing.auth.login")
         logoutItem.text = i18nService.translate("swing.auth.logout.simple")
@@ -709,9 +738,13 @@ class SyncWindow(
         aboutItem.text = i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))
         searchLabel.text = i18nService.translate("swing.label.search")
         authorLabel.text = i18nService.translate("swing.label.author")
-        standardThemesMenu.text = i18nService.translate("swing.theme.standard")
-        lightThemeItem.text = i18nService.translate("swing.theme.light")
-        darkThemeItem.text = i18nService.translate("swing.theme.dark")
+        statusHintLabel.text = i18nService.translate("swing.statusbar.hint")
+        statusMetaLabel.text = i18nService.translate("swing.statusbar.version", appVersion)
+
+        val borderColor = UIManager.getColor("Component.borderColor")
+        if (borderColor != null) {
+            statusBarPanel.border = javax.swing.BorderFactory.createMatteBorder(1, 0, 0, 0, borderColor)
+        }
     }
 }
 

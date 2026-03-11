@@ -9,11 +9,21 @@ import javax.swing.UIManager
 object RemixIcon {
     private val logger = LoggerFactory.getLogger(RemixIcon::class.java)
     private const val BASE_PATH = "icons"
+    private const val DEFAULT_ICON = "settings-3-line"
+    private val fallbackByName = mapOf(
+        "lock-password-line" to "settings-3-line",
+        "logout-box-r-line" to "settings-3-line",
+        "user-add-line" to "add-box-line",
+        "error-warning-line" to "settings-3-line",
+        "question-line" to "settings-3-line",
+        "information-line" to "settings-3-line",
+        "chat-smile-3-line" to "settings-3-line"
+    )
 
     fun get(name: String, size: Int = 18): Icon {
-        // Flattened names for local resources
         val fileName = if (name.contains("/")) name.substringAfterLast("/") else name
-        val path = "$BASE_PATH/$fileName.svg"
+        val resolved = resolveExistingFile(fileName)
+        val path = "$BASE_PATH/$resolved.svg"
 
         return try {
             FlatSVGIcon(path, size, size).apply {
@@ -35,5 +45,19 @@ object RemixIcon {
         }
         override fun getIconWidth() = size
         override fun getIconHeight() = size
+    }
+
+    private fun resolveExistingFile(fileName: String): String {
+        val classLoader = RemixIcon::class.java.classLoader
+        val candidatePath = "$BASE_PATH/$fileName.svg"
+        if (classLoader.getResource(candidatePath) != null) return fileName
+
+        val mapped = fallbackByName[fileName]
+        if (mapped != null && classLoader.getResource("$BASE_PATH/$mapped.svg") != null) {
+            logger.debug("Using mapped fallback icon {} for missing {}", mapped, fileName)
+            return mapped
+        }
+        logger.warn("Missing icon {}. Falling back to {}", fileName, DEFAULT_ICON)
+        return DEFAULT_ICON
     }
 }
