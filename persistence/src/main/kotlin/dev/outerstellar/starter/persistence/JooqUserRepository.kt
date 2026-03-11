@@ -11,6 +11,21 @@ import java.util.UUID
 class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val logger = LoggerFactory.getLogger(JooqUserRepository::class.java)
 
+    override fun findById(id: UUID): User? {
+        return dsl.selectFrom(USERS)
+            .where(USERS.ID.eq(id))
+            .fetchOne()?.let { record ->
+                User(
+                    id = record.id!!,
+                    username = record.username!!,
+                    email = record.email!!,
+                    passwordHash = record.passwordHash!!,
+                    role = UserRole.valueOf(record.role!!),
+                    enabled = record.enabled!!
+                )
+            }
+    }
+
     override fun findByUsername(username: String): User? {
         return dsl.selectFrom(USERS)
             .where(USERS.USERNAME.eq(username))
