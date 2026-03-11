@@ -1,45 +1,31 @@
 package dev.outerstellar.starter.security
 
-import dev.outerstellar.starter.infra.createDataSource
-import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.persistence.JooqUserRepository
-import org.jooq.DSLContext
-import org.jooq.SQLDialect
-import org.jooq.impl.DSL
+import dev.outerstellar.starter.web.H2WebTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.UUID
 
-@Testcontainers
-class SecurityIntegrationTest {
-
-    @Container
-    val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
-        withDatabaseName("securitytestdb")
-        withUsername("test")
-        withPassword("test")
-    }
+class SecurityIntegrationTest : H2WebTest() {
 
     private lateinit var userRepository: JooqUserRepository
     private lateinit var passwordEncoder: PasswordEncoder
     private lateinit var securityService: SecurityService
-    private lateinit var dsl: DSLContext
 
     @BeforeEach
-    fun setup() {
-        val dataSource = createDataSource(postgres.jdbcUrl, postgres.username, postgres.password)
-        migrate(dataSource)
-        
-        dsl = DSL.using(dataSource, SQLDialect.POSTGRES)
-        userRepository = JooqUserRepository(dsl)
+    fun setupTest() {
+        userRepository = JooqUserRepository(testDsl)
         passwordEncoder = BCryptPasswordEncoder(logRounds = 4) // Fast for tests
         securityService = SecurityService(userRepository, passwordEncoder)
+    }
+
+    @AfterEach
+    fun teardown() {
+        cleanup()
     }
 
     @Test

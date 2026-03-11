@@ -142,6 +142,7 @@ fun app(
 
   val syncContract = contract {
       renderer = OpenApi3(ApiInfo("Sync", "v1.0"), Jackson)
+      descriptionPath = "/api/v1/sync/openapi.json"
       security = object : org.http4k.contract.security.Security {
           override val filter = bearerAuthFilter
       }
@@ -163,20 +164,17 @@ fun app(
     static(ResourceLoader.Classpath("static")),
     apiRoutes,
     syncContract,
-    // Inject WebContext and Security context into UI and Component routes
-    ServerFilters.InitialiseRequestContext(WebContext.contexts)
-        .then(Filters.stateFilter(config.devDashboardEnabled, userRepository))
-        .then(Filters.securityFilter)
-        .then(routes(
-            uiRoutes, 
-            componentRoutes,
-            "/" bind filteredAdminHandler
-        )),
+    uiRoutes, 
+    componentRoutes,
+    "/" bind filteredAdminHandler,
     "/health" bind GET to { Response(Status.OK).body("ok") },
     "/metrics" bind GET to { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
   )
 
   val httpHandler = Filters.telemetry
+    .then(ServerFilters.InitialiseRequestContext(WebContext.contexts))
+    .then(Filters.stateFilter(config.devDashboardEnabled, userRepository))
+    .then(Filters.securityFilter)
     .then(Filters.requestLogging)
     .then(Filters.serverMetrics)
     .then(Filters.globalErrorHandler(pageFactory, jteRenderer))

@@ -1,23 +1,24 @@
 package dev.outerstellar.starter.web
 
-import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
+import dev.outerstellar.starter.model.StoredMessage
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
-import dev.outerstellar.starter.security.UserRepository
+import dev.outerstellar.starter.security.User
+import dev.outerstellar.starter.security.UserRole
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncPullResponse
-import dev.outerstellar.starter.sync.SyncPushRequest
-import io.mockk.mockk
-import org.junit.jupiter.api.AfterEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.Jackson.asA
+import org.junit.jupiter.api.AfterEach
+import java.util.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class SyncIntegrationTest : H2WebTest() {
 
@@ -28,32 +29,39 @@ class SyncIntegrationTest : H2WebTest() {
 
     @Test
     fun `can pull changes from api`() {
+        val userRepository = JooqUserRepository(testDsl)
         val repository = JooqMessageRepository(testDsl, testDsl)
-        repository.seedStarterMessages()
-        
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, transactionManager, cache)
         val pageFactory = WebPageFactory(repository)
-        
-        val securityService = mockk<SecurityService>(relaxed = true)
-        val userRepository = mockk<UserRepository>(relaxed = true)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
+        val securityService = SecurityService(userRepository, encoder)
+
+        // Pre-register an admin user for Bearer Auth
+        val adminId = UUID.randomUUID()
+        userRepository.save(User(
+            id = adminId,
+            username = "admin",
+            email = "admin@test.com",
+            passwordHash = encoder.encode("password"),
+            role = UserRole.ADMIN
+        ))
 
         val app = app(
-            messageService, 
-            repository, 
-            outbox, 
-            cache, 
-            createRenderer(), 
-            pageFactory, 
-            testConfig, 
-            securityService,
-            userRepository,
-            encoder
+            messageService, repository, outbox, cache, createRenderer(), 
+            pageFactory, testConfig, securityService, userRepository, encoder
+        ).http!!
+
+        // Add some data
+        repository.createServerMessage("Alice", "Hello")
+        repository.createServerMessage("Bob", "Hi")
+
+        // Pull changes with Bearer Auth
+        val response = app(Request(GET, "/api/v1/sync?since=0")
+            .header("Authorization", "Bearer $adminId")
         )
-        val response = app.http!!(Request(GET, "/api/v1/sync?since=0"))
 
         assertEquals(Status.OK, response.status)
         val pullResponse = asA(response.bodyString(), SyncPullResponse::class)

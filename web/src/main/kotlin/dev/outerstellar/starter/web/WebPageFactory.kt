@@ -53,7 +53,9 @@ data class HomePage(
   val submitLabel: String,
   val submitUrl: String,
   val messageList: MessageListViewModel,
-) : ViewModel
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/HomePage"
+}
 
 data class PaginationViewModel(
     val currentPage: Int,
@@ -79,7 +81,9 @@ data class AuthPage(
   val helperText: String,
   val tabs: List<AuthModeTab>,
   val defaultFormUrl: String,
-) : ViewModel
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/AuthPage"
+}
 
 data class AuthFormFragment(
   val mode: String,
@@ -117,7 +121,9 @@ data class ErrorPage(
   val secondaryActionUrl: String,
   val helpButtonLabel: String,
   val helpUrl: String,
-) : ViewModel
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/ErrorPage"
+}
 
 data class ErrorHelpFragment(val title: String, val items: List<String>) : ViewModel
 
@@ -128,7 +134,9 @@ data class DevDashboardPage(
   val cacheStats: Map<String, Any>,
   val outboxStats: OutboxStatsViewModel,
   val telemetryStatus: String,
-) : ViewModel
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/DevDashboard"
+}
 
 data class OutboxStatsViewModel(
     val pending: Int,

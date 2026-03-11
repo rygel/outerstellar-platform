@@ -60,17 +60,18 @@
         @endfor
 
         <!-- Traditional Pagination Bar -->
-        @if(model.pagination != null && model.pagination.totalPages > 1)
+        !{ val pagination = model.pagination }
+        @if(pagination != null && pagination.totalPages > 1)
             <nav class="pagination-bar mt-6">
                 <div class="flex items-center justify-between gap-4">
                     <div class="pagination-info">
-                        Showing page <strong>${model.pagination.currentPage}</strong> of <strong>${model.pagination.totalPages}</strong>
+                        Showing page <strong>${pagination.currentPage}</strong> of <strong>${pagination.totalPages}</strong>
                     </div>
                     
                     <div class="pagination-controls flex gap-1">
-                        @if(model.pagination.hasPrevious)
+                        @if(pagination.hasPrevious)
                             <button class="button-link button-cozy" 
-                                    hx-get="${model.pagination.previousUrl}" 
+                                    hx-get="${pagination.previousUrl}" 
                                     hx-target="#message-list-container" 
                                     hx-push-url="true">
                                 <i class="ri-arrow-left-s-line"></i>
@@ -81,7 +82,7 @@
                             </button>
                         @endif
 
-                        @for(page in model.pagination.pages)
+                        @for(page in pagination.pages)
                             <button class="button-link button-cozy @if(page.isActive) border-accent text-accent font-bold @endif"
                                     hx-get="${page.url}"
                                     hx-target="#message-list-container"
@@ -90,9 +91,9 @@
                             </button>
                         @endfor
 
-                        @if(model.pagination.hasNext)
+                        @if(pagination.hasNext)
                             <button class="button-link button-cozy" 
-                                    hx-get="${model.pagination.nextUrl}" 
+                                    hx-get="${pagination.nextUrl}" 
                                     hx-target="#message-list-container" 
                                     hx-push-url="true">
                                 <i class="ri-arrow-right-s-line"></i>

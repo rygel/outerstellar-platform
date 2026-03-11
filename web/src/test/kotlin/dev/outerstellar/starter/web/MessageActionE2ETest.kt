@@ -13,6 +13,7 @@ import org.junit.jupiter.api.AfterEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
@@ -56,8 +57,12 @@ class MessageActionE2ETest : H2WebTest() {
                 .form("content", "Test Content")
         )
 
-        assertEquals(Status.OK, response.status)
-        assertTrue(response.bodyString().contains("Test Author"))
-        assertTrue(response.bodyString().contains("Test Content"))
+        assertEquals(Status.FOUND, response.status)
+        
+        // Follow redirect
+        val redirectResponse = app.http!!(Request(GET, "/"))
+        assertEquals(Status.OK, redirectResponse.status)
+        assertTrue(redirectResponse.bodyString().contains("Test Author"))
+        assertTrue(redirectResponse.bodyString().contains("Test Content"))
     }
 }

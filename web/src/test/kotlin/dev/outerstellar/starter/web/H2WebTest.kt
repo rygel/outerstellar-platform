@@ -10,7 +10,7 @@ import javax.sql.DataSource
 @Suppress("UtilityClassWithPublicConstructor")
 abstract class H2WebTest {
     companion object {
-        private const val jdbcUrl = "jdbc:h2:mem:webtestdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+        private const val jdbcUrl = "jdbc:h2:mem:webtestdb_unique;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
         private val dataSource: DataSource by lazy {
             createDataSource(jdbcUrl, "sa", "").also { migrate(it) }
         }
