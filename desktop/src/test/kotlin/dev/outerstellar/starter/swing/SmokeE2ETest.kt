@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.swing
 
+import dev.outerstellar.starter.AppConfig
 import dev.outerstellar.starter.di.apiClientModule
 import dev.outerstellar.starter.di.coreModule
 import dev.outerstellar.starter.di.desktopModule
@@ -20,6 +21,7 @@ class SmokeE2ETest : KoinTest {
 
     @BeforeEach
     fun setup() {
+        stopKoin()
         startKoin {
             modules(
                 coreModule,
@@ -27,6 +29,7 @@ class SmokeE2ETest : KoinTest {
                 apiClientModule,
                 desktopModule,
                 module {
+                    single { AppConfig() }
                     single(named("jdbcUrl")) { "jdbc:h2:mem:test;MODE=PostgreSQL" }
                 }
             )
