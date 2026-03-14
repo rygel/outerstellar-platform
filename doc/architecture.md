@@ -324,6 +324,196 @@ even though templates compiled.
 
 **Why:** This ensures tests are stable, non-intrusive, and compatible with headless CI pipelines, while still allowing developers to run full GUI tests when needed.
 
+## Testing strategy
+
+### Test categories
+
+The project uses three tiers of tests:
+
+| Tier | Location | Runs in CI | Purpose |
+|------|----------|-----------|---------|
+| **Unit tests** | `*/src/test/` | Always | ViewModel logic, SecurityService, repository behavior |
+| **Integration tests** | `web/src/test/` | Always | http4k function tests — full app stack without a running server |
+| **UI layout tests** | `desktop/src/test/` | Headful only | Verify Swing dialogs and components are visually usable |
+
+### http4k function-level integration tests
+
+The web module uses http4k's in-memory testing pattern: the `app()` function returns an `HttpHandler` that is called directly without starting Jetty. This gives full-stack coverage (filters, routing, persistence, rendering) with fast execution.
+
+Pattern:
+```kotlin
+class SomeIntegrationTest : H2WebTest() {
+    private lateinit var app: HttpHandler
+
+    @BeforeEach
+    fun setup() {
+        // Wire real repositories against the shared H2 test database
+        app = app(messageService, contactService, ...).http!!
+    }
+
+    @Test
+    fun `endpoint returns expected result`() {
+        val response = app(Request(GET, "/some/path"))
+        assertEquals(Status.OK, response.status)
+    }
+}
+```
+
+### UI usability testing requirements
+
+**Every Swing dialog, form, and panel must have layout tests that verify the UI is actually usable — not just that components exist.** This is a binding requirement for all downstream projects that build on this starter.
+
+Specifically, when adding or modifying Swing UI:
+
+1. **Text fields must have a minimum preferred width of 150px.** A field that renders at 30px wide is technically present but unusable. Test with:
+   ```kotlin
+   assertTrue(field.preferredSize.width >= 150, "Field too narrow: ${field.preferredSize.width}px")
+   ```
+
+2. **Buttons must be at least 60x24px.** Smaller buttons are hard to click and text gets clipped. Test with:
+   ```kotlin
+   assertTrue(button.width >= 60, "Button too narrow")
+   assertTrue(button.height >= 24, "Button too short")
+   ```
+
+3. **Dialogs must have minimum dimensions (300x200px).** A dialog that renders at 100x50 is broken even if all fields are present.
+
+4. **Navigation elements must have sufficient click targets (60x60px minimum).** Sidebar buttons, nav items, and toolbar actions must be easily clickable.
+
+5. **Tables must have a minimum usable width (200px).** A table squeezed into 50px shows nothing useful.
+
+These tests use `assumeFalse(GraphicsEnvironment.isHeadless())` so they skip cleanly in CI. Run them locally with:
+```
+mvn test -pl desktop -Ptests-headful
+```
+
+The existing `UiLayoutTest.kt` demonstrates the pattern. **When you add a new dialog or panel, add corresponding size assertions to this class.**
+
+### Web UI usability testing requirements
+
+**The same principle applies to the web UI.** When adding or modifying web pages and HTMX components, integration tests must verify that the rendered HTML is functionally complete — not just that the status code is 200.
+
+Specifically:
+
+1. **Forms must contain all expected fields.** Test that the HTML body includes the expected `<input>`, `<select>`, and `<button>` elements:
+   ```kotlin
+   val body = response.bodyString()
+   assertTrue(body.contains("name=\"email\""), "Form should have email field")
+   assertTrue(body.contains("name=\"password\""), "Form should have password field")
+   assertTrue(body.contains("type=\"submit\""), "Form should have submit button")
+   ```
+
+2. **Tables must render column headers and data.** An admin page that shows an empty `<table>` with no headers is broken:
+   ```kotlin
+   assertTrue(body.contains("<th"), "Table should have column headers")
+   assertTrue(body.contains("Username"), "Table should show Username column")
+   ```
+
+3. **Navigation links must be present for the user's role.** An admin should see admin links; a regular user should not:
+   ```kotlin
+   assertTrue(body.contains("/admin/users"), "Admin should see Users link")
+   assertFalse(body.contains("/admin/users"), "Regular user should NOT see Users link")
+   ```
+
+4. **HTMX attributes must be correct.** Forms that use `hx-post` or `hx-get` must target the right URLs:
+   ```kotlin
+   assertTrue(body.contains("hx-post=\"/auth/components/change-password\""))
+   ```
+
+5. **Error and success states must render with appropriate tone classes.** The `panel-success` and `panel-danger` classes must appear in the right contexts.
+
+6. **Pages must render within the layout shell.** Verify that `<html>`, the sidebar, and the topbar are present — a page that renders raw content without the layout is broken:
+   ```kotlin
+   assertTrue(body.contains("class=\"shell\""), "Page should render inside layout shell")
+   assertTrue(body.contains("class=\"sidebar\""), "Page should have sidebar navigation")
+   ```
+
+The existing `UserManagementIntegrationTest` demonstrates this pattern for admin pages, auth flows, and navigation visibility.
+
+### Headless vs headful test profiles
+
+- `mvn test -Ptests-headless` — all Swing GUI tests are skipped (CI default)
+- `mvn test -Ptests-headful` — all tests run including GUI interaction and layout verification
+- ViewModel-level tests always run regardless of profile
+
+## Authentication and user management
+
+The starter includes a complete authentication system:
+
+- **Login / Register** — both web (session cookie) and API (bearer token)
+- **Password change** — API endpoint + web page with topbar link
+- **Password reset** — email-based flow with time-limited tokens (uses `ConsoleEmailService` in dev)
+- **User administration** — admin-only list/enable/disable/promote/demote
+- **API key management** — SHA-256 hashed keys with `osk_` prefix, create/list/delete
+- **Session timeout** — configurable inactivity timeout for both cookie and bearer sessions
+- **Audit log** — records all auth-related actions (admin-visible at `/admin/audit`)
+
+### Bearer authentication
+
+The bearer auth filter (`bearerAuthFilter` in `App.kt`) supports two token types:
+1. **User ID tokens** (UUIDs) — returned by the login/register endpoints
+2. **API keys** — `osk_`-prefixed keys, hashed with SHA-256 and looked up in the `api_keys` table
+
+Both are checked for session timeout before proceeding.
+
+## Security
+
+### HTTP security headers
+
+All responses include: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`. HTML responses additionally include a `Content-Security-Policy` header.
+
+### Rate limiting
+
+The `/api/v1/auth/login` and `/api/v1/auth/register` endpoints are rate-limited (10 requests/minute per IP) to prevent brute force attacks.
+
+### CORS
+
+Configurable via `corsOrigins` in `AppConfig` (default `*` for dev, empty for prod).
+
+### WebSocket authentication
+
+The `/ws/sync` WebSocket endpoint validates the session cookie and rejects unauthenticated connections with status code 4401.
+
+## Operational features
+
+### Health check
+
+`GET /health` returns JSON with database connectivity status, user count, and timestamp. Returns 503 when the database is unreachable.
+
+### Connection pooling
+
+HikariCP manages the database connection pool (10 max, 2 idle, 10s timeout).
+
+### Graceful shutdown
+
+The shutdown hook coordinates: stops the outbox scheduler (waits 5s for in-flight work), then stops the Jetty server.
+
+### Swagger UI
+
+Available at `/swagger.html` — loads from CDN and points at the Auth, Sync, and Admin OpenAPI specs.
+
+### Docker
+
+- `Dockerfile` — multi-stage build (Maven builder + JRE runtime)
+- `docker-compose.yml` — single service with persistent volume
+- Build with: `mvn -Pdocker package`
+
+## Build profile strategy
+
+All common operations use Maven profiles — no shell scripts needed:
+
+| Command | Purpose |
+|---------|---------|
+| `mvn compile` | Compile all modules |
+| `mvn -Pfast compile` | Compile skipping all quality checks |
+| `mvn test` | Run all tests (headless) |
+| `mvn test -Ptests-headful` | Run all tests including GUI |
+| `mvn -Pcoverage verify` | Run tests with JaCoCo coverage |
+| `mvn -Pdocker package` | Build Docker image |
+| `mvn -Pseed compile exec:java` | Seed database with sample data |
+| `mvn -pl persistence-jooq -Pjooq-codegen generate-sources` | Regenerate jOOQ code |
+| `mvn -Pruntime-dev compile exec:java -pl web` | Run web app in dev mode |
+
 ## What is necessary right now
 
 For this starter to remain healthy, these pieces are important:
@@ -337,16 +527,18 @@ For this starter to remain healthy, these pieces are important:
 - `jte-runtime` stays on the runtime classpath
 - JTE hot-reload continues using the explicit application classloader
 - concrete Outerstellar theme files are loaded, not `themes.json`
-- `start-web.ps1` / `stop-web.ps1` remain the supported background runtime controls
+- **UI layout tests are maintained for every Swing dialog and panel** — mere existence checks are not sufficient
+- **Integration tests use http4k function-level testing** — no running server needed
+- **All auth features (login, register, password change/reset, admin, API keys) must have test coverage**
 
 ## Future evolution
 
 The most likely next architectural improvements are:
 
-1. split into multiple Maven modules
-2. extract shared sync/domain contracts more cleanly
-3. add real authentication back-end behavior behind the example pages
-4. expand sync beyond the message demo
-5. introduce stronger error handling and observability conventions
+1. extract shared sync/domain contracts more cleanly
+2. expand sync beyond the message demo
+3. replace `ConsoleEmailService` with SMTP integration for production
+4. add TOTP two-factor authentication
+5. add database backup/restore tooling
 
-For now, the current decisions are intentional because they optimize for a usable, teachable starter with working web, database, templating, theming, i18n, and sync examples.
+For now, the current decisions are intentional because they optimize for a usable, teachable starter with working web, database, templating, theming, i18n, authentication, and sync examples.
