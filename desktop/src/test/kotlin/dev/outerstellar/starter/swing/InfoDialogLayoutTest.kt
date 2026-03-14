@@ -10,6 +10,7 @@ import java.util.Locale
 import javax.swing.JButton
 import javax.swing.JTextArea
 import javax.swing.SwingUtilities
+import javax.swing.JComponent
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Test
@@ -29,22 +30,27 @@ class InfoDialogLayoutTest {
         runOnEdt { window.configureForTest() }
         val dialog = runOnEdtResult { window.buildInfoDialog("About", "Some message text", null) }
         runOnEdt {
-            dialog.setLocationRelativeTo(window.frame)
-            dialog.doLayout()
+            dialog.pack()   // force MigLayout to size and position all children
             dialog.validate()
         }
 
         runOnEdt {
             val messageArea = findByName<JTextArea>(dialog, "infoDialogMessageArea")
             val closeButton = findByName<JButton>(dialog, "infoDialogCloseButton")
+            val pane = dialog.contentPane
+
+            // Convert component positions to dialog content-pane coordinates so we compare
+            // the same coordinate space (components live in different nested panels).
+            val msgY = SwingUtilities.convertPoint(messageArea.parent, 0, messageArea.y, pane).y
+            val btnY = SwingUtilities.convertPoint(closeButton.parent, 0, closeButton.y, pane).y
 
             assertTrue(
-                closeButton.y > messageArea.y + (messageArea.height / 2),
-                "Close button should be below message area",
+                btnY > msgY + (messageArea.height / 2),
+                "Close button (pane-y=$btnY) should be below message area (pane-y=$msgY, h=${messageArea.height})",
             )
             assertTrue(
-                closeButton.y + closeButton.height <= dialog.contentPane.height - 8,
-                "Close button should sit near bottom",
+                btnY + closeButton.height <= pane.height - 8,
+                "Close button should sit near bottom (btnY=$btnY, btnH=${closeButton.height}, paneH=${pane.height})",
             )
         }
 

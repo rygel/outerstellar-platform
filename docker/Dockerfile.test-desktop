@@ -1,19 +1,40 @@
 FROM maven:3.9-eclipse-temurin-21
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends xvfb libxrender1 libxtst6 libxi6 fontconfig && \
+    apt-get install -y --no-install-recommends xvfb x11-utils libxrender1 libxtst6 libxi6 fontconfig && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# Copy POMs first for dependency layer caching
+COPY pom.xml .
+COPY core/pom.xml core/
+COPY security/pom.xml security/
+COPY persistence-jooq/pom.xml persistence-jooq/
+COPY persistence-jdbi/pom.xml persistence-jdbi/
+COPY api-client/pom.xml api-client/
+COPY web/pom.xml web/
+COPY desktop/pom.xml desktop/
+COPY seed/pom.xml seed/
+
+# Pre-download public dependencies (Maven Central) at image build time so the
+# test run container starts fast. Private GitHub Packages deps that require auth
+# will download at runtime via the mounted settings.xml — there are few of them.
+# "|| true" is intentional: auth failures for private packages are expected here.
+RUN mvn dependency:resolve \
+        -pl desktop -am \
+        -Denforcer.skip=true -Ddetekt.skip=true -Dspotbugs.skip=true \
+        -Dcheckstyle.skip=true -Dpmd.skip=true -Dcpd.skip=true \
+        -DskipTests --fail-at-end \
+    || true
+
+# Copy full source (separate layer — only invalidated when source changes)
 COPY . .
 
-# Pre-download dependencies (cached layer)
-RUN mvn dependency:go-offline -pl desktop -am -DskipTests \
-    -Denforcer.skip=true -Ddetekt.skip=true -Dspotbugs.skip=true \
-    -Dcheckstyle.skip=true -Dpmd.skip=true -Dcpd.skip=true || true
-
-ENTRYPOINT ["xvfb-run", "--server-args=-screen 0 1024x768x24", \
-    "mvn", "test", "-pl", "desktop", "-am", \
-    "-Ddesktop.headless=false", \
-    "-Denforcer.skip=true", "-Ddetekt.skip=true", "-Dspotbugs.skip=true", \
-    "-Dcheckstyle.skip=true", "-Dpmd.skip=true", "-Dcpd.skip=true"]
+# Entrypoint: start Xvfb, wait for it, then run tests.
+# Using a script avoids xvfb-run's SIGUSR1 readiness protocol which can hang
+# indefinitely in container environments.
+COPY docker/entrypoint-desktop-tests.sh /entrypoint.sh
+# Strip Windows CRLF line endings (if file was edited on Windows) and make executable
+RUN sed -i 's/\r//' /entrypoint.sh && chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

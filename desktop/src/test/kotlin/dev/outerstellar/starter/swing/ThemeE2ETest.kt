@@ -7,6 +7,7 @@ import javax.swing.JPanel
 import javax.swing.JTextField
 import javax.swing.UIManager
 import org.assertj.swing.edt.GuiActionRunner
+import org.assertj.swing.edt.GuiQuery
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Test
@@ -147,21 +148,16 @@ class ThemeE2ETest {
         val i18nService = com.outerstellar.i18n.I18nService.create("messages")
         val viewModel =
             io.mockk.mockk<dev.outerstellar.starter.swing.viewmodel.SyncViewModel>(relaxed = true)
-        val syncWindow = SyncWindow(viewModel, themeManager, i18nService)
 
-        GuiActionRunner.execute {
-            syncWindow.configureForTest()
-            // We can't easily use FrameFixture for a modal dialog that blocks,
-            // but we can test the updatePreview logic by manually triggering it or finding
-            // components
-        }
-
-        val frame = syncWindow.frame
+        // Robot must be created BEFORE the frame so the robot's AWT hierarchy tracks it.
         val robot = org.assertj.swing.core.BasicRobot.robotWithNewAwtHierarchy()
-        val w = org.assertj.swing.fixture.FrameFixture(robot, frame)
+        val syncWindow = GuiActionRunner.execute<SyncWindow> {
+            SyncWindow(viewModel, themeManager, i18nService).also { it.configureForTest() }
+        }!!
+        val w = org.assertj.swing.fixture.FrameFixture(robot, syncWindow.frame)
 
         try {
-            GuiActionRunner.execute { frame.isVisible = true }
+            w.show()
 
             w.menuItem("settingsItem").click()
             val dialog = w.dialog("settingsDialog")

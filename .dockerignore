@@ -5,6 +5,5 @@ target/
 .claude/
 *.md
 doc/
-desktop/src/
 data/
 node_modules/
