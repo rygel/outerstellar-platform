@@ -9,11 +9,12 @@ private const val DEFAULT_MAX_SIZE = 1000L
 private const val DEFAULT_TTL_MINUTES = 10L
 
 class CaffeineMessageCache(meterRegistry: MeterRegistry? = null) : MessageCache {
-    private val cache = Caffeine.newBuilder()
-        .maximumSize(DEFAULT_MAX_SIZE)
-        .expireAfterWrite(DEFAULT_TTL_MINUTES, TimeUnit.MINUTES)
-        .recordStats()
-        .build<String, Any>()
+    private val cache =
+        Caffeine.newBuilder()
+            .maximumSize(DEFAULT_MAX_SIZE)
+            .expireAfterWrite(DEFAULT_TTL_MINUTES, TimeUnit.MINUTES)
+            .recordStats()
+            .build<String, Any>()
 
     init {
         if (meterRegistry != null) {
@@ -26,6 +27,8 @@ class CaffeineMessageCache(meterRegistry: MeterRegistry? = null) : MessageCache 
     override fun put(key: String, value: Any) {
         cache.put(key, value)
     }
+
+    override fun getOrPut(key: String, loader: () -> Any): Any = cache.get(key) { loader() }
 
     override fun invalidate(key: String) {
         cache.invalidate(key)
@@ -44,7 +47,7 @@ class CaffeineMessageCache(meterRegistry: MeterRegistry? = null) : MessageCache 
             "evictionWeight" to stats.evictionWeight(),
             "hitRate" to stats.hitRate(),
             "missRate" to stats.missRate(),
-            "averageLoadPenalty" to stats.averageLoadPenalty()
+            "averageLoadPenalty" to stats.averageLoadPenalty(),
         )
     }
 }

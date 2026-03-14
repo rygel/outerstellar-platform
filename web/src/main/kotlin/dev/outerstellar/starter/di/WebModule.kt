@@ -19,30 +19,30 @@ import org.http4k.template.TemplateRenderer
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
-val webModule = module {
-    single { AppConfig.fromEnvironment() }
-    single(named("jdbcUrl")) { get<AppConfig>().jdbcUrl }
-    single(named("serverBaseUrl")) { "http://localhost:8080" }
-    single<TemplateRenderer> { createRenderer() }
-    single { WebPageFactory(get()) }
-    single { SyncApi(get(), get()) }
-    single<MessageCache> { dev.outerstellar.starter.persistence.NoOpMessageCache }
+val webModule
+    get() = module {
+        single { AppConfig.fromEnvironment() }
+        single(named("jdbcUrl")) { get<AppConfig>().jdbcUrl }
+        single(named("serverBaseUrl")) { "http://localhost:8080" }
+        single<TemplateRenderer> { createRenderer() }
+        single { WebPageFactory(get()) }
+        single { SyncApi(get(), get()) }
+        single<MessageCache> { dev.outerstellar.starter.persistence.NoOpMessageCache }
 
-    single<I18nService> { I18nService.fromResourceBundle("messages") }
-    single<EventPublisher> { SyncWebSocket }
-    single<PolyHandler>(named("webServer")) {
-        app(
-            get<MessageService>(),
-            get<dev.outerstellar.starter.service.ContactService>(),
-            get<MessageRepository>(),
-            get<OutboxRepository>(),
-            get<MessageCache>(),
-            get<TemplateRenderer>(),
-            get<WebPageFactory>(),
-            get<AppConfig>(),
-            get<SecurityService>(),
-            get<UserRepository>(),
-            get<dev.outerstellar.starter.security.PasswordEncoder>()
-        )
+        single<I18nService> { I18nService.fromResourceBundle("messages") }
+        single<EventPublisher> { SyncWebSocket }
+        single<PolyHandler>(named("webServer")) {
+            app(
+                get<MessageService>(),
+                get<dev.outerstellar.starter.service.ContactService>(),
+                get<MessageRepository>(),
+                get<OutboxRepository>(),
+                get<MessageCache>(),
+                get<TemplateRenderer>(),
+                get<WebPageFactory>(),
+                get<AppConfig>(),
+                get<SecurityService>(),
+                get<UserRepository>(),
+            )
+        }
     }
-}

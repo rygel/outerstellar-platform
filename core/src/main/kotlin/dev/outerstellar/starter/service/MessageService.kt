@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.service
 
+import dev.outerstellar.starter.model.ConflictStrategy
 import dev.outerstellar.starter.model.MessageNotFoundException
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.PagedResult
@@ -28,7 +29,7 @@ class MessageService(
     private val outboxRepository: OutboxRepository? = null,
     private val transactionManager: TransactionManager? = null,
     private val cache: MessageCache = NoOpMessageCache,
-    private val eventPublisher: EventPublisher = NoOpEventPublisher
+    private val eventPublisher: EventPublisher = NoOpEventPublisher,
 ) {
     private val logger = LoggerFactory.getLogger(MessageService::class.java)
 
@@ -36,46 +37,43 @@ class MessageService(
         query: String? = null,
         year: Int? = null,
         limit: Int = 100,
-        offset: Int = 0
+        offset: Int = 0,
     ): PagedResult<MessageSummary> {
         val cacheKey = "list:$query:$year:$limit:$offset"
 
         @Suppress("UNCHECKED_CAST")
-        val cached = cache.get(cacheKey) as? PagedResult<MessageSummary>
-        if (cached != null) return cached
-
-        val items = repository.listMessages(query, year, limit, offset)
-        val total = repository.countMessages(query, year)
-
-        val result = PagedResult(
-            items = items,
-            metadata = PaginationMetadata(
-                currentPage = (offset / limit) + 1,
-                pageSize = limit,
-                totalItems = total
+        return cache.getOrPut(cacheKey) {
+            val items = repository.listMessages(query, year, limit, offset)
+            val total = repository.countMessages(query, year)
+            PagedResult(
+                items = items,
+                metadata =
+                PaginationMetadata(
+                    currentPage = (offset / limit) + 1,
+                    pageSize = limit,
+                    totalItems = total,
+                ),
             )
-        )
-
-        cache.put(cacheKey, result)
-        return result
+        } as PagedResult<MessageSummary>
     }
 
     fun listDeletedMessages(
         query: String? = null,
         year: Int? = null,
         limit: Int = 100,
-        offset: Int = 0
+        offset: Int = 0,
     ): PagedResult<MessageSummary> {
         val items = repository.listMessages(query, year, limit, offset, includeDeleted = true)
         val total = repository.countMessages(query, year, includeDeleted = true)
 
         return PagedResult(
             items = items,
-            metadata = PaginationMetadata(
+            metadata =
+            PaginationMetadata(
                 currentPage = (offset / limit) + 1,
                 pageSize = limit,
-                totalItems = total
-            )
+                totalItems = total,
+            ),
         )
     }
 
@@ -97,22 +95,26 @@ class MessageService(
         if (content.isBlank()) errors += "Content is required."
         if (errors.isNotEmpty()) throw ValidationException(errors)
 
-        val message = if (transactionManager != null && outboxRepository != null) {
-            transactionManager.inTransaction {
-                val msg = repository.createServerMessage(author, content)
-                outboxRepository.save(
-                    OutboxEntry(
-                        id = UUID.randomUUID(),
-                        payloadType = "MESSAGE_CREATED",
-                        payload = msg.syncId,
-                        status = "PENDING"
+        val tm = transactionManager
+        val outbox = outboxRepository
+
+        val message =
+            if (tm != null && outbox != null) {
+                tm.inTransaction {
+                    val msg = repository.createServerMessage(author, content)
+                    outbox.save(
+                        OutboxEntry(
+                            id = UUID.randomUUID(),
+                            payloadType = "MESSAGE_CREATED",
+                            payload = msg.syncId,
+                            status = "PENDING",
+                        )
                     )
-                )
-                msg
+                    msg
+                }
+            } else {
+                repository.createServerMessage(author, content)
             }
-        } else {
-            repository.createServerMessage(author, content)
-        }
 
         cache.put("entity:${message.syncId}", message)
         cache.invalidateAll()
@@ -121,7 +123,9 @@ class MessageService(
     }
 
     fun createLocalMessage(author: String, content: String): StoredMessage {
-        if (author.isBlank() || content.isBlank()) throw ValidationException(listOf("Fields cannot be empty."))
+        if (author.isBlank() || content.isBlank()) {
+            throw ValidationException(listOf("Fields cannot be empty."))
+        }
 
         val message = repository.createLocalMessage(author, content)
         cache.put("entity:${message.syncId}", message)
@@ -132,26 +136,32 @@ class MessageService(
 
     fun getChangesSince(since: Long): SyncPullResponse {
         val changes = repository.findChangesSince(since).map { it.toSyncMessage() }
-        return SyncPullResponse(
-            messages = changes,
-            serverTimestamp = System.currentTimeMillis()
-        )
+        return SyncPullResponse(messages = changes, serverTimestamp = System.currentTimeMillis())
     }
 
     fun processPushRequest(request: SyncPushRequest): SyncPushResponse {
         val validationResult = SyncPushRequest.validate(request)
         if (validationResult is Invalid) {
-            throw ValidationException(validationResult.errors.map { "${it.dataPath}: ${it.message}" })
+            throw ValidationException(
+                validationResult.errors.map { "${it.dataPath}: ${it.message}" }
+            )
         }
 
         val conflicts = mutableListOf<SyncConflict>()
         var appliedCount = 0
 
         request.messages.forEach { incoming ->
-            val current = try { findBySyncId(incoming.syncId) } catch (e: MessageNotFoundException) {
-                logger.trace("No existing message found for syncId: {}. Exception: {}", incoming.syncId, e.message)
-                null
-            }
+            val current =
+                try {
+                    findBySyncId(incoming.syncId)
+                } catch (e: MessageNotFoundException) {
+                    logger.trace(
+                        "No existing message found for syncId: {}. Exception: {}",
+                        incoming.syncId,
+                        e.message,
+                    )
+                    null
+                }
             when {
                 current == null || incoming.updatedAtEpochMs > current.updatedAtEpochMs -> {
                     val updated = repository.upsertSyncedMessage(incoming, dirty = false)
@@ -160,11 +170,12 @@ class MessageService(
                 }
                 incoming.updatedAtEpochMs < current.updatedAtEpochMs -> {
                     repository.markConflict(incoming.syncId, incoming)
-                    conflicts += SyncConflict(
-                        syncId = incoming.syncId,
-                        reason = "Server has a newer version.",
-                        serverMessage = current.toSyncMessage()
-                    )
+                    conflicts +=
+                        SyncConflict(
+                            syncId = incoming.syncId,
+                            reason = "Server has a newer version.",
+                            serverMessage = current.toSyncMessage(),
+                        )
                 }
             }
         }
@@ -178,15 +189,18 @@ class MessageService(
     }
 
     fun deleteMessage(syncId: String) {
-        if (transactionManager != null && outboxRepository != null) {
-            transactionManager.inTransaction {
+        val tm = transactionManager
+        val outbox = outboxRepository
+
+        if (tm != null && outbox != null) {
+            tm.inTransaction {
                 repository.softDelete(syncId)
-                outboxRepository.save(
+                outbox.save(
                     OutboxEntry(
                         id = UUID.randomUUID(),
                         payloadType = "MESSAGE_DELETED",
                         payload = syncId,
-                        status = "PENDING"
+                        status = "PENDING",
                     )
                 )
             }
@@ -199,48 +213,50 @@ class MessageService(
     }
 
     fun updateMessage(message: StoredMessage): StoredMessage {
-        val updated = if (transactionManager != null && outboxRepository != null) {
-            transactionManager.inTransaction {
-                val up = repository.updateMessage(message)
-                outboxRepository.save(
-                    OutboxEntry(
-                        id = UUID.randomUUID(),
-                        payloadType = "MESSAGE_UPDATED",
-                        payload = up.syncId,
-                        status = "PENDING"
+        val tm = transactionManager
+        val outbox = outboxRepository
+
+        val updated =
+            if (tm != null && outbox != null) {
+                tm.inTransaction {
+                    val up = repository.updateMessage(message)
+                    outbox.save(
+                        OutboxEntry(
+                            id = UUID.randomUUID(),
+                            payloadType = "MESSAGE_UPDATED",
+                            payload = up.syncId,
+                            status = "PENDING",
+                        )
                     )
-                )
-                up
+                    up
+                }
+            } else {
+                repository.updateMessage(message)
             }
-        } else {
-            repository.updateMessage(message)
-        }
         cache.put("entity:${updated.syncId}", updated)
         cache.invalidateAll()
         eventPublisher.publishRefresh("message-list-panel")
         return updated
     }
 
-    fun resolveConflict(syncId: String, strategy: String) {
+    fun resolveConflict(syncId: String, strategy: ConflictStrategy) {
         val current = repository.findBySyncId(syncId) ?: throw MessageNotFoundException(syncId)
-        if (current.syncConflict == null) return
+        val currentConflict = current.syncConflict ?: return
 
-        val serverVersion = Jackson.asA(
-            current.syncConflict,
-            SyncMessage::class
-        )
+        val serverVersion = Jackson.asA(currentConflict, SyncMessage::class)
 
-        val resolved = if (strategy == "mine") {
-            current.copy(dirty = true, syncConflict = null)
-        } else {
-            current.copy(
-                author = serverVersion.author,
-                content = serverVersion.content,
-                updatedAtEpochMs = serverVersion.updatedAtEpochMs,
-                dirty = false,
-                syncConflict = null
-            )
-        }
+        val resolved =
+            if (strategy == ConflictStrategy.MINE) {
+                current.copy(dirty = true, syncConflict = null)
+            } else {
+                current.copy(
+                    author = serverVersion.author,
+                    content = serverVersion.content,
+                    updatedAtEpochMs = serverVersion.updatedAtEpochMs,
+                    dirty = false,
+                    syncConflict = null,
+                )
+            }
 
         repository.resolveConflict(syncId, resolved)
         cache.invalidateAll()

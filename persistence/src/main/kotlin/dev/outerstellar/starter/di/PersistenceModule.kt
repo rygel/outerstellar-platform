@@ -12,53 +12,34 @@ import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.security.UserRepository
 import io.micrometer.core.instrument.Metrics
+import javax.sql.DataSource
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
-import javax.sql.DataSource
 
-val persistenceModule = module {
-    single<DataSource> {
-        val config = get<dev.outerstellar.starter.AppConfig>()
-        createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
-    }
+val persistenceModule
+    get() = module {
+        single<DataSource> {
+            val config = get<dev.outerstellar.starter.AppConfig>()
+            createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
+        }
 
-    single(named("primaryDsl")) {
-        DSL.using(get<DataSource>(), SQLDialect.H2).also {
-            if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
-                Metrics.globalRegistry.gauge("database.connections.active", 1)
+        single<DSLContext> {
+            DSL.using(get<DataSource>(), SQLDialect.H2).also {
+                if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
+                    Metrics.globalRegistry.gauge("database.connections.active", 1)
+                }
             }
         }
+
+        single<MessageRepository> { JooqMessageRepository(get()) }
+
+        single<ContactRepository> { JooqContactRepository(get()) }
+
+        single<UserRepository> { JooqUserRepository(get()) }
+
+        single<OutboxRepository> { JooqOutboxRepository(get()) }
+
+        single<TransactionManager> { JooqTransactionManager(get()) }
     }
-
-    single(named("replicaDsl")) { get<DSLContext>(named("primaryDsl")) }
-
-    single<MessageRepository> {
-        JooqMessageRepository(
-            primaryDsl = get(named("primaryDsl")),
-            replicaDsl = get(named("replicaDsl"))
-        )
-    }
-
-    single<ContactRepository> {
-        JooqContactRepository(
-            primaryDsl = get(named("primaryDsl")),
-            replicaDsl = get(named("replicaDsl"))
-        )
-    }
-
-    single<UserRepository> {
-        JooqUserRepository(get(named("primaryDsl")))
-    }
-
-    single<OutboxRepository> {
-        JooqOutboxRepository(
-            primaryDsl = get(named("primaryDsl")),
-            replicaDsl = get(named("replicaDsl"))
-        )
-    }
-
-    single<TransactionManager> { JooqTransactionManager(get(named("primaryDsl"))) }
-}

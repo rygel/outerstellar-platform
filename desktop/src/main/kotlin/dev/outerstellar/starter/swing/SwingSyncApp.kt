@@ -2,6 +2,7 @@ package dev.outerstellar.starter.swing
 
 import com.formdev.flatlaf.FlatLightLaf
 import com.outerstellar.i18n.I18nService
+import dev.outerstellar.starter.model.ConflictStrategy
 import dev.outerstellar.starter.AppConfig
 import dev.outerstellar.starter.di.coreModule
 import dev.outerstellar.starter.di.desktopModule
@@ -15,13 +16,6 @@ import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.service.SyncProvider
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import dev.outerstellar.starter.sync.SyncService
-import net.miginfocom.swing.MigLayout
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
-import org.koin.core.context.startKoin
-import org.koin.core.module.Module
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.awt.Color
@@ -66,6 +60,13 @@ import javax.swing.border.TitledBorder
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.table.DefaultTableModel
+import net.miginfocom.swing.MigLayout
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+import org.koin.core.context.startKoin
+import org.koin.core.module.Module
+import org.koin.core.qualifier.named
+import org.koin.dsl.module
 
 private const val FRAME_WIDTH = 1000
 private const val FRAME_HEIGHT = 750
@@ -87,9 +88,7 @@ fun main() {
 
     val splash = showSplash()
 
-    startKoin {
-        modules(swingRuntimeModules())
-    }
+    startKoin { modules(swingRuntimeModules()) }
 
     val desktop = DesktopComponent
     migrate(desktop.dataSource)
@@ -104,13 +103,21 @@ fun main() {
         FlatLightLaf.setup()
 
         val themeManager = ThemeManager()
-        val startupTheme = savedState?.themeId
-            ?.let { themeId -> ThemeCatalog.allThemes().find { it.id == themeId } }
-            ?: ThemeCatalog.findTheme("default")
+        val startupTheme =
+            savedState?.themeId?.let { themeId ->
+                ThemeCatalog.allThemes().find { it.id == themeId }
+            } ?: ThemeCatalog.findTheme("default")
         themeManager.applyTheme(startupTheme)
 
         val notifier = SystemTrayNotifier(i18nService)
-        val viewModel = SyncViewModel(desktop.messageService, desktop.contactService, desktop.syncService, i18nService, notifier)
+        val viewModel =
+            SyncViewModel(
+                desktop.messageService,
+                desktop.contactService,
+                desktop.syncService,
+                i18nService,
+                notifier,
+            )
         val window = SyncWindow(viewModel, themeManager, i18nService, desktop.config.version)
 
         DeepLinkHandler.setup(
@@ -120,15 +127,20 @@ fun main() {
                     window.updateSearchField(query)
                 }
             },
-            onSync = {
-                SwingUtilities.invokeLater {
-                    viewModel.sync()
-                }
-            }
+            onSync = { SwingUtilities.invokeLater { viewModel.sync() } },
         )
 
         window.show()
         splash.dispose()
+
+        // Auto-login in development mode
+        if (desktop.config.devMode) {
+            viewModel.login("admin", "admin123") { success, error ->
+                if (!success) {
+                    println("Dev auto-login failed: $error")
+                }
+            }
+        }
     }
 }
 
@@ -172,15 +184,6 @@ private fun showSplash(): JWindow {
     return window
 }
 
-data class Contact(
-    val name: String,
-    val emails: List<String>,
-    val phones: List<String>,
-    val company: String,
-    val companyAddress: String,
-    val department: String
-)
-
 @Suppress("TooManyFunctions")
 class SyncWindow(
     private val viewModel: SyncViewModel,
@@ -203,96 +206,137 @@ class SyncWindow(
     private val messagesModel = DefaultListModel<MessageSummary>()
     private val messagesList = JList(messagesModel).apply { name = "messagesList" }
 
-    private val contactsModel = DefaultTableModel(arrayOf("Name", "Emails", "Phones", "Company", "Company Address", "Department"), 0)
-    private val contactsTable = JTable(contactsModel).apply { name = "contactsTable" }
+    private val contactsModel =
+        DefaultTableModel(
+            arrayOf(
+                "Name",
+                "Emails",
+                "Phones",
+                "Socials",
+                "Company",
+                "Company Address",
+                "Department",
+                "SyncID",
+            ),
+            0,
+        )
+    private val contactsTable =
+        JTable(contactsModel).apply {
+            name = "contactsTable"
+            // Hide the SyncID column
+            columnModel.getColumn(7).minWidth = 0
+            columnModel.getColumn(7).maxWidth = 0
+            columnModel.getColumn(7).preferredWidth = 0
+        }
 
-    private val statusLabel = JLabel("Statusbar Test").apply {
-        name = "statusLabel"
-        toolTipText = "Statusbar Test"
-    }
+    private val statusLabel =
+        JLabel("Statusbar Test").apply {
+            name = "statusLabel"
+            toolTipText = "Statusbar Test"
+        }
     private val statusHintLabel = JLabel().apply { name = "statusHintLabel" }
     private val statusMetaLabel = JLabel().apply { name = "statusMetaLabel" }
     private val searchLabel = JLabel().apply { name = "searchLabel" }
     private val authorLabel = JLabel().apply { name = "authorLabel" }
-    private val statusBar = JToolBar().apply {
-        name = "statusBarPanel"
-        isFloatable = false
-        isRollover = false
-    }
+    private val statusBar =
+        JToolBar().apply {
+            name = "statusBarPanel"
+            isFloatable = false
+            isRollover = false
+        }
     private val searchField = JTextField().apply { name = "searchField" }
     private val authorField = JTextField().apply { name = "authorField" }
-    private val contentArea = JTextArea().apply {
-        name = "contentArea"
-        lineWrap = true
-        wrapStyleWord = true
-    }
-    private val syncButton = JButton(i18nService.translate("swing.button.sync")).apply {
-        name = "syncButton"
-        icon = RemixIcon.get("system/refresh-line")
-    }
-    private val createButton = JButton(i18nService.translate("swing.button.create")).apply {
-        name = "createButton"
-        icon = RemixIcon.get("system/add-box-line")
-        addActionListener {
-            viewModel.createMessage { }
+    private val contentArea =
+        JTextArea().apply {
+            name = "contentArea"
+            lineWrap = true
+            wrapStyleWord = true
         }
-    }
+    private val syncButton =
+        JButton(i18nService.translate("swing.button.sync")).apply {
+            name = "syncButton"
+            icon = RemixIcon.get("system/refresh-line")
+        }
+    private val createButton =
+        JButton(i18nService.translate("swing.button.create")).apply {
+            name = "createButton"
+            icon = RemixIcon.get("system/add-box-line")
+            addActionListener { viewModel.createMessage {} }
+        }
 
     private val appMenu = JMenu(i18nService.translate("swing.menu.file")).apply { name = "appMenu" }
-    private val helpMenu = JMenu(i18nService.translate("swing.menu.help")).apply { name = "helpMenu" }
-    private val settingsItem = JMenuItem(i18nService.translate("swing.menu.settings")).apply {
-        name = "settingsItem"
-        icon = RemixIcon.get("system/settings-3-line")
-    }
-    private val loginItem = JMenuItem(i18nService.translate("swing.auth.login")).apply {
-        name = "loginItem"
-        icon = RemixIcon.get("system/lock-password-line")
-    }
-    private val logoutItem = JMenuItem(i18nService.translate("swing.auth.logout.simple")).apply {
-        name = "logoutItem"
-        icon = RemixIcon.get("system/logout-box-r-line")
-    }
-    private val registerItem = JMenuItem(i18nService.translate("swing.auth.register")).apply {
-        name = "registerItem"
-        icon = RemixIcon.get("system/user-add-line")
-    }
-    private val newItem = JMenuItem(i18nService.translate("swing.menu.file.new")).apply { name = "newItem" }
-    private val openItem = JMenuItem(i18nService.translate("swing.menu.file.open")).apply { name = "openItem" }
-    private val saveItem = JMenuItem(i18nService.translate("swing.menu.file.save")).apply { name = "saveItem" }
-    private val saveAsItem = JMenuItem(i18nService.translate("swing.menu.file.saveAs")).apply { name = "saveAsItem" }
-    private val exitItem = JMenuItem(i18nService.translate("swing.menu.file.exit")).apply { name = "exitItem" }
-    private val viewHelpItem = JMenuItem(i18nService.translate("swing.menu.help.view")).apply { name = "viewHelpItem" }
-    private val sendFeedbackItem = JMenuItem(i18nService.translate("swing.menu.help.feedback")).apply {
-        name = "sendFeedbackItem"
-    }
-    private val checkUpdatesItem = JMenuItem(i18nService.translate("swing.menu.help.updates")).apply {
-        name = "checkUpdatesItem"
-    }
-    private val aboutItem = JMenuItem(
-        i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))
-    ).apply {
-        name = "aboutItem"
-    }
+    private val helpMenu =
+        JMenu(i18nService.translate("swing.menu.help")).apply { name = "helpMenu" }
+    private val settingsItem =
+        JMenuItem(i18nService.translate("swing.menu.settings")).apply {
+            name = "settingsItem"
+            icon = RemixIcon.get("system/settings-3-line")
+        }
+    private val loginItem =
+        JMenuItem(i18nService.translate("swing.auth.login")).apply {
+            name = "loginItem"
+            icon = RemixIcon.get("system/lock-password-line")
+        }
+    private val logoutItem =
+        JMenuItem(i18nService.translate("swing.auth.logout.simple")).apply {
+            name = "logoutItem"
+            icon = RemixIcon.get("system/logout-box-r-line")
+        }
+    private val registerItem =
+        JMenuItem(i18nService.translate("swing.auth.register")).apply {
+            name = "registerItem"
+            icon = RemixIcon.get("system/user-add-line")
+        }
+    private val newItem =
+        JMenuItem(i18nService.translate("swing.menu.file.new")).apply { name = "newItem" }
+    private val openItem =
+        JMenuItem(i18nService.translate("swing.menu.file.open")).apply { name = "openItem" }
+    private val saveItem =
+        JMenuItem(i18nService.translate("swing.menu.file.save")).apply { name = "saveItem" }
+    private val saveAsItem =
+        JMenuItem(i18nService.translate("swing.menu.file.saveAs")).apply { name = "saveAsItem" }
+    private val exitItem =
+        JMenuItem(i18nService.translate("swing.menu.file.exit")).apply { name = "exitItem" }
+    private val viewHelpItem =
+        JMenuItem(i18nService.translate("swing.menu.help.view")).apply { name = "viewHelpItem" }
+    private val sendFeedbackItem =
+        JMenuItem(i18nService.translate("swing.menu.help.feedback")).apply {
+            name = "sendFeedbackItem"
+        }
+    private val checkUpdatesItem =
+        JMenuItem(i18nService.translate("swing.menu.help.updates")).apply {
+            name = "checkUpdatesItem"
+        }
+    private val aboutItem =
+        JMenuItem(
+                i18nService.translate(
+                    "swing.menu.help.about",
+                    i18nService.translate("swing.app.name"),
+                )
+            )
+            .apply { name = "aboutItem" }
 
     private lateinit var sidebarPanel: JPanel
 
-    private val navMessagesBtn = JButton("Messages").apply {
-        name = "navMessagesBtn"
-        icon = RemixIcon.get("communication/chat-3-line", 32)
-        font = font.deriveFont(16f)
-        verticalTextPosition = SwingConstants.BOTTOM
-        horizontalTextPosition = SwingConstants.CENTER
-        putClientProperty("JButton.buttonType", "square")
-    }
+    private val navMessagesBtn =
+        JButton("Messages").apply {
+            name = "navMessagesBtn"
+            icon = RemixIcon.get("communication/chat-3-line", 32)
+            font = font.deriveFont(16f)
+            verticalTextPosition = SwingConstants.BOTTOM
+            horizontalTextPosition = SwingConstants.CENTER
+            putClientProperty("JButton.buttonType", "square")
+        }
 
-    private val navContactsBtn = JButton("Contacts").apply {
-        name = "navContactsBtn"
-        icon = RemixIcon.get("user/user-3-line", 32)
-        font = font.deriveFont(16f)
-        verticalTextPosition = SwingConstants.BOTTOM
-        horizontalTextPosition = SwingConstants.CENTER
-        putClientProperty("JButton.buttonType", "square")
-    }
+    private val navContactsBtn =
+        JButton("Contacts").apply {
+            name = "navContactsBtn"
+            icon = RemixIcon.get("user/user-3-line", 32)
+            font = font.deriveFont(16f)
+            verticalTextPosition = SwingConstants.BOTTOM
+            horizontalTextPosition = SwingConstants.CENTER
+            putClientProperty("JButton.buttonType", "square")
+        }
 
     fun show() {
         configureFrame()
@@ -330,31 +374,39 @@ class SyncWindow(
 
     private fun saveState() {
         val themeName = UIManager.get("current_theme_name") as? String
-        val state = DesktopState(
-            windowBounds = frame.bounds,
-            isMaximized = (frame.extendedState and JFrame.MAXIMIZED_BOTH) != 0,
-            lastSearchQuery = viewModel.searchQuery.takeIf { it.isNotBlank() },
-            themeId = ThemeCatalog.allThemes().find { it.name == themeName }?.id,
-            language = Locale.getDefault().language
-        )
+        val state =
+            DesktopState(
+                windowBounds = frame.bounds,
+                isMaximized = (frame.extendedState and JFrame.MAXIMIZED_BOTH) != 0,
+                lastSearchQuery = viewModel.searchQuery.takeIf { it.isNotBlank() },
+                themeId = ThemeCatalog.allThemes().find { it.name == themeName }?.id,
+                language = Locale.getDefault().language,
+            )
         DesktopStateProvider.saveState(state)
     }
 
     private fun setupBinding() {
-        viewModel.addObserver {
-            updateUI()
-        }
+        viewModel.addObserver { updateUI() }
 
-        val docListener = object : DocumentListener {
-            override fun insertUpdate(e: DocumentEvent?) { updateViewModel() }
-            override fun removeUpdate(e: DocumentEvent?) { updateViewModel() }
-            override fun changedUpdate(e: DocumentEvent?) { updateViewModel() }
+        val docListener =
+            object : DocumentListener {
+                override fun insertUpdate(e: DocumentEvent?) {
+                    updateViewModel()
+                }
 
-            private fun updateViewModel() {
-                viewModel.author = authorField.text
-                viewModel.content = contentArea.text
+                override fun removeUpdate(e: DocumentEvent?) {
+                    updateViewModel()
+                }
+
+                override fun changedUpdate(e: DocumentEvent?) {
+                    updateViewModel()
+                }
+
+                private fun updateViewModel() {
+                    viewModel.author = authorField.text
+                    viewModel.content = contentArea.text
+                }
             }
-        }
 
         authorField.document.addDocumentListener(docListener)
         contentArea.document.addDocumentListener(docListener)
@@ -362,43 +414,59 @@ class SyncWindow(
         authorField.text = viewModel.author
         contentArea.text = viewModel.content
 
-        searchField.document.addDocumentListener(object : DocumentListener {
-            override fun insertUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
-            override fun removeUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
-            override fun changedUpdate(e: DocumentEvent?) { viewModel.searchQuery = searchField.text }
-        })
+        searchField.document.addDocumentListener(
+            object : DocumentListener {
+                override fun insertUpdate(e: DocumentEvent?) {
+                    viewModel.searchQuery = searchField.text
+                }
 
-        messagesList.addMouseListener(object : MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent) {
-                if (e.clickCount == 2) {
-                    val index = messagesList.locationToIndex(e.point)
-                    if (index >= 0) {
-                        val msg = messagesModel.getElementAt(index)
-                        if (msg.hasConflict) {
-                            showConflictDialog(msg)
+                override fun removeUpdate(e: DocumentEvent?) {
+                    viewModel.searchQuery = searchField.text
+                }
+
+                override fun changedUpdate(e: DocumentEvent?) {
+                    viewModel.searchQuery = searchField.text
+                }
+            }
+        )
+
+        messagesList.addMouseListener(
+            object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.clickCount == 2) {
+                        val index = messagesList.locationToIndex(e.point)
+                        if (index >= 0) {
+                            val msg = messagesModel.getElementAt(index)
+                            if (msg.hasConflict) {
+                                showConflictDialog(msg)
+                            }
                         }
                     }
                 }
             }
-        })
+        )
     }
 
     private fun updateUI() {
         messagesModel.clear()
         viewModel.messages.forEach(messagesModel::addElement)
-        
+
         contactsModel.rowCount = 0
         viewModel.contacts.forEach { contact ->
-            contactsModel.addRow(arrayOf(
-                contact.name,
-                contact.emails.joinToString(", "),
-                contact.phones.joinToString(", "),
-                contact.company,
-                contact.companyAddress,
-                contact.department
-            ))
+            contactsModel.addRow(
+                arrayOf(
+                    contact.name,
+                    contact.emails.joinToString(", "),
+                    contact.phones.joinToString(", "),
+                    contact.socialMedia.joinToString(", "),
+                    contact.company,
+                    contact.companyAddress,
+                    contact.department,
+                    contact.syncId,
+                )
+            )
         }
-        
+
         statusLabel.text = viewModel.status
         statusLabel.toolTipText = viewModel.status
         syncButton.isEnabled = !viewModel.isSyncing
@@ -421,20 +489,23 @@ class SyncWindow(
 
     private fun configureFrame() {
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-        frame.addWindowListener(object : WindowAdapter() {
-            override fun windowClosing(e: WindowEvent?) {
-                saveState()
-                viewModel.stopAutoSync()
+        frame.addWindowListener(
+            object : WindowAdapter() {
+                override fun windowClosing(e: WindowEvent?) {
+                    saveState()
+                    viewModel.stopAutoSync()
+                }
             }
-        })
+        )
         frame.minimumSize = Dimension(FRAME_WIDTH, FRAME_HEIGHT)
         frame.setLocationRelativeTo(null)
         frame.jMenuBar = createMenuBar()
 
         // SIDEBAR
-        sidebarPanel = JPanel(MigLayout("fillx, ins 10, gap 10", "[grow]", "[]10[]10[grow]")).apply {
-            name = "sidebarPanel"
-        }
+        sidebarPanel =
+            JPanel(MigLayout("fillx, ins 10, gap 10", "[grow]", "[]10[]10[grow]")).apply {
+                name = "sidebarPanel"
+            }
 
         navMessagesBtn.addActionListener { mainLayout.show(mainCardPanel, "MESSAGES") }
         navContactsBtn.addActionListener { mainLayout.show(mainCardPanel, "CONTACTS") }
@@ -455,28 +526,38 @@ class SyncWindow(
         searchPanel.add(syncButton, "w 120!")
         messagesPanel.add(searchPanel, "growx, wrap")
 
-        messagesList.cellRenderer = object : DefaultListCellRenderer() {
-            override fun getListCellRendererComponent(
-                list: javax.swing.JList<*>?,
-                value: Any?,
-                index: Int,
-                isSelected: Boolean,
-                cellHasFocus: Boolean
-            ) = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).also { c ->
-                val msg = value as MessageSummary
-                val dangerColor = (UIManager.getColor("Theme.danger") ?: Color.RED).toHtml()
-                val accentColor = (UIManager.getColor("Theme.accent") ?: Color.BLUE).toHtml()
-                val conflictMarker = if (msg.hasConflict) " <font color='$dangerColor'>[CONFLICT]</font>" else ""
-                val localMarker = if (msg.dirty) " <font color='$accentColor'>(Local)</font>" else ""
-                (c as JLabel).text = "<html><b>${msg.author}</b>$localMarker$conflictMarker &mdash; " +
-                    "${msg.updatedAtLabel()}<br/>${msg.content}</html>"
-                if (msg.hasConflict) {
-                    c.icon = RemixIcon.get("system/error-warning-line", CONFLICT_ICON_SIZE)
-                } else {
-                    c.icon = null
-                }
+        messagesList.cellRenderer =
+            object : DefaultListCellRenderer() {
+                override fun getListCellRendererComponent(
+                    list: javax.swing.JList<*>?,
+                    value: Any?,
+                    index: Int,
+                    isSelected: Boolean,
+                    cellHasFocus: Boolean,
+                ) =
+                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
+                        .also { c ->
+                            val msg = value as MessageSummary
+                            val dangerColor =
+                                (UIManager.getColor("Theme.danger") ?: Color.RED).toHtml()
+                            val accentColor =
+                                (UIManager.getColor("Theme.accent") ?: Color.BLUE).toHtml()
+                            val conflictMarker =
+                                if (msg.hasConflict) " <font color='$dangerColor'>[CONFLICT]</font>"
+                                else ""
+                            val localMarker =
+                                if (msg.dirty) " <font color='$accentColor'>(Local)</font>" else ""
+                            (c as JLabel).text =
+                                "<html><b>${msg.author}</b>$localMarker$conflictMarker &mdash; " +
+                                    "${msg.updatedAtLabel()}<br/>${msg.content}</html>"
+                            if (msg.hasConflict) {
+                                c.icon =
+                                    RemixIcon.get("system/error-warning-line", CONFLICT_ICON_SIZE)
+                            } else {
+                                c.icon = null
+                            }
+                        }
             }
-        }
         messagesScrollPane = JScrollPane(messagesList)
         messagesPanel.add(messagesScrollPane, "grow, wrap")
 
@@ -492,42 +573,51 @@ class SyncWindow(
 
         // --- Contacts View ---
         contactsPanel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow]"))
-        contactsPanel.add(
-            JLabel("Contacts Directory").apply { font = font.deriveFont(Font.BOLD, 18f) },
-            "wrap, gapbottom 10"
+
+        val contactsHeaderPanel = JPanel(MigLayout("fillx, ins 0", "[grow][]", "[]"))
+        contactsHeaderPanel.add(
+            JLabel("Contacts Directory").apply { font = font.deriveFont(Font.BOLD, 18f) }
         )
+
+        val createContactBtn =
+            JButton("Create Contact").apply {
+                icon = RemixIcon.get("system/add-box-line")
+                addActionListener { showContactFormDialog(null) }
+            }
+        contactsHeaderPanel.add(createContactBtn, "right")
+
+        contactsPanel.add(contactsHeaderPanel, "wrap, growx, gapbottom 10")
         contactsPanel.add(JScrollPane(contactsTable), "grow")
 
-        contactsTable.addMouseListener(object : MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent) {
-                if (e.clickCount == 2) {
-                    val row = contactsTable.rowAtPoint(e.point)
-                    if (row >= 0) {
-                        val name = contactsModel.getValueAt(row, 0).toString()
-                        val emails = contactsModel.getValueAt(row, 1).toString()
-                        val phones = contactsModel.getValueAt(row, 2).toString()
-                        val company = contactsModel.getValueAt(row, 3).toString()
-                        val address = contactsModel.getValueAt(row, 4).toString()
-                        val department = contactsModel.getValueAt(row, 5).toString()
-                        showContactDialog(name, emails, phones, company, address, department)
+        contactsTable.addMouseListener(
+            object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.clickCount == 2) {
+                        val row = contactsTable.rowAtPoint(e.point)
+                        if (row >= 0) {
+                            val syncId = contactsModel.getValueAt(row, 7).toString()
+                            showContactFormDialog(syncId)
+                        }
                     }
                 }
             }
-        })
-        
+        )
+
         mainCardPanel.add(contactsPanel, "CONTACTS")
 
-        val splitPane = JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebarPanel, mainCardPanel).apply {
-            dividerLocation = 140
-            dividerSize = 1
-            border = null
-        }
+        val splitPane =
+            JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebarPanel, mainCardPanel).apply {
+                dividerLocation = 140
+                dividerSize = 1
+                border = null
+            }
 
         configureStatusBar()
-        rootPanel = JPanel(BorderLayout()).apply {
-            add(splitPane, BorderLayout.CENTER)
-            add(statusBar, BorderLayout.SOUTH)
-        }
+        rootPanel =
+            JPanel(BorderLayout()).apply {
+                add(splitPane, BorderLayout.CENTER)
+                add(statusBar, BorderLayout.SOUTH)
+            }
         frame.contentPane = rootPanel
         applyTranslations()
     }
@@ -542,7 +632,9 @@ class SyncWindow(
         openItem.addActionListener { showMenuPlaceholder("swing.menu.file.open") }
         saveItem.addActionListener { showMenuPlaceholder("swing.menu.file.save") }
         saveAsItem.addActionListener { showMenuPlaceholder("swing.menu.file.saveAs") }
-        exitItem.addActionListener { frame.dispatchEvent(WindowEvent(frame, WindowEvent.WINDOW_CLOSING)) }
+        exitItem.addActionListener {
+            frame.dispatchEvent(WindowEvent(frame, WindowEvent.WINDOW_CLOSING))
+        }
         viewHelpItem.addActionListener { showHelpDialog() }
         sendFeedbackItem.addActionListener { showFeedbackDialog() }
         checkUpdatesItem.addActionListener { showUpdateCheckDialog() }
@@ -552,18 +644,18 @@ class SyncWindow(
         newItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_N, menuMask)
         openItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_O, menuMask)
         saveItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask)
-        saveAsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask or InputEvent.SHIFT_DOWN_MASK)
+        saveAsItem.accelerator =
+            KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask or InputEvent.SHIFT_DOWN_MASK)
         exitItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_F4, InputEvent.ALT_DOWN_MASK)
 
-        appMenu.add(loginItem)
-        appMenu.add(logoutItem)
-        appMenu.addSeparator()
-        appMenu.add(registerItem)
-        appMenu.addSeparator()
         appMenu.add(newItem)
         appMenu.add(openItem)
         appMenu.add(saveItem)
         appMenu.add(saveAsItem)
+        appMenu.addSeparator()
+        appMenu.add(loginItem)
+        appMenu.add(logoutItem)
+        appMenu.add(registerItem)
         appMenu.addSeparator()
         appMenu.add(settingsItem)
         appMenu.addSeparator()
@@ -581,7 +673,12 @@ class SyncWindow(
     }
 
     private fun showLoginDialog() {
-        val dialog = createThemedDialog(i18nService.translate("swing.auth.dialog.title"), "[][grow]", "[][][]")
+        val dialog =
+            createThemedDialog(
+                i18nService.translate("swing.auth.dialog.title"),
+                "[][grow]",
+                "[][][]",
+            )
 
         dialog.add(JLabel(i18nService.translate("swing.auth.username")))
         val userField = JTextField().apply { name = "username" }
@@ -591,7 +688,8 @@ class SyncWindow(
         val passField = JPasswordField().apply { name = "password" }
         dialog.add(passField, "growx, wrap")
 
-        val loginBtn = JButton(i18nService.translate("swing.auth.signin")).apply { name = "loginBtn" }
+        val loginBtn =
+            JButton(i18nService.translate("swing.auth.signin")).apply { name = "loginBtn" }
         loginBtn.addActionListener {
             viewModel.login(userField.text, String(passField.password)) { success, error ->
                 if (success) {
@@ -601,7 +699,7 @@ class SyncWindow(
                         dialog,
                         error,
                         i18nService.translate("swing.auth.failed.title"),
-                        JOptionPane.ERROR_MESSAGE
+                        JOptionPane.ERROR_MESSAGE,
                     )
                 }
             }
@@ -615,8 +713,9 @@ class SyncWindow(
         val dialog = JDialog(frame, "Resolve Sync Conflict", true)
         dialog.layout = MigLayout("fill, ins 20, gap 10", "[grow][grow]", "[][grow][]")
 
-        val introText = "<html>A sync conflict was detected for this message.<br/>" +
-            "Please choose which version to keep:</html>"
+        val introText =
+            "<html>A sync conflict was detected for this message.<br/>" +
+                "Please choose which version to keep:</html>"
         dialog.add(JLabel(introText), "span, wrap, gapbottom 15")
 
         val localPanel = JPanel(MigLayout("fillx, ins 10", "[grow]", "[][]"))
@@ -630,7 +729,7 @@ class SyncWindow(
                     wrapStyleWord = true
                 }
             ),
-            "grow, h 100!"
+            "grow, h 100!",
         )
 
         val serverPanel = JPanel(MigLayout("fillx, ins 10", "[grow]", "[][]"))
@@ -645,11 +744,11 @@ class SyncWindow(
         val serverBtn = JButton("Accept Server Version")
 
         mineBtn.addActionListener {
-            viewModel.resolveConflict(msg.syncId, "mine")
+            viewModel.resolveConflict(msg.syncId, ConflictStrategy.MINE)
             dialog.dispose()
         }
         serverBtn.addActionListener {
-            viewModel.resolveConflict(msg.syncId, "server")
+            viewModel.resolveConflict(msg.syncId, ConflictStrategy.SERVER)
             dialog.dispose()
         }
 
@@ -662,56 +761,229 @@ class SyncWindow(
         dialog.isVisible = true
     }
 
-    private fun showContactDialog(
-        name: String, 
-        emails: String, 
-        phones: String, 
-        company: String, 
-        companyAddress: String, 
-        department: String
-    ) {
-        val dialog = createThemedDialog("Contact Details", "[grow]", "[][][][][][][]")
-        
-        dialog.add(JLabel("Name: $name"), "wrap")
-        dialog.add(JLabel("Emails: $emails"), "wrap")
-        dialog.add(JLabel("Phones: $phones"), "wrap")
-        dialog.add(JLabel("Company: $company"), "wrap")
-        dialog.add(JLabel("Department: $department"), "wrap")
-        dialog.add(JLabel("Address: $companyAddress"), "wrap")
-        
-        val closeBtn = JButton(i18nService.translate("swing.button.close"))
-        closeBtn.addActionListener { dialog.dispose() }
-        
-        dialog.add(createActionRow(closeBtn), "span, growx, gaptop 15")
-        
-        dialog.pack()
+    private fun showContactFormDialog(syncId: String?) {
+        val isEditing = syncId != null
+        val title = if (isEditing) "Edit Contact" else "Create Contact"
+        val dialog = createThemedDialog(title, "[][grow]", "[][][][][][][][][]")
+        dialog.setSize(550, 500)
+
+        val contact = if (isEditing) viewModel.contacts.find { it.syncId == syncId } else null
+
+        val nameField = JTextField(contact?.name ?: "")
+        val emails = contact?.emails?.toMutableList() ?: mutableListOf<String>()
+        val phones = contact?.phones?.toMutableList() ?: mutableListOf<String>()
+        val socials = contact?.socialMedia?.toMutableList() ?: mutableListOf<String>()
+        val companyField = JTextField(contact?.company ?: "")
+        val departmentField = JTextField(contact?.department ?: "")
+        val addressField = JTextField(contact?.companyAddress ?: "")
+
+        dialog.add(JLabel("Name:"), "right")
+        dialog.add(nameField, "growx, wrap")
+
+        dialog.add(JLabel("Emails:"), "right")
+        val editEmailsBtn =
+            JButton("Manage Emails (${emails.size})").apply {
+                addActionListener {
+                    showListEditDialog("Emails", emails)
+                    text = "Manage Emails (${emails.size})"
+                }
+            }
+        dialog.add(editEmailsBtn, "growx, wrap")
+
+        dialog.add(JLabel("Phones:"), "right")
+        val editPhonesBtn =
+            JButton("Manage Phones (${phones.size})").apply {
+                addActionListener {
+                    showListEditDialog("Phones", phones)
+                    text = "Manage Phones (${phones.size})"
+                }
+            }
+        dialog.add(editPhonesBtn, "growx, wrap")
+
+        dialog.add(JLabel("Social Media:"), "right")
+        val editSocialsBtn =
+            JButton("Manage Socials (${socials.size})").apply {
+                addActionListener {
+                    showListEditDialog("Social Media", socials)
+                    text = "Manage Socials (${socials.size})"
+                }
+            }
+        dialog.add(editSocialsBtn, "growx, wrap")
+
+        dialog.add(JLabel("Company:"), "right")
+        dialog.add(companyField, "growx, wrap")
+        dialog.add(JLabel("Department:"), "right")
+        dialog.add(departmentField, "growx, wrap")
+        dialog.add(JLabel("Address:"), "right")
+        dialog.add(addressField, "growx, wrap")
+
+        val saveBtn = JButton(if (isEditing) "Update Contact" else "Save Contact")
+        val cancelBtn = JButton(i18nService.translate("swing.settings.button.cancel"))
+
+        saveBtn.addActionListener {
+            if (nameField.text.isBlank()) {
+                JOptionPane.showMessageDialog(
+                    dialog,
+                    "Name is required",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE,
+                )
+                return@addActionListener
+            }
+
+            val onValidationError: (String) -> Unit = { error ->
+                JOptionPane.showMessageDialog(dialog, error, "Error", JOptionPane.ERROR_MESSAGE)
+            }
+
+            if (isEditing && syncId != null) {
+                viewModel.updateContact(
+                    syncId = syncId,
+                    name = nameField.text,
+                    emails = emails,
+                    phones = phones,
+                    socialMedia = socials,
+                    company = companyField.text,
+                    companyAddress = addressField.text,
+                    department = departmentField.text,
+                    onValidationError = onValidationError,
+                )
+            } else {
+                viewModel.createContact(
+                    name = nameField.text,
+                    emails = emails,
+                    phones = phones,
+                    socialMedia = socials,
+                    company = companyField.text,
+                    companyAddress = addressField.text,
+                    department = departmentField.text,
+                    onValidationError = onValidationError,
+                )
+            }
+            dialog.dispose()
+        }
+
+        cancelBtn.addActionListener { dialog.dispose() }
+
+        dialog.add(createActionRow(cancelBtn, saveBtn), "span, growx, gaptop 20")
+
+        dialog.setLocationRelativeTo(frame)
+        dialog.isVisible = true
+    }
+
+    private fun showListEditDialog(title: String, list: MutableList<String>) {
+        val dialog = JDialog(frame, "Manage $title", true)
+        dialog.layout = MigLayout("fill, ins 20, gap 10", "[grow][]", "[][grow][]")
+
+        val listModel = DefaultListModel<String>()
+        list.forEach { listModel.addElement(it) }
+        val jList = JList(listModel)
+
+        val inputField = JTextField()
+        val addBtn = JButton("Add")
+
+        fun updateItem() {
+            val index = jList.selectedIndex
+            if (index >= 0 && inputField.text.isNotBlank()) {
+                val newValue = inputField.text.trim()
+                list[index] = newValue
+                listModel.set(index, newValue)
+                inputField.text = ""
+                jList.clearSelection()
+                addBtn.text = "Add"
+            }
+        }
+
+        addBtn.addActionListener {
+            if (addBtn.text == "Update") {
+                updateItem()
+            } else if (inputField.text.isNotBlank()) {
+                val valToAdd = inputField.text.trim()
+                list.add(valToAdd)
+                listModel.addElement(valToAdd)
+                inputField.text = ""
+            }
+        }
+
+        val editBtn = JButton("Edit Selected")
+        editBtn.addActionListener {
+            val index = jList.selectedIndex
+            if (index >= 0) {
+                inputField.text = listModel.getElementAt(index)
+                addBtn.text = "Update"
+                inputField.requestFocusInWindow()
+            }
+        }
+
+        val removeBtn = JButton("Remove Selected")
+        removeBtn.addActionListener {
+            val index = jList.selectedIndex
+            if (index >= 0) {
+                list.removeAt(index)
+                listModel.remove(index)
+                inputField.text = ""
+                addBtn.text = "Add"
+            }
+        }
+
+        val topPanel = JPanel(MigLayout("ins 0, fillx", "[grow][]", "[]"))
+        topPanel.isOpaque = false
+        topPanel.add(inputField, "growx")
+        topPanel.add(addBtn, "w 80!")
+
+        dialog.add(JLabel("Add or edit $title:"), "span, wrap")
+        dialog.add(topPanel, "span, growx, wrap")
+        dialog.add(JScrollPane(jList), "grow")
+
+        val sideBtnPanel = JPanel(MigLayout("ins 0", "[]", "[]10[]"))
+        sideBtnPanel.isOpaque = false
+        sideBtnPanel.add(editBtn, "growx, wrap")
+        sideBtnPanel.add(removeBtn, "growx")
+        dialog.add(sideBtnPanel, "top")
+
+        val okBtn = JButton("Done")
+        okBtn.addActionListener { dialog.dispose() }
+
+        dialog.add(okBtn, "span, right, gaptop 10")
+
+        dialog.setSize(450, 400)
         dialog.setLocationRelativeTo(frame)
         dialog.isVisible = true
     }
 
     private fun showSettingsDialog() {
-        val dialog = createThemedDialog(i18nService.translate("swing.settings.title"), "[][grow]", "[][][]")
+        val dialog =
+            createThemedDialog(i18nService.translate("swing.settings.title"), "[][grow]", "[][][]")
         dialog.name = "settingsDialog"
 
         dialog.add(JLabel(i18nService.translate("swing.settings.language")))
-        val languages = arrayOf(
-            "en" to i18nService.translate("swing.language.en"),
-            "fr" to i18nService.translate("swing.language.fr")
-        )
-        val langCombo = JComboBox<String>(languages.map { it.second }.toTypedArray()).apply { name = "langCombo" }
-        langCombo.selectedIndex = languages.indexOfFirst { it.first == Locale.getDefault().language }.coerceAtLeast(0)
+        val languages =
+            arrayOf(
+                "en" to i18nService.translate("swing.language.en"),
+                "fr" to i18nService.translate("swing.language.fr"),
+            )
+        val langCombo =
+            JComboBox<String>(languages.map { it.second }.toTypedArray()).apply {
+                name = "langCombo"
+            }
+        langCombo.selectedIndex =
+            languages.indexOfFirst { it.first == Locale.getDefault().language }.coerceAtLeast(0)
         dialog.add(langCombo, "growx, wrap")
 
         dialog.add(JLabel(i18nService.translate("swing.settings.theme")))
         val allThemes = ThemeCatalog.allThemes().sortedBy { it.name }
-        val themeCombo = JComboBox<String>(allThemes.map { it.name }.toTypedArray()).apply { name = "themeCombo" }
+        val themeCombo =
+            JComboBox<String>(allThemes.map { it.name }.toTypedArray()).apply {
+                name = "themeCombo"
+            }
         val currentThemeName = UIManager.get("current_theme_name") as? String
-        themeCombo.selectedIndex = allThemes.indexOfFirst { it.name == currentThemeName }.coerceAtLeast(0)
+        themeCombo.selectedIndex =
+            allThemes.indexOfFirst { it.name == currentThemeName }.coerceAtLeast(0)
         dialog.add(themeCombo, "growx, wrap")
 
-        val previewPanel = JPanel(MigLayout("fillx, ins 15, gap 10", "[grow]", "[][][]")).apply {
-            name = "previewPanel"
-        }
+        val previewPanel =
+            JPanel(MigLayout("fillx, ins 15, gap 10", "[grow]", "[][][]")).apply {
+                name = "previewPanel"
+            }
         val sampleLabel = JLabel("Sample Label Text")
         val sampleField = JTextField("Sample Input Text")
         val sampleButton = JButton("Sample Button")
@@ -729,14 +1001,15 @@ class SyncWindow(
             val border = themeManager.decodeColor(colors["borderColor"]) ?: Color.GRAY
 
             previewPanel.background = bg
-            previewPanel.border = BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(border),
-                "Theme Preview: ${theme.name}",
-                TitledBorder.DEFAULT_JUSTIFICATION,
-                TitledBorder.DEFAULT_POSITION,
-                null,
-                fg
-            )
+            previewPanel.border =
+                BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(border),
+                    "Theme Preview: ${theme.name}",
+                    TitledBorder.DEFAULT_JUSTIFICATION,
+                    TitledBorder.DEFAULT_POSITION,
+                    null,
+                    fg,
+                )
             sampleLabel.foreground = fg
             sampleField.background = compBg
             sampleField.foreground = fg
@@ -744,15 +1017,17 @@ class SyncWindow(
             sampleButton.foreground = fg
         }
 
-        themeCombo.addActionListener {
-            updatePreview(allThemes[themeCombo.selectedIndex])
-        }
+        themeCombo.addActionListener { updatePreview(allThemes[themeCombo.selectedIndex]) }
         updatePreview(allThemes[themeCombo.selectedIndex])
 
-        val applyButton = JButton(i18nService.translate("swing.settings.button.apply")).apply { name = "applyButton" }
-        val cancelButton = JButton(
-            i18nService.translate("swing.settings.button.cancel"),
-        ).apply { name = "cancelButton" }
+        val applyButton =
+            JButton(i18nService.translate("swing.settings.button.apply")).apply {
+                name = "applyButton"
+            }
+        val cancelButton =
+            JButton(i18nService.translate("swing.settings.button.cancel")).apply {
+                name = "cancelButton"
+            }
 
         applyButton.addActionListener {
             val selectedTheme = allThemes[themeCombo.selectedIndex]
@@ -774,11 +1049,12 @@ class SyncWindow(
     }
 
     private fun showRegisterDialog() {
-        val dialog = createThemedDialog(
-            i18nService.translate("swing.auth.register.dialog.title"),
-            "[][grow]",
-            "[][][][]"
-        )
+        val dialog =
+            createThemedDialog(
+                i18nService.translate("swing.auth.register.dialog.title"),
+                "[][grow]",
+                "[][][][]",
+            )
 
         dialog.add(JLabel(i18nService.translate("swing.auth.username")))
         val userField = JTextField().apply { name = "registerUsername" }
@@ -792,7 +1068,10 @@ class SyncWindow(
         val confirmField = JPasswordField().apply { name = "registerPasswordConfirm" }
         dialog.add(confirmField, "growx, wrap")
 
-        val registerBtn = JButton(i18nService.translate("swing.auth.register.submit")).apply { name = "registerBtn" }
+        val registerBtn =
+            JButton(i18nService.translate("swing.auth.register.submit")).apply {
+                name = "registerBtn"
+            }
         registerBtn.addActionListener {
             val password = String(passField.password)
             val confirmPassword = String(confirmField.password)
@@ -801,7 +1080,7 @@ class SyncWindow(
                     dialog,
                     i18nService.translate("swing.auth.password.mismatch"),
                     i18nService.translate("swing.auth.register.failed.title"),
-                    JOptionPane.ERROR_MESSAGE
+                    JOptionPane.ERROR_MESSAGE,
                 )
                 return@addActionListener
             }
@@ -813,7 +1092,7 @@ class SyncWindow(
                         dialog,
                         error,
                         i18nService.translate("swing.auth.register.failed.title"),
-                        JOptionPane.ERROR_MESSAGE
+                        JOptionPane.ERROR_MESSAGE,
                     )
                 }
             }
@@ -833,7 +1112,7 @@ class SyncWindow(
             frame,
             i18nService.translate("swing.menu.placeholder", i18nService.translate(key)),
             i18nService.translate("swing.menu.placeholder.title"),
-            JOptionPane.INFORMATION_MESSAGE
+            JOptionPane.INFORMATION_MESSAGE,
         )
     }
 
@@ -841,15 +1120,24 @@ class SyncWindow(
         showInfoDialog(
             title = i18nService.translate("swing.menu.help.view"),
             message = i18nService.translate("swing.help.message"),
-            icon = RemixIcon.get("system/question-line", 24)
+            icon = RemixIcon.get("system/question-line", 24),
         )
     }
 
     private fun showAboutDialog() {
         showInfoDialog(
-            title = i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name")),
-            message = i18nService.translate("swing.about.message", i18nService.translate("swing.app.name"), appVersion),
-            icon = RemixIcon.get("system/information-line", 24)
+            title =
+                i18nService.translate(
+                    "swing.menu.help.about",
+                    i18nService.translate("swing.app.name"),
+                ),
+            message =
+                i18nService.translate(
+                    "swing.about.message",
+                    i18nService.translate("swing.app.name"),
+                    appVersion,
+                ),
+            icon = RemixIcon.get("system/information-line", 24),
         )
     }
 
@@ -857,7 +1145,7 @@ class SyncWindow(
         showInfoDialog(
             title = i18nService.translate("swing.menu.help.feedback"),
             message = i18nService.translate("swing.feedback.message"),
-            icon = RemixIcon.get("communication/chat-smile-3-line", 24)
+            icon = RemixIcon.get("communication/chat-smile-3-line", 24),
         )
     }
 
@@ -865,7 +1153,7 @@ class SyncWindow(
         showInfoDialog(
             title = i18nService.translate("swing.menu.help.updates"),
             message = i18nService.translate("swing.updates.message", appVersion),
-            icon = RemixIcon.get("system/refresh-line", 24)
+            icon = RemixIcon.get("system/refresh-line", 24),
         )
     }
 
@@ -887,22 +1175,24 @@ class SyncWindow(
             contentPanel.add(logoLabel, "top, left")
         }
 
-        val messageArea = JTextArea(message).apply {
-            name = "infoDialogMessageArea"
-            isEditable = false
-            isOpaque = false
-            lineWrap = true
-            wrapStyleWord = true
-            border = null
-            font = Font("Inter", Font.PLAIN, 13)
-        }
+        val messageArea =
+            JTextArea(message).apply {
+                name = "infoDialogMessageArea"
+                isEditable = false
+                isOpaque = false
+                lineWrap = true
+                wrapStyleWord = true
+                border = null
+                font = Font("Inter", Font.PLAIN, 13)
+            }
 
         contentPanel.add(messageArea, "grow, push")
         dialog.add(contentPanel, "grow, push, wrap")
 
-        val closeButton = JButton(i18nService.translate("swing.button.close")).apply {
-            name = "infoDialogCloseButton"
-        }
+        val closeButton =
+            JButton(i18nService.translate("swing.button.close")).apply {
+                name = "infoDialogCloseButton"
+            }
         closeButton.addActionListener { dialog.dispose() }
 
         dialog.add(createActionRow(closeButton), "growx")
@@ -955,7 +1245,8 @@ class SyncWindow(
         viewHelpItem.text = i18nService.translate("swing.menu.help.view")
         sendFeedbackItem.text = i18nService.translate("swing.menu.help.feedback")
         checkUpdatesItem.text = i18nService.translate("swing.menu.help.updates")
-        aboutItem.text = i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))
+        aboutItem.text =
+            i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))
         searchLabel.text = i18nService.translate("swing.label.search")
         authorLabel.text = i18nService.translate("swing.label.author")
         navMessagesBtn.text = i18nService.translate("swing.menu.file")
@@ -969,27 +1260,28 @@ class SyncWindow(
     }
 }
 
-internal fun swingRuntimeModules(): List<Module> = listOf(
-    desktopModule,
-    module {
-        single {
-            val cfg = get<SwingAppConfig>()
-            AppConfig(
-                jdbcUrl = cfg.jdbcUrl,
-                jdbcUser = cfg.jdbcUser,
-                jdbcPassword = cfg.jdbcPassword
-            )
-        }
-        single<MessageCache> { NoOpMessageCache }
-        single<SyncService> {
-            SyncService(
-                baseUrl = get(named("serverBaseUrl")),
-                repository = get(),
-                transactionManager = get()
-            )
-        }
-        single<SyncProvider> { get<SyncService>() }
-    },
-    persistenceModule,
-    coreModule
-)
+internal fun swingRuntimeModules(): List<Module> =
+    listOf(
+        desktopModule,
+        module {
+            single {
+                val cfg = get<SwingAppConfig>()
+                AppConfig(
+                    jdbcUrl = cfg.jdbcUrl,
+                    jdbcUser = cfg.jdbcUser,
+                    jdbcPassword = cfg.jdbcPassword,
+                )
+            }
+            single<MessageCache> { NoOpMessageCache }
+            single<SyncService> {
+                SyncService(
+                    baseUrl = get(named("serverBaseUrl")),
+                    repository = get(),
+                    transactionManager = get(),
+                )
+            }
+            single<SyncProvider> { get<SyncService>() }
+        },
+        persistenceModule,
+        coreModule,
+    )

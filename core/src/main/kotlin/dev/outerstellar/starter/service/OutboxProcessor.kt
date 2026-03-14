@@ -9,7 +9,7 @@ private const val MAX_BATCH_SIZE = 10
 
 class OutboxProcessor(
     private val outboxRepository: OutboxRepository,
-    private val transactionManager: TransactionManager? = null
+    private val transactionManager: TransactionManager? = null,
 ) {
     private val logger = LoggerFactory.getLogger(OutboxProcessor::class.java)
 
@@ -21,6 +21,7 @@ class OutboxProcessor(
         processEntries(entries)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun processEntries(entries: List<OutboxEntry>) {
         entries.forEach { entry ->
             try {
@@ -28,18 +29,13 @@ class OutboxProcessor(
                 logger.debug("Processing entry: {} ({})", entry.id, entry.payloadType)
 
                 if (transactionManager != null) {
-                    transactionManager.inTransaction {
-                        outboxRepository.markProcessed(entry.id)
-                    }
+                    transactionManager.inTransaction { outboxRepository.markProcessed(entry.id) }
                 } else {
                     outboxRepository.markProcessed(entry.id)
                 }
-            } catch (e: IllegalStateException) {
-                logger.error("Known error processing outbox entry {}: {}", entry.id, e.message)
-                outboxRepository.markFailed(entry.id, e.message ?: "Illegal state")
-            } catch (e: IllegalArgumentException) {
-                logger.error("Validation error for outbox entry {}: {}", entry.id, e.message)
-                outboxRepository.markFailed(entry.id, e.message ?: "Invalid argument")
+            } catch (e: Exception) {
+                logger.error("Error processing outbox entry {}: {}", entry.id, e.message, e)
+                outboxRepository.markFailed(entry.id, e.message ?: "Unknown error")
             }
         }
     }
