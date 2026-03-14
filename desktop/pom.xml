@@ -18,7 +18,7 @@
     <dependencies>
         <dependency>
             <groupId>dev.outerstellar</groupId>
-            <artifactId>persistence</artifactId>
+            <artifactId>persistence-jooq</artifactId>
         </dependency>
         <dependency>
             <groupId>dev.outerstellar</groupId>

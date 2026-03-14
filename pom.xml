@@ -10,7 +10,8 @@
 
     <modules>
         <module>core</module>
-        <module>persistence</module>
+        <module>persistence-jooq</module>
+        <module>persistence-jdbi</module>
         <module>api-client</module>
         <module>web</module>
         <module>desktop</module>
@@ -27,6 +28,7 @@
         <http4k.version>6.31.1.0</http4k.version>
         <flyway.version>11.3.4</flyway.version>
         <jooq.version>3.19.7</jooq.version>
+        <jdbi.version>3.45.0</jdbi.version>
         <h2.version>2.2.224</h2.version>
         <jte.version>3.2.3</jte.version>
         <flatlaf.version>3.5.4</flatlaf.version>
@@ -92,7 +94,12 @@
             </dependency>
             <dependency>
                 <groupId>dev.outerstellar</groupId>
-                <artifactId>persistence</artifactId>
+                <artifactId>persistence-jooq</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.outerstellar</groupId>
+                <artifactId>persistence-jdbi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -206,6 +213,16 @@
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq</artifactId>
                 <version>${jooq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jdbi</groupId>
+                <artifactId>jdbi3-core</artifactId>
+                <version>${jdbi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jdbi</groupId>
+                <artifactId>jdbi3-kotlin</artifactId>
+                <version>${jdbi.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.h2database</groupId>
@@ -342,6 +359,11 @@
                 <groupId>org.mindrot</groupId>
                 <artifactId>jbcrypt</artifactId>
                 <version>0.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>6.2.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -675,7 +697,7 @@
                             <directory>core/src/main/kotlin</directory>
                         </watch>
                         <watch>
-                            <directory>persistence/src/main/kotlin</directory>
+                            <directory>persistence-jooq/src/main/kotlin</directory>
                         </watch>
                         <watch>
                             <directory>web/src/main/kotlin</directory>
@@ -778,6 +800,78 @@
                 <skipTests>true</skipTests>
                 <runtime.profile>prod</runtime.profile>
                 <runtime.dev.mode>false</runtime.dev.mode>
+            </properties>
+        </profile>
+
+        <!-- mvn -Pdocker package — builds Docker image -->
+        <profile>
+            <id>docker</id>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docker-build</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>-t</argument>
+                                        <argument>outerstellar-starter:${project.version}</argument>
+                                        <argument>.</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- mvn -Pseed exec:java — seeds the database with sample data -->
+        <profile>
+            <id>seed</id>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+            <build>
+                <defaultGoal>compile exec:java</defaultGoal>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <configuration>
+                            <mainClass>dev.outerstellar.starter.seed.SeedDataKt</mainClass>
+                            <classpathScope>compile</classpathScope>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- mvn -Pfast compile — compile only, skip all checks -->
+        <profile>
+            <id>fast</id>
+            <properties>
+                <skipTests>true</skipTests>
+                <jacoco.skip>true</jacoco.skip>
+                <enforcer.skip>true</enforcer.skip>
+                <spotless.check.skip>true</spotless.check.skip>
+                <spotless.apply.skip>true</spotless.apply.skip>
+                <detekt.skip>true</detekt.skip>
+                <checkstyle.skip>true</checkstyle.skip>
+                <pmd.skip>true</pmd.skip>
+                <cpd.skip>true</cpd.skip>
+                <spotbugs.skip>true</spotbugs.skip>
             </properties>
         </profile>
     </profiles>

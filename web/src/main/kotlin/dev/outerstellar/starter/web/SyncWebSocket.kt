@@ -12,10 +12,36 @@ object SyncWebSocket : WebComponent<Nothing>, dev.outerstellar.starter.service.E
     private val logger = LoggerFactory.getLogger(SyncWebSocket::class.java)
     private val connections = ConcurrentHashMap.newKeySet<Websocket>()
 
-    val handler: WsHandler = { _: Request ->
+    var userRepository: dev.outerstellar.starter.security.UserRepository? = null
+
+    val handler: WsHandler = { request: Request ->
         WsResponse { ws: Websocket ->
+            val sessionCookie =
+                request.header("Cookie")
+                    ?.split(";")
+                    ?.map { it.trim() }
+                    ?.find { it.startsWith("${WebContext.SESSION_COOKIE}=") }
+                    ?.substringAfter("=")
+            val user =
+                sessionCookie?.let {
+                    try {
+                        userRepository?.findById(java.util.UUID.fromString(it))
+                    } catch (e: IllegalArgumentException) {
+                        null
+                    }
+                }
+            if (user == null) {
+                logger.warn("WebSocket connection rejected: no valid session")
+                ws.close(org.http4k.websocket.WsStatus(4401, "Authentication required"))
+                return@WsResponse
+            }
+
             connections.add(ws)
-            logger.info("New WebSocket connection established. Total: {}", connections.size)
+            logger.info(
+                "WebSocket connection established for user {}. Total: {}",
+                user.username,
+                connections.size,
+            )
 
             ws.onMessage { msg -> logger.debug("Received message: {}", msg.bodyString()) }
 

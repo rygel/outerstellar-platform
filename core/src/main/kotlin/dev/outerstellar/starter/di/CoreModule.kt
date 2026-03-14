@@ -4,6 +4,8 @@ import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.service.ContactService
 import dev.outerstellar.starter.service.EventPublisher
 import dev.outerstellar.starter.service.MessageService
+import dev.outerstellar.starter.service.ConsoleEmailService
+import dev.outerstellar.starter.service.EmailService
 import dev.outerstellar.starter.service.NoOpEventPublisher
 import dev.outerstellar.starter.service.OutboxProcessor
 import org.koin.dsl.module
@@ -14,4 +16,5 @@ val coreModule
         single { ContactService(get(), get<EventPublisher>()) }
         single { OutboxProcessor(get(), getOrNull<TransactionManager>()) }
         single<EventPublisher> { NoOpEventPublisher }
+        single<EmailService> { ConsoleEmailService() }
     }

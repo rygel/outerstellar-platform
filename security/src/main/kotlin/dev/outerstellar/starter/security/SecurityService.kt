@@ -20,6 +20,7 @@ class SecurityService(
     private val auditRepository: AuditRepository? = null,
     private val resetRepository: PasswordResetRepository? = null,
     private val apiKeyRepository: ApiKeyRepository? = null,
+    private val emailService: dev.outerstellar.starter.service.EmailService? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
 
@@ -135,6 +136,12 @@ class SecurityService(
             )
         resetRepository?.save(resetToken)
         logger.info("Password reset token generated for user {}", user.username)
+        emailService?.send(
+            to = user.email,
+            subject = "Password Reset Request",
+            body = "Use this link to reset your password: /auth/reset?token=$tokenValue\n" +
+                "This link expires in 1 hour.",
+        )
         audit("PASSWORD_RESET_REQUESTED", actor = user)
         return tokenValue
     }

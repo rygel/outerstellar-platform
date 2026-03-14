@@ -2,14 +2,22 @@ package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
+import dev.outerstellar.starter.model.ApiKeySummary
 import dev.outerstellar.starter.model.AuthTokenResponse
 import dev.outerstellar.starter.model.ChangePasswordRequest
+import dev.outerstellar.starter.model.CreateApiKeyRequest
+import dev.outerstellar.starter.model.CreateApiKeyResponse
 import dev.outerstellar.starter.model.LoginRequest
+import dev.outerstellar.starter.model.PasswordResetConfirm
+import dev.outerstellar.starter.model.PasswordResetRequest
 import dev.outerstellar.starter.model.RegisterRequest
 import dev.outerstellar.starter.model.SetUserEnabledRequest
 import dev.outerstellar.starter.model.SetUserRoleRequest
 import dev.outerstellar.starter.model.UserSummary
+import dev.outerstellar.starter.persistence.JooqApiKeyRepository
+import dev.outerstellar.starter.persistence.JooqAuditRepository
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqPasswordResetRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -23,7 +31,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
+import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
+import org.http4k.core.Method.OPTIONS
 import org.http4k.core.Method.POST
 import org.http4k.core.Method.PUT
 import org.http4k.core.Request
@@ -48,6 +58,11 @@ class UserManagementIntegrationTest : H2WebTest() {
     private val userSummaryListLens = Body.auto<List<UserSummary>>().toLens()
     private val setUserEnabledLens = Body.auto<SetUserEnabledRequest>().toLens()
     private val setUserRoleLens = Body.auto<SetUserRoleRequest>().toLens()
+    private val createApiKeyLens = Body.auto<CreateApiKeyRequest>().toLens()
+    private val createApiKeyResponseLens = Body.auto<CreateApiKeyResponse>().toLens()
+    private val apiKeySummaryListLens = Body.auto<List<ApiKeySummary>>().toLens()
+    private val resetRequestLens = Body.auto<PasswordResetRequest>().toLens()
+    private val resetConfirmLens = Body.auto<PasswordResetConfirm>().toLens()
 
     @BeforeEach
     fun setupTest() {
@@ -64,7 +79,16 @@ class UserManagementIntegrationTest : H2WebTest() {
                 cache,
             )
         encoder = BCryptPasswordEncoder(logRounds = 4)
-        securityService = SecurityService(userRepository, encoder)
+        val auditRepository = JooqAuditRepository(testDsl)
+        val resetRepository = JooqPasswordResetRepository(testDsl)
+        val apiKeyRepository = JooqApiKeyRepository(testDsl)
+        securityService = SecurityService(
+            userRepository,
+            encoder,
+            auditRepository,
+            resetRepository,
+            apiKeyRepository,
+        )
         val contactService =
             io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
         val pageFactory =
@@ -512,4 +536,5 @@ class UserManagementIntegrationTest : H2WebTest() {
             "Should not contain Users nav link",
         )
     }
-}
+
+ 

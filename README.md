@@ -6,7 +6,7 @@ A modern, full-stack Kotlin application designed as a starter template for build
 
 ### Key Architectural Features
 
-- **Multi-Module Architecture**: Split into `core`, `persistence`, `api-client`, `security`, `web`, and `desktop` modules for clear separation of concerns.
+- **Multi-Module Architecture**: Split into `core`, `persistence-jooq`, `persistence-jdbi`, `api-client`, `security`, `web`, and `desktop` modules for clear separation of concerns.
 - **Transactional Outbox Pattern**: Ensures atomicity and reliability for background tasks and data synchronization.
 - **Dependency Injection**: Powered by **Koin** for flexible and testable component wiring.
 - **Observability**: Fully integrated with **OpenTelemetry** for distributed tracing and **Micrometer** for real-time metrics.
@@ -21,7 +21,8 @@ A modern, full-stack Kotlin application designed as a starter template for build
 ### Project Structure
 
 - `core`: Domain models, service interfaces, and shared business logic.
-- `persistence`: Database implementation using jOOQ, Flyway migrations, and Caffeine caching.
+- `persistence-jooq`: Database implementation using jOOQ, Flyway migrations, and Caffeine caching.
+- `persistence-jdbi`: Alternative database implementation using JDBI (drop-in replacement for `persistence-jooq`).
 - `api-client`: Shared DTOs and client logic for synchronization between components.
 - `security`: Authentication models, role-based access control, and security filters.
 - `web`: The main http4k server, JTE templates, and web-specific infrastructure.
@@ -71,12 +72,12 @@ mvn -pl web -Pruntime-dev compile exec:java
 
 Generated jOOQ sources are checked in under:
 
-- `persistence/src/main/generated/jooq`
+- `persistence-jooq/src/main/generated/jooq`
 
 Regenerate them manually when migrations change:
 
 ```bash
-mvn -pl persistence -Pjooq-codegen generate-sources
+mvn -pl persistence-jooq -Pjooq-codegen generate-sources
 ```
 
 PowerShell shortcut:

@@ -1,1 +1,4 @@
 devDashboardEnabled: true
+devMode: true
+sessionTimeoutMinutes: 120
+corsOrigins: "*"

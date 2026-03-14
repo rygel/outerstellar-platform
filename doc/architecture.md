@@ -21,7 +21,8 @@ The goal is to start from a runnable platform, not just a dependency list.
 The project is organized as a **multi-module Maven project**:
 
 - `core` - shared domain models, services, and configuration
-- `persistence` - jOOQ-backed repository implementation and Flyway migrations
+- `persistence-jooq` - jOOQ-backed repository implementation and Flyway migrations
+- `persistence-jdbi` - JDBI-backed repository implementation (alternative to jOOQ)
 - `api-client` - shared sync DTOs and client sync service
 - `web` - http4k web server, JTE templates, and HTMX interactions
 - `desktop` - Swing desktop client, theme manager, and UI tests
@@ -92,9 +93,9 @@ The repository layer wraps jOOQ so the app uses a small domain-oriented API rath
 
 The project uses **manual jOOQ code generation** with generated sources checked into version control.
 
-- generated sources location: `persistence/src/main/generated/jooq`
+- generated sources location: `persistence-jooq/src/main/generated/jooq`
 - generation profile: `jooq-codegen`
-- generation command: `mvn -pl persistence -Pjooq-codegen generate-sources`
+- generation command: `mvn -pl persistence-jooq -Pjooq-codegen generate-sources`
 - PowerShell shortcut: `./generate-jooq.ps1`
 
 This keeps builds deterministic and removes implicit schema/codegen drift between environments.
@@ -330,7 +331,7 @@ For this starter to remain healthy, these pieces are important:
 - Flyway remains the schema authority
 - Detekt ensures Kotlin code style and formatting (configured in `detekt.yml`)
 - jOOQ remains the database access layer
-- jOOQ generated sources remain checked in under `persistence/src/main/generated/jooq`
+- jOOQ generated sources remain checked in under `persistence-jooq/src/main/generated/jooq`
 - jOOQ sources are regenerated manually with `-Pjooq-codegen` when schema changes
 - JTE/KTE remains the server rendering path
 - `jte-runtime` stays on the runtime classpath

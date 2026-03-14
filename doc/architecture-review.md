@@ -6,11 +6,11 @@ Last reviewed: 2026-03-14
 
 ### Clean module boundaries
 
-The project enforces proper dependency inversion across its multi-module structure. Domain interfaces live in `core/`, implementation details live in `persistence/`, and this separation is enforced at build time by ArchUnit tests. The `core` module has no dependency on `web`, `desktop`, or jOOQ implementation classes.
+The project enforces proper dependency inversion across its multi-module structure. Domain interfaces live in `core/`, implementation details live in `persistence-jooq/`, and this separation is enforced at build time by ArchUnit tests. The `core` module has no dependency on `web`, `desktop`, or jOOQ implementation classes.
 
 ### Repository interface pattern
 
-All persistence contracts are defined as interfaces in `core/persistence/` (`MessageRepository`, `ContactRepository`, `OutboxRepository`). The jOOQ implementations in `persistence/` are the only classes that touch SQL or jOOQ directly. This means any module depending on `core` can work against the interface without pulling in database dependencies.
+All persistence contracts are defined as interfaces in `core/persistence/` (`MessageRepository`, `ContactRepository`, `OutboxRepository`). The jOOQ implementations in `persistence-jooq/` are the only classes that touch SQL or jOOQ directly. This means any module depending on `core` can work against the interface without pulling in database dependencies.
 
 ### Optional dependency wiring
 

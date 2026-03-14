@@ -1,1 +1,3 @@
 sessionCookieSecure: true
+sessionTimeoutMinutes: 30
+corsOrigins: ""

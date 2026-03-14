@@ -40,4 +40,4 @@ jobs:
           xvfb-run --auto-servernum mvn test -pl desktop
 
       - name: Final Integration Test
-        run: mvn test -pl core,persistence
+        run: mvn test -pl core,persistence-jooq

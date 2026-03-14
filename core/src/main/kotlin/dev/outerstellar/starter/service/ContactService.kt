@@ -39,15 +39,16 @@ class ContactService(
         department: String,
     ): StoredContact {
         logger.info("Creating contact name={}", name)
-        val contact = repository.createLocalContact(
-            name,
-            emails,
-            phones,
-            socialMedia,
-            company,
-            companyAddress,
-            department,
-        )
+        val contact =
+            repository.createLocalContact(
+                name,
+                emails,
+                phones,
+                socialMedia,
+                company,
+                companyAddress,
+                department,
+            )
         eventPublisher.publishRefresh("contact-list-panel")
         return contact
     }

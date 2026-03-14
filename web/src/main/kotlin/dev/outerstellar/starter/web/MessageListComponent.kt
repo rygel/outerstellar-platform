@@ -43,7 +43,17 @@ class MessageListComponent(private val messageService: MessageService) :
                 messageService.listMessages(query, year, limit, offset)
             }
 
-        return buildViewModel(ctx, result.items, result.metadata.totalItems, limit, offset, query, year, isTrash, i18n)
+        return buildViewModel(
+            ctx,
+            result.items,
+            result.metadata.totalItems,
+            limit,
+            offset,
+            query,
+            year,
+            isTrash,
+            i18n,
+        )
     }
 
     @Suppress("LongParameterList")
