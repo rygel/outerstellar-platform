@@ -7,6 +7,7 @@ import dev.outerstellar.starter.sync.SyncService
 import io.mockk.mockk
 import java.awt.Component
 import java.awt.Container
+import java.awt.GraphicsEnvironment
 import java.util.Locale
 import javax.swing.AbstractButton
 import javax.swing.JComponent
@@ -15,6 +16,7 @@ import javax.swing.JMenu
 import javax.swing.JMenuItem
 import javax.swing.SwingUtilities
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Test
 
 class SyncWindowI18nTest {
@@ -23,6 +25,7 @@ class SyncWindowI18nTest {
 
     @Test
     fun `refreshTranslations updates primary window labels and menus`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
 
         val en = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
         val fr = I18nService.create("messages").also { it.setLocale(Locale.FRENCH) }

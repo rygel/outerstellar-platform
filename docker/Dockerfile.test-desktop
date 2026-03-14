@@ -1,0 +1,19 @@
+FROM maven:3.9-eclipse-temurin-21
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends xvfb libxrender1 libxtst6 libxi6 fontconfig && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . .
+
+# Pre-download dependencies (cached layer)
+RUN mvn dependency:go-offline -pl desktop -am -DskipTests \
+    -Denforcer.skip=true -Ddetekt.skip=true -Dspotbugs.skip=true \
+    -Dcheckstyle.skip=true -Dpmd.skip=true -Dcpd.skip=true || true
+
+ENTRYPOINT ["xvfb-run", "--server-args=-screen 0 1024x768x24", \
+    "mvn", "test", "-pl", "desktop", "-am", \
+    "-Ddesktop.headless=false", \
+    "-Denforcer.skip=true", "-Ddetekt.skip=true", "-Dspotbugs.skip=true", \
+    "-Dcheckstyle.skip=true", "-Dpmd.skip=true", "-Dcpd.skip=true"]

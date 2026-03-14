@@ -316,13 +316,13 @@ even though templates compiled.
 
 **Why:** shutdown should remain reliable even if a child disappears between discovery and termination.
 
-### 9. Swing UI testing in CI
+### 9. Swing UI testing without stealing the display
 
-**Finding:** Swing GUI tests need a display. Simply setting `java.awt.headless=true` causes tests to be skipped, which gives false confidence — the tests pass because they don't run.
+**Finding:** Swing GUI tests need a display (`JFrame` throws `HeadlessException` when `java.awt.headless=true`). But tests must not pop up windows on the developer's machine.
 
-**Decision:** CI uses Xvfb (X virtual framebuffer) with `java.awt.headless=false` so GUI tests actually execute against a virtual display. Local builds default to `headless=true` for convenience (no popups), toggled with `-Ptests-headful`.
+**Decision:** Default is `java.awt.headless=true` (no windows). GUI tests run inside a Docker container with Xvfb via `mvn -Ptest-desktop verify`. CI also uses Xvfb. The `Dockerfile.test-desktop` packages the project with a virtual framebuffer.
 
-**Why:** Tests that are skipped in CI provide no value. Xvfb gives the same pixel-level rendering as a real display, so layout and interaction tests produce meaningful results without a physical screen.
+**Why:** Both requirements are met — tests actually execute (not skipped), and no windows appear on the developer's screen. The Docker container provides an isolated virtual display.
 
 ## Testing strategy
 
@@ -430,20 +430,19 @@ Specifically:
 
 The existing `UserManagementIntegrationTest` demonstrates this pattern for admin pages, auth flows, and navigation visibility.
 
-### Headless vs headful test profiles
+### Desktop test execution model
 
-Swing GUI tests need a display to run. On CI (Linux), this is provided by **Xvfb** (X virtual framebuffer). The key setting is `java.awt.headless`:
+The default `java.awt.headless=true` prevents `JFrame` creation, so GUI tests skip during normal local builds. **GUI tests are executed inside a Docker container with Xvfb**, ensuring they always run without popping up windows on the developer's machine.
 
-- When `true`: `GraphicsEnvironment.isHeadless()` returns `true` and GUI tests skip via `assumeFalse`
-- When `false`: tests run normally — either against a real display or a virtual framebuffer like Xvfb
+| Command | What runs |
+|---------|-----------|
+| `mvn test -pl desktop` | Headless tests only (ViewModel, ThemeManager, etc.) — no windows created |
+| `mvn -Ptest-desktop verify` | **All tests** including GUI — runs inside Docker with Xvfb |
+| `mvn test -pl desktop -Ptests-headful` | All tests against the local display (use only if you want windows) |
 
-| Environment | Command | What happens |
-|-------------|---------|-------------|
-| **CI (Linux)** | `xvfb-run mvn test -pl desktop -Ddesktop.headless=false` | GUI tests run against virtual framebuffer |
-| **Developer (with display)** | `mvn test -pl desktop -Ptests-headful` | GUI tests run against real display |
-| **Quick build (skip GUI)** | `mvn test -pl desktop` | GUI tests skipped (default `desktop.headless=true`) |
+The Docker test image (`docker/Dockerfile.test-desktop`) packages the project with Xvfb and runs `xvfb-run mvn test -pl desktop -Ddesktop.headless=false`. This gives real pixel-level rendering without a physical screen.
 
-ViewModel-level tests (e.g., `SyncViewModelAuthTest`) always run regardless of headless mode since they don't use any AWT/Swing components.
+ViewModel-level tests (e.g., `SyncViewModelAuthTest`) always run in every mode since they don't create AWT/Swing components.
 
 ## Authentication and user management
 
@@ -519,6 +518,7 @@ All common operations use Maven profiles — no shell scripts needed:
 | `mvn test -Ptests-headful` | Run all tests including GUI |
 | `mvn -Pcoverage verify` | Run tests with JaCoCo coverage |
 | `mvn -Pdocker package` | Build Docker image |
+| `mvn -Ptest-desktop verify` | Run Swing GUI tests inside Docker with Xvfb |
 | `mvn -Pseed compile exec:java` | Seed database with sample data |
 | `mvn -pl persistence-jooq -Pjooq-codegen generate-sources` | Regenerate jOOQ code |
 | `mvn -Pruntime-dev compile exec:java -pl web` | Run web app in dev mode |

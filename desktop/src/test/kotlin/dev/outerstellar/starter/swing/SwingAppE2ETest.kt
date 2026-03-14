@@ -12,6 +12,7 @@ import io.mockk.verify
 import java.awt.Color
 import java.awt.Component
 import java.awt.Container
+import java.awt.GraphicsEnvironment
 import java.util.Locale
 import java.util.function.BooleanSupplier
 import javax.swing.JComponent
@@ -24,6 +25,7 @@ import org.assertj.swing.edt.GuiActionRunner
 import org.assertj.swing.fixture.FrameFixture
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -40,12 +42,15 @@ class SwingAppE2ETest {
         @JvmStatic
         @BeforeAll
         fun setUpOnce() {
-            FailOnThreadViolationRepaintManager.install()
+            if (!GraphicsEnvironment.isHeadless()) {
+                FailOnThreadViolationRepaintManager.install()
+            }
         }
     }
 
     @BeforeEach
     fun onSetUp() {
+        if (GraphicsEnvironment.isHeadless()) return
         robot = BasicRobot.robotWithNewAwtHierarchy()
         val viewModel = SyncViewModel(messageService, null, syncService, i18nService)
         val syncWindow =
@@ -76,6 +81,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `ui interaction updates viewmodel and calls service`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
 
         val w = window!!
         w.textBox("authorField").deleteText().enterText("AssertJ Author")
@@ -87,6 +93,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `ui auth flow updates menu state on login and logout`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
 
         every { syncService.login("alice", "secret") } returns
             AuthTokenResponse("tok", "alice", "USER")
@@ -107,6 +114,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `ui register flow updates menu state`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
 
         every { syncService.register("newuser", "secret123") } returns
             AuthTokenResponse("tok2", "newuser", "USER")
@@ -124,6 +132,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `changing theme from settings updates key ui surfaces`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
 
         val w = window!!
         val darkTheme = ThemeCatalog.allThemes().first { it.name == "Dark" }
@@ -244,6 +253,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `change password menu item is enabled after login`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
 
         every { syncService.login("alice", "secret") } returns
             AuthTokenResponse("tok", "alice", "USER")
@@ -271,6 +281,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `change password dialog has correct fields`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
 
         every { syncService.login("alice", "secret") } returns
             AuthTokenResponse("tok", "alice", "USER")
@@ -297,6 +308,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `users nav button is enabled for admin role`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
 
         every { syncService.login("admin", "secret") } returns
             AuthTokenResponse("tok", "admin", "ADMIN")
@@ -331,6 +343,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `users nav button stays disabled for regular user`() {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
 
         every { syncService.login("alice", "secret") } returns
             AuthTokenResponse("tok", "alice", "USER")

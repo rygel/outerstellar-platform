@@ -61,7 +61,7 @@
         <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
-        <desktop.headless>false</desktop.headless>
+        <desktop.headless>true</desktop.headless>
         <runtime.profile>dev</runtime.profile>
         <runtime.dev.mode>false</runtime.dev.mode>
         <!-- Set to false so Swing tests always run. CI uses xvfb-run for virtual display. -->
@@ -862,6 +862,57 @@
                             <mainClass>dev.outerstellar.starter.seed.SeedDataKt</mainClass>
                             <classpathScope>compile</classpathScope>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- mvn -Ptest-desktop verify — runs Swing tests inside Docker with Xvfb -->
+        <profile>
+            <id>test-desktop</id>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docker-build-test</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>build</argument>
+                                        <argument>-t</argument>
+                                        <argument>outerstellar-test-desktop</argument>
+                                        <argument>-f</argument>
+                                        <argument>docker/Dockerfile.test-desktop</argument>
+                                        <argument>.</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>docker-run-test</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>docker</executable>
+                                    <arguments>
+                                        <argument>run</argument>
+                                        <argument>--rm</argument>
+                                        <argument>outerstellar-test-desktop</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
