@@ -32,6 +32,11 @@
         <flatlaf.version>3.5.4</flatlaf.version>
         <junit.version>5.12.0</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
+        <checkstyle.version>3.6.0</checkstyle.version>
+        <pmd.version>3.27.0</pmd.version>
+        <spotbugs.version>4.9.8.2</spotbugs.version>
+        <spotless.version>2.44.3</spotless.version>
+        <ktfmt.version>0.54</ktfmt.version>
         <jacoco.version>0.8.14</jacoco.version>
         <extra-enforcer-rules.version>1.8.0</extra-enforcer-rules.version>
         <maven.jar.plugin.version>3.4.2</maven.jar.plugin.version>
@@ -52,7 +57,7 @@
         <opentelemetry.version>1.59.0</opentelemetry.version>
 
         <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
-        <kotlin.compiler.daemon>false</kotlin.compiler.daemon>
+        <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
         <desktop.headless>true</desktop.headless>
         <runtime.profile>dev</runtime.profile>
@@ -351,6 +356,7 @@
                     <configuration>
                         <jvmTarget>${java.version}</jvmTarget>
                         <useDaemon>false</useDaemon>
+                        <executionStrategy>in-process</executionStrategy>
                     </configuration>
                     <executions>
                         <execution>
@@ -491,10 +497,104 @@
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>${jacoco.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>${spotbugs.version}</version>
+                    <configuration>
+                        <excludeFilterFile>${maven.multiModuleProjectDirectory}/spotbugs-exclude.xml</excludeFilterFile>
+                        <effort>Max</effort>
+                        <threshold>Low</threshold>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>${checkstyle.version}</version>
+                    <configuration>
+                        <configLocation>${maven.multiModuleProjectDirectory}/checkstyle.xml</configLocation>
+                        <consoleOutput>true</consoleOutput>
+                        <failsOnError>true</failsOnError>
+                        <linkXRef>false</linkXRef>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>${pmd.version}</version>
+                    <configuration>
+                        <rulesets>
+                            <ruleset>${maven.multiModuleProjectDirectory}/pmd.xml</ruleset>
+                        </rulesets>
+                        <printFailingErrors>true</printFailingErrors>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${spotless.version}</version>
+                    <configuration>
+                        <kotlin>
+                            <ktfmt>
+                                <version>${ktfmt.version}</version>
+                                <style>KOTLINLANG</style>
+                            </ktfmt>
+                        </kotlin>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
 
         <plugins>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>apply</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                            <goal>cpd-check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -559,8 +659,6 @@
                                         <ignoreClass>kotlinx.coroutines.future.**</ignoreClass>
                                         <ignoreClass>kotlinx.coroutines.stream.**</ignoreClass>
                                         <ignoreClass>kotlinx.coroutines.time.**</ignoreClass>
-                                        <ignoreClass>com.outerstellar.i18n.I18nService</ignoreClass>
-                                        <ignoreClass>com.outerstellar.i18n.I18nService$Companion</ignoreClass>
                                     </ignoreClasses>
                                 </banDuplicateClasses>
                             </rules>

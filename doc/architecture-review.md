@@ -33,13 +33,11 @@ H2 is the intentional and permanent choice for this starter. It provides zero-se
 The project uses two package roots:
 
 - `dev.outerstellar.starter` — the project's own code
-- `com.outerstellar` — external Outerstellar libraries
+- `com.outerstellar` — external Outerstellar libraries, consumed as Maven dependencies
 
-The `com.outerstellar` root exists only for vendored external dependencies. Currently, `I18nService` (`com.outerstellar.i18n`) is vendored into `core/src/main/kotlin/com/outerstellar/i18n/` as a local source copy of the `com.outerstellar:outerstellar-i18n` Maven artifact. This is why the root POM includes a `banDuplicateClasses` exclusion for `com.outerstellar.i18n.I18nService` — both the vendored source and the transitive JAR provide the class.
+The `com.outerstellar` packages (`com.outerstellar:outerstellar-i18n` and `com.outerstellar:outerstellar-theme`) are external dependencies declared in the POM and resolved from the Maven repository. They are not vendored — no source copies exist in this project. The `com.outerstellar` package root should never contain project-owned source files.
 
-The `com.outerstellar:outerstellar-theme` library is consumed as a normal Maven dependency and is not vendored.
-
-**Rule:** all project-owned code uses `dev.outerstellar.starter`. The `com.outerstellar` package root is reserved exclusively for vendored copies of external Outerstellar libraries and should never contain project-owned classes.
+**Rule:** all project-owned code uses `dev.outerstellar.starter`. The `com.outerstellar` namespace belongs to the external Outerstellar libraries and must not be used for project-owned classes.
 
 ## Areas for improvement
 
