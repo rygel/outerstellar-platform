@@ -537,4 +537,295 @@ class UserManagementIntegrationTest : H2WebTest() {
         )
     }
 
- 
+    // ---- API Key Tests ----
+
+    @Test
+    fun `api key creation returns key with osk prefix`() {
+        val auth = registerUser("apikeyuser1", "password123")
+
+        val response =
+            app(
+                bearerRequest(POST, "/api/v1/auth/api-keys", auth.token)
+                    .with(createApiKeyLens of CreateApiKeyRequest("test-key"))
+            )
+        assertEquals(Status.OK, response.status)
+
+        val apiKeyResponse = createApiKeyResponseLens(response)
+        assertTrue(apiKeyResponse.key.startsWith("osk_"), "Key should start with osk_ prefix")
+        assertEquals("test-key", apiKeyResponse.name)
+        assertTrue(apiKeyResponse.keyPrefix.isNotBlank())
+    }
+
+    @Test
+    fun `api key authentication works`() {
+        val auth = registerUser("apikeyuser2", "password123")
+
+        // Create an API key
+        val createResponse =
+            app(
+                bearerRequest(POST, "/api/v1/auth/api-keys", auth.token)
+                    .with(createApiKeyLens of CreateApiKeyRequest("sync-key"))
+            )
+        assertEquals(Status.OK, createResponse.status)
+        val apiKeyResponse = createApiKeyResponseLens(createResponse)
+
+        // Use the API key as bearer token for a sync request
+        val syncResponse =
+            app(bearerRequest(GET, "/api/v1/auth/api-keys", apiKeyResponse.key))
+        assertEquals(Status.OK, syncResponse.status)
+    }
+
+    @Test
+    fun `api key listing shows created keys`() {
+        val auth = registerUser("apikeyuser3", "password123")
+
+        // Create a key
+        app(
+            bearerRequest(POST, "/api/v1/auth/api-keys", auth.token)
+                .with(createApiKeyLens of CreateApiKeyRequest("listed-key"))
+        )
+
+        // List keys
+        val listResponse =
+            app(bearerRequest(GET, "/api/v1/auth/api-keys", auth.token))
+        assertEquals(Status.OK, listResponse.status)
+
+        val keys = apiKeySummaryListLens(listResponse)
+        assertTrue(keys.isNotEmpty(), "Key list should not be empty")
+        assertNotNull(keys.find { it.name == "listed-key" }, "Should find the created key")
+    }
+
+    @Test
+    fun `api key deletion works`() {
+        val auth = registerUser("apikeyuser4", "password123")
+
+        // Create a key
+        val createResponse =
+            app(
+                bearerRequest(POST, "/api/v1/auth/api-keys", auth.token)
+                    .with(createApiKeyLens of CreateApiKeyRequest("delete-me"))
+            )
+        val apiKeyResponse = createApiKeyResponseLens(createResponse)
+
+        // List keys to get the ID
+        val listResponse =
+            app(bearerRequest(GET, "/api/v1/auth/api-keys", auth.token))
+        val keys = apiKeySummaryListLens(listResponse)
+        val keyId = keys.find { it.name == "delete-me" }!!.id
+
+        // Delete the key
+        val deleteResponse =
+            app(bearerRequest(DELETE, "/api/v1/auth/api-keys/$keyId", auth.token))
+        assertEquals(Status.OK, deleteResponse.status)
+
+        // Verify the key no longer works for auth
+        val authResponse =
+            app(bearerRequest(GET, "/api/v1/auth/api-keys", apiKeyResponse.key))
+        assertEquals(Status.UNAUTHORIZED, authResponse.status)
+    }
+
+    // ---- Password Reset Tests ----
+
+    @Test
+    fun `password reset request returns 200 for known email`() {
+        registerUser("resetuser1", "password123")
+
+        val response =
+            app(
+                Request(POST, "/api/v1/auth/reset-request")
+                    .with(resetRequestLens of PasswordResetRequest("resetuser1"))
+            )
+        assertEquals(Status.OK, response.status)
+    }
+
+    @Test
+    fun `password reset request returns 200 for unknown email`() {
+        val response =
+            app(
+                Request(POST, "/api/v1/auth/reset-request")
+                    .with(resetRequestLens of PasswordResetRequest("nonexistent@test.com"))
+            )
+        // Should return 200 to not reveal user existence
+        assertEquals(Status.OK, response.status)
+    }
+
+    @Test
+    fun `password reset with valid token works`() {
+        val auth = registerUser("resetuser2", "password123")
+
+        // Request a reset via the service directly to get the token
+        val resetToken = securityService.requestPasswordReset("resetuser2")
+        assertNotNull(resetToken, "Reset token should be generated for known email")
+
+        // Confirm the reset via the API
+        val confirmResponse =
+            app(
+                Request(POST, "/api/v1/auth/reset-confirm")
+                    .with(resetConfirmLens of PasswordResetConfirm(resetToken, "newresetpass1"))
+            )
+        assertEquals(Status.OK, confirmResponse.status)
+
+        // Verify old password no longer works
+        val failLogin =
+            app(
+                Request(POST, "/api/v1/auth/login")
+                    .with(loginLens of LoginRequest("resetuser2", "password123"))
+            )
+        assertEquals(Status.UNAUTHORIZED, failLogin.status)
+
+        // Verify new password works
+        val successLogin = loginUser("resetuser2", "newresetpass1")
+        assertTrue(successLogin.token.isNotBlank())
+    }
+
+    @Test
+    fun `password reset with expired or used token fails`() {
+        registerUser("resetuser3", "password123")
+        val resetToken = securityService.requestPasswordReset("resetuser3")
+        assertNotNull(resetToken)
+
+        // Use the token once
+        app(
+            Request(POST, "/api/v1/auth/reset-confirm")
+                .with(resetConfirmLens of PasswordResetConfirm(resetToken, "newpassword1"))
+        )
+
+        // Try to use the same token again
+        val response =
+            app(
+                Request(POST, "/api/v1/auth/reset-confirm")
+                    .with(resetConfirmLens of PasswordResetConfirm(resetToken, "anotherpass1"))
+            )
+        assertEquals(Status.BAD_REQUEST, response.status)
+    }
+
+    // ---- Rate Limiting Tests ----
+
+    @Test
+    fun `rate limiter allows requests under limit`() {
+        registerUser("ratelimituser", "password123")
+
+        // Make a few login attempts (under the default limit of 10)
+        for (i in 1..3) {
+            val response =
+                app(
+                    Request(POST, "/api/v1/auth/login")
+                        .with(loginLens of LoginRequest("ratelimituser", "password123"))
+                )
+            assertEquals(
+                Status.OK,
+                response.status,
+                "Request $i should succeed within rate limit",
+            )
+        }
+    }
+
+    @Test
+    fun `rate limiter blocks after exceeding limit`() {
+        // The default rate limit is 10 requests per minute per IP/path
+        // Since in-memory tests share the same "unknown" client IP, we need to
+        // send 11 rapid requests to trigger the limit
+        var blockedCount = 0
+        for (i in 1..12) {
+            val response =
+                app(
+                    Request(POST, "/api/v1/auth/login")
+                        .header("X-Forwarded-For", "10.0.0.99")
+                        .with(loginLens of LoginRequest("nobody", "nopass"))
+                )
+            if (response.status == Status.TOO_MANY_REQUESTS) {
+                blockedCount++
+            }
+        }
+        assertTrue(blockedCount > 0, "At least one request should be rate-limited")
+    }
+
+    // ---- CORS Tests ----
+
+    @Test
+    fun `cors preflight returns correct headers`() {
+        val response =
+            app(
+                Request(OPTIONS, "/api/v1/auth/login")
+                    .header("Origin", "http://localhost:3000")
+                    .header("Access-Control-Request-Method", "POST")
+            )
+        assertEquals(Status.NO_CONTENT, response.status)
+        assertNotNull(
+            response.header("Access-Control-Allow-Origin"),
+            "Should have Allow-Origin header",
+        )
+        assertNotNull(
+            response.header("Access-Control-Allow-Methods"),
+            "Should have Allow-Methods header",
+        )
+        assertNotNull(
+            response.header("Access-Control-Allow-Headers"),
+            "Should have Allow-Headers header",
+        )
+    }
+
+    @Test
+    fun `cors headers present on normal response`() {
+        val response = app(Request(GET, "/health"))
+        assertNotNull(
+            response.header("Access-Control-Allow-Origin"),
+            "Should have Allow-Origin header on normal response",
+        )
+    }
+
+    // ---- Security Headers Tests ----
+
+    @Test
+    fun `security headers present on responses`() {
+        val response = app(Request(GET, "/health"))
+
+        assertEquals("nosniff", response.header("X-Content-Type-Options"))
+        assertEquals("DENY", response.header("X-Frame-Options"))
+        assertEquals(
+            "strict-origin-when-cross-origin",
+            response.header("Referrer-Policy"),
+        )
+    }
+
+    // ---- Correlation ID Tests ----
+
+    @Test
+    fun `correlation id is generated when not provided`() {
+        val response = app(Request(GET, "/health"))
+
+        val requestId = response.header("X-Request-Id")
+        assertNotNull(requestId, "Response should have X-Request-Id header")
+        assertTrue(requestId.isNotBlank(), "Request ID should not be blank")
+    }
+
+    @Test
+    fun `correlation id is forwarded when provided`() {
+        val customId = "test-correlation-id-12345"
+        val response =
+            app(Request(GET, "/health").header("X-Request-Id", customId))
+
+        assertEquals(
+            customId,
+            response.header("X-Request-Id"),
+            "Response should forward the provided X-Request-Id",
+        )
+    }
+
+    // ---- Health Check Test ----
+
+    @Test
+    fun `health endpoint returns json with db status`() {
+        val response = app(Request(GET, "/health"))
+
+        assertEquals(Status.OK, response.status)
+        val contentType = response.header("content-type")
+        assertNotNull(contentType)
+        assertTrue(contentType.contains("application/json"), "Should return JSON")
+
+        val body = response.bodyString()
+        assertTrue(body.contains("\"status\""), "Should contain status field")
+        assertTrue(body.contains("\"database\""), "Should contain database field")
+        assertTrue(body.contains("\"timestamp\""), "Should contain timestamp field")
+    }
+}
