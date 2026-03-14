@@ -51,6 +51,14 @@ class UserAdminRoutes(
                         renderer.render(pageFactory.buildUserAdminPage(ctx))
                     }
                 },
+            "/admin/audit" meta
+                {
+                    summary = "Audit log page"
+                } bindContract
+                GET to
+                { request: org.http4k.core.Request ->
+                    renderer.render(pageFactory.buildAuditLogPage(request.webContext))
+                },
             "/admin/users" / userIdPath / "toggle-role" meta
                 {
                     summary = "Toggle user role between USER and ADMIN"

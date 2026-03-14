@@ -8,57 +8,35 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
 import org.jooq.DSLContext
-import org.jooq.impl.DSL
-import org.jooq.impl.SQLDataType
 import org.slf4j.LoggerFactory
 
 class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val logger = LoggerFactory.getLogger(JooqUserRepository::class.java)
 
-    private val lastActivityAtField =
-        DSL.field(DSL.name("LAST_ACTIVITY_AT"), SQLDataType.LOCALDATETIME)
-
-    private val userFields =
-        listOf(
-            USERS.ID,
-            USERS.USERNAME,
-            USERS.EMAIL,
-            USERS.PASSWORD_HASH,
-            USERS.ROLE,
-            USERS.ENABLED,
-            lastActivityAtField,
-        )
-
-    private fun mapUser(record: org.jooq.Record): User {
+    private fun mapUser(record: dev.outerstellar.starter.jooq.tables.records.UsersRecord): User {
         return User(
-            id = record.get(USERS.ID)!!,
-            username = record.get(USERS.USERNAME)!!,
-            email = record.get(USERS.EMAIL)!!,
-            passwordHash = record.get(USERS.PASSWORD_HASH)!!,
-            role = UserRole.valueOf(record.get(USERS.ROLE)!!),
-            enabled = record.get(USERS.ENABLED)!!,
-            lastActivityAt = record.get(lastActivityAtField)?.toInstant(ZoneOffset.UTC),
+            id = record.id!!,
+            username = record.username!!,
+            email = record.email!!,
+            passwordHash = record.passwordHash!!,
+            role = UserRole.valueOf(record.role!!),
+            enabled = record.enabled!!,
+            lastActivityAt = record.lastActivityAt?.toInstant(ZoneOffset.UTC),
         )
     }
 
     override fun findById(id: UUID): User? {
-        return dsl.select(userFields).from(USERS).where(USERS.ID.eq(id)).fetchOne()?.let {
-            mapUser(it)
-        }
+        return dsl.selectFrom(USERS).where(USERS.ID.eq(id)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun findByUsername(username: String): User? {
-        return dsl.select(userFields)
-            .from(USERS)
-            .where(USERS.USERNAME.eq(username))
-            .fetchOne()
-            ?.let { mapUser(it) }
+        return dsl.selectFrom(USERS).where(USERS.USERNAME.eq(username)).fetchOne()?.let {
+            mapUser(it)
+        }
     }
 
     override fun findByEmail(email: String): User? {
-        return dsl.select(userFields).from(USERS).where(USERS.EMAIL.eq(email)).fetchOne()?.let {
-            mapUser(it)
-        }
+        return dsl.selectFrom(USERS).where(USERS.EMAIL.eq(email)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun save(user: User) {
@@ -92,9 +70,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findAll(): List<User> {
-        return dsl.select(userFields).from(USERS).orderBy(USERS.USERNAME).fetch().map {
-            mapUser(it)
-        }
+        return dsl.selectFrom(USERS).orderBy(USERS.USERNAME).fetch().map { mapUser(it) }
     }
 
     override fun updateRole(userId: UUID, role: UserRole) {
@@ -107,7 +83,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
 
     override fun updateLastActivity(userId: UUID) {
         dsl.update(USERS)
-            .set(lastActivityAtField, LocalDateTime.now(ZoneOffset.UTC))
+            .set(USERS.LAST_ACTIVITY_AT, LocalDateTime.now(ZoneOffset.UTC))
             .where(USERS.ID.eq(userId))
             .execute()
     }

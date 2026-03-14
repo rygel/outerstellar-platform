@@ -19,3 +19,26 @@ data class UserSummary(
 data class SetUserEnabledRequest(val enabled: Boolean)
 
 data class SetUserRoleRequest(val role: String)
+
+data class PasswordResetToken(
+    val id: Long = 0,
+    val userId: java.util.UUID,
+    val token: String,
+    val expiresAt: java.time.Instant,
+    val used: Boolean = false,
+)
+
+data class PasswordResetRequest(val email: String)
+
+data class PasswordResetConfirm(val token: String, val newPassword: String)
+
+data class AuditEntry(
+    val id: Long = 0,
+    val actorId: String?,
+    val actorUsername: String?,
+    val targetId: String?,
+    val targetUsername: String?,
+    val action: String,
+    val detail: String?,
+    val createdAt: java.time.Instant = java.time.Instant.now(),
+)

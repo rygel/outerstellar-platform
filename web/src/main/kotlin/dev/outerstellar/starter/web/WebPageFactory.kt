@@ -30,6 +30,7 @@ data class ShellView(
     val userName: String? = null,
     val isLoggedIn: Boolean = false,
     val logoutUrl: String? = null,
+    val changePasswordUrl: String? = null,
 )
 
 data class HomeFeature(val label: String, val value: String)
@@ -161,6 +162,10 @@ data class ConflictResolveViewModel(
     val resolveUrl: String,
 ) : ViewModel
 
+data class ChangePasswordPage(val form: ChangePasswordForm) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/ChangePasswordPage"
+}
+
 data class ChangePasswordForm(
     val title: String,
     val currentPasswordLabel: String,
@@ -173,6 +178,16 @@ data class ChangePasswordForm(
     val confirmPasswordPlaceholder: String,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/ChangePasswordForm"
+}
+
+data class ResetPasswordPage(
+    val token: String,
+    val newPasswordLabel: String,
+    val confirmPasswordLabel: String,
+    val submitLabel: String,
+    val submitUrl: String,
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/ResetPasswordPage"
 }
 
 data class UserAdminRow(
@@ -193,6 +208,18 @@ data class UserAdminPage(
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/UserAdminPage"
 }
+
+data class AuditLogPage(val title: String, val entries: List<AuditEntryViewModel>) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/AuditLogPage"
+}
+
+data class AuditEntryViewModel(
+    val actorUsername: String,
+    val targetUsername: String,
+    val action: String,
+    val detail: String,
+    val timestamp: String,
+)
 
 data class SidebarSelector(
     val heading: String,
@@ -235,6 +262,7 @@ class WebPageFactory(
     private val messageService: MessageService,
     private val contactService: dev.outerstellar.starter.service.ContactService? = null,
     private val securityService: dev.outerstellar.starter.security.SecurityService? = null,
+    private val auditRepository: dev.outerstellar.starter.security.AuditRepository? = null,
 ) {
     private val messageListComponent = MessageListComponent(messageService)
 
@@ -612,9 +640,16 @@ class WebPageFactory(
             pagePath == "/admin/dev" ->
                 buildDevDashboardPage(ctx, "", emptyMap(), OutboxStatsViewModel(0, 0, 0), "")
             pagePath == "/admin/users" -> buildUserAdminPage(ctx)
+            pagePath == "/admin/audit" -> buildAuditLogPage(ctx)
             pagePath.startsWith("/errors") -> buildErrorPage(ctx, "not-found")
             else -> buildHomePage(ctx)
         }
+    }
+
+    fun buildChangePasswordPage(ctx: WebContext): Page<ChangePasswordPage> {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.password.title"), "/auth")
+        return Page(shell = shell, data = ChangePasswordPage(form = buildChangePasswordForm(ctx)))
     }
 
     fun buildChangePasswordForm(ctx: WebContext): ChangePasswordForm {
@@ -629,6 +664,22 @@ class WebPageFactory(
             currentPasswordPlaceholder = i18n.translate("web.password.current.placeholder"),
             newPasswordPlaceholder = i18n.translate("web.password.new.placeholder"),
             confirmPasswordPlaceholder = i18n.translate("web.password.confirm.placeholder"),
+        )
+    }
+
+    fun buildResetPasswordPage(ctx: WebContext, token: String): Page<ResetPasswordPage> {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.reset.title"), "/auth")
+        return Page(
+            shell = shell,
+            data =
+                ResetPasswordPage(
+                    token = token,
+                    newPasswordLabel = i18n.translate("web.reset.newPassword"),
+                    confirmPasswordLabel = i18n.translate("web.reset.confirmPassword"),
+                    submitLabel = i18n.translate("web.reset.submit"),
+                    submitUrl = ctx.url("/auth/components/reset-confirm"),
+                ),
         )
     }
 
@@ -655,6 +706,30 @@ class WebPageFactory(
                                 toggleEnabledUrl = ctx.url("/admin/users/${u.id}/toggle-enabled"),
                                 toggleRoleUrl = ctx.url("/admin/users/${u.id}/toggle-role"),
                                 isSelf = u.id == currentUserId,
+                            )
+                        },
+                ),
+        )
+    }
+
+    fun buildAuditLogPage(ctx: WebContext): Page<AuditLogPage> {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.admin.audit.title"), "/admin/audit")
+        val entries = securityService?.getAuditLog() ?: emptyList()
+
+        return Page(
+            shell = shell,
+            data =
+                AuditLogPage(
+                    title = i18n.translate("web.admin.audit.title"),
+                    entries =
+                        entries.map { e ->
+                            AuditEntryViewModel(
+                                actorUsername = e.actorUsername ?: "",
+                                targetUsername = e.targetUsername ?: "",
+                                action = e.action,
+                                detail = e.detail ?: "",
+                                timestamp = e.createdAt.toString(),
                             )
                         },
                 ),

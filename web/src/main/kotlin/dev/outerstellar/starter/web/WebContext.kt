@@ -113,6 +113,14 @@ class WebContext(
                     activeSection == "/admin/users",
                 )
             )
+            navLinks.add(
+                ShellLink(
+                    i18n.translate("web.nav.audit"),
+                    url("/admin/audit"),
+                    "ri-file-list-3-line",
+                    activeSection == "/admin/audit",
+                )
+            )
         }
 
         if (devDashboardEnabled && user?.role == UserRole.ADMIN) {
@@ -146,6 +154,7 @@ class WebContext(
             userName = user?.username,
             isLoggedIn = user != null,
             logoutUrl = url("/logout"),
+            changePasswordUrl = if (user != null) url("/auth/change-password") else null,
         )
     }
 }

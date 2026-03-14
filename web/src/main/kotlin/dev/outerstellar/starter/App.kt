@@ -20,6 +20,7 @@ import dev.outerstellar.starter.web.SyncWebSocket
 import dev.outerstellar.starter.web.UserAdminApi
 import dev.outerstellar.starter.web.UserAdminRoutes
 import dev.outerstellar.starter.web.WebPageFactory
+import dev.outerstellar.starter.web.rateLimitFilter
 import dev.outerstellar.starter.web.webContext
 import java.util.UUID
 import org.http4k.contract.bindContract
@@ -80,7 +81,22 @@ fun app(
                     }
                 }
             if (user != null) {
-                next(req.with(SecurityRules.USER_KEY of user))
+                // Check bearer token session timeout
+                if (user.lastActivityAt != null) {
+                    val elapsed =
+                        java.time.Duration.between(user.lastActivityAt, java.time.Instant.now())
+                    if (elapsed.toMinutes() >= config.sessionTimeoutMinutes) {
+                        Response(Status.UNAUTHORIZED)
+                            .header("X-Session-Expired", "true")
+                            .body("Session expired")
+                    } else {
+                        userRepository.updateLastActivity(user.id)
+                        next(req.with(SecurityRules.USER_KEY of user))
+                    }
+                } else {
+                    userRepository.updateLastActivity(user.id)
+                    next(req.with(SecurityRules.USER_KEY of user))
+                }
             } else {
                 Response(Status.UNAUTHORIZED).body("API token required")
             }
@@ -204,6 +220,7 @@ fun app(
 
     val httpHandler =
         Filters.telemetry
+            .then(rateLimitFilter())
             .then(Filters.devAutoLogin(config.devMode, userRepository))
             .then(Filters.stateFilter(config.devDashboardEnabled, userRepository))
             .then(

@@ -8,6 +8,8 @@ import dev.outerstellar.starter.service.SyncProvider
 import dev.outerstellar.starter.web.AuthTokenResponse
 import dev.outerstellar.starter.web.ChangePasswordRequest
 import dev.outerstellar.starter.web.LoginRequest
+import dev.outerstellar.starter.web.PasswordResetConfirm
+import dev.outerstellar.starter.web.PasswordResetRequest
 import dev.outerstellar.starter.web.RegisterRequest
 import dev.outerstellar.starter.web.SetUserEnabledRequest
 import dev.outerstellar.starter.web.SetUserRoleRequest
@@ -45,6 +47,8 @@ class SyncService(
     private val userSummaryListLens = Body.auto<List<UserSummary>>().toLens()
     private val setUserEnabledLens = Body.auto<SetUserEnabledRequest>().toLens()
     private val setUserRoleLens = Body.auto<SetUserRoleRequest>().toLens()
+    private val resetRequestLens = Body.auto<PasswordResetRequest>().toLens()
+    private val resetConfirmLens = Body.auto<PasswordResetConfirm>().toLens()
 
     fun login(username: String, pass: String): AuthTokenResponse {
         val request =
@@ -125,6 +129,26 @@ class SyncService(
         checkSessionExpired(response)
         if (response.status != Status.OK) {
             throw SyncException("Failed to update user role: ${response.bodyString()}")
+        }
+    }
+
+    fun requestPasswordReset(email: String) {
+        val request =
+            Request(POST, "$baseUrl/api/v1/auth/reset-request")
+                .with(resetRequestLens of PasswordResetRequest(email))
+        val response = client(request)
+        if (response.status != Status.OK) {
+            throw SyncException("Password reset request failed: ${response.status}")
+        }
+    }
+
+    fun resetPassword(token: String, newPassword: String) {
+        val request =
+            Request(POST, "$baseUrl/api/v1/auth/reset-confirm")
+                .with(resetConfirmLens of PasswordResetConfirm(token, newPassword))
+        val response = client(request)
+        if (response.status != Status.OK) {
+            throw SyncException("Password reset failed: ${response.bodyString()}")
         }
     }
 

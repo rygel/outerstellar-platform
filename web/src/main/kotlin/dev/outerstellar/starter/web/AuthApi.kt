@@ -3,6 +3,8 @@ package dev.outerstellar.starter.web
 import dev.outerstellar.starter.model.AuthTokenResponse
 import dev.outerstellar.starter.model.ChangePasswordRequest
 import dev.outerstellar.starter.model.LoginRequest
+import dev.outerstellar.starter.model.PasswordResetConfirm
+import dev.outerstellar.starter.model.PasswordResetRequest
 import dev.outerstellar.starter.model.RegisterRequest
 import dev.outerstellar.starter.model.UsernameAlreadyExistsException
 import dev.outerstellar.starter.model.WeakPasswordException
@@ -24,6 +26,8 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
     private val registerRequestLens = Body.auto<RegisterRequest>().toLens()
     private val tokenResponseLens = Body.auto<AuthTokenResponse>().toLens()
     private val changePasswordLens = Body.auto<ChangePasswordRequest>().toLens()
+    private val resetRequestLens = Body.auto<PasswordResetRequest>().toLens()
+    private val resetConfirmLens = Body.auto<PasswordResetConfirm>().toLens()
 
     /** Routes that require bearer authentication (password change). */
     val bearerRoutes: List<ContractRoute> =
@@ -111,6 +115,37 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     } catch (e: IllegalArgumentException) {
                         Response(Status.BAD_REQUEST)
                             .body(e.message ?: "Invalid registration request")
+                    }
+                },
+            "/api/v1/auth/reset-request" meta
+                {
+                    summary = "Request a password reset"
+                    receiving(resetRequestLens)
+                    returning(Status.OK to "Reset request accepted")
+                } bindContract
+                POST to
+                { request ->
+                    val body = resetRequestLens(request)
+                    securityService.requestPasswordReset(body.email)
+                    Response(Status.OK).body("Reset request accepted")
+                },
+            "/api/v1/auth/reset-confirm" meta
+                {
+                    summary = "Confirm password reset with token"
+                    receiving(resetConfirmLens)
+                    returning(Status.OK to "Password has been reset")
+                    returning(Status.BAD_REQUEST to "Invalid or expired token")
+                } bindContract
+                POST to
+                { request ->
+                    val body = resetConfirmLens(request)
+                    try {
+                        securityService.resetPassword(body.token, body.newPassword)
+                        Response(Status.OK).body("Password has been reset")
+                    } catch (e: IllegalArgumentException) {
+                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid or expired token")
+                    } catch (e: WeakPasswordException) {
+                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid password")
                     }
                 },
         )

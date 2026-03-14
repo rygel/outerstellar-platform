@@ -5,5 +5,5 @@ import org.koin.dsl.module
 val securityModule
     get() = module {
         single<PasswordEncoder> { BCryptPasswordEncoder() }
-        single { SecurityService(get(), get()) }
+        single { SecurityService(get(), get(), getOrNull(), getOrNull()) }
     }

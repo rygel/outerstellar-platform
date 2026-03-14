@@ -1,16 +1,21 @@
 package dev.outerstellar.starter.security
 
+import dev.outerstellar.starter.model.AuditEntry
 import dev.outerstellar.starter.model.InsufficientPermissionException
+import dev.outerstellar.starter.model.PasswordResetToken
 import dev.outerstellar.starter.model.UserNotFoundException
 import dev.outerstellar.starter.model.UserSummary
 import dev.outerstellar.starter.model.UsernameAlreadyExistsException
 import dev.outerstellar.starter.model.WeakPasswordException
+import java.time.Instant
 import java.util.UUID
 import org.slf4j.LoggerFactory
 
 class SecurityService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
+    private val auditRepository: AuditRepository? = null,
+    private val resetRepository: PasswordResetRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
 
@@ -54,6 +59,7 @@ class SecurityService(
             )
         userRepository.save(created)
         logger.info("Registration successful for user {}", username)
+        audit("USER_REGISTERED", actor = created)
         return created
     }
 
@@ -72,6 +78,7 @@ class SecurityService(
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
         logger.info("Password changed for user {}", user.username)
+        audit("PASSWORD_CHANGED", actor = user)
     }
 
     fun listUsers(): List<UserSummary> {
@@ -86,6 +93,9 @@ class SecurityService(
             userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateEnabled(targetId, enabled)
         logger.info("User {} enabled set to {} by admin {}", target.username, enabled, adminId)
+        val admin = userRepository.findById(adminId)
+        val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
+        audit(action, actor = admin, target = target)
     }
 
     fun setUserRole(adminId: UUID, targetId: UUID, role: UserRole) {
@@ -96,10 +106,88 @@ class SecurityService(
             userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateRole(targetId, role)
         logger.info("User {} role set to {} by admin {}", target.username, role, adminId)
+        val admin = userRepository.findById(adminId)
+        audit(
+            "USER_ROLE_CHANGED",
+            actor = admin,
+            target = target,
+            detail = "from ${target.role} to $role",
+        )
+    }
+
+    fun requestPasswordReset(email: String): String? {
+        val user = userRepository.findByEmail(email)
+        if (user == null) {
+            logger.info("Password reset requested for unknown email {}", email)
+            return null
+        }
+
+        val tokenValue = UUID.randomUUID().toString()
+        val resetToken =
+            PasswordResetToken(
+                userId = user.id,
+                token = tokenValue,
+                expiresAt = Instant.now().plusSeconds(RESET_TOKEN_TTL_SECONDS),
+            )
+        resetRepository?.save(resetToken)
+        logger.info("Password reset token generated for user {}", user.username)
+        audit("PASSWORD_RESET_REQUESTED", actor = user)
+        return tokenValue
+    }
+
+    fun resetPassword(token: String, newPassword: String) {
+        val resetToken =
+            resetRepository?.findByToken(token)
+                ?: throw IllegalArgumentException("Invalid reset token")
+
+        if (resetToken.used) {
+            throw IllegalArgumentException("Reset token has already been used")
+        }
+        if (resetToken.expiresAt.isBefore(Instant.now())) {
+            throw IllegalArgumentException("Reset token has expired")
+        }
+        if (newPassword.length < MIN_PASSWORD_LENGTH) {
+            throw WeakPasswordException(
+                "New password must be at least $MIN_PASSWORD_LENGTH characters"
+            )
+        }
+
+        val user =
+            userRepository.findById(resetToken.userId)
+                ?: throw UserNotFoundException(resetToken.userId.toString())
+
+        val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
+        userRepository.save(updated)
+        resetRepository.markUsed(token)
+        logger.info("Password reset completed for user {}", user.username)
+        audit("PASSWORD_RESET_COMPLETED", actor = user)
+    }
+
+    fun getAuditLog(): List<AuditEntry> {
+        return auditRepository?.findRecent() ?: emptyList()
+    }
+
+    private fun audit(
+        action: String,
+        actor: User? = null,
+        target: User? = null,
+        detail: String? = null,
+    ) {
+        auditRepository?.log(
+            AuditEntry(
+                actorId = actor?.id?.toString(),
+                actorUsername = actor?.username,
+                targetId = target?.id?.toString(),
+                targetUsername = target?.username,
+                action = action,
+                detail = detail,
+            )
+        )
     }
 
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
+        private const val RESET_TOKEN_TTL_SECONDS = 3600L
     }
 }
 

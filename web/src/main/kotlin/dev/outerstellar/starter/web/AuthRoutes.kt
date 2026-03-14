@@ -81,9 +81,34 @@ class AuthRoutes(
                                 pageFactory.buildAuthResult(request.webContext, errorValues)
                             )
                         }
+                    } else if (mode == "recover") {
+                        val ctx = request.webContext
+                        if (email.isNotBlank()) {
+                            securityService.requestPasswordReset(email)
+                        }
+                        renderer.render(
+                            AuthResultFragment(
+                                title = ctx.i18n.translate("web.auth.result.success.title"),
+                                message = ctx.i18n.translate("web.reset.request.success"),
+                                toneClass = "panel-success",
+                            )
+                        )
                     } else {
                         val formValues = request.form().associate { it.first to it.second }
                         renderer.render(pageFactory.buildAuthResult(request.webContext, formValues))
+                    }
+                },
+            "/auth/change-password" meta
+                {
+                    summary = "Change password page"
+                } bindContract
+                GET to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    if (ctx.user == null) {
+                        Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    } else {
+                        renderer.render(pageFactory.buildChangePasswordPage(ctx))
                     }
                 },
             "/auth/components/change-password" meta
@@ -132,6 +157,64 @@ class AuthRoutes(
                                     )
                                 )
                             }
+                        }
+                    }
+                },
+            "/auth/reset" meta
+                {
+                    summary = "Password reset page"
+                } bindContract
+                GET to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    val token = request.query("token").orEmpty()
+                    renderer.render(pageFactory.buildResetPasswordPage(ctx, token))
+                },
+            "/auth/components/reset-confirm" meta
+                {
+                    summary = "Process password reset form"
+                } bindContract
+                POST to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    val token = request.form("token").orEmpty()
+                    val newPassword = request.form("newPassword").orEmpty()
+                    val confirmPassword = request.form("confirmPassword").orEmpty()
+
+                    if (newPassword != confirmPassword) {
+                        renderer.render(
+                            AuthResultFragment(
+                                title = ctx.i18n.translate("web.reset.error.title"),
+                                message = ctx.i18n.translate("web.reset.error.mismatch"),
+                                toneClass = "panel-danger",
+                            )
+                        )
+                    } else {
+                        try {
+                            securityService.resetPassword(token, newPassword)
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.reset.success.title"),
+                                    message = ctx.i18n.translate("web.reset.success.body"),
+                                    toneClass = "panel-success",
+                                )
+                            )
+                        } catch (e: IllegalArgumentException) {
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.reset.error.title"),
+                                    message = ctx.i18n.translate("web.reset.error.invalid"),
+                                    toneClass = "panel-danger",
+                                )
+                            )
+                        } catch (e: WeakPasswordException) {
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.reset.error.title"),
+                                    message = e.message ?: "Password reset failed",
+                                    toneClass = "panel-danger",
+                                )
+                            )
                         }
                     }
                 },

@@ -19,3 +19,7 @@ data class UserSummary(
 data class SetUserEnabledRequest(val enabled: Boolean)
 
 data class SetUserRoleRequest(val role: String)
+
+data class PasswordResetRequest(val email: String)
+
+data class PasswordResetConfirm(val token: String, val newPassword: String)

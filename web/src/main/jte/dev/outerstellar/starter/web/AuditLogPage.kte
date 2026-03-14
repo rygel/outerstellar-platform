@@ -1,0 +1,35 @@
+@import dev.outerstellar.starter.web.AuditLogPage
+@import dev.outerstellar.starter.web.Page
+@param model: Page<AuditLogPage>
+
+@template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
+    <section class="hero-grid">
+        <div class="panel">
+            <h1>${model.data.title}</h1>
+        </div>
+    </section>
+    <section class="panel">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align:left;padding:0.5rem;">When</th>
+                    <th style="text-align:left;padding:0.5rem;">Actor</th>
+                    <th style="text-align:left;padding:0.5rem;">Action</th>
+                    <th style="text-align:left;padding:0.5rem;">Target</th>
+                    <th style="text-align:left;padding:0.5rem;">Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (entry in model.data.entries)
+                    <tr style="border-top: 1px solid var(--border-color, #333);">
+                        <td style="padding:0.5rem;white-space:nowrap;">${entry.timestamp}</td>
+                        <td style="padding:0.5rem;">${entry.actorUsername}</td>
+                        <td style="padding:0.5rem;"><span class="chip">${entry.action}</span></td>
+                        <td style="padding:0.5rem;">${entry.targetUsername}</td>
+                        <td style="padding:0.5rem;">${entry.detail}</td>
+                    </tr>
+                @endfor
+            </tbody>
+        </table>
+    </section>
+`)

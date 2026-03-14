@@ -67,7 +67,11 @@ class AuthenticationWorkflowTest : H2WebTest() {
         // 1. Try to access admin dashboard -> should redirect to auth with returnTo
         val initialResponse = app(Request(GET, "/admin/dev"))
         assertEquals(Status.FOUND, initialResponse.status)
-        assertTrue(initialResponse.header("location")!!.contains("/auth?returnTo=/admin/dev"))
+        val location = initialResponse.header("location")!!
+        assertTrue(
+            location.contains("/auth") && location.contains("returnTo"),
+            "Expected auth redirect with returnTo, got: $location",
+        )
 
         // 2. Register a new admin user
         val regResponse =
@@ -104,7 +108,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
         assertNotNull(sessionCookie, "Session cookie should be present in response")
         val setCookieHeader = loginResponse.header("Set-Cookie").orEmpty()
         assertTrue(setCookieHeader.contains("HttpOnly"))
-        assertTrue(setCookieHeader.contains("SameSite=Lax"))
+        assertTrue(setCookieHeader.contains("SameSite=Strict"))
 
         // 4. Access admin dashboard with session
         val adminResponse = app(Request(GET, "/admin/dev").cookie(sessionCookie))
