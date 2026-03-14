@@ -326,7 +326,7 @@ class SwingAppE2ETest {
     }
 
     @Test
-    fun `users nav button is visible for admin role`() {
+    fun `users nav button is enabled for admin role`() {
         assumeFalse(
             GraphicsEnvironment.isHeadless(),
             "Skipping GUI interaction test in headless mode",
@@ -340,7 +340,7 @@ class SwingAppE2ETest {
         // Before login, users button should be hidden
         val usersVisibleBefore =
             GuiActionRunner.execute<Boolean> {
-                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isVisible
+                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled
             }
         assertEquals(false, usersVisibleBefore)
 
@@ -352,19 +352,19 @@ class SwingAppE2ETest {
 
         waitUntil(5_000) {
             GuiActionRunner.execute<Boolean> {
-                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isVisible
+                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled
             } == true
         }
 
         val usersVisibleAfter =
             GuiActionRunner.execute<Boolean> {
-                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isVisible
+                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled
             }
         assertEquals(true, usersVisibleAfter)
     }
 
     @Test
-    fun `users nav button stays hidden for regular user`() {
+    fun `users nav button stays disabled for regular user`() {
         assumeFalse(
             GraphicsEnvironment.isHeadless(),
             "Skipping GUI interaction test in headless mode",
@@ -383,7 +383,7 @@ class SwingAppE2ETest {
 
         val usersVisible =
             GuiActionRunner.execute<Boolean> {
-                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isVisible
+                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled
             }
         assertEquals(false, usersVisible)
     }

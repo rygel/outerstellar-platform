@@ -347,7 +347,7 @@ class SyncWindow(
             verticalTextPosition = SwingConstants.BOTTOM
             horizontalTextPosition = SwingConstants.CENTER
             putClientProperty("JButton.buttonType", "square")
-            isVisible = false
+            isEnabled = false
         }
 
     private val changePasswordItem =
@@ -513,7 +513,7 @@ class SyncWindow(
         changePasswordItem.isEnabled = viewModel.isLoggedIn
 
         val isAdmin = viewModel.userRole == "ADMIN"
-        navUsersBtn.isVisible = isAdmin && viewModel.isLoggedIn
+        navUsersBtn.isEnabled = viewModel.isLoggedIn && viewModel.userRole == "ADMIN"
 
         usersModel.rowCount = 0
         viewModel.adminUsers.forEach { user ->
