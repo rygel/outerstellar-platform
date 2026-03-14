@@ -38,7 +38,7 @@ class SmokeE2ETest : KoinTest {
                     single<MessageCache> { NoOpMessageCache }
                     single { SyncService(get(named("serverBaseUrl")), get(), get()) }
                     single<SyncProvider> { get<SyncService>() }
-                }
+                },
             )
         }
     }

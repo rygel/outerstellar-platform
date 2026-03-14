@@ -5,13 +5,14 @@ import dev.outerstellar.starter.sync.SyncService
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
-val apiClientModule = module {
-    single<SyncService> {
-        SyncService(
-            baseUrl = get(named("serverBaseUrl")),
-            repository = get(),
-            transactionManager = get(),
-        )
+val apiClientModule
+    get() = module {
+        single<SyncService> {
+            SyncService(
+                baseUrl = get(named("serverBaseUrl")),
+                repository = get(),
+                transactionManager = get(),
+            )
+        }
+        single<SyncProvider> { get<SyncService>() }
     }
-    single<SyncProvider> { get<SyncService>() }
-}

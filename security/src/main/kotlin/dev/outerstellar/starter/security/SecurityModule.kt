@@ -2,7 +2,8 @@ package dev.outerstellar.starter.security
 
 import org.koin.dsl.module
 
-val securityModule = module {
-    single<PasswordEncoder> { BCryptPasswordEncoder() }
-    single { SecurityService(get(), get()) }
-}
+val securityModule
+    get() = module {
+        single<PasswordEncoder> { BCryptPasswordEncoder() }
+        single { SecurityService(get(), get()) }
+    }

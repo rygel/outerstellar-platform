@@ -19,53 +19,65 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
     private val registerRequestLens = Body.auto<RegisterRequest>().toLens()
     private val tokenResponseLens = Body.auto<AuthTokenResponse>().toLens()
 
-    override val routes: List<ContractRoute> = listOf(
-        "/api/v1/auth/login" meta {
-            summary = "Login to get API token"
-            receiving(loginRequestLens)
-            returning(Status.OK, tokenResponseLens to AuthTokenResponse("", "", ""))
-            returning(Status.UNAUTHORIZED to "Invalid credentials")
-        } bindContract POST to { request ->
-            val login = loginRequestLens(request)
-            val user = securityService.authenticate(login.username, login.password)
+    override val routes: List<ContractRoute> =
+        listOf(
+            "/api/v1/auth/login" meta
+                {
+                    summary = "Login to get API token"
+                    receiving(loginRequestLens)
+                    returning(Status.OK, tokenResponseLens to AuthTokenResponse("", "", ""))
+                    returning(Status.UNAUTHORIZED to "Invalid credentials")
+                } bindContract
+                POST to
+                { request ->
+                    val login = loginRequestLens(request)
+                    val user = securityService.authenticate(login.username, login.password)
 
-            if (user != null) {
-                Response(Status.OK).with(
-                    tokenResponseLens of AuthTokenResponse(
-                        token = user.id.toString(),
-                        username = user.username,
-                        role = user.role.name
-                    )
-                )
-            } else {
-                Response(Status.UNAUTHORIZED).body("Invalid credentials")
-            }
-        },
-        "/api/v1/auth/register" meta {
-            summary = "Register user and return API token"
-            receiving(registerRequestLens)
-            returning(Status.OK, tokenResponseLens to AuthTokenResponse("", "", ""))
-            returning(Status.BAD_REQUEST to "Invalid registration request")
-            returning(Status.CONFLICT to "Username already exists")
-        } bindContract POST to { request ->
-            val register = registerRequestLens(request)
-            try {
-                val user = securityService.register(register.username, register.password)
-                Response(Status.OK).with(
-                    tokenResponseLens of AuthTokenResponse(
-                        token = user.id.toString(),
-                        username = user.username,
-                        role = user.role.name
-                    )
-                )
-            } catch (e: IllegalArgumentException) {
-                val status = if (e.message?.contains("already exists", ignoreCase = true) == true) {
-                    Status.CONFLICT
-                } else {
-                    Status.BAD_REQUEST
-                }
-                Response(status).body(e.message ?: "Invalid registration request")
-            }
-        }
-    )
+                    if (user != null) {
+                        Response(Status.OK)
+                            .with(
+                                tokenResponseLens of
+                                    AuthTokenResponse(
+                                        token = user.id.toString(),
+                                        username = user.username,
+                                        role = user.role.name,
+                                    )
+                            )
+                    } else {
+                        Response(Status.UNAUTHORIZED).body("Invalid credentials")
+                    }
+                },
+            "/api/v1/auth/register" meta
+                {
+                    summary = "Register user and return API token"
+                    receiving(registerRequestLens)
+                    returning(Status.OK, tokenResponseLens to AuthTokenResponse("", "", ""))
+                    returning(Status.BAD_REQUEST to "Invalid registration request")
+                    returning(Status.CONFLICT to "Username already exists")
+                } bindContract
+                POST to
+                { request ->
+                    val register = registerRequestLens(request)
+                    try {
+                        val user = securityService.register(register.username, register.password)
+                        Response(Status.OK)
+                            .with(
+                                tokenResponseLens of
+                                    AuthTokenResponse(
+                                        token = user.id.toString(),
+                                        username = user.username,
+                                        role = user.role.name,
+                                    )
+                            )
+                    } catch (e: IllegalArgumentException) {
+                        val status =
+                            if (e.message?.contains("already exists", ignoreCase = true) == true) {
+                                Status.CONFLICT
+                            } else {
+                                Status.BAD_REQUEST
+                            }
+                        Response(status).body(e.message ?: "Invalid registration request")
+                    }
+                },
+        )
 }

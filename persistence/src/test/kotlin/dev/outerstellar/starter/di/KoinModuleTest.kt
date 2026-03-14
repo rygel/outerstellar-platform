@@ -17,7 +17,7 @@ class KoinModuleTest : KoinTest {
                 module {
                     single { AppConfig(jdbcUrl = "jdbc:h2:mem:test;MODE=PostgreSQL") }
                     single(named("jdbcUrl")) { "jdbc:h2:mem:test;MODE=PostgreSQL" }
-                }
+                },
             )
         }
     }

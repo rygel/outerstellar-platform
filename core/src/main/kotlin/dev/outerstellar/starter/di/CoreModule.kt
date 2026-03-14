@@ -8,9 +8,10 @@ import dev.outerstellar.starter.service.NoOpEventPublisher
 import dev.outerstellar.starter.service.OutboxProcessor
 import org.koin.dsl.module
 
-val coreModule = module {
-    single { MessageService(get(), get(), get(), get(), get<EventPublisher>()) }
-    single { ContactService(get()) }
-    single { OutboxProcessor(get(), getOrNull<TransactionManager>()) }
-    single<EventPublisher> { NoOpEventPublisher }
-}
+val coreModule
+    get() = module {
+        single { MessageService(get(), get(), get(), get(), get<EventPublisher>()) }
+        single { ContactService(get()) }
+        single { OutboxProcessor(get(), getOrNull<TransactionManager>()) }
+        single<EventPublisher> { NoOpEventPublisher }
+    }

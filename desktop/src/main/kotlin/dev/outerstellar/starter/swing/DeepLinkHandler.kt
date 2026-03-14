@@ -1,9 +1,9 @@
 package dev.outerstellar.starter.swing
 
-import org.slf4j.LoggerFactory
 import java.awt.Desktop
 import java.net.URI
 import java.net.URISyntaxException
+import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.DeepLinkHandler")
 
@@ -18,9 +18,7 @@ object DeepLinkHandler {
         try {
             val desktop = Desktop.getDesktop()
             if (desktop.isSupported(Desktop.Action.APP_OPEN_URI)) {
-                desktop.setOpenURIHandler { event ->
-                    handleUri(event.uri)
-                }
+                desktop.setOpenURIHandler { event -> handleUri(event.uri) }
                 logger.info("DeepLinkHandler initialized for outerstellar://")
             } else {
                 logger.warn("DeepLinkHandler: APP_OPEN_URI not supported on this platform")
@@ -38,10 +36,12 @@ object DeepLinkHandler {
             val action = uri.host ?: uri.path.trimStart('/')
             when {
                 action.startsWith("search") -> {
-                    val query = uri.query?.split('&')
-                        ?.find { it.startsWith("q=") }
-                        ?.substringAfter("q=")
-                        ?.let { java.net.URLDecoder.decode(it, "UTF-8") }
+                    val query =
+                        uri.query
+                            ?.split('&')
+                            ?.find { it.startsWith("q=") }
+                            ?.substringAfter("q=")
+                            ?.let { java.net.URLDecoder.decode(it, "UTF-8") }
                     if (query != null) {
                         onSearchRequested?.invoke(query)
                     }
@@ -53,9 +53,7 @@ object DeepLinkHandler {
         }
     }
 
-    /**
-     * Fallback for platforms where APP_OPEN_URI handler doesn't work or for manual testing.
-     */
+    /** Fallback for platforms where APP_OPEN_URI handler doesn't work or for manual testing. */
     fun processRawArgs(args: Array<String>) {
         args.forEach { arg ->
             if (arg.startsWith("outerstellar://")) {

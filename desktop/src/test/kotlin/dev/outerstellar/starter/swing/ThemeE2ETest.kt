@@ -1,15 +1,15 @@
 package dev.outerstellar.starter.swing
 
 import dev.outerstellar.starter.model.ThemeCatalog
-import org.assertj.swing.edt.GuiActionRunner
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assumptions.assumeFalse
-import org.junit.jupiter.api.Test
 import java.awt.Color
 import java.awt.GraphicsEnvironment
 import javax.swing.JPanel
 import javax.swing.JTextField
 import javax.swing.UIManager
+import org.assertj.swing.edt.GuiActionRunner
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assumptions.assumeFalse
+import org.junit.jupiter.api.Test
 
 class ThemeE2ETest {
 
@@ -26,91 +26,99 @@ class ThemeE2ETest {
         val expectedLightCompBg = Color.decode(lightTheme.colors.getValue("componentBackground"))
 
         // Apply dark theme
-        GuiActionRunner.execute {
-            themeManager.applyTheme(darkTheme)
-        }
+        GuiActionRunner.execute { themeManager.applyTheme(darkTheme) }
 
         val panel = GuiActionRunner.execute<JPanel> { JPanel() }!!
         val textField = GuiActionRunner.execute<JTextField> { JTextField() }!!
         val button = GuiActionRunner.execute<javax.swing.JButton> { javax.swing.JButton() }!!
 
-        assertEquals(expectedDarkBg.rgb, panel.background.rgb, "Panel background should match dark theme")
-        assertEquals(expectedDarkCompBg.rgb, textField.background.rgb, "TextField background should match dark theme")
+        assertEquals(
+            expectedDarkBg.rgb,
+            panel.background.rgb,
+            "Panel background should match dark theme",
+        )
+        assertEquals(
+            expectedDarkCompBg.rgb,
+            textField.background.rgb,
+            "TextField background should match dark theme",
+        )
         assertEquals(
             Color.decode(darkTheme.colors.getValue("foreground")).rgb,
             textField.foreground.rgb,
-            "TextField foreground should match dark theme"
+            "TextField foreground should match dark theme",
         )
         assertEquals(
             Color.decode(darkTheme.colors.getValue("accent")).rgb,
             button.background.rgb,
-            "Button background should match accent"
+            "Button background should match accent",
         )
         assertEquals(
             Color.decode(darkTheme.colors.getValue("foreground")).rgb,
             button.foreground.rgb,
-            "Button foreground should match foreground"
+            "Button foreground should match foreground",
         )
         assertEquals(
             Color.decode(darkTheme.colors.getValue("success")).rgb,
-            (UIManager.get("Theme.success") as Color).rgb
+            (UIManager.get("Theme.success") as Color).rgb,
         )
         assertEquals(
             Color.decode(darkTheme.colors.getValue("danger")).rgb,
-            (UIManager.get("Theme.danger") as Color).rgb
+            (UIManager.get("Theme.danger") as Color).rgb,
         )
 
         // Verify some new keys
         assertEquals(expectedDarkCompBg.rgb, (UIManager.get("TextArea.background") as Color).rgb)
         assertEquals(
             Color.decode(darkTheme.colors.getValue("selectionBackground")).rgb,
-            (UIManager.get("List.selectionBackground") as Color).rgb
+            (UIManager.get("List.selectionBackground") as Color).rgb,
         )
 
         // Apply light theme
-        GuiActionRunner.execute {
-            themeManager.applyTheme(lightTheme)
-        }
+        GuiActionRunner.execute { themeManager.applyTheme(lightTheme) }
 
         val panel2 = GuiActionRunner.execute<JPanel> { JPanel() }!!
         val textField2 = GuiActionRunner.execute<JTextField> { JTextField() }!!
         val button2 = GuiActionRunner.execute<javax.swing.JButton> { javax.swing.JButton() }!!
 
-        assertEquals(expectedLightBg.rgb, panel2.background.rgb, "Panel background should match light theme")
+        assertEquals(
+            expectedLightBg.rgb,
+            panel2.background.rgb,
+            "Panel background should match light theme",
+        )
         assertEquals(
             expectedLightCompBg.rgb,
             textField2.background.rgb,
-            "TextField background should match light theme"
+            "TextField background should match light theme",
         )
         assertEquals(
             Color.decode(lightTheme.colors.getValue("foreground")).rgb,
             textField2.foreground.rgb,
-            "TextField foreground should match light theme"
+            "TextField foreground should match light theme",
         )
         assertEquals(
             Color.decode(lightTheme.colors.getValue("accent")).rgb,
             button2.background.rgb,
-            "Button background should match accent"
+            "Button background should match accent",
         )
         assertEquals(
             Color.decode(lightTheme.colors.getValue("foreground")).rgb,
             button2.foreground.rgb,
-            "Button foreground should match foreground"
+            "Button foreground should match foreground",
         )
         assertEquals(
             Color.decode(lightTheme.colors.getValue("success")).rgb,
-            (UIManager.get("Theme.success") as Color).rgb
+            (UIManager.get("Theme.success") as Color).rgb,
         )
         assertEquals(
             Color.decode(lightTheme.colors.getValue("danger")).rgb,
-            (UIManager.get("Theme.danger") as Color).rgb
+            (UIManager.get("Theme.danger") as Color).rgb,
         )
 
         // Verify some new keys in light theme
         assertEquals(expectedLightCompBg.rgb, (UIManager.get("ComboBox.background") as Color).rgb)
         assertEquals(
             Color.decode(lightTheme.colors.getValue("background")).rgb,
-            (UIManager.get("List.selectionForeground") as Color).rgb
+            (UIManager.get("List.selectionForeground") as Color).rgb,
         )
     }
 
@@ -124,31 +132,32 @@ class ThemeE2ETest {
         val expectedLightBg = Color.decode(lightTheme.colors.getValue("background"))
 
         // Apply light theme
-        GuiActionRunner.execute {
-            themeManager.applyTheme(lightTheme)
-        }
+        GuiActionRunner.execute { themeManager.applyTheme(lightTheme) }
         assertEquals(expectedLightBg.rgb, (UIManager.get("Panel.background") as Color).rgb)
 
         // Apply dark theme
-        GuiActionRunner.execute {
-            themeManager.applyTheme(darkTheme)
-        }
+        GuiActionRunner.execute { themeManager.applyTheme(darkTheme) }
         assertEquals(expectedDarkBg.rgb, (UIManager.get("Panel.background") as Color).rgb)
     }
 
     @Test
     fun `settings dialog theme preview should update live when selection changes`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping GUI interaction test in headless mode")
+        assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Skipping GUI interaction test in headless mode",
+        )
 
         val themeManager = ThemeManager()
         val i18nService = com.outerstellar.i18n.I18nService.create("messages")
-        val viewModel = io.mockk.mockk<dev.outerstellar.starter.swing.viewmodel.SyncViewModel>(relaxed = true)
+        val viewModel =
+            io.mockk.mockk<dev.outerstellar.starter.swing.viewmodel.SyncViewModel>(relaxed = true)
         val syncWindow = SyncWindow(viewModel, themeManager, i18nService)
 
         GuiActionRunner.execute {
             syncWindow.configureForTest()
             // We can't easily use FrameFixture for a modal dialog that blocks,
-            // but we can test the updatePreview logic by manually triggering it or finding components
+            // but we can test the updatePreview logic by manually triggering it or finding
+            // components
         }
 
         val frame = syncWindow.frame
@@ -168,14 +177,22 @@ class ThemeE2ETest {
             val darkTheme = ThemeCatalog.allThemes().first { it.name == "Dark" }
             val expectedDarkBg = Color.decode(darkTheme.colors.getValue("background"))
 
-            assertEquals(expectedDarkBg.rgb, previewPanel.background.rgb, "Preview panel should update to dark background")
+            assertEquals(
+                expectedDarkBg.rgb,
+                previewPanel.background.rgb,
+                "Preview panel should update to dark background",
+            )
 
             // Select 'Default' (Light)
             themeCombo.selectItem("Default")
             val lightTheme = ThemeCatalog.allThemes().first { it.id == "default" }
             val expectedLightBg = Color.decode(lightTheme.colors.getValue("background"))
 
-            assertEquals(expectedLightBg.rgb, previewPanel.background.rgb, "Preview panel should update to light background")
+            assertEquals(
+                expectedLightBg.rgb,
+                previewPanel.background.rgb,
+                "Preview panel should update to light background",
+            )
 
             dialog.button("cancelButton").click()
         } finally {

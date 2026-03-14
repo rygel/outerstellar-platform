@@ -5,12 +5,14 @@ import dev.outerstellar.starter.model.StoredContact
 import dev.outerstellar.starter.persistence.ContactRepository
 import org.slf4j.LoggerFactory
 
-class ContactService(
-    private val repository: ContactRepository
-) {
+class ContactService(private val repository: ContactRepository) {
     private val logger = LoggerFactory.getLogger(ContactService::class.java)
 
-    fun listContacts(query: String? = null, limit: Int = 100, offset: Int = 0): List<ContactSummary> {
+    fun listContacts(
+        query: String? = null,
+        limit: Int = 100,
+        offset: Int = 0,
+    ): List<ContactSummary> {
         logger.debug("Listing contacts query='{}' limit={} offset={}", query, limit, offset)
         return repository.listContacts(query, limit, offset)
     }
@@ -19,16 +21,30 @@ class ContactService(
         return repository.countContacts(query)
     }
 
+    fun getContactBySyncId(syncId: String): StoredContact? {
+        return repository.findBySyncId(syncId)
+    }
+
+    @Suppress("LongParameterList")
     fun createContact(
         name: String,
         emails: List<String>,
         phones: List<String>,
+        socialMedia: List<String>,
         company: String,
         companyAddress: String,
-        department: String
+        department: String,
     ): StoredContact {
         logger.info("Creating contact name={}", name)
-        return repository.createLocalContact(name, emails, phones, company, companyAddress, department)
+        return repository.createLocalContact(
+            name,
+            emails,
+            phones,
+            socialMedia,
+            company,
+            companyAddress,
+            department,
+        )
     }
 
     fun updateContact(contact: StoredContact): StoredContact {
@@ -41,16 +57,20 @@ class ContactService(
         repository.softDelete(syncId)
     }
 
-    fun getChangesSince(updatedAtEpochMs: Long): dev.outerstellar.starter.sync.SyncPullContactResponse {
+    fun getChangesSince(
+        updatedAtEpochMs: Long
+    ): dev.outerstellar.starter.sync.SyncPullContactResponse {
         val changes = repository.findChangesSince(updatedAtEpochMs)
         val serverTimestamp = System.currentTimeMillis()
         return dev.outerstellar.starter.sync.SyncPullContactResponse(
             contacts = changes.map { it.toSyncContact() },
-            serverTimestamp = serverTimestamp
+            serverTimestamp = serverTimestamp,
         )
     }
 
-    fun processPushRequest(request: dev.outerstellar.starter.sync.SyncPushContactRequest): dev.outerstellar.starter.sync.SyncPushContactResponse {
+    fun processPushRequest(
+        request: dev.outerstellar.starter.sync.SyncPushContactRequest
+    ): dev.outerstellar.starter.sync.SyncPushContactResponse {
         var applied = 0
         val conflicts = mutableListOf<dev.outerstellar.starter.sync.SyncContactConflict>()
 
@@ -61,7 +81,7 @@ class ContactService(
                     dev.outerstellar.starter.sync.SyncContactConflict(
                         syncId = pushedContact.syncId,
                         reason = "Server has newer version",
-                        serverContact = existing.toSyncContact()
+                        serverContact = existing.toSyncContact(),
                     )
                 )
             } else {
@@ -72,7 +92,7 @@ class ContactService(
 
         return dev.outerstellar.starter.sync.SyncPushContactResponse(
             appliedCount = applied,
-            conflicts = conflicts
+            conflicts = conflicts,
         )
     }
 }

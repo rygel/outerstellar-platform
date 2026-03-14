@@ -3,7 +3,8 @@ package dev.outerstellar.starter.security
 import java.util.UUID
 
 enum class UserRole {
-    USER, ADMIN
+    USER,
+    ADMIN,
 }
 
 data class User(
@@ -12,12 +13,15 @@ data class User(
     val email: String,
     val passwordHash: String,
     val role: UserRole,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
 )
 
 interface UserRepository {
     fun findById(id: UUID): User?
+
     fun findByUsername(username: String): User?
+
     fun findByEmail(email: String): User?
+
     fun save(user: User)
 }

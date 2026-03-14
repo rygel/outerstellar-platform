@@ -191,20 +191,20 @@ Current Swing theme choices:
 
 ## Build and quality tooling
 
-The build includes workbook-style quality tooling and project hygiene:
+The build includes workbook-style quality tooling and project hygiene. **It is mandatory that these static analysis and formatting tools remain present, enabled, and strictly enforced to ensure a high-quality baseline for all downstream projects:**
 
-- Enforcer
-- JaCoCo
-- SpotBugs
-- Modernizer
-- Spotless
-- Checkstyle
-- PMD
-- Detekt
-- Versions Maven Plugin
-- OWASP Dependency Check
+- Enforcer (dependency convergence and version rules)
+- JaCoCo (test coverage)
+- SpotBugs (static analysis for bugs)
+- Modernizer (detect legacy Java API usage)
+- Spotless / Ktlint (code formatting)
+- Checkstyle (coding standard adherence)
+- PMD (source code analyzer)
+- Detekt (Kotlin static analysis)
+- Versions Maven Plugin (dependency updates)
+- OWASP Dependency Check (security vulnerabilities)
 
-These are included so the starter begins with the same quality expectations as downstream projects.
+These are included and enforced so the starter begins with and maintains the exact same rigorous quality expectations as downstream projects.
 
 ### Build profile strategy
 

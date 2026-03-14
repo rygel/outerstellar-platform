@@ -25,17 +25,15 @@ data class ShellView(
     val layoutSelectorUrl: String,
     val footerCopy: String,
     val footerStatusUrl: String,
+    val version: String,
     val userName: String? = null,
     val isLoggedIn: Boolean = false,
-    val logoutUrl: String? = null
+    val logoutUrl: String? = null,
 )
 
 data class HomeFeature(val label: String, val value: String)
 
-data class Page<T : ViewModel>(
-    val shell: ShellView,
-    val data: T
-) : ViewModel {
+data class Page<T : ViewModel>(val shell: ShellView, val data: T) : ViewModel {
     override fun template(): String = data.template()
 }
 
@@ -54,6 +52,14 @@ data class HomePage(
     override fun template(): String = "dev/outerstellar/starter/web/HomePage"
 }
 
+data class TrashPage(
+    val title: String,
+    val description: String,
+    val messageList: MessageListViewModel,
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/TrashPage"
+}
+
 data class PaginationViewModel(
     val currentPage: Int,
     val totalPages: Int,
@@ -61,14 +67,10 @@ data class PaginationViewModel(
     val hasNext: Boolean,
     val previousUrl: String?,
     val nextUrl: String?,
-    val pages: List<PageNumberViewModel>
+    val pages: List<PageNumberViewModel>,
 )
 
-data class PageNumberViewModel(
-    val number: Int,
-    val url: String,
-    val isActive: Boolean
-)
+data class PageNumberViewModel(val number: Int, val url: String, val isActive: Boolean)
 
 data class AuthModeTab(val key: String, val label: String, val url: String)
 
@@ -135,11 +137,7 @@ data class DevDashboardPage(
     override fun template(): String = "dev/outerstellar/starter/web/DevDashboard"
 }
 
-data class OutboxStatsViewModel(
-    val pending: Int,
-    val processed: Int,
-    val failed: Int
-)
+data class OutboxStatsViewModel(val pending: Int, val processed: Int, val failed: Int)
 
 data class ModalViewModel(
     val id: String,
@@ -148,7 +146,7 @@ data class ModalViewModel(
     val confirmLabel: String,
     val cancelLabel: String,
     val actionUrl: String,
-    val targetId: String
+    val targetId: String,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/components/Modal"
 }
@@ -159,7 +157,7 @@ data class ConflictResolveViewModel(
     val myContent: String,
     val serverAuthor: String,
     val serverContent: String,
-    val resolveUrl: String
+    val resolveUrl: String,
 ) : ViewModel
 
 data class SidebarSelector(
@@ -183,15 +181,16 @@ data class ContactViewModel(
     val name: String,
     val emails: List<String>,
     val phones: List<String>,
+    val socialMedia: List<String>,
     val company: String,
     val companyAddress: String,
-    val department: String
+    val department: String,
 )
 
 data class ContactsPage(
     val title: String,
     val description: String,
-    val contacts: List<ContactViewModel>
+    val contacts: List<ContactViewModel>,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/ContactsPage"
 }
@@ -199,32 +198,35 @@ data class ContactsPage(
 @Suppress("TooManyFunctions")
 class WebPageFactory(
     private val repository: MessageRepository,
-    private val contactService: dev.outerstellar.starter.service.ContactService? = null
+    private val contactService: dev.outerstellar.starter.service.ContactService? = null,
 ) {
     private val messageListComponent = MessageListComponent(repository)
 
     fun buildContactsPage(ctx: WebContext): Page<ContactsPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell("Contacts", "/contacts")
-        
+
         val dbContacts = contactService?.listContacts() ?: emptyList()
 
         return Page(
             shell = shell,
-            data = ContactsPage(
-                title = "Contacts Directory",
-                description = "A list of all your contacts.",
-                contacts = dbContacts.map { 
-                    ContactViewModel(
-                        name = it.name,
-                        emails = it.emails,
-                        phones = it.phones,
-                        company = it.company,
-                        companyAddress = it.companyAddress,
-                        department = it.department
-                    ) 
-                }
-            )
+            data =
+                ContactsPage(
+                    title = "Contacts Directory",
+                    description = "A list of all your contacts.",
+                    contacts =
+                        dbContacts.map {
+                            ContactViewModel(
+                                name = it.name,
+                                emails = it.emails,
+                                phones = it.phones,
+                                socialMedia = it.socialMedia,
+                                company = it.company,
+                                companyAddress = it.companyAddress,
+                                department = it.department,
+                            )
+                        },
+                ),
         )
     }
 
@@ -233,7 +235,7 @@ class WebPageFactory(
         query: String? = null,
         limit: Int = DEFAULT_LIMIT,
         offset: Int = 0,
-        year: Int? = null
+        year: Int? = null,
     ): Page<HomePage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.home"), "/")
@@ -241,26 +243,37 @@ class WebPageFactory(
 
         return Page(
             shell = shell,
-            data = HomePage(
-                eyebrow = i18n.translate("web.home.eyebrow"),
-                intro = i18n.translate("web.home.intro"),
-                features = listOf(
-                    HomeFeature(i18n.translate("web.feature.http.label"), i18n.translate("web.feature.http.value")),
-                    HomeFeature(i18n.translate("web.feature.db.label"), i18n.translate("web.feature.db.value")),
-                    HomeFeature(i18n.translate("web.feature.sync.label"), i18n.translate("web.feature.sync.value")),
-                    HomeFeature(
-                        i18n.translate("web.feature.desktop.label"),
-                        i18n.translate("web.feature.desktop.value")
-                    )
+            data =
+                HomePage(
+                    eyebrow = i18n.translate("web.home.eyebrow"),
+                    intro = i18n.translate("web.home.intro"),
+                    features =
+                        listOf(
+                            HomeFeature(
+                                i18n.translate("web.feature.http.label"),
+                                i18n.translate("web.feature.http.value"),
+                            ),
+                            HomeFeature(
+                                i18n.translate("web.feature.db.label"),
+                                i18n.translate("web.feature.db.value"),
+                            ),
+                            HomeFeature(
+                                i18n.translate("web.feature.sync.label"),
+                                i18n.translate("web.feature.sync.value"),
+                            ),
+                            HomeFeature(
+                                i18n.translate("web.feature.desktop.label"),
+                                i18n.translate("web.feature.desktop.value"),
+                            ),
+                        ),
+                    composerTitle = i18n.translate("web.home.composer.title"),
+                    composerIntro = i18n.translate("web.home.composer.intro"),
+                    authorPlaceholder = i18n.translate("web.home.composer.author"),
+                    contentPlaceholder = i18n.translate("web.home.composer.content"),
+                    submitLabel = i18n.translate("web.home.composer.submit"),
+                    submitUrl = ctx.url("/messages"),
+                    messageList = messageList,
                 ),
-                composerTitle = i18n.translate("web.home.composer.title"),
-                composerIntro = i18n.translate("web.home.composer.intro"),
-                authorPlaceholder = i18n.translate("web.home.composer.author"),
-                contentPlaceholder = i18n.translate("web.home.composer.content"),
-                submitLabel = i18n.translate("web.home.composer.submit"),
-                submitUrl = ctx.url("/messages"),
-                messageList = messageList
-            )
         )
     }
 
@@ -272,29 +285,31 @@ class WebPageFactory(
         val formsUrl = "/auth/components/forms"
         return Page(
             shell = shell,
-            data = AuthViewModel(
-                heading = i18n.translate("web.auth.heading"),
-                intro = i18n.translate("web.auth.intro"),
-                helperText = i18n.translate("web.auth.helper"),
-                tabs = listOf(
-                    AuthModeTab(
-                        "sign-in",
-                        i18n.translate("web.auth.signin"),
-                        ctx.url("$formsUrl/sign-in?returnTo=$returnTo")
-                    ),
-                    AuthModeTab(
-                        "register",
-                        i18n.translate("web.auth.register"),
-                        ctx.url("$formsUrl/register?returnTo=$returnTo")
-                    ),
-                    AuthModeTab(
-                        "recover",
-                        i18n.translate("web.auth.recover"),
-                        ctx.url("$formsUrl/recover?returnTo=$returnTo")
-                    )
+            data =
+                AuthViewModel(
+                    heading = i18n.translate("web.auth.heading"),
+                    intro = i18n.translate("web.auth.intro"),
+                    helperText = i18n.translate("web.auth.helper"),
+                    tabs =
+                        listOf(
+                            AuthModeTab(
+                                "sign-in",
+                                i18n.translate("web.auth.signin"),
+                                ctx.url("$formsUrl/sign-in?returnTo=$returnTo"),
+                            ),
+                            AuthModeTab(
+                                "register",
+                                i18n.translate("web.auth.register"),
+                                ctx.url("$formsUrl/register?returnTo=$returnTo"),
+                            ),
+                            AuthModeTab(
+                                "recover",
+                                i18n.translate("web.auth.recover"),
+                                ctx.url("$formsUrl/recover?returnTo=$returnTo"),
+                            ),
+                        ),
+                    defaultFormUrl = ctx.url("$formsUrl/sign-in?returnTo=$returnTo"),
                 ),
-                defaultFormUrl = ctx.url("$formsUrl/sign-in?returnTo=$returnTo")
-            )
         )
     }
 
@@ -323,7 +338,7 @@ class WebPageFactory(
             namePlaceholder = i18n.translate("web.auth.placeholder.name"),
             includeNameField = normalizedMode == "register",
             includeConfirmPasswordField = normalizedMode == "register",
-            includeRememberField = normalizedMode == "sign-in"
+            includeRememberField = normalizedMode == "sign-in",
         )
     }
 
@@ -347,13 +362,13 @@ class WebPageFactory(
             AuthResultFragment(
                 title = i18n.translate("web.auth.result.success.title"),
                 message = i18n.translate("web.auth.result.success.body", email),
-                toneClass = "panel-success"
+                toneClass = "panel-success",
             )
         } else {
             AuthResultFragment(
                 title = i18n.translate("web.auth.result.error.title"),
                 message = errors.joinToString(" "),
-                toneClass = "panel-danger"
+                toneClass = "panel-danger",
             )
         }
     }
@@ -362,21 +377,27 @@ class WebPageFactory(
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.errors"), "/errors")
         val normalizedKind = if (kind == "server-error") "server-error" else "not-found"
-        val statusCode = if (normalizedKind == "server-error") HTTP_STATUS_SERVER_ERROR else HTTP_STATUS_NOT_FOUND
+        val statusCode =
+            if (normalizedKind == "server-error") {
+                HTTP_STATUS_SERVER_ERROR
+            } else {
+                HTTP_STATUS_NOT_FOUND
+            }
 
         return Page(
             shell = shell,
-            data = ErrorPage(
-                statusCode = statusCode,
-                heading = i18n.translate("web.error.$normalizedKind.title"),
-                message = i18n.translate("web.error.$normalizedKind.message"),
-                primaryActionLabel = i18n.translate("web.error.primary"),
-                primaryActionUrl = ctx.url("/"),
-                secondaryActionLabel = i18n.translate("web.error.secondary"),
-                secondaryActionUrl = ctx.url("/auth"),
-                helpButtonLabel = i18n.translate("web.error.help"),
-                helpUrl = ctx.url("/errors/components/help/$normalizedKind")
-            )
+            data =
+                ErrorPage(
+                    statusCode = statusCode,
+                    heading = i18n.translate("web.error.$normalizedKind.title"),
+                    message = i18n.translate("web.error.$normalizedKind.message"),
+                    primaryActionLabel = i18n.translate("web.error.primary"),
+                    primaryActionUrl = ctx.url("/"),
+                    secondaryActionLabel = i18n.translate("web.error.secondary"),
+                    secondaryActionUrl = ctx.url("/auth"),
+                    helpButtonLabel = i18n.translate("web.error.help"),
+                    helpUrl = ctx.url("/errors/components/help/$normalizedKind"),
+                ),
         )
     }
 
@@ -386,11 +407,12 @@ class WebPageFactory(
 
         return ErrorHelpFragment(
             title = i18n.translate("web.error.$normalizedKind.help.title"),
-            items = listOf(
-                i18n.translate("web.error.$normalizedKind.help.item1"),
-                i18n.translate("web.error.$normalizedKind.help.item2"),
-                i18n.translate("web.error.$normalizedKind.help.item3")
-            )
+            items =
+                listOf(
+                    i18n.translate("web.error.$normalizedKind.help.item1"),
+                    i18n.translate("web.error.$normalizedKind.help.item2"),
+                    i18n.translate("web.error.$normalizedKind.help.item3"),
+                ),
         )
     }
 
@@ -401,9 +423,25 @@ class WebPageFactory(
         limit: Int = DEFAULT_LIMIT,
         offset: Int = 0,
         year: Int? = null,
-        isTrash: Boolean = false
+        isTrash: Boolean = false,
     ): MessageListViewModel {
         return messageListComponent.build(ctx, query, limit, offset, year, isTrash)
+    }
+
+    fun buildTrashPage(ctx: WebContext): Page<TrashPage> {
+        val i18n = ctx.i18n
+        val shell = ctx.shell("Trash", "/messages/trash")
+        val messageList = buildMessageList(ctx, isTrash = true)
+
+        return Page(
+            shell = shell,
+            data =
+                TrashPage(
+                    title = "Trash",
+                    description = "Messages you've deleted.",
+                    messageList = messageList,
+                ),
+        )
     }
 
     fun buildFooterStatus(ctx: WebContext): FooterStatusFragment {
@@ -420,29 +458,29 @@ class WebPageFactory(
         metrics: String,
         cacheStats: Map<String, Any>,
         outboxStats: OutboxStatsViewModel,
-        telemetryStatus: String
+        telemetryStatus: String,
     ): Page<DevDashboardPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.nav.dev"), "/admin/dev")
 
         return Page(
             shell = shell,
-            data = DevDashboardPage(
-                metrics = metrics,
-                cacheStats = cacheStats,
-                outboxStats = outboxStats,
-                telemetryStatus = telemetryStatus
-            )
+            data =
+                DevDashboardPage(
+                    metrics = metrics,
+                    cacheStats = cacheStats,
+                    outboxStats = outboxStats,
+                    telemetryStatus = telemetryStatus,
+                ),
         )
     }
 
     fun buildConflictResolveModal(ctx: WebContext, syncId: String): ConflictResolveViewModel {
-        val message = repository.findBySyncId(syncId)
-            ?: throw dev.outerstellar.starter.model.MessageNotFoundException(syncId)
-        val serverVersion = org.http4k.format.Jackson.asA(
-            message.syncConflict!!,
-            SyncMessage::class
-        )
+        val message =
+            repository.findBySyncId(syncId)
+                ?: throw dev.outerstellar.starter.model.MessageNotFoundException(syncId)
+        val serverVersion =
+            org.http4k.format.Jackson.asA(message.syncConflict!!, SyncMessage::class)
 
         return ConflictResolveViewModel(
             syncId = syncId,
@@ -450,7 +488,7 @@ class WebPageFactory(
             myContent = message.content,
             serverAuthor = serverVersion.author,
             serverContent = serverVersion.content,
-            resolveUrl = ctx.url("/messages/resolve/$syncId")
+            resolveUrl = ctx.url("/messages/resolve/$syncId"),
         )
     }
 
@@ -463,15 +501,17 @@ class WebPageFactory(
             label = i18n.translate("web.sidebar.theme.label"),
             selectId = "theme-selector",
             selectName = "theme",
-            options = ThemeCatalog.allThemes().map {
-                ShellOption(it.id, it.name, it.id, it.id == ctx.theme)
-            },
-            hiddenFields = listOf(
-                HiddenField("pagePath", pagePath),
-                HiddenField("lang", ctx.lang),
-                HiddenField("layout", ctx.layout)
-            ),
-            refreshUrl = "/components/navigation/page"
+            options =
+                ThemeCatalog.allThemes().map {
+                    ShellOption(it.id, it.name, it.id, it.id == ctx.theme)
+                },
+            hiddenFields =
+                listOf(
+                    HiddenField("pagePath", pagePath),
+                    HiddenField("lang", ctx.lang),
+                    HiddenField("layout", ctx.layout),
+                ),
+            refreshUrl = "/components/navigation/page",
         )
     }
 
@@ -484,15 +524,18 @@ class WebPageFactory(
             label = i18n.translate("web.sidebar.language.label"),
             selectId = "language-selector",
             selectName = "lang",
-            options = listOf("en" to "web.language.english", "fr" to "web.language.french").map { (id, key) ->
-                ShellOption(id, i18n.translate(key), id, id == ctx.lang)
-            },
-            hiddenFields = listOf(
-                HiddenField("pagePath", pagePath),
-                HiddenField("theme", ctx.theme),
-                HiddenField("layout", ctx.layout)
-            ),
-            refreshUrl = "/components/navigation/page"
+            options =
+                listOf("en" to "web.language.english", "fr" to "web.language.french").map {
+                    (id, key) ->
+                    ShellOption(id, i18n.translate(key), id, id == ctx.lang)
+                },
+            hiddenFields =
+                listOf(
+                    HiddenField("pagePath", pagePath),
+                    HiddenField("theme", ctx.theme),
+                    HiddenField("layout", ctx.layout),
+                ),
+            refreshUrl = "/components/navigation/page",
         )
     }
 
@@ -505,24 +548,35 @@ class WebPageFactory(
             label = i18n.translate("web.sidebar.layout.label"),
             selectId = "layout-selector",
             selectName = "layout",
-            options = listOf(
-                "nice" to "web.layout.nice",
-                "cozy" to "web.layout.cozy",
-                "compact" to "web.layout.compact"
-            ).map { (id, key) ->
-                ShellOption(id, i18n.translate(key), id, id == ctx.layout)
-            },
-            hiddenFields = listOf(
-                HiddenField("pagePath", pagePath),
-                HiddenField("theme", ctx.theme),
-                HiddenField("lang", ctx.lang)
-            ),
-            refreshUrl = "/components/navigation/page"
+            options =
+                listOf(
+                        "nice" to "web.layout.nice",
+                        "cozy" to "web.layout.cozy",
+                        "compact" to "web.layout.compact",
+                    )
+                    .map { (id, key) ->
+                        ShellOption(id, i18n.translate(key), id, id == ctx.layout)
+                    },
+            hiddenFields =
+                listOf(
+                    HiddenField("pagePath", pagePath),
+                    HiddenField("theme", ctx.theme),
+                    HiddenField("lang", ctx.lang),
+                ),
+            refreshUrl = "/components/navigation/page",
         )
     }
 
-    fun buildNavigationRefresh(ctx: WebContext): SidebarSelector {
-        // Logic for refreshing navigation based on context state
-        return buildLayoutSelector(ctx) // Example fallback
+    fun buildNavigationRefresh(ctx: WebContext): Page<out ViewModel> {
+        val pagePath = ctx.request.query("pagePath") ?: "/"
+        return when {
+            pagePath == "/" -> buildHomePage(ctx)
+            pagePath == "/contacts" -> buildContactsPage(ctx)
+            pagePath == "/auth" -> buildAuthPage(ctx)
+            pagePath == "/admin/dev" ->
+                buildDevDashboardPage(ctx, "", emptyMap(), OutboxStatsViewModel(0, 0, 0), "")
+            pagePath.startsWith("/errors") -> buildErrorPage(ctx, "not-found")
+            else -> buildHomePage(ctx)
+        }
     }
 }

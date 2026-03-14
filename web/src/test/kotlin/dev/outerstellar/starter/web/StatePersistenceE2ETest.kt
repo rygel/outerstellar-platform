@@ -8,13 +8,13 @@ import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.service.MessageService
 import io.mockk.mockk
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.cookies
 import org.junit.jupiter.api.AfterEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class StatePersistenceE2ETest : H2WebTest() {
     @AfterEach
@@ -34,21 +34,23 @@ class StatePersistenceE2ETest : H2WebTest() {
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
-        val contactService = io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
+        val contactService =
+            io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
-        val app = app(
-            messageService,
-            contactService,
-            repository,
-            outbox,
-            cache,
-            createRenderer(),
-            pageFactory,
-            testConfig,
-            securityService,
-            userRepository,
-            encoder
-        )
+        val app =
+            app(
+                messageService,
+                contactService,
+                repository,
+                outbox,
+                cache,
+                createRenderer(),
+                pageFactory,
+                testConfig,
+                securityService,
+                userRepository,
+                encoder,
+            )
 
         val response = app.http!!(Request(GET, "/?lang=fr"))
         assertEquals(Status.OK, response.status)

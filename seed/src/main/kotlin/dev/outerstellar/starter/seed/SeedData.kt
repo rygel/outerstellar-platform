@@ -5,11 +5,11 @@ import dev.outerstellar.starter.di.persistenceModule
 import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.persistence.ContactRepository
 import dev.outerstellar.starter.persistence.MessageRepository
+import javax.sql.DataSource
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.slf4j.LoggerFactory
-import javax.sql.DataSource
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.seed.SeedData")
 
@@ -22,16 +22,14 @@ object SeedComponent : KoinComponent {
 fun main() {
     logger.info("Starting database seed process...")
 
-    startKoin {
-        modules(persistenceModule, coreModule)
-    }
+    startKoin { modules(persistenceModule, coreModule) }
 
     val seedComponent = SeedComponent
     migrate(seedComponent.dataSource)
 
     logger.info("Seeding messages...")
     seedComponent.messageRepository.seedStarterMessages()
-    
+
     logger.info("Seeding contacts...")
     seedComponent.contactRepository.seedStarterContacts()
 

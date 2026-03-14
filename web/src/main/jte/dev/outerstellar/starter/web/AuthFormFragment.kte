@@ -2,8 +2,8 @@
 @param model: AuthFormFragment
 
 <div>
-    <h2>${model.title}</h2>
-    <p>${model.description}</p>
+    <h2 style="font-size: 1.25rem;">${model.title}</h2>
+    <p class="text-muted mb-6">${model.description}</p>
     <form class="form-grid"
           hx-post="${model.submitUrl}"
           hx-target="#auth-result-slot"
@@ -11,26 +11,40 @@
         <input type="hidden" name="mode" value="${model.mode}">
         <input type="hidden" name="lang" value="${model.language}">
         <input type="hidden" name="theme" value="${model.theme}">
+        
         @if (model.includeNameField)
-            <label>${model.nameLabel}</label>
-            <input type="text" name="displayName" placeholder="${model.namePlaceholder}">
+            <div class="mb-2">
+                <label class="topbar-label">${model.nameLabel}</label>
+                <input type="text" name="displayName" placeholder="${model.namePlaceholder}">
+            </div>
         @endif
-        <label>${model.emailLabel}</label>
-        <input type="email" name="email" placeholder="${model.emailPlaceholder}">
+        
+        <div class="mb-2">
+            <label class="topbar-label">${model.emailLabel}</label>
+            <input type="email" name="email" placeholder="${model.emailPlaceholder}">
+        </div>
+        
         @if (model.mode != "recover")
-            <label>${model.passwordLabel}</label>
-            <input type="password" name="password" placeholder="${model.passwordPlaceholder}">
+            <div class="mb-2">
+                <label class="topbar-label">${model.passwordLabel}</label>
+                <input type="password" name="password" placeholder="${model.passwordPlaceholder}">
+            </div>
         @endif
+        
         @if (model.includeConfirmPasswordField)
-            <label>${model.confirmPasswordLabel}</label>
-            <input type="password" name="confirmPassword" placeholder="${model.confirmPasswordPlaceholder}">
+            <div class="mb-2">
+                <label class="topbar-label">${model.confirmPasswordLabel}</label>
+                <input type="password" name="confirmPassword" placeholder="${model.confirmPasswordPlaceholder}">
+            </div>
         @endif
+        
         @if (model.includeRememberField)
-            <label>
-                <input type="checkbox" name="rememberMe">
-                ${model.rememberLabel}
-            </label>
+            <div class="flex items-center gap-2 mb-4">
+                <input type="checkbox" name="rememberMe" style="width: auto;">
+                <label class="text-muted" style="font-size: 0.875rem;">${model.rememberLabel}</label>
+            </div>
         @endif
-        <button type="submit">${model.submitLabel}</button>
+        
+        <button type="submit" class="w-full">${model.submitLabel}</button>
     </form>
 </div>

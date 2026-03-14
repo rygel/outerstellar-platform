@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 
 class SecurityService(
     private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
 
@@ -36,13 +36,14 @@ class SecurityService(
         require(password.length >= 8) { "Password must be at least 8 characters" }
         require(userRepository.findByUsername(username) == null) { "Username already exists" }
 
-        val created = User(
-            id = java.util.UUID.randomUUID(),
-            username = username,
-            email = username,
-            passwordHash = passwordEncoder.encode(password),
-            role = UserRole.USER
-        )
+        val created =
+            User(
+                id = java.util.UUID.randomUUID(),
+                username = username,
+                email = username,
+                passwordHash = passwordEncoder.encode(password),
+                role = UserRole.USER,
+            )
         userRepository.save(created)
         logger.info("Registration successful for user {}", username)
         return created

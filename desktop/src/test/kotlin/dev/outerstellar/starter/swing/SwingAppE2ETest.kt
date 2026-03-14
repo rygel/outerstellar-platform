@@ -9,6 +9,15 @@ import dev.outerstellar.starter.web.AuthTokenResponse
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.awt.Color
+import java.awt.Component
+import java.awt.Container
+import java.awt.GraphicsEnvironment
+import java.util.Locale
+import java.util.function.BooleanSupplier
+import javax.swing.JComponent
+import javax.swing.JFrame
+import javax.swing.UIManager
 import org.assertj.swing.core.BasicRobot
 import org.assertj.swing.core.Robot
 import org.assertj.swing.edt.FailOnThreadViolationRepaintManager
@@ -20,15 +29,6 @@ import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.awt.Color
-import java.awt.Component
-import java.awt.Container
-import java.awt.GraphicsEnvironment
-import java.util.Locale
-import java.util.function.BooleanSupplier
-import javax.swing.JComponent
-import javax.swing.JFrame
-import javax.swing.UIManager
 
 class SwingAppE2ETest {
 
@@ -54,11 +54,12 @@ class SwingAppE2ETest {
 
         robot = BasicRobot.robotWithNewAwtHierarchy()
         val viewModel = SyncViewModel(messageService, null, syncService, i18nService)
-        val syncWindow = GuiActionRunner.execute<SyncWindow> {
-            val sw = SyncWindow(viewModel, ThemeManager(), i18nService)
-            sw.configureForTest()
-            sw
-        }!!
+        val syncWindow =
+            GuiActionRunner.execute<SyncWindow> {
+                val sw = SyncWindow(viewModel, ThemeManager(), i18nService)
+                sw.configureForTest()
+                sw
+            }!!
         window = FrameFixture(robot!!, syncWindow.frame)
         window?.show()
     }
@@ -81,7 +82,10 @@ class SwingAppE2ETest {
 
     @Test
     fun `ui interaction updates viewmodel and calls service`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping GUI interaction test in headless mode")
+        assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Skipping GUI interaction test in headless mode",
+        )
 
         val w = window!!
         w.textBox("authorField").deleteText().enterText("AssertJ Author")
@@ -93,9 +97,13 @@ class SwingAppE2ETest {
 
     @Test
     fun `ui auth flow updates menu state on login and logout`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping GUI interaction test in headless mode")
+        assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Skipping GUI interaction test in headless mode",
+        )
 
-        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns
+            AuthTokenResponse("tok", "alice", "USER")
 
         val w = window!!
         assertEquals("Login", w.menuItem("loginItem").target().text)
@@ -113,9 +121,13 @@ class SwingAppE2ETest {
 
     @Test
     fun `ui register flow updates menu state`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping GUI interaction test in headless mode")
+        assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Skipping GUI interaction test in headless mode",
+        )
 
-        every { syncService.register("newuser", "secret123") } returns AuthTokenResponse("tok2", "newuser", "USER")
+        every { syncService.register("newuser", "secret123") } returns
+            AuthTokenResponse("tok2", "newuser", "USER")
 
         val w = window!!
         w.menuItem("registerItem").click()
@@ -130,7 +142,10 @@ class SwingAppE2ETest {
 
     @Test
     fun `changing theme from settings updates key ui surfaces`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping GUI interaction test in headless mode")
+        assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Skipping GUI interaction test in headless mode",
+        )
 
         val w = window!!
         val darkTheme = ThemeCatalog.allThemes().first { it.name == "Dark" }
@@ -141,7 +156,8 @@ class SwingAppE2ETest {
         w.dialog().button("applyButton").click()
 
         waitUntil(2_000) {
-            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } == "Dark"
+            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } ==
+                "Dark"
         }
 
         assertThemeColors(w, darkTheme)
@@ -152,7 +168,8 @@ class SwingAppE2ETest {
         w.dialog().button("applyButton").click()
 
         waitUntil(2_000) {
-            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } == "Default"
+            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } ==
+                "Default"
         }
 
         assertThemeColors(w, defaultTheme)
@@ -180,19 +197,44 @@ class SwingAppE2ETest {
         throw AssertionError("Component not found: $name")
     }
 
-    private fun assertThemeColors(w: FrameFixture, theme: dev.outerstellar.starter.model.ThemeDefinition) {
+    private fun assertThemeColors(
+        w: FrameFixture,
+        theme: dev.outerstellar.starter.model.ThemeDefinition,
+    ) {
         val expectedWindowBg = Color.decode(theme.colors.getValue("background"))
         val expectedComponentBg = Color.decode(theme.colors.getValue("componentBackground"))
 
-        val frameBg = GuiActionRunner.execute<Color> { requireNotNull((w.target() as JFrame).contentPane.background) }
-        val menuBg = GuiActionRunner.execute<Color> { requireNotNull((w.target() as JFrame).jMenuBar.background) }
-        val listBg = GuiActionRunner.execute<Color> { requireNotNull(w.list("messagesList").target().background) }
-        val searchBg = GuiActionRunner.execute<Color> { requireNotNull(w.textBox("searchField").target().background) }
-        val authorBg = GuiActionRunner.execute<Color> { requireNotNull(w.textBox("authorField").target().background) }
-        val contentBg = GuiActionRunner.execute<Color> { requireNotNull(w.textBox("contentArea").target().background) }
-        val statusBg = GuiActionRunner.execute<Color> {
-            requireNotNull((findByName((w.target() as JFrame).contentPane, "statusBarPanel") as JComponent).background)
-        }
+        val frameBg =
+            GuiActionRunner.execute<Color> {
+                requireNotNull((w.target() as JFrame).contentPane.background)
+            }
+        val menuBg =
+            GuiActionRunner.execute<Color> {
+                requireNotNull((w.target() as JFrame).jMenuBar.background)
+            }
+        val listBg =
+            GuiActionRunner.execute<Color> {
+                requireNotNull(w.list("messagesList").target().background)
+            }
+        val searchBg =
+            GuiActionRunner.execute<Color> {
+                requireNotNull(w.textBox("searchField").target().background)
+            }
+        val authorBg =
+            GuiActionRunner.execute<Color> {
+                requireNotNull(w.textBox("authorField").target().background)
+            }
+        val contentBg =
+            GuiActionRunner.execute<Color> {
+                requireNotNull(w.textBox("contentArea").target().background)
+            }
+        val statusBg =
+            GuiActionRunner.execute<Color> {
+                requireNotNull(
+                    (findByName((w.target() as JFrame).contentPane, "statusBarPanel") as JComponent)
+                        .background
+                )
+            }
 
         assertEquals(expectedWindowBg.rgb, rgbOf(frameBg))
         assertEquals(expectedWindowBg.rgb, rgbOf(menuBg))
@@ -206,11 +248,14 @@ class SwingAppE2ETest {
     private fun assertThemeDiffersFrom(
         w: FrameFixture,
         previous: dev.outerstellar.starter.model.ThemeDefinition,
-        current: dev.outerstellar.starter.model.ThemeDefinition
+        current: dev.outerstellar.starter.model.ThemeDefinition,
     ) {
         val prevWindowBg = Color.decode(previous.colors.getValue("background")).rgb
         val currentWindowBg = Color.decode(current.colors.getValue("background")).rgb
-        val frameBg = GuiActionRunner.execute<Color> { requireNotNull((w.target() as JFrame).contentPane.background) }
+        val frameBg =
+            GuiActionRunner.execute<Color> {
+                requireNotNull((w.target() as JFrame).contentPane.background)
+            }
 
         if (prevWindowBg != currentWindowBg) {
             assertEquals(currentWindowBg, rgbOf(frameBg))

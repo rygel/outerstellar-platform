@@ -2,8 +2,7 @@ package dev.outerstellar.starter.model
 
 enum class ConflictStrategy {
     MINE,
-    SERVER,
-    ;
+    SERVER;
 
     companion object {
         fun fromString(value: String): ConflictStrategy =

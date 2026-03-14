@@ -13,15 +13,16 @@ class KoinModuleTest : KoinTest {
     @Test
     fun `desktop application modules should be valid`() {
         desktopModule.verify(
-            extraTypes = listOf(
-                MessageService::class,
-                dev.outerstellar.starter.service.ContactService::class,
-                SyncService::class,
-                I18nService::class,
-                SystemTrayNotifier::class,
-                dev.outerstellar.starter.swing.SwingAppConfig::class,
-                java.lang.String::class
-            )
+            extraTypes =
+                listOf(
+                    MessageService::class,
+                    dev.outerstellar.starter.service.ContactService::class,
+                    SyncService::class,
+                    I18nService::class,
+                    SystemTrayNotifier::class,
+                    dev.outerstellar.starter.swing.SwingAppConfig::class,
+                    java.lang.String::class,
+                )
         )
     }
 }

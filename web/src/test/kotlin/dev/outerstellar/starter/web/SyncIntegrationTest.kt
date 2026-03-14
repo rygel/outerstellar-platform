@@ -10,14 +10,14 @@ import dev.outerstellar.starter.security.User
 import dev.outerstellar.starter.security.UserRole
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncPullResponse
+import java.util.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.Jackson.asA
 import org.junit.jupiter.api.AfterEach
-import java.util.*
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class SyncIntegrationTest : H2WebTest() {
 
@@ -46,25 +46,35 @@ class SyncIntegrationTest : H2WebTest() {
                 username = "admin",
                 email = "admin@test.com",
                 passwordHash = encoder.encode("password"),
-                role = UserRole.ADMIN
+                role = UserRole.ADMIN,
             )
         )
-        val contactService = io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
+        val contactService =
+            io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
-        val app = app(
-            messageService, contactService, repository, outbox, cache, createRenderer(),
-            pageFactory, testConfig, securityService, userRepository, encoder
-        ).http!!
+        val app =
+            app(
+                    messageService,
+                    contactService,
+                    repository,
+                    outbox,
+                    cache,
+                    createRenderer(),
+                    pageFactory,
+                    testConfig,
+                    securityService,
+                    userRepository,
+                    encoder,
+                )
+                .http!!
 
         // Add some data
         repository.createServerMessage("Alice", "Hello")
         repository.createServerMessage("Bob", "Hi")
 
         // Pull changes with Bearer Auth
-        val response = app(
-            Request(GET, "/api/v1/sync?since=0")
-                .header("Authorization", "Bearer $adminId")
-        )
+        val response =
+            app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $adminId"))
 
         assertEquals(Status.OK, response.status)
         val pullResponse = asA(response.bodyString(), SyncPullResponse::class)

@@ -19,10 +19,15 @@ class KoinModuleTest : KoinTest {
                 coreModule,
                 module {
                     single { mockk<MessageRepository>(relaxed = true) }
+                    single {
+                        mockk<dev.outerstellar.starter.persistence.ContactRepository>(
+                            relaxed = true
+                        )
+                    }
                     single { mockk<OutboxRepository>(relaxed = true) }
                     single { mockk<MessageCache>(relaxed = true) }
                     single { mockk<TransactionManager>(relaxed = true) }
-                }
+                },
             )
         }
     }

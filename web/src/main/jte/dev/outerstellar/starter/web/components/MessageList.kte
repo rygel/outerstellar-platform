@@ -8,19 +8,19 @@
         @for(msg in model.messages)
             <article class="panel message-item @if(msg.dirty) border-accent @endif">
                 <header class="message-header">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-4">
                         <span class="message-author">${msg.author}</span>
                         @if(msg.dirty)
-                            <span class="status-badge" title="Pending synchronization">
+                            <span class="status-badge" style="color: var(--color-accent);">
                                 <i class="ri-refresh-line"></i> Local
                             </span>
                         @endif
                         @if(msg.hasConflict)
-                            <button class="status-badge panel-danger cursor-pointer border-none hover:brightness-110" 
+                            <button class="status-badge panel-danger" 
                                     hx-get="/messages/resolve/${msg.syncId}" 
                                     hx-target="body" 
                                     hx-swap="beforeend"
-                                    title="Sync conflict! Click to resolve">
+                                    style="border: none; cursor: pointer;">
                                 <i class="ri-error-warning-line"></i> Conflict
                             </button>
                         @endif
@@ -32,8 +32,8 @@
                 </div>
                 <footer class="message-footer">
                     <div class="message-meta">
-                        <span>ID: ${msg.syncId.take(8)}...</span>
-                        <span>v${msg.version}</span>
+                        <span>ID: ${msg.syncId.take(8)}</span>
+                        <span>Version ${msg.version}</span>
                     </div>
                     <div class="button-row">
                         @if(model.isTrash)

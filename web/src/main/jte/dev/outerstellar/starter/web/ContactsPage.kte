@@ -3,41 +3,72 @@
 @param model: Page<ContactsPage>
 
 @template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
-    <section class="panel">
-        <h1>${model.data.title}</h1>
-        <p>${model.data.description}</p>
-        
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Emails</th>
-                    <th>Phones</th>
-                    <th>Company</th>
-                    <th>Department</th>
-                    <th>Address</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (contact in model.data.contacts)
-                    <tr>
-                        <td>${contact.name}</td>
-                        <td>
+    <header class="flex justify-between items-center mb-6">
+        <div>
+            <h1>${model.data.title}</h1>
+            <p class="text-muted">${model.data.description}</p>
+        </div>
+        <button class="button-accent">
+            <i class="ri-user-add-line"></i>
+            Create Contact
+        </button>
+    </header>
+
+    <div class="card-grid">
+        @for (contact in model.data.contacts)
+            <div class="panel contact-card">
+                <div class="contact-header">
+                    <div class="contact-avatar">
+                        ${contact.name.take(1).uppercase()}
+                    </div>
+                    <div class="contact-info">
+                        <h3>${contact.name}</h3>
+                        <p class="text-muted">${contact.company} &middot; ${contact.department}</p>
+                    </div>
+                </div>
+                
+                <div class="contact-details mt-4">
+                    <div class="contact-detail-item">
+                        <i class="ri-mail-line"></i>
+                        <div>
                             @for (email in contact.emails)
                                 <div>${email}</div>
                             @endfor
-                        </td>
-                        <td>
+                        </div>
+                    </div>
+                    <div class="contact-detail-item">
+                        <i class="ri-phone-line"></i>
+                        <div>
                             @for (phone in contact.phones)
                                 <div>${phone}</div>
                             @endfor
-                        </td>
-                        <td>${contact.company}</td>
-                        <td>${contact.department}</td>
-                        <td>${contact.companyAddress}</td>
-                    </tr>
-                @endfor
-            </tbody>
-        </table>
-    </section>
+                        </div>
+                    </div>
+                    @if (contact.socialMedia.isNotEmpty())
+                        <div class="contact-detail-item">
+                            <i class="ri-share-line"></i>
+                            <div class="flex gap-2">
+                                @for (social in contact.socialMedia)
+                                    <span class="chip">${social}</span>
+                                @endfor
+                            </div>
+                        </div>
+                    @endif
+                    <div class="contact-detail-item">
+                        <i class="ri-map-pin-line"></i>
+                        <div>${contact.companyAddress}</div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end gap-2 mt-6">
+                    <button class="button-icon" title="Edit contact">
+                        <i class="ri-edit-line"></i>
+                    </button>
+                    <button class="button-icon text-danger" title="Delete contact">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                </div>
+            </div>
+        @endfor
+    </div>
 `)

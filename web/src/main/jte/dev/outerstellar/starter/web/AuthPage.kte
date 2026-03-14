@@ -3,34 +3,37 @@
 @param model: Page<AuthViewModel>
 
 @template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
-    <section class="panel hero-grid">
-        <div>
-            <p class="status-badge">${model.shell.pageTitle}</p>
+    <section class="hero-grid">
+        <div class="panel">
+            <p class="topbar-label">${model.shell.pageTitle}</p>
             <h1>${model.data.heading}</h1>
-            <p>${model.data.intro}</p>
-        </div>
-        <div class="panel panel-muted">
-            <strong>HTMX</strong>
-            <p>${model.data.helperText}</p>
+            <p class="text-muted">${model.data.intro}</p>
         </div>
     </section>
-    <section class="panel">
-        <div class="tabs">
-            @for (tab in model.data.tabs)
-                <button class="chip"
-                        hx-get="${tab.url}"
-                        hx-target="#auth-form-slot"
-                        hx-swap="innerHTML">
-                    ${tab.label}
-                </button>
-            @endfor
+    
+    <div style="max-width: 500px; margin: 2rem auto;">
+        <section class="panel">
+            <div class="tabs mb-6" style="display: flex; gap: 0.5rem; justify-content: center;">
+                @for (tab in model.data.tabs)
+                    <button class="secondary"
+                            style="flex: 1;"
+                            hx-get="${tab.url}"
+                            hx-target="#auth-form-slot"
+                            hx-swap="innerHTML">
+                        ${tab.label}
+                    </button>
+                @endfor
+            </div>
+            <div id="auth-form-slot"
+                 hx-get="${model.data.defaultFormUrl}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+            </div>
+            <div id="auth-result-slot" class="mt-4"></div>
+        </section>
+        
+        <div class="panel panel-muted mt-6 text-center">
+            <p class="text-muted" style="margin: 0;">${model.data.helperText}</p>
         </div>
-        <div id="auth-form-slot"
-             class="panel panel-muted"
-             hx-get="${model.data.defaultFormUrl}"
-             hx-trigger="load"
-             hx-swap="innerHTML">
-        </div>
-        <div id="auth-result-slot" class="panel panel-muted"></div>
-    </section>
+    </div>
 `)

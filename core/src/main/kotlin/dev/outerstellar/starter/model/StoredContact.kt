@@ -7,6 +7,7 @@ data class StoredContact(
     val name: String,
     val emails: List<String>,
     val phones: List<String>,
+    val socialMedia: List<String>,
     val company: String,
     val companyAddress: String,
     val department: String,
@@ -16,19 +17,21 @@ data class StoredContact(
     val version: Long = 1,
     val syncConflict: String? = null,
 ) {
-    fun toSummary(): ContactSummary = ContactSummary(
-        syncId = syncId,
-        name = name,
-        emails = emails,
-        phones = phones,
-        company = company,
-        companyAddress = companyAddress,
-        department = department,
-        updatedAtEpochMs = updatedAtEpochMs,
-        dirty = dirty,
-        version = version,
-        hasConflict = syncConflict != null
-    )
+    fun toSummary(): ContactSummary =
+        ContactSummary(
+            syncId = syncId,
+            name = name,
+            emails = emails,
+            phones = phones,
+            socialMedia = socialMedia,
+            company = company,
+            companyAddress = companyAddress,
+            department = department,
+            updatedAtEpochMs = updatedAtEpochMs,
+            dirty = dirty,
+            version = version,
+            hasConflict = syncConflict != null,
+        )
 
     fun toSyncContact(): SyncContact =
         SyncContact(
@@ -36,6 +39,7 @@ data class StoredContact(
             name = name,
             emails = emails,
             phones = phones,
+            socialMedia = socialMedia,
             company = company,
             companyAddress = companyAddress,
             department = department,

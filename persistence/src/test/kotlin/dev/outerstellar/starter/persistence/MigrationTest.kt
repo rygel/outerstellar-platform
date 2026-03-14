@@ -2,8 +2,8 @@ package dev.outerstellar.starter.persistence
 
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.infra.migrate
-import org.junit.jupiter.api.Test
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Test
 
 class MigrationTest {
 

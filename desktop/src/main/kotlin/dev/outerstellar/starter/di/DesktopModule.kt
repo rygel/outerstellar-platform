@@ -7,12 +7,13 @@ import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
-val desktopModule = module {
-    single { SwingAppConfig.fromEnvironment() }
-    single(named("jdbcUrl")) { get<SwingAppConfig>().jdbcUrl }
-    single(named("serverBaseUrl")) { get<SwingAppConfig>().serverBaseUrl }
+val desktopModule
+    get() = module {
+        single { SwingAppConfig.fromEnvironment() }
+        single(named("jdbcUrl")) { get<SwingAppConfig>().jdbcUrl }
+        single(named("serverBaseUrl")) { get<SwingAppConfig>().serverBaseUrl }
 
-    single { SyncViewModel(get(), getOrNull(), get(), get(), getOrNull()) }
-    single { SystemTrayNotifier(get()) }
-    single { I18nService.fromResourceBundle("messages") }
-}
+        single { SyncViewModel(get(), getOrNull(), get(), get(), getOrNull()) }
+        single { SystemTrayNotifier(get()) }
+        single { I18nService.fromResourceBundle("messages") }
+    }

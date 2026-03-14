@@ -12,22 +12,22 @@ data class SyncMessage(
     val deleted: Boolean = false,
 ) {
     companion object {
-        val validate = Validation<SyncMessage> {
-            SyncMessage::syncId { minLength(1) }
-            SyncMessage::author { minLength(1) }
-            SyncMessage::content { minLength(1) }
-        }
+        val validate =
+            Validation<SyncMessage> {
+                SyncMessage::syncId { minLength(1) }
+                SyncMessage::author { minLength(1) }
+                SyncMessage::content { minLength(1) }
+            }
     }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncPushRequest(val messages: List<SyncMessage> = emptyList()) {
     companion object {
-        val validate = Validation<SyncPushRequest> {
-            SyncPushRequest::messages onEach {
-                run(SyncMessage.validate)
+        val validate =
+            Validation<SyncPushRequest> {
+                SyncPushRequest::messages onEach { run(SyncMessage.validate) }
             }
-        }
     }
 }
 
@@ -62,6 +62,7 @@ data class SyncContact(
     val name: String,
     val emails: List<String>,
     val phones: List<String>,
+    val socialMedia: List<String>,
     val company: String,
     val companyAddress: String,
     val department: String,
@@ -69,21 +70,21 @@ data class SyncContact(
     val deleted: Boolean = false,
 ) {
     companion object {
-        val validate = Validation<SyncContact> {
-            SyncContact::syncId { minLength(1) }
-            SyncContact::name { minLength(1) }
-        }
+        val validate =
+            Validation<SyncContact> {
+                SyncContact::syncId { minLength(1) }
+                SyncContact::name { minLength(1) }
+            }
     }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncPushContactRequest(val contacts: List<SyncContact> = emptyList()) {
     companion object {
-        val validate = Validation<SyncPushContactRequest> {
-            SyncPushContactRequest::contacts onEach {
-                run(SyncContact.validate)
+        val validate =
+            Validation<SyncPushContactRequest> {
+                SyncPushContactRequest::contacts onEach { run(SyncContact.validate) }
             }
-        }
     }
 }
 
@@ -107,8 +108,8 @@ data class SyncPullContactResponse(
 )
 
 /**
- * Annotation to ignore unknown properties during JSON deserialization.
- * Replaces Jackson's JsonIgnoreProperties to avoid dependency conflicts with http4k 6.x.
+ * Annotation to ignore unknown properties during JSON deserialization. Replaces Jackson's
+ * JsonIgnoreProperties to avoid dependency conflicts with http4k 6.x.
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)

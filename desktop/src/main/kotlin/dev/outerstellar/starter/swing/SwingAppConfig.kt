@@ -7,11 +7,13 @@ import com.sksamuel.hoplite.addMapSource
 
 data class SwingAppConfig(
     val serverBaseUrl: String = "http://localhost:8080",
-    val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-swing-client;MODE=PostgreSQL;AUTO_SERVER=TRUE",
+    val jdbcUrl: String =
+        "jdbc:h2:file:./data/outerstellar-swing-client;MODE=PostgreSQL;AUTO_SERVER=TRUE",
     val jdbcUser: String = "sa",
     val jdbcPassword: String = "",
     val version: String = "1.0.0",
-    val updateUrl: String = ""
+    val updateUrl: String = "",
+    val devMode: Boolean = false,
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)

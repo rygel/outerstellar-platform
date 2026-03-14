@@ -2,13 +2,13 @@ package dev.outerstellar.starter.persistence
 
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.infra.migrate
+import javax.sql.DataSource
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import javax.sql.DataSource
 
 class JooqMessageRepositoryTest {
 
@@ -37,7 +37,7 @@ class JooqMessageRepositoryTest {
                 year = null,
                 limit = 10,
                 offset = 0,
-                includeDeleted = false
+                includeDeleted = false,
             )
         }
     }

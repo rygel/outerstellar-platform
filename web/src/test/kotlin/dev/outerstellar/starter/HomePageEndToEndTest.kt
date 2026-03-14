@@ -11,12 +11,12 @@ import dev.outerstellar.starter.web.StubMessageCache
 import dev.outerstellar.starter.web.StubOutboxRepository
 import dev.outerstellar.starter.web.StubTransactionManager
 import dev.outerstellar.starter.web.WebPageFactory
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class HomePageEndToEndTest : H2WebTest() {
 
@@ -31,23 +31,25 @@ class HomePageEndToEndTest : H2WebTest() {
         val pageFactory = WebPageFactory(repository)
         val passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, passwordEncoder)
-        val contactService = io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
+        val contactService =
+            io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
         repository.seedStarterMessages()
 
-        val appHandler = app(
-            messageService,
-            contactService,
-            repository,
-            outbox,
-            cache,
-            createRenderer(),
-            pageFactory,
-            testConfig,
-            securityService,
-            userRepository,
-            passwordEncoder
-        )
+        val appHandler =
+            app(
+                messageService,
+                contactService,
+                repository,
+                outbox,
+                cache,
+                createRenderer(),
+                pageFactory,
+                testConfig,
+                securityService,
+                userRepository,
+                passwordEncoder,
+            )
 
         val response = appHandler.http!!(Request(GET, "/"))
 
@@ -56,7 +58,10 @@ class HomePageEndToEndTest : H2WebTest() {
         }
 
         assertEquals(Status.OK, response.status)
-        assertTrue(response.bodyString().contains("Outerstellar Starter"), "Body should contain brand name")
+        assertTrue(
+            response.bodyString().contains("Outerstellar Starter"),
+            "Body should contain brand name",
+        )
         assertTrue(response.header("content-type")?.contains("text/html") == true)
     }
 }

@@ -2,13 +2,13 @@ package dev.outerstellar.starter.security
 
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.web.H2WebTest
+import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import java.util.UUID
 
 class SecurityIntegrationTest : H2WebTest() {
 
@@ -34,13 +34,14 @@ class SecurityIntegrationTest : H2WebTest() {
         val password = "secretpassword"
 
         // 1. Register
-        val newUser = User(
-            id = UUID.randomUUID(),
-            username = username,
-            email = "test@example.com",
-            passwordHash = passwordEncoder.encode(password),
-            role = UserRole.USER
-        )
+        val newUser =
+            User(
+                id = UUID.randomUUID(),
+                username = username,
+                email = "test@example.com",
+                passwordHash = passwordEncoder.encode(password),
+                role = UserRole.USER,
+            )
         userRepository.save(newUser)
 
         // 2. Authenticate
@@ -62,7 +63,7 @@ class SecurityIntegrationTest : H2WebTest() {
                 username = username,
                 email = "secure@example.com",
                 passwordHash = passwordEncoder.encode(password),
-                role = UserRole.USER
+                role = UserRole.USER,
             )
         )
 

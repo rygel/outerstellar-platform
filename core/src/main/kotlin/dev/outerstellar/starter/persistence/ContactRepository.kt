@@ -4,12 +4,13 @@ import dev.outerstellar.starter.model.ContactSummary
 import dev.outerstellar.starter.model.StoredContact
 import dev.outerstellar.starter.sync.SyncContact
 
+@Suppress("TooManyFunctions")
 interface ContactRepository {
     fun listContacts(
         query: String? = null,
         limit: Int = 100,
         offset: Int = 0,
-        includeDeleted: Boolean = false
+        includeDeleted: Boolean = false,
     ): List<ContactSummary>
 
     fun countContacts(query: String? = null, includeDeleted: Boolean = false): Long
@@ -20,22 +21,26 @@ interface ContactRepository {
 
     fun findChangesSince(updatedAtEpochMs: Long): List<StoredContact>
 
+    @Suppress("LongParameterList")
     fun createServerContact(
         name: String,
         emails: List<String>,
         phones: List<String>,
+        socialMedia: List<String>,
         company: String,
         companyAddress: String,
-        department: String
+        department: String,
     ): StoredContact
 
+    @Suppress("LongParameterList")
     fun createLocalContact(
         name: String,
         emails: List<String>,
         phones: List<String>,
+        socialMedia: List<String>,
         company: String,
         companyAddress: String,
-        department: String
+        department: String,
     ): StoredContact
 
     fun upsertSyncedContact(contact: SyncContact, dirty: Boolean): StoredContact

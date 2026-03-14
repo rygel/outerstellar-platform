@@ -2,10 +2,10 @@ package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.infra.migrate
+import javax.sql.DataSource
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
-import javax.sql.DataSource
 
 @Suppress("UtilityClassWithPublicConstructor")
 abstract class H2WebTest {
@@ -15,15 +15,14 @@ abstract class H2WebTest {
             createDataSource(jdbcUrl, "sa", "").also { migrate(it) }
         }
 
-        val testConfig = dev.outerstellar.starter.AppConfig(
-            port = 0,
-            jdbcUrl = jdbcUrl,
-            devDashboardEnabled = true
-        )
+        val testConfig =
+            dev.outerstellar.starter.AppConfig(
+                port = 0,
+                jdbcUrl = jdbcUrl,
+                devDashboardEnabled = true,
+            )
 
-        val testDsl: DSLContext by lazy {
-            DSL.using(dataSource, SQLDialect.H2)
-        }
+        val testDsl: DSLContext by lazy { DSL.using(dataSource, SQLDialect.H2) }
 
         fun setup() {
             // Initialization is handled by lazy properties

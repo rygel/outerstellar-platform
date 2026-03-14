@@ -4,56 +4,50 @@ import dev.outerstellar.starter.jooq.tables.references.USERS
 import dev.outerstellar.starter.security.User
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.security.UserRole
+import java.util.UUID
 import org.jooq.DSLContext
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val logger = LoggerFactory.getLogger(JooqUserRepository::class.java)
 
     override fun findById(id: UUID): User? {
-        return dsl.selectFrom(USERS)
-            .where(USERS.ID.eq(id))
-            .fetchOne()?.let { record ->
-                User(
-                    id = record.id!!,
-                    username = record.username!!,
-                    email = record.email!!,
-                    passwordHash = record.passwordHash!!,
-                    role = UserRole.valueOf(record.role!!),
-                    enabled = record.enabled!!
-                )
-            }
+        return dsl.selectFrom(USERS).where(USERS.ID.eq(id)).fetchOne()?.let { record ->
+            User(
+                id = record.id!!,
+                username = record.username!!,
+                email = record.email!!,
+                passwordHash = record.passwordHash!!,
+                role = UserRole.valueOf(record.role!!),
+                enabled = record.enabled!!,
+            )
+        }
     }
 
     override fun findByUsername(username: String): User? {
-        return dsl.selectFrom(USERS)
-            .where(USERS.USERNAME.eq(username))
-            .fetchOne()?.let { record ->
-                User(
-                    id = record.id!!,
-                    username = record.username!!,
-                    email = record.email!!,
-                    passwordHash = record.passwordHash!!,
-                    role = UserRole.valueOf(record.role!!),
-                    enabled = record.enabled!!
-                )
-            }
+        return dsl.selectFrom(USERS).where(USERS.USERNAME.eq(username)).fetchOne()?.let { record ->
+            User(
+                id = record.id!!,
+                username = record.username!!,
+                email = record.email!!,
+                passwordHash = record.passwordHash!!,
+                role = UserRole.valueOf(record.role!!),
+                enabled = record.enabled!!,
+            )
+        }
     }
 
     override fun findByEmail(email: String): User? {
-        return dsl.selectFrom(USERS)
-            .where(USERS.EMAIL.eq(email))
-            .fetchOne()?.let { record ->
-                User(
-                    id = record.id!!,
-                    username = record.username!!,
-                    email = record.email!!,
-                    passwordHash = record.passwordHash!!,
-                    role = UserRole.valueOf(record.role!!),
-                    enabled = record.enabled!!
-                )
-            }
+        return dsl.selectFrom(USERS).where(USERS.EMAIL.eq(email)).fetchOne()?.let { record ->
+            User(
+                id = record.id!!,
+                username = record.username!!,
+                email = record.email!!,
+                passwordHash = record.passwordHash!!,
+                role = UserRole.valueOf(record.role!!),
+                enabled = record.enabled!!,
+            )
+        }
     }
 
     override fun save(user: User) {
@@ -80,7 +74,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
                     username = "admin",
                     email = "admin@outerstellar.de",
                     passwordHash = passwordHash,
-                    role = UserRole.ADMIN
+                    role = UserRole.ADMIN,
                 )
             )
         }

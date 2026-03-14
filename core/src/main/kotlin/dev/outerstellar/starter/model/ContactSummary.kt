@@ -5,6 +5,7 @@ data class ContactSummary(
     val name: String,
     val emails: List<String>,
     val phones: List<String>,
+    val socialMedia: List<String>,
     val company: String,
     val companyAddress: String,
     val department: String,

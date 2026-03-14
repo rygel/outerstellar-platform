@@ -4,22 +4,21 @@ import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.security.User
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.security.UserRole
+import java.util.Locale
+import java.util.UUID
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestKey
 import org.slf4j.LoggerFactory
-import java.util.Locale
-import java.util.UUID
 
 class WebContext(
     val request: Request,
     private val devDashboardEnabled: Boolean = false,
-    private val userRepository: UserRepository? = null
+    private val userRepository: UserRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
     companion object {
-        val contexts = org.http4k.core.RequestContexts()
         val KEY = RequestKey.required<WebContext>("web.context")
 
         const val LANG_COOKIE = "app_lang"
@@ -57,9 +56,7 @@ class WebContext(
     }
 
     val i18n: I18nService by lazy {
-        I18nService.create("messages").also {
-            it.setLocale(Locale.of(lang))
-        }
+        I18nService.create("messages").also { it.setLocale(Locale.of(lang)) }
     }
 
     fun url(path: String): String = path
@@ -67,23 +64,45 @@ class WebContext(
     fun componentUrl(path: String, pagePath: String): String =
         "${url(path)}?pagePath=${if (pagePath.isBlank()) "/" else pagePath}"
 
+    @Suppress("LongMethod")
     fun shell(pageTitle: String, activeSection: String): ShellView {
         val currentPath = if (request.uri.path.isBlank()) "/" else request.uri.path
         val themeCss = ThemeCatalog.toCssVariables(theme)
         val layoutClass = if (layout == "nice") "" else "layout-$layout"
 
-        val navLinks = mutableListOf(
-            ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
-            ShellLink("Contacts", url("/contacts"), "ri-user-3-line", activeSection == "/contacts"),
-            ShellLink("Trash", url("/messages/trash"), "ri-delete-bin-7-line", activeSection == "/messages/trash"),
-            ShellLink(i18n.translate("web.nav.auth"), url("/auth"), "ri-shield-keyhole-line", activeSection == "/auth"),
-            ShellLink(
-                i18n.translate("web.nav.errors"),
-                url("/errors/not-found"),
-                "ri-error-warning-line",
-                activeSection == "/errors"
+        val navLinks =
+            mutableListOf(
+                ShellLink(
+                    i18n.translate("web.nav.home"),
+                    url("/"),
+                    "ri-home-5-line",
+                    activeSection == "/",
+                ),
+                ShellLink(
+                    "Contacts",
+                    url("/contacts"),
+                    "ri-user-3-line",
+                    activeSection == "/contacts",
+                ),
+                ShellLink(
+                    "Trash",
+                    url("/messages/trash"),
+                    "ri-delete-bin-7-line",
+                    activeSection == "/messages/trash",
+                ),
+                ShellLink(
+                    i18n.translate("web.nav.auth"),
+                    url("/auth"),
+                    "ri-shield-keyhole-line",
+                    activeSection == "/auth",
+                ),
+                ShellLink(
+                    i18n.translate("web.nav.errors"),
+                    url("/errors/not-found"),
+                    "ri-error-warning-line",
+                    activeSection == "/errors",
+                ),
             )
-        )
 
         if (devDashboardEnabled && user?.role == UserRole.ADMIN) {
             navLinks.add(
@@ -91,7 +110,7 @@ class WebContext(
                     i18n.translate("web.nav.dev"),
                     url("/admin/dev"),
                     "ri-dashboard-line",
-                    activeSection == "/admin/dev"
+                    activeSection == "/admin/dev",
                 )
             )
         }
@@ -107,13 +126,15 @@ class WebContext(
             layoutClass = layoutClass,
             navLinks = navLinks,
             themeSelectorUrl = componentUrl("/components/sidebar/theme-selector", currentPath),
-            languageSelectorUrl = componentUrl("/components/sidebar/language-selector", currentPath),
+            languageSelectorUrl =
+                componentUrl("/components/sidebar/language-selector", currentPath),
             layoutSelectorUrl = componentUrl("/components/sidebar/layout-selector", currentPath),
             footerCopy = i18n.translate("web.footer.copy"),
             footerStatusUrl = url("/components/footer-status"),
+            version = System.currentTimeMillis().toString(),
             userName = user?.username,
             isLoggedIn = user != null,
-            logoutUrl = url("/logout")
+            logoutUrl = url("/logout"),
         )
     }
 }

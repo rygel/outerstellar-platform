@@ -6,6 +6,7 @@ package dev.outerstellar.starter.jooq.tables.references
 
 import dev.outerstellar.starter.jooq.tables.ContactEmails
 import dev.outerstellar.starter.jooq.tables.ContactPhones
+import dev.outerstellar.starter.jooq.tables.ContactSocials
 import dev.outerstellar.starter.jooq.tables.Contacts
 import dev.outerstellar.starter.jooq.tables.FlywaySchemaHistory
 import dev.outerstellar.starter.jooq.tables.Messages
@@ -24,6 +25,11 @@ val CONTACT_EMAILS: ContactEmails = ContactEmails.CONTACT_EMAILS
  * The table <code>PUBLIC.CONTACT_PHONES</code>.
  */
 val CONTACT_PHONES: ContactPhones = ContactPhones.CONTACT_PHONES
+
+/**
+ * The table <code>PUBLIC.CONTACT_SOCIALS</code>.
+ */
+val CONTACT_SOCIALS: ContactSocials = ContactSocials.CONTACT_SOCIALS
 
 /**
  * The table <code>PUBLIC.CONTACTS</code>.

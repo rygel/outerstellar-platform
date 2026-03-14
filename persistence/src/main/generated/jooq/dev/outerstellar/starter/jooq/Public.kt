@@ -6,6 +6,7 @@ package dev.outerstellar.starter.jooq
 
 import dev.outerstellar.starter.jooq.tables.ContactEmails
 import dev.outerstellar.starter.jooq.tables.ContactPhones
+import dev.outerstellar.starter.jooq.tables.ContactSocials
 import dev.outerstellar.starter.jooq.tables.Contacts
 import dev.outerstellar.starter.jooq.tables.FlywaySchemaHistory
 import dev.outerstellar.starter.jooq.tables.Messages
@@ -44,6 +45,11 @@ open class Public : SchemaImpl("PUBLIC", DefaultCatalog.DEFAULT_CATALOG) {
     val CONTACT_PHONES: ContactPhones get() = ContactPhones.CONTACT_PHONES
 
     /**
+     * The table <code>PUBLIC.CONTACT_SOCIALS</code>.
+     */
+    val CONTACT_SOCIALS: ContactSocials get() = ContactSocials.CONTACT_SOCIALS
+
+    /**
      * The table <code>PUBLIC.CONTACTS</code>.
      */
     val CONTACTS: Contacts get() = Contacts.CONTACTS
@@ -78,6 +84,7 @@ open class Public : SchemaImpl("PUBLIC", DefaultCatalog.DEFAULT_CATALOG) {
     override fun getTables(): List<Table<*>> = listOf(
         ContactEmails.CONTACT_EMAILS,
         ContactPhones.CONTACT_PHONES,
+        ContactSocials.CONTACT_SOCIALS,
         Contacts.CONTACTS,
         FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY,
         Messages.MESSAGES,

@@ -6,6 +6,7 @@ package dev.outerstellar.starter.jooq.keys
 
 import dev.outerstellar.starter.jooq.tables.ContactEmails
 import dev.outerstellar.starter.jooq.tables.ContactPhones
+import dev.outerstellar.starter.jooq.tables.ContactSocials
 import dev.outerstellar.starter.jooq.tables.Contacts
 import dev.outerstellar.starter.jooq.tables.FlywaySchemaHistory
 import dev.outerstellar.starter.jooq.tables.Messages
@@ -14,6 +15,7 @@ import dev.outerstellar.starter.jooq.tables.SyncState
 import dev.outerstellar.starter.jooq.tables.Users
 import dev.outerstellar.starter.jooq.tables.records.ContactEmailsRecord
 import dev.outerstellar.starter.jooq.tables.records.ContactPhonesRecord
+import dev.outerstellar.starter.jooq.tables.records.ContactSocialsRecord
 import dev.outerstellar.starter.jooq.tables.records.ContactsRecord
 import dev.outerstellar.starter.jooq.tables.records.FlywaySchemaHistoryRecord
 import dev.outerstellar.starter.jooq.tables.records.MessagesRecord
@@ -47,3 +49,4 @@ val CONSTRAINT_4D4: UniqueKey<UsersRecord> = Internal.createUniqueKey(Users.USER
 
 val CONSTRAINT_F: ForeignKey<ContactEmailsRecord, ContactsRecord> = Internal.createForeignKey(ContactEmails.CONTACT_EMAILS, DSL.name("CONSTRAINT_F"), arrayOf(ContactEmails.CONTACT_EMAILS.CONTACT_ID), dev.outerstellar.starter.jooq.keys.CONSTRAINT_C, arrayOf(Contacts.CONTACTS.ID), true)
 val CONSTRAINT_3: ForeignKey<ContactPhonesRecord, ContactsRecord> = Internal.createForeignKey(ContactPhones.CONTACT_PHONES, DSL.name("CONSTRAINT_3"), arrayOf(ContactPhones.CONTACT_PHONES.CONTACT_ID), dev.outerstellar.starter.jooq.keys.CONSTRAINT_C, arrayOf(Contacts.CONTACTS.ID), true)
+val CONSTRAINT_B: ForeignKey<ContactSocialsRecord, ContactsRecord> = Internal.createForeignKey(ContactSocials.CONTACT_SOCIALS, DSL.name("CONSTRAINT_B"), arrayOf(ContactSocials.CONTACT_SOCIALS.CONTACT_ID), dev.outerstellar.starter.jooq.keys.CONSTRAINT_C, arrayOf(Contacts.CONTACTS.ID), true)

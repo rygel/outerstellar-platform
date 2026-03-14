@@ -12,15 +12,16 @@ data class StoredMessage(
     val version: Long = 1,
     val syncConflict: String? = null,
 ) {
-    fun toSummary(): MessageSummary = MessageSummary(
-        syncId = syncId,
-        author = author,
-        content = content,
-        updatedAtEpochMs = updatedAtEpochMs,
-        dirty = dirty,
-        version = version,
-        hasConflict = syncConflict != null
-    )
+    fun toSummary(): MessageSummary =
+        MessageSummary(
+            syncId = syncId,
+            author = author,
+            content = content,
+            updatedAtEpochMs = updatedAtEpochMs,
+            dirty = dirty,
+            version = version,
+            hasConflict = syncConflict != null,
+        )
 
     fun toSyncMessage(): SyncMessage =
         SyncMessage(

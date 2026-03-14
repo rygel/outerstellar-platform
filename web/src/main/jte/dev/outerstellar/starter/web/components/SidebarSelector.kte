@@ -1,11 +1,10 @@
 @import dev.outerstellar.starter.web.SidebarSelector
 @param model: SidebarSelector
 
-<div class="sidebar-select-wrapper">
-    <h2>${model.heading}</h2>
-    <label class="sidebar-select-label" for="${model.selectId}">${model.label}</label>
+<div>
+    <h3 class="sidebar-select-label">${model.heading}</h3>
     <form hx-get="${model.refreshUrl}" hx-target="body" hx-push-url="true">
-        <select id="${model.selectId}" name="${model.selectName}" class="sidebar-select" onchange="htmx.trigger(this.form, 'submit')">
+        <select id="${model.selectId}" name="${model.selectName}" class="sidebar-select" onchange="htmx.trigger(this.form, 'submit')" aria-label="${model.label}">
             @for (option in model.options)
                 <option value="${option.id}" selected="${option.active}">${option.label}</option>
             @endfor

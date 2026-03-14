@@ -9,8 +9,8 @@ import dev.outerstellar.starter.sync.SyncPushRequest
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import org.junit.jupiter.api.Test
 
 class MessageCacheTest {
     private val repository = mockk<MessageRepository>(relaxed = true)

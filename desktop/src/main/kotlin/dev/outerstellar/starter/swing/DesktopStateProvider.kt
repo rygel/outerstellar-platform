@@ -1,9 +1,9 @@
 package dev.outerstellar.starter.swing
 
-import org.slf4j.LoggerFactory
 import java.awt.Rectangle
 import java.util.prefs.BackingStoreException
 import java.util.prefs.Preferences
+import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.swing.DesktopStateProvider")
 
@@ -18,7 +18,7 @@ data class DesktopState(
     val isMaximized: Boolean,
     val lastSearchQuery: String? = null,
     val themeId: String? = null,
-    val language: String? = null
+    val language: String? = null,
 )
 
 object DesktopStateProvider {
@@ -31,7 +31,8 @@ object DesktopStateProvider {
             prefs.putInt("window_width", state.windowBounds.width)
             prefs.putInt("window_height", state.windowBounds.height)
             prefs.putBoolean("is_maximized", state.isMaximized)
-            state.lastSearchQuery?.let { prefs.put("last_search", it) } ?: prefs.remove("last_search")
+            state.lastSearchQuery?.let { prefs.put("last_search", it) }
+                ?: prefs.remove("last_search")
             state.themeId?.let { prefs.put("theme_id", it) } ?: prefs.remove("theme_id")
             state.language?.let { prefs.put("language", it) } ?: prefs.remove("language")
             prefs.flush()
@@ -58,11 +59,12 @@ object DesktopStateProvider {
         val language = prefs.get("language", "en")
 
         return DesktopState(
-            windowBounds = Rectangle(if (x == NOT_SAVED_SENTINEL) DEFAULT_X else x, y, width, height),
+            windowBounds =
+                Rectangle(if (x == NOT_SAVED_SENTINEL) DEFAULT_X else x, y, width, height),
             isMaximized = isMaximized,
             lastSearchQuery = lastSearch,
             themeId = themeId,
-            language = language
+            language = language,
         )
     }
 }

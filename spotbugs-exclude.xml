@@ -4,6 +4,16 @@
         <Package name="~dev\.outerstellar\.starter\.jooq(\..*)?"/>
     </Match>
     <Match>
+        <Package name="~gg\.jte\.generated(\..*)?"/>
+    </Match>
+    <Match>
+        <Package name="~dev\.outerstellar\.starter\.swing(\..*)?"/>
+    </Match>
+    <Match>
+        <Class name="dev.outerstellar.starter.web.WebContext$Companion"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+    <Match>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>

@@ -8,15 +8,20 @@ data class OutboxEntry(
     val payloadType: String,
     val payload: String,
     val status: String,
-    val createdAt: Instant = Instant.now()
+    val createdAt: Instant = Instant.now(),
 )
 
 interface OutboxRepository {
     fun save(entry: OutboxEntry)
+
     fun listPending(limit: Int): List<OutboxEntry>
+
     fun markProcessed(id: UUID)
+
     fun markFailed(id: UUID, error: String)
+
     fun getStats(): Map<String, Int>
+
     fun listFailed(): List<OutboxEntry>
 }
 

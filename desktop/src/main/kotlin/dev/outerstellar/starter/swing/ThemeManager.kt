@@ -5,10 +5,10 @@ import com.formdev.flatlaf.FlatLaf
 import com.formdev.flatlaf.FlatLightLaf
 import dev.outerstellar.starter.model.ThemeCatalog
 import dev.outerstellar.starter.model.ThemeDefinition
-import org.slf4j.LoggerFactory
 import java.awt.Color
 import javax.swing.UIManager
 import javax.swing.plaf.ColorUIResource
+import org.slf4j.LoggerFactory
 
 class ThemeManager {
     private val logger = LoggerFactory.getLogger(ThemeManager::class.java)
@@ -40,9 +40,7 @@ class ThemeManager {
 
         // Helper to put ColorUIResource which updateComponentTreeUI respects
         fun putColor(key: String, hex: String?) {
-            decodeSafe(hex)?.let { color ->
-                UIManager.put(key, ColorUIResource(color))
-            }
+            decodeSafe(hex)?.let { color -> UIManager.put(key, ColorUIResource(color)) }
         }
 
         // Standard background/foreground
@@ -115,7 +113,8 @@ class ThemeManager {
         putColor("FormattedTextField.selectionBackground", palette["selectionBackground"])
         putColor("ComboBox.selectionBackground", palette["selectionBackground"])
 
-        // We use background for selection foreground as most selection backgrounds are dark/accented
+        // We use background for selection foreground as most selection backgrounds are
+        // dark/accented
         decodeSafe(palette["background"])?.let { color ->
             val res = ColorUIResource(color)
             UIManager.put("List.selectionForeground", res)

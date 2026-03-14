@@ -7,10 +7,12 @@ package dev.outerstellar.starter.jooq.tables
 import dev.outerstellar.starter.jooq.Public
 import dev.outerstellar.starter.jooq.indexes.UX_CONTACTS_SYNC_ID
 import dev.outerstellar.starter.jooq.keys.CONSTRAINT_3
+import dev.outerstellar.starter.jooq.keys.CONSTRAINT_B
 import dev.outerstellar.starter.jooq.keys.CONSTRAINT_C
 import dev.outerstellar.starter.jooq.keys.CONSTRAINT_F
 import dev.outerstellar.starter.jooq.tables.ContactEmails.ContactEmailsPath
 import dev.outerstellar.starter.jooq.tables.ContactPhones.ContactPhonesPath
+import dev.outerstellar.starter.jooq.tables.ContactSocials.ContactSocialsPath
 import dev.outerstellar.starter.jooq.tables.records.ContactsRecord
 
 import java.time.LocalDateTime
@@ -207,6 +209,22 @@ open class Contacts(
 
     val contactPhones: ContactPhonesPath
         get(): ContactPhonesPath = contactPhones()
+
+    private lateinit var _contactSocials: ContactSocialsPath
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>PUBLIC.CONTACT_SOCIALS</code> table
+     */
+    fun contactSocials(): ContactSocialsPath {
+        if (!this::_contactSocials.isInitialized)
+            _contactSocials = ContactSocialsPath(this, null, CONSTRAINT_B.inverseKey)
+
+        return _contactSocials;
+    }
+
+    val contactSocials: ContactSocialsPath
+        get(): ContactSocialsPath = contactSocials()
     override fun `as`(alias: String): Contacts = Contacts(DSL.name(alias), this)
     override fun `as`(alias: Name): Contacts = Contacts(alias, this)
     override fun `as`(alias: Table<*>): Contacts = Contacts(alias.qualifiedName, this)

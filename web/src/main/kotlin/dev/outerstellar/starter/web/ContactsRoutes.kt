@@ -8,14 +8,18 @@ import org.http4k.template.TemplateRenderer
 
 class ContactsRoutes(
     private val pageFactory: WebPageFactory,
-    private val renderer: TemplateRenderer
+    private val renderer: TemplateRenderer,
 ) : ServerRoutes {
 
-    override val routes = listOf(
-        "/contacts" meta {
-            summary = "Contacts page"
-        } bindContract GET to { request ->
-            renderer.render(pageFactory.buildContactsPage(request.webContext))
-        }
-    )
+    override val routes =
+        listOf(
+            "/contacts" meta
+                {
+                    summary = "Contacts page"
+                } bindContract
+                GET to
+                { request ->
+                    renderer.render(pageFactory.buildContactsPage(request.webContext))
+                }
+        )
 }

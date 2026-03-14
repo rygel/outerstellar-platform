@@ -10,14 +10,14 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
+import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.Locale
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 class SyncViewModelAuthTest {
     private val messageService = mockk<MessageService>(relaxed = true)
@@ -26,7 +26,8 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `login success updates auth state and author`() {
-        every { syncService.login("alice", "secret") } returns AuthTokenResponse("t", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns
+            AuthTokenResponse("t", "alice", "USER")
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
@@ -73,7 +74,8 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `logout clears auth state and calls sync service logout`() {
-        every { syncService.login("alice", "secret") } returns AuthTokenResponse("t", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns
+            AuthTokenResponse("t", "alice", "USER")
         every { syncService.logout() } just runs
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
@@ -92,7 +94,8 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `register success updates auth state and author`() {
-        every { syncService.register("newuser", "secret123") } returns AuthTokenResponse("t", "newuser", "USER")
+        every { syncService.register("newuser", "secret123") } returns
+            AuthTokenResponse("t", "newuser", "USER")
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
@@ -116,7 +119,8 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `register failure preserves logged out state and returns error`() {
-        every { syncService.register("newuser", "short") } throws RuntimeException("Registration failed: 409 CONFLICT")
+        every { syncService.register("newuser", "short") } throws
+            RuntimeException("Registration failed: 409 CONFLICT")
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)

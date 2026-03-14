@@ -4,6 +4,10 @@ import dev.outerstellar.starter.di.coreModule
 import dev.outerstellar.starter.di.persistenceModule
 import dev.outerstellar.starter.di.webModule
 import dev.outerstellar.starter.security.securityModule
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.server.PolyHandler
@@ -12,10 +16,6 @@ import org.koin.core.context.stopKoin
 import org.koin.core.qualifier.named
 import org.koin.test.KoinTest
 import org.koin.test.inject
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class SmokeE2ETest : KoinTest {
 
@@ -24,9 +24,7 @@ class SmokeE2ETest : KoinTest {
     @BeforeTest
     fun setup() {
         stopKoin() // Ensure clean state
-        startKoin {
-            modules(persistenceModule, coreModule, securityModule, webModule)
-        }
+        startKoin { modules(persistenceModule, coreModule, securityModule, webModule) }
     }
 
     @AfterTest

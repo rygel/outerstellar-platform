@@ -8,6 +8,10 @@ import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRole
 import dev.outerstellar.starter.service.MessageService
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -18,10 +22,6 @@ import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 class AuthenticationWorkflowTest : H2WebTest() {
 
@@ -39,12 +39,24 @@ class AuthenticationWorkflowTest : H2WebTest() {
         val pageFactory = WebPageFactory(repository)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
-        val contactService = io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
+        val contactService =
+            io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
-        app = app(
-            messageService, contactService, repository, outbox, cache, createRenderer(),
-            pageFactory, testConfig, securityService, userRepository, encoder
-        ).http!!
+        app =
+            app(
+                    messageService,
+                    contactService,
+                    repository,
+                    outbox,
+                    cache,
+                    createRenderer(),
+                    pageFactory,
+                    testConfig,
+                    securityService,
+                    userRepository,
+                    encoder,
+                )
+                .http!!
     }
 
     @AfterEach
@@ -60,14 +72,15 @@ class AuthenticationWorkflowTest : H2WebTest() {
         assertTrue(initialResponse.header("location")!!.contains("/auth?returnTo=/admin/dev"))
 
         // 2. Register a new admin user
-        val regResponse = app(
-            Request(POST, "/auth/components/result")
-                .form("mode", "register")
-                .form("name", "superadmin")
-                .form("email", "admin@test.com")
-                .form("password", "password123")
-                .form("confirmPassword", "password123")
-        )
+        val regResponse =
+            app(
+                Request(POST, "/auth/components/result")
+                    .form("mode", "register")
+                    .form("name", "superadmin")
+                    .form("email", "admin@test.com")
+                    .form("password", "password123")
+                    .form("confirmPassword", "password123")
+            )
         // Registration redirects to /auth?registered=true
         assertEquals(Status.FOUND, regResponse.status)
         assertTrue(regResponse.header("location")!!.contains("registered=true"))
@@ -77,13 +90,14 @@ class AuthenticationWorkflowTest : H2WebTest() {
         userRepository.save(user.copy(role = UserRole.ADMIN))
 
         // 3. Login with returnTo
-        val loginResponse = app(
-            Request(POST, "/auth/components/result")
-                .query("returnTo", "/admin/dev")
-                .form("mode", "sign-in")
-                .form("email", "admin@test.com")
-                .form("password", "password123")
-        )
+        val loginResponse =
+            app(
+                Request(POST, "/auth/components/result")
+                    .query("returnTo", "/admin/dev")
+                    .form("mode", "sign-in")
+                    .form("email", "admin@test.com")
+                    .form("password", "password123")
+            )
 
         assertEquals(Status.FOUND, loginResponse.status)
         assertEquals("/admin/dev", loginResponse.header("location"))
@@ -112,12 +126,13 @@ class AuthenticationWorkflowTest : H2WebTest() {
                 .form("confirmPassword", "password123")
         )
 
-        val loginResponse = app(
-            Request(POST, "/auth/components/result")
-                .form("mode", "sign-in")
-                .form("email", "user@test.com")
-                .form("password", "password123")
-        )
+        val loginResponse =
+            app(
+                Request(POST, "/auth/components/result")
+                    .form("mode", "sign-in")
+                    .form("email", "user@test.com")
+                    .form("password", "password123")
+            )
         val sessionCookie = loginResponse.cookies().find { it.name == "app_session" }!!
 
         // Try to access admin dashboard -> should be Forbidden (403)
@@ -136,13 +151,14 @@ class AuthenticationWorkflowTest : H2WebTest() {
                 .form("confirmPassword", "password123")
         )
 
-        val loginResponse = app(
-            Request(POST, "/auth/components/result")
-                .query("returnTo", "//evil.example/path")
-                .form("mode", "sign-in")
-                .form("email", "safe@test.com")
-                .form("password", "password123")
-        )
+        val loginResponse =
+            app(
+                Request(POST, "/auth/components/result")
+                    .query("returnTo", "//evil.example/path")
+                    .form("mode", "sign-in")
+                    .form("email", "safe@test.com")
+                    .form("password", "password123")
+            )
 
         assertEquals(Status.FOUND, loginResponse.status)
         assertEquals("/", loginResponse.header("location"))

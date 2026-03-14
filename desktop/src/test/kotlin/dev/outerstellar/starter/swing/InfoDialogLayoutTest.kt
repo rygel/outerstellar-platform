@@ -5,14 +5,14 @@ import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import dev.outerstellar.starter.sync.SyncService
 import io.mockk.mockk
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Assumptions.assumeFalse
-import org.junit.jupiter.api.Test
 import java.awt.GraphicsEnvironment
 import java.util.Locale
 import javax.swing.JButton
 import javax.swing.JTextArea
 import javax.swing.SwingUtilities
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assumptions.assumeFalse
+import org.junit.jupiter.api.Test
 
 class InfoDialogLayoutTest {
     private val messageService = mockk<MessageService>(relaxed = true)
@@ -40,16 +40,16 @@ class InfoDialogLayoutTest {
 
             assertTrue(
                 closeButton.y > messageArea.y + (messageArea.height / 2),
-                "Close button should be below message area"
+                "Close button should be below message area",
             )
             assertTrue(
                 closeButton.y + closeButton.height <= dialog.contentPane.height - 8,
-                "Close button should sit near bottom"
+                "Close button should sit near bottom",
             )
         }
 
         runOnEdt {
-            dialog.dispose();
+            dialog.dispose()
             window.frame.dispose()
         }
     }

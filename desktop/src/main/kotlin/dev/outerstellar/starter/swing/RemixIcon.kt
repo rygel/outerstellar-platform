@@ -1,24 +1,25 @@
 package dev.outerstellar.starter.swing
 
 import com.formdev.flatlaf.extras.FlatSVGIcon
-import org.slf4j.LoggerFactory
 import java.awt.Color
 import javax.swing.Icon
 import javax.swing.UIManager
+import org.slf4j.LoggerFactory
 
 object RemixIcon {
     private val logger = LoggerFactory.getLogger(RemixIcon::class.java)
     private const val BASE_PATH = "icons"
     private const val DEFAULT_ICON = "settings-3-line"
-    private val fallbackByName = mapOf(
-        "lock-password-line" to "settings-3-line",
-        "logout-box-r-line" to "settings-3-line",
-        "user-add-line" to "add-box-line",
-        "error-warning-line" to "settings-3-line",
-        "question-line" to "settings-3-line",
-        "information-line" to "settings-3-line",
-        "chat-smile-3-line" to "settings-3-line"
-    )
+    private val fallbackByName =
+        mapOf(
+            "lock-password-line" to "settings-3-line",
+            "logout-box-r-line" to "settings-3-line",
+            "user-add-line" to "add-box-line",
+            "error-warning-line" to "settings-3-line",
+            "question-line" to "settings-3-line",
+            "information-line" to "settings-3-line",
+            "chat-smile-3-line" to "settings-3-line",
+        )
 
     fun get(name: String, size: Int = 18): Icon {
         val fileName = if (name.contains("/")) name.substringAfterLast("/") else name
@@ -42,13 +43,16 @@ object RemixIcon {
         }
     }
 
-    private fun createEmptyIcon(size: Int): Icon = object : Icon {
-        override fun paintIcon(c: java.awt.Component?, g: java.awt.Graphics?, x: Int, y: Int) {
-            // No-op placeholder
+    private fun createEmptyIcon(size: Int): Icon =
+        object : Icon {
+            override fun paintIcon(c: java.awt.Component?, g: java.awt.Graphics?, x: Int, y: Int) {
+                // No-op placeholder
+            }
+
+            override fun getIconWidth() = size
+
+            override fun getIconHeight() = size
         }
-        override fun getIconWidth() = size
-        override fun getIconHeight() = size
-    }
 
     private fun resolveExistingFile(fileName: String): String {
         val classLoader = RemixIcon::class.java.classLoader

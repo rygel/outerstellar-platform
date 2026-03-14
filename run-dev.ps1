@@ -5,6 +5,9 @@ Write-Host "Starting outerstellar-starter development mode..." -ForegroundColor 
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# Stop existing instances first
+& (Join-Path $projectRoot "stop-web.ps1")
+
 $watcherJob = Start-Job -Name "OuterstellarWatcher" -ScriptBlock {
     param($root)
     Set-Location $root
