@@ -868,6 +868,7 @@
         </profile>
 
         <!-- mvn -Ptest-desktop verify — runs Swing tests inside Docker with Xvfb -->
+        <!-- Reports are copied to desktop/target/surefire-reports-docker/ -->
         <profile>
             <id>test-desktop</id>
             <properties>
@@ -880,35 +881,15 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>docker-build-test</id>
+                                <id>docker-test-desktop</id>
                                 <phase>verify</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>docker</executable>
+                                    <executable>bash</executable>
                                     <arguments>
-                                        <argument>build</argument>
-                                        <argument>-t</argument>
-                                        <argument>outerstellar-test-desktop</argument>
-                                        <argument>-f</argument>
-                                        <argument>docker/Dockerfile.test-desktop</argument>
-                                        <argument>.</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>docker-run-test</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>docker</executable>
-                                    <arguments>
-                                        <argument>run</argument>
-                                        <argument>--rm</argument>
-                                        <argument>outerstellar-test-desktop</argument>
+                                        <argument>docker/run-desktop-tests.sh</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
