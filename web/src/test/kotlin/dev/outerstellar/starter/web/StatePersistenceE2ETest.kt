@@ -24,7 +24,7 @@ class StatePersistenceE2ETest : H2WebTest() {
 
     @Test
     fun `language preference is persisted in cookie`() {
-        val repository = JooqMessageRepository(testDsl, testDsl)
+        val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
@@ -41,7 +41,6 @@ class StatePersistenceE2ETest : H2WebTest() {
             app(
                 messageService,
                 contactService,
-                repository,
                 outbox,
                 cache,
                 createRenderer(),
@@ -49,7 +48,6 @@ class StatePersistenceE2ETest : H2WebTest() {
                 testConfig,
                 securityService,
                 userRepository,
-                encoder,
             )
 
         val response = app.http!!(Request(GET, "/?lang=fr"))

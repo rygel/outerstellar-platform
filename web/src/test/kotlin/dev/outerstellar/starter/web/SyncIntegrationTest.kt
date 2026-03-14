@@ -29,12 +29,12 @@ class SyncIntegrationTest : H2WebTest() {
     @Test
     fun `can pull changes from api`() {
         val userRepository = JooqUserRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl, testDsl)
+        val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, transactionManager, cache)
-        val pageFactory = WebPageFactory(repository, messageService)
+        val pageFactory = WebPageFactory(repository, messageService, null, null)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
 
@@ -56,7 +56,6 @@ class SyncIntegrationTest : H2WebTest() {
             app(
                     messageService,
                     contactService,
-                    repository,
                     outbox,
                     cache,
                     createRenderer(),
@@ -64,7 +63,6 @@ class SyncIntegrationTest : H2WebTest() {
                     testConfig,
                     securityService,
                     userRepository,
-                    encoder,
                 )
                 .http!!
 

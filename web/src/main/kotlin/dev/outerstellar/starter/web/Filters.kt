@@ -5,6 +5,7 @@ import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.security.SecurityRules
 import dev.outerstellar.starter.security.UserRepository
 import java.time.Duration
+import java.time.Instant
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Response
@@ -31,7 +32,13 @@ object Filters {
             val start = System.currentTimeMillis()
             val response = next(request)
             val duration = System.currentTimeMillis() - start
-            logger.info("{} {} -> {} ({}ms)", request.method, request.uri, response.status, duration)
+            logger.info(
+                "{} {} -> {} ({}ms)",
+                request.method,
+                request.uri,
+                response.status,
+                duration,
+            )
             response
         }
     }
@@ -75,17 +82,26 @@ object Filters {
                 val cookieMaxAge = Duration.ofDays(COOKIE_MAX_AGE_DAYS).toSeconds()
 
                 val langCookie =
-                    request.query("lang")
+                    request
+                        .query("lang")
                         ?.takeIf { it in setOf("en", "fr") }
-                        ?.let { Cookie(WebContext.LANG_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+                        ?.let {
+                            Cookie(WebContext.LANG_COOKIE, it, maxAge = cookieMaxAge, path = "/")
+                        }
                 val themeCookie =
-                    request.query("theme")
+                    request
+                        .query("theme")
                         ?.takeIf { v -> ThemeCatalog.allThemes().any { it.id == v } }
-                        ?.let { Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+                        ?.let {
+                            Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/")
+                        }
                 val layoutCookie =
-                    request.query("layout")
+                    request
+                        .query("layout")
                         ?.takeIf { it in setOf("nice", "cozy", "compact") }
-                        ?.let { Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+                        ?.let {
+                            Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/")
+                        }
 
                 var updatedResponse = response
                 if (langCookie != null) updatedResponse = updatedResponse.cookie(langCookie)
@@ -95,6 +111,49 @@ object Filters {
                 updatedResponse
             }
         }
+
+    fun sessionTimeout(
+        timeoutMinutes: Int,
+        userRepository: UserRepository,
+        sessionCookieSecure: Boolean,
+    ): Filter = Filter { next: HttpHandler ->
+        { request ->
+            val user =
+                try {
+                    request.webContext.user
+                } catch (e: IllegalStateException) {
+                    null
+                }
+
+            if (user != null && user.lastActivityAt != null) {
+                val elapsed = Duration.between(user.lastActivityAt, Instant.now())
+                if (elapsed.toMinutes() >= timeoutMinutes) {
+                    logger.info(
+                        "Session expired for user {} after {} minutes",
+                        user.username,
+                        elapsed.toMinutes(),
+                    )
+                    if (request.uri.path.startsWith("/api/")) {
+                        Response(Status.UNAUTHORIZED)
+                            .header("X-Session-Expired", "true")
+                            .body("Session expired")
+                    } else {
+                        Response(Status.FOUND)
+                            .header("location", "/auth?expired=true")
+                            .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
+                    }
+                } else {
+                    userRepository.updateLastActivity(user.id)
+                    next(request)
+                }
+            } else {
+                if (user != null) {
+                    userRepository.updateLastActivity(user.id)
+                }
+                next(request)
+            }
+        }
+    }
 
     // Bridge WebContext user into SecurityRules
     val securityFilter: Filter = Filter { next: HttpHandler ->

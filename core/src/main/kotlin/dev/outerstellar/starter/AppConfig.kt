@@ -16,6 +16,7 @@ data class AppConfig(
     // Defaults to false for local development (HTTP). Set to true in production via
     // APP_PROFILE=prod or the SESSIONCOOKIESECURE environment variable.
     val sessionCookieSecure: Boolean = false,
+    val sessionTimeoutMinutes: Int = 30,
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)

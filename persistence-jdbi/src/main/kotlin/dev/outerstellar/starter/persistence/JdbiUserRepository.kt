@@ -1,0 +1,134 @@
+package dev.outerstellar.starter.persistence
+
+import dev.outerstellar.starter.security.User
+import dev.outerstellar.starter.security.UserRepository
+import dev.outerstellar.starter.security.UserRole
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.util.UUID
+import org.jdbi.v3.core.Jdbi
+import org.slf4j.LoggerFactory
+
+class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
+    private val logger = LoggerFactory.getLogger(JdbiUserRepository::class.java)
+
+    override fun findById(id: UUID): User? {
+        return jdbi.withHandle<User?, Exception> { handle ->
+            handle
+                .createQuery("SELECT * FROM users WHERE id = :id")
+                .bind("id", id)
+                .map { rs, _ -> mapUser(rs) }
+                .findOne()
+                .orElse(null)
+        }
+    }
+
+    override fun findByUsername(username: String): User? {
+        return jdbi.withHandle<User?, Exception> { handle ->
+            handle
+                .createQuery("SELECT * FROM users WHERE username = :username")
+                .bind("username", username)
+                .map { rs, _ -> mapUser(rs) }
+                .findOne()
+                .orElse(null)
+        }
+    }
+
+    override fun findByEmail(email: String): User? {
+        return jdbi.withHandle<User?, Exception> { handle ->
+            handle
+                .createQuery("SELECT * FROM users WHERE email = :email")
+                .bind("email", email)
+                .map { rs, _ -> mapUser(rs) }
+                .findOne()
+                .orElse(null)
+        }
+    }
+
+    override fun save(user: User) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate(
+                    """
+                    MERGE INTO users (id, username, email, password_hash, role, enabled)
+                    KEY (id)
+                    VALUES (:id, :username, :email, :passwordHash, :role, :enabled)
+                    """
+                )
+                .bind("id", user.id)
+                .bind("username", user.username)
+                .bind("email", user.email)
+                .bind("passwordHash", user.passwordHash)
+                .bind("role", user.role.name)
+                .bind("enabled", user.enabled)
+                .execute()
+        }
+    }
+
+    override fun seedAdminUser(passwordHash: String) {
+        if (findByUsername("admin") == null) {
+            logger.info("Seeding default admin user")
+            save(
+                User(
+                    id = UUID.randomUUID(),
+                    username = "admin",
+                    email = "admin@outerstellar.de",
+                    passwordHash = passwordHash,
+                    role = UserRole.ADMIN,
+                )
+            )
+        }
+    }
+
+    override fun findAll(): List<User> {
+        return jdbi.withHandle<List<User>, Exception> { handle ->
+            handle
+                .createQuery("SELECT * FROM users ORDER BY username")
+                .map { rs, _ -> mapUser(rs) }
+                .list()
+        }
+    }
+
+    override fun updateRole(userId: UUID, role: UserRole) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate("UPDATE users SET role = :role WHERE id = :id")
+                .bind("role", role.name)
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
+    override fun updateEnabled(userId: UUID, enabled: Boolean) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate("UPDATE users SET enabled = :enabled WHERE id = :id")
+                .bind("enabled", enabled)
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
+    override fun updateLastActivity(userId: UUID) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate("UPDATE users SET last_activity_at = :lastActivity WHERE id = :id")
+                .bind("lastActivity", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
+    private fun mapUser(rs: java.sql.ResultSet): User {
+        val lastActivity = rs.getTimestamp("last_activity_at")
+        return User(
+            id = rs.getObject("id", UUID::class.java),
+            username = rs.getString("username"),
+            email = rs.getString("email"),
+            passwordHash = rs.getString("password_hash"),
+            role = UserRole.valueOf(rs.getString("role")),
+            enabled = rs.getBoolean("enabled"),
+            lastActivityAt = lastActivity?.toInstant(),
+        )
+    }
+}

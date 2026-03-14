@@ -1,18 +1,25 @@
 package dev.outerstellar.starter.sync
 
+import dev.outerstellar.starter.model.SessionExpiredException
 import dev.outerstellar.starter.model.SyncException
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.service.SyncProvider
 import dev.outerstellar.starter.web.AuthTokenResponse
+import dev.outerstellar.starter.web.ChangePasswordRequest
 import dev.outerstellar.starter.web.LoginRequest
 import dev.outerstellar.starter.web.RegisterRequest
+import dev.outerstellar.starter.web.SetUserEnabledRequest
+import dev.outerstellar.starter.web.SetUserRoleRequest
+import dev.outerstellar.starter.web.UserSummary
 import org.http4k.client.JavaHttpClient
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
+import org.http4k.core.Method.PUT
 import org.http4k.core.Request
+import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.Jackson.auto
@@ -24,6 +31,9 @@ class SyncService(
     private val client: HttpHandler = JavaHttpClient(),
 ) : SyncProvider {
     @Volatile private var apiToken: String? = null
+    @Volatile
+    var userRole: String? = null
+        private set
 
     private val loginRequestLens = Body.auto<LoginRequest>().toLens()
     private val registerRequestLens = Body.auto<RegisterRequest>().toLens()
@@ -31,6 +41,10 @@ class SyncService(
     private val pullResponseLens = Body.auto<SyncPullResponse>().toLens()
     private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
     private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
+    private val changePasswordLens = Body.auto<ChangePasswordRequest>().toLens()
+    private val userSummaryListLens = Body.auto<List<UserSummary>>().toLens()
+    private val setUserEnabledLens = Body.auto<SetUserEnabledRequest>().toLens()
+    private val setUserRoleLens = Body.auto<SetUserRoleRequest>().toLens()
 
     fun login(username: String, pass: String): AuthTokenResponse {
         val request =
@@ -42,6 +56,7 @@ class SyncService(
         if (response.status == Status.OK) {
             val auth = authTokenLens(response)
             this.apiToken = auth.token
+            this.userRole = auth.role
             return auth
         } else {
             throw SyncException("Login failed: ${response.status}")
@@ -58,6 +73,7 @@ class SyncService(
         if (response.status == Status.OK) {
             val auth = authTokenLens(response)
             this.apiToken = auth.token
+            this.userRole = auth.role
             return auth
         } else {
             throw SyncException("Registration failed: ${response.status}")
@@ -66,6 +82,63 @@ class SyncService(
 
     fun logout() {
         this.apiToken = null
+        this.userRole = null
+    }
+
+    fun changePassword(currentPassword: String, newPassword: String) {
+        val request =
+            Request(PUT, "$baseUrl/api/v1/auth/password")
+                .with(changePasswordLens of ChangePasswordRequest(currentPassword, newPassword))
+        val response = authenticatedRequest(request)
+        checkSessionExpired(response)
+        if (response.status != Status.OK) {
+            throw SyncException("Password change failed: ${response.bodyString()}")
+        }
+    }
+
+    fun listUsers(): List<UserSummary> {
+        val request = Request(GET, "$baseUrl/api/v1/admin/users")
+        val response = authenticatedRequest(request)
+        checkSessionExpired(response)
+        if (response.status != Status.OK) {
+            throw SyncException("Failed to list users: ${response.status}")
+        }
+        return userSummaryListLens(response)
+    }
+
+    fun setUserEnabled(userId: String, enabled: Boolean) {
+        val request =
+            Request(PUT, "$baseUrl/api/v1/admin/users/$userId/enabled")
+                .with(setUserEnabledLens of SetUserEnabledRequest(enabled))
+        val response = authenticatedRequest(request)
+        checkSessionExpired(response)
+        if (response.status != Status.OK) {
+            throw SyncException("Failed to update user enabled: ${response.bodyString()}")
+        }
+    }
+
+    fun setUserRole(userId: String, role: String) {
+        val request =
+            Request(PUT, "$baseUrl/api/v1/admin/users/$userId/role")
+                .with(setUserRoleLens of SetUserRoleRequest(role))
+        val response = authenticatedRequest(request)
+        checkSessionExpired(response)
+        if (response.status != Status.OK) {
+            throw SyncException("Failed to update user role: ${response.bodyString()}")
+        }
+    }
+
+    private fun authenticatedRequest(request: Request): Response {
+        val authed = apiToken?.let { request.header("Authorization", "Bearer $it") } ?: request
+        return client(authed)
+    }
+
+    private fun checkSessionExpired(response: Response) {
+        if (
+            response.status == Status.UNAUTHORIZED && response.header("X-Session-Expired") == "true"
+        ) {
+            throw SessionExpiredException()
+        }
     }
 
     override fun sync(): SyncStats {

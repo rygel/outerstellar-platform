@@ -2,12 +2,12 @@ package dev.outerstellar.starter.swing
 
 import com.formdev.flatlaf.FlatLightLaf
 import com.outerstellar.i18n.I18nService
-import dev.outerstellar.starter.model.ConflictStrategy
 import dev.outerstellar.starter.AppConfig
 import dev.outerstellar.starter.di.coreModule
 import dev.outerstellar.starter.di.desktopModule
 import dev.outerstellar.starter.di.persistenceModule
 import dev.outerstellar.starter.infra.migrate
+import dev.outerstellar.starter.model.ConflictStrategy
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.ThemeCatalog
 import dev.outerstellar.starter.persistence.MessageCache
@@ -198,6 +198,7 @@ class SyncWindow(
 
     private lateinit var messagesPanel: JPanel
     private lateinit var contactsPanel: JPanel
+    private lateinit var usersPanel: JPanel
 
     private lateinit var searchPanel: JPanel
     private lateinit var footerPanel: JPanel
@@ -336,6 +337,34 @@ class SyncWindow(
             verticalTextPosition = SwingConstants.BOTTOM
             horizontalTextPosition = SwingConstants.CENTER
             putClientProperty("JButton.buttonType", "square")
+        }
+
+    private val navUsersBtn =
+        JButton("Users").apply {
+            name = "navUsersBtn"
+            icon = RemixIcon.get("user/group-line", 32)
+            font = font.deriveFont(16f)
+            verticalTextPosition = SwingConstants.BOTTOM
+            horizontalTextPosition = SwingConstants.CENTER
+            putClientProperty("JButton.buttonType", "square")
+            isVisible = false
+        }
+
+    private val changePasswordItem =
+        JMenuItem(i18nService.translate("swing.password.change")).apply {
+            name = "changePasswordItem"
+            icon = RemixIcon.get("system/lock-password-line")
+            isEnabled = false
+        }
+
+    private val usersModel =
+        DefaultTableModel(arrayOf("Username", "Email", "Role", "Enabled", "ID"), 0)
+    private val usersTable =
+        JTable(usersModel).apply {
+            name = "usersTable"
+            columnModel.getColumn(4).minWidth = 0
+            columnModel.getColumn(4).maxWidth = 0
+            columnModel.getColumn(4).preferredWidth = 0
         }
 
     fun show() {
@@ -481,6 +510,17 @@ class SyncWindow(
         loginItem.isEnabled = !viewModel.isLoggedIn
         logoutItem.isEnabled = viewModel.isLoggedIn
         registerItem.isEnabled = !viewModel.isLoggedIn
+        changePasswordItem.isEnabled = viewModel.isLoggedIn
+
+        val isAdmin = viewModel.userRole == "ADMIN"
+        navUsersBtn.isVisible = isAdmin && viewModel.isLoggedIn
+
+        usersModel.rowCount = 0
+        viewModel.adminUsers.forEach { user ->
+            usersModel.addRow(
+                arrayOf(user.username, user.email, user.role, user.enabled.toString(), user.id)
+            )
+        }
     }
 
     fun updateSearchField(query: String) {
@@ -509,9 +549,14 @@ class SyncWindow(
 
         navMessagesBtn.addActionListener { mainLayout.show(mainCardPanel, "MESSAGES") }
         navContactsBtn.addActionListener { mainLayout.show(mainCardPanel, "CONTACTS") }
+        navUsersBtn.addActionListener {
+            viewModel.loadUsers()
+            mainLayout.show(mainCardPanel, "USERS")
+        }
 
         sidebarPanel.add(navMessagesBtn, "growx, h 100!, wrap")
         sidebarPanel.add(navContactsBtn, "growx, h 100!, wrap")
+        sidebarPanel.add(navUsersBtn, "growx, h 100!, wrap")
         sidebarPanel.add(Box.createVerticalGlue(), "growy")
 
         // MAIN CONTENT (CARD LAYOUT)
@@ -605,6 +650,47 @@ class SyncWindow(
 
         mainCardPanel.add(contactsPanel, "CONTACTS")
 
+        // --- Users Admin View ---
+        usersPanel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow][]"))
+
+        val usersHeaderPanel = JPanel(MigLayout("fillx, ins 0", "[grow]", "[]"))
+        usersHeaderPanel.add(
+            JLabel(i18nService.translate("swing.admin.users.title")).apply {
+                font = font.deriveFont(Font.BOLD, 18f)
+            }
+        )
+        usersPanel.add(usersHeaderPanel, "wrap, growx, gapbottom 10")
+        usersPanel.add(JScrollPane(usersTable), "grow, wrap")
+
+        val userActionsPanel = JPanel(MigLayout("ins 0, fillx", "[][]", "[]"))
+        val toggleEnabledBtn =
+            JButton(i18nService.translate("swing.admin.toggle.enabled")).apply {
+                addActionListener {
+                    val row = usersTable.selectedRow
+                    if (row >= 0) {
+                        val userId = usersModel.getValueAt(row, 4).toString()
+                        val enabled = usersModel.getValueAt(row, 3).toString() == "true"
+                        viewModel.toggleUserEnabled(userId, enabled)
+                    }
+                }
+            }
+        val toggleRoleBtn =
+            JButton(i18nService.translate("swing.admin.toggle.role")).apply {
+                addActionListener {
+                    val row = usersTable.selectedRow
+                    if (row >= 0) {
+                        val userId = usersModel.getValueAt(row, 4).toString()
+                        val role = usersModel.getValueAt(row, 2).toString()
+                        viewModel.toggleUserRole(userId, role)
+                    }
+                }
+            }
+        userActionsPanel.add(toggleEnabledBtn)
+        userActionsPanel.add(toggleRoleBtn)
+        usersPanel.add(userActionsPanel, "growx")
+
+        mainCardPanel.add(usersPanel, "USERS")
+
         val splitPane =
             JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebarPanel, mainCardPanel).apply {
                 dividerLocation = 140
@@ -628,6 +714,7 @@ class SyncWindow(
         loginItem.addActionListener { showLoginDialog() }
         logoutItem.addActionListener { viewModel.logout() }
         registerItem.addActionListener { showRegisterDialog() }
+        changePasswordItem.addActionListener { showChangePasswordDialog() }
         newItem.addActionListener { clearComposer() }
         openItem.addActionListener { showMenuPlaceholder("swing.menu.file.open") }
         saveItem.addActionListener { showMenuPlaceholder("swing.menu.file.save") }
@@ -656,6 +743,7 @@ class SyncWindow(
         appMenu.add(loginItem)
         appMenu.add(logoutItem)
         appMenu.add(registerItem)
+        appMenu.add(changePasswordItem)
         appMenu.addSeparator()
         appMenu.add(settingsItem)
         appMenu.addSeparator()
@@ -1102,6 +1190,66 @@ class SyncWindow(
         showDialog(dialog)
     }
 
+    private fun showChangePasswordDialog() {
+        val dialog =
+            createThemedDialog(
+                i18nService.translate("swing.password.dialog.title"),
+                "[][grow]",
+                "[][][][]",
+            )
+
+        dialog.add(JLabel(i18nService.translate("swing.password.current")))
+        val currentField = JPasswordField().apply { name = "currentPassword" }
+        dialog.add(currentField, "growx, wrap")
+
+        dialog.add(JLabel(i18nService.translate("swing.password.new")))
+        val newField = JPasswordField().apply { name = "newPassword" }
+        dialog.add(newField, "growx, wrap")
+
+        dialog.add(JLabel(i18nService.translate("swing.password.confirm")))
+        val confirmField = JPasswordField().apply { name = "confirmPassword" }
+        dialog.add(confirmField, "growx, wrap")
+
+        val changeBtn =
+            JButton(i18nService.translate("swing.password.submit")).apply {
+                name = "changePasswordBtn"
+            }
+        changeBtn.addActionListener {
+            val newPassword = String(newField.password)
+            val confirmPassword = String(confirmField.password)
+            if (newPassword != confirmPassword) {
+                JOptionPane.showMessageDialog(
+                    dialog,
+                    i18nService.translate("swing.auth.password.mismatch"),
+                    i18nService.translate("swing.password.error.title"),
+                    JOptionPane.ERROR_MESSAGE,
+                )
+                return@addActionListener
+            }
+            viewModel.changePassword(String(currentField.password), newPassword) { success, error ->
+                if (success) {
+                    JOptionPane.showMessageDialog(
+                        dialog,
+                        i18nService.translate("swing.password.success"),
+                        i18nService.translate("swing.password.dialog.title"),
+                        JOptionPane.INFORMATION_MESSAGE,
+                    )
+                    dialog.dispose()
+                } else {
+                    JOptionPane.showMessageDialog(
+                        dialog,
+                        error,
+                        i18nService.translate("swing.password.error.title"),
+                        JOptionPane.ERROR_MESSAGE,
+                    )
+                }
+            }
+        }
+
+        dialog.add(createActionRow(changeBtn), "span, growx")
+        showDialog(dialog)
+    }
+
     private fun clearComposer() {
         authorField.text = i18nService.translate("swing.author.default")
         contentArea.text = ""
@@ -1249,8 +1397,10 @@ class SyncWindow(
             i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))
         searchLabel.text = i18nService.translate("swing.label.search")
         authorLabel.text = i18nService.translate("swing.label.author")
+        changePasswordItem.text = i18nService.translate("swing.password.change")
         navMessagesBtn.text = i18nService.translate("swing.menu.file")
         navContactsBtn.text = "Contacts"
+        navUsersBtn.text = i18nService.translate("swing.admin.users.nav")
         statusHintLabel.text = ""
         statusMetaLabel.text = i18nService.translate("swing.statusbar.version", appVersion)
         if (statusLabel.text.isBlank()) {

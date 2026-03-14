@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.security
 
+import java.time.Instant
 import java.util.UUID
 
 enum class UserRole {
@@ -14,6 +15,7 @@ data class User(
     val passwordHash: String,
     val role: UserRole,
     val enabled: Boolean = true,
+    val lastActivityAt: Instant? = null,
 )
 
 interface UserRepository {
@@ -26,4 +28,12 @@ interface UserRepository {
     fun save(user: User)
 
     fun seedAdminUser(passwordHash: String)
+
+    fun findAll(): List<User>
+
+    fun updateRole(userId: UUID, role: UserRole)
+
+    fun updateEnabled(userId: UUID, enabled: Boolean)
+
+    fun updateLastActivity(userId: UUID)
 }

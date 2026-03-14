@@ -6,12 +6,14 @@ import dev.outerstellar.starter.model.ContactNotFoundException
 import dev.outerstellar.starter.model.ContactSummary
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.OuterstellarException
+import dev.outerstellar.starter.model.SessionExpiredException
 import dev.outerstellar.starter.model.SyncException
 import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.service.ContactService
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.swing.SystemTrayNotifier
 import dev.outerstellar.starter.sync.SyncService
+import dev.outerstellar.starter.web.UserSummary
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -45,6 +47,12 @@ class SyncViewModel(
         private set
 
     var isLoggedIn: Boolean = false
+        private set
+
+    var userRole: String? = null
+        private set
+
+    var adminUsers: List<UserSummary> = emptyList()
         private set
 
     var author: String = i18nService.translate("swing.author.default")
@@ -157,6 +165,7 @@ class SyncViewModel(
                     return try {
                         val result = syncService.login(user, pass)
                         userName = result.username
+                        userRole = result.role
                         isLoggedIn = true
                         true to null
                     } catch (e: SyncException) {
@@ -186,6 +195,7 @@ class SyncViewModel(
                     return try {
                         val result = syncService.register(user, pass)
                         userName = result.username
+                        userRole = result.role
                         isLoggedIn = true
                         true to null
                     } catch (e: SyncException) {
@@ -213,7 +223,9 @@ class SyncViewModel(
         stopAutoSync()
         syncService.logout()
         isLoggedIn = false
+        userRole = null
         userName = ""
+        adminUsers = emptyList()
         author = i18nService.translate("swing.author.default")
         status = i18nService.translate("swing.status.loggedOut")
         notifyObservers()
@@ -282,6 +294,103 @@ class SyncViewModel(
                 }
             }
             .execute()
+    }
+
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        onResult: (Boolean, String?) -> Unit,
+    ) {
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+                override fun doInBackground(): Pair<Boolean, String?> {
+                    return try {
+                        syncService.changePassword(currentPassword, newPassword)
+                        true to null
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                        false to i18nService.translate("swing.session.expired")
+                    } catch (e: SyncException) {
+                        false to e.message
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        false to (e.message ?: "Unknown error")
+                    }
+                }
+
+                override fun done() {
+                    val (success, error) = get()
+                    onResult(success, error)
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    fun loadUsers() {
+        object : SwingWorker<Unit, Unit>() {
+                override fun doInBackground() {
+                    try {
+                        adminUsers = syncService.listUsers()
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        status = e.message ?: "Failed to load users"
+                    }
+                }
+
+                override fun done() {
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    fun toggleUserEnabled(userId: String, currentEnabled: Boolean) {
+        object : SwingWorker<Unit, Unit>() {
+                override fun doInBackground() {
+                    try {
+                        syncService.setUserEnabled(userId, !currentEnabled)
+                        adminUsers = syncService.listUsers()
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        status = e.message ?: "Failed to toggle user"
+                    }
+                }
+
+                override fun done() {
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    fun toggleUserRole(userId: String, currentRole: String) {
+        object : SwingWorker<Unit, Unit>() {
+                override fun doInBackground() {
+                    try {
+                        val newRole = if (currentRole == "ADMIN") "USER" else "ADMIN"
+                        syncService.setUserRole(userId, newRole)
+                        adminUsers = syncService.listUsers()
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        status = e.message ?: "Failed to toggle role"
+                    }
+                }
+
+                override fun done() {
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    private fun handleSessionExpired() {
+        isLoggedIn = false
+        userRole = null
+        userName = ""
+        stopAutoSync()
+        status = i18nService.translate("swing.session.expired")
     }
 
     fun resolveConflict(syncId: String, strategy: ConflictStrategy) {

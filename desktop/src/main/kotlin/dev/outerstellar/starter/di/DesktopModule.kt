@@ -15,5 +15,5 @@ val desktopModule
 
         single { SyncViewModel(get(), getOrNull(), get(), get(), getOrNull()) }
         single { SystemTrayNotifier(get()) }
-        single { I18nService.fromResourceBundle("messages") }
+        single<I18nService> { I18nService.create("messages") }
     }

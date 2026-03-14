@@ -17,6 +17,8 @@ import dev.outerstellar.starter.web.Filters
 import dev.outerstellar.starter.web.HomeRoutes
 import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.SyncWebSocket
+import dev.outerstellar.starter.web.UserAdminApi
+import dev.outerstellar.starter.web.UserAdminRoutes
 import dev.outerstellar.starter.web.WebPageFactory
 import dev.outerstellar.starter.web.webContext
 import java.util.UUID
@@ -102,13 +104,7 @@ fun app(
         routes += HomeRoutes(messageService, pageFactory, jteRenderer).routes
         routes += ContactsRoutes(pageFactory, jteRenderer).routes
         routes +=
-            AuthRoutes(
-                    pageFactory,
-                    jteRenderer,
-                    securityService,
-                    config.sessionCookieSecure,
-                )
-                .routes
+            AuthRoutes(pageFactory, jteRenderer, securityService, config.sessionCookieSecure).routes
         routes += ErrorRoutes(pageFactory, jteRenderer).routes
 
         // Global Logout
@@ -142,16 +138,37 @@ fun app(
                     config.devDashboardEnabled,
                 )
                 .routes
+        routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
     }
+
+    val bearerSecurity =
+        object : org.http4k.security.Security {
+            override val filter = bearerAuthFilter
+        }
+
+    val bearerAdminSecurity =
+        object : org.http4k.security.Security {
+            override val filter = Filter { next ->
+                bearerAuthFilter.then(
+                    Filter { inner -> SecurityRules.hasRole(UserRole.ADMIN, inner) }
+                )(next)
+            }
+        }
 
     val syncContract = contract {
         renderer = OpenApi3(ApiInfo("Sync", "v1.0"), Jackson)
         descriptionPath = "/api/v1/sync/openapi.json"
-        security =
-            object : org.http4k.security.Security {
-                override val filter = bearerAuthFilter
-            }
+        security = bearerSecurity
         routes += SyncApi(messageService, contactService).routes
+        routes += AuthApi(securityService).bearerRoutes
+    }
+
+    // Bearer + Admin protected API routes (user admin)
+    val bearerAdminApiContract = contract {
+        renderer = OpenApi3(ApiInfo("Outerstellar Admin API", "v1.0"), Jackson)
+        descriptionPath = "/api/v1/admin/api-openapi.json"
+        security = bearerAdminSecurity
+        routes += UserAdminApi(securityService).routes
     }
 
     // 4. HTMX Components (HTML Fragments)
@@ -168,11 +185,14 @@ fun app(
 
     val metricsHandler =
         Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
-            .then { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
+            .then {
+                Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape())
+            }
 
     val baseApp: HttpHandler =
         routes(
             static(ResourceLoader.Classpath("static")),
+            bearerAdminApiContract,
             apiRoutes,
             syncContract,
             uiRoutes,
@@ -186,6 +206,13 @@ fun app(
         Filters.telemetry
             .then(Filters.devAutoLogin(config.devMode, userRepository))
             .then(Filters.stateFilter(config.devDashboardEnabled, userRepository))
+            .then(
+                Filters.sessionTimeout(
+                    config.sessionTimeoutMinutes,
+                    userRepository,
+                    config.sessionCookieSecure,
+                )
+            )
             .then(Filters.securityFilter)
             .then(Filters.requestLogging)
             .then(Filters.serverMetrics)

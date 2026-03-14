@@ -1,9 +1,10 @@
 package dev.outerstellar.starter.web
 
 internal object SessionCookie {
-    fun create(userId: String, secure: Boolean): String {
+    fun create(userId: String, secure: Boolean, maxAgeSeconds: Long? = null): String {
         val securePart = if (secure) "; Secure" else ""
-        return "${WebContext.SESSION_COOKIE}=$userId; Path=/; HttpOnly; SameSite=Strict$securePart"
+        val maxAgePart = maxAgeSeconds?.let { "; Max-Age=$it" } ?: ""
+        return "${WebContext.SESSION_COOKIE}=$userId; Path=/; HttpOnly; SameSite=Strict$securePart$maxAgePart"
     }
 
     fun clear(secure: Boolean): String {

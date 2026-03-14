@@ -42,3 +42,11 @@ class UsernameAlreadyExistsException(username: String) :
     OuterstellarException("Username '$username' is already taken.")
 
 class WeakPasswordException(message: String) : OuterstellarException(message)
+
+class UserNotFoundException(userId: String) :
+    OuterstellarException("User with ID $userId was not found.")
+
+class InsufficientPermissionException(message: String) : OuterstellarException(message)
+
+class SessionExpiredException(message: String = "Session has expired") :
+    OuterstellarException(message)

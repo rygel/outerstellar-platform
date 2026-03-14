@@ -24,7 +24,7 @@ class AuthPageE2ETest : H2WebTest() {
 
     @Test
     fun `auth page renders correctly`() {
-        val repository = JooqMessageRepository(testDsl, testDsl)
+        val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
@@ -41,7 +41,6 @@ class AuthPageE2ETest : H2WebTest() {
             app(
                 messageService,
                 contactService,
-                repository,
                 outbox,
                 cache,
                 createRenderer(),
@@ -49,7 +48,6 @@ class AuthPageE2ETest : H2WebTest() {
                 testConfig,
                 securityService,
                 userRepository,
-                encoder,
             )
         val response = app.http!!(Request(GET, "/auth"))
 

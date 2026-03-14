@@ -26,7 +26,7 @@ class MessageActionE2ETest : H2WebTest() {
 
     @Test
     fun `can create a message via form`() {
-        val repository = JooqMessageRepository(testDsl, testDsl)
+        val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
@@ -43,7 +43,6 @@ class MessageActionE2ETest : H2WebTest() {
             app(
                 messageService,
                 contactService,
-                repository,
                 outbox,
                 cache,
                 createRenderer(),
@@ -51,7 +50,6 @@ class MessageActionE2ETest : H2WebTest() {
                 testConfig,
                 securityService,
                 userRepository,
-                encoder,
             )
 
         val response =

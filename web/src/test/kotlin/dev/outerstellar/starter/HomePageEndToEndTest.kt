@@ -23,12 +23,12 @@ class HomePageEndToEndTest : H2WebTest() {
     @Test
     fun `home page is available on running server`() {
         val userRepository = JooqUserRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl, testDsl)
+        val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, transactionManager, cache)
-        val pageFactory = WebPageFactory(repository, messageService)
+        val pageFactory = WebPageFactory(repository, messageService, null, null)
         val passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, passwordEncoder)
         val contactService =
@@ -40,7 +40,6 @@ class HomePageEndToEndTest : H2WebTest() {
             app(
                 messageService,
                 contactService,
-                repository,
                 outbox,
                 cache,
                 createRenderer(),
@@ -48,7 +47,6 @@ class HomePageEndToEndTest : H2WebTest() {
                 testConfig,
                 securityService,
                 userRepository,
-                passwordEncoder,
             )
 
         val response = appHandler.http!!(Request(GET, "/"))

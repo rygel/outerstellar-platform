@@ -8,8 +8,8 @@ import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
-import dev.outerstellar.starter.service.EventPublisher
 import dev.outerstellar.starter.service.ContactService
+import dev.outerstellar.starter.service.EventPublisher
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.SyncWebSocket
@@ -25,11 +25,11 @@ val webModule
         single(named("jdbcUrl")) { get<AppConfig>().jdbcUrl }
         single(named("serverBaseUrl")) { "http://localhost:8080" }
         single<TemplateRenderer> { createRenderer() }
-        single { WebPageFactory(get(), get()) }
+        single { WebPageFactory(get(), get(), get(), get()) }
         single { SyncApi(get(), get()) }
         single<MessageCache> { dev.outerstellar.starter.persistence.NoOpMessageCache }
 
-        single<I18nService> { I18nService.fromResourceBundle("messages") }
+        single<I18nService> { I18nService.create("messages") }
         single<EventPublisher> { SyncWebSocket }
         single<PolyHandler>(named("webServer")) {
             app(

@@ -161,6 +161,39 @@ data class ConflictResolveViewModel(
     val resolveUrl: String,
 ) : ViewModel
 
+data class ChangePasswordForm(
+    val title: String,
+    val currentPasswordLabel: String,
+    val newPasswordLabel: String,
+    val confirmPasswordLabel: String,
+    val submitLabel: String,
+    val submitUrl: String,
+    val currentPasswordPlaceholder: String,
+    val newPasswordPlaceholder: String,
+    val confirmPasswordPlaceholder: String,
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/ChangePasswordForm"
+}
+
+data class UserAdminRow(
+    val id: String,
+    val username: String,
+    val email: String,
+    val role: String,
+    val enabled: Boolean,
+    val toggleEnabledUrl: String,
+    val toggleRoleUrl: String,
+    val isSelf: Boolean,
+)
+
+data class UserAdminPage(
+    val title: String,
+    val description: String,
+    val users: List<UserAdminRow>,
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/UserAdminPage"
+}
+
 data class SidebarSelector(
     val heading: String,
     val label: String,
@@ -201,6 +234,7 @@ class WebPageFactory(
     private val repository: MessageRepository,
     private val messageService: MessageService,
     private val contactService: dev.outerstellar.starter.service.ContactService? = null,
+    private val securityService: dev.outerstellar.starter.security.SecurityService? = null,
 ) {
     private val messageListComponent = MessageListComponent(messageService)
 
@@ -577,8 +611,53 @@ class WebPageFactory(
             pagePath == "/auth" -> buildAuthPage(ctx)
             pagePath == "/admin/dev" ->
                 buildDevDashboardPage(ctx, "", emptyMap(), OutboxStatsViewModel(0, 0, 0), "")
+            pagePath == "/admin/users" -> buildUserAdminPage(ctx)
             pagePath.startsWith("/errors") -> buildErrorPage(ctx, "not-found")
             else -> buildHomePage(ctx)
         }
+    }
+
+    fun buildChangePasswordForm(ctx: WebContext): ChangePasswordForm {
+        val i18n = ctx.i18n
+        return ChangePasswordForm(
+            title = i18n.translate("web.password.title"),
+            currentPasswordLabel = i18n.translate("web.password.current"),
+            newPasswordLabel = i18n.translate("web.password.new"),
+            confirmPasswordLabel = i18n.translate("web.password.confirm"),
+            submitLabel = i18n.translate("web.password.submit"),
+            submitUrl = ctx.url("/auth/components/change-password"),
+            currentPasswordPlaceholder = i18n.translate("web.password.current.placeholder"),
+            newPasswordPlaceholder = i18n.translate("web.password.new.placeholder"),
+            confirmPasswordPlaceholder = i18n.translate("web.password.confirm.placeholder"),
+        )
+    }
+
+    fun buildUserAdminPage(ctx: WebContext): Page<UserAdminPage> {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.admin.users.title"), "/admin/users")
+        val users = securityService?.listUsers() ?: emptyList()
+        val currentUserId = ctx.user?.id?.toString()
+
+        return Page(
+            shell = shell,
+            data =
+                UserAdminPage(
+                    title = i18n.translate("web.admin.users.title"),
+                    description = i18n.translate("web.admin.users.description"),
+                    users =
+                        users.map { u ->
+                            UserAdminRow(
+                                id = u.id,
+                                username = u.username,
+                                email = u.email,
+                                role = u.role,
+                                enabled = u.enabled,
+                                toggleEnabledUrl = ctx.url("/admin/users/${u.id}/toggle-enabled"),
+                                toggleRoleUrl = ctx.url("/admin/users/${u.id}/toggle-role"),
+                                isSelf = u.id == currentUserId,
+                            )
+                        },
+                ),
+        )
     }
 }

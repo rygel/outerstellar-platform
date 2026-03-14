@@ -104,6 +104,17 @@ class WebContext(
                 ),
             )
 
+        if (user?.role == UserRole.ADMIN) {
+            navLinks.add(
+                ShellLink(
+                    i18n.translate("web.nav.users"),
+                    url("/admin/users"),
+                    "ri-group-line",
+                    activeSection == "/admin/users",
+                )
+            )
+        }
+
         if (devDashboardEnabled && user?.role == UserRole.ADMIN) {
             navLinks.add(
                 ShellLink(

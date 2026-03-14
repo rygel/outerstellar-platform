@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.infra.render
+import dev.outerstellar.starter.model.WeakPasswordException
 import dev.outerstellar.starter.security.SecurityService
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -83,6 +84,55 @@ class AuthRoutes(
                     } else {
                         val formValues = request.form().associate { it.first to it.second }
                         renderer.render(pageFactory.buildAuthResult(request.webContext, formValues))
+                    }
+                },
+            "/auth/components/change-password" meta
+                {
+                    summary = "Process password change form"
+                } bindContract
+                POST to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    val user = ctx.user
+                    if (user == null) {
+                        Response(Status.UNAUTHORIZED).body("Not logged in")
+                    } else {
+                        val currentPassword = request.form("currentPassword").orEmpty()
+                        val newPassword = request.form("newPassword").orEmpty()
+                        val confirmPassword = request.form("confirmPassword").orEmpty()
+
+                        if (newPassword != confirmPassword) {
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.password.error.title"),
+                                    message = ctx.i18n.translate("web.password.error.mismatch"),
+                                    toneClass = "panel-danger",
+                                )
+                            )
+                        } else {
+                            try {
+                                securityService.changePassword(
+                                    user.id,
+                                    currentPassword,
+                                    newPassword,
+                                )
+                                renderer.render(
+                                    AuthResultFragment(
+                                        title = ctx.i18n.translate("web.password.success.title"),
+                                        message = ctx.i18n.translate("web.password.success.body"),
+                                        toneClass = "panel-success",
+                                    )
+                                )
+                            } catch (e: WeakPasswordException) {
+                                renderer.render(
+                                    AuthResultFragment(
+                                        title = ctx.i18n.translate("web.password.error.title"),
+                                        message = e.message ?: "Password change failed",
+                                        toneClass = "panel-danger",
+                                    )
+                                )
+                            }
+                        }
                     }
                 },
         )

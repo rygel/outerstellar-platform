@@ -25,7 +25,7 @@ class AuthApiIntegrationTest : H2WebTest() {
     @BeforeEach
     fun setupTest() {
         val userRepository = JooqUserRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl, testDsl)
+        val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
@@ -36,7 +36,7 @@ class AuthApiIntegrationTest : H2WebTest() {
                 transactionManager,
                 cache,
             )
-        val pageFactory = WebPageFactory(repository, messageService)
+        val pageFactory = WebPageFactory(repository, messageService, null, null)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
         val contactService =
@@ -46,7 +46,6 @@ class AuthApiIntegrationTest : H2WebTest() {
             app(
                     messageService,
                     contactService,
-                    repository,
                     outbox,
                     cache,
                     createRenderer(),
@@ -54,7 +53,6 @@ class AuthApiIntegrationTest : H2WebTest() {
                     testConfig,
                     securityService,
                     userRepository,
-                    encoder,
                 )
                 .http!!
     }
