@@ -98,6 +98,10 @@ class ContactService(
             }
         }
 
+        if (applied > 0 || conflicts.isNotEmpty()) {
+            eventPublisher.publishRefresh("contact-list-panel")
+        }
+
         return dev.outerstellar.starter.sync.SyncPushContactResponse(
             appliedCount = applied,
             conflicts = conflicts,

@@ -1,7 +1,6 @@
 package dev.outerstellar.starter
 
 import dev.outerstellar.starter.persistence.MessageCache
-import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.security.SecurityRules
 import dev.outerstellar.starter.security.SecurityService
@@ -28,6 +27,7 @@ import org.http4k.contract.openapi.v3.OpenApi3
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
+import org.http4k.core.Method.POST
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
@@ -55,7 +55,6 @@ private val logger = LoggerFactory.getLogger("dev.outerstellar.starter.App")
 fun app(
     messageService: MessageService,
     contactService: dev.outerstellar.starter.service.ContactService,
-    repository: MessageRepository,
     outboxRepository: OutboxRepository,
     cache: MessageCache,
     jteRenderer: TemplateRenderer,
@@ -100,7 +99,7 @@ fun app(
     val uiRoutes = contract {
         renderer = OpenApi3(ApiInfo("Outerstellar UI", "v1.0"), Jackson)
         descriptionPath = "/ui/openapi.json"
-        routes += HomeRoutes(messageService, repository, pageFactory, jteRenderer).routes
+        routes += HomeRoutes(messageService, pageFactory, jteRenderer).routes
         routes += ContactsRoutes(pageFactory, jteRenderer).routes
         routes +=
             AuthRoutes(
@@ -114,7 +113,7 @@ fun app(
 
         // Global Logout
         routes +=
-            ("/logout" bindContract GET).to { request: org.http4k.core.Request ->
+            ("/logout" bindContract POST).to { request: org.http4k.core.Request ->
                 Response(Status.FOUND)
                     .header("location", request.webContext.url("/"))
                     .header(
@@ -167,6 +166,10 @@ fun app(
         Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
             .then(adminContract)
 
+    val metricsHandler =
+        Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
+            .then { Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape()) }
+
     val baseApp: HttpHandler =
         routes(
             static(ResourceLoader.Classpath("static")),
@@ -176,11 +179,7 @@ fun app(
             componentRoutes,
             "/" bind filteredAdminHandler,
             "/health" bind GET to { Response(Status.OK).body("ok") },
-            "/metrics" bind
-                GET to
-                {
-                    Response(Status.OK).body(dev.outerstellar.starter.web.Metrics.registry.scrape())
-                },
+            "/metrics" bind GET to metricsHandler,
         )
 
     val httpHandler =

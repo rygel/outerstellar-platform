@@ -8,6 +8,9 @@ import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.security.PasswordEncoder
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.security.securityModule
+import dev.outerstellar.starter.service.OutboxProcessor
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import org.http4k.server.Jetty
 import org.http4k.server.PolyHandler
@@ -27,6 +30,7 @@ object MainComponent : KoinComponent {
     val contactRepository: dev.outerstellar.starter.persistence.ContactRepository by inject()
     val userRepository: UserRepository by inject()
     val passwordEncoder: PasswordEncoder by inject()
+    val outboxProcessor: OutboxProcessor by inject()
     val app: PolyHandler by inject(named("webServer"))
 }
 
@@ -42,6 +46,18 @@ fun main() {
             logger.warn("Set ADMIN_PASSWORD to a secure value before deploying to production.")
         }
     main.userRepository.seedAdminUser(main.passwordEncoder.encode(adminPassword))
+
+    val outboxScheduler = Executors.newSingleThreadScheduledExecutor { r ->
+        Thread(r, "outbox-processor").also { it.isDaemon = true }
+    }
+    outboxScheduler.scheduleWithFixedDelay(
+        { main.outboxProcessor.processPending() },
+        30L, 30L, TimeUnit.SECONDS,
+    )
+    Runtime.getRuntime().addShutdownHook(Thread({
+        logger.info("Shutting down outbox scheduler")
+        outboxScheduler.shutdownNow()
+    }, "outbox-shutdown"))
 
     val server = main.app.asServer(Jetty(main.config.port)).start()
     logger.info("Outerstellar starter running on http://localhost:{}", server.port())

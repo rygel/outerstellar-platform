@@ -243,6 +243,36 @@ toast.innerHTML = '...<p ...>' + message + '</p>...'
 
 **What changed:** Created `web/src/main/resources/application-prod.yaml` that sets `sessionCookieSecure: true`. Running with `APP_PROFILE=prod` activates this profile. Added a comment on the field in `AppConfig` explaining the intentional default and how to override it.
 
+### Scheduled OutboxProcessor polling loop
+
+`OutboxProcessor.processPending()` was fully implemented but never called — outbox entries written by `MessageService` accumulated in the database indefinitely. The outbox pattern was wired but one-sided.
+
+**What changed:** `Main.kt` now creates a single-daemon-thread `ScheduledExecutorService` named `outbox-processor` that calls `outboxProcessor.processPending()` every 30 seconds with `scheduleWithFixedDelay`. A JVM shutdown hook calls `shutdownNow()` on the scheduler so in-flight processing is interrupted cleanly on exit.
+
+### Routed message restore through the service layer
+
+`HomeRoutes` called `repository.restore(syncId)` directly, bypassing `MessageService` entirely. The restored message was invisible to the cache and produced no WebSocket refresh — a browser tab showing the trash page would not update, and the entry would persist in any warm list cache until it expired.
+
+**What changed:** Added `MessageService.restore(syncId)` which calls `repository.restore`, invalidates the entity cache key and all list cache entries, and calls `eventPublisher.publishRefresh("message-list-panel")`. `HomeRoutes` now calls `messageService.restore(syncId)`. The `repository: MessageRepository` parameter was removed from `HomeRoutes`, `app()`, and `WebModule` as it is no longer needed.
+
+### Published contact refresh events on sync push
+
+`ContactService.processPushRequest` applied pushed contacts but never called `eventPublisher.publishRefresh("contact-list-panel")`. A browser tab open on the contacts page would not update after a desktop sync push even though the server data had changed.
+
+**What changed:** Added `eventPublisher.publishRefresh("contact-list-panel")` at the end of `processPushRequest` when at least one contact was applied or a conflict was detected, consistent with the pattern in `MessageService.processPushRequest`.
+
+### Changed logout from GET to POST
+
+The `/logout` route was bound to `GET`, making it vulnerable to cross-site logout — any page on any origin could log the user out by including `<img src="/logout">` or a link. Logout is a state-changing action and must use a method that browsers do not fire automatically on cross-origin resource loads.
+
+**What changed:** `/logout` is now bound to `POST`. The "Sign out" link in `Layout.kte` is replaced with an inline `<form method="post">` containing a `<button type="submit">` styled to look like a link.
+
+### Gated /metrics behind admin authentication
+
+`/metrics` returned raw Prometheus metrics — request counts, latency histograms, JVM memory, and thread pool stats — to any unauthenticated caller. This information helps an attacker profile server load, identify slow endpoints, and time attacks.
+
+**What changed:** The metrics route now passes through a filter that requires an authenticated session with `ADMIN` role, identical to the filter applied to `/admin/dev`. Unauthenticated requests and non-admin sessions receive a redirect to the login page.
+
 ### Read admin password from environment variable
 
 `Main.kt` hardcoded `"admin123"` as the password for the seeded admin user. Anyone who cloned the starter and deployed it without reading `Main.kt` would have a known credential in production.

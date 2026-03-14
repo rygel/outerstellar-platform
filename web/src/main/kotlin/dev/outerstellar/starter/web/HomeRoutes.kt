@@ -2,7 +2,6 @@ package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.infra.render
 import dev.outerstellar.starter.model.ConflictStrategy
-import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -23,7 +22,6 @@ private const val MAX_LIMIT = 100
 
 class HomeRoutes(
     private val messageService: MessageService,
-    private val repository: MessageRepository,
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
 ) : ServerRoutes {
@@ -79,7 +77,7 @@ class HomeRoutes(
                 POST to
                 { syncId ->
                     { request: org.http4k.core.Request ->
-                        repository.restore(syncId)
+                        messageService.restore(syncId)
                         Response(Status.FOUND)
                             .header("location", request.webContext.url("/messages/trash"))
                     }

@@ -188,6 +188,13 @@ class MessageService(
         return SyncPushResponse(appliedCount = appliedCount, conflicts = conflicts)
     }
 
+    fun restore(syncId: String) {
+        repository.restore(syncId)
+        cache.invalidate("entity:$syncId")
+        cache.invalidateAll()
+        eventPublisher.publishRefresh("message-list-panel")
+    }
+
     fun deleteMessage(syncId: String) {
         val tm = transactionManager
         val outbox = outboxRepository

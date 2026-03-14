@@ -5,11 +5,11 @@ import dev.outerstellar.starter.AppConfig
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.MessageCache
-import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.service.EventPublisher
+import dev.outerstellar.starter.service.ContactService
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.SyncWebSocket
@@ -35,7 +35,6 @@ val webModule
             app(
                 get<MessageService>(),
                 get<dev.outerstellar.starter.service.ContactService>(),
-                get<MessageRepository>(),
                 get<OutboxRepository>(),
                 get<MessageCache>(),
                 get<TemplateRenderer>(),

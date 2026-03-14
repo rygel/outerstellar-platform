@@ -131,7 +131,9 @@
                 <div class="topbar-user">
                     <div class="user-info">
                         <span class="user-name">${shell.userName}</span>
-                        <a href="${shell.logoutUrl}" class="sign-out-link">Sign out</a>
+                        <form method="post" action="${shell.logoutUrl}" style="display:inline;">
+                            <button type="submit" class="sign-out-link" style="background:none;border:none;padding:0;cursor:pointer;">Sign out</button>
+                        </form>
                     </div>
                     <div class="user-avatar">
                         <i class="ri-user-smile-line"></i>
