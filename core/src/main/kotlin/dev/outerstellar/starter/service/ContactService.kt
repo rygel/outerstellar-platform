@@ -5,7 +5,10 @@ import dev.outerstellar.starter.model.StoredContact
 import dev.outerstellar.starter.persistence.ContactRepository
 import org.slf4j.LoggerFactory
 
-class ContactService(private val repository: ContactRepository) {
+class ContactService(
+    private val repository: ContactRepository,
+    private val eventPublisher: EventPublisher = NoOpEventPublisher,
+) {
     private val logger = LoggerFactory.getLogger(ContactService::class.java)
 
     fun listContacts(
@@ -36,7 +39,7 @@ class ContactService(private val repository: ContactRepository) {
         department: String,
     ): StoredContact {
         logger.info("Creating contact name={}", name)
-        return repository.createLocalContact(
+        val contact = repository.createLocalContact(
             name,
             emails,
             phones,
@@ -45,16 +48,21 @@ class ContactService(private val repository: ContactRepository) {
             companyAddress,
             department,
         )
+        eventPublisher.publishRefresh("contact-list-panel")
+        return contact
     }
 
     fun updateContact(contact: StoredContact): StoredContact {
         val updated = contact.copy(dirty = true)
-        return repository.updateContact(updated)
+        val result = repository.updateContact(updated)
+        eventPublisher.publishRefresh("contact-list-panel")
+        return result
     }
 
     fun deleteContact(syncId: String) {
         logger.info("Soft deleting contact syncId={}", syncId)
         repository.softDelete(syncId)
+        eventPublisher.publishRefresh("contact-list-panel")
     }
 
     fun getChangesSince(

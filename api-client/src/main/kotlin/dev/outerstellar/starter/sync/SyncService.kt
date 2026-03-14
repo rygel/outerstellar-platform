@@ -23,7 +23,7 @@ class SyncService(
     private val transactionManager: TransactionManager,
     private val client: HttpHandler = JavaHttpClient(),
 ) : SyncProvider {
-    private var apiToken: String? = null
+    @Volatile private var apiToken: String? = null
 
     private val loginRequestLens = Body.auto<LoginRequest>().toLens()
     private val registerRequestLens = Body.auto<RegisterRequest>().toLens()

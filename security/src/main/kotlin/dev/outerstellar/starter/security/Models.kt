@@ -24,4 +24,6 @@ interface UserRepository {
     fun findByEmail(email: String): User?
 
     fun save(user: User)
+
+    fun seedAdminUser(passwordHash: String)
 }

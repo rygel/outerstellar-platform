@@ -243,6 +243,42 @@ toast.innerHTML = '...<p ...>' + message + '</p>...'
 
 **What changed:** Created `web/src/main/resources/application-prod.yaml` that sets `sessionCookieSecure: true`. Running with `APP_PROFILE=prod` activates this profile. Added a comment on the field in `AppConfig` explaining the intentional default and how to override it.
 
+### Read admin password from environment variable
+
+`Main.kt` hardcoded `"admin123"` as the password for the seeded admin user. Anyone who cloned the starter and deployed it without reading `Main.kt` would have a known credential in production.
+
+**What changed:** `Main.kt` now reads `ADMIN_PASSWORD` from the environment. If the variable is not set, a random UUID is generated and logged at WARN level as the first-boot password, with a reminder to set the variable before going to production. Because `seedAdminUser` only creates the admin user when none exists, the generated password is only meaningful on first boot.
+
+### Moved seedAdminUser onto the UserRepository interface
+
+`Main.kt` called `seedAdminUser` by casting `userRepository` to `JooqUserRepository`:
+
+```kotlin
+(main.userRepository as JooqUserRepository).seedAdminUser(...)
+```
+
+This breaks the interface abstraction — any alternative `UserRepository` implementation would throw `ClassCastException` at startup.
+
+**What changed:** `seedAdminUser(passwordHash: String)` is now declared on the `UserRepository` interface. `JooqUserRepository.seedAdminUser` is annotated with `override`. `Main.kt` calls it directly on the `UserRepository` without a cast.
+
+### Added WebSocket refresh events to ContactService
+
+`MessageService` calls `eventPublisher.publishRefresh("message-list-panel")` after every mutation so connected browser tabs update in real time. `ContactService` had no equivalent — contact mutations were silent, and open tabs showing the contacts page would not refresh.
+
+**What changed:** `ContactService` now accepts an `EventPublisher` constructor parameter (defaulting to `NoOpEventPublisher`). `createContact`, `updateContact`, and `deleteContact` each call `eventPublisher.publishRefresh("contact-list-panel")` after the repository operation. `CoreModule` wires in the shared `EventPublisher` singleton.
+
+### Batched contact collection INSERTs
+
+`insertCollections` previously issued one `INSERT` statement per email, phone, and social handle — a contact with 3 emails, 2 phones, and 2 socials generated 7 separate round trips.
+
+**What changed:** Each non-empty collection is now inserted using `txDsl.batch(inserts).execute()`, reducing N individual round trips to a single batch statement per collection type (still within the same transaction).
+
+### Made SyncService.apiToken @Volatile
+
+`SyncService.sync()` runs on a `ScheduledExecutorService` background thread while `login()` and `logout()` can be called from the Swing EDT. The plain `var apiToken` had no memory visibility guarantee — a background thread could observe a stale null even after `login()` returned on another thread.
+
+**What changed:** `apiToken` is now `@Volatile`, ensuring writes from any thread are immediately visible to all other threads.
+
 ### Removed duplicate htmx WebSocket extension script
 
 `Layout.kte` included `htmx-ext-ws@2.0.1/ws.js` twice (lines 15–16). The duplicate caused the extension to register twice, which can trigger duplicate event listeners and redundant network requests.

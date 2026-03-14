@@ -65,7 +65,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             .execute()
     }
 
-    fun seedAdminUser(passwordHash: String) {
+    override fun seedAdminUser(passwordHash: String) {
         if (findByUsername("admin") == null) {
             logger.info("Seeding default admin user")
             save(

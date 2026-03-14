@@ -4,7 +4,6 @@ import dev.outerstellar.starter.di.coreModule
 import dev.outerstellar.starter.di.persistenceModule
 import dev.outerstellar.starter.di.webModule
 import dev.outerstellar.starter.infra.migrate
-import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.security.PasswordEncoder
 import dev.outerstellar.starter.security.UserRepository
@@ -37,9 +36,12 @@ fun main() {
     val main = MainComponent
     migrate(main.dataSource)
 
-    (main.userRepository as JooqUserRepository).seedAdminUser(
-        main.passwordEncoder.encode("admin123")
-    )
+    val adminPassword = System.getenv("ADMIN_PASSWORD")
+        ?: java.util.UUID.randomUUID().toString().also { generated ->
+            logger.warn("ADMIN_PASSWORD env var not set. Using generated password for first-boot admin: {}", generated)
+            logger.warn("Set ADMIN_PASSWORD to a secure value before deploying to production.")
+        }
+    main.userRepository.seedAdminUser(main.passwordEncoder.encode(adminPassword))
 
     val server = main.app.asServer(Jetty(main.config.port)).start()
     logger.info("Outerstellar starter running on http://localhost:{}", server.port())
