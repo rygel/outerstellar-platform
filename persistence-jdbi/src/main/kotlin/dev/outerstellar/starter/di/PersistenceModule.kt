@@ -2,6 +2,7 @@ package dev.outerstellar.starter.di
 
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.persistence.ContactRepository
+import dev.outerstellar.starter.persistence.JdbiApiKeyRepository
 import dev.outerstellar.starter.persistence.JdbiAuditRepository
 import dev.outerstellar.starter.persistence.JdbiContactRepository
 import dev.outerstellar.starter.persistence.JdbiMessageRepository
@@ -12,6 +13,7 @@ import dev.outerstellar.starter.persistence.JdbiUserRepository
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.persistence.TransactionManager
+import dev.outerstellar.starter.security.ApiKeyRepository
 import dev.outerstellar.starter.security.AuditRepository
 import dev.outerstellar.starter.security.PasswordResetRepository
 import dev.outerstellar.starter.security.UserRepository
@@ -49,4 +51,6 @@ val persistenceModule
         single<AuditRepository> { JdbiAuditRepository(get()) }
 
         single<PasswordResetRepository> { JdbiPasswordResetRepository(get()) }
+
+        single<ApiKeyRepository> { JdbiApiKeyRepository(get()) }
     }

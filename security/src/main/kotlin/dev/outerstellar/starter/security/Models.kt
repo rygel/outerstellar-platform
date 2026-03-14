@@ -51,3 +51,15 @@ interface PasswordResetRepository {
 
     fun markUsed(token: String)
 }
+
+interface ApiKeyRepository {
+    fun save(apiKey: dev.outerstellar.starter.model.ApiKey)
+
+    fun findByKeyHash(keyHash: String): dev.outerstellar.starter.model.ApiKey?
+
+    fun findByUserId(userId: UUID): List<dev.outerstellar.starter.model.ApiKey>
+
+    fun delete(id: Long, userId: UUID)
+
+    fun updateLastUsed(id: Long)
+}

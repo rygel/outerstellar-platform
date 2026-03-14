@@ -1,0 +1,21 @@
+@import dev.outerstellar.starter.web.ProfilePage
+@import dev.outerstellar.starter.web.Page
+@param model: Page<ProfilePage>
+
+@template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
+    <div style="max-width: 500px; margin: 2rem auto;">
+        <section class="panel">
+            <h2>${model.data.title}</h2>
+            <div class="panel panel-muted" style="margin-bottom:1rem;">
+                <strong>Username:</strong> ${model.data.username}<br/>
+                <strong>Role:</strong> <span class="chip">${model.data.role}</span>
+            </div>
+            <form hx-post="${model.data.submitUrl}" hx-target="#profile-result" hx-swap="innerHTML">
+                <label for="email">${model.data.emailLabel}</label>
+                <input type="email" id="email" name="email" value="${model.data.email}" placeholder="${model.data.emailPlaceholder}" required>
+                <button type="submit">${model.data.submitLabel}</button>
+            </form>
+            <div id="profile-result" class="mt-4"></div>
+        </section>
+    </div>
+`)

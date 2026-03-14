@@ -1,7 +1,10 @@
 package dev.outerstellar.starter.web
 
+import dev.outerstellar.starter.model.ApiKeySummary
 import dev.outerstellar.starter.model.AuthTokenResponse
 import dev.outerstellar.starter.model.ChangePasswordRequest
+import dev.outerstellar.starter.model.CreateApiKeyRequest
+import dev.outerstellar.starter.model.CreateApiKeyResponse
 import dev.outerstellar.starter.model.LoginRequest
 import dev.outerstellar.starter.model.PasswordResetConfirm
 import dev.outerstellar.starter.model.PasswordResetRequest
@@ -12,14 +15,19 @@ import dev.outerstellar.starter.security.SecurityRules
 import dev.outerstellar.starter.security.SecurityService
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
+import org.http4k.contract.div
 import org.http4k.contract.meta
 import org.http4k.core.Body
+import org.http4k.core.Method.DELETE
+import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Method.PUT
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.Jackson.auto
+import org.http4k.lens.Path
+import org.http4k.lens.long
 
 class AuthApi(private val securityService: SecurityService) : ServerRoutes {
     private val loginRequestLens = Body.auto<LoginRequest>().toLens()
@@ -28,8 +36,12 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
     private val changePasswordLens = Body.auto<ChangePasswordRequest>().toLens()
     private val resetRequestLens = Body.auto<PasswordResetRequest>().toLens()
     private val resetConfirmLens = Body.auto<PasswordResetConfirm>().toLens()
+    private val createApiKeyLens = Body.auto<CreateApiKeyRequest>().toLens()
+    private val createApiKeyResponseLens = Body.auto<CreateApiKeyResponse>().toLens()
+    private val apiKeySummaryListLens = Body.auto<List<ApiKeySummary>>().toLens()
+    private val apiKeyIdPath = Path.long().of("id")
 
-    /** Routes that require bearer authentication (password change). */
+    /** Routes that require bearer authentication (password change, API keys). */
     val bearerRoutes: List<ContractRoute> =
         listOf(
             "/api/v1/auth/password" meta
@@ -53,7 +65,49 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     } catch (e: WeakPasswordException) {
                         Response(Status.BAD_REQUEST).body(e.message ?: "Invalid password")
                     }
-                }
+                },
+            "/api/v1/auth/api-keys" meta
+                {
+                    summary = "Create a new API key"
+                    receiving(createApiKeyLens)
+                    returning(Status.OK to "API key created")
+                    returning(Status.BAD_REQUEST to "Invalid request")
+                } bindContract
+                POST to
+                { request ->
+                    val user = SecurityRules.USER_KEY(request)!!
+                    try {
+                        val body = createApiKeyLens(request)
+                        val response = securityService.createApiKey(user.id, body.name)
+                        Response(Status.OK).with(createApiKeyResponseLens of response)
+                    } catch (e: IllegalArgumentException) {
+                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid request")
+                    }
+                },
+            "/api/v1/auth/api-keys" meta
+                {
+                    summary = "List user's API keys"
+                    returning(Status.OK to "API keys list")
+                } bindContract
+                GET to
+                { request ->
+                    val user = SecurityRules.USER_KEY(request)!!
+                    val keys = securityService.listApiKeys(user.id)
+                    Response(Status.OK).with(apiKeySummaryListLens of keys)
+                },
+            "/api/v1/auth/api-keys" / apiKeyIdPath meta
+                {
+                    summary = "Delete an API key"
+                    returning(Status.OK to "API key deleted")
+                } bindContract
+                DELETE to
+                { id ->
+                    { request ->
+                        val user = SecurityRules.USER_KEY(request)!!
+                        securityService.deleteApiKey(user.id, id)
+                        Response(Status.OK).body("API key deleted")
+                    }
+                },
         )
 
     /** Public routes (login, register) - no auth required. */

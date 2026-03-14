@@ -75,9 +75,10 @@ fun app(
                 token?.let {
                     try {
                         val id = UUID.fromString(token)
-                        userRepository.findById(id)?.takeIf { it.enabled }
+                        userRepository.findById(id)?.takeIf { u -> u.enabled }
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        null
+                        // Token is not a UUID, try API key authentication
+                        securityService.authenticateApiKey(token)
                     }
                 }
             if (user != null) {
@@ -214,12 +215,33 @@ fun app(
             uiRoutes,
             componentRoutes,
             "/" bind filteredAdminHandler,
-            "/health" bind GET to { Response(Status.OK).body("ok") },
+            "/health" bind
+                GET to
+                {
+                    val checks = mutableMapOf<String, Any>("status" to "UP")
+                    try {
+                        val userCount = userRepository.findAll().size
+                        checks["database"] = mapOf("status" to "UP", "users" to userCount)
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        checks["status"] = "DOWN"
+                        checks["database"] =
+                            mapOf("status" to "DOWN", "error" to (e.message ?: "unknown"))
+                    }
+                    checks["timestamp"] = java.time.Instant.now().toString()
+                    val status =
+                        if (checks["status"] == "UP") Status.OK else Status.SERVICE_UNAVAILABLE
+                    Response(status)
+                        .header("content-type", "application/json; charset=utf-8")
+                        .body(Jackson.asJsonObject(checks).toString())
+                },
             "/metrics" bind GET to metricsHandler,
         )
 
     val httpHandler =
-        Filters.telemetry
+        Filters.correlationId
+            .then(Filters.cors(config.corsOrigins))
+            .then(Filters.securityHeaders)
+            .then(Filters.telemetry)
             .then(rateLimitFilter())
             .then(Filters.devAutoLogin(config.devMode, userRepository))
             .then(Filters.stateFilter(config.devDashboardEnabled, userRepository))

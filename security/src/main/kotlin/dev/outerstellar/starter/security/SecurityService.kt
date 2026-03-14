@@ -1,6 +1,9 @@
 package dev.outerstellar.starter.security
 
+import dev.outerstellar.starter.model.ApiKey
+import dev.outerstellar.starter.model.ApiKeySummary
 import dev.outerstellar.starter.model.AuditEntry
+import dev.outerstellar.starter.model.CreateApiKeyResponse
 import dev.outerstellar.starter.model.InsufficientPermissionException
 import dev.outerstellar.starter.model.PasswordResetToken
 import dev.outerstellar.starter.model.UserNotFoundException
@@ -16,6 +19,7 @@ class SecurityService(
     private val passwordEncoder: PasswordEncoder,
     private val auditRepository: AuditRepository? = null,
     private val resetRepository: PasswordResetRepository? = null,
+    private val apiKeyRepository: ApiKeyRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
 
@@ -163,8 +167,74 @@ class SecurityService(
         audit("PASSWORD_RESET_COMPLETED", actor = user)
     }
 
-    fun getAuditLog(): List<AuditEntry> {
-        return auditRepository?.findRecent() ?: emptyList()
+    fun getAuditLog(limit: Int = 50): List<AuditEntry> {
+        return auditRepository?.findRecent(limit) ?: emptyList()
+    }
+
+    fun updateProfile(userId: UUID, newEmail: String) {
+        val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
+        if (newEmail != user.email) {
+            val existing = userRepository.findByEmail(newEmail)
+            if (existing != null && existing.id != userId) {
+                throw UsernameAlreadyExistsException(newEmail)
+            }
+        }
+        userRepository.save(user.copy(email = newEmail))
+        logger.info("Profile updated for user {}", user.username)
+    }
+
+    fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse {
+        require(name.isNotBlank()) { "API key name is required" }
+        val rawKey = "osk_" + generateRandomHex(API_KEY_HEX_LENGTH)
+        val keyPrefix = rawKey.take(API_KEY_PREFIX_LENGTH)
+        val keyHash = hashApiKey(rawKey)
+
+        val apiKey = ApiKey(userId = userId, keyHash = keyHash, keyPrefix = keyPrefix, name = name)
+        apiKeyRepository?.save(apiKey)
+        logger.info("API key created for user {}", userId)
+        return CreateApiKeyResponse(key = rawKey, name = name, keyPrefix = keyPrefix)
+    }
+
+    fun listApiKeys(userId: UUID): List<ApiKeySummary> {
+        return apiKeyRepository?.findByUserId(userId)?.map { key ->
+            ApiKeySummary(
+                id = key.id,
+                keyPrefix = key.keyPrefix,
+                name = key.name,
+                enabled = key.enabled,
+                createdAt = key.createdAt.toString(),
+                lastUsedAt = key.lastUsedAt?.toString(),
+            )
+        } ?: emptyList()
+    }
+
+    fun deleteApiKey(userId: UUID, keyId: Long) {
+        apiKeyRepository?.delete(keyId, userId)
+        logger.info("API key {} deleted for user {}", keyId, userId)
+    }
+
+    fun authenticateApiKey(rawKey: String): User? {
+        val keyHash = hashApiKey(rawKey)
+        val apiKey = apiKeyRepository?.findByKeyHash(keyHash) ?: return null
+        if (!apiKey.enabled) return null
+
+        val user = userRepository.findById(apiKey.userId)
+        if (user != null && user.enabled) {
+            apiKeyRepository.updateLastUsed(apiKey.id)
+            return user
+        }
+        return null
+    }
+
+    private fun generateRandomHex(length: Int): String {
+        val bytes = ByteArray(length / 2)
+        java.security.SecureRandom().nextBytes(bytes)
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun hashApiKey(key: String): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 
     private fun audit(
@@ -188,6 +258,8 @@ class SecurityService(
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
         private const val RESET_TOKEN_TTL_SECONDS = 3600L
+        private const val API_KEY_HEX_LENGTH = 32
+        private const val API_KEY_PREFIX_LENGTH = 8
     }
 }
 

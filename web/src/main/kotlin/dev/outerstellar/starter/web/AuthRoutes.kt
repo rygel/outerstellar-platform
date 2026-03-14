@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.infra.render
+import dev.outerstellar.starter.model.UsernameAlreadyExistsException
 import dev.outerstellar.starter.model.WeakPasswordException
 import dev.outerstellar.starter.security.SecurityService
 import org.http4k.contract.bindContract
@@ -12,6 +13,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.http4k.lens.Path
+import org.http4k.lens.long
 import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
 
@@ -22,6 +24,7 @@ class AuthRoutes(
     private val sessionCookieSecure: Boolean,
 ) : ServerRoutes {
     private val modePath = Path.string().of("mode")
+    private val apiKeyIdPath = Path.long().of("id")
 
     override val routes =
         listOf(
@@ -215,6 +218,107 @@ class AuthRoutes(
                                     toneClass = "panel-danger",
                                 )
                             )
+                        }
+                    }
+                },
+            "/auth/profile" meta
+                {
+                    summary = "User profile page"
+                } bindContract
+                GET to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    if (ctx.user == null) {
+                        Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    } else {
+                        renderer.render(pageFactory.buildProfilePage(ctx))
+                    }
+                },
+            "/auth/components/profile-update" meta
+                {
+                    summary = "Process profile update form"
+                } bindContract
+                POST to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    val user = ctx.user
+                    if (user == null) {
+                        Response(Status.UNAUTHORIZED).body("Not logged in")
+                    } else {
+                        val newEmail = request.form("email").orEmpty()
+                        try {
+                            securityService.updateProfile(user.id, newEmail)
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.profile.success.title"),
+                                    message = ctx.i18n.translate("web.profile.success.body"),
+                                    toneClass = "panel-success",
+                                )
+                            )
+                        } catch (e: UsernameAlreadyExistsException) {
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.profile.error.title"),
+                                    message = e.message ?: "Update failed",
+                                    toneClass = "panel-danger",
+                                )
+                            )
+                        }
+                    }
+                },
+            "/auth/api-keys" meta
+                {
+                    summary = "API keys management page"
+                } bindContract
+                GET to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    if (ctx.user == null) {
+                        Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    } else {
+                        renderer.render(pageFactory.buildApiKeysPage(ctx))
+                    }
+                },
+            "/auth/api-keys/create" meta
+                {
+                    summary = "Create a new API key"
+                } bindContract
+                POST to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    val user = ctx.user
+                    if (user == null) {
+                        Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    } else {
+                        val name = request.form("name").orEmpty()
+                        if (name.isBlank()) {
+                            renderer.render(pageFactory.buildApiKeysPage(ctx))
+                        } else {
+                            val result = securityService.createApiKey(user.id, name)
+                            renderer.render(
+                                pageFactory.buildApiKeysPage(
+                                    ctx,
+                                    newKey = result.key,
+                                    newKeyName = result.name,
+                                )
+                            )
+                        }
+                    }
+                },
+            "/auth/api-keys" / apiKeyIdPath / "delete" meta
+                {
+                    summary = "Delete an API key"
+                } bindContract
+                POST to
+                { id, _ ->
+                    { request: org.http4k.core.Request ->
+                        val ctx = request.webContext
+                        val user = ctx.user
+                        if (user == null) {
+                            Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        } else {
+                            securityService.deleteApiKey(user.id, id)
+                            Response(Status.FOUND).header("location", ctx.url("/auth/api-keys"))
                         }
                     }
                 },

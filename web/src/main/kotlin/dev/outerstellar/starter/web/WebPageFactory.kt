@@ -31,6 +31,7 @@ data class ShellView(
     val isLoggedIn: Boolean = false,
     val logoutUrl: String? = null,
     val changePasswordUrl: String? = null,
+    val profileUrl: String? = null,
 )
 
 data class HomeFeature(val label: String, val value: String)
@@ -205,11 +206,24 @@ data class UserAdminPage(
     val title: String,
     val description: String,
     val users: List<UserAdminRow>,
+    val currentPage: Int = 1,
+    val hasPrevious: Boolean = false,
+    val hasNext: Boolean = false,
+    val previousUrl: String = "",
+    val nextUrl: String = "",
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/UserAdminPage"
 }
 
-data class AuditLogPage(val title: String, val entries: List<AuditEntryViewModel>) : ViewModel {
+data class AuditLogPage(
+    val title: String,
+    val entries: List<AuditEntryViewModel>,
+    val currentPage: Int = 1,
+    val hasPrevious: Boolean = false,
+    val hasNext: Boolean = false,
+    val previousUrl: String = "",
+    val nextUrl: String = "",
+) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/AuditLogPage"
 }
 
@@ -221,6 +235,19 @@ data class AuditEntryViewModel(
     val timestamp: String,
 )
 
+data class ProfilePage(
+    val title: String,
+    val username: String,
+    val email: String,
+    val role: String,
+    val submitUrl: String,
+    val emailLabel: String,
+    val emailPlaceholder: String,
+    val submitLabel: String,
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/ProfilePage"
+}
+
 data class SidebarSelector(
     val heading: String,
     val label: String,
@@ -231,6 +258,16 @@ data class SidebarSelector(
     val refreshUrl: String,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/components/SidebarSelector"
+}
+
+data class ApiKeysPage(
+    val title: String,
+    val keys: List<dev.outerstellar.starter.model.ApiKeySummary>,
+    val createUrl: String,
+    val newKey: String? = null,
+    val newKeyName: String? = null,
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/ApiKeysPage"
 }
 
 private const val MIN_PASSWORD_LENGTH = 8
@@ -683,11 +720,19 @@ class WebPageFactory(
         )
     }
 
-    fun buildUserAdminPage(ctx: WebContext): Page<UserAdminPage> {
+    fun buildUserAdminPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<UserAdminPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.admin.users.title"), "/admin/users")
-        val users = securityService?.listUsers() ?: emptyList()
+        val allUsers = securityService?.listUsers() ?: emptyList()
         val currentUserId = ctx.user?.id?.toString()
+        val safeOffset = offset.coerceIn(0, maxOf(0, allUsers.size - 1))
+        val pageUsers = allUsers.drop(safeOffset).take(limit)
+        val currentPage = (safeOffset / limit) + 1
+        val hasPrevious = safeOffset > 0
+        val hasNext = safeOffset + limit < allUsers.size
+        val previousUrl =
+            ctx.url("/admin/users?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
+        val nextUrl = ctx.url("/admin/users?limit=$limit&offset=${safeOffset + limit}")
 
         return Page(
             shell = shell,
@@ -696,7 +741,7 @@ class WebPageFactory(
                     title = i18n.translate("web.admin.users.title"),
                     description = i18n.translate("web.admin.users.description"),
                     users =
-                        users.map { u ->
+                        pageUsers.map { u ->
                             UserAdminRow(
                                 id = u.id,
                                 username = u.username,
@@ -708,14 +753,27 @@ class WebPageFactory(
                                 isSelf = u.id == currentUserId,
                             )
                         },
+                    currentPage = currentPage,
+                    hasPrevious = hasPrevious,
+                    hasNext = hasNext,
+                    previousUrl = previousUrl,
+                    nextUrl = nextUrl,
                 ),
         )
     }
 
-    fun buildAuditLogPage(ctx: WebContext): Page<AuditLogPage> {
+    fun buildAuditLogPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<AuditLogPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.admin.audit.title"), "/admin/audit")
-        val entries = securityService?.getAuditLog() ?: emptyList()
+        val allEntries = securityService?.getAuditLog(limit = limit + offset + 1) ?: emptyList()
+        val safeOffset = offset.coerceIn(0, maxOf(0, allEntries.size - 1))
+        val pageEntries = allEntries.drop(safeOffset).take(limit)
+        val currentPage = (safeOffset / limit) + 1
+        val hasPrevious = safeOffset > 0
+        val hasNext = allEntries.size > safeOffset + limit
+        val previousUrl =
+            ctx.url("/admin/audit?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
+        val nextUrl = ctx.url("/admin/audit?limit=$limit&offset=${safeOffset + limit}")
 
         return Page(
             shell = shell,
@@ -723,7 +781,7 @@ class WebPageFactory(
                 AuditLogPage(
                     title = i18n.translate("web.admin.audit.title"),
                     entries =
-                        entries.map { e ->
+                        pageEntries.map { e ->
                             AuditEntryViewModel(
                                 actorUsername = e.actorUsername ?: "",
                                 targetUsername = e.targetUsername ?: "",
@@ -732,6 +790,55 @@ class WebPageFactory(
                                 timestamp = e.createdAt.toString(),
                             )
                         },
+                    currentPage = currentPage,
+                    hasPrevious = hasPrevious,
+                    hasNext = hasNext,
+                    previousUrl = previousUrl,
+                    nextUrl = nextUrl,
+                ),
+        )
+    }
+
+    fun buildApiKeysPage(
+        ctx: WebContext,
+        newKey: String? = null,
+        newKeyName: String? = null,
+    ): Page<ApiKeysPage> {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.apikeys.title"), "/auth/api-keys")
+        val userId = ctx.user?.id ?: throw IllegalStateException("User not logged in")
+        val keys = securityService?.listApiKeys(userId) ?: emptyList()
+
+        return Page(
+            shell = shell,
+            data =
+                ApiKeysPage(
+                    title = i18n.translate("web.apikeys.title"),
+                    keys = keys,
+                    createUrl = ctx.url("/auth/api-keys/create"),
+                    newKey = newKey,
+                    newKeyName = newKeyName,
+                ),
+        )
+    }
+
+    fun buildProfilePage(ctx: WebContext): Page<ProfilePage> {
+        val i18n = ctx.i18n
+        val shell = ctx.shell(i18n.translate("web.profile.title"), "/auth/profile")
+        val user = ctx.user!!
+
+        return Page(
+            shell = shell,
+            data =
+                ProfilePage(
+                    title = i18n.translate("web.profile.title"),
+                    username = user.username,
+                    email = user.email,
+                    role = user.role.name,
+                    submitUrl = ctx.url("/auth/components/profile-update"),
+                    emailLabel = i18n.translate("web.profile.email"),
+                    emailPlaceholder = i18n.translate("web.profile.email.placeholder"),
+                    submitLabel = i18n.translate("web.profile.submit"),
                 ),
         )
     }

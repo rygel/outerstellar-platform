@@ -155,6 +155,7 @@ class WebContext(
             isLoggedIn = user != null,
             logoutUrl = url("/logout"),
             changePasswordUrl = if (user != null) url("/auth/change-password") else null,
+            profileUrl = if (user != null) url("/auth/profile") else null,
         )
     }
 }

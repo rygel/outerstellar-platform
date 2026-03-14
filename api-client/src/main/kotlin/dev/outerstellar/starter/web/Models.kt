@@ -23,3 +23,16 @@ data class SetUserRoleRequest(val role: String)
 data class PasswordResetRequest(val email: String)
 
 data class PasswordResetConfirm(val token: String, val newPassword: String)
+
+data class CreateApiKeyRequest(val name: String)
+
+data class CreateApiKeyResponse(val key: String, val name: String, val keyPrefix: String)
+
+data class ApiKeySummary(
+    val id: Long,
+    val keyPrefix: String,
+    val name: String,
+    val enabled: Boolean,
+    val createdAt: String,
+    val lastUsedAt: String?,
+)

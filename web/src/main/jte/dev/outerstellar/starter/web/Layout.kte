@@ -132,6 +132,10 @@
                     <div class="user-info">
                         <span class="user-name">${shell.userName}</span>
                         <div style="display:flex; gap:0.5rem; align-items:center;">
+                            @if(shell.profileUrl != null)
+                                <a href="${shell.profileUrl}" class="sign-out-link" style="font-size:0.8rem;"><i class="ri-user-settings-line"></i> Profile</a>
+                                <span style="opacity:0.3;">|</span>
+                            @endif
                             @if(shell.changePasswordUrl != null)
                                 <a href="${shell.changePasswordUrl}" class="sign-out-link" style="font-size:0.8rem;"><i class="ri-lock-password-line"></i> Change password</a>
                                 <span style="opacity:0.3;">|</span>

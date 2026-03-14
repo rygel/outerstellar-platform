@@ -17,6 +17,7 @@ data class AppConfig(
     // APP_PROFILE=prod or the SESSIONCOOKIESECURE environment variable.
     val sessionCookieSecure: Boolean = false,
     val sessionTimeoutMinutes: Int = 30,
+    val corsOrigins: String = "*",
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)

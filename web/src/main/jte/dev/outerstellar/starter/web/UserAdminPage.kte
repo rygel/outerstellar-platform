@@ -57,5 +57,18 @@
                 @endfor
             </tbody>
         </table>
+        <div style="display:flex; justify-content:space-between; margin-top:1rem;">
+            @if(model.data.hasPrevious)
+                <a href="${model.data.previousUrl}" class="secondary">Previous</a>
+            @else
+                <span></span>
+            @endif
+            <span class="text-muted">Page ${model.data.currentPage}</span>
+            @if(model.data.hasNext)
+                <a href="${model.data.nextUrl}" class="secondary">Next</a>
+            @else
+                <span></span>
+            @endif
+        </div>
     </section>
 `)

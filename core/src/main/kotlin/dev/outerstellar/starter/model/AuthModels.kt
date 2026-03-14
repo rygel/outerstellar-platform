@@ -42,3 +42,27 @@ data class AuditEntry(
     val detail: String?,
     val createdAt: java.time.Instant = java.time.Instant.now(),
 )
+
+data class ApiKey(
+    val id: Long = 0,
+    val userId: java.util.UUID,
+    val keyHash: String,
+    val keyPrefix: String,
+    val name: String,
+    val enabled: Boolean = true,
+    val createdAt: java.time.Instant = java.time.Instant.now(),
+    val lastUsedAt: java.time.Instant? = null,
+)
+
+data class ApiKeySummary(
+    val id: Long,
+    val keyPrefix: String,
+    val name: String,
+    val enabled: Boolean,
+    val createdAt: String,
+    val lastUsedAt: String?,
+)
+
+data class CreateApiKeyRequest(val name: String)
+
+data class CreateApiKeyResponse(val key: String, val name: String, val keyPrefix: String)

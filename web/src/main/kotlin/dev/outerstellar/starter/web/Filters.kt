@@ -23,17 +23,74 @@ import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 
 private const val COOKIE_MAX_AGE_DAYS = 365L
+private const val REQUEST_ID_HEADER = "X-Request-Id"
 
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
+
+    val correlationId: Filter = Filter { next: HttpHandler ->
+        { request ->
+            val requestId =
+                request.header(REQUEST_ID_HEADER) ?: java.util.UUID.randomUUID().toString()
+            val response = next(request.header(REQUEST_ID_HEADER, requestId))
+            response.header(REQUEST_ID_HEADER, requestId)
+        }
+    }
+
+    fun cors(allowedOrigins: String): Filter = Filter { next: HttpHandler ->
+        { request ->
+            if (request.method == org.http4k.core.Method.OPTIONS) {
+                Response(Status.NO_CONTENT)
+                    .header("Access-Control-Allow-Origin", allowedOrigins)
+                    .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                    .header(
+                        "Access-Control-Allow-Headers",
+                        "Authorization, Content-Type, X-Request-Id",
+                    )
+                    .header("Access-Control-Max-Age", "3600")
+            } else {
+                val response = next(request)
+                response
+                    .header("Access-Control-Allow-Origin", allowedOrigins)
+                    .header("Access-Control-Expose-Headers", "X-Request-Id, X-Session-Expired")
+            }
+        }
+    }
+
+    val securityHeaders: Filter = Filter { next: HttpHandler ->
+        { request ->
+            next(request)
+                .header("X-Content-Type-Options", "nosniff")
+                .header("X-Frame-Options", "DENY")
+                .header("Referrer-Policy", "strict-origin-when-cross-origin")
+                .header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+                .let { response ->
+                    if (!request.uri.path.startsWith("/api/")) {
+                        response.header(
+                            "Content-Security-Policy",
+                            "default-src 'self'; " +
+                                "script-src 'self' 'unsafe-inline' https://unpkg.com; " +
+                                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+                                "font-src 'self' https://cdn.jsdelivr.net; " +
+                                "connect-src 'self' ws: wss:; " +
+                                "img-src 'self' data:;",
+                        )
+                    } else {
+                        response
+                    }
+                }
+        }
+    }
 
     val requestLogging: Filter = Filter { next: HttpHandler ->
         { request ->
             val start = System.currentTimeMillis()
             val response = next(request)
             val duration = System.currentTimeMillis() - start
+            val requestId = request.header(REQUEST_ID_HEADER) ?: "-"
             logger.info(
-                "{} {} -> {} ({}ms)",
+                "[{}] {} {} -> {} ({}ms)",
+                requestId.take(8),
                 request.method,
                 request.uri,
                 response.status,

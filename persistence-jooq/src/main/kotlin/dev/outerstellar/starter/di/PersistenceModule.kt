@@ -2,6 +2,7 @@ package dev.outerstellar.starter.di
 
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.persistence.ContactRepository
+import dev.outerstellar.starter.persistence.JooqApiKeyRepository
 import dev.outerstellar.starter.persistence.JooqAuditRepository
 import dev.outerstellar.starter.persistence.JooqContactRepository
 import dev.outerstellar.starter.persistence.JooqMessageRepository
@@ -12,6 +13,7 @@ import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.persistence.TransactionManager
+import dev.outerstellar.starter.security.ApiKeyRepository
 import dev.outerstellar.starter.security.AuditRepository
 import dev.outerstellar.starter.security.PasswordResetRepository
 import dev.outerstellar.starter.security.UserRepository
@@ -50,4 +52,6 @@ val persistenceModule
         single<AuditRepository> { JooqAuditRepository(get()) }
 
         single<PasswordResetRepository> { JooqPasswordResetRepository(get()) }
+
+        single<ApiKeyRepository> { JooqApiKeyRepository(get()) }
     }

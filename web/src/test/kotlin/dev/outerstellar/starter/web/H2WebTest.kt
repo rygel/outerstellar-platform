@@ -36,6 +36,7 @@ abstract class H2WebTest {
             testDsl.execute("TRUNCATE TABLE SYNC_STATE")
             testDsl.execute("TRUNCATE TABLE AUDIT_LOG")
             testDsl.execute("TRUNCATE TABLE PASSWORD_RESET_TOKENS")
+            testDsl.execute("TRUNCATE TABLE API_KEYS")
             testDsl.execute("SET REFERENTIAL_INTEGRITY TRUE")
         }
     }

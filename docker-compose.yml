@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_PROFILE=prod
+      - SESSIONCOOKIESECURE=false
+      - ADMIN_PASSWORD=admin123
+    volumes:
+      - app-data:/app/data
+
+volumes:
+  app-data:
