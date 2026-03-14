@@ -32,12 +32,13 @@ jobs:
       - name: Run Web Tests
         run: mvn test -pl web
 
-      - name: Run Desktop Tests (Headless)
+      - name: Run Desktop Tests (Xvfb virtual display)
         run: |
-          # We need a virtual display for Swing E2E tests to work in Linux CI/act
+          # Xvfb provides a virtual framebuffer so Swing GUI tests run without a physical display.
+          # -Ddesktop.headless=false ensures java.awt.headless=false so tests are NOT skipped.
           sudo apt-get update
           sudo apt-get install -y xvfb
-          xvfb-run --auto-servernum mvn test -pl desktop
+          xvfb-run --auto-servernum mvn test -pl desktop -Ddesktop.headless=false
 
       - name: Final Integration Test
         run: mvn test -pl core,persistence-jooq

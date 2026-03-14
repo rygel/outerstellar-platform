@@ -316,13 +316,13 @@ even though templates compiled.
 
 **Why:** shutdown should remain reliable even if a child disappears between discovery and termination.
 
-### 9. Headless Swing UI testing
+### 9. Swing UI testing in CI
 
-**Finding:** Running Swing UI tests in a local or CI environment can lead to unexpected window popups and mouse cursor capture, which can be disruptive and cause test failures in non-GUI environments.
+**Finding:** Swing GUI tests need a display. Simply setting `java.awt.headless=true` causes tests to be skipped, which gives false confidence — the tests pass because they don't run.
 
-**Decision:** Enforce headless mode by default for all desktop tests using `java.awt.headless=true` in Maven, while providing a toggle switch (`-Dheadless=false`) for manual GUI verification.
+**Decision:** CI uses Xvfb (X virtual framebuffer) with `java.awt.headless=false` so GUI tests actually execute against a virtual display. Local builds default to `headless=true` for convenience (no popups), toggled with `-Ptests-headful`.
 
-**Why:** This ensures tests are stable, non-intrusive, and compatible with headless CI pipelines, while still allowing developers to run full GUI tests when needed.
+**Why:** Tests that are skipped in CI provide no value. Xvfb gives the same pixel-level rendering as a real display, so layout and interaction tests produce meaningful results without a physical screen.
 
 ## Testing strategy
 
@@ -432,9 +432,18 @@ The existing `UserManagementIntegrationTest` demonstrates this pattern for admin
 
 ### Headless vs headful test profiles
 
-- `mvn test -Ptests-headless` — all Swing GUI tests are skipped (CI default)
-- `mvn test -Ptests-headful` — all tests run including GUI interaction and layout verification
-- ViewModel-level tests always run regardless of profile
+Swing GUI tests need a display to run. On CI (Linux), this is provided by **Xvfb** (X virtual framebuffer). The key setting is `java.awt.headless`:
+
+- When `true`: `GraphicsEnvironment.isHeadless()` returns `true` and GUI tests skip via `assumeFalse`
+- When `false`: tests run normally — either against a real display or a virtual framebuffer like Xvfb
+
+| Environment | Command | What happens |
+|-------------|---------|-------------|
+| **CI (Linux)** | `xvfb-run mvn test -pl desktop -Ddesktop.headless=false` | GUI tests run against virtual framebuffer |
+| **Developer (with display)** | `mvn test -pl desktop -Ptests-headful` | GUI tests run against real display |
+| **Quick build (skip GUI)** | `mvn test -pl desktop` | GUI tests skipped (default `desktop.headless=true`) |
+
+ViewModel-level tests (e.g., `SyncViewModelAuthTest`) always run regardless of headless mode since they don't use any AWT/Swing components.
 
 ## Authentication and user management
 
