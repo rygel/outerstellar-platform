@@ -17,7 +17,8 @@ object SyncWebSocket : WebComponent<Nothing>, dev.outerstellar.starter.service.E
     val handler: WsHandler = { request: Request ->
         WsResponse { ws: Websocket ->
             val sessionCookie =
-                request.header("Cookie")
+                request
+                    .header("Cookie")
                     ?.split(";")
                     ?.map { it.trim() }
                     ?.find { it.startsWith("${WebContext.SESSION_COOKIE}=") }

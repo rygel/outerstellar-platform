@@ -139,8 +139,9 @@ class SecurityService(
         emailService?.send(
             to = user.email,
             subject = "Password Reset Request",
-            body = "Use this link to reset your password: /auth/reset?token=$tokenValue\n" +
-                "This link expires in 1 hour.",
+            body =
+                "Use this link to reset your password: /auth/reset?token=$tokenValue\n" +
+                    "This link expires in 1 hour.",
         )
         audit("PASSWORD_RESET_REQUESTED", actor = user)
         return tokenValue

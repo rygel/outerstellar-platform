@@ -25,21 +25,23 @@ class SecurityServiceTest {
     private lateinit var apiKeyRepository: ApiKeyRepository
     private lateinit var service: SecurityService
 
-    private val testUser = User(
-        id = UUID.randomUUID(),
-        username = "testuser",
-        email = "testuser@test.com",
-        passwordHash = "hashed_password",
-        role = UserRole.USER,
-    )
+    private val testUser =
+        User(
+            id = UUID.randomUUID(),
+            username = "testuser",
+            email = "testuser@test.com",
+            passwordHash = "hashed_password",
+            role = UserRole.USER,
+        )
 
-    private val adminUser = User(
-        id = UUID.randomUUID(),
-        username = "admin",
-        email = "admin@test.com",
-        passwordHash = "hashed_admin",
-        role = UserRole.ADMIN,
-    )
+    private val adminUser =
+        User(
+            id = UUID.randomUUID(),
+            username = "admin",
+            email = "admin@test.com",
+            passwordHash = "hashed_admin",
+            role = UserRole.ADMIN,
+        )
 
     @BeforeEach
     fun setup() {
@@ -47,12 +49,13 @@ class SecurityServiceTest {
         passwordEncoder = mockk(relaxed = true)
         auditRepository = mockk(relaxed = true)
         apiKeyRepository = mockk(relaxed = true)
-        service = SecurityService(
-            userRepository = userRepository,
-            passwordEncoder = passwordEncoder,
-            auditRepository = auditRepository,
-            apiKeyRepository = apiKeyRepository,
-        )
+        service =
+            SecurityService(
+                userRepository = userRepository,
+                passwordEncoder = passwordEncoder,
+                auditRepository = auditRepository,
+                apiKeyRepository = apiKeyRepository,
+            )
     }
 
     // ---- authenticate ----
@@ -104,18 +107,14 @@ class SecurityServiceTest {
     fun `register throws on duplicate username`() {
         every { userRepository.findByUsername("existing") } returns testUser
 
-        assertThrows<UsernameAlreadyExistsException> {
-            service.register("existing", "password123")
-        }
+        assertThrows<UsernameAlreadyExistsException> { service.register("existing", "password123") }
     }
 
     @Test
     fun `register throws on short password`() {
         every { userRepository.findByUsername("newuser") } returns null
 
-        assertThrows<WeakPasswordException> {
-            service.register("newuser", "short")
-        }
+        assertThrows<WeakPasswordException> { service.register("newuser", "short") }
     }
 
     @Test
@@ -220,9 +219,7 @@ class SecurityServiceTest {
 
     @Test
     fun `createApiKey throws on blank name`() {
-        assertThrows<IllegalArgumentException> {
-            service.createApiKey(testUser.id, "")
-        }
+        assertThrows<IllegalArgumentException> { service.createApiKey(testUser.id, "") }
     }
 
     @Test
@@ -230,15 +227,17 @@ class SecurityServiceTest {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
         // Compute the expected hash the same way SecurityService does
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val expectedHash = digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
+        val expectedHash =
+            digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
 
-        val apiKey = ApiKey(
-            id = 1L,
-            userId = testUser.id,
-            keyHash = expectedHash,
-            keyPrefix = "osk_abcd",
-            name = "test-key",
-        )
+        val apiKey =
+            ApiKey(
+                id = 1L,
+                userId = testUser.id,
+                keyHash = expectedHash,
+                keyPrefix = "osk_abcd",
+                name = "test-key",
+            )
 
         every { apiKeyRepository.findByKeyHash(expectedHash) } returns apiKey
         every { userRepository.findById(testUser.id) } returns testUser
@@ -254,16 +253,18 @@ class SecurityServiceTest {
     fun `authenticateApiKey returns null for disabled key`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val expectedHash = digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
+        val expectedHash =
+            digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
 
-        val disabledKey = ApiKey(
-            id = 2L,
-            userId = testUser.id,
-            keyHash = expectedHash,
-            keyPrefix = "osk_abcd",
-            name = "disabled-key",
-            enabled = false,
-        )
+        val disabledKey =
+            ApiKey(
+                id = 2L,
+                userId = testUser.id,
+                keyHash = expectedHash,
+                keyPrefix = "osk_abcd",
+                name = "disabled-key",
+                enabled = false,
+            )
 
         every { apiKeyRepository.findByKeyHash(expectedHash) } returns disabledKey
 
@@ -276,15 +277,17 @@ class SecurityServiceTest {
     fun `authenticateApiKey returns null for disabled user`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val expectedHash = digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
+        val expectedHash =
+            digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
 
-        val apiKey = ApiKey(
-            id = 3L,
-            userId = testUser.id,
-            keyHash = expectedHash,
-            keyPrefix = "osk_abcd",
-            name = "test-key",
-        )
+        val apiKey =
+            ApiKey(
+                id = 3L,
+                userId = testUser.id,
+                keyHash = expectedHash,
+                keyPrefix = "osk_abcd",
+                name = "test-key",
+            )
 
         val disabledUser = testUser.copy(enabled = false)
         every { apiKeyRepository.findByKeyHash(expectedHash) } returns apiKey

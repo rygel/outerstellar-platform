@@ -2,37 +2,36 @@ package dev.outerstellar.starter.persistence
 
 import dev.outerstellar.starter.model.ApiKey
 import dev.outerstellar.starter.security.ApiKeyRepository
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 import org.jooq.DSLContext
 import org.jooq.Record
 import org.jooq.impl.DSL
+import org.jooq.impl.SQLDataType
 
 class JooqApiKeyRepository(private val dsl: DSLContext) : ApiKeyRepository {
 
-    private val table = DSL.table("api_keys")
-    private val idField = DSL.field("id", Long::class.java)
-    private val userIdField = DSL.field("user_id", UUID::class.java)
-    private val keyHashField = DSL.field("key_hash", String::class.java)
-    private val keyPrefixField = DSL.field("key_prefix", String::class.java)
-    private val nameField = DSL.field("name", String::class.java)
-    private val enabledField = DSL.field("enabled", Boolean::class.java)
-    private val createdAtField = DSL.field("created_at", LocalDateTime::class.java)
-    private val lastUsedAtField = DSL.field("last_used_at", LocalDateTime::class.java)
+    private val table = DSL.table("API_KEYS")
+    private val idField = DSL.field(DSL.name("ID"), SQLDataType.BIGINT)
+    private val userIdField = DSL.field(DSL.name("USER_ID"), SQLDataType.UUID)
+    private val keyHashField = DSL.field(DSL.name("KEY_HASH"), SQLDataType.VARCHAR)
+    private val keyPrefixField = DSL.field(DSL.name("KEY_PREFIX"), SQLDataType.VARCHAR)
+    private val nameField = DSL.field(DSL.name("NAME"), SQLDataType.VARCHAR)
+    private val enabledField = DSL.field(DSL.name("ENABLED"), SQLDataType.BOOLEAN)
+    private val createdAtField = DSL.field(DSL.name("CREATED_AT"), SQLDataType.TIMESTAMP)
+    private val lastUsedAtField = DSL.field(DSL.name("LAST_USED_AT"), SQLDataType.TIMESTAMP)
 
     private fun mapRecord(record: Record): ApiKey {
         val createdAt = record.get(createdAtField)
         val lastUsedAt = record.get(lastUsedAtField)
         return ApiKey(
-            id = record.get(idField),
-            userId = record.get(userIdField),
-            keyHash = record.get(keyHashField),
-            keyPrefix = record.get(keyPrefixField),
-            name = record.get(nameField),
-            enabled = record.get(enabledField),
-            createdAt = createdAt?.toInstant(ZoneOffset.UTC) ?: java.time.Instant.now(),
-            lastUsedAt = lastUsedAt?.toInstant(ZoneOffset.UTC),
+            id = record.get(idField)!!,
+            userId = record.get(userIdField)!!,
+            keyHash = record.get(keyHashField)!!,
+            keyPrefix = record.get(keyPrefixField)!!,
+            name = record.get(nameField)!!,
+            enabled = record.get(enabledField) ?: true,
+            createdAt = createdAt?.toInstant() ?: java.time.Instant.now(),
+            lastUsedAt = lastUsedAt?.toInstant(),
         )
     }
 
@@ -43,7 +42,7 @@ class JooqApiKeyRepository(private val dsl: DSLContext) : ApiKeyRepository {
             .set(keyPrefixField, apiKey.keyPrefix)
             .set(nameField, apiKey.name)
             .set(enabledField, apiKey.enabled)
-            .set(createdAtField, LocalDateTime.ofInstant(apiKey.createdAt, ZoneOffset.UTC))
+            .set(createdAtField, java.sql.Timestamp.from(apiKey.createdAt))
             .execute()
     }
 
@@ -68,7 +67,7 @@ class JooqApiKeyRepository(private val dsl: DSLContext) : ApiKeyRepository {
 
     override fun updateLastUsed(id: Long) {
         dsl.update(table)
-            .set(lastUsedAtField, LocalDateTime.now(ZoneOffset.UTC))
+            .set(lastUsedAtField, java.sql.Timestamp.from(java.time.Instant.now()))
             .where(idField.eq(id))
             .execute()
     }

@@ -66,6 +66,14 @@
         <runtime.dev.mode>false</runtime.dev.mode>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>github-rygel</id>
+            <name>Rygel GitHub Packages</name>
+            <url>https://maven.pkg.github.com/rygel/*</url>
+        </repository>
+    </repositories>
+
     <dependencyManagement>
         <dependencies>
             <dependency>

@@ -82,13 +82,14 @@ class UserManagementIntegrationTest : H2WebTest() {
         val auditRepository = JooqAuditRepository(testDsl)
         val resetRepository = JooqPasswordResetRepository(testDsl)
         val apiKeyRepository = JooqApiKeyRepository(testDsl)
-        securityService = SecurityService(
-            userRepository,
-            encoder,
-            auditRepository,
-            resetRepository,
-            apiKeyRepository,
-        )
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                auditRepository,
+                resetRepository,
+                apiKeyRepository,
+            )
         val contactService =
             io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
         val pageFactory =
@@ -570,8 +571,7 @@ class UserManagementIntegrationTest : H2WebTest() {
         val apiKeyResponse = createApiKeyResponseLens(createResponse)
 
         // Use the API key as bearer token for a sync request
-        val syncResponse =
-            app(bearerRequest(GET, "/api/v1/auth/api-keys", apiKeyResponse.key))
+        val syncResponse = app(bearerRequest(GET, "/api/v1/auth/api-keys", apiKeyResponse.key))
         assertEquals(Status.OK, syncResponse.status)
     }
 
@@ -586,9 +586,8 @@ class UserManagementIntegrationTest : H2WebTest() {
         )
 
         // List keys
-        val listResponse =
-            app(bearerRequest(GET, "/api/v1/auth/api-keys", auth.token))
-        assertEquals(Status.OK, listResponse.status)
+        val listResponse = app(bearerRequest(GET, "/api/v1/auth/api-keys", auth.token))
+        assertEquals(Status.OK, listResponse.status, "List failed: ${listResponse.bodyString()}")
 
         val keys = apiKeySummaryListLens(listResponse)
         assertTrue(keys.isNotEmpty(), "Key list should not be empty")
@@ -608,19 +607,16 @@ class UserManagementIntegrationTest : H2WebTest() {
         val apiKeyResponse = createApiKeyResponseLens(createResponse)
 
         // List keys to get the ID
-        val listResponse =
-            app(bearerRequest(GET, "/api/v1/auth/api-keys", auth.token))
+        val listResponse = app(bearerRequest(GET, "/api/v1/auth/api-keys", auth.token))
         val keys = apiKeySummaryListLens(listResponse)
         val keyId = keys.find { it.name == "delete-me" }!!.id
 
         // Delete the key
-        val deleteResponse =
-            app(bearerRequest(DELETE, "/api/v1/auth/api-keys/$keyId", auth.token))
+        val deleteResponse = app(bearerRequest(DELETE, "/api/v1/auth/api-keys/$keyId", auth.token))
         assertEquals(Status.OK, deleteResponse.status)
 
         // Verify the key no longer works for auth
-        val authResponse =
-            app(bearerRequest(GET, "/api/v1/auth/api-keys", apiKeyResponse.key))
+        val authResponse = app(bearerRequest(GET, "/api/v1/auth/api-keys", apiKeyResponse.key))
         assertEquals(Status.UNAUTHORIZED, authResponse.status)
     }
 
@@ -712,11 +708,7 @@ class UserManagementIntegrationTest : H2WebTest() {
                     Request(POST, "/api/v1/auth/login")
                         .with(loginLens of LoginRequest("ratelimituser", "password123"))
                 )
-            assertEquals(
-                Status.OK,
-                response.status,
-                "Request $i should succeed within rate limit",
-            )
+            assertEquals(Status.OK, response.status, "Request $i should succeed within rate limit")
         }
     }
 
@@ -782,10 +774,7 @@ class UserManagementIntegrationTest : H2WebTest() {
 
         assertEquals("nosniff", response.header("X-Content-Type-Options"))
         assertEquals("DENY", response.header("X-Frame-Options"))
-        assertEquals(
-            "strict-origin-when-cross-origin",
-            response.header("Referrer-Policy"),
-        )
+        assertEquals("strict-origin-when-cross-origin", response.header("Referrer-Policy"))
     }
 
     // ---- Correlation ID Tests ----
@@ -802,8 +791,7 @@ class UserManagementIntegrationTest : H2WebTest() {
     @Test
     fun `correlation id is forwarded when provided`() {
         val customId = "test-correlation-id-12345"
-        val response =
-            app(Request(GET, "/health").header("X-Request-Id", customId))
+        val response = app(Request(GET, "/health").header("X-Request-Id", customId))
 
         assertEquals(
             customId,
