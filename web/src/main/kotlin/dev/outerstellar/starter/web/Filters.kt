@@ -75,17 +75,17 @@ object Filters {
                 val cookieMaxAge = Duration.ofDays(COOKIE_MAX_AGE_DAYS).toSeconds()
 
                 val langCookie =
-                    request.query("lang")?.let {
-                        Cookie(WebContext.LANG_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                    }
+                    request.query("lang")
+                        ?.takeIf { it in setOf("en", "fr") }
+                        ?.let { Cookie(WebContext.LANG_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
                 val themeCookie =
-                    request.query("theme")?.let {
-                        Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                    }
+                    request.query("theme")
+                        ?.takeIf { v -> ThemeCatalog.allThemes().any { it.id == v } }
+                        ?.let { Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
                 val layoutCookie =
-                    request.query("layout")?.let {
-                        Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                    }
+                    request.query("layout")
+                        ?.takeIf { it in setOf("nice", "cozy", "compact") }
+                        ?.let { Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
 
                 var updatedResponse = response
                 if (langCookie != null) updatedResponse = updatedResponse.cookie(langCookie)

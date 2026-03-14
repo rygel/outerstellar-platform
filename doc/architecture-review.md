@@ -243,6 +243,24 @@ toast.innerHTML = '...<p ...>' + message + '</p>...'
 
 **What changed:** Created `web/src/main/resources/application-prod.yaml` that sets `sessionCookieSecure: true`. Running with `APP_PROFILE=prod` activates this profile. Added a comment on the field in `AppConfig` explaining the intentional default and how to override it.
 
+### Removed duplicate htmx WebSocket extension script
+
+`Layout.kte` included `htmx-ext-ws@2.0.1/ws.js` twice (lines 15–16). The duplicate caused the extension to register twice, which can trigger duplicate event listeners and redundant network requests.
+
+**What changed:** Removed the duplicate `<script>` tag.
+
+### Validated preference values before persisting cookies
+
+`Filters.stateFilter` wrote `theme`, `lang`, and `layout` query parameters directly into long-lived cookies without checking whether the values were valid. WebContext validated the values on read and fell back to defaults, but the invalid value was still stored in the cookie, persisting silently across requests.
+
+**What changed:** Each parameter is now validated against its allowed set before the cookie is created — `lang` must be `"en"` or `"fr"`, `layout` must be `"nice"`, `"cozy"`, or `"compact"`, and `theme` must be a known ID from `ThemeCatalog`. Parameters that fail validation are ignored and no cookie is set.
+
+### Made contact collection updates atomic
+
+`JooqContactRepository.insertCollections` (which replaces emails, phones, and social links for a contact with DELETE + INSERT) was called outside any database transaction in `updateContact`, `upsertSyncedContact`, and `resolveConflict`. A crash or exception between the DELETE and INSERT would leave the collections empty while the parent contact row remained updated — a partial, inconsistent state.
+
+**What changed:** `insertCollections` now accepts a `DSLContext` parameter instead of using the class-level `dsl` field. Each caller (`updateContact`, `upsertSyncedContact`, `resolveConflict`, and `insertContact`) wraps its work in `dsl.transaction { config -> val txDsl = using(config); ... }` so the contact row update and the collection replacement execute atomically.
+
 ### Fixed UpdateService version comparison with pre-release suffixes
 
 `UpdateService.isNewer` split version strings on `.` and filtered with `toIntOrNull()`. A version like `1.2.3-SNAPSHOT` splits into `["1", "2", "3-SNAPSHOT"]`; `"3-SNAPSHOT".toIntOrNull()` returns null, so it is dropped. The version would then be compared as `[1, 2]` rather than `[1, 2, 3]`, making it appear older than `1.2.3`.
