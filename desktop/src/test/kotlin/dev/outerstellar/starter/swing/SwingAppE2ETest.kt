@@ -263,4 +263,122 @@ class SwingAppE2ETest {
     }
 
     private fun rgbOf(color: Color?): Int = requireNotNull(color).rgb
+
+    @Test
+    fun `change password menu item is enabled after login`() {
+        assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Skipping GUI interaction test in headless mode",
+        )
+
+        every { syncService.login("alice", "secret") } returns
+            AuthTokenResponse("tok", "alice", "USER")
+
+        val w = window!!
+
+        // Before login, change password should be disabled
+        val changePasswordBefore =
+            GuiActionRunner.execute<Boolean> {
+                w.menuItem("changePasswordItem").target().isEnabled
+            }
+        assertEquals(false, changePasswordBefore)
+
+        // Login
+        w.menuItem("loginItem").click()
+        w.dialog().textBox("username").enterText("alice")
+        w.dialog().textBox("password").enterText("secret")
+        w.dialog().button("loginBtn").click()
+
+        waitUntil(2_000) { w.menuItem("changePasswordItem").target().isEnabled }
+
+        // After login, change password should be enabled
+        val changePasswordAfter =
+            GuiActionRunner.execute<Boolean> {
+                w.menuItem("changePasswordItem").target().isEnabled
+            }
+        assertEquals(true, changePasswordAfter)
+    }
+
+    @Test
+    fun `change password dialog has correct fields`() {
+        assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Skipping GUI interaction test in headless mode",
+        )
+
+        every { syncService.login("alice", "secret") } returns
+            AuthTokenResponse("tok", "alice", "USER")
+
+        val w = window!!
+        w.menuItem("loginItem").click()
+        w.dialog().textBox("username").enterText("alice")
+        w.dialog().textBox("password").enterText("secret")
+        w.dialog().button("loginBtn").click()
+
+        waitUntil(2_000) { w.menuItem("changePasswordItem").target().isEnabled }
+
+        w.menuItem("changePasswordItem").click()
+
+        // Verify the change password dialog has the expected fields
+        val dialog = w.dialog()
+        dialog.textBox("currentPassword").requireVisible()
+        dialog.textBox("newPassword").requireVisible()
+        dialog.textBox("confirmPassword").requireVisible()
+        dialog.button("changePasswordBtn").requireVisible()
+
+        dialog.close()
+    }
+
+    @Test
+    fun `users nav button is visible for admin role`() {
+        assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Skipping GUI interaction test in headless mode",
+        )
+
+        every { syncService.login("admin", "secret") } returns
+            AuthTokenResponse("tok", "admin", "ADMIN")
+
+        val w = window!!
+
+        // Before login, users button should be hidden
+        val usersVisibleBefore =
+            GuiActionRunner.execute<Boolean> { w.button("navUsersBtn").target().isVisible }
+        assertEquals(false, usersVisibleBefore)
+
+        // Login as admin
+        w.menuItem("loginItem").click()
+        w.dialog().textBox("username").enterText("admin")
+        w.dialog().textBox("password").enterText("secret")
+        w.dialog().button("loginBtn").click()
+
+        waitUntil(2_000) { w.button("navUsersBtn").target().isVisible }
+
+        val usersVisibleAfter =
+            GuiActionRunner.execute<Boolean> { w.button("navUsersBtn").target().isVisible }
+        assertEquals(true, usersVisibleAfter)
+    }
+
+    @Test
+    fun `users nav button stays hidden for regular user`() {
+        assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Skipping GUI interaction test in headless mode",
+        )
+
+        every { syncService.login("alice", "secret") } returns
+            AuthTokenResponse("tok", "alice", "USER")
+
+        val w = window!!
+        w.menuItem("loginItem").click()
+        w.dialog().textBox("username").enterText("alice")
+        w.dialog().textBox("password").enterText("secret")
+        w.dialog().button("loginBtn").click()
+
+        waitUntil(2_000) { w.menuItem("logoutItem").target().isEnabled }
+
+        val usersVisible =
+            GuiActionRunner.execute<Boolean> { w.button("navUsersBtn").target().isVisible }
+        assertEquals(false, usersVisible)
+    }
 }
