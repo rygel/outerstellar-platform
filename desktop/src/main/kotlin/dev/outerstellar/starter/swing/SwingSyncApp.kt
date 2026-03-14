@@ -1352,7 +1352,13 @@ class SyncWindow(
     private fun createThemedDialog(title: String, columns: String, rows: String): JDialog =
         JDialog(frame, title, true).apply {
             layout = MigLayout("fill, ins 24, gap 10", columns, rows)
+            minimumSize = java.awt.Dimension(MIN_DIALOG_WIDTH, MIN_DIALOG_HEIGHT)
         }
+
+    companion object {
+        private const val MIN_DIALOG_WIDTH = 420
+        private const val MIN_DIALOG_HEIGHT = 250
+    }
 
     private fun createActionRow(vararg buttons: JButton): JPanel =
         JPanel(MigLayout("ins 0, fillx", "[grow]${"[]".repeat(buttons.size)}", "[]")).apply {

@@ -5,13 +5,11 @@ import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import dev.outerstellar.starter.sync.SyncService
 import io.mockk.mockk
-import java.awt.GraphicsEnvironment
 import java.util.Locale
 import javax.swing.JButton
 import javax.swing.JTextArea
 import javax.swing.SwingUtilities
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Test
 
 class InfoDialogLayoutTest {
@@ -20,7 +18,6 @@ class InfoDialogLayoutTest {
 
     @Test
     fun `info dialog action button is anchored below content`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Skipping Swing layout test in headless mode")
 
         val i18n = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
         val viewModel = SyncViewModel(messageService, null, syncService, i18n)
