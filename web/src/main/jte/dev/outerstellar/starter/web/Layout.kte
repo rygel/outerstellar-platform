@@ -10,10 +10,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${shell.pageTitle} - ${shell.appTitle}</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/site.css">
+    <link rel="stylesheet" href="/site.css?v=${shell.version}">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script src="https://unpkg.com/htmx-ext-ws@2.0.1/ws.js"></script>
-    <style>${shell.themeCss}</style>
+    <script src="https://unpkg.com/htmx-ext-ws@2.0.1/ws.js"></script>
     <style>
         .htmx-indicator { display: none; }
         .htmx-request .htmx-indicator { display: inline-block; }
@@ -30,6 +30,7 @@
     </style>
 </head>
 <body class="${shell.layoutClass}" hx-ext="ws" ws-connect="/ws/sync">
+<style id="theme-style">${shell.themeCss}</style>
 <div id="toast-container"></div>
 <script>
     document.addEventListener('htmx:responseError', function(event) {
@@ -45,18 +46,33 @@
         toast.style.marginBottom = '0.75rem';
         toast.style.pointerEvents = 'auto';
         toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-        
+
         const title = type === 'error' ? 'Error' : 'Success';
         const icon = type === 'error' ? 'ri-error-warning-fill' : 'ri-checkbox-circle-fill';
-        
-        toast.innerHTML = '<div style="display: flex; align-items: center; gap: 0.75rem;">' +
-                '<i class="' + icon + '" style="font-size: 1.25rem;"></i>' +
-                '<div>' +
-                    '<strong style="display: block; font-size: 0.9rem;">' + title + '</strong>' +
-                    '<p style="margin:0; font-size: 0.85rem; opacity: 0.9;">' + message + '</p>' +
-                '</div>' +
-            '</div>';
-        
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display: flex; align-items: center; gap: 0.75rem;';
+
+        const iconEl = document.createElement('i');
+        iconEl.className = icon;
+        iconEl.style.fontSize = '1.25rem';
+
+        const textEl = document.createElement('div');
+
+        const titleEl = document.createElement('strong');
+        titleEl.style.cssText = 'display: block; font-size: 0.9rem;';
+        titleEl.textContent = title;
+
+        const msgEl = document.createElement('p');
+        msgEl.style.cssText = 'margin:0; font-size: 0.85rem; opacity: 0.9;';
+        msgEl.textContent = message;
+
+        textEl.appendChild(titleEl);
+        textEl.appendChild(msgEl);
+        row.appendChild(iconEl);
+        row.appendChild(textEl);
+        toast.appendChild(row);
+
         container.appendChild(toast);
         setTimeout(() => {
             toast.style.opacity = '0';
@@ -83,32 +99,21 @@
             @endfor
         </nav>
         <div class="sidebar-footer" ws-subscribe>
-            @if(shell.isLoggedIn)
-                <section class="sidebar-section" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem; margin-bottom: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                        <i class="ri-user-smile-line" style="font-size: 1.25rem; opacity: 0.7;"></i>
-                        <div>
-                            <span style="display: block; font-size: 0.85rem; font-weight: 600;">${shell.userName}</span>
-                            <a href="${shell.logoutUrl}" style="font-size: 0.75rem; opacity: 0.6; text-decoration: underline;">Sign out</a>
-                        </div>
-                    </div>
-                </section>
-            @endif
-            <section class="sidebar-section">
+            <section class="sidebar-select-wrapper">
                 <div id="theme-selector"
                      hx-get="${shell.themeSelectorUrl}"
                      hx-trigger="load"
                      hx-swap="innerHTML">
                 </div>
             </section>
-            <section class="sidebar-section">
+            <section class="sidebar-select-wrapper">
                 <div id="language-selector"
                      hx-get="${shell.languageSelectorUrl}"
                      hx-trigger="load"
                      hx-swap="innerHTML">
                 </div>
             </section>
-            <section class="sidebar-section" style="padding-bottom: 0;">
+            <section class="sidebar-select-wrapper" style="padding-bottom: 0; margin-bottom: 0;">
                 <div id="layout-selector"
                      hx-get="${shell.layoutSelectorUrl}"
                      hx-trigger="load"
@@ -119,11 +124,21 @@
     </aside>
     <div class="main-shell">
         <header class="topbar">
-            <div>
-                <p class="topbar-label">${shell.pageTitle}</p>
+            <div style="display: flex; flex-direction: column;">
+                <span class="topbar-label">${shell.pageTitle}</span>
                 <strong>${shell.appTagline}</strong>
             </div>
-            <span class="status-badge">${shell.themeId} / ${shell.localeTag}</span>
+            @if(shell.isLoggedIn)
+                <div class="topbar-user">
+                    <div class="user-info">
+                        <span class="user-name">${shell.userName}</span>
+                        <a href="${shell.logoutUrl}" class="sign-out-link">Sign out</a>
+                    </div>
+                    <div class="user-avatar">
+                        <i class="ri-user-smile-line"></i>
+                    </div>
+                </div>
+            @endif
         </header>
         <main class="content">
             <div id="ws-updates" ws-subscribe></div>

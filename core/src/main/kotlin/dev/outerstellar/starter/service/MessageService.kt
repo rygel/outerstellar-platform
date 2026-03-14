@@ -19,9 +19,9 @@ import dev.outerstellar.starter.sync.SyncPullResponse
 import dev.outerstellar.starter.sync.SyncPushRequest
 import dev.outerstellar.starter.sync.SyncPushResponse
 import io.konform.validation.Invalid
+import java.util.UUID
 import org.http4k.format.Jackson
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 @Suppress("TooManyFunctions")
 class MessageService(
@@ -48,11 +48,11 @@ class MessageService(
             PagedResult(
                 items = items,
                 metadata =
-                PaginationMetadata(
-                    currentPage = (offset / limit) + 1,
-                    pageSize = limit,
-                    totalItems = total,
-                ),
+                    PaginationMetadata(
+                        currentPage = (offset / limit) + 1,
+                        pageSize = limit,
+                        totalItems = total,
+                    ),
             )
         } as PagedResult<MessageSummary>
     }
@@ -69,11 +69,11 @@ class MessageService(
         return PagedResult(
             items = items,
             metadata =
-            PaginationMetadata(
-                currentPage = (offset / limit) + 1,
-                pageSize = limit,
-                totalItems = total,
-            ),
+                PaginationMetadata(
+                    currentPage = (offset / limit) + 1,
+                    pageSize = limit,
+                    totalItems = total,
+                ),
         )
     }
 
@@ -163,12 +163,12 @@ class MessageService(
                     null
                 }
             when {
-                current == null || incoming.updatedAtEpochMs > current.updatedAtEpochMs -> {
+                current == null || incoming.updatedAtEpochMs >= current.updatedAtEpochMs -> {
                     val updated = repository.upsertSyncedMessage(incoming, dirty = false)
                     cache.put("entity:${updated.syncId}", updated)
                     appliedCount++
                 }
-                incoming.updatedAtEpochMs < current.updatedAtEpochMs -> {
+                else -> {
                     repository.markConflict(incoming.syncId, incoming)
                     conflicts +=
                         SyncConflict(

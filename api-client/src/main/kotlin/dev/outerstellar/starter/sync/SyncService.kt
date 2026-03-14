@@ -33,8 +33,9 @@ class SyncService(
     private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
 
     fun login(username: String, pass: String): AuthTokenResponse {
-        val request = Request(POST, "$baseUrl/api/v1/auth/login")
-            .with(loginRequestLens of LoginRequest(username, pass))
+        val request =
+            Request(POST, "$baseUrl/api/v1/auth/login")
+                .with(loginRequestLens of LoginRequest(username, pass))
 
         val response = client(request)
 
@@ -48,8 +49,9 @@ class SyncService(
     }
 
     fun register(username: String, pass: String): AuthTokenResponse {
-        val request = Request(POST, "$baseUrl/api/v1/auth/register")
-            .with(registerRequestLens of RegisterRequest(username, pass))
+        val request =
+            Request(POST, "$baseUrl/api/v1/auth/register")
+                .with(registerRequestLens of RegisterRequest(username, pass))
 
         val response = client(request)
 
@@ -69,9 +71,8 @@ class SyncService(
     override fun sync(): SyncStats {
         val lastSync = repository.getLastSyncEpochMs()
         val pullRequest = Request(GET, "$baseUrl/api/v1/sync?since=$lastSync")
-        val authenticatedPullRequest = apiToken?.let {
-            pullRequest.header("Authorization", "Bearer $it")
-        } ?: pullRequest
+        val authenticatedPullRequest =
+            apiToken?.let { pullRequest.header("Authorization", "Bearer $it") } ?: pullRequest
 
         val pullResponse = client(authenticatedPullRequest)
         if (pullResponse.status != Status.OK) {
@@ -83,12 +84,11 @@ class SyncService(
         val dirtyMessages = repository.listDirtyMessages()
         val pushRequestData = SyncPushRequest(dirtyMessages.map { it.toSyncMessage() })
 
-        val httpRequest = Request(POST, "$baseUrl/api/v1/sync")
-            .with(pushRequestLens of pushRequestData)
+        val httpRequest =
+            Request(POST, "$baseUrl/api/v1/sync").with(pushRequestLens of pushRequestData)
 
-        val authPushRequest = apiToken?.let {
-            httpRequest.header("Authorization", "Bearer $it")
-        } ?: httpRequest
+        val authPushRequest =
+            apiToken?.let { httpRequest.header("Authorization", "Bearer $it") } ?: httpRequest
 
         val pushResponse = client(authPushRequest)
         if (pushResponse.status != Status.OK) {
@@ -102,8 +102,8 @@ class SyncService(
             pushBody.conflicts.forEach { conflict ->
                 conflict.serverMessage?.let { repository.upsertSyncedMessage(it, false) }
             }
+            repository.setLastSyncEpochMs(pullBody.serverTimestamp)
         }
-        repository.setLastSyncEpochMs(pullBody.serverTimestamp)
 
         return SyncStats(
             pushedCount = pushBody.appliedCount,

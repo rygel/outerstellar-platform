@@ -212,3 +212,39 @@ The session cookie used `SameSite=Lax`, which allows the cookie to be sent on cr
 `SyncViewModel.stopAutoSync()` called `shutdown()` on the `ScheduledExecutorService`, which waits for running tasks to complete. On application exit, this can delay shutdown if a sync task is in progress.
 
 **What changed:** Replaced `shutdown()` with `shutdownNow()`, which interrupts running tasks and cancels pending ones for immediate cleanup.
+
+### Fixed XSS in toast notification via innerHTML
+
+`Layout.kte` built the toast notification by assigning to `toast.innerHTML` with string concatenation:
+
+```js
+toast.innerHTML = '...<p ...>' + message + '</p>...'
+```
+
+`message` is `event.detail.xhr.responseText` — the raw HTTP response body from the server. Server error responses can include user-controlled content (e.g. a validation error message echoing back a malformed email address). Assigning raw text to `innerHTML` would execute any `<script>` tags or event handler attributes in that content.
+
+**What changed:** Replaced the `innerHTML` assignment with explicit DOM construction using `document.createElement` and `textContent` assignment. The message and title strings are now set with `.textContent` rather than concatenated into HTML, so no input can be interpreted as markup.
+
+### Moved setLastSyncEpochMs inside the sync transaction
+
+`SyncService.sync()` applied pulled messages inside a `transactionManager.inTransaction` block but then called `repository.setLastSyncEpochMs(pullBody.serverTimestamp)` _after_ the transaction committed. If the process crashed between the commit and the timestamp write, the next sync would re-apply an already-processed batch. Because `upsertSyncedMessage` is idempotent this would not corrupt data, but it would cause redundant work and obscure the sync state.
+
+**What changed:** Moved `repository.setLastSyncEpochMs(...)` inside the `inTransaction` block so the timestamp advances atomically with the message upserts.
+
+### Closed equal-timestamp gap in conflict detection
+
+`MessageService.processPushRequest` used strict `>` and `<` comparisons on `updatedAtEpochMs`. When an incoming message had the same timestamp as the local version, no branch matched and the message was silently dropped — neither applied nor flagged as a conflict.
+
+**What changed:** Changed `incoming.updatedAtEpochMs > current.updatedAtEpochMs` to `>=`. Equal timestamps now take the incoming version, which is the correct last-writer-wins semantics for identical timestamps. The separate `<` branch was replaced with an `else` clause so all cases are exhaustively covered.
+
+### Added sessionCookieSecure prod profile
+
+`AppConfig.sessionCookieSecure` defaults to `false`, which is appropriate for local HTTP development but dangerous in production (the session cookie would be transmitted over unencrypted connections). Previously there was no mechanism to enforce the secure flag in production without setting an environment variable manually.
+
+**What changed:** Created `web/src/main/resources/application-prod.yaml` that sets `sessionCookieSecure: true`. Running with `APP_PROFILE=prod` activates this profile. Added a comment on the field in `AppConfig` explaining the intentional default and how to override it.
+
+### Fixed UpdateService version comparison with pre-release suffixes
+
+`UpdateService.isNewer` split version strings on `.` and filtered with `toIntOrNull()`. A version like `1.2.3-SNAPSHOT` splits into `["1", "2", "3-SNAPSHOT"]`; `"3-SNAPSHOT".toIntOrNull()` returns null, so it is dropped. The version would then be compared as `[1, 2]` rather than `[1, 2, 3]`, making it appear older than `1.2.3`.
+
+**What changed:** Added `.substringBefore('-')` before splitting so that `1.2.3-SNAPSHOT` is normalized to `1.2.3` before component parsing. Both `latestParts` and `currentParts` are now stripped of any pre-release suffix before the numeric comparison.
