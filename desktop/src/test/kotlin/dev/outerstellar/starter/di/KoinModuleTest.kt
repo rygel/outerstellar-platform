@@ -22,6 +22,8 @@ class KoinModuleTest : KoinTest {
                     SystemTrayNotifier::class,
                     dev.outerstellar.starter.swing.SwingAppConfig::class,
                     java.lang.String::class,
+                    Boolean::class,
+                    Int::class,
                 )
         )
     }
