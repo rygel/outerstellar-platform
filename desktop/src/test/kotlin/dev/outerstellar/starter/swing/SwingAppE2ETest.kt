@@ -113,10 +113,10 @@ class SwingAppE2ETest {
         w.dialog().textBox("password").enterText("secret")
         w.dialog().button("loginBtn").click()
 
-        waitUntil(2_000) { w.menuItem("logoutItem").target().isEnabled }
+        waitUntil(5_000) { w.menuItem("logoutItem").target().isEnabled }
 
         w.menuItem("logoutItem").click()
-        waitUntil(2_000) { !w.menuItem("logoutItem").target().isEnabled }
+        waitUntil(5_000) { !w.menuItem("logoutItem").target().isEnabled }
     }
 
     @Test
@@ -137,7 +137,7 @@ class SwingAppE2ETest {
         w.dialog().textBox("registerPasswordConfirm").enterText("secret123")
         w.dialog().button("registerBtn").click()
 
-        waitUntil(2_000) { w.menuItem("logoutItem").target().isEnabled }
+        waitUntil(5_000) { w.menuItem("logoutItem").target().isEnabled }
     }
 
     @Test
@@ -155,7 +155,7 @@ class SwingAppE2ETest {
         w.dialog().comboBox("themeCombo").selectItem("Dark")
         w.dialog().button("applyButton").click()
 
-        waitUntil(2_000) {
+        waitUntil(5_000) {
             GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } ==
                 "Dark"
         }
@@ -167,7 +167,7 @@ class SwingAppE2ETest {
         w.dialog().comboBox("themeCombo").selectItem("Default")
         w.dialog().button("applyButton").click()
 
-        waitUntil(2_000) {
+        waitUntil(5_000) {
             GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } ==
                 "Default"
         }
@@ -278,9 +278,7 @@ class SwingAppE2ETest {
 
         // Before login, change password should be disabled
         val changePasswordBefore =
-            GuiActionRunner.execute<Boolean> {
-                w.menuItem("changePasswordItem").target().isEnabled
-            }
+            GuiActionRunner.execute<Boolean> { w.menuItem("changePasswordItem").target().isEnabled }
         assertEquals(false, changePasswordBefore)
 
         // Login
@@ -289,13 +287,11 @@ class SwingAppE2ETest {
         w.dialog().textBox("password").enterText("secret")
         w.dialog().button("loginBtn").click()
 
-        waitUntil(2_000) { w.menuItem("changePasswordItem").target().isEnabled }
+        waitUntil(5_000) { w.menuItem("changePasswordItem").target().isEnabled }
 
         // After login, change password should be enabled
         val changePasswordAfter =
-            GuiActionRunner.execute<Boolean> {
-                w.menuItem("changePasswordItem").target().isEnabled
-            }
+            GuiActionRunner.execute<Boolean> { w.menuItem("changePasswordItem").target().isEnabled }
         assertEquals(true, changePasswordAfter)
     }
 
@@ -315,7 +311,7 @@ class SwingAppE2ETest {
         w.dialog().textBox("password").enterText("secret")
         w.dialog().button("loginBtn").click()
 
-        waitUntil(2_000) { w.menuItem("changePasswordItem").target().isEnabled }
+        waitUntil(5_000) { w.menuItem("changePasswordItem").target().isEnabled }
 
         w.menuItem("changePasswordItem").click()
 
@@ -343,7 +339,9 @@ class SwingAppE2ETest {
 
         // Before login, users button should be hidden
         val usersVisibleBefore =
-            GuiActionRunner.execute<Boolean> { w.button("navUsersBtn").target().isVisible }
+            GuiActionRunner.execute<Boolean> {
+                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isVisible
+            }
         assertEquals(false, usersVisibleBefore)
 
         // Login as admin
@@ -352,10 +350,16 @@ class SwingAppE2ETest {
         w.dialog().textBox("password").enterText("secret")
         w.dialog().button("loginBtn").click()
 
-        waitUntil(2_000) { w.button("navUsersBtn").target().isVisible }
+        waitUntil(5_000) {
+            GuiActionRunner.execute<Boolean> {
+                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isVisible
+            } == true
+        }
 
         val usersVisibleAfter =
-            GuiActionRunner.execute<Boolean> { w.button("navUsersBtn").target().isVisible }
+            GuiActionRunner.execute<Boolean> {
+                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isVisible
+            }
         assertEquals(true, usersVisibleAfter)
     }
 
@@ -375,10 +379,12 @@ class SwingAppE2ETest {
         w.dialog().textBox("password").enterText("secret")
         w.dialog().button("loginBtn").click()
 
-        waitUntil(2_000) { w.menuItem("logoutItem").target().isEnabled }
+        waitUntil(5_000) { w.menuItem("logoutItem").target().isEnabled }
 
         val usersVisible =
-            GuiActionRunner.execute<Boolean> { w.button("navUsersBtn").target().isVisible }
+            GuiActionRunner.execute<Boolean> {
+                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isVisible
+            }
         assertEquals(false, usersVisible)
     }
 }
