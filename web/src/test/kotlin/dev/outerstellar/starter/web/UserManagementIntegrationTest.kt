@@ -816,4 +816,248 @@ class UserManagementIntegrationTest : H2WebTest() {
         assertTrue(body.contains("\"database\""), "Should contain database field")
         assertTrue(body.contains("\"timestamp\""), "Should contain timestamp field")
     }
+
+    // ---- Web UI Usability Tests ----
+
+    @Test
+    fun `home page renders inside layout shell with sidebar and topbar`() {
+        val response = app(Request(GET, "/"))
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+
+        assertTrue(body.contains("class=\"shell\""), "Page should render inside layout shell")
+        assertTrue(body.contains("class=\"sidebar\""), "Page should have sidebar")
+        assertTrue(body.contains("class=\"topbar\""), "Page should have topbar")
+        assertTrue(body.contains("class=\"nav-links\""), "Page should have navigation links")
+        assertTrue(body.contains("class=\"footer\""), "Page should have footer")
+    }
+
+    @Test
+    fun `auth page has sign-in form with email and password fields`() {
+        val response = app(Request(GET, "/auth"))
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+
+        assertTrue(body.contains("class=\"shell\""), "Auth page should render inside layout shell")
+        assertTrue(body.contains("auth-form-slot"), "Auth page should have form slot for HTMX")
+        assertTrue(body.contains("auth-result-slot"), "Auth page should have result slot")
+    }
+
+    @Test
+    fun `auth sign-in form fragment has all required fields`() {
+        val response = app(Request(GET, "/auth/components/forms/sign-in"))
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+
+        assertTrue(body.contains("name=\"email\""), "Sign-in form should have email field")
+        assertTrue(body.contains("name=\"password\""), "Sign-in form should have password field")
+        assertTrue(
+            body.contains("type=\"submit\"") || body.contains("<button"),
+            "Form should have submit button",
+        )
+        assertTrue(
+            body.contains("hx-post") || body.contains("action="),
+            "Form should have an action URL",
+        )
+    }
+
+    @Test
+    fun `auth register form fragment has name, email, password, and confirm fields`() {
+        val response = app(Request(GET, "/auth/components/forms/register"))
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+
+        assertTrue(body.contains("name=\"email\""), "Register form should have email field")
+        assertTrue(body.contains("name=\"password\""), "Register form should have password field")
+        assertTrue(
+            body.contains("name=\"confirmPassword\""),
+            "Register form should have confirm field",
+        )
+    }
+
+    @Test
+    fun `user admin page has table with column headers`() {
+        val (adminId, _) = seedAdmin()
+        registerUser("tableuser", "password123")
+
+        val response =
+            app(
+                Request(GET, "/admin/users")
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+            )
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+
+        assertTrue(body.contains("<table"), "Admin page should have a table")
+        assertTrue(body.contains("<th"), "Table should have column headers")
+        assertTrue(body.contains("Username"), "Table should show Username column")
+        assertTrue(body.contains("Email"), "Table should show Email column")
+        assertTrue(body.contains("Role"), "Table should show Role column")
+        assertTrue(body.contains("Enabled"), "Table should show Enabled column")
+        assertTrue(body.contains("tableuser"), "Table should show the registered user")
+    }
+
+    @Test
+    fun `user admin page has enable-disable and role toggle buttons`() {
+        val (adminId, _) = seedAdmin()
+        registerUser("togglebtnuser", "password123")
+
+        val response =
+            app(
+                Request(GET, "/admin/users")
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+            )
+        val body = response.bodyString()
+
+        assertTrue(body.contains("toggle-enabled"), "Admin page should have toggle-enabled actions")
+        assertTrue(body.contains("toggle-role"), "Admin page should have toggle-role actions")
+        assertTrue(
+            body.contains("Disable") || body.contains("Enable"),
+            "Should show Disable or Enable button text",
+        )
+        assertTrue(
+            body.contains("Promote") || body.contains("Demote"),
+            "Should show Promote or Demote button text",
+        )
+    }
+
+    @Test
+    fun `user admin page marks current user as self`() {
+        val (adminId, _) = seedAdmin()
+
+        val response =
+            app(
+                Request(GET, "/admin/users")
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+            )
+        val body = response.bodyString()
+
+        assertTrue(body.contains("(you)"), "Admin page should mark the current user as (you)")
+    }
+
+    @Test
+    fun `change password page has current, new, and confirm fields`() {
+        val (adminId, _) = seedAdmin()
+
+        val response =
+            app(
+                Request(GET, "/auth/change-password")
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+            )
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+
+        assertTrue(
+            body.contains("class=\"shell\""),
+            "Change password page should have layout shell",
+        )
+        assertTrue(body.contains("name=\"currentPassword\""), "Should have current password field")
+        assertTrue(body.contains("name=\"newPassword\""), "Should have new password field")
+        assertTrue(body.contains("name=\"confirmPassword\""), "Should have confirm password field")
+        assertTrue(
+            body.contains("type=\"submit\"") || body.contains("<button"),
+            "Should have submit button",
+        )
+        assertTrue(
+            body.contains("hx-post") && body.contains("change-password"),
+            "Form should POST to change-password endpoint via HTMX",
+        )
+    }
+
+    @Test
+    fun `change password page redirects when not logged in`() {
+        val response = app(Request(GET, "/auth/change-password"))
+        assertEquals(Status.FOUND, response.status)
+        assertTrue(response.header("location")!!.contains("/auth"), "Should redirect to auth page")
+    }
+
+    @Test
+    fun `topbar shows profile and change-password links when logged in`() {
+        val (adminId, _) = seedAdmin()
+
+        val response =
+            app(
+                Request(GET, "/")
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+            )
+        val body = response.bodyString()
+
+        assertTrue(body.contains("topbar-user"), "Topbar should have user section")
+        assertTrue(body.contains("Change password"), "Topbar should have change password link")
+        assertTrue(
+            body.contains("/auth/change-password"),
+            "Change password link should have correct URL",
+        )
+        assertTrue(body.contains("Sign out"), "Topbar should have sign out button")
+    }
+
+    @Test
+    fun `topbar does not show user links when logged out`() {
+        val response = app(Request(GET, "/"))
+        val body = response.bodyString()
+
+        assertFalse(
+            body.contains("topbar-user"),
+            "Topbar should not show user section when logged out",
+        )
+        assertFalse(
+            body.contains("Change password"),
+            "Should not show change password when logged out",
+        )
+    }
+
+    @Test
+    fun `admin nav links include Users and Audit Log`() {
+        val (adminId, _) = seedAdmin()
+
+        val response =
+            app(
+                Request(GET, "/")
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+            )
+        val body = response.bodyString()
+
+        assertTrue(body.contains("/admin/users"), "Admin should see Users nav link")
+        assertTrue(body.contains("/admin/audit"), "Admin should see Audit Log nav link")
+    }
+
+    @Test
+    fun `regular user nav does not include admin links`() {
+        val userAuth = registerUser("regularnavuser", "password123")
+
+        val response =
+            app(
+                Request(GET, "/")
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.token))
+            )
+        val body = response.bodyString()
+
+        assertFalse(body.contains("/admin/users"), "Regular user should not see Users link")
+        assertFalse(body.contains("/admin/audit"), "Regular user should not see Audit Log link")
+    }
+
+    @Test
+    fun `password reset page has token field and password fields`() {
+        val response = app(Request(GET, "/auth/reset?token=some-test-token"))
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+
+        assertTrue(body.contains("some-test-token"), "Reset page should contain the token")
+        assertTrue(body.contains("name=\"newPassword\""), "Should have new password field")
+        assertTrue(body.contains("name=\"confirmPassword\""), "Should have confirm password field")
+        assertTrue(
+            body.contains("type=\"submit\"") || body.contains("<button"),
+            "Should have submit button",
+        )
+    }
+
+    @Test
+    fun `error pages render inside layout shell`() {
+        val response = app(Request(GET, "/nonexistent-page"))
+        assertEquals(Status.NOT_FOUND, response.status)
+        val body = response.bodyString()
+
+        assertTrue(body.contains("class=\"shell\""), "Error page should render inside layout shell")
+        assertTrue(body.contains("class=\"sidebar\""), "Error page should have sidebar navigation")
+    }
 }
