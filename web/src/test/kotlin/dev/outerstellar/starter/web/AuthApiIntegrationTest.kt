@@ -36,7 +36,7 @@ class AuthApiIntegrationTest : H2WebTest() {
                 transactionManager,
                 cache,
             )
-        val pageFactory = WebPageFactory(repository)
+        val pageFactory = WebPageFactory(repository, messageService)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
         val contactService =

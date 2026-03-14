@@ -332,3 +332,43 @@ This breaks the interface abstraction — any alternative `UserRepository` imple
 `UpdateService.isNewer` split version strings on `.` and filtered with `toIntOrNull()`. A version like `1.2.3-SNAPSHOT` splits into `["1", "2", "3-SNAPSHOT"]`; `"3-SNAPSHOT".toIntOrNull()` returns null, so it is dropped. The version would then be compared as `[1, 2]` rather than `[1, 2, 3]`, making it appear older than `1.2.3`.
 
 **What changed:** Added `.substringBefore('-')` before splitting so that `1.2.3-SNAPSHOT` is normalized to `1.2.3` before component parsing. Both `latestParts` and `currentParts` are now stripped of any pre-release suffix before the numeric comparison.
+
+### Replaced string-matching error classification in AuthApi with typed exceptions
+
+`AuthApi` caught `IllegalArgumentException` and inspected `e.message?.contains("already exists")` to decide whether to return HTTP 409 or 400. This fragile pattern breaks silently if the error message wording changes and makes it impossible to distinguish a username conflict from any other `IllegalArgumentException` with similar phrasing.
+
+**What changed:**
+
+- Added `UsernameAlreadyExistsException(username)` and `WeakPasswordException(message)` to the `OuterstellarException` sealed hierarchy in `Exceptions.kt`
+- `SecurityService.register()` now throws `UsernameAlreadyExistsException` and `WeakPasswordException` instead of `require()` / `IllegalArgumentException`
+- `AuthApi` catches each typed exception first, mapping `UsernameAlreadyExistsException` to HTTP 409 and `WeakPasswordException` to HTTP 400. The original `IllegalArgumentException` catch remains as a fallback for `require(username.isNotBlank())`.
+
+### Fixed pagination URL query parameter name mismatch
+
+`MessageListComponent.createUrl()` built pagination URLs using `&query=$query`, but all routes read the search filter with the lens `Query.string().optional("q")`. When a user searched for a term and navigated to the next page, the `query` parameter was ignored and the search filter was silently dropped, showing the full unfiltered list.
+
+**What changed:** Renamed the query parameter in `createUrl` from `query` to `q`, aligning it with the lens used by `HomeRoutes` and `ComponentRoutes`.
+
+### URL-encoded returnTo parameter in SecurityRules.authenticated
+
+`SecurityRules.authenticated` set the redirect header as `/auth?returnTo=$returnTo` where `returnTo` was `request.uri.toString()` — raw, unencoded. For a URI like `/?q=hello&limit=10`, the full redirect became `/auth?returnTo=/?q=hello&limit=10`, and HTTP clients would parse `q=hello` and `limit=10` as separate query parameters on the auth URL rather than part of `returnTo`. After login the user would be redirected to `/` instead of `/?q=hello&limit=10`.
+
+**What changed:** Applied `URLEncoder.encode(returnTo, "UTF-8")` so the full URI is percent-encoded before embedding it in the redirect query string. `AuthRoutes` and `WebPageFactory` already call `ctx.request.query("returnTo")` to read it back, which performs the corresponding decode automatically.
+
+### Extended pagination bounds validation to ComponentRoutes
+
+`HomeRoutes` applied `coerceIn(1, MAX_LIMIT)` and `coerceAtLeast(0)` to its limit and offset parameters, but `ComponentRoutes /components/message-list` accepted the same parameters without any bounds checking. A caller could pass `?limit=0` (causing a divide-by-zero in `PaginationMetadata`) or `?limit=99999` to force an expensive query.
+
+**What changed:** Added `val MAX_LIMIT = 100` constant to `ComponentRoutes` and applied `.coerceIn(1, MAX_LIMIT)` to limit and `.coerceAtLeast(0)` to offset, consistent with the existing `HomeRoutes` behavior.
+
+### Routed MessageListComponent reads through MessageService
+
+`MessageListComponent.build()` called `repository.listMessages()` and `repository.countMessages()` directly, bypassing `MessageService` and its Caffeine cache. Every HTMX fragment refresh was a cold database query even when the same data was already warm in cache from the full page render.
+
+**What changed:**
+
+- `MessageListComponent` now accepts `MessageService` instead of `MessageRepository`
+- `build()` delegates to `messageService.listMessages()` (normal) or `messageService.listDeletedMessages()` (trash), both of which go through the Caffeine cache
+- `WebPageFactory` accepts an additional `messageService: MessageService` constructor parameter and passes it to `MessageListComponent`
+- `WebModule` wires the second `get()` (resolved as `MessageService` by Koin type inference)
+- All nine test files that constructed `WebPageFactory(repository)` updated to `WebPageFactory(repository, messageService)`

@@ -37,3 +37,8 @@ class OptimisticLockException(entityType: String, syncId: String) :
 
 class SyncException(message: String, cause: Throwable? = null) :
     OuterstellarException(message, cause)
+
+class UsernameAlreadyExistsException(username: String) :
+    OuterstellarException("Username '$username' is already taken.")
+
+class WeakPasswordException(message: String) : OuterstellarException(message)

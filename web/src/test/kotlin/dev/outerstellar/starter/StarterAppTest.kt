@@ -19,7 +19,7 @@ class StarterAppTest {
         val repository = mockk<MessageRepository>(relaxed = true)
         val outbox = mockk<OutboxRepository>(relaxed = true)
         val cache = StubMessageCache()
-        val pageFactory = WebPageFactory(repository)
+        val pageFactory = WebPageFactory(repository, messageService)
         val config =
             AppConfig(port = 8080, jdbcUrl = "jdbc:h2:mem:test", devDashboardEnabled = true)
 

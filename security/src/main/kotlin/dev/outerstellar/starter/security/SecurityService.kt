@@ -1,5 +1,7 @@
 package dev.outerstellar.starter.security
 
+import dev.outerstellar.starter.model.UsernameAlreadyExistsException
+import dev.outerstellar.starter.model.WeakPasswordException
 import org.slf4j.LoggerFactory
 
 class SecurityService(
@@ -33,8 +35,8 @@ class SecurityService(
 
     fun register(username: String, password: String): User {
         require(username.isNotBlank()) { "Username is required" }
-        require(password.length >= 8) { "Password must be at least 8 characters" }
-        require(userRepository.findByUsername(username) == null) { "Username already exists" }
+        if (password.length < 8) throw WeakPasswordException("Password must be at least 8 characters")
+        if (userRepository.findByUsername(username) != null) throw UsernameAlreadyExistsException(username)
 
         val created =
             User(

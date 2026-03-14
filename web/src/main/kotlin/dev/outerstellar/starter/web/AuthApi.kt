@@ -3,6 +3,8 @@ package dev.outerstellar.starter.web
 import dev.outerstellar.starter.model.AuthTokenResponse
 import dev.outerstellar.starter.model.LoginRequest
 import dev.outerstellar.starter.model.RegisterRequest
+import dev.outerstellar.starter.model.UsernameAlreadyExistsException
+import dev.outerstellar.starter.model.WeakPasswordException
 import dev.outerstellar.starter.security.SecurityService
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
@@ -69,14 +71,12 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                                         role = user.role.name,
                                     )
                             )
+                    } catch (e: UsernameAlreadyExistsException) {
+                        Response(Status.CONFLICT).body(e.message ?: "Username already taken")
+                    } catch (e: WeakPasswordException) {
+                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
                     } catch (e: IllegalArgumentException) {
-                        val status =
-                            if (e.message?.contains("already exists", ignoreCase = true) == true) {
-                                Status.CONFLICT
-                            } else {
-                                Status.BAD_REQUEST
-                            }
-                        Response(status).body(e.message ?: "Invalid registration request")
+                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
                     }
                 },
         )

@@ -25,7 +25,7 @@ val webModule
         single(named("jdbcUrl")) { get<AppConfig>().jdbcUrl }
         single(named("serverBaseUrl")) { "http://localhost:8080" }
         single<TemplateRenderer> { createRenderer() }
-        single { WebPageFactory(get()) }
+        single { WebPageFactory(get(), get()) }
         single { SyncApi(get(), get()) }
         single<MessageCache> { dev.outerstellar.starter.persistence.NoOpMessageCache }
 

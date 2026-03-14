@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncMessage
 import org.http4k.template.ViewModel
 
@@ -198,9 +199,10 @@ data class ContactsPage(
 @Suppress("TooManyFunctions")
 class WebPageFactory(
     private val repository: MessageRepository,
+    private val messageService: MessageService,
     private val contactService: dev.outerstellar.starter.service.ContactService? = null,
 ) {
-    private val messageListComponent = MessageListComponent(repository)
+    private val messageListComponent = MessageListComponent(messageService)
 
     fun buildContactsPage(ctx: WebContext): Page<ContactsPage> {
         val i18n = ctx.i18n

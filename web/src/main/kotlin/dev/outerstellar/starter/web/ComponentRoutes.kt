@@ -10,6 +10,7 @@ import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
 
 private const val DEFAULT_LIMIT = 10
+private const val MAX_LIMIT = 100
 
 class ComponentRoutes(
     private val pageFactory: WebPageFactory,
@@ -65,8 +66,8 @@ class ComponentRoutes(
                 GET to
                 { request: org.http4k.core.Request ->
                     val query = queryLens(request)
-                    val limit = limitLens(request)
-                    val offset = offsetLens(request)
+                    val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
+                    val offset = offsetLens(request).coerceAtLeast(0)
                     val year = yearLens(request)
                     renderer.render(
                         pageFactory.buildMessageList(request.webContext, query, limit, offset, year)

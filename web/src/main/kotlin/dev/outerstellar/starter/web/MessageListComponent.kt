@@ -2,7 +2,7 @@ package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.PaginationMetadata
-import dev.outerstellar.starter.persistence.MessageRepository
+import dev.outerstellar.starter.service.MessageService
 import org.http4k.template.ViewModel
 
 data class MessageListViewModel(
@@ -24,7 +24,7 @@ private const val ARG_OFFSET = 2
 private const val ARG_YEAR = 3
 private const val ARG_IS_TRASH = 4
 
-class MessageListComponent(private val repository: MessageRepository) :
+class MessageListComponent(private val messageService: MessageService) :
     WebComponent<MessageListViewModel> {
 
     override fun build(ctx: WebContext, vararg args: Any?): MessageListViewModel {
@@ -36,10 +36,14 @@ class MessageListComponent(private val repository: MessageRepository) :
 
         val i18n = ctx.i18n
 
-        val items = repository.listMessages(query, year, limit, offset, includeDeleted = isTrash)
-        val total = repository.countMessages(query, year, includeDeleted = isTrash)
+        val result =
+            if (isTrash) {
+                messageService.listDeletedMessages(query, year, limit, offset)
+            } else {
+                messageService.listMessages(query, year, limit, offset)
+            }
 
-        return buildViewModel(ctx, items, total, limit, offset, query, year, isTrash, i18n)
+        return buildViewModel(ctx, result.items, result.metadata.totalItems, limit, offset, query, year, isTrash, i18n)
     }
 
     @Suppress("LongParameterList")
@@ -66,7 +70,7 @@ class MessageListComponent(private val repository: MessageRepository) :
             val baseUrl = if (isTrash) "/messages/trash" else "/"
             return ctx.url(
                 "$baseUrl?limit=$limit&offset=$newOffset" +
-                    (if (query != null) "&query=$query" else "") +
+                    (if (query != null) "&q=$query" else "") +
                     (if (year != null) "&year=$year" else "")
             )
         }

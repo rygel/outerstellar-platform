@@ -31,7 +31,7 @@ class MessageActionE2ETest : H2WebTest() {
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, transactionManager, cache)
-        val pageFactory = WebPageFactory(repository)
+        val pageFactory = WebPageFactory(repository, messageService)
 
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)

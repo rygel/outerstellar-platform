@@ -36,7 +36,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, transactionManager, cache)
-        val pageFactory = WebPageFactory(repository)
+        val pageFactory = WebPageFactory(repository, messageService)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
         val contactService =
