@@ -436,7 +436,7 @@ class SyncWindow(
         }
 
     private val navProfileBtn =
-        JButton("Profile").apply {
+        JButton(i18nService.translate("swing.profile.nav")).apply {
             name = "navProfileBtn"
             icon = RemixIcon.get("user/account-circle-line", 32)
             font = font.deriveFont(16f)
@@ -899,7 +899,9 @@ class SyncWindow(
         profilePanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][][][grow]"))
 
         profilePanel.add(
-            JLabel("My Profile").apply { font = font.deriveFont(Font.BOLD, 18f) },
+            JLabel(i18nService.translate("swing.profile.title")).apply {
+                font = font.deriveFont(Font.BOLD, 18f)
+            },
             "wrap, gapbottom 10",
         )
 
@@ -907,7 +909,9 @@ class SyncWindow(
         val profileInfoPanel =
             JPanel(MigLayout("fillx, ins 10, gap 8", "[120!][grow]", "[][][][] "))
         profileInfoPanel.border =
-            javax.swing.BorderFactory.createTitledBorder("Profile Information")
+            javax.swing.BorderFactory.createTitledBorder(
+                i18nService.translate("swing.profile.section.info")
+            )
 
         val profileEmailField = JTextField().apply { name = "profileEmailField" }
         val profileUsernameField = JTextField().apply { name = "profileUsernameField" }
@@ -918,16 +922,16 @@ class SyncWindow(
                 foreground = Color(0x22, 0x77, 0x22)
             }
 
-        profileInfoPanel.add(JLabel("Email:"))
+        profileInfoPanel.add(JLabel(i18nService.translate("swing.profile.label.email")))
         profileInfoPanel.add(profileEmailField, "growx, wrap")
-        profileInfoPanel.add(JLabel("Username:"))
+        profileInfoPanel.add(JLabel(i18nService.translate("swing.profile.label.username")))
         profileInfoPanel.add(profileUsernameField, "growx, wrap")
-        profileInfoPanel.add(JLabel("Avatar URL:"))
+        profileInfoPanel.add(JLabel(i18nService.translate("swing.profile.label.avatar")))
         profileInfoPanel.add(profileAvatarUrlField, "growx, wrap")
         profileInfoPanel.add(profileStatusLabel, "skip 1, wrap")
 
         val saveProfileBtn =
-            JButton("Save Profile").apply {
+            JButton(i18nService.translate("swing.profile.save")).apply {
                 name = "saveProfileBtn"
                 icon = RemixIcon.get("system/save-line")
             }
@@ -940,10 +944,11 @@ class SyncWindow(
                 saveProfileBtn.isEnabled = true
                 if (success) {
                     profileStatusLabel.foreground = Color(0x22, 0x77, 0x22)
-                    profileStatusLabel.text = "Profile saved."
+                    profileStatusLabel.text = i18nService.translate("swing.profile.saved")
                 } else {
                     profileStatusLabel.foreground = Color(0xCC, 0x44, 0x44)
-                    profileStatusLabel.text = error ?: "Save failed."
+                    profileStatusLabel.text =
+                        error ?: i18nService.translate("swing.profile.save.failed")
                 }
             }
         }
@@ -953,11 +958,18 @@ class SyncWindow(
         // Section 2: Notification preferences
         val notifPrefsPanel = JPanel(MigLayout("fillx, ins 10, gap 8", "[grow]", "[][]"))
         notifPrefsPanel.border =
-            javax.swing.BorderFactory.createTitledBorder("Notification Preferences")
+            javax.swing.BorderFactory.createTitledBorder(
+                i18nService.translate("swing.profile.section.notifications")
+            )
 
         val emailNotifCheckbox =
-            JCheckBox("Email notifications").apply { name = "emailNotifCheckbox" }
-        val pushNotifCheckbox = JCheckBox("Push notifications").apply { name = "pushNotifCheckbox" }
+            JCheckBox(i18nService.translate("swing.profile.notif.email")).apply {
+                name = "emailNotifCheckbox"
+            }
+        val pushNotifCheckbox =
+            JCheckBox(i18nService.translate("swing.profile.notif.push")).apply {
+                name = "pushNotifCheckbox"
+            }
         val notifStatusLabel =
             JLabel().apply {
                 name = "notifStatusLabel"
@@ -968,7 +980,10 @@ class SyncWindow(
         notifPrefsPanel.add(pushNotifCheckbox, "wrap")
         notifPrefsPanel.add(notifStatusLabel, "wrap")
 
-        val saveNotifBtn = JButton("Save Preferences").apply { name = "saveNotifBtn" }
+        val saveNotifBtn =
+            JButton(i18nService.translate("swing.profile.notif.save")).apply {
+                name = "saveNotifBtn"
+            }
         saveNotifBtn.addActionListener {
             saveNotifBtn.isEnabled = false
             viewModel.updateNotificationPreferences(
@@ -978,10 +993,11 @@ class SyncWindow(
                 saveNotifBtn.isEnabled = true
                 if (success) {
                     notifStatusLabel.foreground = Color(0x22, 0x77, 0x22)
-                    notifStatusLabel.text = "Preferences saved."
+                    notifStatusLabel.text = i18nService.translate("swing.profile.notif.saved")
                 } else {
                     notifStatusLabel.foreground = Color(0xCC, 0x44, 0x44)
-                    notifStatusLabel.text = error ?: "Save failed."
+                    notifStatusLabel.text =
+                        error ?: i18nService.translate("swing.profile.save.failed")
                 }
             }
         }
@@ -993,16 +1009,16 @@ class SyncWindow(
         dangerPanel.border =
             BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color(0xCC, 0x44, 0x44), 1),
-                "Danger Zone",
+                i18nService.translate("swing.profile.section.danger"),
                 TitledBorder.DEFAULT_JUSTIFICATION,
                 TitledBorder.DEFAULT_POSITION,
                 null,
                 Color(0xCC, 0x44, 0x44),
             )
 
-        dangerPanel.add(JLabel("Permanently deletes your account. This cannot be undone."), "wrap")
+        dangerPanel.add(JLabel(i18nService.translate("swing.profile.danger.description")), "wrap")
         val deleteAccountBtn =
-            JButton("Delete My Account").apply {
+            JButton(i18nService.translate("swing.profile.delete")).apply {
                 name = "deleteAccountBtn"
                 foreground = Color(0xCC, 0x44, 0x44)
             }
@@ -1010,8 +1026,8 @@ class SyncWindow(
             val confirmed =
                 JOptionPane.showConfirmDialog(
                     frame,
-                    "Are you sure you want to permanently delete your account?\nThis action cannot be undone.",
-                    "Confirm Account Deletion",
+                    i18nService.translate("swing.profile.delete.confirm"),
+                    i18nService.translate("swing.profile.delete.confirm.title"),
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE,
                 )
@@ -1021,8 +1037,8 @@ class SyncWindow(
                     if (success) {
                         JOptionPane.showMessageDialog(
                             frame,
-                            "Your account has been deleted.",
-                            "Account Deleted",
+                            i18nService.translate("swing.profile.delete.success"),
+                            i18nService.translate("swing.profile.delete.success.title"),
                             JOptionPane.INFORMATION_MESSAGE,
                         )
                         mainLayout.show(mainCardPanel, "MESSAGES")
@@ -1030,8 +1046,8 @@ class SyncWindow(
                         deleteAccountBtn.isEnabled = true
                         JOptionPane.showMessageDialog(
                             frame,
-                            error ?: "Deletion failed.",
-                            "Error",
+                            error ?: i18nService.translate("swing.profile.delete.failed"),
+                            i18nService.translate("swing.profile.delete.error.title"),
                             JOptionPane.ERROR_MESSAGE,
                         )
                     }
@@ -1813,6 +1829,7 @@ class SyncWindow(
         navMessagesBtn.text = i18nService.translate("swing.menu.file")
         navContactsBtn.text = i18nService.translate("swing.contact.nav")
         navUsersBtn.text = i18nService.translate("swing.admin.users.nav")
+        navProfileBtn.text = i18nService.translate("swing.profile.nav")
         contactsModel.setColumnIdentifiers(
             arrayOf(
                 i18nService.translate("swing.contact.table.name"),
