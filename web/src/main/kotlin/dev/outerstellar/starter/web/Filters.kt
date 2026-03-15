@@ -278,11 +278,26 @@ object Filters {
                         next(request)
                     }
                 } else {
-                    // On safe methods: ensure the CSRF cookie is present; set it if missing
-                    val response = next(request)
+                    // On safe methods: ensure the CSRF cookie is present; set it if missing.
+                    // IMPORTANT: pre-generate the token and inject it into the request's Cookie
+                    // header *before* calling the handler, so that WebContext.csrfToken reads the
+                    // same value that we set in the response cookie. Without this, WebContext would
+                    // generate an independent random UUID for the meta tag while the filter sets a
+                    // different one in the cookie — making the first-visit CSRF check always fail.
                     val existingToken = request.cookie(WebContext.CSRF_COOKIE)?.value
                     if (existingToken == null) {
                         val newToken = UUID.randomUUID().toString()
+                        val existingCookieHeader = request.header("Cookie")
+                        val augmentedRequest =
+                            request.header(
+                                "Cookie",
+                                if (existingCookieHeader != null) {
+                                    "${WebContext.CSRF_COOKIE}=$newToken; $existingCookieHeader"
+                                } else {
+                                    "${WebContext.CSRF_COOKIE}=$newToken"
+                                },
+                            )
+                        val response = next(augmentedRequest)
                         response.cookie(
                             Cookie(
                                 WebContext.CSRF_COOKIE,
@@ -295,7 +310,7 @@ object Filters {
                             )
                         )
                     } else {
-                        response
+                        next(request)
                     }
                 }
             }

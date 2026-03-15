@@ -69,11 +69,7 @@ class ComprehensiveWebE2ETest : KoinTest {
 
         routes.forEach { path ->
             val response = app.http!!(Request(GET, path))
-            assertEquals(
-                if (path.contains("errors")) Status.NOT_FOUND else Status.OK,
-                response.status,
-                "Path $path failed",
-            )
+            assertEquals(Status.OK, response.status, "Path $path failed")
             val body = response.bodyString()
             assertTrue(body.contains("<!DOCTYPE html>"), "Path $path did not return HTML")
             assertTrue(body.contains("site.css?v="), "Path $path is missing CSS cache buster")

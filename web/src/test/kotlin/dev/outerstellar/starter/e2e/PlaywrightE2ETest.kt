@@ -117,13 +117,24 @@ class PlaywrightE2ETest : KoinTest {
     @Test
     fun `should be able to create a new message`() {
         page.navigate("http://localhost:${server.port()}/")
+        page.waitForLoadState(com.microsoft.playwright.options.LoadState.NETWORKIDLE)
 
         page.fill("input[name='author']", "Playwright Tester")
         page.fill("textarea[name='content']", "Hello from E2E test!")
-        page.click("button[type='submit']")
 
-        // Wait for page to reload and show the new message
-        page.waitForSelector("text=Playwright Tester")
-        assertTrue(page.locator("text=Hello from E2E test!").isVisible)
+        // Use a specific selector scoped to the message composer form so we don't
+        // accidentally click the logout or other submit buttons on the page.
+        // The form uses hx-post; HTMX sends XHR (not native form submit), and the
+        // browser follows the 302 redirect transparently — wait for NETWORKIDLE then
+        // navigate explicitly to get fresh SSR with the new message.
+        page.locator("form.form-grid button[type='submit']").click()
+        page.waitForLoadState(com.microsoft.playwright.options.LoadState.NETWORKIDLE)
+
+        page.navigate("http://localhost:${server.port()}/")
+        page.waitForLoadState(com.microsoft.playwright.options.LoadState.NETWORKIDLE)
+
+        val content = page.content()
+        assertTrue(content.contains("Playwright Tester"), "Message author not found in page")
+        assertTrue(content.contains("Hello from E2E test!"), "Message content not found in page")
     }
 }

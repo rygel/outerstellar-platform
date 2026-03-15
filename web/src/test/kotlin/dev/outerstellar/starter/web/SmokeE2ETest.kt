@@ -8,6 +8,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.server.PolyHandler
@@ -36,7 +37,8 @@ class SmokeE2ETest : KoinTest {
     fun `web application starts up and responds to health check`() {
         val response = app.http!!(Request(GET, "/health"))
         assertEquals(200, response.status.code)
-        assertEquals("ok", response.bodyString())
+        val body = response.bodyString()
+        assertTrue(body.contains("\"UP\""), "Health check did not return UP status: $body")
     }
 
     @Test
