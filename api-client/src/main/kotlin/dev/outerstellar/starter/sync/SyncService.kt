@@ -14,10 +14,14 @@ import dev.outerstellar.starter.web.PasswordResetRequest
 import dev.outerstellar.starter.web.RegisterRequest
 import dev.outerstellar.starter.web.SetUserEnabledRequest
 import dev.outerstellar.starter.web.SetUserRoleRequest
+import dev.outerstellar.starter.web.UpdateNotificationPrefsRequest
+import dev.outerstellar.starter.web.UpdateProfileRequest
+import dev.outerstellar.starter.web.UserProfileResponse
 import dev.outerstellar.starter.web.UserSummary
 import org.http4k.client.JavaHttpClient
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
+import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Method.PUT
@@ -51,6 +55,9 @@ class SyncService(
     private val resetRequestLens = Body.auto<PasswordResetRequest>().toLens()
     private val resetConfirmLens = Body.auto<PasswordResetConfirm>().toLens()
     private val notificationListLens = Body.auto<List<NotificationSummary>>().toLens()
+    private val updateProfileLens = Body.auto<UpdateProfileRequest>().toLens()
+    private val userProfileResponseLens = Body.auto<UserProfileResponse>().toLens()
+    private val updateNotifPrefsLens = Body.auto<UpdateNotificationPrefsRequest>().toLens()
 
     fun login(username: String, pass: String): AuthTokenResponse {
         val request =
@@ -170,6 +177,48 @@ class SyncService(
     fun markAllNotificationsRead() {
         val response = authenticatedRequest(Request(PUT, "$baseUrl/api/v1/notifications/read-all"))
         checkSessionExpired(response)
+    }
+
+    fun fetchProfile(): UserProfileResponse {
+        val response = authenticatedRequest(Request(GET, "$baseUrl/api/v1/auth/profile"))
+        checkSessionExpired(response)
+        if (response.status != Status.OK) {
+            throw SyncException("Failed to fetch profile: ${response.status}")
+        }
+        return userProfileResponseLens(response)
+    }
+
+    fun updateProfile(email: String, username: String? = null, avatarUrl: String? = null) {
+        val request =
+            Request(PUT, "$baseUrl/api/v1/auth/profile")
+                .with(updateProfileLens of UpdateProfileRequest(email, username, avatarUrl))
+        val response = authenticatedRequest(request)
+        checkSessionExpired(response)
+        if (response.status != Status.OK) {
+            throw SyncException(response.bodyString().ifBlank { "Profile update failed" })
+        }
+    }
+
+    fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean) {
+        val request =
+            Request(PUT, "$baseUrl/api/v1/auth/notification-preferences")
+                .with(
+                    updateNotifPrefsLens of
+                        UpdateNotificationPrefsRequest(emailEnabled, pushEnabled)
+                )
+        val response = authenticatedRequest(request)
+        checkSessionExpired(response)
+        if (response.status != Status.OK) {
+            throw SyncException("Failed to update notification preferences: ${response.status}")
+        }
+    }
+
+    fun deleteAccount() {
+        val response = authenticatedRequest(Request(DELETE, "$baseUrl/api/v1/auth/account"))
+        checkSessionExpired(response)
+        if (response.status != Status.OK) {
+            throw SyncException(response.bodyString().ifBlank { "Account deletion failed" })
+        }
     }
 
     private fun authenticatedRequest(request: Request): Response {

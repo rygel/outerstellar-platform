@@ -69,6 +69,18 @@ class SyncViewModel(
     val unreadNotificationCount: Int
         get() = notifications.count { !it.read }
 
+    var userEmail: String = ""
+        private set
+
+    var userAvatarUrl: String? = null
+        private set
+
+    var emailNotificationsEnabled: Boolean = true
+        private set
+
+    var pushNotificationsEnabled: Boolean = true
+        private set
+
     var author: String = i18nService.translate("swing.author.default")
     var content: String = ""
     var searchQuery: String = ""
@@ -251,6 +263,8 @@ class SyncViewModel(
         isLoggedIn = false
         userRole = null
         userName = ""
+        userEmail = ""
+        userAvatarUrl = null
         adminUsers = emptyList()
         author = i18nService.translate("swing.author.default")
         status = i18nService.translate("swing.status.loggedOut")
@@ -485,10 +499,137 @@ class SyncViewModel(
             .execute()
     }
 
+    fun loadProfile(onResult: (Boolean, String?) -> Unit) {
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+                override fun doInBackground(): Pair<Boolean, String?> {
+                    return try {
+                        val profile = syncService.fetchProfile()
+                        userEmail = profile.email
+                        userAvatarUrl = profile.avatarUrl
+                        emailNotificationsEnabled = profile.emailNotificationsEnabled
+                        pushNotificationsEnabled = profile.pushNotificationsEnabled
+                        true to null
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                        false to i18nService.translate("swing.session.expired")
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        false to (e.message ?: "Failed to load profile")
+                    }
+                }
+
+                override fun done() {
+                    val (success, error) = get()
+                    onResult(success, error)
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    fun updateProfile(
+        email: String,
+        username: String?,
+        avatarUrl: String?,
+        onResult: (Boolean, String?) -> Unit,
+    ) {
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+                override fun doInBackground(): Pair<Boolean, String?> {
+                    return try {
+                        syncService.updateProfile(email, username, avatarUrl)
+                        // Reload to sync local state
+                        val profile = syncService.fetchProfile()
+                        userName = profile.username
+                        userEmail = profile.email
+                        userAvatarUrl = profile.avatarUrl
+                        true to null
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                        false to i18nService.translate("swing.session.expired")
+                    } catch (e: SyncException) {
+                        false to e.message
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        false to (e.message ?: "Unknown error")
+                    }
+                }
+
+                override fun done() {
+                    val (success, error) = get()
+                    onResult(success, error)
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    fun updateNotificationPreferences(
+        emailEnabled: Boolean,
+        pushEnabled: Boolean,
+        onResult: (Boolean, String?) -> Unit,
+    ) {
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+                override fun doInBackground(): Pair<Boolean, String?> {
+                    return try {
+                        syncService.updateNotificationPreferences(emailEnabled, pushEnabled)
+                        emailNotificationsEnabled = emailEnabled
+                        pushNotificationsEnabled = pushEnabled
+                        true to null
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                        false to i18nService.translate("swing.session.expired")
+                    } catch (e: SyncException) {
+                        false to e.message
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        false to (e.message ?: "Unknown error")
+                    }
+                }
+
+                override fun done() {
+                    val (success, error) = get()
+                    onResult(success, error)
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+                override fun doInBackground(): Pair<Boolean, String?> {
+                    return try {
+                        syncService.deleteAccount()
+                        true to null
+                    } catch (e: SessionExpiredException) {
+                        false to i18nService.translate("swing.session.expired")
+                    } catch (e: SyncException) {
+                        false to e.message
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        false to (e.message ?: "Unknown error")
+                    }
+                }
+
+                override fun done() {
+                    val (success, error) = get()
+                    if (success) {
+                        // Force local session clear after account deletion
+                        isLoggedIn = false
+                        userRole = null
+                        userName = ""
+                        userEmail = ""
+                        stopAutoSync()
+                    }
+                    onResult(success, error)
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
     private fun handleSessionExpired() {
         isLoggedIn = false
         userRole = null
         userName = ""
+        userEmail = ""
+        userAvatarUrl = null
         stopAutoSync()
         status = i18nService.translate("swing.session.expired")
     }

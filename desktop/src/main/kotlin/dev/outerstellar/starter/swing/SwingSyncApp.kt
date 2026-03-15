@@ -39,6 +39,7 @@ import javax.swing.Box
 import javax.swing.DefaultListCellRenderer
 import javax.swing.DefaultListModel
 import javax.swing.JButton
+import javax.swing.JCheckBox
 import javax.swing.JComboBox
 import javax.swing.JDialog
 import javax.swing.JFrame
@@ -264,6 +265,7 @@ class SyncWindow(
     private lateinit var contactsPanel: JPanel
     private lateinit var usersPanel: JPanel
     private lateinit var notificationsPanel: JPanel
+    private lateinit var profilePanel: JPanel
 
     private lateinit var searchPanel: JPanel
     private lateinit var footerPanel: JPanel
@@ -426,6 +428,17 @@ class SyncWindow(
         JButton("Alerts").apply {
             name = "navNotificationsBtn"
             icon = RemixIcon.get("system/notification-3-line", 32)
+            font = font.deriveFont(16f)
+            verticalTextPosition = SwingConstants.BOTTOM
+            horizontalTextPosition = SwingConstants.CENTER
+            putClientProperty("JButton.buttonType", "square")
+            isEnabled = false
+        }
+
+    private val navProfileBtn =
+        JButton("Profile").apply {
+            name = "navProfileBtn"
+            icon = RemixIcon.get("user/account-circle-line", 32)
             font = font.deriveFont(16f)
             verticalTextPosition = SwingConstants.BOTTOM
             horizontalTextPosition = SwingConstants.CENTER
@@ -608,8 +621,8 @@ class SyncWindow(
         registerItem.isEnabled = !viewModel.isLoggedIn
         changePasswordItem.isEnabled = viewModel.isLoggedIn
 
-        val isAdmin = viewModel.userRole == "ADMIN"
         navUsersBtn.isEnabled = viewModel.isLoggedIn && viewModel.userRole == "ADMIN"
+        navProfileBtn.isEnabled = viewModel.isLoggedIn
 
         usersModel.rowCount = 0
         viewModel.adminUsers.forEach { user ->
@@ -654,11 +667,16 @@ class SyncWindow(
             viewModel.loadNotifications()
             mainLayout.show(mainCardPanel, "NOTIFICATIONS")
         }
+        navProfileBtn.addActionListener {
+            mainLayout.show(mainCardPanel, "PROFILE")
+            viewModel.loadProfile { _, _ -> }
+        }
 
         sidebarPanel.add(navMessagesBtn, "growx, h 100!, wrap")
         sidebarPanel.add(navContactsBtn, "growx, h 100!, wrap")
         sidebarPanel.add(navUsersBtn, "growx, h 100!, wrap")
         sidebarPanel.add(navNotificationsBtn, "growx, h 100!, wrap")
+        sidebarPanel.add(navProfileBtn, "growx, h 100!, wrap")
         sidebarPanel.add(Box.createVerticalGlue(), "growy")
 
         // MAIN CONTENT (CARD LAYOUT)
@@ -873,6 +891,168 @@ class SyncWindow(
                 viewModel.notifications.forEach { notifListModel.addElement(it) }
                 if (viewModel.notifications.isEmpty()) {
                     markAllReadBtn.isEnabled = false
+                }
+            }
+        }
+
+        // --- Profile View ---
+        profilePanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][][][grow]"))
+
+        profilePanel.add(
+            JLabel("My Profile").apply { font = font.deriveFont(Font.BOLD, 18f) },
+            "wrap, gapbottom 10",
+        )
+
+        // Section 1: Profile info
+        val profileInfoPanel =
+            JPanel(MigLayout("fillx, ins 10, gap 8", "[120!][grow]", "[][][][] "))
+        profileInfoPanel.border =
+            javax.swing.BorderFactory.createTitledBorder("Profile Information")
+
+        val profileEmailField = JTextField().apply { name = "profileEmailField" }
+        val profileUsernameField = JTextField().apply { name = "profileUsernameField" }
+        val profileAvatarUrlField = JTextField().apply { name = "profileAvatarUrlField" }
+        val profileStatusLabel =
+            JLabel().apply {
+                name = "profileStatusLabel"
+                foreground = Color(0x22, 0x77, 0x22)
+            }
+
+        profileInfoPanel.add(JLabel("Email:"))
+        profileInfoPanel.add(profileEmailField, "growx, wrap")
+        profileInfoPanel.add(JLabel("Username:"))
+        profileInfoPanel.add(profileUsernameField, "growx, wrap")
+        profileInfoPanel.add(JLabel("Avatar URL:"))
+        profileInfoPanel.add(profileAvatarUrlField, "growx, wrap")
+        profileInfoPanel.add(profileStatusLabel, "skip 1, wrap")
+
+        val saveProfileBtn =
+            JButton("Save Profile").apply {
+                name = "saveProfileBtn"
+                icon = RemixIcon.get("system/save-line")
+            }
+        saveProfileBtn.addActionListener {
+            val email = profileEmailField.text.trim()
+            val username = profileUsernameField.text.trim().takeIf { it.isNotBlank() }
+            val avatarUrl = profileAvatarUrlField.text.trim().takeIf { it.isNotBlank() }
+            saveProfileBtn.isEnabled = false
+            viewModel.updateProfile(email, username, avatarUrl) { success, error ->
+                saveProfileBtn.isEnabled = true
+                if (success) {
+                    profileStatusLabel.foreground = Color(0x22, 0x77, 0x22)
+                    profileStatusLabel.text = "Profile saved."
+                } else {
+                    profileStatusLabel.foreground = Color(0xCC, 0x44, 0x44)
+                    profileStatusLabel.text = error ?: "Save failed."
+                }
+            }
+        }
+        profileInfoPanel.add(saveProfileBtn, "skip 1, wrap")
+        profilePanel.add(profileInfoPanel, "growx, wrap, gapbottom 12")
+
+        // Section 2: Notification preferences
+        val notifPrefsPanel = JPanel(MigLayout("fillx, ins 10, gap 8", "[grow]", "[][]"))
+        notifPrefsPanel.border =
+            javax.swing.BorderFactory.createTitledBorder("Notification Preferences")
+
+        val emailNotifCheckbox =
+            JCheckBox("Email notifications").apply { name = "emailNotifCheckbox" }
+        val pushNotifCheckbox = JCheckBox("Push notifications").apply { name = "pushNotifCheckbox" }
+        val notifStatusLabel =
+            JLabel().apply {
+                name = "notifStatusLabel"
+                foreground = Color(0x22, 0x77, 0x22)
+            }
+
+        notifPrefsPanel.add(emailNotifCheckbox, "wrap")
+        notifPrefsPanel.add(pushNotifCheckbox, "wrap")
+        notifPrefsPanel.add(notifStatusLabel, "wrap")
+
+        val saveNotifBtn = JButton("Save Preferences").apply { name = "saveNotifBtn" }
+        saveNotifBtn.addActionListener {
+            saveNotifBtn.isEnabled = false
+            viewModel.updateNotificationPreferences(
+                emailNotifCheckbox.isSelected,
+                pushNotifCheckbox.isSelected,
+            ) { success, error ->
+                saveNotifBtn.isEnabled = true
+                if (success) {
+                    notifStatusLabel.foreground = Color(0x22, 0x77, 0x22)
+                    notifStatusLabel.text = "Preferences saved."
+                } else {
+                    notifStatusLabel.foreground = Color(0xCC, 0x44, 0x44)
+                    notifStatusLabel.text = error ?: "Save failed."
+                }
+            }
+        }
+        notifPrefsPanel.add(saveNotifBtn, "wrap")
+        profilePanel.add(notifPrefsPanel, "growx, wrap, gapbottom 12")
+
+        // Section 3: Danger zone
+        val dangerPanel = JPanel(MigLayout("fillx, ins 10, gap 8", "[grow]", "[][]"))
+        dangerPanel.border =
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color(0xCC, 0x44, 0x44), 1),
+                "Danger Zone",
+                TitledBorder.DEFAULT_JUSTIFICATION,
+                TitledBorder.DEFAULT_POSITION,
+                null,
+                Color(0xCC, 0x44, 0x44),
+            )
+
+        dangerPanel.add(JLabel("Permanently deletes your account. This cannot be undone."), "wrap")
+        val deleteAccountBtn =
+            JButton("Delete My Account").apply {
+                name = "deleteAccountBtn"
+                foreground = Color(0xCC, 0x44, 0x44)
+            }
+        deleteAccountBtn.addActionListener {
+            val confirmed =
+                JOptionPane.showConfirmDialog(
+                    frame,
+                    "Are you sure you want to permanently delete your account?\nThis action cannot be undone.",
+                    "Confirm Account Deletion",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE,
+                )
+            if (confirmed == JOptionPane.YES_OPTION) {
+                deleteAccountBtn.isEnabled = false
+                viewModel.deleteAccount { success, error ->
+                    if (success) {
+                        JOptionPane.showMessageDialog(
+                            frame,
+                            "Your account has been deleted.",
+                            "Account Deleted",
+                            JOptionPane.INFORMATION_MESSAGE,
+                        )
+                        mainLayout.show(mainCardPanel, "MESSAGES")
+                    } else {
+                        deleteAccountBtn.isEnabled = true
+                        JOptionPane.showMessageDialog(
+                            frame,
+                            error ?: "Deletion failed.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE,
+                        )
+                    }
+                }
+            }
+        }
+        dangerPanel.add(deleteAccountBtn, "wrap")
+        profilePanel.add(dangerPanel, "growx, wrap")
+
+        mainCardPanel.add(profilePanel, "PROFILE")
+
+        // Wire profile fields from viewModel
+        viewModel.addObserver {
+            javax.swing.SwingUtilities.invokeLater {
+                navProfileBtn.isEnabled = viewModel.isLoggedIn
+                if (viewModel.isLoggedIn) {
+                    profileUsernameField.text = viewModel.userName
+                    profileEmailField.text = viewModel.userEmail
+                    profileAvatarUrlField.text = viewModel.userAvatarUrl ?: ""
+                    emailNotifCheckbox.isSelected = viewModel.emailNotificationsEnabled
+                    pushNotifCheckbox.isSelected = viewModel.pushNotificationsEnabled
                 }
             }
         }

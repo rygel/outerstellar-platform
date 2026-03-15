@@ -66,3 +66,19 @@ data class ApiKeySummary(
 data class CreateApiKeyRequest(val name: String)
 
 data class CreateApiKeyResponse(val key: String, val name: String, val keyPrefix: String)
+
+data class UpdateProfileRequest(
+    val email: String,
+    val username: String? = null,
+    val avatarUrl: String? = null,
+)
+
+data class UpdateNotificationPrefsRequest(val emailEnabled: Boolean, val pushEnabled: Boolean)
+
+data class UserProfileResponse(
+    val username: String,
+    val email: String,
+    val avatarUrl: String?,
+    val emailNotificationsEnabled: Boolean,
+    val pushNotificationsEnabled: Boolean,
+)

@@ -45,3 +45,19 @@ data class NotificationSummary(
     val read: Boolean,
     val createdAt: String,
 )
+
+data class UpdateProfileRequest(
+    val email: String,
+    val username: String? = null,
+    val avatarUrl: String? = null,
+)
+
+data class UpdateNotificationPrefsRequest(val emailEnabled: Boolean, val pushEnabled: Boolean)
+
+data class UserProfileResponse(
+    val username: String,
+    val email: String,
+    val avatarUrl: String?,
+    val emailNotificationsEnabled: Boolean,
+    val pushNotificationsEnabled: Boolean,
+)
