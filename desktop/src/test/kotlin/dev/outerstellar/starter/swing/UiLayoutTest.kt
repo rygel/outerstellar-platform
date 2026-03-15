@@ -9,6 +9,7 @@ import java.awt.Component
 import java.awt.Container
 import java.util.Locale
 import javax.swing.JButton
+import javax.swing.JCheckBox
 import javax.swing.JComponent
 import javax.swing.JDialog
 import javax.swing.JPasswordField
@@ -199,11 +200,47 @@ class UiLayoutTest {
                 findByName<JButton>(frame, "navMessagesBtn")
                 findByName<JButton>(frame, "navContactsBtn")
                 findByName<JButton>(frame, "navUsersBtn")
+                findByName<JButton>(frame, "navProfileBtn")
                 findByName<JTextField>(frame, "searchField")
                 findByName<JTextField>(frame, "authorField")
                 findByName<JTable>(frame, "contactsTable")
                 findByName<JTable>(frame, "usersTable")
                 findByName<JComponent>(frame, "statusBarPanel")
+            }
+        } finally {
+            runOnEdt { frame.dispose() }
+        }
+    }
+
+    @Test
+    fun `profile nav button exists and is initially disabled`() {
+        val (_, frame) = createWindow()
+        try {
+            runOnEdt {
+                val btn = findByName<JButton>(frame, "navProfileBtn")
+                assertTrue(btn.preferredSize.width >= MIN_NAV_BUTTON_SIZE, "Profile nav too narrow")
+                assertTrue(btn.preferredSize.height >= MIN_NAV_BUTTON_SIZE, "Profile nav too short")
+                // not logged in → should be disabled
+                assertTrue(!btn.isEnabled, "Profile nav should be disabled before login")
+            }
+        } finally {
+            runOnEdt { frame.dispose() }
+        }
+    }
+
+    @Test
+    fun `profile panel has all expected input components`() {
+        val (_, frame) = createWindow()
+        try {
+            runOnEdt {
+                findByName<JTextField>(frame, "profileEmailField")
+                findByName<JTextField>(frame, "profileUsernameField")
+                findByName<JTextField>(frame, "profileAvatarUrlField")
+                findByName<JButton>(frame, "saveProfileBtn")
+                findByName<JCheckBox>(frame, "emailNotifCheckbox")
+                findByName<JCheckBox>(frame, "pushNotifCheckbox")
+                findByName<JButton>(frame, "saveNotifBtn")
+                findByName<JButton>(frame, "deleteAccountBtn")
             }
         } finally {
             runOnEdt { frame.dispose() }
