@@ -282,7 +282,7 @@ class SyncWindow(
                 i18nService.translate("swing.contact.table.phones"),
                 i18nService.translate("swing.contact.table.socials"),
                 i18nService.translate("swing.contact.table.company"),
-                "Company Address",
+                i18nService.translate("swing.contact.table.company.address"),
                 i18nService.translate("swing.contact.table.department"),
                 "SyncID",
             ),
@@ -1840,7 +1840,7 @@ class SyncWindow(
                 i18nService.translate("swing.contact.table.phones"),
                 i18nService.translate("swing.contact.table.socials"),
                 i18nService.translate("swing.contact.table.company"),
-                "Company Address",
+                i18nService.translate("swing.contact.table.company.address"),
                 i18nService.translate("swing.contact.table.department"),
                 "SyncID",
             )
