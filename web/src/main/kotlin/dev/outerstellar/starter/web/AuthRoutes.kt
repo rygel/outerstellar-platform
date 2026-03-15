@@ -1,5 +1,7 @@
 package dev.outerstellar.starter.web
 
+import dev.outerstellar.starter.analytics.AnalyticsService
+import dev.outerstellar.starter.analytics.NoOpAnalyticsService
 import dev.outerstellar.starter.infra.render
 import dev.outerstellar.starter.model.UsernameAlreadyExistsException
 import dev.outerstellar.starter.model.WeakPasswordException
@@ -22,6 +24,7 @@ class AuthRoutes(
     private val renderer: TemplateRenderer,
     private val securityService: SecurityService,
     private val sessionCookieSecure: Boolean,
+    private val analytics: AnalyticsService = NoOpAnalyticsService(),
 ) : ServerRoutes {
     private val modePath = Path.string().of("mode")
     private val apiKeyIdPath = Path.long().of("id")
@@ -59,29 +62,58 @@ class AuthRoutes(
                         safeReturnTo(request.query("returnTo") ?: request.form("returnTo"))
 
                     if (mode == "sign-in") {
+                        val ctx = request.webContext
                         val user = securityService.authenticate(email, password)
                         if (user != null) {
+                            analytics.identify(
+                                user.id.toString(),
+                                mapOf("username" to user.username, "role" to user.role.name),
+                            )
+                            analytics.track(user.id.toString(), "User Logged In")
                             Response(Status.FOUND)
-                                .header("location", request.webContext.url(returnTo))
+                                .header("location", ctx.url(returnTo))
                                 .header(
                                     "Set-Cookie",
                                     SessionCookie.create(user.id.toString(), sessionCookieSecure),
                                 )
                         } else {
-                            val errorValues = mapOf("error" to "Invalid credentials")
                             renderer.render(
-                                pageFactory.buildAuthResult(request.webContext, errorValues)
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.auth.result.error.title"),
+                                    message = "Invalid credentials",
+                                    toneClass = "panel-danger",
+                                )
                             )
                         }
                     } else if (mode == "register") {
+                        val ctx = request.webContext
                         try {
                             securityService.register(email, password)
-                            val target = request.webContext.url("/auth?registered=true")
+                            val target = ctx.url("/auth?registered=true")
                             Response(Status.FOUND).header("location", target)
-                        } catch (e: IllegalArgumentException) {
-                            val errorValues = mapOf("error" to (e.message ?: "Registration failed"))
+                        } catch (e: UsernameAlreadyExistsException) {
                             renderer.render(
-                                pageFactory.buildAuthResult(request.webContext, errorValues)
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.auth.result.error.title"),
+                                    message = e.message ?: "Registration failed",
+                                    toneClass = "panel-danger",
+                                )
+                            )
+                        } catch (e: WeakPasswordException) {
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.auth.result.error.title"),
+                                    message = e.message ?: "Registration failed",
+                                    toneClass = "panel-danger",
+                                )
+                            )
+                        } catch (e: IllegalArgumentException) {
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.auth.result.error.title"),
+                                    message = e.message ?: "Registration failed",
+                                    toneClass = "panel-danger",
+                                )
                             )
                         }
                     } else if (mode == "recover") {

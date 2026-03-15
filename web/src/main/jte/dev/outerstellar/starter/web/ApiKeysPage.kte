@@ -7,13 +7,13 @@
         <div class="panel">
             <p class="topbar-label">${model.shell.pageTitle}</p>
             <h1>${model.data.title}</h1>
-            <p class="text-muted">Manage your API keys for programmatic access.</p>
+            <p class="text-muted">${model.data.description}</p>
         </div>
     </section>
 
     @if(model.data.newKey != null)
         <section class="panel panel-success" style="margin-bottom: 1rem;">
-            <h3>Key created. Copy it now - it won't be shown again:</h3>
+            <h3>${model.data.newKeyBanner}</h3>
             <p style="font-family: monospace; word-break: break-all; padding: 0.75rem; background: var(--surface-color, #1a1a2e); border-radius: 4px;">
                 ${model.data.newKey}
             </p>
@@ -22,29 +22,29 @@
     @endif
 
     <section class="panel">
-        <h2>Create API Key</h2>
+        <h2>${model.data.createLabel}</h2>
         <form method="post" action="${model.data.createUrl}" style="display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap;">
             <div>
-                <label for="key-name">Key Name</label>
-                <input type="text" id="key-name" name="name" placeholder="My integration" required style="min-width: 250px;" />
+                <label for="key-name">${model.data.keyNameLabel}</label>
+                <input type="text" id="key-name" name="name" placeholder="${model.data.keyNamePlaceholder}" required style="min-width: 250px;" />
             </div>
-            <button type="submit">Create API Key</button>
+            <button type="submit">${model.data.createLabel}</button>
         </form>
     </section>
 
     <section class="panel" style="margin-top: 1rem;">
-        <h2>Your API Keys</h2>
+        <h2>${model.data.yourKeysHeading}</h2>
         @if(model.data.keys.isEmpty())
-            <p class="text-muted">No API keys yet.</p>
+            <p class="text-muted">${model.data.emptyLabel}</p>
         @else
             <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr>
-                        <th style="text-align: left; padding: 0.5rem;">Prefix</th>
-                        <th style="text-align: left; padding: 0.5rem;">Name</th>
-                        <th style="text-align: left; padding: 0.5rem;">Created</th>
-                        <th style="text-align: left; padding: 0.5rem;">Last Used</th>
-                        <th style="text-align: center; padding: 0.5rem;">Actions</th>
+                        <th style="text-align: left; padding: 0.5rem;">${model.data.headerPrefix}</th>
+                        <th style="text-align: left; padding: 0.5rem;">${model.data.headerName}</th>
+                        <th style="text-align: left; padding: 0.5rem;">${model.data.headerCreated}</th>
+                        <th style="text-align: left; padding: 0.5rem;">${model.data.headerLastUsed}</th>
+                        <th style="text-align: center; padding: 0.5rem;">${model.data.headerActions}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,12 +53,12 @@
                             <td style="padding: 0.5rem; font-family: monospace;">${key.keyPrefix}...</td>
                             <td style="padding: 0.5rem;">${key.name}</td>
                             <td style="padding: 0.5rem;">${key.createdAt}</td>
-                            <td style="padding: 0.5rem;">${key.lastUsedAt ?: "Never"}</td>
+                            <td style="padding: 0.5rem;">${key.lastUsedAt ?: model.data.neverLabel}</td>
                             <td style="text-align: center; padding: 0.5rem;">
                                 <form method="post" action="/auth/api-keys/${key.id}/delete" style="display: inline;"
-                                      onsubmit="return confirm('Delete this key?');">
+                                      onsubmit="return confirm('${model.data.deleteConfirm}');">
                                     <button type="submit" class="secondary" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
-                                        Delete
+                                        ${model.data.deleteLabel}
                                     </button>
                                 </form>
                             </td>

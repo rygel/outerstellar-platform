@@ -8,9 +8,9 @@ import io.mockk.mockk
 import java.awt.GraphicsEnvironment
 import java.util.Locale
 import javax.swing.JButton
+import javax.swing.JComponent
 import javax.swing.JTextArea
 import javax.swing.SwingUtilities
-import javax.swing.JComponent
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Test
@@ -30,7 +30,7 @@ class InfoDialogLayoutTest {
         runOnEdt { window.configureForTest() }
         val dialog = runOnEdtResult { window.buildInfoDialog("About", "Some message text", null) }
         runOnEdt {
-            dialog.pack()   // force MigLayout to size and position all children
+            dialog.pack() // force MigLayout to size and position all children
             dialog.validate()
         }
 

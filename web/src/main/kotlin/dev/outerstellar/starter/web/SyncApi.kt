@@ -1,5 +1,8 @@
 package dev.outerstellar.starter.web
 
+import dev.outerstellar.starter.analytics.AnalyticsService
+import dev.outerstellar.starter.analytics.NoOpAnalyticsService
+import dev.outerstellar.starter.security.SecurityRules
 import dev.outerstellar.starter.service.ContactService
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncConflict
@@ -28,6 +31,7 @@ import org.http4k.lens.long
 class SyncApi(
     private val messageService: MessageService,
     private val contactService: ContactService,
+    private val analytics: AnalyticsService = NoOpAnalyticsService(),
 ) : ServerRoutes {
     private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
     private val pushResponseLens = Body.auto<SyncPushResponse>().toLens()
@@ -69,6 +73,17 @@ class SyncApi(
                 { request ->
                     val syncRequest = pushRequestLens(request)
                     val syncResponse = messageService.processPushRequest(syncRequest)
+                    val userId = SecurityRules.USER_KEY(request)?.id?.toString()
+                    if (userId != null) {
+                        analytics.track(
+                            userId,
+                            "Messages Synced",
+                            mapOf(
+                                "pushed" to syncRequest.messages.size,
+                                "conflicts" to syncResponse.conflicts.size,
+                            ),
+                        )
+                    }
                     Response(Status.OK).with(pushResponseLens of syncResponse)
                 },
             "/api/v1/sync/contacts" meta

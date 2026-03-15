@@ -1,16 +1,21 @@
 package dev.outerstellar.starter.web
 
+import dev.outerstellar.starter.analytics.AnalyticsService
 import dev.outerstellar.starter.model.OuterstellarException
 import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.security.SecurityRules
 import dev.outerstellar.starter.security.UserRepository
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
+import org.http4k.core.Method
 import org.http4k.core.Response
 import org.http4k.core.Status
+import org.http4k.core.body.form
 import org.http4k.core.cookie.Cookie
+import org.http4k.core.cookie.SameSite
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
 import org.http4k.core.then
@@ -241,6 +246,80 @@ object Filters {
                     null
                 }
             next(request.with(SecurityRules.USER_KEY of user))
+        }
+    }
+
+    /**
+     * Double-submit cookie CSRF protection for HTML form routes.
+     * - Ensures every response carries a `_csrf` cookie with a random token.
+     * - On unsafe methods (POST/PUT/DELETE/PATCH): rejects requests where the form field `_csrf` or
+     *   header `X-CSRF-Token` does not match the cookie.
+     * - Exempts `/api/v1/` routes (Bearer-token auth) and `/oauth/` routes.
+     */
+    fun csrfProtection(sessionCookieSecure: Boolean, enabled: Boolean = true): Filter =
+        Filter { next ->
+            { request ->
+                if (!enabled) return@Filter next(request)
+
+                val unsafeMethods = setOf(Method.POST, Method.PUT, Method.DELETE, Method.PATCH)
+                val path = request.uri.path
+                val exempt = path.startsWith("/api/v1/") || path.startsWith("/oauth/")
+
+                if (request.method in unsafeMethods && !exempt) {
+                    val cookieToken = request.cookie(WebContext.CSRF_COOKIE)?.value
+                    val formToken = request.form("_csrf")
+                    val headerToken = request.header("X-CSRF-Token")
+                    val submitted = formToken ?: headerToken
+
+                    if (cookieToken == null || submitted == null || cookieToken != submitted) {
+                        logger.warn("CSRF check failed for {} {}", request.method, path)
+                        Response(Status.FORBIDDEN).body("Invalid or missing CSRF token")
+                    } else {
+                        next(request)
+                    }
+                } else {
+                    // On safe methods: ensure the CSRF cookie is present; set it if missing
+                    val response = next(request)
+                    val existingToken = request.cookie(WebContext.CSRF_COOKIE)?.value
+                    if (existingToken == null) {
+                        val newToken = UUID.randomUUID().toString()
+                        response.cookie(
+                            Cookie(
+                                WebContext.CSRF_COOKIE,
+                                newToken,
+                                path = "/",
+                                secure = sessionCookieSecure,
+                                httpOnly =
+                                    false, // must be readable by JS for HTMX header injection
+                                sameSite = SameSite.Strict,
+                            )
+                        )
+                    } else {
+                        response
+                    }
+                }
+            }
+        }
+
+    fun analyticsPageView(analytics: AnalyticsService): Filter = Filter { next ->
+        { request ->
+            val response = next(request)
+            if (
+                request.method == org.http4k.core.Method.GET &&
+                    !request.uri.path.startsWith("/api/") &&
+                    !request.uri.path.startsWith("/static/") &&
+                    !request.uri.path.startsWith("/ws/")
+            ) {
+                try {
+                    val userId = request.webContext.user?.id?.toString()
+                    if (userId != null) {
+                        analytics.page(userId, request.uri.path)
+                    }
+                } catch (_: Exception) {
+                    // Not authenticated or context unavailable — skip page view
+                }
+            }
+            response
         }
     }
 

@@ -3,6 +3,7 @@ package dev.outerstellar.starter.swing
 import com.formdev.flatlaf.FlatLightLaf
 import com.outerstellar.i18n.I18nService
 import dev.outerstellar.starter.AppConfig
+import dev.outerstellar.starter.analytics.NoOpAnalyticsService
 import dev.outerstellar.starter.di.coreModule
 import dev.outerstellar.starter.di.desktopModule
 import dev.outerstellar.starter.di.persistenceModule
@@ -14,6 +15,7 @@ import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.NoOpMessageCache
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.service.SyncProvider
+import dev.outerstellar.starter.swing.analytics.PersistentBatchingAnalyticsService
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import dev.outerstellar.starter.sync.SyncService
 import java.awt.BorderLayout
@@ -27,7 +29,10 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
+import java.nio.file.Path
 import java.util.Locale
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import javax.sql.DataSource
 import javax.swing.BorderFactory
 import javax.swing.Box
@@ -93,6 +98,55 @@ fun main() {
     val desktop = DesktopComponent
     migrate(desktop.dataSource)
 
+    val analytics =
+        if (desktop.config.analyticsEnabled && desktop.config.segmentWriteKey.isNotBlank()) {
+            PersistentBatchingAnalyticsService(
+                writeKey = desktop.config.segmentWriteKey,
+                dataDir = Path.of("./data"),
+                maxFileSizeBytes = desktop.config.analyticsMaxFileSizeKb * 1024,
+                maxEventAgeDays = desktop.config.analyticsMaxEventAgeDays,
+            )
+        } else {
+            null
+        }
+
+    // Start connectivity checker early so analytics scheduler can skip flush when offline
+    val connectivityChecker =
+        ConnectivityChecker(healthUrl = "${desktop.config.serverBaseUrl}/health").also {
+            it.start()
+        }
+
+    // Flush any events left over from the previous session, then schedule daily flushes
+    val analyticsScheduler =
+        if (analytics != null) {
+            Executors.newSingleThreadScheduledExecutor { r ->
+                    Thread(r, "analytics-flush").also { it.isDaemon = true }
+                }
+                .also { scheduler ->
+                    scheduler.execute { if (connectivityChecker.isOnline) analytics.flush() }
+                    scheduler.scheduleAtFixedRate(
+                        { if (connectivityChecker.isOnline) analytics.flush() },
+                        desktop.config.analyticsFlushIntervalHours,
+                        desktop.config.analyticsFlushIntervalHours,
+                        TimeUnit.HOURS,
+                    )
+                }
+        } else {
+            null
+        }
+
+    Runtime.getRuntime()
+        .addShutdownHook(
+            Thread(
+                {
+                    connectivityChecker.stop()
+                    analyticsScheduler?.shutdown()
+                    if (connectivityChecker.isOnline) analytics?.flush()
+                },
+                "analytics-shutdown",
+            )
+        )
+
     val savedState = DesktopStateProvider.loadState()
     val initialLocale = savedState?.language?.let { Locale.of(it) } ?: Locale.getDefault()
     Locale.setDefault(initialLocale)
@@ -117,8 +171,17 @@ fun main() {
                 desktop.syncService,
                 i18nService,
                 notifier,
+                analytics ?: NoOpAnalyticsService(),
+                connectivityChecker,
             )
-        val window = SyncWindow(viewModel, themeManager, i18nService, desktop.config.version)
+        val window =
+            SyncWindow(
+                viewModel,
+                themeManager,
+                i18nService,
+                desktop.config.version,
+                desktop.config.updateUrl,
+            )
 
         DeepLinkHandler.setup(
             onSearch = { query ->
@@ -190,6 +253,7 @@ class SyncWindow(
     private val themeManager: ThemeManager,
     private var i18nService: I18nService,
     private val appVersion: String = "dev",
+    private val updateUrl: String = "",
 ) {
     val frame = JFrame(i18nService.translate("swing.app.title"))
     private lateinit var rootPanel: JPanel
@@ -199,6 +263,7 @@ class SyncWindow(
     private lateinit var messagesPanel: JPanel
     private lateinit var contactsPanel: JPanel
     private lateinit var usersPanel: JPanel
+    private lateinit var notificationsPanel: JPanel
 
     private lateinit var searchPanel: JPanel
     private lateinit var footerPanel: JPanel
@@ -210,13 +275,13 @@ class SyncWindow(
     private val contactsModel =
         DefaultTableModel(
             arrayOf(
-                "Name",
-                "Emails",
-                "Phones",
-                "Socials",
-                "Company",
+                i18nService.translate("swing.contact.table.name"),
+                i18nService.translate("swing.contact.table.emails"),
+                i18nService.translate("swing.contact.table.phones"),
+                i18nService.translate("swing.contact.table.socials"),
+                i18nService.translate("swing.contact.table.company"),
                 "Company Address",
-                "Department",
+                i18nService.translate("swing.contact.table.department"),
                 "SyncID",
             ),
             0,
@@ -234,6 +299,13 @@ class SyncWindow(
         JLabel("Statusbar Test").apply {
             name = "statusLabel"
             toolTipText = "Statusbar Test"
+        }
+    private val offlineBadge =
+        JLabel().apply {
+            name = "offlineBadge"
+            isVisible = false
+            foreground = Color(0xCC, 0x44, 0x44)
+            font = font.deriveFont(Font.BOLD, 11f)
         }
     private val statusHintLabel = JLabel().apply { name = "statusHintLabel" }
     private val statusMetaLabel = JLabel().apply { name = "statusMetaLabel" }
@@ -330,7 +402,7 @@ class SyncWindow(
         }
 
     private val navContactsBtn =
-        JButton("Contacts").apply {
+        JButton(i18nService.translate("swing.contact.nav")).apply {
             name = "navContactsBtn"
             icon = RemixIcon.get("user/user-3-line", 32)
             font = font.deriveFont(16f)
@@ -350,6 +422,17 @@ class SyncWindow(
             isEnabled = false
         }
 
+    private val navNotificationsBtn =
+        JButton("Alerts").apply {
+            name = "navNotificationsBtn"
+            icon = RemixIcon.get("system/notification-3-line", 32)
+            font = font.deriveFont(16f)
+            verticalTextPosition = SwingConstants.BOTTOM
+            horizontalTextPosition = SwingConstants.CENTER
+            putClientProperty("JButton.buttonType", "square")
+            isEnabled = false
+        }
+
     private val changePasswordItem =
         JMenuItem(i18nService.translate("swing.password.change")).apply {
             name = "changePasswordItem"
@@ -358,7 +441,16 @@ class SyncWindow(
         }
 
     private val usersModel =
-        DefaultTableModel(arrayOf("Username", "Email", "Role", "Enabled", "ID"), 0)
+        DefaultTableModel(
+            arrayOf(
+                i18nService.translate("swing.admin.users.header.username"),
+                i18nService.translate("swing.admin.users.header.email"),
+                i18nService.translate("swing.admin.users.header.role"),
+                i18nService.translate("swing.admin.users.header.enabled"),
+                i18nService.translate("swing.admin.users.header.id"),
+            ),
+            0,
+        )
     private val usersTable =
         JTable(usersModel).apply {
             name = "usersTable"
@@ -498,7 +590,11 @@ class SyncWindow(
 
         statusLabel.text = viewModel.status
         statusLabel.toolTipText = viewModel.status
-        syncButton.isEnabled = !viewModel.isSyncing
+        syncButton.isEnabled = !viewModel.isSyncing && viewModel.isOnline
+
+        val online = viewModel.isOnline
+        offlineBadge.isVisible = !online
+        offlineBadge.text = if (!online) i18nService.translate("swing.connectivity.offline") else ""
 
         if (contentArea.text != viewModel.content) {
             contentArea.text = viewModel.content
@@ -534,6 +630,7 @@ class SyncWindow(
                 override fun windowClosing(e: WindowEvent?) {
                     saveState()
                     viewModel.stopAutoSync()
+                    viewModel.connectivityChecker?.stop()
                 }
             }
         )
@@ -553,10 +650,15 @@ class SyncWindow(
             viewModel.loadUsers()
             mainLayout.show(mainCardPanel, "USERS")
         }
+        navNotificationsBtn.addActionListener {
+            viewModel.loadNotifications()
+            mainLayout.show(mainCardPanel, "NOTIFICATIONS")
+        }
 
         sidebarPanel.add(navMessagesBtn, "growx, h 100!, wrap")
         sidebarPanel.add(navContactsBtn, "growx, h 100!, wrap")
         sidebarPanel.add(navUsersBtn, "growx, h 100!, wrap")
+        sidebarPanel.add(navNotificationsBtn, "growx, h 100!, wrap")
         sidebarPanel.add(Box.createVerticalGlue(), "growy")
 
         // MAIN CONTENT (CARD LAYOUT)
@@ -690,6 +792,90 @@ class SyncWindow(
         usersPanel.add(userActionsPanel, "growx")
 
         mainCardPanel.add(usersPanel, "USERS")
+
+        // --- Notifications View ---
+        notificationsPanel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow][]"))
+
+        val notifHeaderPanel = JPanel(MigLayout("fillx, ins 0", "[grow][]", "[]"))
+        notifHeaderPanel.add(
+            JLabel(i18nService.translate("swing.notifications.title")).apply {
+                font = font.deriveFont(Font.BOLD, 18f)
+                name = "notifTitleLabel"
+            }
+        )
+        val markAllReadBtn =
+            JButton(i18nService.translate("swing.notifications.mark.all.read")).apply {
+                name = "markAllReadBtn"
+                addActionListener { viewModel.markAllNotificationsRead() }
+            }
+        notifHeaderPanel.add(markAllReadBtn, "right")
+        notificationsPanel.add(notifHeaderPanel, "wrap, growx, gapbottom 10")
+
+        val notifListModel =
+            javax.swing.DefaultListModel<dev.outerstellar.starter.web.NotificationSummary>()
+        val notifList =
+            javax.swing.JList(notifListModel).apply {
+                name = "notificationsList"
+                cellRenderer =
+                    object : javax.swing.DefaultListCellRenderer() {
+                        override fun getListCellRendererComponent(
+                            list: javax.swing.JList<*>?,
+                            value: Any?,
+                            index: Int,
+                            isSelected: Boolean,
+                            cellHasFocus: Boolean,
+                        ): java.awt.Component {
+                            super.getListCellRendererComponent(
+                                list,
+                                value,
+                                index,
+                                isSelected,
+                                cellHasFocus,
+                            )
+                            val n =
+                                value as? dev.outerstellar.starter.web.NotificationSummary
+                                    ?: return this
+                            val unreadMark = if (!n.read) "● " else "  "
+                            text =
+                                "<html><b>$unreadMark${n.title}</b><br/><span style='font-size:10px'>${n.body}</span></html>"
+                            return this
+                        }
+                    }
+            }
+        notificationsPanel.add(JScrollPane(notifList), "grow, wrap")
+
+        val notifActionsPanel = JPanel(MigLayout("ins 0, fillx", "[]", "[]"))
+        val markReadBtn =
+            JButton(i18nService.translate("swing.notifications.mark.read")).apply {
+                name = "markReadBtn"
+                addActionListener {
+                    val idx = notifList.selectedIndex
+                    if (idx >= 0) {
+                        val notifId = notifListModel.getElementAt(idx).id
+                        viewModel.markNotificationRead(notifId)
+                    }
+                }
+            }
+        notifActionsPanel.add(markReadBtn)
+        notificationsPanel.add(notifActionsPanel, "growx")
+
+        mainCardPanel.add(notificationsPanel, "NOTIFICATIONS")
+
+        // Wire notification list updates from viewModel
+        viewModel.addObserver {
+            javax.swing.SwingUtilities.invokeLater {
+                val unread = viewModel.unreadNotificationCount
+                val label = if (unread > 0) "Alerts ($unread)" else "Alerts"
+                navNotificationsBtn.text = label
+                navNotificationsBtn.isEnabled = viewModel.isLoggedIn
+
+                notifListModel.clear()
+                viewModel.notifications.forEach { notifListModel.addElement(it) }
+                if (viewModel.notifications.isEmpty()) {
+                    markAllReadBtn.isEnabled = false
+                }
+            }
+        }
 
         val splitPane =
             JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebarPanel, mainCardPanel).apply {
@@ -913,14 +1099,19 @@ class SyncWindow(
                 JOptionPane.showMessageDialog(
                     dialog,
                     "Name is required",
-                    "Error",
+                    i18nService.translate("swing.error.title"),
                     JOptionPane.ERROR_MESSAGE,
                 )
                 return@addActionListener
             }
 
             val onValidationError: (String) -> Unit = { error ->
-                JOptionPane.showMessageDialog(dialog, error, "Error", JOptionPane.ERROR_MESSAGE)
+                JOptionPane.showMessageDialog(
+                    dialog,
+                    error,
+                    i18nService.translate("swing.error.title"),
+                    JOptionPane.ERROR_MESSAGE,
+                )
             }
 
             if (isEditing && syncId != null) {
@@ -967,7 +1158,9 @@ class SyncWindow(
         val jList = JList(listModel)
 
         val inputField = JTextField()
-        val addBtn = JButton("Add")
+        val addLabel = i18nService.translate("swing.button.add")
+        val updateLabel = i18nService.translate("swing.button.update")
+        val addBtn = JButton(addLabel)
 
         fun updateItem() {
             val index = jList.selectedIndex
@@ -977,12 +1170,12 @@ class SyncWindow(
                 listModel.set(index, newValue)
                 inputField.text = ""
                 jList.clearSelection()
-                addBtn.text = "Add"
+                addBtn.text = addLabel
             }
         }
 
         addBtn.addActionListener {
-            if (addBtn.text == "Update") {
+            if (addBtn.text == updateLabel) {
                 updateItem()
             } else if (inputField.text.isNotBlank()) {
                 val valToAdd = inputField.text.trim()
@@ -997,7 +1190,7 @@ class SyncWindow(
             val index = jList.selectedIndex
             if (index >= 0) {
                 inputField.text = listModel.getElementAt(index)
-                addBtn.text = "Update"
+                addBtn.text = updateLabel
                 inputField.requestFocusInWindow()
             }
         }
@@ -1009,7 +1202,7 @@ class SyncWindow(
                 list.removeAt(index)
                 listModel.remove(index)
                 inputField.text = ""
-                addBtn.text = "Add"
+                addBtn.text = addLabel
             }
         }
 
@@ -1298,11 +1491,42 @@ class SyncWindow(
     }
 
     private fun showUpdateCheckDialog() {
-        showInfoDialog(
-            title = i18nService.translate("swing.menu.help.updates"),
-            message = i18nService.translate("swing.updates.message", appVersion),
-            icon = RemixIcon.get("system/refresh-line", 24),
-        )
+        if (updateUrl.isBlank()) {
+            showInfoDialog(
+                title = i18nService.translate("swing.menu.help.updates"),
+                message = i18nService.translate("swing.updates.message", appVersion),
+                icon = RemixIcon.get("system/refresh-line", 24),
+            )
+            return
+        }
+
+        UpdateService(
+                currentVersion = appVersion,
+                updateUrl = updateUrl,
+                onUpdateAvailable = { latestVersion ->
+                    SwingUtilities.invokeLater {
+                        showInfoDialog(
+                            title = i18nService.translate("swing.updates.available.title"),
+                            message =
+                                i18nService.translate(
+                                    "swing.updates.available.message",
+                                    latestVersion,
+                                    appVersion,
+                                ),
+                            icon = RemixIcon.get("system/refresh-line", 24),
+                        )
+                    }
+                },
+            )
+            .also { svc ->
+                // Show "checking" feedback immediately, update finishes asynchronously
+                showInfoDialog(
+                    title = i18nService.translate("swing.menu.help.updates"),
+                    message = i18nService.translate("swing.updates.checking"),
+                    icon = RemixIcon.get("system/refresh-line", 24),
+                )
+                svc.checkForUpdates()
+            }
     }
 
     private fun showInfoDialog(title: String, message: String, icon: javax.swing.Icon?) {
@@ -1376,6 +1600,8 @@ class SyncWindow(
         statusBar.removeAll()
         statusBar.add(statusLabel)
         statusBar.add(Box.createHorizontalGlue())
+        statusBar.add(offlineBadge)
+        statusBar.addSeparator(Dimension(10, 0))
         statusBar.add(statusHintLabel)
         statusBar.addSeparator(Dimension(10, 0))
         statusBar.add(statusMetaLabel)
@@ -1405,8 +1631,29 @@ class SyncWindow(
         authorLabel.text = i18nService.translate("swing.label.author")
         changePasswordItem.text = i18nService.translate("swing.password.change")
         navMessagesBtn.text = i18nService.translate("swing.menu.file")
-        navContactsBtn.text = "Contacts"
+        navContactsBtn.text = i18nService.translate("swing.contact.nav")
         navUsersBtn.text = i18nService.translate("swing.admin.users.nav")
+        contactsModel.setColumnIdentifiers(
+            arrayOf(
+                i18nService.translate("swing.contact.table.name"),
+                i18nService.translate("swing.contact.table.emails"),
+                i18nService.translate("swing.contact.table.phones"),
+                i18nService.translate("swing.contact.table.socials"),
+                i18nService.translate("swing.contact.table.company"),
+                "Company Address",
+                i18nService.translate("swing.contact.table.department"),
+                "SyncID",
+            )
+        )
+        usersModel.setColumnIdentifiers(
+            arrayOf(
+                i18nService.translate("swing.admin.users.header.username"),
+                i18nService.translate("swing.admin.users.header.email"),
+                i18nService.translate("swing.admin.users.header.role"),
+                i18nService.translate("swing.admin.users.header.enabled"),
+                i18nService.translate("swing.admin.users.header.id"),
+            )
+        )
         statusHintLabel.text = ""
         statusMetaLabel.text = i18nService.translate("swing.statusbar.version", appVersion)
         if (statusLabel.text.isBlank()) {

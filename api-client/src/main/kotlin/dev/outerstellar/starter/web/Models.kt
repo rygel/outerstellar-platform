@@ -36,3 +36,12 @@ data class ApiKeySummary(
     val createdAt: String,
     val lastUsedAt: String?,
 )
+
+data class NotificationSummary(
+    val id: String,
+    val title: String,
+    val body: String,
+    val type: String,
+    val read: Boolean,
+    val createdAt: String,
+)

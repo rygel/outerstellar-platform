@@ -25,6 +25,7 @@ class WebContext(
         const val THEME_COOKIE = "app_theme"
         const val LAYOUT_COOKIE = "app_layout"
         const val SESSION_COOKIE = "app_session"
+        const val CSRF_COOKIE = "_csrf"
     }
 
     val lang: String by lazy {
@@ -59,6 +60,10 @@ class WebContext(
         I18nService.create("messages").also { it.setLocale(Locale.of(lang)) }
     }
 
+    val csrfToken: String by lazy {
+        request.cookie(CSRF_COOKIE)?.value ?: java.util.UUID.randomUUID().toString()
+    }
+
     fun url(path: String): String = path
 
     fun componentUrl(path: String, pagePath: String): String =
@@ -79,13 +84,13 @@ class WebContext(
                     activeSection == "/",
                 ),
                 ShellLink(
-                    "Contacts",
+                    i18n.translate("web.nav.contacts"),
                     url("/contacts"),
                     "ri-user-3-line",
                     activeSection == "/contacts",
                 ),
                 ShellLink(
-                    "Trash",
+                    i18n.translate("web.nav.trash"),
                     url("/messages/trash"),
                     "ri-delete-bin-7-line",
                     activeSection == "/messages/trash",
@@ -162,6 +167,12 @@ class WebContext(
             profileUrl = if (user != null) url("/auth/profile") else null,
             isDarkMode = isDark,
             darkModeToggleUrl = darkModeToggleUrl,
+            toastErrorLabel = i18n.translate("web.layout.toast.error"),
+            toastSuccessLabel = i18n.translate("web.layout.toast.success"),
+            changePasswordLabel = i18n.translate("web.layout.change.password"),
+            signOutLabel = i18n.translate("web.layout.sign.out"),
+            csrfToken = csrfToken,
+            notificationsUrl = if (user != null) url("/notifications") else null,
         )
     }
 }

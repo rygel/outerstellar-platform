@@ -26,9 +26,10 @@ class MessageCacheTest {
         every { cache.get(any()) } returns null
         // getOrPut has a default impl in the interface but MockK relaxed mocks don't invoke it;
         // replicate the default behaviour so get/put interactions are still verifiable.
-        every { cache.getOrPut(any(), any()) } answers {
-            cache.get(firstArg()) ?: secondArg<() -> Any>()().also { cache.put(firstArg(), it) }
-        }
+        every { cache.getOrPut(any(), any()) } answers
+            {
+                cache.get(firstArg()) ?: secondArg<() -> Any>()().also { cache.put(firstArg(), it) }
+            }
         every { repository.listMessages(any(), any(), any(), any()) } returns items
         every { repository.countMessages(any(), any()) } returns 1L
 

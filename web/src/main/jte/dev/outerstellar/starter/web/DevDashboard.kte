@@ -5,33 +5,33 @@
 @template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
     <section class="panel hero-grid">
         <div>
-            <p class="status-badge">System Diagnostics</p>
-            <h1>Developer Dashboard</h1>
-            <p>Real-time metrics and system state for local development.</p>
+            <p class="status-badge">${model.data.badge}</p>
+            <h1>${model.data.heading}</h1>
+            <p>${model.data.description}</p>
         </div>
     </section>
 
     <div class="card-grid">
         <section class="panel">
-            <h2>Transactional Outbox</h2>
+            <h2>${model.data.outboxLabel}</h2>
             <div class="message-list">
                 <div class="message-meta">
-                    <span>Pending</span>
+                    <span>${model.data.pendingLabel}</span>
                     <strong>${model.data.outboxStats.pending}</strong>
                 </div>
                 <div class="message-meta">
-                    <span>Processed</span>
+                    <span>${model.data.processedLabel}</span>
                     <strong>${model.data.outboxStats.processed}</strong>
                 </div>
                 <div class="message-meta">
-                    <span>Failed</span>
+                    <span>${model.data.failedLabel}</span>
                     <strong>${model.data.outboxStats.failed}</strong>
                 </div>
             </div>
         </section>
 
         <section class="panel">
-            <h2>Cache Statistics</h2>
+            <h2>${model.data.cacheLabel}</h2>
             <div class="message-list">
                 @for(entry in model.data.cacheStats)
                     <div class="message-meta">
@@ -44,22 +44,22 @@
     </div>
 
     <section class="panel">
-        <h2>Custom Protocol Tester</h2>
+        <h2>${model.data.protocolLabel}</h2>
         <p class="opacity-70 mb-4">Test the <code>outerstellar://</code> deep link integration with the desktop application.</p>
         <div class="button-row">
-            <a href="outerstellar://sync" class="button-link">Trigger Sync</a>
+            <a href="outerstellar://sync" class="button-link">${model.data.triggerSyncLabel}</a>
             <a href="outerstellar://search?q=HTMX" class="button-link button-secondary">Search "HTMX"</a>
             <a href="outerstellar://search?q=Dracula" class="button-link button-secondary">Search "Dracula"</a>
         </div>
     </section>
 
     <section class="panel">
-        <h2>OpenTelemetry</h2>
+        <h2>${model.data.telemetryLabel}</h2>
         <p class="status-badge">${model.data.telemetryStatus}</p>
     </section>
 
     <section class="panel">
-        <h2>Application Metrics</h2>
+        <h2>${model.data.metricsLabel}</h2>
         <pre class="panel panel-muted" style="overflow: auto; max-height: 400px; font-size: 12px; font-family: monospace;">
 ${model.data.metrics}
         </pre>

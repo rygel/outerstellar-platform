@@ -13,6 +13,14 @@ data class MessageListViewModel(
     val refreshUrl: String,
     val pagination: PaginationViewModel? = null,
     val isTrash: Boolean = false,
+    val restoreTitle: String = "Restore message",
+    val editTitle: String = "Edit message (Local only)",
+    val deleteTitle: String = "Delete message",
+    val deleteConfirm: String = "Are you sure you want to delete this message?",
+    val showingPageLabel: String = "Showing page",
+    val ofLabel: String = "of",
+    val localBadge: String = "Local",
+    val conflictBadge: String = "Conflict",
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/components/MessageList"
 }
@@ -109,7 +117,7 @@ class MessageListComponent(private val messageService: MessageService) :
             messages = items,
             emptyMessage =
                 if (isTrash) {
-                    "No deleted messages found."
+                    i18n.translate("web.trash.empty")
                 } else {
                     i18n.translate("web.home.list.empty")
                 },
@@ -118,6 +126,14 @@ class MessageListComponent(private val messageService: MessageService) :
             refreshUrl = currentUrl,
             pagination = pagination,
             isTrash = isTrash,
+            restoreTitle = i18n.translate("web.messages.restore"),
+            editTitle = i18n.translate("web.messages.edit"),
+            deleteTitle = i18n.translate("web.messages.delete"),
+            deleteConfirm = i18n.translate("web.messages.delete.confirm"),
+            showingPageLabel = i18n.translate("web.messages.showing.page"),
+            ofLabel = i18n.translate("web.messages.of"),
+            localBadge = i18n.translate("web.messages.local.badge"),
+            conflictBadge = i18n.translate("web.messages.conflict.badge"),
         )
     }
 }

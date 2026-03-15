@@ -5,6 +5,22 @@ import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addEnvironmentSource
 import com.sksamuel.hoplite.addResourceSource
 
+data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
+
+/**
+ * SMTP email configuration. Email sending is **disabled by default**. Set [enabled] = true and
+ * provide [host]/[username]/[password] to activate.
+ */
+data class EmailConfig(
+    val enabled: Boolean = false,
+    val host: String = "localhost",
+    val port: Int = 587,
+    val username: String = "",
+    val password: String = "",
+    val from: String = "noreply@example.com",
+    val startTls: Boolean = true,
+)
+
 data class AppConfig(
     val port: Int = 8080,
     val jdbcUrl: String =
@@ -18,6 +34,11 @@ data class AppConfig(
     val sessionCookieSecure: Boolean = false,
     val sessionTimeoutMinutes: Int = 30,
     val corsOrigins: String = "*",
+    val csrfEnabled: Boolean = true,
+    val segment: SegmentConfig = SegmentConfig(),
+    val email: EmailConfig = EmailConfig(),
+    /** Public-facing base URL used in emails, e.g. https://app.example.com */
+    val appBaseUrl: String = "http://localhost:8080",
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)

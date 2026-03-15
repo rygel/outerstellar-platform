@@ -48,6 +48,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             .set(USERS.ROLE, user.role.name)
             .set(USERS.ENABLED, user.enabled)
             .onDuplicateKeyUpdate()
+            .set(USERS.EMAIL, user.email)
             .set(USERS.PASSWORD_HASH, user.passwordHash)
             .set(USERS.ROLE, user.role.name)
             .set(USERS.ENABLED, user.enabled)

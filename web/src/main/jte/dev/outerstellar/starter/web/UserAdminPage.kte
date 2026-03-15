@@ -15,11 +15,11 @@
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
-                    <th style="text-align: left; padding: 0.5rem;">Username</th>
-                    <th style="text-align: left; padding: 0.5rem;">Email</th>
-                    <th style="text-align: left; padding: 0.5rem;">Role</th>
-                    <th style="text-align: center; padding: 0.5rem;">Enabled</th>
-                    <th style="text-align: center; padding: 0.5rem;">Actions</th>
+                    <th style="text-align: left; padding: 0.5rem;">${model.data.headerUsername}</th>
+                    <th style="text-align: left; padding: 0.5rem;">${model.data.headerEmail}</th>
+                    <th style="text-align: left; padding: 0.5rem;">${model.data.headerRole}</th>
+                    <th style="text-align: center; padding: 0.5rem;">${model.data.headerEnabled}</th>
+                    <th style="text-align: center; padding: 0.5rem;">${model.data.headerActions}</th>
                 </tr>
             </thead>
             <tbody>
@@ -41,16 +41,16 @@
                             @if(!user.isSelf)
                                 <form method="post" action="${user.toggleEnabledUrl}" style="display: inline;">
                                     <button type="submit" class="secondary" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
-                                        @if(user.enabled)Disable@elseEnable@endif
+                                        @if(user.enabled)${model.data.actionDisable}@else${model.data.actionEnable}@endif
                                     </button>
                                 </form>
                                 <form method="post" action="${user.toggleRoleUrl}" style="display: inline;">
                                     <button type="submit" class="secondary" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
-                                        @if(user.role == "ADMIN")Demote@elsePromote@endif
+                                        @if(user.role == "ADMIN")${model.data.actionDemote}@else${model.data.actionPromote}@endif
                                     </button>
                                 </form>
                             @else
-                                <span class="text-muted" style="font-size: 0.8rem;">(you)</span>
+                                <span class="text-muted" style="font-size: 0.8rem;">(${model.data.selfLabel})</span>
                             @endif
                         </td>
                     </tr>
@@ -59,13 +59,13 @@
         </table>
         <div style="display:flex; justify-content:space-between; margin-top:1rem;">
             @if(model.data.hasPrevious)
-                <a href="${model.data.previousUrl}" class="secondary">Previous</a>
+                <a href="${model.data.previousUrl}" class="secondary">${model.data.previousLabel}</a>
             @else
                 <span></span>
             @endif
             <span class="text-muted">Page ${model.data.currentPage}</span>
             @if(model.data.hasNext)
-                <a href="${model.data.nextUrl}" class="secondary">Next</a>
+                <a href="${model.data.nextUrl}" class="secondary">${model.data.nextLabel}</a>
             @else
                 <span></span>
             @endif

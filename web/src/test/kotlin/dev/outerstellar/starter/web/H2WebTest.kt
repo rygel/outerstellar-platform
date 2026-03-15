@@ -20,6 +20,7 @@ abstract class H2WebTest {
                 port = 0,
                 jdbcUrl = jdbcUrl,
                 devDashboardEnabled = true,
+                csrfEnabled = false, // disabled in tests — covered by CsrfProtectionIntegrationTest
             )
 
         val testDsl: DSLContext by lazy { DSL.using(dataSource, SQLDialect.H2) }
@@ -32,11 +33,15 @@ abstract class H2WebTest {
             testDsl.execute("SET REFERENTIAL_INTEGRITY FALSE")
             testDsl.execute("TRUNCATE TABLE MESSAGES")
             testDsl.execute("TRUNCATE TABLE OUTBOX")
+            testDsl.execute("TRUNCATE TABLE DEVICE_TOKENS")
+            testDsl.execute("TRUNCATE TABLE OAUTH_CONNECTIONS")
+            testDsl.execute("TRUNCATE TABLE API_KEYS")
+            testDsl.execute("TRUNCATE TABLE PASSWORD_RESET_TOKENS")
+            testDsl.execute("TRUNCATE TABLE AUDIT_LOG")
+            testDsl.execute("TRUNCATE TABLE CONTACTS")
             testDsl.execute("TRUNCATE TABLE USERS")
             testDsl.execute("TRUNCATE TABLE SYNC_STATE")
-            testDsl.execute("TRUNCATE TABLE AUDIT_LOG")
-            testDsl.execute("TRUNCATE TABLE PASSWORD_RESET_TOKENS")
-            testDsl.execute("TRUNCATE TABLE API_KEYS")
+            testDsl.execute("TRUNCATE TABLE NOTIFICATIONS")
             testDsl.execute("SET REFERENTIAL_INTEGRITY TRUE")
         }
     }

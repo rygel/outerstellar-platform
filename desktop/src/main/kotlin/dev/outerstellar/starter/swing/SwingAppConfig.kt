@@ -14,6 +14,11 @@ data class SwingAppConfig(
     val version: String = "1.0.0",
     val updateUrl: String = "",
     val devMode: Boolean = false,
+    val segmentWriteKey: String = "",
+    val analyticsEnabled: Boolean = false,
+    val analyticsFlushIntervalHours: Long = 24,
+    val analyticsMaxFileSizeKb: Long = 2048,
+    val analyticsMaxEventAgeDays: Long = 30,
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)

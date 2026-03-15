@@ -8,6 +8,7 @@ import dev.outerstellar.starter.service.SyncProvider
 import dev.outerstellar.starter.web.AuthTokenResponse
 import dev.outerstellar.starter.web.ChangePasswordRequest
 import dev.outerstellar.starter.web.LoginRequest
+import dev.outerstellar.starter.web.NotificationSummary
 import dev.outerstellar.starter.web.PasswordResetConfirm
 import dev.outerstellar.starter.web.PasswordResetRequest
 import dev.outerstellar.starter.web.RegisterRequest
@@ -49,6 +50,7 @@ class SyncService(
     private val setUserRoleLens = Body.auto<SetUserRoleRequest>().toLens()
     private val resetRequestLens = Body.auto<PasswordResetRequest>().toLens()
     private val resetConfirmLens = Body.auto<PasswordResetConfirm>().toLens()
+    private val notificationListLens = Body.auto<List<NotificationSummary>>().toLens()
 
     fun login(username: String, pass: String): AuthTokenResponse {
         val request =
@@ -150,6 +152,24 @@ class SyncService(
         if (response.status != Status.OK) {
             throw SyncException("Password reset failed: ${response.bodyString()}")
         }
+    }
+
+    fun listNotifications(): List<NotificationSummary> {
+        val response = authenticatedRequest(Request(GET, "$baseUrl/api/v1/notifications"))
+        checkSessionExpired(response)
+        if (response.status != Status.OK) return emptyList()
+        return notificationListLens(response)
+    }
+
+    fun markNotificationRead(notificationId: String) {
+        val response =
+            authenticatedRequest(Request(PUT, "$baseUrl/api/v1/notifications/$notificationId/read"))
+        checkSessionExpired(response)
+    }
+
+    fun markAllNotificationsRead() {
+        val response = authenticatedRequest(Request(PUT, "$baseUrl/api/v1/notifications/read-all"))
+        checkSessionExpired(response)
     }
 
     private fun authenticatedRequest(request: Request): Response {

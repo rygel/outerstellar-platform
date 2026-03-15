@@ -10,7 +10,7 @@
         </div>
         <button class="button-accent">
             <i class="ri-user-add-line"></i>
-            Create Contact
+            ${model.data.createLabel}
         </button>
     </header>
 
@@ -61,10 +61,10 @@
                 </div>
 
                 <div class="flex justify-end gap-2 mt-6">
-                    <button class="button-icon" title="Edit contact">
+                    <button class="button-icon" title="${model.data.editTitle}">
                         <i class="ri-edit-line"></i>
                     </button>
-                    <button class="button-icon text-danger" title="Delete contact">
+                    <button class="button-icon text-danger" title="${model.data.deleteTitle}">
                         <i class="ri-delete-bin-line"></i>
                     </button>
                 </div>
@@ -75,11 +75,11 @@
     @if(model.data.hasPrevious || model.data.hasNext)
         <div class="flex justify-between items-center mt-6" style="padding: 0 0.25rem;">
             <span class="text-muted" style="font-size: 0.875rem;">
-                Page ${model.data.currentPage} &middot; ${model.data.totalCount} contacts total
+                Page ${model.data.currentPage} &middot; ${model.data.totalCount} ${model.data.contactsTotalLabel}
             </span>
             <div class="flex gap-2">
                 @if(model.data.hasPrevious)
-                    <a href="${model.data.previousUrl}" class="button-icon" title="Previous page">
+                    <a href="${model.data.previousUrl}" class="button-icon" title="${model.data.previousPageTitle}">
                         <i class="ri-arrow-left-s-line"></i>
                     </a>
                 @else
@@ -88,7 +88,7 @@
                     </button>
                 @endif
                 @if(model.data.hasNext)
-                    <a href="${model.data.nextUrl}" class="button-icon" title="Next page">
+                    <a href="${model.data.nextUrl}" class="button-icon" title="${model.data.nextPageTitle}">
                         <i class="ri-arrow-right-s-line"></i>
                     </a>
                 @else

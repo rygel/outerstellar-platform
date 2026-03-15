@@ -8,6 +8,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="${shell.csrfToken}">
     <title>${shell.pageTitle} - ${shell.appTitle}</title>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="/site.css?v=${shell.version}">
@@ -46,7 +47,7 @@
         toast.style.pointerEvents = 'auto';
         toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
 
-        const title = type === 'error' ? 'Error' : 'Success';
+        const title = type === 'error' ? '${shell.toastErrorLabel}' : '${shell.toastSuccessLabel}';
         const icon = type === 'error' ? 'ri-error-warning-fill' : 'ri-checkbox-circle-fill';
 
         const row = document.createElement('div');
@@ -138,6 +139,13 @@
                         <i class="ri-moon-line"></i>
                     @endif
                 </a>
+            @if(shell.notificationsUrl != null)
+                <div id="notification-bell"
+                     hx-get="/components/notification-bell"
+                     hx-trigger="load, every 60s"
+                     hx-swap="innerHTML">
+                </div>
+            @endif
             @if(shell.isLoggedIn)
                 <div class="topbar-user">
                     <div class="user-info">
@@ -148,11 +156,12 @@
                                 <span style="opacity:0.3;">|</span>
                             @endif
                             @if(shell.changePasswordUrl != null)
-                                <a href="${shell.changePasswordUrl}" class="sign-out-link" style="font-size:0.8rem;"><i class="ri-lock-password-line"></i> Change password</a>
+                                <a href="${shell.changePasswordUrl}" class="sign-out-link" style="font-size:0.8rem;"><i class="ri-lock-password-line"></i> ${shell.changePasswordLabel}</a>
                                 <span style="opacity:0.3;">|</span>
                             @endif
                             <form method="post" action="${shell.logoutUrl}" style="display:inline;">
-                                <button type="submit" class="sign-out-link" style="background:none;border:none;padding:0;cursor:pointer;">Sign out</button>
+                                <input type="hidden" name="_csrf" value="${shell.csrfToken}">
+                                <button type="submit" class="sign-out-link" style="background:none;border:none;padding:0;cursor:pointer;">${shell.signOutLabel}</button>
                             </form>
                         </div>
                     </div>
@@ -178,6 +187,15 @@
         </footer>
     </div>
 </div>
+<script>
+    // Inject CSRF token into every HTMX request automatically
+    document.addEventListener('htmx:configRequest', function(event) {
+        var token = document.querySelector('meta[name="csrf-token"]');
+        if (token) {
+            event.detail.headers['X-CSRF-Token'] = token.content;
+        }
+    });
+</script>
 <script>
     // On first visit (no theme cookie set), apply system color-scheme preference.
     // The server defaults to dark; if the user prefers light we redirect once.

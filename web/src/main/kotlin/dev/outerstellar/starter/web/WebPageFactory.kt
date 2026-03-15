@@ -34,6 +34,13 @@ data class ShellView(
     val profileUrl: String? = null,
     val isDarkMode: Boolean = true,
     val darkModeToggleUrl: String = "?theme=default",
+    val toastErrorLabel: String = "Error",
+    val toastSuccessLabel: String = "Success",
+    val changePasswordLabel: String = "Change password",
+    val signOutLabel: String = "Sign out",
+    val csrfToken: String = "",
+    val notificationsUrl: String? = null,
+    val unreadNotificationCount: Int = 0,
 )
 
 data class HomeFeature(val label: String, val value: String)
@@ -110,6 +117,8 @@ data class AuthFormFragment(
     val includeNameField: Boolean,
     val includeConfirmPasswordField: Boolean,
     val includeRememberField: Boolean,
+    val oauthSeparator: String = "or continue with",
+    val signInWithApple: String = "Sign in with Apple",
 ) : ViewModel
 
 data class AuthResultFragment(val title: String, val message: String, val toneClass: String) :
@@ -138,6 +147,18 @@ data class DevDashboardPage(
     val cacheStats: Map<String, Any>,
     val outboxStats: OutboxStatsViewModel,
     val telemetryStatus: String,
+    val badge: String = "System Diagnostics",
+    val heading: String = "Developer Dashboard",
+    val description: String = "Real-time metrics and system state for local development.",
+    val outboxLabel: String = "Transactional Outbox",
+    val pendingLabel: String = "Pending",
+    val processedLabel: String = "Processed",
+    val failedLabel: String = "Failed",
+    val cacheLabel: String = "Cache Statistics",
+    val protocolLabel: String = "Custom Protocol Tester",
+    val telemetryLabel: String = "OpenTelemetry",
+    val metricsLabel: String = "Application Metrics",
+    val triggerSyncLabel: String = "Trigger Sync",
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/DevDashboard"
 }
@@ -163,6 +184,15 @@ data class ConflictResolveViewModel(
     val serverAuthor: String,
     val serverContent: String,
     val resolveUrl: String,
+    val modalTitle: String = "Sync Conflict Detected",
+    val myVersionLabel: String = "My Version (Local)",
+    val serverVersionLabel: String = "Server Version",
+    val keepMineLabel: String = "Keep My Version",
+    val acceptServerLabel: String = "Accept Server Version",
+    val decideLaterLabel: String = "Decide Later",
+    val description: String =
+        "The server has a newer or different version of this message. Please choose which version to keep.",
+    val authorLabel: String = "Author",
 ) : ViewModel
 
 data class ChangePasswordPage(val form: ChangePasswordForm) : ViewModel {
@@ -189,6 +219,8 @@ data class ResetPasswordPage(
     val confirmPasswordLabel: String,
     val submitLabel: String,
     val submitUrl: String,
+    val newPasswordPlaceholder: String = "At least 8 characters",
+    val confirmPasswordPlaceholder: String = "Repeat your new password",
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/ResetPasswordPage"
 }
@@ -213,6 +245,18 @@ data class UserAdminPage(
     val hasNext: Boolean = false,
     val previousUrl: String = "",
     val nextUrl: String = "",
+    val headerUsername: String = "Username",
+    val headerEmail: String = "Email",
+    val headerRole: String = "Role",
+    val headerEnabled: String = "Enabled",
+    val headerActions: String = "Actions",
+    val actionDisable: String = "Disable",
+    val actionEnable: String = "Enable",
+    val actionDemote: String = "Demote",
+    val actionPromote: String = "Promote",
+    val selfLabel: String = "you",
+    val previousLabel: String = "Previous",
+    val nextLabel: String = "Next",
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/UserAdminPage"
 }
@@ -225,6 +269,13 @@ data class AuditLogPage(
     val hasNext: Boolean = false,
     val previousUrl: String = "",
     val nextUrl: String = "",
+    val headerWhen: String = "When",
+    val headerActor: String = "Actor",
+    val headerAction: String = "Action",
+    val headerTarget: String = "Target",
+    val headerDetail: String = "Detail",
+    val previousLabel: String = "Previous",
+    val nextLabel: String = "Next",
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/AuditLogPage"
 }
@@ -268,11 +319,56 @@ data class ApiKeysPage(
     val createUrl: String,
     val newKey: String? = null,
     val newKeyName: String? = null,
+    val description: String = "Manage your API keys for programmatic access.",
+    val newKeyBanner: String = "Key created. Copy it now - it won't be shown again:",
+    val createLabel: String = "Create API Key",
+    val keyNameLabel: String = "Key Name",
+    val keyNamePlaceholder: String = "My integration",
+    val yourKeysHeading: String = "Your API Keys",
+    val emptyLabel: String = "No API keys yet.",
+    val headerPrefix: String = "Prefix",
+    val headerName: String = "Name",
+    val headerCreated: String = "Created",
+    val headerLastUsed: String = "Last Used",
+    val headerActions: String = "Actions",
+    val neverLabel: String = "Never",
+    val deleteConfirm: String = "Delete this key?",
+    val deleteLabel: String = "Delete",
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/ApiKeysPage"
 }
 
 private const val MIN_PASSWORD_LENGTH = 8
+
+data class NotificationViewModel(
+    val id: String,
+    val title: String,
+    val body: String,
+    val type: String,
+    val read: Boolean,
+    val timeAgo: String,
+    val markReadUrl: String,
+)
+
+data class NotificationsPage(
+    val title: String,
+    val description: String,
+    val notifications: List<NotificationViewModel>,
+    val unreadCount: Int,
+    val markAllReadUrl: String,
+    val emptyLabel: String = "No notifications yet.",
+    val markAllReadLabel: String = "Mark all as read",
+    val markReadLabel: String = "Mark as read",
+    val readLabel: String = "Read",
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/NotificationsPage"
+}
+
+data class NotificationBellFragment(val unreadCount: Int, val notificationsUrl: String) :
+    ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/components/NotificationBell"
+}
+
 private const val DEFAULT_LIMIT = 10
 private const val HTTP_STATUS_NOT_FOUND = 404
 private const val HTTP_STATUS_SERVER_ERROR = 500
@@ -297,6 +393,12 @@ data class ContactsPage(
     val previousUrl: String = "",
     val nextUrl: String = "",
     val totalCount: Long = 0,
+    val createLabel: String = "Create Contact",
+    val editTitle: String = "Edit contact",
+    val deleteTitle: String = "Delete contact",
+    val contactsTotalLabel: String = "contacts total",
+    val previousPageTitle: String = "Previous page",
+    val nextPageTitle: String = "Next page",
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/ContactsPage"
 }
@@ -308,6 +410,7 @@ class WebPageFactory(
     private val contactService: dev.outerstellar.starter.service.ContactService? = null,
     private val securityService: dev.outerstellar.starter.security.SecurityService? = null,
     private val auditRepository: dev.outerstellar.starter.security.AuditRepository? = null,
+    private val notificationService: dev.outerstellar.starter.service.NotificationService? = null,
 ) {
     private val messageListComponent = MessageListComponent(messageService)
 
@@ -318,7 +421,7 @@ class WebPageFactory(
         offset: Int = 0,
     ): Page<ContactsPage> {
         val i18n = ctx.i18n
-        val shell = ctx.shell("Contacts", "/contacts")
+        val shell = ctx.shell(i18n.translate("web.nav.contacts"), "/contacts")
 
         val dbContacts = contactService?.listContacts(query, limit, offset) ?: emptyList()
         val totalCount = contactService?.countContacts(query) ?: 0L
@@ -352,6 +455,12 @@ class WebPageFactory(
                     previousUrl = previousUrl,
                     nextUrl = nextUrl,
                     totalCount = totalCount,
+                    createLabel = i18n.translate("web.contacts.create"),
+                    editTitle = i18n.translate("web.contacts.edit"),
+                    deleteTitle = i18n.translate("web.contacts.delete"),
+                    contactsTotalLabel = i18n.translate("web.contacts.total"),
+                    previousPageTitle = i18n.translate("web.contacts.previous.page"),
+                    nextPageTitle = i18n.translate("web.contacts.next.page"),
                 ),
         )
     }
@@ -465,6 +574,8 @@ class WebPageFactory(
             includeNameField = normalizedMode == "register",
             includeConfirmPasswordField = normalizedMode == "register",
             includeRememberField = normalizedMode == "sign-in",
+            oauthSeparator = i18n.translate("web.auth.oauth.separator"),
+            signInWithApple = i18n.translate("web.auth.signin.apple"),
         )
     }
 
@@ -556,15 +667,15 @@ class WebPageFactory(
 
     fun buildTrashPage(ctx: WebContext): Page<TrashPage> {
         val i18n = ctx.i18n
-        val shell = ctx.shell("Trash", "/messages/trash")
+        val shell = ctx.shell(i18n.translate("web.trash.title"), "/messages/trash")
         val messageList = buildMessageList(ctx, isTrash = true)
 
         return Page(
             shell = shell,
             data =
                 TrashPage(
-                    title = "Trash",
-                    description = "Messages you've deleted.",
+                    title = i18n.translate("web.trash.title"),
+                    description = i18n.translate("web.trash.description"),
                     messageList = messageList,
                 ),
         )
@@ -597,6 +708,18 @@ class WebPageFactory(
                     cacheStats = cacheStats,
                     outboxStats = outboxStats,
                     telemetryStatus = telemetryStatus,
+                    badge = i18n.translate("web.dev.badge"),
+                    heading = i18n.translate("web.dev.heading"),
+                    description = i18n.translate("web.dev.description"),
+                    outboxLabel = i18n.translate("web.dev.outbox"),
+                    pendingLabel = i18n.translate("web.dev.outbox.pending"),
+                    processedLabel = i18n.translate("web.dev.outbox.processed"),
+                    failedLabel = i18n.translate("web.dev.outbox.failed"),
+                    cacheLabel = i18n.translate("web.dev.cache"),
+                    protocolLabel = i18n.translate("web.dev.protocol"),
+                    telemetryLabel = i18n.translate("web.dev.telemetry"),
+                    metricsLabel = i18n.translate("web.dev.metrics"),
+                    triggerSyncLabel = i18n.translate("web.dev.trigger.sync"),
                 ),
         )
     }
@@ -608,6 +731,7 @@ class WebPageFactory(
         val serverVersion =
             org.http4k.format.Jackson.asA(message.syncConflict!!, SyncMessage::class)
 
+        val i18n = ctx.i18n
         return ConflictResolveViewModel(
             syncId = syncId,
             myAuthor = message.author,
@@ -615,6 +739,14 @@ class WebPageFactory(
             serverAuthor = serverVersion.author,
             serverContent = serverVersion.content,
             resolveUrl = ctx.url("/messages/resolve/$syncId"),
+            modalTitle = i18n.translate("web.conflict.title"),
+            myVersionLabel = i18n.translate("web.conflict.my.version"),
+            serverVersionLabel = i18n.translate("web.conflict.server.version"),
+            keepMineLabel = i18n.translate("web.conflict.keep.mine"),
+            acceptServerLabel = i18n.translate("web.conflict.accept.server"),
+            decideLaterLabel = i18n.translate("web.conflict.decide.later"),
+            description = i18n.translate("web.conflict.description"),
+            authorLabel = i18n.translate("web.conflict.author"),
         )
     }
 
@@ -741,6 +873,8 @@ class WebPageFactory(
                     confirmPasswordLabel = i18n.translate("web.reset.confirmPassword"),
                     submitLabel = i18n.translate("web.reset.submit"),
                     submitUrl = ctx.url("/auth/components/reset-confirm"),
+                    newPasswordPlaceholder = i18n.translate("web.auth.placeholder.password"),
+                    confirmPasswordPlaceholder = i18n.translate("web.password.confirm.placeholder"),
                 ),
         )
     }
@@ -783,6 +917,18 @@ class WebPageFactory(
                     hasNext = hasNext,
                     previousUrl = previousUrl,
                     nextUrl = nextUrl,
+                    headerUsername = i18n.translate("web.admin.users.header.username"),
+                    headerEmail = i18n.translate("web.admin.users.header.email"),
+                    headerRole = i18n.translate("web.admin.users.header.role"),
+                    headerEnabled = i18n.translate("web.admin.users.header.enabled"),
+                    headerActions = i18n.translate("web.admin.users.header.actions"),
+                    actionDisable = i18n.translate("web.admin.users.action.disable"),
+                    actionEnable = i18n.translate("web.admin.users.action.enable"),
+                    actionDemote = i18n.translate("web.admin.users.action.demote"),
+                    actionPromote = i18n.translate("web.admin.users.action.promote"),
+                    selfLabel = i18n.translate("web.admin.users.self"),
+                    previousLabel = i18n.translate("web.admin.pagination.previous"),
+                    nextLabel = i18n.translate("web.admin.pagination.next"),
                 ),
         )
     }
@@ -820,6 +966,13 @@ class WebPageFactory(
                     hasNext = hasNext,
                     previousUrl = previousUrl,
                     nextUrl = nextUrl,
+                    headerWhen = i18n.translate("web.admin.audit.header.when"),
+                    headerActor = i18n.translate("web.admin.audit.header.actor"),
+                    headerAction = i18n.translate("web.admin.audit.header.action"),
+                    headerTarget = i18n.translate("web.admin.audit.header.target"),
+                    headerDetail = i18n.translate("web.admin.audit.header.detail"),
+                    previousLabel = i18n.translate("web.admin.pagination.previous"),
+                    nextLabel = i18n.translate("web.admin.pagination.next"),
                 ),
         )
     }
@@ -843,6 +996,21 @@ class WebPageFactory(
                     createUrl = ctx.url("/auth/api-keys/create"),
                     newKey = newKey,
                     newKeyName = newKeyName,
+                    description = i18n.translate("web.apikeys.description"),
+                    newKeyBanner = i18n.translate("web.apikeys.created"),
+                    createLabel = i18n.translate("web.apikeys.create"),
+                    keyNameLabel = i18n.translate("web.apikeys.name"),
+                    keyNamePlaceholder = i18n.translate("web.apikeys.name.placeholder"),
+                    yourKeysHeading = i18n.translate("web.apikeys.your.keys"),
+                    emptyLabel = i18n.translate("web.apikeys.empty"),
+                    headerPrefix = i18n.translate("web.apikeys.table.prefix"),
+                    headerName = i18n.translate("web.apikeys.table.name"),
+                    headerCreated = i18n.translate("web.apikeys.table.created"),
+                    headerLastUsed = i18n.translate("web.apikeys.table.last.used"),
+                    headerActions = i18n.translate("web.apikeys.table.actions"),
+                    neverLabel = i18n.translate("web.apikeys.table.never"),
+                    deleteConfirm = i18n.translate("web.apikeys.delete.confirm"),
+                    deleteLabel = i18n.translate("web.apikeys.delete"),
                 ),
         )
     }
@@ -866,5 +1034,62 @@ class WebPageFactory(
                     submitLabel = i18n.translate("web.profile.submit"),
                 ),
         )
+    }
+
+    fun buildNotificationsPage(ctx: WebContext): Page<NotificationsPage> {
+        val i18n = ctx.i18n
+        val user = ctx.user!!
+        val unreadCount = notificationService?.countUnread(user.id) ?: 0
+        val shell =
+            ctx.shell(i18n.translate("web.notifications.title"), "/notifications")
+                .copy(
+                    notificationsUrl = ctx.url("/notifications"),
+                    unreadNotificationCount = unreadCount,
+                )
+        val notifications = notificationService?.listForUser(user.id) ?: emptyList()
+        return Page(
+            shell = shell,
+            data =
+                NotificationsPage(
+                    title = i18n.translate("web.notifications.title"),
+                    description = i18n.translate("web.notifications.description"),
+                    notifications =
+                        notifications.map { n ->
+                            NotificationViewModel(
+                                id = n.id.toString(),
+                                title = n.title,
+                                body = n.body,
+                                type = n.type,
+                                read = n.isRead,
+                                timeAgo = formatTimeAgo(n.createdAt),
+                                markReadUrl = ctx.url("/notifications/${n.id}/read"),
+                            )
+                        },
+                    unreadCount = unreadCount,
+                    markAllReadUrl = ctx.url("/notifications/read-all"),
+                    emptyLabel = i18n.translate("web.notifications.empty"),
+                    markAllReadLabel = i18n.translate("web.notifications.mark.all.read"),
+                    markReadLabel = i18n.translate("web.notifications.mark.read"),
+                    readLabel = i18n.translate("web.notifications.read"),
+                ),
+        )
+    }
+
+    fun buildNotificationBell(ctx: WebContext): NotificationBellFragment {
+        val unreadCount = ctx.user?.id?.let { notificationService?.countUnread(it) } ?: 0
+        return NotificationBellFragment(
+            unreadCount = unreadCount,
+            notificationsUrl = ctx.url("/notifications"),
+        )
+    }
+
+    private fun formatTimeAgo(instant: java.time.Instant): String {
+        val seconds = java.time.Duration.between(instant, java.time.Instant.now()).seconds
+        return when {
+            seconds < 60 -> "just now"
+            seconds < 3600 -> "${seconds / 60}m ago"
+            seconds < 86400 -> "${seconds / 3600}h ago"
+            else -> "${seconds / 86400}d ago"
+        }
     }
 }

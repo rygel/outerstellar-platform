@@ -33,7 +33,13 @@ class TokenBucket(private val maxRequests: Int, private val windowMs: Long) {
 fun rateLimitFilter(
     maxRequests: Int = DEFAULT_MAX_REQUESTS,
     windowMs: Long = DEFAULT_WINDOW_MS,
-    pathPrefixes: List<String> = listOf("/api/v1/auth/login", "/api/v1/auth/register"),
+    pathPrefixes: List<String> =
+        listOf(
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            // HTML form auth actions (sign-in, register, recover) all POST to the same path
+            "/auth/components/result",
+        ),
 ): Filter {
     val buckets = ConcurrentHashMap<String, TokenBucket>()
 

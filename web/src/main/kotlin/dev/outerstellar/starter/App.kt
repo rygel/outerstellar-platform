@@ -1,5 +1,7 @@
 package dev.outerstellar.starter
 
+import dev.outerstellar.starter.analytics.AnalyticsService
+import dev.outerstellar.starter.analytics.NoOpAnalyticsService
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.security.AppleOAuthProvider
@@ -17,6 +19,8 @@ import dev.outerstellar.starter.web.DeviceRegistrationApi
 import dev.outerstellar.starter.web.ErrorRoutes
 import dev.outerstellar.starter.web.Filters
 import dev.outerstellar.starter.web.HomeRoutes
+import dev.outerstellar.starter.web.NotificationApi
+import dev.outerstellar.starter.web.NotificationRoutes
 import dev.outerstellar.starter.web.OAuthRoutes
 import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.SyncWebSocket
@@ -69,6 +73,8 @@ fun app(
     securityService: SecurityService,
     userRepository: UserRepository,
     deviceTokenRepository: dev.outerstellar.starter.security.DeviceTokenRepository? = null,
+    analytics: AnalyticsService = NoOpAnalyticsService(),
+    notificationService: dev.outerstellar.starter.service.NotificationService? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
 
@@ -125,7 +131,14 @@ fun app(
         routes += HomeRoutes(messageService, pageFactory, jteRenderer).routes
         routes += ContactsRoutes(pageFactory, jteRenderer).routes
         routes +=
-            AuthRoutes(pageFactory, jteRenderer, securityService, config.sessionCookieSecure).routes
+            AuthRoutes(
+                    pageFactory,
+                    jteRenderer,
+                    securityService,
+                    config.sessionCookieSecure,
+                    analytics,
+                )
+                .routes
         routes +=
             OAuthRoutes(
                     providers = mapOf("apple" to AppleOAuthProvider()),
@@ -134,6 +147,9 @@ fun app(
                 )
                 .routes
         routes += ErrorRoutes(pageFactory, jteRenderer).routes
+        if (notificationService != null) {
+            routes += NotificationRoutes(pageFactory, jteRenderer, notificationService).routes
+        }
 
         // Global Logout
         routes +=
@@ -187,10 +203,13 @@ fun app(
         renderer = OpenApi3(ApiInfo("Sync", "v1.0"), Jackson)
         descriptionPath = "/api/v1/sync/openapi.json"
         security = bearerSecurity
-        routes += SyncApi(messageService, contactService).routes
+        routes += SyncApi(messageService, contactService, analytics).routes
         routes += AuthApi(securityService).bearerRoutes
         if (deviceTokenRepository != null) {
             routes += DeviceRegistrationApi(deviceTokenRepository).routes
+        }
+        if (notificationService != null) {
+            routes += NotificationApi(notificationService).routes
         }
     }
 
@@ -257,8 +276,10 @@ fun app(
             .then(Filters.securityHeaders)
             .then(Filters.telemetry)
             .then(rateLimitFilter())
+            .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
             .then(Filters.devAutoLogin(config.devMode, userRepository))
             .then(Filters.stateFilter(config.devDashboardEnabled, userRepository))
+            .then(Filters.analyticsPageView(analytics))
             .then(
                 Filters.sessionTimeout(
                     config.sessionTimeoutMinutes,

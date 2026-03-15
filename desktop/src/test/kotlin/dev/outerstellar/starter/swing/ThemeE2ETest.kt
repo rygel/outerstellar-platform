@@ -7,7 +7,6 @@ import javax.swing.JPanel
 import javax.swing.JTextField
 import javax.swing.UIManager
 import org.assertj.swing.edt.GuiActionRunner
-import org.assertj.swing.edt.GuiQuery
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Test
@@ -151,9 +150,10 @@ class ThemeE2ETest {
 
         // Robot must be created BEFORE the frame so the robot's AWT hierarchy tracks it.
         val robot = org.assertj.swing.core.BasicRobot.robotWithNewAwtHierarchy()
-        val syncWindow = GuiActionRunner.execute<SyncWindow> {
-            SyncWindow(viewModel, themeManager, i18nService).also { it.configureForTest() }
-        }!!
+        val syncWindow =
+            GuiActionRunner.execute<SyncWindow> {
+                SyncWindow(viewModel, themeManager, i18nService).also { it.configureForTest() }
+            }!!
         val w = org.assertj.swing.fixture.FrameFixture(robot, syncWindow.frame)
 
         try {

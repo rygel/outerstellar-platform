@@ -1,6 +1,8 @@
 package dev.outerstellar.starter.swing.viewmodel
 
 import com.outerstellar.i18n.I18nService
+import dev.outerstellar.starter.analytics.AnalyticsService
+import dev.outerstellar.starter.analytics.NoOpAnalyticsService
 import dev.outerstellar.starter.model.ConflictStrategy
 import dev.outerstellar.starter.model.ContactNotFoundException
 import dev.outerstellar.starter.model.ContactSummary
@@ -11,6 +13,7 @@ import dev.outerstellar.starter.model.SyncException
 import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.service.ContactService
 import dev.outerstellar.starter.service.MessageService
+import dev.outerstellar.starter.swing.ConnectivityChecker
 import dev.outerstellar.starter.swing.SystemTrayNotifier
 import dev.outerstellar.starter.sync.SyncService
 import dev.outerstellar.starter.web.UserSummary
@@ -27,9 +30,14 @@ class SyncViewModel(
     private val syncService: SyncService,
     private var i18nService: I18nService,
     private val notifier: SystemTrayNotifier? = null,
+    private val analytics: AnalyticsService = NoOpAnalyticsService(),
+    val connectivityChecker: ConnectivityChecker? = null,
 ) {
     private val observers = CopyOnWriteArrayList<() -> Unit>()
     private var autoSyncExecutor: ScheduledExecutorService? = null
+
+    var isOnline: Boolean = connectivityChecker?.isOnline ?: true
+        private set
 
     var messages: List<MessageSummary> = emptyList()
         private set
@@ -55,6 +63,12 @@ class SyncViewModel(
     var adminUsers: List<UserSummary> = emptyList()
         private set
 
+    var notifications: List<dev.outerstellar.starter.web.NotificationSummary> = emptyList()
+        private set
+
+    val unreadNotificationCount: Int
+        get() = notifications.count { !it.read }
+
     var author: String = i18nService.translate("swing.author.default")
     var content: String = ""
     var searchQuery: String = ""
@@ -62,6 +76,13 @@ class SyncViewModel(
             field = value
             loadMessages()
         }
+
+    init {
+        connectivityChecker?.addObserver { online ->
+            isOnline = online
+            notifyObservers()
+        }
+    }
 
     fun addObserver(observer: () -> Unit) {
         observers.add(observer)
@@ -167,6 +188,11 @@ class SyncViewModel(
                         userName = result.username
                         userRole = result.role
                         isLoggedIn = true
+                        analytics.identify(
+                            userName,
+                            mapOf("role" to (userRole ?: "user"), "platform" to "desktop"),
+                        )
+                        analytics.track(userName, "User Logged In", mapOf("platform" to "desktop"))
                         true to null
                     } catch (e: SyncException) {
                         false to e.message
@@ -256,6 +282,11 @@ class SyncViewModel(
 
     fun sync(isAuto: Boolean = false) {
         if (isSyncing) return
+        if (!isOnline) {
+            status = i18nService.translate("swing.status.offline")
+            notifyObservers()
+            return
+        }
 
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
@@ -274,6 +305,16 @@ class SyncViewModel(
                                 stats.pulledCount,
                                 stats.conflictCount,
                             )
+                        analytics.track(
+                            userName,
+                            "Sync Completed",
+                            mapOf(
+                                "pushed" to stats.pushedCount,
+                                "pulled" to stats.pulledCount,
+                                "conflicts" to stats.conflictCount,
+                                "platform" to "desktop",
+                            ),
+                        )
                         if (!isAuto) {
                             notifier?.notifySuccess(status)
                         }
@@ -385,12 +426,115 @@ class SyncViewModel(
             .execute()
     }
 
+    fun loadNotifications() {
+        object : SwingWorker<Unit, Unit>() {
+                override fun doInBackground() {
+                    try {
+                        notifications = syncService.listNotifications()
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        // non-critical: silently ignore
+                    }
+                }
+
+                override fun done() {
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    fun markNotificationRead(notificationId: String) {
+        object : SwingWorker<Unit, Unit>() {
+                override fun doInBackground() {
+                    try {
+                        syncService.markNotificationRead(notificationId)
+                        notifications = syncService.listNotifications()
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        status = e.message ?: "Failed to mark notification as read"
+                    }
+                }
+
+                override fun done() {
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    fun markAllNotificationsRead() {
+        object : SwingWorker<Unit, Unit>() {
+                override fun doInBackground() {
+                    try {
+                        syncService.markAllNotificationsRead()
+                        notifications = syncService.listNotifications()
+                    } catch (e: SessionExpiredException) {
+                        handleSessionExpired()
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        status = e.message ?: "Failed to mark all notifications as read"
+                    }
+                }
+
+                override fun done() {
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
     private fun handleSessionExpired() {
         isLoggedIn = false
         userRole = null
         userName = ""
         stopAutoSync()
         status = i18nService.translate("swing.session.expired")
+    }
+
+    fun requestPasswordReset(email: String, onResult: (Boolean, String?) -> Unit) {
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+                override fun doInBackground(): Pair<Boolean, String?> {
+                    return try {
+                        syncService.requestPasswordReset(email)
+                        true to null
+                    } catch (e: SyncException) {
+                        false to e.message
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        false to (e.message ?: "Unknown error")
+                    }
+                }
+
+                override fun done() {
+                    val (success, error) = get()
+                    onResult(success, error)
+                    notifyObservers()
+                }
+            }
+            .execute()
+    }
+
+    fun resetPassword(token: String, newPassword: String, onResult: (Boolean, String?) -> Unit) {
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+                override fun doInBackground(): Pair<Boolean, String?> {
+                    return try {
+                        syncService.resetPassword(token, newPassword)
+                        true to null
+                    } catch (e: SyncException) {
+                        false to e.message
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        false to (e.message ?: "Unknown error")
+                    }
+                }
+
+                override fun done() {
+                    val (success, error) = get()
+                    onResult(success, error)
+                    notifyObservers()
+                }
+            }
+            .execute()
     }
 
     fun resolveConflict(syncId: String, strategy: ConflictStrategy) {
