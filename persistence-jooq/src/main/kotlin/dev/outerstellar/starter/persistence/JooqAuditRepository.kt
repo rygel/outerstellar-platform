@@ -32,19 +32,33 @@ class JooqAuditRepository(private val dsl: DSLContext) : AuditRepository {
     }
 
     override fun findRecent(limit: Int): List<AuditEntry> {
-        return dsl.select().from(table).orderBy(createdAtField.desc()).limit(limit).fetch().map {
-            record ->
-            AuditEntry(
-                id = record.get(idField) ?: 0,
-                actorId = record.get(actorIdField)?.toString(),
-                actorUsername = record.get(actorUsernameField),
-                targetId = record.get(targetIdField)?.toString(),
-                targetUsername = record.get(targetUsernameField),
-                action = record.get(actionField) ?: "",
-                detail = record.get(detailField),
-                createdAt =
-                    record.get(createdAtField)?.toInstant(ZoneOffset.UTC) ?: java.time.Instant.now(),
+        return dsl.select(
+                idField,
+                actorIdField,
+                actorUsernameField,
+                targetIdField,
+                targetUsernameField,
+                actionField,
+                detailField,
+                createdAtField,
             )
-        }
+            .from(table)
+            .orderBy(createdAtField.desc())
+            .limit(limit)
+            .fetch()
+            .map { record ->
+                AuditEntry(
+                    id = record.get(idField) ?: 0,
+                    actorId = record.get(actorIdField)?.toString(),
+                    actorUsername = record.get(actorUsernameField),
+                    targetId = record.get(targetIdField)?.toString(),
+                    targetUsername = record.get(targetUsernameField),
+                    action = record.get(actionField) ?: "",
+                    detail = record.get(detailField),
+                    createdAt =
+                        record.get(createdAtField)?.toInstant(ZoneOffset.UTC)
+                            ?: java.time.Instant.now(),
+                )
+            }
     }
 }
