@@ -136,4 +136,61 @@ class JdbiUserRepositoryTest : H2JdbiTest() {
         assertEquals(1, admins.size)
         assertEquals("hash1", admins[0].passwordHash)
     }
+
+    @Test
+    fun `deleteById removes user`() {
+        val u = user("henry")
+        repo.save(u)
+        assertNotNull(repo.findById(u.id))
+        repo.deleteById(u.id)
+        assertNull(repo.findById(u.id))
+    }
+
+    @Test
+    fun `deleteById on unknown id is a no-op`() {
+        repo.deleteById(UUID.randomUUID()) // should not throw
+    }
+
+    @Test
+    fun `updateUsername changes the username`() {
+        val u = user("ivan")
+        repo.save(u)
+        repo.updateUsername(u.id, "ivan_updated")
+        val found = repo.findById(u.id)!!
+        assertEquals("ivan_updated", found.username)
+        assertNotNull(repo.findByUsername("ivan_updated"))
+        assertNull(repo.findByUsername("ivan"))
+    }
+
+    @Test
+    fun `updateAvatarUrl sets and clears avatar`() {
+        val u = user("julia")
+        repo.save(u)
+
+        repo.updateAvatarUrl(u.id, "https://example.com/avatar.png")
+        assertEquals("https://example.com/avatar.png", repo.findById(u.id)!!.avatarUrl)
+
+        repo.updateAvatarUrl(u.id, null)
+        assertNull(repo.findById(u.id)!!.avatarUrl)
+    }
+
+    @Test
+    fun `updateNotificationPreferences persists email and push flags`() {
+        val u = user("karen")
+        repo.save(u)
+
+        // defaults should be true
+        assertTrue(repo.findById(u.id)!!.emailNotificationsEnabled)
+        assertTrue(repo.findById(u.id)!!.pushNotificationsEnabled)
+
+        repo.updateNotificationPreferences(u.id, emailEnabled = false, pushEnabled = false)
+        val updated = repo.findById(u.id)!!
+        assertFalse(updated.emailNotificationsEnabled)
+        assertFalse(updated.pushNotificationsEnabled)
+
+        repo.updateNotificationPreferences(u.id, emailEnabled = true, pushEnabled = false)
+        val partial = repo.findById(u.id)!!
+        assertTrue(partial.emailNotificationsEnabled)
+        assertFalse(partial.pushNotificationsEnabled)
+    }
 }

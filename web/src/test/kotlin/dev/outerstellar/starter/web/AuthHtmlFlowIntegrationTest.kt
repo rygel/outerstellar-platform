@@ -17,6 +17,8 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -458,6 +460,182 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
             )
 
         assertEquals(Status.UNAUTHORIZED, response.status)
+    }
+
+    @Test
+    fun `POST auth-components-profile-update persists username change`() {
+        val response =
+            app(
+                Request(POST, "/auth/components/profile-update")
+                    .cookie(sessionCookie())
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(formBody("email" to testUser.email, "username" to "updated_username"))
+            )
+
+        assertEquals(Status.OK, response.status)
+        val saved = userRepository.findById(testUser.id)
+        assertEquals("updated_username", saved?.username)
+    }
+
+    @Test
+    fun `POST auth-components-profile-update returns error when username is already taken`() {
+        val other =
+            dev.outerstellar.starter.security.User(
+                id = java.util.UUID.randomUUID(),
+                username = "taken_user",
+                email = "taken@test.com",
+                passwordHash = encoder.encode("password123"),
+                role = dev.outerstellar.starter.security.UserRole.USER,
+            )
+        userRepository.save(other)
+
+        val response =
+            app(
+                Request(POST, "/auth/components/profile-update")
+                    .cookie(sessionCookie())
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(formBody("email" to testUser.email, "username" to "taken_user"))
+            )
+
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+        assertTrue(
+            body.contains("already") || body.contains("taken") || body.contains("exist"),
+            "Taken username should return error, got: ${body.take(200)}",
+        )
+        // original username must be unchanged
+        assertEquals("htmltestuser", userRepository.findById(testUser.id)?.username)
+    }
+
+    @Test
+    fun `POST auth-components-profile-update persists avatar URL`() {
+        val response =
+            app(
+                Request(POST, "/auth/components/profile-update")
+                    .cookie(sessionCookie())
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(
+                        formBody(
+                            "email" to testUser.email,
+                            "avatarUrl" to "https://example.com/avatar.png",
+                        )
+                    )
+            )
+
+        assertEquals(Status.OK, response.status)
+        assertEquals(
+            "https://example.com/avatar.png",
+            userRepository.findById(testUser.id)?.avatarUrl,
+        )
+    }
+
+    // ---- Notification preferences ----
+
+    @Test
+    fun `POST auth-notification-preferences persists flags`() {
+        val response =
+            app(
+                Request(POST, "/auth/notification-preferences")
+                    .cookie(sessionCookie())
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(formBody()) // no checkboxes → both false
+            )
+
+        assertEquals(Status.OK, response.status)
+        val saved = userRepository.findById(testUser.id)!!
+        assertFalse(saved.emailNotificationsEnabled)
+        assertFalse(saved.pushNotificationsEnabled)
+    }
+
+    @Test
+    fun `POST auth-notification-preferences with checkboxes on persists true`() {
+        val response =
+            app(
+                Request(POST, "/auth/notification-preferences")
+                    .cookie(sessionCookie())
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(formBody("emailNotifications" to "on", "pushNotifications" to "on"))
+            )
+
+        assertEquals(Status.OK, response.status)
+        val saved = userRepository.findById(testUser.id)!!
+        assertTrue(saved.emailNotificationsEnabled)
+        assertTrue(saved.pushNotificationsEnabled)
+    }
+
+    @Test
+    fun `POST auth-notification-preferences without session returns 401`() {
+        val response =
+            app(
+                Request(POST, "/auth/notification-preferences")
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(formBody("emailNotifications" to "on"))
+            )
+
+        assertEquals(Status.UNAUTHORIZED, response.status)
+    }
+
+    // ---- Delete account ----
+
+    @Test
+    fun `POST auth-account-delete removes account and redirects`() {
+        val response =
+            app(
+                Request(POST, "/auth/account/delete")
+                    .cookie(sessionCookie())
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(formBody())
+            )
+
+        assertEquals(Status.FOUND, response.status)
+        val location = response.header("location").orEmpty()
+        assertTrue(
+            location.contains("deleted=true"),
+            "Delete should redirect with deleted=true, got: $location",
+        )
+        // user must be gone
+        assertNull(userRepository.findById(testUser.id))
+    }
+
+    @Test
+    fun `POST auth-account-delete without session returns 401`() {
+        val response =
+            app(
+                Request(POST, "/auth/account/delete")
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(formBody())
+            )
+
+        assertEquals(Status.UNAUTHORIZED, response.status)
+    }
+
+    @Test
+    fun `POST auth-account-delete blocks last admin from deleting themselves`() {
+        val adminUser =
+            dev.outerstellar.starter.security.User(
+                id = java.util.UUID.randomUUID(),
+                username = "only_admin",
+                email = "admin@test.com",
+                passwordHash = encoder.encode("admin123"),
+                role = dev.outerstellar.starter.security.UserRole.ADMIN,
+            )
+        userRepository.save(adminUser)
+        val adminCookie = Cookie(WebContext.SESSION_COOKIE, adminUser.id.toString())
+
+        val response =
+            app(
+                Request(POST, "/auth/account/delete")
+                    .cookie(adminCookie)
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body(formBody())
+            )
+
+        // should return an error fragment, not a redirect
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+        assertTrue(body.isNotBlank(), "Last-admin delete error should return content")
+        // admin must still exist
+        assertNotNull(userRepository.findById(adminUser.id))
     }
 
     // ---- API keys page ----

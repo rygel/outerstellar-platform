@@ -306,4 +306,134 @@ class SecurityServiceTest {
 
         assertNull(result)
     }
+
+    // ---- updateProfile ----
+
+    @Test
+    fun `updateProfile updates email`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { userRepository.findByEmail("new@test.com") } returns null
+
+        service.updateProfile(testUser.id, "new@test.com")
+
+        val saved = slot<User>()
+        verify { userRepository.save(capture(saved)) }
+        assertEquals("new@test.com", saved.captured.email)
+    }
+
+    @Test
+    fun `updateProfile updates username when different`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { userRepository.findByEmail(testUser.email) } returns null
+        every { userRepository.findByUsername("newname") } returns null
+
+        service.updateProfile(testUser.id, testUser.email, newUsername = "newname")
+
+        verify { userRepository.updateUsername(testUser.id, "newname") }
+    }
+
+    @Test
+    fun `updateProfile throws when new username is already taken`() {
+        val other = testUser.copy(id = UUID.randomUUID(), username = "taken")
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { userRepository.findByEmail(testUser.email) } returns null
+        every { userRepository.findByUsername("taken") } returns other
+
+        assertThrows<UsernameAlreadyExistsException> {
+            service.updateProfile(testUser.id, testUser.email, newUsername = "taken")
+        }
+    }
+
+    @Test
+    fun `updateProfile skips username update when same as current`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { userRepository.findByEmail(testUser.email) } returns null
+
+        service.updateProfile(testUser.id, testUser.email, newUsername = testUser.username)
+
+        verify(exactly = 0) { userRepository.updateUsername(any(), any()) }
+    }
+
+    @Test
+    fun `updateProfile updates avatar URL when changed`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { userRepository.findByEmail(testUser.email) } returns null
+
+        service.updateProfile(
+            testUser.id,
+            testUser.email,
+            newAvatarUrl = "https://example.com/avatar.png",
+        )
+
+        verify { userRepository.updateAvatarUrl(testUser.id, "https://example.com/avatar.png") }
+    }
+
+    @Test
+    fun `updateProfile clears avatar URL when blank`() {
+        val userWithAvatar = testUser.copy(avatarUrl = "https://old.example.com/avatar.png")
+        every { userRepository.findById(testUser.id) } returns userWithAvatar
+        every { userRepository.findByEmail(testUser.email) } returns null
+
+        service.updateProfile(testUser.id, testUser.email, newAvatarUrl = "")
+
+        verify { userRepository.updateAvatarUrl(testUser.id, null) }
+    }
+
+    // ---- deleteAccount ----
+
+    @Test
+    fun `deleteAccount removes the user`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { userRepository.findAll() } returns listOf(testUser, adminUser)
+
+        service.deleteAccount(testUser.id)
+
+        verify { userRepository.deleteById(testUser.id) }
+    }
+
+    @Test
+    fun `deleteAccount blocks deleting the only admin`() {
+        every { userRepository.findById(adminUser.id) } returns adminUser
+        every { userRepository.findAll() } returns listOf(adminUser)
+
+        assertThrows<dev.outerstellar.starter.model.InsufficientPermissionException> {
+            service.deleteAccount(adminUser.id)
+        }
+        verify(exactly = 0) { userRepository.deleteById(any()) }
+    }
+
+    @Test
+    fun `deleteAccount allows admin deletion when another admin exists`() {
+        val secondAdmin = adminUser.copy(id = UUID.randomUUID(), username = "admin2")
+        every { userRepository.findById(adminUser.id) } returns adminUser
+        every { userRepository.findAll() } returns listOf(adminUser, secondAdmin)
+
+        service.deleteAccount(adminUser.id)
+
+        verify { userRepository.deleteById(adminUser.id) }
+    }
+
+    // ---- updateNotificationPreferences ----
+
+    @Test
+    fun `updateNotificationPreferences persists both flags`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+
+        service.updateNotificationPreferences(testUser.id, emailEnabled = false, pushEnabled = true)
+
+        verify { userRepository.updateNotificationPreferences(testUser.id, false, true) }
+    }
+
+    @Test
+    fun `updateNotificationPreferences disables all notifications`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+
+        service.updateNotificationPreferences(
+            testUser.id,
+            emailEnabled = false,
+            pushEnabled = false,
+        )
+
+        verify { userRepository.updateNotificationPreferences(testUser.id, false, false) }
+    }
 }
