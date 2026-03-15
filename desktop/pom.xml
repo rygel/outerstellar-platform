@@ -59,6 +59,14 @@
             <artifactId>koin-core-jvm</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.sksamuel.hoplite</groupId>
+            <artifactId>hoplite-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sksamuel.hoplite</groupId>
+            <artifactId>hoplite-yaml</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.insert-koin</groupId>
             <artifactId>koin-test-junit5</artifactId>
             <version>${koin.version}</version>
