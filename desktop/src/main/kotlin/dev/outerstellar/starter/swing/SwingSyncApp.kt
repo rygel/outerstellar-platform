@@ -298,9 +298,9 @@ class SyncWindow(
         }
 
     private val statusLabel =
-        JLabel("Statusbar Test").apply {
+        JLabel(i18nService.translate("swing.status.ready")).apply {
             name = "statusLabel"
-            toolTipText = "Statusbar Test"
+            toolTipText = i18nService.translate("swing.status.ready")
         }
     private val offlineBadge =
         JLabel().apply {
@@ -394,7 +394,7 @@ class SyncWindow(
     private lateinit var sidebarPanel: JPanel
 
     private val navMessagesBtn =
-        JButton("Messages").apply {
+        JButton(i18nService.translate("swing.nav.messages")).apply {
             name = "navMessagesBtn"
             icon = RemixIcon.get("communication/chat-3-line", 32)
             font = font.deriveFont(16f)
@@ -414,7 +414,7 @@ class SyncWindow(
         }
 
     private val navUsersBtn =
-        JButton("Users").apply {
+        JButton(i18nService.translate("swing.admin.users.nav")).apply {
             name = "navUsersBtn"
             icon = RemixIcon.get("user/group-line", 32)
             font = font.deriveFont(16f)
@@ -425,7 +425,7 @@ class SyncWindow(
         }
 
     private val navNotificationsBtn =
-        JButton("Alerts").apply {
+        JButton(i18nService.translate("swing.notifications.nav")).apply {
             name = "navNotificationsBtn"
             icon = RemixIcon.get("system/notification-3-line", 32)
             font = font.deriveFont(16f)
@@ -883,8 +883,10 @@ class SyncWindow(
         viewModel.addObserver {
             javax.swing.SwingUtilities.invokeLater {
                 val unread = viewModel.unreadNotificationCount
-                val label = if (unread > 0) "Alerts ($unread)" else "Alerts"
-                navNotificationsBtn.text = label
+                navNotificationsBtn.text =
+                    if (unread > 0)
+                        i18nService.translate("swing.notifications.nav.unread", unread.toString())
+                    else i18nService.translate("swing.notifications.nav")
                 navNotificationsBtn.isEnabled = viewModel.isLoggedIn
 
                 notifListModel.clear()
@@ -1826,9 +1828,10 @@ class SyncWindow(
         searchLabel.text = i18nService.translate("swing.label.search")
         authorLabel.text = i18nService.translate("swing.label.author")
         changePasswordItem.text = i18nService.translate("swing.password.change")
-        navMessagesBtn.text = i18nService.translate("swing.menu.file")
+        navMessagesBtn.text = i18nService.translate("swing.nav.messages")
         navContactsBtn.text = i18nService.translate("swing.contact.nav")
         navUsersBtn.text = i18nService.translate("swing.admin.users.nav")
+        navNotificationsBtn.text = i18nService.translate("swing.notifications.nav")
         navProfileBtn.text = i18nService.translate("swing.profile.nav")
         contactsModel.setColumnIdentifiers(
             arrayOf(
@@ -1854,7 +1857,7 @@ class SyncWindow(
         statusHintLabel.text = ""
         statusMetaLabel.text = i18nService.translate("swing.statusbar.version", appVersion)
         if (statusLabel.text.isBlank()) {
-            statusLabel.text = "Statusbar Test"
+            statusLabel.text = i18nService.translate("swing.status.ready")
             statusLabel.toolTipText = statusLabel.text
         }
     }
