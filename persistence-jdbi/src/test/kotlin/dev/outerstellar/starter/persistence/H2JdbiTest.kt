@@ -32,6 +32,7 @@ abstract class H2JdbiTest {
             handle.execute("DELETE FROM contact_socials")
             handle.execute("DELETE FROM contacts")
             handle.execute("DELETE FROM messages")
+            handle.execute("DELETE FROM sync_state")
             handle.execute("DELETE FROM users")
         }
     }
