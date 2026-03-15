@@ -19,7 +19,11 @@ class ContactsRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    renderer.render(pageFactory.buildContactsPage(request.webContext))
+                    val ctx = request.webContext
+                    val query = request.query("q")
+                    val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, 50) ?: 12
+                    val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+                    renderer.render(pageFactory.buildContactsPage(ctx, query, limit, offset))
                 }
         )
 }

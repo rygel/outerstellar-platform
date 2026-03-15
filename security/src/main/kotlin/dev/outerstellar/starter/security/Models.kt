@@ -52,6 +52,28 @@ interface PasswordResetRepository {
     fun markUsed(token: String)
 }
 
+data class DeviceToken(
+    val id: Long,
+    val userId: UUID,
+    val platform: String,
+    val token: String,
+    val appBundle: String?,
+)
+
+interface DeviceTokenRepository {
+    /** Register or update a device token. Upserts by token value. */
+    fun upsert(deviceToken: DeviceToken)
+
+    /** Remove a specific device token (e.g. when user logs out on that device). */
+    fun delete(token: String)
+
+    /** Find all active tokens for a user (for sending push notifications). */
+    fun findByUserId(userId: UUID): List<DeviceToken>
+
+    /** Remove all tokens for a user (e.g. account deletion). */
+    fun deleteAllForUser(userId: UUID)
+}
+
 interface ApiKeyRepository {
     fun save(apiKey: dev.outerstellar.starter.model.ApiKey)
 

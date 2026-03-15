@@ -127,6 +127,17 @@
                 <span class="topbar-label">${shell.pageTitle}</span>
                 <strong>${shell.appTagline}</strong>
             </div>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
+                <a href="${shell.darkModeToggleUrl}"
+                   class="button-icon"
+                   title="Toggle dark/light mode"
+                   style="text-decoration: none; font-size: 1.1rem;">
+                    @if(shell.isDarkMode)
+                        <i class="ri-sun-line"></i>
+                    @else
+                        <i class="ri-moon-line"></i>
+                    @endif
+                </a>
             @if(shell.isLoggedIn)
                 <div class="topbar-user">
                     <div class="user-info">
@@ -150,6 +161,7 @@
                     </div>
                 </div>
             @endif
+            </div>
         </header>
         <main class="content">
             <div id="ws-updates" ws-subscribe></div>
@@ -166,5 +178,22 @@
         </footer>
     </div>
 </div>
+<script>
+    // On first visit (no theme cookie set), apply system color-scheme preference.
+    // The server defaults to dark; if the user prefers light we redirect once.
+    (function() {
+        var hasCookie = document.cookie.split(';').some(function(c) {
+            return c.trim().startsWith('app_theme=');
+        });
+        if (!hasCookie && window.matchMedia) {
+            var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+            if (prefersLight) {
+                var expires = new Date(Date.now() + 365 * 86400 * 1000).toUTCString();
+                document.cookie = 'app_theme=default;path=/;expires=' + expires;
+                window.location.reload();
+            }
+        }
+    })();
+</script>
 </body>
 </html>

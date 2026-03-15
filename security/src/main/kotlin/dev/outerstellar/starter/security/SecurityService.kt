@@ -21,6 +21,7 @@ class SecurityService(
     private val resetRepository: PasswordResetRepository? = null,
     private val apiKeyRepository: ApiKeyRepository? = null,
     private val emailService: dev.outerstellar.starter.service.EmailService? = null,
+    private val oauthRepository: OAuthRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
 
@@ -219,6 +220,57 @@ class SecurityService(
     fun deleteApiKey(userId: UUID, keyId: Long) {
         apiKeyRepository?.delete(keyId, userId)
         logger.info("API key {} deleted for user {}", keyId, userId)
+    }
+
+    /**
+     * Find an existing user linked to an OAuth provider identity, or create a new one.
+     *
+     * If [oauthRepository] is not configured this throws [IllegalStateException].
+     */
+    fun findOrCreateOAuthUser(providerName: String, oauthSubject: String, email: String?): User {
+        val repo = oauthRepository ?: error("OAuthRepository is not configured")
+
+        val existing = repo.findByProviderSubject(providerName, oauthSubject)
+        if (existing != null) {
+            return userRepository.findById(existing.userId)
+                ?: error("OAuth user record found but linked user missing: ${existing.userId}")
+        }
+
+        // Derive a username from the email or generate a random one
+        val baseUsername =
+            email?.substringBefore('@')?.filter { it.isLetterOrDigit() }?.take(30)
+                ?: providerName + "_" + UUID.randomUUID().toString().take(8)
+        val username = ensureUniqueUsername(baseUsername)
+
+        val user =
+            User(
+                id = UUID.randomUUID(),
+                username = username,
+                email = email ?: "$username@$providerName.oauth",
+                passwordHash = passwordEncoder.encode(UUID.randomUUID().toString()),
+                role = UserRole.USER,
+            )
+        userRepository.save(user)
+
+        repo.save(
+            OAuthConnection(
+                id = 0L,
+                userId = user.id,
+                provider = providerName,
+                subject = oauthSubject,
+                email = email,
+            )
+        )
+        logger.info("Created new user {} via OAuth provider {}", username, providerName)
+        audit("OAUTH_USER_CREATED", actor = user, detail = "provider=$providerName")
+        return user
+    }
+
+    private fun ensureUniqueUsername(base: String): String {
+        if (userRepository.findByUsername(base) == null) return base
+        var i = 2
+        while (userRepository.findByUsername("$base$i") != null) i++
+        return "$base$i"
     }
 
     fun authenticateApiKey(rawKey: String): User? {

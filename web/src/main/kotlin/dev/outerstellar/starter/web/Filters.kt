@@ -21,6 +21,7 @@ import org.http4k.filter.ServerFilters
 import org.http4k.format.Jackson
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 
 private const val COOKIE_MAX_AGE_DAYS = 365L
 private const val REQUEST_ID_HEADER = "X-Request-Id"
@@ -32,8 +33,15 @@ object Filters {
         { request ->
             val requestId =
                 request.header(REQUEST_ID_HEADER) ?: java.util.UUID.randomUUID().toString()
-            val response = next(request.header(REQUEST_ID_HEADER, requestId))
-            response.header(REQUEST_ID_HEADER, requestId)
+            MDC.put("requestId", requestId.take(8))
+            MDC.put("method", request.method.name)
+            MDC.put("path", request.uri.path)
+            try {
+                val response = next(request.header(REQUEST_ID_HEADER, requestId))
+                response.header(REQUEST_ID_HEADER, requestId)
+            } finally {
+                MDC.clear()
+            }
         }
     }
 
@@ -134,6 +142,16 @@ object Filters {
         Filter { next: HttpHandler ->
             { request ->
                 val context = WebContext(request, devDashboardEnabled, userRepository)
+                val contextUser =
+                    try {
+                        context.user
+                    } catch (e: Exception) {
+                        null
+                    }
+                if (contextUser != null) {
+                    MDC.put("userId", contextUser.id.toString().take(8))
+                    MDC.put("username", contextUser.username)
+                }
                 val response = next(request.with(WebContext.KEY of context))
 
                 val cookieMaxAge = Duration.ofDays(COOKIE_MAX_AGE_DAYS).toSeconds()

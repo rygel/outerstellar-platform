@@ -26,7 +26,7 @@
                         <p class="text-muted">${contact.company} &middot; ${contact.department}</p>
                     </div>
                 </div>
-                
+
                 <div class="contact-details mt-4">
                     <div class="contact-detail-item">
                         <i class="ri-mail-line"></i>
@@ -59,7 +59,7 @@
                         <div>${contact.companyAddress}</div>
                     </div>
                 </div>
-                
+
                 <div class="flex justify-end gap-2 mt-6">
                     <button class="button-icon" title="Edit contact">
                         <i class="ri-edit-line"></i>
@@ -71,4 +71,32 @@
             </div>
         @endfor
     </div>
+
+    @if(model.data.hasPrevious || model.data.hasNext)
+        <div class="flex justify-between items-center mt-6" style="padding: 0 0.25rem;">
+            <span class="text-muted" style="font-size: 0.875rem;">
+                Page ${model.data.currentPage} &middot; ${model.data.totalCount} contacts total
+            </span>
+            <div class="flex gap-2">
+                @if(model.data.hasPrevious)
+                    <a href="${model.data.previousUrl}" class="button-icon" title="Previous page">
+                        <i class="ri-arrow-left-s-line"></i>
+                    </a>
+                @else
+                    <button class="button-icon" disabled style="opacity: 0.3;">
+                        <i class="ri-arrow-left-s-line"></i>
+                    </button>
+                @endif
+                @if(model.data.hasNext)
+                    <a href="${model.data.nextUrl}" class="button-icon" title="Next page">
+                        <i class="ri-arrow-right-s-line"></i>
+                    </a>
+                @else
+                    <button class="button-icon" disabled style="opacity: 0.3;">
+                        <i class="ri-arrow-right-s-line"></i>
+                    </button>
+                @endif
+            </div>
+        </div>
+    @endif
 `)

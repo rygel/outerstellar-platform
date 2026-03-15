@@ -2,6 +2,7 @@ package dev.outerstellar.starter
 
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.OutboxRepository
+import dev.outerstellar.starter.security.AppleOAuthProvider
 import dev.outerstellar.starter.security.SecurityRules
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
@@ -12,9 +13,11 @@ import dev.outerstellar.starter.web.AuthRoutes
 import dev.outerstellar.starter.web.ComponentRoutes
 import dev.outerstellar.starter.web.ContactsRoutes
 import dev.outerstellar.starter.web.DevDashboardRoutes
+import dev.outerstellar.starter.web.DeviceRegistrationApi
 import dev.outerstellar.starter.web.ErrorRoutes
 import dev.outerstellar.starter.web.Filters
 import dev.outerstellar.starter.web.HomeRoutes
+import dev.outerstellar.starter.web.OAuthRoutes
 import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.SyncWebSocket
 import dev.outerstellar.starter.web.UserAdminApi
@@ -65,6 +68,7 @@ fun app(
     config: AppConfig,
     securityService: SecurityService,
     userRepository: UserRepository,
+    deviceTokenRepository: dev.outerstellar.starter.security.DeviceTokenRepository? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
 
@@ -122,6 +126,13 @@ fun app(
         routes += ContactsRoutes(pageFactory, jteRenderer).routes
         routes +=
             AuthRoutes(pageFactory, jteRenderer, securityService, config.sessionCookieSecure).routes
+        routes +=
+            OAuthRoutes(
+                    providers = mapOf("apple" to AppleOAuthProvider()),
+                    securityService = securityService,
+                    sessionCookieSecure = config.sessionCookieSecure,
+                )
+                .routes
         routes += ErrorRoutes(pageFactory, jteRenderer).routes
 
         // Global Logout
@@ -178,6 +189,9 @@ fun app(
         security = bearerSecurity
         routes += SyncApi(messageService, contactService).routes
         routes += AuthApi(securityService).bearerRoutes
+        if (deviceTokenRepository != null) {
+            routes += DeviceRegistrationApi(deviceTokenRepository).routes
+        }
     }
 
     // Bearer + Admin protected API routes (user admin)

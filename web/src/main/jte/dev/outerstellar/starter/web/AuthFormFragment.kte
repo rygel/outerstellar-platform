@@ -47,4 +47,21 @@
         
         <button type="submit" class="w-full">${model.submitLabel}</button>
     </form>
+
+    @if (model.mode == "sign-in")
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <hr style="flex: 1; border: none; border-top: 1px solid var(--color-border, #333);">
+                <span class="text-muted" style="font-size: 0.8rem;">or continue with</span>
+                <hr style="flex: 1; border: none; border-top: 1px solid var(--color-border, #333);">
+            </div>
+            <a href="/auth/oauth/apple"
+               style="display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.5rem;
+                      border: 1px solid var(--color-border, #333); border-radius: 6px;
+                      text-decoration: none; font-size: 0.9rem; width: 100%; justify-content: center;">
+                <i class="ri-apple-fill" style="font-size: 1.1rem;"></i>
+                Sign in with Apple
+            </a>
+        </div>
+    @endif
 </div>

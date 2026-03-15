@@ -134,6 +134,10 @@ class WebContext(
             )
         }
 
+        val isDark = theme == "dark"
+        val toggleTheme = if (isDark) "default" else "dark"
+        val darkModeToggleUrl = "$currentPath?theme=$toggleTheme"
+
         return ShellView(
             pageTitle = pageTitle,
             appTitle = i18n.translate("web.app.title"),
@@ -156,6 +160,8 @@ class WebContext(
             logoutUrl = url("/logout"),
             changePasswordUrl = if (user != null) url("/auth/change-password") else null,
             profileUrl = if (user != null) url("/auth/profile") else null,
+            isDarkMode = isDark,
+            darkModeToggleUrl = darkModeToggleUrl,
         )
     }
 }

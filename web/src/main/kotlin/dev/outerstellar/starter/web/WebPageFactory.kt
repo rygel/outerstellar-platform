@@ -32,6 +32,8 @@ data class ShellView(
     val logoutUrl: String? = null,
     val changePasswordUrl: String? = null,
     val profileUrl: String? = null,
+    val isDarkMode: Boolean = true,
+    val darkModeToggleUrl: String = "?theme=default",
 )
 
 data class HomeFeature(val label: String, val value: String)
@@ -289,6 +291,12 @@ data class ContactsPage(
     val title: String,
     val description: String,
     val contacts: List<ContactViewModel>,
+    val currentPage: Int = 1,
+    val hasPrevious: Boolean = false,
+    val hasNext: Boolean = false,
+    val previousUrl: String = "",
+    val nextUrl: String = "",
+    val totalCount: Long = 0,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/ContactsPage"
 }
@@ -303,11 +311,22 @@ class WebPageFactory(
 ) {
     private val messageListComponent = MessageListComponent(messageService)
 
-    fun buildContactsPage(ctx: WebContext): Page<ContactsPage> {
+    fun buildContactsPage(
+        ctx: WebContext,
+        query: String? = null,
+        limit: Int = 12,
+        offset: Int = 0,
+    ): Page<ContactsPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell("Contacts", "/contacts")
 
-        val dbContacts = contactService?.listContacts() ?: emptyList()
+        val dbContacts = contactService?.listContacts(query, limit, offset) ?: emptyList()
+        val totalCount = contactService?.countContacts(query) ?: 0L
+        val currentPage = (offset / limit) + 1
+        val hasPrevious = offset > 0
+        val hasNext = offset + limit < totalCount
+        val previousUrl = ctx.url("/contacts?limit=$limit&offset=${maxOf(0, offset - limit)}")
+        val nextUrl = ctx.url("/contacts?limit=$limit&offset=${offset + limit}")
 
         return Page(
             shell = shell,
@@ -327,6 +346,12 @@ class WebPageFactory(
                                 department = it.department,
                             )
                         },
+                    currentPage = currentPage,
+                    hasPrevious = hasPrevious,
+                    hasNext = hasNext,
+                    previousUrl = previousUrl,
+                    nextUrl = nextUrl,
+                    totalCount = totalCount,
                 ),
         )
     }
