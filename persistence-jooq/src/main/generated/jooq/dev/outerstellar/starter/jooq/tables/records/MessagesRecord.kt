@@ -22,21 +22,21 @@ open class MessagesRecord() : UpdatableRecordImpl<MessagesRecord>(Messages.MESSA
         set(value): Unit = set(0, value)
         get(): Long? = get(0) as Long?
 
-    open var author: String?
+    open var syncId: String?
         set(value): Unit = set(1, value)
         get(): String? = get(1) as String?
 
-    open var content: String?
+    open var author: String?
         set(value): Unit = set(2, value)
         get(): String? = get(2) as String?
 
-    open var createdAt: LocalDateTime?
+    open var content: String?
         set(value): Unit = set(3, value)
-        get(): LocalDateTime? = get(3) as LocalDateTime?
+        get(): String? = get(3) as String?
 
-    open var syncId: String?
+    open var createdAt: LocalDateTime?
         set(value): Unit = set(4, value)
-        get(): String? = get(4) as String?
+        get(): LocalDateTime? = get(4) as LocalDateTime?
 
     open var updatedAtEpochMs: Long?
         set(value): Unit = set(5, value)
@@ -75,12 +75,12 @@ open class MessagesRecord() : UpdatableRecordImpl<MessagesRecord>(Messages.MESSA
     /**
      * Create a detached, initialised MessagesRecord
      */
-    constructor(id: Long? = null, author: String? = null, content: String? = null, createdAt: LocalDateTime? = null, syncId: String? = null, updatedAtEpochMs: Long? = null, deleted: Boolean? = null, dirty: Boolean? = null, deletedAt: LocalDateTime? = null, createdYear: Int? = null, version: Long? = null, syncConflict: String? = null): this() {
+    constructor(id: Long? = null, syncId: String? = null, author: String? = null, content: String? = null, createdAt: LocalDateTime? = null, updatedAtEpochMs: Long? = null, deleted: Boolean? = null, dirty: Boolean? = null, deletedAt: LocalDateTime? = null, createdYear: Int? = null, version: Long? = null, syncConflict: String? = null): this() {
         this.id = id
+        this.syncId = syncId
         this.author = author
         this.content = content
         this.createdAt = createdAt
-        this.syncId = syncId
         this.updatedAtEpochMs = updatedAtEpochMs
         this.deleted = deleted
         this.dirty = dirty

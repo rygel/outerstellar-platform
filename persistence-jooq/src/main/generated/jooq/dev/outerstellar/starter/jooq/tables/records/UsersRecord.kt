@@ -52,6 +52,18 @@ open class UsersRecord() : UpdatableRecordImpl<UsersRecord>(Users.USERS) {
         set(value): Unit = set(7, value)
         get(): LocalDateTime? = get(7) as LocalDateTime?
 
+    open var avatarUrl: String?
+        set(value): Unit = set(8, value)
+        get(): String? = get(8) as String?
+
+    open var emailNotificationsEnabled: Boolean?
+        set(value): Unit = set(9, value)
+        get(): Boolean? = get(9) as Boolean?
+
+    open var pushNotificationsEnabled: Boolean?
+        set(value): Unit = set(10, value)
+        get(): Boolean? = get(10) as Boolean?
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -61,7 +73,7 @@ open class UsersRecord() : UpdatableRecordImpl<UsersRecord>(Users.USERS) {
     /**
      * Create a detached, initialised UsersRecord
      */
-    constructor(id: UUID? = null, username: String? = null, email: String? = null, passwordHash: String? = null, role: String? = null, enabled: Boolean? = null, createdAt: OffsetDateTime? = null, lastActivityAt: LocalDateTime? = null): this() {
+    constructor(id: UUID? = null, username: String? = null, email: String? = null, passwordHash: String? = null, role: String? = null, enabled: Boolean? = null, createdAt: OffsetDateTime? = null, lastActivityAt: LocalDateTime? = null, avatarUrl: String? = null, emailNotificationsEnabled: Boolean? = null, pushNotificationsEnabled: Boolean? = null): this() {
         this.id = id
         this.username = username
         this.email = email
@@ -70,6 +82,9 @@ open class UsersRecord() : UpdatableRecordImpl<UsersRecord>(Users.USERS) {
         this.enabled = enabled
         this.createdAt = createdAt
         this.lastActivityAt = lastActivityAt
+        this.avatarUrl = avatarUrl
+        this.emailNotificationsEnabled = emailNotificationsEnabled
+        this.pushNotificationsEnabled = pushNotificationsEnabled
         resetChangedOnNotNull()
     }
 }

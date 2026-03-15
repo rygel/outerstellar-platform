@@ -5,9 +5,19 @@ package dev.outerstellar.starter.jooq.tables
 
 
 import dev.outerstellar.starter.jooq.Public
+import dev.outerstellar.starter.jooq.keys.CONSTRAINT_1E5
 import dev.outerstellar.starter.jooq.keys.CONSTRAINT_4
 import dev.outerstellar.starter.jooq.keys.CONSTRAINT_4D
 import dev.outerstellar.starter.jooq.keys.CONSTRAINT_4D4
+import dev.outerstellar.starter.jooq.keys.CONSTRAINT_59
+import dev.outerstellar.starter.jooq.keys.CONSTRAINT_6A
+import dev.outerstellar.starter.jooq.keys.CONSTRAINT_86F0
+import dev.outerstellar.starter.jooq.keys.CONSTRAINT_F3F
+import dev.outerstellar.starter.jooq.tables.ApiKeys.ApiKeysPath
+import dev.outerstellar.starter.jooq.tables.DeviceTokens.DeviceTokensPath
+import dev.outerstellar.starter.jooq.tables.Notifications.NotificationsPath
+import dev.outerstellar.starter.jooq.tables.OauthConnections.OauthConnectionsPath
+import dev.outerstellar.starter.jooq.tables.PasswordResetTokens.PasswordResetTokensPath
 import dev.outerstellar.starter.jooq.tables.records.UsersRecord
 
 import java.time.LocalDateTime
@@ -22,6 +32,7 @@ import org.jooq.Field
 import org.jooq.ForeignKey
 import org.jooq.InverseForeignKey
 import org.jooq.Name
+import org.jooq.Path
 import org.jooq.PlainSQL
 import org.jooq.QueryPart
 import org.jooq.Record
@@ -34,6 +45,7 @@ import org.jooq.TableField
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
+import org.jooq.impl.Internal
 import org.jooq.impl.SQLDataType
 import org.jooq.impl.TableImpl
 
@@ -115,6 +127,21 @@ open class Users(
      */
     val LAST_ACTIVITY_AT: TableField<UsersRecord, LocalDateTime?> = createField(DSL.name("LAST_ACTIVITY_AT"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
+    /**
+     * The column <code>PUBLIC.USERS.AVATAR_URL</code>.
+     */
+    val AVATAR_URL: TableField<UsersRecord, String?> = createField(DSL.name("AVATAR_URL"), SQLDataType.VARCHAR(512), this, "")
+
+    /**
+     * The column <code>PUBLIC.USERS.EMAIL_NOTIFICATIONS_ENABLED</code>.
+     */
+    val EMAIL_NOTIFICATIONS_ENABLED: TableField<UsersRecord, Boolean?> = createField(DSL.name("EMAIL_NOTIFICATIONS_ENABLED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("TRUE"), SQLDataType.BOOLEAN)), this, "")
+
+    /**
+     * The column <code>PUBLIC.USERS.PUSH_NOTIFICATIONS_ENABLED</code>.
+     */
+    val PUSH_NOTIFICATIONS_ENABLED: TableField<UsersRecord, Boolean?> = createField(DSL.name("PUSH_NOTIFICATIONS_ENABLED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("TRUE"), SQLDataType.BOOLEAN)), this, "")
+
     private constructor(alias: Name, aliased: Table<UsersRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<UsersRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<UsersRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
@@ -133,9 +160,102 @@ open class Users(
      * Create a <code>PUBLIC.USERS</code> table reference
      */
     constructor(): this(DSL.name("USERS"), null)
+
+    constructor(path: Table<out Record>, childPath: ForeignKey<out Record, UsersRecord>?, parentPath: InverseForeignKey<out Record, UsersRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, USERS, null, null)
+
+    /**
+     * A subtype implementing {@link Path} for simplified path-based joins.
+     */
+    open class UsersPath : Users, Path<UsersRecord> {
+        constructor(path: Table<out Record>, childPath: ForeignKey<out Record, UsersRecord>?, parentPath: InverseForeignKey<out Record, UsersRecord>?): super(path, childPath, parentPath)
+        private constructor(alias: Name, aliased: Table<UsersRecord>): super(alias, aliased)
+        override fun `as`(alias: String): UsersPath = UsersPath(DSL.name(alias), this)
+        override fun `as`(alias: Name): UsersPath = UsersPath(alias, this)
+        override fun `as`(alias: Table<*>): UsersPath = UsersPath(alias.qualifiedName, this)
+    }
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getPrimaryKey(): UniqueKey<UsersRecord> = CONSTRAINT_4
     override fun getUniqueKeys(): List<UniqueKey<UsersRecord>> = listOf(CONSTRAINT_4D, CONSTRAINT_4D4)
+
+    private lateinit var _apiKeys: ApiKeysPath
+
+    /**
+     * Get the implicit to-many join path to the <code>PUBLIC.API_KEYS</code>
+     * table
+     */
+    fun apiKeys(): ApiKeysPath {
+        if (!this::_apiKeys.isInitialized)
+            _apiKeys = ApiKeysPath(this, null, CONSTRAINT_6A.inverseKey)
+
+        return _apiKeys;
+    }
+
+    val apiKeys: ApiKeysPath
+        get(): ApiKeysPath = apiKeys()
+
+    private lateinit var _deviceTokens: DeviceTokensPath
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>PUBLIC.DEVICE_TOKENS</code> table
+     */
+    fun deviceTokens(): DeviceTokensPath {
+        if (!this::_deviceTokens.isInitialized)
+            _deviceTokens = DeviceTokensPath(this, null, CONSTRAINT_1E5.inverseKey)
+
+        return _deviceTokens;
+    }
+
+    val deviceTokens: DeviceTokensPath
+        get(): DeviceTokensPath = deviceTokens()
+
+    private lateinit var _notifications: NotificationsPath
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>PUBLIC.NOTIFICATIONS</code> table
+     */
+    fun notifications(): NotificationsPath {
+        if (!this::_notifications.isInitialized)
+            _notifications = NotificationsPath(this, null, CONSTRAINT_59.inverseKey)
+
+        return _notifications;
+    }
+
+    val notifications: NotificationsPath
+        get(): NotificationsPath = notifications()
+
+    private lateinit var _oauthConnections: OauthConnectionsPath
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>PUBLIC.OAUTH_CONNECTIONS</code> table
+     */
+    fun oauthConnections(): OauthConnectionsPath {
+        if (!this::_oauthConnections.isInitialized)
+            _oauthConnections = OauthConnectionsPath(this, null, CONSTRAINT_F3F.inverseKey)
+
+        return _oauthConnections;
+    }
+
+    val oauthConnections: OauthConnectionsPath
+        get(): OauthConnectionsPath = oauthConnections()
+
+    private lateinit var _passwordResetTokens: PasswordResetTokensPath
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>PUBLIC.PASSWORD_RESET_TOKENS</code> table
+     */
+    fun passwordResetTokens(): PasswordResetTokensPath {
+        if (!this::_passwordResetTokens.isInitialized)
+            _passwordResetTokens = PasswordResetTokensPath(this, null, CONSTRAINT_86F0.inverseKey)
+
+        return _passwordResetTokens;
+    }
+
+    val passwordResetTokens: PasswordResetTokensPath
+        get(): PasswordResetTokensPath = passwordResetTokens()
     override fun `as`(alias: String): Users = Users(DSL.name(alias), this)
     override fun `as`(alias: Name): Users = Users(alias, this)
     override fun `as`(alias: Table<*>): Users = Users(alias.qualifiedName, this)

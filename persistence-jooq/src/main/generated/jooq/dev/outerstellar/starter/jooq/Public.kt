@@ -4,13 +4,19 @@
 package dev.outerstellar.starter.jooq
 
 
+import dev.outerstellar.starter.jooq.tables.ApiKeys
+import dev.outerstellar.starter.jooq.tables.AuditLog
 import dev.outerstellar.starter.jooq.tables.ContactEmails
 import dev.outerstellar.starter.jooq.tables.ContactPhones
 import dev.outerstellar.starter.jooq.tables.ContactSocials
 import dev.outerstellar.starter.jooq.tables.Contacts
+import dev.outerstellar.starter.jooq.tables.DeviceTokens
 import dev.outerstellar.starter.jooq.tables.FlywaySchemaHistory
 import dev.outerstellar.starter.jooq.tables.Messages
+import dev.outerstellar.starter.jooq.tables.Notifications
+import dev.outerstellar.starter.jooq.tables.OauthConnections
 import dev.outerstellar.starter.jooq.tables.Outbox
+import dev.outerstellar.starter.jooq.tables.PasswordResetTokens
 import dev.outerstellar.starter.jooq.tables.SyncState
 import dev.outerstellar.starter.jooq.tables.Users
 
@@ -35,6 +41,16 @@ open class Public : SchemaImpl("PUBLIC", DefaultCatalog.DEFAULT_CATALOG) {
     }
 
     /**
+     * The table <code>PUBLIC.API_KEYS</code>.
+     */
+    val API_KEYS: ApiKeys get() = ApiKeys.API_KEYS
+
+    /**
+     * The table <code>PUBLIC.AUDIT_LOG</code>.
+     */
+    val AUDIT_LOG: AuditLog get() = AuditLog.AUDIT_LOG
+
+    /**
      * The table <code>PUBLIC.CONTACT_EMAILS</code>.
      */
     val CONTACT_EMAILS: ContactEmails get() = ContactEmails.CONTACT_EMAILS
@@ -55,6 +71,11 @@ open class Public : SchemaImpl("PUBLIC", DefaultCatalog.DEFAULT_CATALOG) {
     val CONTACTS: Contacts get() = Contacts.CONTACTS
 
     /**
+     * The table <code>PUBLIC.DEVICE_TOKENS</code>.
+     */
+    val DEVICE_TOKENS: DeviceTokens get() = DeviceTokens.DEVICE_TOKENS
+
+    /**
      * The table <code>PUBLIC.flyway_schema_history</code>.
      */
     val FLYWAY_SCHEMA_HISTORY: FlywaySchemaHistory get() = FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY
@@ -65,9 +86,24 @@ open class Public : SchemaImpl("PUBLIC", DefaultCatalog.DEFAULT_CATALOG) {
     val MESSAGES: Messages get() = Messages.MESSAGES
 
     /**
+     * The table <code>PUBLIC.NOTIFICATIONS</code>.
+     */
+    val NOTIFICATIONS: Notifications get() = Notifications.NOTIFICATIONS
+
+    /**
+     * The table <code>PUBLIC.OAUTH_CONNECTIONS</code>.
+     */
+    val OAUTH_CONNECTIONS: OauthConnections get() = OauthConnections.OAUTH_CONNECTIONS
+
+    /**
      * The table <code>PUBLIC.OUTBOX</code>.
      */
     val OUTBOX: Outbox get() = Outbox.OUTBOX
+
+    /**
+     * The table <code>PUBLIC.PASSWORD_RESET_TOKENS</code>.
+     */
+    val PASSWORD_RESET_TOKENS: PasswordResetTokens get() = PasswordResetTokens.PASSWORD_RESET_TOKENS
 
     /**
      * The table <code>PUBLIC.SYNC_STATE</code>.
@@ -82,13 +118,19 @@ open class Public : SchemaImpl("PUBLIC", DefaultCatalog.DEFAULT_CATALOG) {
     override fun getCatalog(): Catalog = DefaultCatalog.DEFAULT_CATALOG
 
     override fun getTables(): List<Table<*>> = listOf(
+        ApiKeys.API_KEYS,
+        AuditLog.AUDIT_LOG,
         ContactEmails.CONTACT_EMAILS,
         ContactPhones.CONTACT_PHONES,
         ContactSocials.CONTACT_SOCIALS,
         Contacts.CONTACTS,
+        DeviceTokens.DEVICE_TOKENS,
         FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY,
         Messages.MESSAGES,
+        Notifications.NOTIFICATIONS,
+        OauthConnections.OAUTH_CONNECTIONS,
         Outbox.OUTBOX,
+        PasswordResetTokens.PASSWORD_RESET_TOKENS,
         SyncState.SYNC_STATE,
         Users.USERS
     )

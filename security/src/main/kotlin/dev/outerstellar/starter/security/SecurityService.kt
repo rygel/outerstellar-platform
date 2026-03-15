@@ -181,7 +181,12 @@ class SecurityService(
         return auditRepository?.findRecent(limit) ?: emptyList()
     }
 
-    fun updateProfile(userId: UUID, newEmail: String) {
+    fun updateProfile(
+        userId: UUID,
+        newEmail: String,
+        newUsername: String? = null,
+        newAvatarUrl: String? = null,
+    ) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         if (newEmail != user.email) {
             val existing = userRepository.findByEmail(newEmail)
@@ -189,8 +194,43 @@ class SecurityService(
                 throw UsernameAlreadyExistsException(newEmail)
             }
         }
+        if (newUsername != null && newUsername != user.username) {
+            require(newUsername.isNotBlank()) { "Username cannot be blank" }
+            require(newUsername.length <= MAX_USERNAME_LENGTH) {
+                "Username cannot exceed $MAX_USERNAME_LENGTH characters"
+            }
+            if (userRepository.findByUsername(newUsername) != null) {
+                throw UsernameAlreadyExistsException(newUsername)
+            }
+            userRepository.updateUsername(userId, newUsername)
+        }
+        if (newAvatarUrl != user.avatarUrl) {
+            userRepository.updateAvatarUrl(userId, newAvatarUrl?.takeIf { it.isNotBlank() })
+        }
         userRepository.save(user.copy(email = newEmail))
         logger.info("Profile updated for user {}", user.username)
+    }
+
+    fun deleteAccount(userId: UUID) {
+        val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
+        if (user.role == UserRole.ADMIN) {
+            val adminCount = userRepository.findAll().count { it.role == UserRole.ADMIN }
+            if (adminCount <= 1) {
+                throw InsufficientPermissionException(
+                    "Cannot delete the only remaining admin account"
+                )
+            }
+        }
+        userRepository.deleteById(userId)
+        logger.info("Account deleted for user {}", user.username)
+        audit("ACCOUNT_DELETED", actor = user)
+    }
+
+    fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) {
+        val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
+        userRepository.updateNotificationPreferences(userId, emailEnabled, pushEnabled)
+        logger.info("Notification preferences updated for user {}", user.username)
+        audit("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
     }
 
     fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse {
@@ -318,6 +358,7 @@ class SecurityService(
 
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
+        private const val MAX_USERNAME_LENGTH = 50
         private const val RESET_TOKEN_TTL_SECONDS = 3600L
         private const val API_KEY_HEX_LENGTH = 32
         private const val API_KEY_PREFIX_LENGTH = 8

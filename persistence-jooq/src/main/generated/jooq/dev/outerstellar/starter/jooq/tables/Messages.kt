@@ -6,8 +6,8 @@ package dev.outerstellar.starter.jooq.tables
 
 import dev.outerstellar.starter.jooq.Public
 import dev.outerstellar.starter.jooq.indexes.IDX_MESSAGES_AUTHOR
-import dev.outerstellar.starter.jooq.indexes.IDX_MESSAGES_CREATED_AT
-import dev.outerstellar.starter.jooq.indexes.IDX_MESSAGES_DELETED_AT
+import dev.outerstellar.starter.jooq.indexes.IDX_MESSAGES_CREATED
+import dev.outerstellar.starter.jooq.indexes.IDX_MESSAGES_DELETED
 import dev.outerstellar.starter.jooq.indexes.IDX_MESSAGES_YEAR
 import dev.outerstellar.starter.jooq.indexes.UX_MESSAGES_SYNC_ID
 import dev.outerstellar.starter.jooq.keys.CONSTRAINT_1
@@ -84,6 +84,11 @@ open class Messages(
     val ID: TableField<MessagesRecord, Long?> = createField(DSL.name("ID"), SQLDataType.BIGINT.nullable(false).identity(true), this, "")
 
     /**
+     * The column <code>PUBLIC.MESSAGES.SYNC_ID</code>.
+     */
+    val SYNC_ID: TableField<MessagesRecord, String?> = createField(DSL.name("SYNC_ID"), SQLDataType.VARCHAR(36).nullable(false), this, "")
+
+    /**
      * The column <code>PUBLIC.MESSAGES.AUTHOR</code>.
      */
     val AUTHOR: TableField<MessagesRecord, String?> = createField(DSL.name("AUTHOR"), SQLDataType.VARCHAR(100).nullable(false), this, "")
@@ -97,11 +102,6 @@ open class Messages(
      * The column <code>PUBLIC.MESSAGES.CREATED_AT</code>.
      */
     val CREATED_AT: TableField<MessagesRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
-
-    /**
-     * The column <code>PUBLIC.MESSAGES.SYNC_ID</code>.
-     */
-    val SYNC_ID: TableField<MessagesRecord, String?> = createField(DSL.name("SYNC_ID"), SQLDataType.VARCHAR(36).nullable(false), this, "")
 
     /**
      * The column <code>PUBLIC.MESSAGES.UPDATED_AT_EPOCH_MS</code>.
@@ -134,10 +134,9 @@ open class Messages(
     val VERSION: TableField<MessagesRecord, Long?> = createField(DSL.name("VERSION"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.BIGINT)), this, "")
 
     /**
-     * The column <code>PUBLIC.MESSAGES.SYNC_CONFLICT</code>. Stores the
-     * serialized server version of the message when a sync conflict occurs
+     * The column <code>PUBLIC.MESSAGES.SYNC_CONFLICT</code>.
      */
-    val SYNC_CONFLICT: TableField<MessagesRecord, String?> = createField(DSL.name("SYNC_CONFLICT"), SQLDataType.VARCHAR(1000000000), this, "Stores the serialized server version of the message when a sync conflict occurs")
+    val SYNC_CONFLICT: TableField<MessagesRecord, String?> = createField(DSL.name("SYNC_CONFLICT"), SQLDataType.VARCHAR(1000000000), this, "")
 
     private constructor(alias: Name, aliased: Table<MessagesRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<MessagesRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
@@ -158,7 +157,7 @@ open class Messages(
      */
     constructor(): this(DSL.name("MESSAGES"), null)
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
-    override fun getIndexes(): List<Index> = listOf(IDX_MESSAGES_AUTHOR, IDX_MESSAGES_CREATED_AT, IDX_MESSAGES_DELETED_AT, IDX_MESSAGES_YEAR, UX_MESSAGES_SYNC_ID)
+    override fun getIndexes(): List<Index> = listOf(IDX_MESSAGES_AUTHOR, IDX_MESSAGES_CREATED, IDX_MESSAGES_DELETED, IDX_MESSAGES_YEAR, UX_MESSAGES_SYNC_ID)
     override fun getIdentity(): Identity<MessagesRecord, Long?> = super.getIdentity() as Identity<MessagesRecord, Long?>
     override fun getPrimaryKey(): UniqueKey<MessagesRecord> = CONSTRAINT_1
     override fun `as`(alias: String): Messages = Messages(DSL.name(alias), this)

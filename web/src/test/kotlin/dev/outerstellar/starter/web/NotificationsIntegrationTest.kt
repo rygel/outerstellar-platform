@@ -119,6 +119,7 @@ class NotificationsIntegrationTest : H2WebTest() {
     fun `GET notifications returns created notifications`() {
         val (userId, token) = registerAndLogin()
         notificationService.create(userId, "Hello", "This is a test notification")
+        Thread.sleep(2) // ensure distinct created_at timestamps for deterministic ordering
         notificationService.create(userId, "Warning", "Something needs attention", "warning")
 
         val response = app(bearerRequest(GET, "/api/v1/notifications", token))

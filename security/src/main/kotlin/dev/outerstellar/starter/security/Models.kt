@@ -16,6 +16,9 @@ data class User(
     val role: UserRole,
     val enabled: Boolean = true,
     val lastActivityAt: Instant? = null,
+    val avatarUrl: String? = null,
+    val emailNotificationsEnabled: Boolean = true,
+    val pushNotificationsEnabled: Boolean = true,
 )
 
 interface UserRepository {
@@ -36,6 +39,14 @@ interface UserRepository {
     fun updateEnabled(userId: UUID, enabled: Boolean)
 
     fun updateLastActivity(userId: UUID)
+
+    fun deleteById(userId: UUID)
+
+    fun updateUsername(userId: UUID, newUsername: String)
+
+    fun updateAvatarUrl(userId: UUID, avatarUrl: String?)
+
+    fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean)
 }
 
 interface AuditRepository {

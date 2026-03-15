@@ -119,6 +119,49 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         }
     }
 
+    override fun deleteById(userId: UUID) {
+        jdbi.useHandle<Exception> { handle ->
+            handle.createUpdate("DELETE FROM users WHERE id = :id").bind("id", userId).execute()
+        }
+    }
+
+    override fun updateUsername(userId: UUID, newUsername: String) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate("UPDATE users SET username = :username WHERE id = :id")
+                .bind("username", newUsername)
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
+    override fun updateAvatarUrl(userId: UUID, avatarUrl: String?) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate("UPDATE users SET avatar_url = :avatarUrl WHERE id = :id")
+                .bind("avatarUrl", avatarUrl)
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
+    override fun updateNotificationPreferences(
+        userId: UUID,
+        emailEnabled: Boolean,
+        pushEnabled: Boolean,
+    ) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate(
+                    "UPDATE users SET email_notifications_enabled = :emailEnabled, push_notifications_enabled = :pushEnabled WHERE id = :id"
+                )
+                .bind("emailEnabled", emailEnabled)
+                .bind("pushEnabled", pushEnabled)
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
     private fun mapUser(rs: java.sql.ResultSet): User {
         val lastActivity = rs.getTimestamp("last_activity_at")
         return User(
@@ -129,6 +172,9 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             role = UserRole.valueOf(rs.getString("role")),
             enabled = rs.getBoolean("enabled"),
             lastActivityAt = lastActivity?.toInstant(),
+            avatarUrl = rs.getString("avatar_url"),
+            emailNotificationsEnabled = rs.getBoolean("email_notifications_enabled"),
+            pushNotificationsEnabled = rs.getBoolean("push_notifications_enabled"),
         )
     }
 }

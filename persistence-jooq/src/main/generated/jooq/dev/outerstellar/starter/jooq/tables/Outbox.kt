@@ -91,6 +91,11 @@ open class Outbox(
     val PAYLOAD: TableField<OutboxRecord, String?> = createField(DSL.name("PAYLOAD"), SQLDataType.VARCHAR(1000000000).nullable(false), this, "")
 
     /**
+     * The column <code>PUBLIC.OUTBOX.STATUS</code>.
+     */
+    val STATUS: TableField<OutboxRecord, String?> = createField(DSL.name("STATUS"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'PENDING'"), SQLDataType.VARCHAR)), this, "")
+
+    /**
      * The column <code>PUBLIC.OUTBOX.CREATED_AT</code>.
      */
     val CREATED_AT: TableField<OutboxRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
@@ -114,11 +119,6 @@ open class Outbox(
      * The column <code>PUBLIC.OUTBOX.DELETED_AT</code>.
      */
     val DELETED_AT: TableField<OutboxRecord, LocalDateTime?> = createField(DSL.name("DELETED_AT"), SQLDataType.LOCALDATETIME(6), this, "")
-
-    /**
-     * The column <code>PUBLIC.OUTBOX.STATUS</code>.
-     */
-    val STATUS: TableField<OutboxRecord, String?> = createField(DSL.name("STATUS"), SQLDataType.VARCHAR(20).defaultValue(DSL.field(DSL.raw("'PENDING'"), SQLDataType.VARCHAR)), this, "")
 
     private constructor(alias: Name, aliased: Table<OutboxRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<OutboxRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)

@@ -293,10 +293,30 @@ data class ProfilePage(
     val username: String,
     val email: String,
     val role: String,
+    val avatarUrl: String,
     val submitUrl: String,
+    val usernameLabel: String,
+    val usernamePlaceholder: String,
     val emailLabel: String,
     val emailPlaceholder: String,
+    val avatarLabel: String,
+    val avatarPlaceholder: String,
     val submitLabel: String,
+    // Notification preferences
+    val emailNotificationsEnabled: Boolean,
+    val pushNotificationsEnabled: Boolean,
+    val notificationPrefsUrl: String,
+    val notificationPrefsLabel: String,
+    val emailNotifLabel: String,
+    val pushNotifLabel: String,
+    val savePrefsLabel: String,
+    // Danger zone
+    val deleteAccountUrl: String,
+    val dangerZoneLabel: String,
+    val deleteAccountLabel: String,
+    val deleteAccountDescription: String,
+    val deleteAccountConfirmLabel: String,
+    val deleteAccountCancelLabel: String,
 ) : ViewModel {
     override fun template(): String = "dev/outerstellar/starter/web/ProfilePage"
 }
@@ -1019,6 +1039,13 @@ class WebPageFactory(
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.profile.title"), "/auth/profile")
         val user = ctx.user!!
+        val gravatarHash =
+            java.security.MessageDigest.getInstance("MD5")
+                .digest(user.email.trim().lowercase().toByteArray())
+                .joinToString("") { "%02x".format(it) }
+        val avatarUrl =
+            user.avatarUrl?.takeIf { it.isNotBlank() }
+                ?: "https://www.gravatar.com/avatar/$gravatarHash?d=identicon&s=80"
 
         return Page(
             shell = shell,
@@ -1028,10 +1055,29 @@ class WebPageFactory(
                     username = user.username,
                     email = user.email,
                     role = user.role.name,
+                    avatarUrl = avatarUrl,
                     submitUrl = ctx.url("/auth/components/profile-update"),
+                    usernameLabel = i18n.translate("web.profile.username"),
+                    usernamePlaceholder = i18n.translate("web.profile.username.placeholder"),
                     emailLabel = i18n.translate("web.profile.email"),
                     emailPlaceholder = i18n.translate("web.profile.email.placeholder"),
+                    avatarLabel = i18n.translate("web.profile.avatar"),
+                    avatarPlaceholder = i18n.translate("web.profile.avatar.placeholder"),
                     submitLabel = i18n.translate("web.profile.submit"),
+                    emailNotificationsEnabled = user.emailNotificationsEnabled,
+                    pushNotificationsEnabled = user.pushNotificationsEnabled,
+                    notificationPrefsUrl = ctx.url("/auth/notification-preferences"),
+                    notificationPrefsLabel = i18n.translate("web.profile.notif.prefs"),
+                    emailNotifLabel = i18n.translate("web.profile.notif.email"),
+                    pushNotifLabel = i18n.translate("web.profile.notif.push"),
+                    savePrefsLabel = i18n.translate("web.profile.notif.save"),
+                    deleteAccountUrl = ctx.url("/auth/account/delete"),
+                    dangerZoneLabel = i18n.translate("web.profile.danger.zone"),
+                    deleteAccountLabel = i18n.translate("web.profile.delete.account"),
+                    deleteAccountDescription =
+                        i18n.translate("web.profile.delete.account.description"),
+                    deleteAccountConfirmLabel = i18n.translate("web.profile.delete.confirm"),
+                    deleteAccountCancelLabel = i18n.translate("web.profile.delete.cancel"),
                 ),
         )
     }

@@ -278,8 +278,15 @@ class AuthRoutes(
                         Response(Status.UNAUTHORIZED).body("Not logged in")
                     } else {
                         val newEmail = request.form("email").orEmpty()
+                        val newUsername = request.form("username")?.takeIf { it.isNotBlank() }
+                        val newAvatarUrl = request.form("avatarUrl")
                         try {
-                            securityService.updateProfile(user.id, newEmail)
+                            securityService.updateProfile(
+                                user.id,
+                                newEmail,
+                                newUsername,
+                                newAvatarUrl,
+                            )
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.success.title"),
@@ -292,6 +299,69 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.error.title"),
                                     message = e.message ?: "Update failed",
+                                    toneClass = "panel-danger",
+                                )
+                            )
+                        } catch (e: IllegalArgumentException) {
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.profile.error.title"),
+                                    message = e.message ?: "Update failed",
+                                    toneClass = "panel-danger",
+                                )
+                            )
+                        }
+                    }
+                },
+            "/auth/notification-preferences" meta
+                {
+                    summary = "Update notification preferences"
+                } bindContract
+                POST to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    val user = ctx.user
+                    if (user == null) {
+                        Response(Status.UNAUTHORIZED).body("Not logged in")
+                    } else {
+                        val emailEnabled = request.form("emailNotifications") == "on"
+                        val pushEnabled = request.form("pushNotifications") == "on"
+                        securityService.updateNotificationPreferences(
+                            user.id,
+                            emailEnabled,
+                            pushEnabled,
+                        )
+                        renderer.render(
+                            AuthResultFragment(
+                                title = ctx.i18n.translate("web.profile.notif.success.title"),
+                                message = ctx.i18n.translate("web.profile.notif.success.body"),
+                                toneClass = "panel-success",
+                            )
+                        )
+                    }
+                },
+            "/auth/account/delete" meta
+                {
+                    summary = "Delete own account"
+                } bindContract
+                POST to
+                { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    val user = ctx.user
+                    if (user == null) {
+                        Response(Status.UNAUTHORIZED).body("Not logged in")
+                    } else {
+                        try {
+                            securityService.deleteAccount(user.id)
+                            Response(Status.FOUND)
+                                .header("location", ctx.url("/auth?deleted=true"))
+                                .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
+                        } catch (
+                            e: dev.outerstellar.starter.model.InsufficientPermissionException) {
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.profile.delete.error.title"),
+                                    message = e.message ?: "Cannot delete account",
                                     toneClass = "panel-danger",
                                 )
                             )

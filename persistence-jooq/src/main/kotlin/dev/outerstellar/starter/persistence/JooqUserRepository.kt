@@ -22,6 +22,9 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             role = UserRole.valueOf(record.role!!),
             enabled = record.enabled!!,
             lastActivityAt = record.lastActivityAt?.toInstant(ZoneOffset.UTC),
+            avatarUrl = record.avatarUrl,
+            emailNotificationsEnabled = record.emailNotificationsEnabled ?: true,
+            pushNotificationsEnabled = record.pushNotificationsEnabled ?: true,
         )
     }
 
@@ -85,6 +88,30 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     override fun updateLastActivity(userId: UUID) {
         dsl.update(USERS)
             .set(USERS.LAST_ACTIVITY_AT, LocalDateTime.now(ZoneOffset.UTC))
+            .where(USERS.ID.eq(userId))
+            .execute()
+    }
+
+    override fun deleteById(userId: UUID) {
+        dsl.deleteFrom(USERS).where(USERS.ID.eq(userId)).execute()
+    }
+
+    override fun updateUsername(userId: UUID, newUsername: String) {
+        dsl.update(USERS).set(USERS.USERNAME, newUsername).where(USERS.ID.eq(userId)).execute()
+    }
+
+    override fun updateAvatarUrl(userId: UUID, avatarUrl: String?) {
+        dsl.update(USERS).set(USERS.AVATAR_URL, avatarUrl).where(USERS.ID.eq(userId)).execute()
+    }
+
+    override fun updateNotificationPreferences(
+        userId: UUID,
+        emailEnabled: Boolean,
+        pushEnabled: Boolean,
+    ) {
+        dsl.update(USERS)
+            .set(USERS.EMAIL_NOTIFICATIONS_ENABLED, emailEnabled)
+            .set(USERS.PUSH_NOTIFICATIONS_ENABLED, pushEnabled)
             .where(USERS.ID.eq(userId))
             .execute()
     }

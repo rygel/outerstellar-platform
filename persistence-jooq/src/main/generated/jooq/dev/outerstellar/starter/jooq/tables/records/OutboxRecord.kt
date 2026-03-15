@@ -31,29 +31,29 @@ open class OutboxRecord() : UpdatableRecordImpl<OutboxRecord>(Outbox.OUTBOX) {
         set(value): Unit = set(2, value)
         get(): String? = get(2) as String?
 
-    open var createdAt: LocalDateTime?
+    open var status: String?
         set(value): Unit = set(3, value)
-        get(): LocalDateTime? = get(3) as LocalDateTime?
+        get(): String? = get(3) as String?
 
-    open var processedAt: LocalDateTime?
+    open var createdAt: LocalDateTime?
         set(value): Unit = set(4, value)
         get(): LocalDateTime? = get(4) as LocalDateTime?
 
-    open var retryCount: Int?
+    open var processedAt: LocalDateTime?
         set(value): Unit = set(5, value)
-        get(): Int? = get(5) as Int?
+        get(): LocalDateTime? = get(5) as LocalDateTime?
+
+    open var retryCount: Int?
+        set(value): Unit = set(6, value)
+        get(): Int? = get(6) as Int?
 
     open var lastError: String?
-        set(value): Unit = set(6, value)
-        get(): String? = get(6) as String?
+        set(value): Unit = set(7, value)
+        get(): String? = get(7) as String?
 
     open var deletedAt: LocalDateTime?
-        set(value): Unit = set(7, value)
-        get(): LocalDateTime? = get(7) as LocalDateTime?
-
-    open var status: String?
         set(value): Unit = set(8, value)
-        get(): String? = get(8) as String?
+        get(): LocalDateTime? = get(8) as LocalDateTime?
 
     // -------------------------------------------------------------------------
     // Primary key information
@@ -64,16 +64,16 @@ open class OutboxRecord() : UpdatableRecordImpl<OutboxRecord>(Outbox.OUTBOX) {
     /**
      * Create a detached, initialised OutboxRecord
      */
-    constructor(id: UUID? = null, payloadType: String? = null, payload: String? = null, createdAt: LocalDateTime? = null, processedAt: LocalDateTime? = null, retryCount: Int? = null, lastError: String? = null, deletedAt: LocalDateTime? = null, status: String? = null): this() {
+    constructor(id: UUID? = null, payloadType: String? = null, payload: String? = null, status: String? = null, createdAt: LocalDateTime? = null, processedAt: LocalDateTime? = null, retryCount: Int? = null, lastError: String? = null, deletedAt: LocalDateTime? = null): this() {
         this.id = id
         this.payloadType = payloadType
         this.payload = payload
+        this.status = status
         this.createdAt = createdAt
         this.processedAt = processedAt
         this.retryCount = retryCount
         this.lastError = lastError
         this.deletedAt = deletedAt
-        this.status = status
         resetChangedOnNotNull()
     }
 }
