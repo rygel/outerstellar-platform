@@ -7,7 +7,6 @@ import dev.outerstellar.starter.sync.SyncService
 import io.mockk.mockk
 import java.awt.Component
 import java.awt.Container
-import java.awt.GraphicsEnvironment
 import java.util.Locale
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -17,7 +16,6 @@ import javax.swing.JTable
 import javax.swing.JTextField
 import javax.swing.SwingUtilities
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Test
 
 private const val MIN_FIELD_WIDTH = 150
@@ -39,7 +37,6 @@ class UiLayoutTest {
 
     @Test
     fun `sidebar nav buttons have sufficient preferred size`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
         val (_, frame) = createWindow()
         try {
             runOnEdt {
@@ -71,7 +68,6 @@ class UiLayoutTest {
 
     @Test
     fun `action buttons have sufficient preferred size`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
         val (_, frame) = createWindow()
         try {
             runOnEdt {
@@ -94,7 +90,6 @@ class UiLayoutTest {
 
     @Test
     fun `contacts table has usable preferred width`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
         val (_, frame) = createWindow()
         try {
             runOnEdt {
@@ -111,7 +106,6 @@ class UiLayoutTest {
 
     @Test
     fun `users admin table has usable preferred width`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
         val (_, frame) = createWindow()
         try {
             runOnEdt {
@@ -128,7 +122,6 @@ class UiLayoutTest {
 
     @Test
     fun `dialogs have enforced minimum size`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
         val (sw, frame) = createWindow()
         try {
             runOnEdt {
@@ -181,7 +174,6 @@ class UiLayoutTest {
 
     @Test
     fun `search and author fields exist and are text inputs`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
         val (_, frame) = createWindow()
         try {
             runOnEdt {
@@ -198,7 +190,6 @@ class UiLayoutTest {
 
     @Test
     fun `main window has all expected named components`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
         val (_, frame) = createWindow()
         try {
             runOnEdt {

@@ -2,13 +2,11 @@ package dev.outerstellar.starter.swing
 
 import dev.outerstellar.starter.model.ThemeCatalog
 import java.awt.Color
-import java.awt.GraphicsEnvironment
 import javax.swing.JPanel
 import javax.swing.JTextField
 import javax.swing.UIManager
 import org.assertj.swing.edt.GuiActionRunner
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Test
 
 class ThemeE2ETest {
@@ -142,7 +140,6 @@ class ThemeE2ETest {
 
     @Test
     fun `settings dialog theme preview should update live when selection changes`() {
-        assumeFalse(GraphicsEnvironment.isHeadless(), "Run with: mvn -Ptest-desktop verify")
         val themeManager = ThemeManager()
         val i18nService = com.outerstellar.i18n.I18nService.create("messages")
         val viewModel =
