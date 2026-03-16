@@ -119,19 +119,19 @@ class PlaywrightE2ETest : KoinTest {
         page.navigate("http://localhost:${server.port()}/")
         page.waitForLoadState(com.microsoft.playwright.options.LoadState.NETWORKIDLE)
 
-        page.fill("input[name='author']", "Playwright Tester")
-        page.fill("textarea[name='content']", "Hello from E2E test!")
+        page.locator("input[name='author']").fill("Playwright Tester")
+        page.locator("textarea[name='content']").fill("Hello from E2E test!")
 
         // Use a specific selector scoped to the message composer form so we don't
         // accidentally click the logout or other submit buttons on the page.
-        // The form uses hx-post; HTMX sends XHR (not native form submit), and the
-        // browser follows the 302 redirect transparently — wait for NETWORKIDLE then
-        // navigate explicitly to get fresh SSR with the new message.
-        page.locator("form.form-grid button[type='submit']").click()
-        page.waitForLoadState(com.microsoft.playwright.options.LoadState.NETWORKIDLE)
+        // The form uses hx-post; HTMX sends XHR (not native form submit) — wait for
+        // the POST response to complete, then navigate explicitly for fresh SSR.
+        page.waitForResponse({ response -> response.request().method() == "POST" }) {
+            page.locator("form.form-grid button[type='submit']").click()
+        }
 
         page.navigate("http://localhost:${server.port()}/")
-        page.waitForLoadState(com.microsoft.playwright.options.LoadState.NETWORKIDLE)
+        page.waitForSelector("text=Playwright Tester")
 
         val content = page.content()
         assertTrue(content.contains("Playwright Tester"), "Message author not found in page")

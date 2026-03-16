@@ -35,18 +35,18 @@
         <junit.version>5.12.0</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
-        <pmd.version>3.27.0</pmd.version>
+        <pmd.version>3.28.0</pmd.version>
         <spotbugs.version>4.9.8.2</spotbugs.version>
-        <spotless.version>2.44.3</spotless.version>
-        <ktfmt.version>0.54</ktfmt.version>
+        <spotless.version>3.3.0</spotless.version>
+        <ktfmt.version>0.61</ktfmt.version>
         <jacoco.version>0.8.14</jacoco.version>
         <extra-enforcer-rules.version>1.12.0</extra-enforcer-rules.version>
-        <maven.jar.plugin.version>3.4.2</maven.jar.plugin.version>
-        <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
-        <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
-        <maven.install.plugin.version>3.1.2</maven.install.plugin.version>
+        <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
+        <maven.surefire.plugin.version>3.5.5</maven.surefire.plugin.version>
+        <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
+        <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
         <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
-        <maven.deploy.plugin.version>3.1.2</maven.deploy.plugin.version>
+        <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <bytebuddy.version>1.18.5</bytebuddy.version>
         <koin.version>4.0.2</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
@@ -144,14 +144,14 @@
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.18.6</version>
+                <version>2.21.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
                 <artifactId>jackson-module-kotlin</artifactId>
-                <version>2.18.6</version>
+                <version>2.21.1</version>
             </dependency>
             <dependency>
                 <groupId>org.http4k</groupId>
@@ -414,7 +414,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.14.0</version>
+                    <version>3.15.0</version>
                     <configuration>
                         <release>${maven.compiler.release}</release>
                     </configuration>
@@ -472,17 +472,17 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.3.1</version>
+                    <version>3.5.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>3.5.0</version>
+                    <version>3.6.3</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-antrun-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.2.0</version>
                 </plugin>
                 <plugin>
                     <groupId>gg.jte</groupId>
