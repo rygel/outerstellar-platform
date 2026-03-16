@@ -69,6 +69,7 @@ class AuditLogIntegrationTest : H2WebTest() {
 
     @BeforeEach
     fun setupTest() {
+        cleanup()
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         userRepository = JooqUserRepository(testDsl)
         val auditRepository = JooqAuditRepository(testDsl)

@@ -66,6 +66,7 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
 
     @BeforeEach
     fun setupTest() {
+        cleanup()
         encoder = BCryptPasswordEncoder(logRounds = 4)
         userRepository = JooqUserRepository(testDsl)
         val apiKeyRepository = JooqApiKeyRepository(testDsl)
