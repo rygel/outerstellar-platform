@@ -1,11 +1,11 @@
 package dev.outerstellar.starter.swing
 
 import com.outerstellar.i18n.I18nService
+import dev.outerstellar.starter.model.AuthTokenResponse
 import dev.outerstellar.starter.model.ThemeCatalog
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import dev.outerstellar.starter.sync.SyncService
-import dev.outerstellar.starter.web.AuthTokenResponse
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -76,7 +76,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `ui interaction updates viewmodel and calls service`() {
-val w = window!!
+        val w = window!!
         w.textBox("authorField").deleteText().enterText("AssertJ Author")
         w.textBox("contentArea").enterText("AssertJ Content")
         w.button("createButton").click()
@@ -86,7 +86,7 @@ val w = window!!
 
     @Test
     fun `ui auth flow updates menu state on login and logout`() {
-every { syncService.login("alice", "secret") } returns
+        every { syncService.login("alice", "secret") } returns
             AuthTokenResponse("tok", "alice", "USER")
 
         val w = window!!
@@ -105,7 +105,7 @@ every { syncService.login("alice", "secret") } returns
 
     @Test
     fun `ui register flow updates menu state`() {
-every { syncService.register("newuser", "secret123") } returns
+        every { syncService.register("newuser", "secret123") } returns
             AuthTokenResponse("tok2", "newuser", "USER")
 
         val w = window!!
@@ -121,7 +121,7 @@ every { syncService.register("newuser", "secret123") } returns
 
     @Test
     fun `changing theme from settings updates key ui surfaces`() {
-val w = window!!
+        val w = window!!
         val darkTheme = ThemeCatalog.allThemes().first { it.name == "Dark" }
         val defaultTheme = ThemeCatalog.allThemes().first { it.name == "Default" }
 
@@ -240,7 +240,7 @@ val w = window!!
 
     @Test
     fun `change password menu item is enabled after login`() {
-every { syncService.login("alice", "secret") } returns
+        every { syncService.login("alice", "secret") } returns
             AuthTokenResponse("tok", "alice", "USER")
 
         val w = window!!
@@ -266,7 +266,7 @@ every { syncService.login("alice", "secret") } returns
 
     @Test
     fun `change password dialog has correct fields`() {
-every { syncService.login("alice", "secret") } returns
+        every { syncService.login("alice", "secret") } returns
             AuthTokenResponse("tok", "alice", "USER")
 
         val w = window!!
@@ -291,7 +291,7 @@ every { syncService.login("alice", "secret") } returns
 
     @Test
     fun `users nav button is enabled for admin role`() {
-every { syncService.login("admin", "secret") } returns
+        every { syncService.login("admin", "secret") } returns
             AuthTokenResponse("tok", "admin", "ADMIN")
 
         val w = window!!
@@ -324,7 +324,7 @@ every { syncService.login("admin", "secret") } returns
 
     @Test
     fun `users nav button stays disabled for regular user`() {
-every { syncService.login("alice", "secret") } returns
+        every { syncService.login("alice", "secret") } returns
             AuthTokenResponse("tok", "alice", "USER")
 
         val w = window!!

@@ -10,13 +10,13 @@ import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.OuterstellarException
 import dev.outerstellar.starter.model.SessionExpiredException
 import dev.outerstellar.starter.model.SyncException
+import dev.outerstellar.starter.model.UserSummary
 import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.service.ContactService
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.swing.ConnectivityChecker
 import dev.outerstellar.starter.swing.SystemTrayNotifier
 import dev.outerstellar.starter.sync.SyncService
-import dev.outerstellar.starter.web.UserSummary
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -63,7 +63,7 @@ class SyncViewModel(
     var adminUsers: List<UserSummary> = emptyList()
         private set
 
-    var notifications: List<dev.outerstellar.starter.web.NotificationSummary> = emptyList()
+    var notifications: List<dev.outerstellar.starter.model.NotificationSummary> = emptyList()
         private set
 
     val unreadNotificationCount: Int

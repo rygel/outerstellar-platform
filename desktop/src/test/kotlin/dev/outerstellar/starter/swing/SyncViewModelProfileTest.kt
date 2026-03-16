@@ -1,13 +1,13 @@
 package dev.outerstellar.starter.swing
 
 import com.outerstellar.i18n.I18nService
+import dev.outerstellar.starter.model.AuthTokenResponse
 import dev.outerstellar.starter.model.SessionExpiredException
 import dev.outerstellar.starter.model.SyncException
+import dev.outerstellar.starter.model.UserProfileResponse
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.swing.viewmodel.SyncViewModel
 import dev.outerstellar.starter.sync.SyncService
-import dev.outerstellar.starter.web.AuthTokenResponse
-import dev.outerstellar.starter.web.UserProfileResponse
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

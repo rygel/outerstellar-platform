@@ -64,12 +64,10 @@ class ArchitectureTest {
     }
 
     @Test
-    fun `api-client should not depend on persistence or desktop`() {
+    fun `api-client should not depend on persistence, desktop, or web`() {
         // NOTE: api-client module (package ..sync..) is not on core's test classpath.
         // The api-client SyncService lives in dev.outerstellar.starter.sync.
         // This rule uses allowEmptyShould(true) so it passes without false positives.
-        // TODO: fix violation — SyncService in api-client imports dev.outerstellar.starter.web.*
-        //   (classes defined within api-client itself in the web sub-package, not the web module)
         val importedClasses = ClassFileImporter().importPackages("dev.outerstellar.starter")
 
         val rule =
@@ -78,7 +76,12 @@ class ArchitectureTest {
                 .resideInAPackage("..sync..")
                 .should()
                 .dependOnClassesThat()
-                .resideInAnyPackage("..persistence.jooq..", "..persistence.jdbi..", "..desktop..")
+                .resideInAnyPackage(
+                    "..persistence.jooq..",
+                    "..persistence.jdbi..",
+                    "..desktop..",
+                    "..web..",
+                )
                 .allowEmptyShould(true)
 
         rule.check(importedClasses)

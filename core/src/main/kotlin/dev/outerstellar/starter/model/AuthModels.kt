@@ -75,6 +75,15 @@ data class UpdateProfileRequest(
 
 data class UpdateNotificationPrefsRequest(val emailEnabled: Boolean, val pushEnabled: Boolean)
 
+data class NotificationSummary(
+    val id: String,
+    val title: String,
+    val body: String,
+    val type: String,
+    val read: Boolean,
+    val createdAt: String,
+)
+
 data class UserProfileResponse(
     val username: String,
     val email: String,

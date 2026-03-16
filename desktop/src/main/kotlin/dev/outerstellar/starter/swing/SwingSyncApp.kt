@@ -830,7 +830,7 @@ class SyncWindow(
         notificationsPanel.add(notifHeaderPanel, "wrap, growx, gapbottom 10")
 
         val notifListModel =
-            javax.swing.DefaultListModel<dev.outerstellar.starter.web.NotificationSummary>()
+            javax.swing.DefaultListModel<dev.outerstellar.starter.model.NotificationSummary>()
         val notifList =
             javax.swing.JList(notifListModel).apply {
                 name = "notificationsList"
@@ -851,7 +851,7 @@ class SyncWindow(
                                 cellHasFocus,
                             )
                             val n =
-                                value as? dev.outerstellar.starter.web.NotificationSummary
+                                value as? dev.outerstellar.starter.model.NotificationSummary
                                     ?: return this
                             val unreadMark = if (!n.read) "● " else "  "
                             text =
