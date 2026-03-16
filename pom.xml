@@ -25,13 +25,13 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.0</outerstellar.version>
-        <http4k.version>6.31.1.0</http4k.version>
-        <flyway.version>11.3.4</flyway.version>
-        <jooq.version>3.19.7</jooq.version>
-        <jdbi.version>3.45.0</jdbi.version>
-        <h2.version>2.2.224</h2.version>
+        <http4k.version>6.35.0.0</http4k.version>
+        <flyway.version>11.20.3</flyway.version>
+        <jooq.version>3.20.11</jooq.version>
+        <jdbi.version>3.51.0</jdbi.version>
+        <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
-        <flatlaf.version>3.5.4</flatlaf.version>
+        <flatlaf.version>3.7.1</flatlaf.version>
         <junit.version>5.12.0</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
@@ -40,7 +40,7 @@
         <spotless.version>2.44.3</spotless.version>
         <ktfmt.version>0.54</ktfmt.version>
         <jacoco.version>0.8.14</jacoco.version>
-        <extra-enforcer-rules.version>1.8.0</extra-enforcer-rules.version>
+        <extra-enforcer-rules.version>1.12.0</extra-enforcer-rules.version>
         <maven.jar.plugin.version>3.4.2</maven.jar.plugin.version>
         <maven.surefire.plugin.version>3.5.2</maven.surefire.plugin.version>
         <maven.clean.plugin.version>3.2.0</maven.clean.plugin.version>
@@ -51,12 +51,12 @@
         <koin.version>4.0.2</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
-        <mockk.version>1.13.17</mockk.version>
-        <archunit.version>1.4.0</archunit.version>
+        <mockk.version>1.14.9</mockk.version>
+        <archunit.version>1.4.1</archunit.version>
         <micrometer.version>1.14.4</micrometer.version>
-        <resilience4j.version>2.3.0</resilience4j.version>
-        <caffeine.version>3.2.0</caffeine.version>
-        <opentelemetry.version>1.59.0</opentelemetry.version>
+        <resilience4j.version>2.4.0</resilience4j.version>
+        <caffeine.version>3.2.3</caffeine.version>
+        <opentelemetry.version>1.60.1</opentelemetry.version>
 
         <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
@@ -144,14 +144,14 @@
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.18.2</version>
+                <version>2.18.6</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
                 <artifactId>jackson-module-kotlin</artifactId>
-                <version>2.18.2</version>
+                <version>2.18.6</version>
             </dependency>
             <dependency>
                 <groupId>org.http4k</groupId>
@@ -246,7 +246,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.17</version>
+                <version>1.5.32</version>
             </dependency>
             <dependency>
                 <groupId>com.formdev</groupId>
