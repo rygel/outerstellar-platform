@@ -50,11 +50,7 @@ data class SyncPullResponse(
     val serverTimestamp: Long = 0,
 )
 
-data class SyncStats(
-    val pushedCount: Int = 0,
-    val pulledCount: Int = 0,
-    val conflictCount: Int = 0,
-)
+data class SyncStats(val pushedCount: Int = 0, val pulledCount: Int = 0, val conflictCount: Int = 0)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncContact(
