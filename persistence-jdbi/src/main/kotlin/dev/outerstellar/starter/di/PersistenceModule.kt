@@ -5,7 +5,9 @@ import dev.outerstellar.starter.persistence.ContactRepository
 import dev.outerstellar.starter.persistence.JdbiApiKeyRepository
 import dev.outerstellar.starter.persistence.JdbiAuditRepository
 import dev.outerstellar.starter.persistence.JdbiContactRepository
+import dev.outerstellar.starter.persistence.JdbiDeviceTokenRepository
 import dev.outerstellar.starter.persistence.JdbiMessageRepository
+import dev.outerstellar.starter.persistence.JdbiOAuthRepository
 import dev.outerstellar.starter.persistence.JdbiOutboxRepository
 import dev.outerstellar.starter.persistence.JdbiPasswordResetRepository
 import dev.outerstellar.starter.persistence.JdbiTransactionManager
@@ -15,6 +17,8 @@ import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.security.ApiKeyRepository
 import dev.outerstellar.starter.security.AuditRepository
+import dev.outerstellar.starter.security.DeviceTokenRepository
+import dev.outerstellar.starter.security.OAuthRepository
 import dev.outerstellar.starter.security.PasswordResetRepository
 import dev.outerstellar.starter.security.UserRepository
 import io.micrometer.core.instrument.Metrics
@@ -53,4 +57,8 @@ val persistenceModule
         single<PasswordResetRepository> { JdbiPasswordResetRepository(get()) }
 
         single<ApiKeyRepository> { JdbiApiKeyRepository(get()) }
+
+        single<OAuthRepository> { JdbiOAuthRepository(get()) }
+
+        single<DeviceTokenRepository> { JdbiDeviceTokenRepository(get()) }
     }

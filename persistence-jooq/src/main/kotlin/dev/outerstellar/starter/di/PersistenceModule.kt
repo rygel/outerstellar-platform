@@ -5,7 +5,9 @@ import dev.outerstellar.starter.persistence.ContactRepository
 import dev.outerstellar.starter.persistence.JooqApiKeyRepository
 import dev.outerstellar.starter.persistence.JooqAuditRepository
 import dev.outerstellar.starter.persistence.JooqContactRepository
+import dev.outerstellar.starter.persistence.JooqDeviceTokenRepository
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqOAuthRepository
 import dev.outerstellar.starter.persistence.JooqOutboxRepository
 import dev.outerstellar.starter.persistence.JooqPasswordResetRepository
 import dev.outerstellar.starter.persistence.JooqTransactionManager
@@ -15,6 +17,8 @@ import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.security.ApiKeyRepository
 import dev.outerstellar.starter.security.AuditRepository
+import dev.outerstellar.starter.security.DeviceTokenRepository
+import dev.outerstellar.starter.security.OAuthRepository
 import dev.outerstellar.starter.security.PasswordResetRepository
 import dev.outerstellar.starter.security.UserRepository
 import io.micrometer.core.instrument.Metrics
@@ -54,4 +58,8 @@ val persistenceModule
         single<PasswordResetRepository> { JooqPasswordResetRepository(get()) }
 
         single<ApiKeyRepository> { JooqApiKeyRepository(get()) }
+
+        single<OAuthRepository> { JooqOAuthRepository(get()) }
+
+        single<DeviceTokenRepository> { JooqDeviceTokenRepository(get()) }
     }

@@ -25,6 +25,8 @@ abstract class H2JooqTest {
     @AfterEach
     fun cleanDatabase() {
         dsl.execute("DELETE FROM notifications")
+        dsl.execute("DELETE FROM device_tokens")
+        dsl.execute("DELETE FROM oauth_connections")
         dsl.execute("DELETE FROM api_keys")
         dsl.execute("DELETE FROM password_reset_tokens")
         dsl.execute("DELETE FROM audit_log")

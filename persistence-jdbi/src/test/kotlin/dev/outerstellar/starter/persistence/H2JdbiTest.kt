@@ -23,6 +23,8 @@ abstract class H2JdbiTest {
     fun cleanDatabase() {
         jdbi.useHandle<Exception> { handle ->
             handle.execute("DELETE FROM notifications")
+            handle.execute("DELETE FROM device_tokens")
+            handle.execute("DELETE FROM oauth_connections")
             handle.execute("DELETE FROM api_keys")
             handle.execute("DELETE FROM password_reset_tokens")
             handle.execute("DELETE FROM audit_log")

@@ -7,7 +7,7 @@ data class OAuthUserInfo(val subject: String, val email: String?, val displayNam
 
 /** An OAuth connection record stored in the database. */
 data class OAuthConnection(
-    val id: Long,
+    val id: Long = 0,
     val userId: UUID,
     val provider: String,
     val subject: String,
@@ -24,6 +24,9 @@ interface OAuthRepository {
 
     /** List all OAuth connections for a given user. */
     fun findByUserId(userId: UUID): List<OAuthConnection>
+
+    /** Remove a specific connection (e.g. user unlinks a provider). */
+    fun delete(id: Long, userId: UUID)
 }
 
 /**
