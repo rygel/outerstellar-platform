@@ -68,6 +68,10 @@ class InMemoryOAuthRepository : OAuthRepository {
     override fun findByUserId(userId: UUID): List<OAuthConnection> =
         connections.filter { it.userId == userId }
 
+    override fun delete(id: Long, userId: UUID) {
+        connections.removeAll { it.id == id && it.userId == userId }
+    }
+
     fun clear() = connections.clear()
 }
 
