@@ -10,10 +10,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="${shell.csrfToken}">
     <title>${shell.pageTitle} - ${shell.appTitle}</title>
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="/site.css?v=${shell.version}">
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <script src="https://unpkg.com/htmx-ext-ws@2.0.1/ws.js"></script>
+    <script src="/vendor/htmx.min.js"></script>
+    <script src="/vendor/htmx-ext-ws.js"></script>
     <style>
         .htmx-indicator { display: none; }
         .htmx-request .htmx-indicator { display: inline-block; }
