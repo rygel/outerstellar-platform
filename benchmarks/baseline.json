@@ -1,0 +1,54 @@
+{
+  "recordedAt" : "2026-03-18T17:44:47.745644700",
+  "javaVersion" : "21.0.9",
+  "benchmarks" : [ {
+    "name" : "GET /api/v1/auth/profile",
+    "iterations" : 200,
+    "p50Ms" : 0.9358,
+    "p95Ms" : 1.4298,
+    "p99Ms" : 1.7992,
+    "maxMs" : 5.0653
+  }, {
+    "name" : "GET /api/v1/sync?since=0",
+    "iterations" : 200,
+    "p50Ms" : 2.5018,
+    "p95Ms" : 4.22,
+    "p99Ms" : 5.067,
+    "maxMs" : 12.9979
+  }, {
+    "name" : "GET /api/v1/sync?since=0 (cold)",
+    "iterations" : 200,
+    "p50Ms" : 1.0369,
+    "p95Ms" : 1.7761,
+    "p99Ms" : 2.042,
+    "maxMs" : 4.4565
+  }, {
+    "name" : "GET /api/v1/sync?since=0 (warm)",
+    "iterations" : 200,
+    "p50Ms" : 0.9439,
+    "p95Ms" : 1.3898,
+    "p99Ms" : 1.698,
+    "maxMs" : 2.0086
+  }, {
+    "name" : "GET /health",
+    "iterations" : 200,
+    "p50Ms" : 0.6869,
+    "p95Ms" : 1.0199,
+    "p99Ms" : 1.3807,
+    "maxMs" : 1.494
+  }, {
+    "name" : "POST /api/v1/auth/login (BCrypt rounds=10)",
+    "iterations" : 10,
+    "p50Ms" : 57.8358,
+    "p95Ms" : 59.0449,
+    "p99Ms" : 59.0449,
+    "maxMs" : 59.0449
+  }, {
+    "name" : "POST /api/v1/sync (1 message)",
+    "iterations" : 200,
+    "p50Ms" : 1.4227,
+    "p95Ms" : 2.3496,
+    "p99Ms" : 3.0842,
+    "maxMs" : 6.1512
+  } ]
+}

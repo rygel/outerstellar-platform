@@ -1,5 +1,8 @@
 package dev.outerstellar.starter.web
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.model.AuthTokenResponse
@@ -14,6 +17,8 @@ import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.service.ContactService
 import dev.outerstellar.starter.service.MessageService
 import io.mockk.mockk
+import java.nio.file.Path
+import java.time.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import org.http4k.core.Body
@@ -23,10 +28,39 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.with
 import org.http4k.format.Jackson.auto
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.slf4j.LoggerFactory
+
+// ---------------------------------------------------------------------------
+// Baseline persistence model
+// ---------------------------------------------------------------------------
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class BenchmarkEntry(
+    val name: String = "",
+    val iterations: Int = 0,
+    val p50Ms: Double = 0.0,
+    val p95Ms: Double = 0.0,
+    val p99Ms: Double = 0.0,
+    val maxMs: Double = 0.0,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class BenchmarkBaseline(
+    val recordedAt: String = "",
+    val javaVersion: String = "",
+    val benchmarks: List<BenchmarkEntry> = emptyList(),
+) {
+    fun byName(): Map<String, BenchmarkEntry> = benchmarks.associateBy { it.name }
+}
+
+// ---------------------------------------------------------------------------
+// Test class
+// ---------------------------------------------------------------------------
 
 /**
  * In-process latency benchmarks for critical HTTP paths.
@@ -34,13 +68,17 @@ import org.slf4j.LoggerFactory
  * These tests use the full application stack (H2 in-memory + Jooq + HTTP4K) but bypass the network,
  * so they measure routing, serialisation, auth, and DB overhead without TCP noise.
  *
- * Run with: mvn test -pl web -am -Pperformance
+ * **Run with:** `mvn test -pl web -am -Pperformance`
  *
- * They are excluded from the regular test suite via the root pom.xml Surefire configuration
- * (`excludedGroups=performance`).
+ * Excluded from the regular test suite via `surefire.excluded.groups=performance` in root
+ * `pom.xml`.
  *
- * Thresholds are intentionally relaxed to accommodate slow CI agents. The primary goal is
- * regression detection over time, not absolute latency enforcement.
+ * After each run the results are written to `benchmarks/baseline.json` at the project root. Commit
+ * that file to capture a new reference point. The next run prints a comparison table so regressions
+ * are immediately visible in the log.
+ *
+ * Absolute P99 thresholds (20–1500 ms depending on the endpoint) catch gross regressions even
+ * without a committed baseline. The baseline file is the historical record.
  */
 @Tag("performance")
 class PerformanceBenchmarkTest : H2WebTest() {
@@ -49,6 +87,105 @@ class PerformanceBenchmarkTest : H2WebTest() {
         private const val WARMUP = 10
         private const val ITERATIONS = 200
         private val logger = LoggerFactory.getLogger(PerformanceBenchmarkTest::class.java)
+        private val mapper = jacksonObjectMapper().writerWithDefaultPrettyPrinter()
+
+        /** Written by @BeforeAll from the committed baseline.json, if present. */
+        private var previousBaseline: BenchmarkBaseline? = null
+
+        /** Accumulated by each @Test method; flushed to disk by @AfterAll. */
+        private val collectedReports = mutableMapOf<String, LatencyReport>()
+
+        /** Path of the baseline file relative to the project root. */
+        private val baselineFile =
+            Path.of(System.getProperty("user.dir"))
+                .resolve("../benchmarks/baseline.json")
+                .normalize()
+                .toFile()
+
+        @BeforeAll
+        @JvmStatic
+        fun loadPreviousBaseline() {
+            collectedReports.clear()
+            if (baselineFile.exists()) {
+                previousBaseline = jacksonObjectMapper().readValue<BenchmarkBaseline>(baselineFile)
+                logger.info(
+                    "Loaded previous baseline from {} (recorded {})",
+                    baselineFile,
+                    previousBaseline!!.recordedAt,
+                )
+            } else {
+                logger.info("No previous baseline found — this run will create {}", baselineFile)
+            }
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun writeBaselineAndCompare() {
+            if (collectedReports.isEmpty()) return
+
+            // -- Comparison table -------------------------------------------------
+            val prev = previousBaseline?.byName()
+            if (prev != null) {
+                val header =
+                    "%-44s  %8s  %8s  %8s  %8s"
+                        .format("benchmark", "prev P99", "curr P99", "delta", "status")
+                val divider = "-".repeat(header.length)
+                logger.info("Benchmark comparison vs previous baseline:")
+                logger.info(divider)
+                logger.info(header)
+                logger.info(divider)
+                for ((name, report) in collectedReports.entries.sortedBy { it.key }) {
+                    val prevEntry = prev[name]
+                    if (prevEntry != null) {
+                        val delta = report.p99Ms() - prevEntry.p99Ms
+                        val pct = if (prevEntry.p99Ms > 0) delta / prevEntry.p99Ms * 100 else 0.0
+                        val status =
+                            when {
+                                delta > prevEntry.p99Ms -> "REGRESSION" // >2× slower
+                                delta > 0 -> "slower"
+                                delta < 0 -> "faster"
+                                else -> "unchanged"
+                            }
+                        logger.info(
+                            "%-44s  %7.2fms  %7.2fms  %+7.2f%%  %s"
+                                .format(name, prevEntry.p99Ms, report.p99Ms(), pct, status)
+                        )
+                    } else {
+                        logger.info(
+                            "%-44s  %8s  %7.2fms  %8s  new".format(name, "—", report.p99Ms(), "—")
+                        )
+                    }
+                }
+                logger.info(divider)
+            }
+
+            // -- Write new baseline -----------------------------------------------
+            baselineFile.parentFile.mkdirs()
+            val baseline =
+                BenchmarkBaseline(
+                    recordedAt = LocalDateTime.now().toString(),
+                    javaVersion = System.getProperty("java.version"),
+                    benchmarks =
+                        collectedReports.values
+                            .sortedBy { it.name }
+                            .map { r ->
+                                BenchmarkEntry(
+                                    name = r.name,
+                                    iterations = r.count,
+                                    p50Ms = r.p50Ms(),
+                                    p95Ms = r.p95Ms(),
+                                    p99Ms = r.p99Ms(),
+                                    maxMs = r.maxMs(),
+                                )
+                            },
+                )
+            mapper.writeValue(baselineFile, baseline)
+            logger.info("Baseline written to {}", baselineFile.canonicalPath)
+        }
+
+        private fun record(report: LatencyReport) {
+            collectedReports[report.name] = report
+        }
     }
 
     private lateinit var app: HttpHandler
@@ -90,7 +227,6 @@ class PerformanceBenchmarkTest : H2WebTest() {
                 )
                 .http!!
 
-        // Register and authenticate a test user up front
         val registerLens = Body.auto<RegisterRequest>().toLens()
         val loginLens = Body.auto<LoginRequest>().toLens()
         val tokenLens = Body.auto<AuthTokenResponse>().toLens()
@@ -121,6 +257,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
         repeat(ITERATIONS) { rec.record { app(req) } }
         val report = rec.report()
         logger.info("{}", report)
+        record(report)
         assertTrue(report.p99Ms() < 20.0, "P99 should be < 20ms, was %.2fms".format(report.p99Ms()))
     }
 
@@ -137,6 +274,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
         repeat(ITERATIONS) { rec.record { app(req) } }
         val report = rec.report()
         logger.info("{}", report)
+        record(report)
         assertTrue(report.p99Ms() < 50.0, "P99 should be < 50ms, was %.2fms".format(report.p99Ms()))
     }
 
@@ -153,6 +291,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
         repeat(ITERATIONS) { rec.record { app(req) } }
         val report = rec.report()
         logger.info("{}", report)
+        record(report)
         assertTrue(report.p99Ms() < 50.0, "P99 should be < 50ms, was %.2fms".format(report.p99Ms()))
     }
 
@@ -174,6 +313,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
         repeat(ITERATIONS) { rec.record { app(req) } }
         val report = rec.report()
         logger.info("{}", report)
+        record(report)
         assertTrue(
             report.p99Ms() < 100.0,
             "P99 should be < 100ms, was %.2fms".format(report.p99Ms()),
@@ -182,9 +322,8 @@ class PerformanceBenchmarkTest : H2WebTest() {
 
     /**
      * Cache effectiveness: measures the latency difference between a cold message-list request
-     * (cache invalidated) and a warm one (Caffeine cache hit).
-     *
-     * Passes as long as warm P99 is no slower than cold P50 — i.e. the cache is actually helping.
+     * (cache invalidated) and a warm one (Caffeine hit). Both variants are recorded in the baseline
+     * so the warm/cold ratio is tracked over time.
      */
     @Test
     fun `message list cache warm vs cold`() {
@@ -193,13 +332,11 @@ class PerformanceBenchmarkTest : H2WebTest() {
 
         val coldRec = LatencyRecorder("GET /api/v1/sync?since=0 (cold)")
         repeat(WARMUP) { app(req) }
-        // Force cold: reset the list cache between each measurement
         repeat(ITERATIONS) {
-            testDsl.execute("TRUNCATE TABLE SYNC_STATE") // flush any state, keep table schema
+            testDsl.execute("TRUNCATE TABLE SYNC_STATE")
             coldRec.record { app(req) }
         }
 
-        // Re-seed state, then warm: repeated calls hit the session cache
         val warmRec = LatencyRecorder("GET /api/v1/sync?since=0 (warm)")
         repeat(WARMUP) { app(req) }
         repeat(ITERATIONS) { warmRec.record { app(req) } }
@@ -208,7 +345,8 @@ class PerformanceBenchmarkTest : H2WebTest() {
         val warm = warmRec.report()
         logger.info("{}", cold)
         logger.info("{}", warm)
-        // Warm P99 must be no worse than cold median — verifies the cache is effective
+        record(cold)
+        record(warm)
         assertTrue(
             warm.p99Ms() <= cold.p50Ms() * 3.0,
             "Warm P99 (%.2fms) should be within 3× of cold P50 (%.2fms)"
@@ -218,9 +356,9 @@ class PerformanceBenchmarkTest : H2WebTest() {
 
     /**
      * BCrypt login latency at production strength (logRounds=10). Intentionally uses a separate
-     * SecurityService instance so it doesn't interfere with other benchmarks.
+     * SecurityService instance so it doesn't affect the main app or other benchmarks.
      *
-     * Runs fewer iterations because each call takes ~100ms.
+     * Runs fewer iterations because each call takes ~100 ms.
      */
     @Test
     fun `POST login latency (BCrypt logRounds=10)`() {
@@ -233,7 +371,6 @@ class PerformanceBenchmarkTest : H2WebTest() {
                 sessionRepository = JooqSessionRepository(testDsl),
             )
 
-        // Register a separate user hashed at logRounds=10
         userRepository.save(
             dev.outerstellar.starter.security.User(
                 id = java.util.UUID.randomUUID(),
@@ -245,7 +382,6 @@ class PerformanceBenchmarkTest : H2WebTest() {
         )
 
         val loginLens = Body.auto<LoginRequest>().toLens()
-        val tokenLens = Body.auto<AuthTokenResponse>().toLens()
         val contactService = mockk<ContactService>(relaxed = true)
         val messageRepository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
@@ -274,11 +410,11 @@ class PerformanceBenchmarkTest : H2WebTest() {
                 .with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))
 
         val rec = LatencyRecorder("POST /api/v1/auth/login (BCrypt rounds=10)")
-        repeat(3) { prodApp(req) } // small warmup — BCrypt is intentionally slow
+        repeat(3) { prodApp(req) }
         repeat(10) { rec.record { prodApp(req) } }
         val report = rec.report()
         logger.info("{}", report)
-        // BCrypt at 10 rounds takes ~100-200ms on modern hardware; allow up to 1500ms for slow CI
+        record(report)
         assertTrue(
             report.p99Ms() < 1500.0,
             "Login P99 should be < 1500ms, was %.2fms".format(report.p99Ms()),
