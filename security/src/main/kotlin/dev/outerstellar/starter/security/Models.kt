@@ -85,6 +85,40 @@ interface DeviceTokenRepository {
     fun deleteAllForUser(userId: UUID)
 }
 
+data class Session(
+    val id: Long = 0,
+    val tokenHash: String,
+    val userId: UUID,
+    val createdAt: Instant = Instant.now(),
+    val expiresAt: Instant,
+)
+
+interface SessionRepository {
+    fun save(session: Session)
+
+    /** Find an active (non-expired) session by token hash. */
+    fun findByTokenHash(tokenHash: String): Session?
+
+    /** Find a session by token hash regardless of expiry. */
+    fun findByTokenHashIncludingExpired(tokenHash: String): Session?
+
+    fun updateExpiresAt(tokenHash: String, expiresAt: Instant)
+
+    fun deleteByTokenHash(tokenHash: String)
+
+    fun deleteByUserId(userId: UUID)
+
+    fun deleteExpired()
+}
+
+sealed class SessionLookup {
+    data class Active(val user: User) : SessionLookup()
+
+    data object Expired : SessionLookup()
+
+    data object NotFound : SessionLookup()
+}
+
 interface ApiKeyRepository {
     fun save(apiKey: dev.outerstellar.starter.model.ApiKey)
 

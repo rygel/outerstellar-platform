@@ -3,6 +3,7 @@ package dev.outerstellar.starter.web
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -54,6 +55,7 @@ class SyncApiIntegrationTest : H2WebTest() {
     private lateinit var userRepository: JooqUserRepository
     private lateinit var contactService: ContactService
     private lateinit var testUser: User
+    private lateinit var sessionToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -65,7 +67,12 @@ class SyncApiIntegrationTest : H2WebTest() {
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
         contactService = mockk(relaxed = true)
-        val securityService = SecurityService(userRepository, encoder)
+        val securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)
 
@@ -78,6 +85,7 @@ class SyncApiIntegrationTest : H2WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
+        sessionToken = securityService.createSession(testUser.id)
 
         every { contactService.getChangesSince(any()) } returns
             SyncPullContactResponse(contacts = emptyList(), serverTimestamp = 0L)
@@ -101,7 +109,7 @@ class SyncApiIntegrationTest : H2WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun bearerHeader() = "Bearer ${testUser.id}"
+    private fun bearerHeader() = "Bearer $sessionToken"
 
     // ---- GET /api/v1/sync ----
 

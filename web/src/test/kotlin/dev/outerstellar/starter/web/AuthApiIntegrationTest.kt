@@ -3,6 +3,7 @@ package dev.outerstellar.starter.web
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -38,7 +39,12 @@ class AuthApiIntegrationTest : H2WebTest() {
             )
         val pageFactory = WebPageFactory(repository, messageService, null, null)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
-        val securityService = SecurityService(userRepository, encoder)
+        val securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
         val contactService =
             io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 

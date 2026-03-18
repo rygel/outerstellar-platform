@@ -18,6 +18,7 @@ import dev.outerstellar.starter.persistence.JooqApiKeyRepository
 import dev.outerstellar.starter.persistence.JooqAuditRepository
 import dev.outerstellar.starter.persistence.JooqMessageRepository
 import dev.outerstellar.starter.persistence.JooqPasswordResetRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -89,6 +90,7 @@ class UserManagementIntegrationTest : H2WebTest() {
                 auditRepository,
                 resetRepository,
                 apiKeyRepository,
+                sessionRepository = JooqSessionRepository(testDsl),
             )
         val contactService =
             io.mockk.mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
@@ -117,14 +119,18 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     // ---- Helper methods ----
 
-    private fun registerUser(username: String, password: String): AuthTokenResponse {
+    private data class RegisteredUser(val id: UUID, val token: String)
+
+    private fun registerUser(username: String, password: String): RegisteredUser {
         val response =
             app(
                 Request(POST, "/api/v1/auth/register")
                     .with(registerLens of RegisterRequest(username, password))
             )
         assertEquals(Status.OK, response.status, "Registration should succeed for $username")
-        return tokenLens(response)
+        val auth = tokenLens(response)
+        val userId = userRepository.findByUsername(username)!!.id
+        return RegisteredUser(userId, auth.token)
     }
 
     private fun loginUser(username: String, password: String): AuthTokenResponse {
@@ -137,7 +143,9 @@ class UserManagementIntegrationTest : H2WebTest() {
         return tokenLens(response)
     }
 
-    private fun seedAdmin(): Pair<UUID, String> {
+    private data class AdminInfo(val id: UUID, val token: String, val password: String)
+
+    private fun seedAdmin(): AdminInfo {
         val adminId = UUID.randomUUID()
         val password = "adminpass123"
         userRepository.save(
@@ -149,7 +157,8 @@ class UserManagementIntegrationTest : H2WebTest() {
                 role = UserRole.ADMIN,
             )
         )
-        return adminId to password
+        val token = securityService.createSession(adminId)
+        return AdminInfo(adminId, token, password)
     }
 
     private fun bearerRequest(method: org.http4k.core.Method, path: String, token: String) =
@@ -229,11 +238,11 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin can list all users`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         registerUser("user1", "password123")
         registerUser("user2", "password456")
 
-        val response = app(bearerRequest(GET, "/api/v1/admin/users", adminId.toString()))
+        val response = app(bearerRequest(GET, "/api/v1/admin/users", admin.token))
         assertEquals(Status.OK, response.status)
 
         val users = userSummaryListLens(response)
@@ -253,16 +262,12 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin can disable a user`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         val userAuth = registerUser("disableuser", "password123")
 
         val response =
             app(
-                bearerRequest(
-                        PUT,
-                        "/api/v1/admin/users/${userAuth.token}/enabled",
-                        adminId.toString(),
-                    )
+                bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/enabled", admin.token)
                     .with(setUserEnabledLens of SetUserEnabledRequest(false))
             )
         assertEquals(Status.OK, response.status)
@@ -278,23 +283,19 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin can re-enable a user`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         val userAuth = registerUser("reenableuser", "password123")
 
         // Disable
         app(
-            bearerRequest(PUT, "/api/v1/admin/users/${userAuth.token}/enabled", adminId.toString())
+            bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/enabled", admin.token)
                 .with(setUserEnabledLens of SetUserEnabledRequest(false))
         )
 
         // Re-enable
         val response =
             app(
-                bearerRequest(
-                        PUT,
-                        "/api/v1/admin/users/${userAuth.token}/enabled",
-                        adminId.toString(),
-                    )
+                bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/enabled", admin.token)
                     .with(setUserEnabledLens of SetUserEnabledRequest(true))
             )
         assertEquals(Status.OK, response.status)
@@ -306,11 +307,11 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin cannot disable self`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         val response =
             app(
-                bearerRequest(PUT, "/api/v1/admin/users/$adminId/enabled", adminId.toString())
+                bearerRequest(PUT, "/api/v1/admin/users/${admin.id}/enabled", admin.token)
                     .with(setUserEnabledLens of SetUserEnabledRequest(false))
             )
         assertEquals(Status.BAD_REQUEST, response.status)
@@ -318,12 +319,12 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin can promote a user to admin`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         val userAuth = registerUser("promoteuser", "password123")
 
         val response =
             app(
-                bearerRequest(PUT, "/api/v1/admin/users/${userAuth.token}/role", adminId.toString())
+                bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/role", admin.token)
                     .with(setUserRoleLens of SetUserRoleRequest("ADMIN"))
             )
         assertEquals(Status.OK, response.status)
@@ -335,19 +336,19 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin can demote an admin to user`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         val userAuth = registerUser("demoteuser", "password123")
 
         // Promote first
         app(
-            bearerRequest(PUT, "/api/v1/admin/users/${userAuth.token}/role", adminId.toString())
+            bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/role", admin.token)
                 .with(setUserRoleLens of SetUserRoleRequest("ADMIN"))
         )
 
         // Now demote
         val response =
             app(
-                bearerRequest(PUT, "/api/v1/admin/users/${userAuth.token}/role", adminId.toString())
+                bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/role", admin.token)
                     .with(setUserRoleLens of SetUserRoleRequest("USER"))
             )
         assertEquals(Status.OK, response.status)
@@ -359,11 +360,11 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin cannot demote self`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         val response =
             app(
-                bearerRequest(PUT, "/api/v1/admin/users/$adminId/role", adminId.toString())
+                bearerRequest(PUT, "/api/v1/admin/users/${admin.id}/role", admin.token)
                     .with(setUserRoleLens of SetUserRoleRequest("USER"))
             )
         assertEquals(Status.BAD_REQUEST, response.status)
@@ -371,10 +372,10 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin user list returns correct fields`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         registerUser("fieldcheck", "password123")
 
-        val response = app(bearerRequest(GET, "/api/v1/admin/users", adminId.toString()))
+        val response = app(bearerRequest(GET, "/api/v1/admin/users", admin.token))
         val users = userSummaryListLens(response)
         val user = users.find { it.username == "fieldcheck" }!!
 
@@ -389,12 +390,12 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin can access user admin page`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         val response =
             app(
                 Request(GET, "/admin/users")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         assertEquals(Status.OK, response.status)
         assertTrue(response.bodyString().contains("User Administration"))
@@ -407,20 +408,20 @@ class UserManagementIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(GET, "/admin/users")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.token))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.id.toString()))
             )
         assertEquals(Status.FORBIDDEN, response.status)
     }
 
     @Test
     fun `admin can toggle user enabled via HTML form`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         val userAuth = registerUser("toggleuser", "password123")
 
         val response =
             app(
-                Request(POST, "/admin/users/${userAuth.token}/toggle-enabled")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                Request(POST, "/admin/users/${userAuth.id}/toggle-enabled")
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         assertEquals(Status.OK, response.status)
 
@@ -431,13 +432,13 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin can toggle user role via HTML form`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         val userAuth = registerUser("roleuser", "password123")
 
         val response =
             app(
-                Request(POST, "/admin/users/${userAuth.token}/toggle-role")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                Request(POST, "/admin/users/${userAuth.id}/toggle-role")
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         assertEquals(Status.OK, response.status)
 
@@ -450,14 +451,14 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `session timeout returns expired header for API requests`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         // Set last_activity to 60 minutes ago (default timeout is 30 min)
         testDsl.execute(
-            "UPDATE users SET last_activity_at = TIMESTAMPADD(MINUTE, -60, CURRENT_TIMESTAMP) WHERE id = '$adminId'"
+            "UPDATE users SET last_activity_at = TIMESTAMPADD(MINUTE, -60, CURRENT_TIMESTAMP) WHERE id = '${admin.id}'"
         )
 
-        val response = app(bearerRequest(GET, "/api/v1/admin/users", adminId.toString()))
+        val response = app(bearerRequest(GET, "/api/v1/admin/users", admin.token))
         // Session timeout filter runs before admin security for API routes too
         // but the timeout filter checks web context user (cookie), not bearer token
         // The bearer auth flow uses a different path, so this might not trigger timeout
@@ -466,17 +467,17 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `session timeout redirects HTML requests to auth page`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         // Set last_activity_at to a timestamp well in the past
         testDsl.execute(
-            "UPDATE users SET last_activity_at = TIMESTAMP '2020-01-01 00:00:00' WHERE id = '$adminId'"
+            "UPDATE users SET last_activity_at = TIMESTAMP '2020-01-01 00:00:00' WHERE id = '${admin.id}'"
         )
 
         val response =
             app(
                 Request(GET, "/")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         assertEquals(
             Status.FOUND,
@@ -492,17 +493,17 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `active session is not expired`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         // Set last_activity to 5 minutes ago (under the 30 min timeout)
         testDsl.execute(
-            "UPDATE users SET last_activity_at = TIMESTAMPADD(MINUTE, -5, CURRENT_TIMESTAMP) WHERE id = '$adminId'"
+            "UPDATE users SET last_activity_at = TIMESTAMPADD(MINUTE, -5, CURRENT_TIMESTAMP) WHERE id = '${admin.id}'"
         )
 
         val response =
             app(
                 Request(GET, "/admin/users")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         assertEquals(Status.OK, response.status)
     }
@@ -511,12 +512,12 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin user sees Users nav link`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         val response =
             app(
                 Request(GET, "/")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         assertEquals(Status.OK, response.status)
         assertTrue(response.bodyString().contains("/admin/users"), "Should contain Users nav link")
@@ -529,7 +530,7 @@ class UserManagementIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(GET, "/")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.token))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.id.toString()))
             )
         assertEquals(Status.OK, response.status)
         assertFalse(
@@ -877,13 +878,13 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `user admin page has table with column headers`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         registerUser("tableuser", "password123")
 
         val response =
             app(
                 Request(GET, "/admin/users")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         assertEquals(Status.OK, response.status)
         val body = response.bodyString()
@@ -899,13 +900,13 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `user admin page has enable-disable and role toggle buttons`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
         registerUser("togglebtnuser", "password123")
 
         val response =
             app(
                 Request(GET, "/admin/users")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         val body = response.bodyString()
 
@@ -923,12 +924,12 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `user admin page marks current user as self`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         val response =
             app(
                 Request(GET, "/admin/users")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         val body = response.bodyString()
 
@@ -937,12 +938,12 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `change password page has current, new, and confirm fields`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         val response =
             app(
                 Request(GET, "/auth/change-password")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         assertEquals(Status.OK, response.status)
         val body = response.bodyString()
@@ -973,12 +974,12 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `topbar shows profile and change-password links when logged in`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         val response =
             app(
                 Request(GET, "/")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         val body = response.bodyString()
 
@@ -1008,12 +1009,12 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `admin nav links include Users and Audit Log`() {
-        val (adminId, _) = seedAdmin()
+        val admin = seedAdmin()
 
         val response =
             app(
                 Request(GET, "/")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", adminId.toString()))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
             )
         val body = response.bodyString()
 
@@ -1028,7 +1029,7 @@ class UserManagementIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(GET, "/")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.token))
+                    .cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.id.toString()))
             )
         val body = response.bodyString()
 

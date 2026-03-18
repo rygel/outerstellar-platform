@@ -5,6 +5,7 @@ import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.model.CreateApiKeyResponse
 import dev.outerstellar.starter.persistence.JooqApiKeyRepository
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -43,6 +44,7 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
+    private lateinit var sessionToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -56,7 +58,12 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService =
-            SecurityService(userRepository, encoder, apiKeyRepository = apiKeyRepository)
+            SecurityService(
+                userRepository,
+                encoder,
+                apiKeyRepository = apiKeyRepository,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)
 
@@ -69,6 +76,7 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
+        sessionToken = securityService.createSession(testUser.id)
 
         app =
             app(
@@ -87,7 +95,7 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun uuidBearer() = "Bearer ${testUser.id}"
+    private fun uuidBearer() = "Bearer $sessionToken"
 
     /** Creates an API key via the API and returns the raw key value. */
     private fun createApiKey(name: String = "my-key"): CreateApiKeyResponse {

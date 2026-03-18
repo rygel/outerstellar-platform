@@ -6,6 +6,7 @@ import dev.outerstellar.starter.model.ApiKeySummary
 import dev.outerstellar.starter.model.CreateApiKeyResponse
 import dev.outerstellar.starter.persistence.JooqApiKeyRepository
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -53,6 +54,8 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
     private lateinit var securityService: SecurityService
     private lateinit var testUser: User
     private lateinit var otherUser: User
+    private lateinit var testToken: String
+    private lateinit var otherToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -70,6 +73,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
                 userRepository = userRepository,
                 passwordEncoder = encoder,
                 apiKeyRepository = apiKeyRepository,
+                sessionRepository = JooqSessionRepository(testDsl),
             )
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)
@@ -92,6 +96,8 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
             )
         userRepository.save(testUser)
         userRepository.save(otherUser)
+        testToken = securityService.createSession(testUser.id)
+        otherToken = securityService.createSession(otherUser.id)
 
         app =
             app(
@@ -110,7 +116,8 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun bearerFor(user: User) = "Bearer ${user.id}"
+    private fun bearerFor(user: User) =
+        if (user == testUser) "Bearer $testToken" else "Bearer $otherToken"
 
     private val createApiKeyResponseLens = Body.auto<CreateApiKeyResponse>().toLens()
     private val apiKeySummaryListLens = Body.auto<List<ApiKeySummary>>().toLens()

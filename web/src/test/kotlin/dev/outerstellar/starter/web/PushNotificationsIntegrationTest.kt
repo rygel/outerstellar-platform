@@ -3,6 +3,7 @@ package dev.outerstellar.starter.web
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.DeviceToken
@@ -54,6 +55,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
     private lateinit var userRepository: JooqUserRepository
     private lateinit var deviceTokenRepository: InMemoryDeviceTokenRepository
     private lateinit var testUser: User
+    private lateinit var sessionToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -66,7 +68,12 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
-        val securityService = SecurityService(userRepository, encoder)
+        val securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)
 
@@ -80,6 +87,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
+        sessionToken = securityService.createSession(testUser.id)
 
         app =
             app(
@@ -110,7 +118,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(POST, "/api/v1/devices/register")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
                     .body("""{"platform":"android","token":"fcm-token-abc123"}""")
             )
@@ -122,7 +130,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(POST, "/api/v1/devices/register")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
                     .body("""{"platform":"ios","token":"apns-token-xyz789"}""")
             )
@@ -134,7 +142,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(POST, "/api/v1/devices/register")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
                     .body(
                         """{"platform":"ios","token":"apns-bundle-token","appBundle":"com.example.app"}"""
@@ -159,7 +167,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(POST, "/api/v1/devices/register")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
                     .body("""{"platform":"windows","token":"some-token"}""")
             )
@@ -175,7 +183,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(POST, "/api/v1/devices/register")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
                     .body("""{"platform":"android","token":""}""")
             )
@@ -188,7 +196,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(POST, "/api/v1/devices/register")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
                     .body("not-valid-json{{{")
             )
@@ -202,7 +210,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val tokenValue = "fcm-stored-token-${UUID.randomUUID()}"
         app(
             Request(POST, "/api/v1/devices/register")
-                .header("Authorization", "Bearer ${testUser.id}")
+                .header("Authorization", "Bearer $sessionToken")
                 .header("content-type", "application/json")
                 .body("""{"platform":"android","token":"$tokenValue"}""")
         )
@@ -217,7 +225,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
     fun `POST register stores appBundle when provided`() {
         app(
             Request(POST, "/api/v1/devices/register")
-                .header("Authorization", "Bearer ${testUser.id}")
+                .header("Authorization", "Bearer $sessionToken")
                 .header("content-type", "application/json")
                 .body(
                     """{"platform":"ios","token":"apns-bundle-stored","appBundle":"com.myapp.bundle"}"""
@@ -233,7 +241,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         repeat(3) { i ->
             app(
                 Request(POST, "/api/v1/devices/register")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
                     .body("""{"platform":"android","token":"fcm-multi-token-$i"}""")
             )
@@ -251,7 +259,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         // First register it
         app(
             Request(POST, "/api/v1/devices/register")
-                .header("Authorization", "Bearer ${testUser.id}")
+                .header("Authorization", "Bearer $sessionToken")
                 .header("content-type", "application/json")
                 .body("""{"platform":"android","token":"$tokenValue"}""")
         )
@@ -259,7 +267,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(DELETE, "/api/v1/devices/register")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
                     .body("""{"token":"$tokenValue"}""")
             )
@@ -271,14 +279,14 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val tokenValue = "fcm-removed-${UUID.randomUUID()}"
         app(
             Request(POST, "/api/v1/devices/register")
-                .header("Authorization", "Bearer ${testUser.id}")
+                .header("Authorization", "Bearer $sessionToken")
                 .header("content-type", "application/json")
                 .body("""{"platform":"android","token":"$tokenValue"}""")
         )
 
         app(
             Request(DELETE, "/api/v1/devices/register")
-                .header("Authorization", "Bearer ${testUser.id}")
+                .header("Authorization", "Bearer $sessionToken")
                 .header("content-type", "application/json")
                 .body("""{"token":"$tokenValue"}""")
         )
@@ -295,7 +303,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val tokenValue = "fcm-query-param-${UUID.randomUUID()}"
         app(
             Request(POST, "/api/v1/devices/register")
-                .header("Authorization", "Bearer ${testUser.id}")
+                .header("Authorization", "Bearer $sessionToken")
                 .header("content-type", "application/json")
                 .body("""{"platform":"android","token":"$tokenValue"}""")
         )
@@ -303,7 +311,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(DELETE, "/api/v1/devices/register?token=$tokenValue")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
             )
         assertEquals(Status.NO_CONTENT, response.status)
     }
@@ -324,7 +332,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val response =
             app(
                 Request(DELETE, "/api/v1/devices/register")
-                    .header("Authorization", "Bearer ${testUser.id}")
+                    .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
                     .body("{}")
             )

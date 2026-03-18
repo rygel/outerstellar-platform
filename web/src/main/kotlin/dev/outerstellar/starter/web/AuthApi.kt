@@ -215,11 +215,12 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     val user = securityService.authenticate(login.username, login.password)
 
                     if (user != null) {
+                        val sessionToken = securityService.createSession(user.id)
                         Response(Status.OK)
                             .with(
                                 tokenResponseLens of
                                     AuthTokenResponse(
-                                        token = user.id.toString(),
+                                        token = sessionToken,
                                         username = user.username,
                                         role = user.role.name,
                                     )
@@ -241,11 +242,12 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     val register = registerRequestLens(request)
                     try {
                         val user = securityService.register(register.username, register.password)
+                        val sessionToken = securityService.createSession(user.id)
                         Response(Status.OK)
                             .with(
                                 tokenResponseLens of
                                     AuthTokenResponse(
-                                        token = user.id.toString(),
+                                        token = sessionToken,
                                         username = user.username,
                                         role = user.role.name,
                                     )

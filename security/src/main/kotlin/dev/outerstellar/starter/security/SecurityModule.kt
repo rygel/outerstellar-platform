@@ -16,6 +16,8 @@ val securityModule
                 getOrNull(),
                 getOrNull(),
                 getOrNull<String>(named("appBaseUrl")) ?: "http://localhost:8080",
+                getOrNull(),
+                get<dev.outerstellar.starter.AppConfig>().sessionTimeoutMinutes.toLong() * 60,
             )
         }
     }

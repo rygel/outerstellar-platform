@@ -8,6 +8,7 @@ import dev.outerstellar.starter.model.RegisterRequest
 import dev.outerstellar.starter.persistence.JooqAuditRepository
 import dev.outerstellar.starter.persistence.JooqMessageRepository
 import dev.outerstellar.starter.persistence.JooqNotificationRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -58,7 +59,13 @@ class NotificationsIntegrationTest : H2WebTest() {
         val messageService =
             dev.outerstellar.starter.service.MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
-        securityService = SecurityService(userRepository, encoder, auditRepository)
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                auditRepository,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
         val pageFactory =
             WebPageFactory(
                 repository,

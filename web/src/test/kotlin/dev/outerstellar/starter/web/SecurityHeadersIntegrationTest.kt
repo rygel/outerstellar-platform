@@ -3,6 +3,7 @@ package dev.outerstellar.starter.web
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -43,6 +44,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
+    private lateinit var sessionToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -54,7 +56,12 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
-        val securityService = SecurityService(userRepository, encoder)
+        val securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)
 
@@ -67,6 +74,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
+        sessionToken = securityService.createSession(testUser.id)
 
         app =
             app(
@@ -96,7 +104,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
     @Test
     fun `API route has X-Content-Type-Options nosniff`() {
         val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${testUser.id}"))
+            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         assertEquals("nosniff", response.header("X-Content-Type-Options"))
     }
 
@@ -117,7 +125,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
     @Test
     fun `API route has X-Frame-Options DENY`() {
         val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${testUser.id}"))
+            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         assertEquals("DENY", response.header("X-Frame-Options"))
     }
 
@@ -134,7 +142,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
     @Test
     fun `API route has Referrer-Policy header`() {
         val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${testUser.id}"))
+            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         assertNotNull(
             response.header("Referrer-Policy"),
             "Referrer-Policy should be present on API routes",
@@ -165,7 +173,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
     @Test
     fun `API route does NOT have Content-Security-Policy`() {
         val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${testUser.id}"))
+            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         val csp = response.header("Content-Security-Policy")
         assertNull(csp, "CSP should not be set on /api/ routes, got: $csp")
     }
@@ -213,7 +221,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
     @Test
     fun `CORS Expose-Headers includes X-Session-Expired`() {
         val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${testUser.id}"))
+            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         val exposeHeaders = response.header("Access-Control-Expose-Headers") ?: ""
         assertTrue(
             exposeHeaders.contains("X-Session-Expired"),

@@ -4,6 +4,7 @@ import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqAuditRepository
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -40,6 +41,8 @@ class AuditLogIntegrationTest : H2WebTest() {
     private lateinit var userRepository: JooqUserRepository
     private lateinit var adminUser: User
     private lateinit var targetUser: User
+    private lateinit var adminToken: String
+    private lateinit var targetToken: String
 
     // Use direct SQL for audit log queries — avoids JooqAuditRepository.findRecent()
     // which fails in H2 due to IDENTITY column field resolution
@@ -79,7 +82,13 @@ class AuditLogIntegrationTest : H2WebTest() {
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
-        val securityService = SecurityService(userRepository, encoder, auditRepository)
+        val securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                auditRepository,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)
 
@@ -101,6 +110,8 @@ class AuditLogIntegrationTest : H2WebTest() {
             )
         userRepository.save(adminUser)
         userRepository.save(targetUser)
+        adminToken = securityService.createSession(adminUser.id)
+        targetToken = securityService.createSession(targetUser.id)
 
         app =
             app(
@@ -119,7 +130,8 @@ class AuditLogIntegrationTest : H2WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun bearerHeader(user: User) = "Bearer ${user.id}"
+    private fun bearerHeader(user: User) =
+        if (user == adminUser) "Bearer $adminToken" else "Bearer $targetToken"
 
     @Test
     fun `enable user action creates audit log entry`() {

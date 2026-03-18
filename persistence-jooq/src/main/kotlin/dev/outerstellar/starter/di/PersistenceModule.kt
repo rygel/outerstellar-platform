@@ -10,6 +10,7 @@ import dev.outerstellar.starter.persistence.JooqMessageRepository
 import dev.outerstellar.starter.persistence.JooqOAuthRepository
 import dev.outerstellar.starter.persistence.JooqOutboxRepository
 import dev.outerstellar.starter.persistence.JooqPasswordResetRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqTransactionManager
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.persistence.MessageRepository
@@ -20,6 +21,7 @@ import dev.outerstellar.starter.security.AuditRepository
 import dev.outerstellar.starter.security.DeviceTokenRepository
 import dev.outerstellar.starter.security.OAuthRepository
 import dev.outerstellar.starter.security.PasswordResetRepository
+import dev.outerstellar.starter.security.SessionRepository
 import dev.outerstellar.starter.security.UserRepository
 import io.micrometer.core.instrument.Metrics
 import javax.sql.DataSource
@@ -62,4 +64,6 @@ val persistenceModule
         single<OAuthRepository> { JooqOAuthRepository(get()) }
 
         single<DeviceTokenRepository> { JooqDeviceTokenRepository(get()) }
+
+        single<SessionRepository> { JooqSessionRepository(get()) }
     }

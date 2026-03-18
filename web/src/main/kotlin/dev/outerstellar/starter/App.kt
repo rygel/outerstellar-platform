@@ -29,7 +29,6 @@ import dev.outerstellar.starter.web.UserAdminRoutes
 import dev.outerstellar.starter.web.WebPageFactory
 import dev.outerstellar.starter.web.rateLimitFilter
 import dev.outerstellar.starter.web.webContext
-import java.util.UUID
 import org.http4k.contract.bindContract
 import org.http4k.contract.contract
 import org.http4k.contract.openapi.ApiInfo
@@ -81,35 +80,25 @@ fun app(
     val bearerAuthFilter = Filter { next ->
         { req ->
             val token = req.header("Authorization")?.removePrefix("Bearer ")
-            val user =
-                token?.let {
-                    try {
-                        val id = UUID.fromString(token)
-                        userRepository.findById(id)?.takeIf { u -> u.enabled }
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        // Token is not a UUID, try API key authentication
-                        securityService.authenticateApiKey(token)
-                    }
-                }
-            if (user != null) {
-                // Check bearer token session timeout
-                if (user.lastActivityAt != null) {
-                    val elapsed =
-                        java.time.Duration.between(user.lastActivityAt, java.time.Instant.now())
-                    if (elapsed.toMinutes() >= config.sessionTimeoutMinutes) {
+            if (token == null) {
+                Response(Status.UNAUTHORIZED).body("API token required")
+            } else {
+                when (val result = securityService.lookupSession(token)) {
+                    is dev.outerstellar.starter.security.SessionLookup.Active ->
+                        next(req.with(SecurityRules.USER_KEY of result.user))
+                    is dev.outerstellar.starter.security.SessionLookup.Expired ->
                         Response(Status.UNAUTHORIZED)
                             .header("X-Session-Expired", "true")
                             .body("Session expired")
-                    } else {
-                        userRepository.updateLastActivity(user.id)
-                        next(req.with(SecurityRules.USER_KEY of user))
+                    is dev.outerstellar.starter.security.SessionLookup.NotFound -> {
+                        val apiKeyUser = securityService.authenticateApiKey(token)
+                        if (apiKeyUser != null) {
+                            next(req.with(SecurityRules.USER_KEY of apiKeyUser))
+                        } else {
+                            Response(Status.UNAUTHORIZED).body("API token required")
+                        }
                     }
-                } else {
-                    userRepository.updateLastActivity(user.id)
-                    next(req.with(SecurityRules.USER_KEY of user))
                 }
-            } else {
-                Response(Status.UNAUTHORIZED).body("API token required")
             }
         }
     }

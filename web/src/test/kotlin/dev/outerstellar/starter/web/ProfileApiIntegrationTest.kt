@@ -9,6 +9,7 @@ import dev.outerstellar.starter.model.UpdateNotificationPrefsRequest
 import dev.outerstellar.starter.model.UpdateProfileRequest
 import dev.outerstellar.starter.model.UserProfileResponse
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -59,7 +60,12 @@ class ProfileApiIntegrationTest : H2WebTest() {
             dev.outerstellar.starter.service.MessageService(repository, outbox, txManager, cache)
         val pageFactory = WebPageFactory(repository, messageService, null, null)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
-        val securityService = SecurityService(userRepository, encoder)
+        val securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
         val contactService = mockk<dev.outerstellar.starter.service.ContactService>(relaxed = true)
 
         app =

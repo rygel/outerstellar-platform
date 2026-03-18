@@ -23,6 +23,8 @@ class SecurityService(
     private val emailService: dev.outerstellar.starter.service.EmailService? = null,
     private val oauthRepository: OAuthRepository? = null,
     private val appBaseUrl: String = "http://localhost:8080",
+    private val sessionRepository: SessionRepository? = null,
+    private val sessionTimeoutSeconds: Long = 1800L,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
 
@@ -237,7 +239,7 @@ class SecurityService(
         require(name.isNotBlank()) { "API key name is required" }
         val rawKey = "osk_" + generateRandomHex(API_KEY_HEX_LENGTH)
         val keyPrefix = rawKey.take(API_KEY_PREFIX_LENGTH)
-        val keyHash = hashApiKey(rawKey)
+        val keyHash = hashToken(rawKey)
 
         val apiKey = ApiKey(userId = userId, keyHash = keyHash, keyPrefix = keyPrefix, name = name)
         apiKeyRepository?.save(apiKey)
@@ -315,7 +317,7 @@ class SecurityService(
     }
 
     fun authenticateApiKey(rawKey: String): User? {
-        val keyHash = hashApiKey(rawKey)
+        val keyHash = hashToken(rawKey)
         val apiKey = apiKeyRepository?.findByKeyHash(keyHash) ?: return null
         if (!apiKey.enabled) return null
 
@@ -327,13 +329,54 @@ class SecurityService(
         return null
     }
 
+    fun createSession(userId: UUID): String {
+        val repo = sessionRepository ?: error("SessionRepository is not configured")
+        val rawToken = "oss_" + generateRandomHex(SESSION_TOKEN_HEX_LENGTH)
+        val tokenHash = hashToken(rawToken)
+        val session =
+            Session(
+                tokenHash = tokenHash,
+                userId = userId,
+                expiresAt = Instant.now().plusSeconds(sessionTimeoutSeconds),
+            )
+        repo.save(session)
+        logger.info("Session created for user {}", userId)
+        return rawToken
+    }
+
+    fun lookupSession(rawToken: String): SessionLookup {
+        val repo = sessionRepository ?: return SessionLookup.NotFound
+        val tokenHash = hashToken(rawToken)
+        val activeSession = repo.findByTokenHash(tokenHash)
+        if (activeSession != null) {
+            val user = userRepository.findById(activeSession.userId)
+            if (user != null && user.enabled) {
+                // Extend session on activity
+                repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(sessionTimeoutSeconds))
+                userRepository.updateLastActivity(user.id)
+                return SessionLookup.Active(user)
+            }
+            return SessionLookup.NotFound
+        }
+        // Check if there's an expired session
+        val expiredSession = repo.findByTokenHashIncludingExpired(tokenHash)
+        if (expiredSession != null) {
+            return SessionLookup.Expired
+        }
+        return SessionLookup.NotFound
+    }
+
+    fun deleteExpiredSessions() {
+        sessionRepository?.deleteExpired()
+    }
+
     private fun generateRandomHex(length: Int): String {
         val bytes = ByteArray(length / 2)
         java.security.SecureRandom().nextBytes(bytes)
         return bytes.joinToString("") { "%02x".format(it) }
     }
 
-    private fun hashApiKey(key: String): String {
+    private fun hashToken(key: String): String {
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
     }
@@ -362,6 +405,7 @@ class SecurityService(
         private const val RESET_TOKEN_TTL_SECONDS = 3600L
         private const val API_KEY_HEX_LENGTH = 32
         private const val API_KEY_PREFIX_LENGTH = 8
+        private const val SESSION_TOKEN_HEX_LENGTH = 48
     }
 }
 

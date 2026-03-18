@@ -3,6 +3,7 @@ package dev.outerstellar.starter.web
 import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -44,6 +45,8 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var userA: User
     private lateinit var userB: User
+    private lateinit var tokenA: String
+    private lateinit var tokenB: String
 
     @BeforeEach
     fun setupTest() {
@@ -55,7 +58,12 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
-        val securityService = SecurityService(userRepository, encoder)
+        val securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)
 
@@ -77,6 +85,8 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
             )
         userRepository.save(userA)
         userRepository.save(userB)
+        tokenA = securityService.createSession(userA.id)
+        tokenB = securityService.createSession(userB.id)
 
         app =
             app(
@@ -96,7 +106,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
     @AfterEach fun teardown() = cleanup()
 
     private fun pushBatch(
-        userId: UUID,
+        token: String,
         syncIds: List<String>,
         author: String,
     ): List<org.http4k.core.Response> {
@@ -105,16 +115,16 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
                 """{"messages":[{"syncId":"$syncId","author":"$author","content":"Content for $syncId","updatedAtEpochMs":${System.currentTimeMillis()}}]}"""
             app(
                 Request(POST, "/api/v1/sync")
-                    .header("Authorization", "Bearer $userId")
+                    .header("Authorization", "Bearer $token")
                     .header("content-type", "application/json")
                     .body(body)
             )
         }
     }
 
-    private fun pullMessages(userId: UUID): SyncPullResponse {
+    private fun pullMessages(token: String): SyncPullResponse {
         val response =
-            app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $userId"))
+            app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $token"))
         assertEquals(Status.OK, response.status)
         return Jackson.asA(response.bodyString(), SyncPullResponse::class)
     }
@@ -129,7 +139,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
 
         pool.submit {
             try {
-                val responses = pushBatch(userA.id, syncIdsA, "concurrent_user_a")
+                val responses = pushBatch(tokenA, syncIdsA, "concurrent_user_a")
                 responses.forEach { r ->
                     if (r.status != Status.OK) errors.add("UserA got ${r.status}")
                 }
@@ -140,7 +150,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
 
         pool.submit {
             try {
-                val responses = pushBatch(userB.id, syncIdsB, "concurrent_user_b")
+                val responses = pushBatch(tokenB, syncIdsB, "concurrent_user_b")
                 responses.forEach { r ->
                     if (r.status != Status.OK) errors.add("UserB got ${r.status}")
                 }
@@ -165,7 +175,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
 
         pool.submit {
             try {
-                pushBatch(userA.id, syncIdsA, "concurrent_user_a")
+                pushBatch(tokenA, syncIdsA, "concurrent_user_a")
             } finally {
                 latch.countDown()
             }
@@ -173,7 +183,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
 
         pool.submit {
             try {
-                pushBatch(userB.id, syncIdsB, "concurrent_user_b")
+                pushBatch(tokenB, syncIdsB, "concurrent_user_b")
             } finally {
                 latch.countDown()
             }
@@ -183,7 +193,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
         pool.shutdown()
 
         // Pull as userA — both users share the same message store in this app
-        val pulled = pullMessages(userA.id)
+        val pulled = pullMessages(tokenA)
         val pulledIds = pulled.messages.map { it.syncId }.toSet()
 
         allIds.forEach { syncId ->
@@ -210,7 +220,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
                     val r =
                         app(
                             Request(POST, "/api/v1/sync")
-                                .header("Authorization", "Bearer ${userA.id}")
+                                .header("Authorization", "Bearer $tokenA")
                                 .header("content-type", "application/json")
                                 .body(body)
                         )
@@ -243,7 +253,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
 
         pool.submit {
             try {
-                pushBatch(userA.id, syncIdsA, "concurrent_user_a")
+                pushBatch(tokenA, syncIdsA, "concurrent_user_a")
             } finally {
                 latch.countDown()
             }
@@ -251,7 +261,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
 
         pool.submit {
             try {
-                pushBatch(userB.id, syncIdsB, "concurrent_user_b")
+                pushBatch(tokenB, syncIdsB, "concurrent_user_b")
             } finally {
                 latch.countDown()
             }
@@ -260,7 +270,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
         assertTrue(latch.await(15, TimeUnit.SECONDS))
         pool.shutdown()
 
-        val pulled = pullMessages(userA.id)
+        val pulled = pullMessages(tokenA)
         assertEquals(
             uniqueCount,
             pulled.messages.size,

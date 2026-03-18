@@ -7,6 +7,9 @@ import dev.outerstellar.starter.security.DeviceToken
 import dev.outerstellar.starter.security.DeviceTokenRepository
 import dev.outerstellar.starter.security.OAuthConnection
 import dev.outerstellar.starter.security.OAuthRepository
+import dev.outerstellar.starter.security.Session
+import dev.outerstellar.starter.security.SessionRepository
+import java.time.Instant
 import java.util.UUID
 
 class StubOutboxRepository : OutboxRepository {
@@ -73,6 +76,40 @@ class InMemoryOAuthRepository : OAuthRepository {
     }
 
     fun clear() = connections.clear()
+}
+
+/** In-memory SessionRepository for tests. */
+class InMemorySessionRepository : SessionRepository {
+    private val sessions = mutableMapOf<String, Session>()
+    private var nextId = 1L
+
+    override fun save(session: Session) {
+        sessions[session.tokenHash] = session.copy(id = nextId++)
+    }
+
+    override fun findByTokenHash(tokenHash: String): Session? =
+        sessions[tokenHash]?.takeIf { it.expiresAt.isAfter(Instant.now()) }
+
+    override fun findByTokenHashIncludingExpired(tokenHash: String): Session? = sessions[tokenHash]
+
+    override fun updateExpiresAt(tokenHash: String, expiresAt: Instant) {
+        sessions[tokenHash]?.let { sessions[tokenHash] = it.copy(expiresAt = expiresAt) }
+    }
+
+    override fun deleteByTokenHash(tokenHash: String) {
+        sessions.remove(tokenHash)
+    }
+
+    override fun deleteByUserId(userId: UUID) {
+        sessions.entries.removeAll { it.value.userId == userId }
+    }
+
+    override fun deleteExpired() {
+        val now = Instant.now()
+        sessions.entries.removeAll { it.value.expiresAt.isBefore(now) }
+    }
+
+    fun clear() = sessions.clear()
 }
 
 /** In-memory DeviceTokenRepository for tests. */

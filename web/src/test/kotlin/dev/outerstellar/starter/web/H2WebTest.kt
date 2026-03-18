@@ -31,6 +31,7 @@ abstract class H2WebTest {
 
         fun cleanup() {
             testDsl.execute("SET REFERENTIAL_INTEGRITY FALSE")
+            testDsl.execute("TRUNCATE TABLE SESSIONS")
             testDsl.execute("TRUNCATE TABLE MESSAGES")
             testDsl.execute("TRUNCATE TABLE OUTBOX")
             testDsl.execute("TRUNCATE TABLE DEVICE_TOKENS")

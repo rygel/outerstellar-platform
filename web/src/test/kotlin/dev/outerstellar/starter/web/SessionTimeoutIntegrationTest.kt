@@ -4,6 +4,7 @@ import dev.outerstellar.starter.app
 import dev.outerstellar.starter.infra.createRenderer
 import dev.outerstellar.starter.jooq.tables.references.USERS
 import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
 import dev.outerstellar.starter.persistence.JooqUserRepository
 import dev.outerstellar.starter.security.BCryptPasswordEncoder
 import dev.outerstellar.starter.security.SecurityService
@@ -43,18 +44,23 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
     private lateinit var userRepository: JooqUserRepository
     private lateinit var activeUser: User
     private lateinit var expiredUser: User
+    private lateinit var activeToken: String
+    private lateinit var expiredToken: String
+    private lateinit var securityService: SecurityService
 
     @BeforeEach
     fun setupTest() {
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         userRepository = JooqUserRepository(testDsl)
+        val sessionRepository = JooqSessionRepository(testDsl)
         val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
-        val securityService = SecurityService(userRepository, encoder)
+        securityService =
+            SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)
 
@@ -81,7 +87,16 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
         userRepository.save(activeUser)
         userRepository.save(expiredUser)
 
-        // Set lastActivityAt to 2 hours ago using typed JOOQ API
+        // Create session tokens
+        activeToken = securityService.createSession(activeUser.id)
+        expiredToken = securityService.createSession(expiredUser.id)
+
+        // Expire the session for expiredUser by setting expires_at to past
+        testDsl.execute(
+            "UPDATE sessions SET expires_at = TIMESTAMPADD(HOUR, -2, CURRENT_TIMESTAMP) WHERE user_id = '${expiredUser.id}'"
+        )
+
+        // Set lastActivityAt for cookie-based timeout tests
         val twoHoursAgo = LocalDateTime.now(ZoneOffset.UTC).minusHours(2)
         val oneMinuteAgo = LocalDateTime.now(ZoneOffset.UTC).minusMinutes(1)
 
@@ -119,7 +134,7 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
     @Test
     fun `expired bearer token returns 401 with X-Session-Expired header`() {
         val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${expiredUser.id}"))
+            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $expiredToken"))
 
         assertEquals(Status.UNAUTHORIZED, response.status)
         assertEquals(
@@ -132,7 +147,7 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
     @Test
     fun `active bearer token is not expired and accesses sync endpoint`() {
         val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${activeUser.id}"))
+            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $activeToken"))
 
         assertEquals(Status.OK, response.status)
     }
@@ -149,9 +164,10 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(freshUser)
+        val freshToken = securityService.createSession(freshUser.id)
 
         val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${freshUser.id}"))
+            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $freshToken"))
 
         assertEquals(Status.OK, response.status)
     }
@@ -189,7 +205,7 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
     @Test
     fun `expired bearer token response body mentions expiry`() {
         val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${expiredUser.id}"))
+            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $expiredToken"))
 
         val body = response.bodyString()
         assertTrue(

@@ -10,6 +10,7 @@ import dev.outerstellar.starter.persistence.JdbiMessageRepository
 import dev.outerstellar.starter.persistence.JdbiOAuthRepository
 import dev.outerstellar.starter.persistence.JdbiOutboxRepository
 import dev.outerstellar.starter.persistence.JdbiPasswordResetRepository
+import dev.outerstellar.starter.persistence.JdbiSessionRepository
 import dev.outerstellar.starter.persistence.JdbiTransactionManager
 import dev.outerstellar.starter.persistence.JdbiUserRepository
 import dev.outerstellar.starter.persistence.MessageRepository
@@ -20,6 +21,7 @@ import dev.outerstellar.starter.security.AuditRepository
 import dev.outerstellar.starter.security.DeviceTokenRepository
 import dev.outerstellar.starter.security.OAuthRepository
 import dev.outerstellar.starter.security.PasswordResetRepository
+import dev.outerstellar.starter.security.SessionRepository
 import dev.outerstellar.starter.security.UserRepository
 import io.micrometer.core.instrument.Metrics
 import javax.sql.DataSource
@@ -61,4 +63,6 @@ val persistenceModule
         single<OAuthRepository> { JdbiOAuthRepository(get()) }
 
         single<DeviceTokenRepository> { JdbiDeviceTokenRepository(get()) }
+
+        single<SessionRepository> { JdbiSessionRepository(get()) }
     }
