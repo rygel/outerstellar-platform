@@ -389,11 +389,37 @@ data class NotificationBellFragment(val unreadCount: Int, val notificationsUrl: 
     override fun template(): String = "dev/outerstellar/starter/web/components/NotificationBell"
 }
 
+data class ContactFormFragment(
+    val syncId: String = "",
+    val name: String = "",
+    val emails: String = "",
+    val phones: String = "",
+    val socialMedia: String = "",
+    val company: String = "",
+    val companyAddress: String = "",
+    val department: String = "",
+    val submitUrl: String = "/contacts",
+    val isEdit: Boolean = false,
+    val titleLabel: String = "Create Contact",
+    val nameLabel: String = "Name",
+    val emailsLabel: String = "Emails (comma-separated)",
+    val phonesLabel: String = "Phones (comma-separated)",
+    val socialLabel: String = "Social media (comma-separated)",
+    val companyLabel: String = "Company",
+    val addressLabel: String = "Address",
+    val departmentLabel: String = "Department",
+    val saveLabel: String = "Save",
+    val cancelLabel: String = "Cancel",
+) : ViewModel {
+    override fun template(): String = "dev/outerstellar/starter/web/components/ContactForm"
+}
+
 private const val DEFAULT_LIMIT = 10
 private const val HTTP_STATUS_NOT_FOUND = 404
 private const val HTTP_STATUS_SERVER_ERROR = 500
 
 data class ContactViewModel(
+    val syncId: String,
     val name: String,
     val emails: List<String>,
     val phones: List<String>,
@@ -401,6 +427,8 @@ data class ContactViewModel(
     val company: String,
     val companyAddress: String,
     val department: String,
+    val deleteUrl: String = "",
+    val editUrl: String = "",
 )
 
 data class ContactsPage(
@@ -416,6 +444,7 @@ data class ContactsPage(
     val createLabel: String = "Create Contact",
     val editTitle: String = "Edit contact",
     val deleteTitle: String = "Delete contact",
+    val deleteConfirmLabel: String = "Are you sure you want to delete this contact?",
     val contactsTotalLabel: String = "contacts total",
     val previousPageTitle: String = "Previous page",
     val nextPageTitle: String = "Next page",
@@ -460,6 +489,7 @@ class WebPageFactory(
                     contacts =
                         dbContacts.map {
                             ContactViewModel(
+                                syncId = it.syncId,
                                 name = it.name,
                                 emails = it.emails,
                                 phones = it.phones,
@@ -467,6 +497,8 @@ class WebPageFactory(
                                 company = it.company,
                                 companyAddress = it.companyAddress,
                                 department = it.department,
+                                deleteUrl = ctx.url("/contacts/${it.syncId}/delete"),
+                                editUrl = ctx.url("/contacts/${it.syncId}/edit"),
                             )
                         },
                     currentPage = currentPage,
@@ -478,6 +510,7 @@ class WebPageFactory(
                     createLabel = i18n.translate("web.contacts.create"),
                     editTitle = i18n.translate("web.contacts.edit"),
                     deleteTitle = i18n.translate("web.contacts.delete"),
+                    deleteConfirmLabel = i18n.translate("web.contacts.delete.confirm"),
                     contactsTotalLabel = i18n.translate("web.contacts.total"),
                     previousPageTitle = i18n.translate("web.contacts.previous.page"),
                     nextPageTitle = i18n.translate("web.contacts.next.page"),
@@ -1126,6 +1159,35 @@ class WebPageFactory(
         return NotificationBellFragment(
             unreadCount = unreadCount,
             notificationsUrl = ctx.url("/notifications"),
+        )
+    }
+
+    fun buildContactForm(ctx: WebContext, syncId: String? = null): ContactFormFragment {
+        val i18n = ctx.i18n
+        val existing = syncId?.let { contactService?.getContactBySyncId(it) }
+        return ContactFormFragment(
+            syncId = existing?.syncId ?: "",
+            name = existing?.name ?: "",
+            emails = existing?.emails?.joinToString(", ") ?: "",
+            phones = existing?.phones?.joinToString(", ") ?: "",
+            socialMedia = existing?.socialMedia?.joinToString(", ") ?: "",
+            company = existing?.company ?: "",
+            companyAddress = existing?.companyAddress ?: "",
+            department = existing?.department ?: "",
+            submitUrl = ctx.url(if (syncId != null) "/contacts/$syncId/update" else "/contacts"),
+            isEdit = syncId != null,
+            titleLabel =
+                if (syncId != null) i18n.translate("web.contacts.edit")
+                else i18n.translate("web.contacts.create"),
+            nameLabel = i18n.translate("web.contacts.form.name"),
+            emailsLabel = i18n.translate("web.contacts.form.emails"),
+            phonesLabel = i18n.translate("web.contacts.form.phones"),
+            socialLabel = i18n.translate("web.contacts.form.social"),
+            companyLabel = i18n.translate("web.contacts.form.company"),
+            addressLabel = i18n.translate("web.contacts.form.address"),
+            departmentLabel = i18n.translate("web.contacts.form.department"),
+            saveLabel = i18n.translate("web.contacts.form.save"),
+            cancelLabel = i18n.translate("web.contacts.form.cancel"),
         )
     }
 

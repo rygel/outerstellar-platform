@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls core/src/main/kotlin/com 2>/dev/null; echo \"exit: $?\")",
+      "Bash(grep:*)",
+      "Bash(cd:*)"
+    ]
+  }
+}

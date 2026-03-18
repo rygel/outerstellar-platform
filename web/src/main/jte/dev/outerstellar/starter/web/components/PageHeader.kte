@@ -1,0 +1,20 @@
+@import gg.jte.Content
+@param title: String
+@param description: String = ""
+@param breadcrumb: String = ""
+@param action: Content? = null
+
+<div class="page-header">
+    <div class="page-header-text">
+        @if(breadcrumb.isNotEmpty())
+            <p class="topbar-label">${breadcrumb}</p>
+        @endif
+        <h1>${title}</h1>
+        @if(description.isNotEmpty())
+            <p class="text-muted">${description}</p>
+        @endif
+    </div>
+    @if(action != null)
+        <div>${action}</div>
+    @endif
+</div>

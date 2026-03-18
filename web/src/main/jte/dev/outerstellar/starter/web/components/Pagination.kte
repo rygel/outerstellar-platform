@@ -1,0 +1,41 @@
+@param hasPrevious: Boolean
+@param hasNext: Boolean
+@param previousUrl: String
+@param nextUrl: String
+@param currentPage: Int
+@param previousLabel: String = "Previous page"
+@param nextLabel: String = "Next page"
+@param totalCount: Long = 0L
+@param totalCountLabel: String = ""
+
+@if(hasPrevious || hasNext)
+<div class="pagination-nav">
+    <span class="pagination-info">
+        @if(totalCount > 0 && totalCountLabel.isNotEmpty())
+            Page ${currentPage} &middot; ${totalCount} ${totalCountLabel}
+        @else
+            Page ${currentPage}
+        @endif
+    </span>
+    <div class="flex gap-2">
+        @if(hasPrevious)
+            <a href="${previousUrl}" class="button-icon" title="${previousLabel}">
+                <i class="ri-arrow-left-s-line"></i>
+            </a>
+        @else
+            <button class="button-icon" disabled style="opacity: 0.3; cursor: not-allowed;">
+                <i class="ri-arrow-left-s-line"></i>
+            </button>
+        @endif
+        @if(hasNext)
+            <a href="${nextUrl}" class="button-icon" title="${nextLabel}">
+                <i class="ri-arrow-right-s-line"></i>
+            </a>
+        @else
+            <button class="button-icon" disabled style="opacity: 0.3; cursor: not-allowed;">
+                <i class="ri-arrow-right-s-line"></i>
+            </button>
+        @endif
+    </div>
+</div>
+@endif

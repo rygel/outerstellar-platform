@@ -118,7 +118,7 @@ fun app(
         renderer = OpenApi3(ApiInfo("Outerstellar UI", "v1.0"), Jackson)
         descriptionPath = "/ui/openapi.json"
         routes += HomeRoutes(messageService, pageFactory, jteRenderer).routes
-        routes += ContactsRoutes(pageFactory, jteRenderer).routes
+        routes += ContactsRoutes(pageFactory, jteRenderer, contactService).routes
         routes +=
             AuthRoutes(
                     pageFactory,

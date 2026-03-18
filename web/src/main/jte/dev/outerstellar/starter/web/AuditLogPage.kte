@@ -1,48 +1,45 @@
 @import dev.outerstellar.starter.web.AuditLogPage
 @import dev.outerstellar.starter.web.Page
+
 @param model: Page<AuditLogPage>
 
 @template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
-    <section class="hero-grid">
-        <div class="panel">
-            <h1>${model.data.title}</h1>
-        </div>
-    </section>
+    @template.dev.outerstellar.starter.web.components.PageHeader(
+        title = model.data.title
+    )
+
     <section class="panel">
-        <table style="width: 100%; border-collapse: collapse;">
+        <table class="data-table">
             <thead>
                 <tr>
-                    <th style="text-align:left;padding:0.5rem;">${model.data.headerWhen}</th>
-                    <th style="text-align:left;padding:0.5rem;">${model.data.headerActor}</th>
-                    <th style="text-align:left;padding:0.5rem;">${model.data.headerAction}</th>
-                    <th style="text-align:left;padding:0.5rem;">${model.data.headerTarget}</th>
-                    <th style="text-align:left;padding:0.5rem;">${model.data.headerDetail}</th>
+                    <th>${model.data.headerWhen}</th>
+                    <th>${model.data.headerActor}</th>
+                    <th>${model.data.headerAction}</th>
+                    <th>${model.data.headerTarget}</th>
+                    <th>${model.data.headerDetail}</th>
                 </tr>
             </thead>
             <tbody>
                 @for (entry in model.data.entries)
-                    <tr style="border-top: 1px solid var(--border-color, #333);">
-                        <td style="padding:0.5rem;white-space:nowrap;">${entry.timestamp}</td>
-                        <td style="padding:0.5rem;">${entry.actorUsername}</td>
-                        <td style="padding:0.5rem;"><span class="chip">${entry.action}</span></td>
-                        <td style="padding:0.5rem;">${entry.targetUsername}</td>
-                        <td style="padding:0.5rem;">${entry.detail}</td>
+                    <tr>
+                        <td style="white-space:nowrap;">${entry.timestamp}</td>
+                        <td>${entry.actorUsername}</td>
+                        <td><span class="chip">${entry.action}</span></td>
+                        <td>${entry.targetUsername}</td>
+                        <td>${entry.detail}</td>
                     </tr>
                 @endfor
             </tbody>
         </table>
-        <div style="display:flex; justify-content:space-between; margin-top:1rem;">
-            @if(model.data.hasPrevious)
-                <a href="${model.data.previousUrl}" class="secondary">${model.data.previousLabel}</a>
-            @else
-                <span></span>
-            @endif
-            <span class="text-muted">Page ${model.data.currentPage}</span>
-            @if(model.data.hasNext)
-                <a href="${model.data.nextUrl}" class="secondary">${model.data.nextLabel}</a>
-            @else
-                <span></span>
-            @endif
-        </div>
+
+        @template.dev.outerstellar.starter.web.components.Pagination(
+            hasPrevious = model.data.hasPrevious,
+            hasNext = model.data.hasNext,
+            previousUrl = model.data.previousUrl,
+            nextUrl = model.data.nextUrl,
+            currentPage = model.data.currentPage,
+            previousLabel = model.data.previousLabel,
+            nextLabel = model.data.nextLabel
+        )
     </section>
 `)
