@@ -1,0 +1,4 @@
+serverBaseUrl: "http://localhost:8080"
+jdbcUrl: "jdbc:h2:file:./data/outerstellar-desktop;MODE=PostgreSQL;AUTO_SERVER=TRUE"
+devMode: false
+analyticsEnabled: false

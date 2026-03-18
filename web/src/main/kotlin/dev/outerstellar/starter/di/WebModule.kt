@@ -40,7 +40,7 @@ val webModule
         single { NotificationService(get()) }
         single { WebPageFactory(get(), get(), get(), get(), getOrNull(), get()) }
         single { SyncApi(get(), get(), get()) }
-        single<MessageCache> { dev.outerstellar.starter.persistence.NoOpMessageCache }
+        single<MessageCache> { dev.outerstellar.starter.persistence.CaffeineMessageCache() }
         single<AnalyticsService> {
             val cfg = get<AppConfig>().segment
             if (cfg.enabled && cfg.writeKey.isNotBlank()) SegmentAnalyticsService(cfg.writeKey)

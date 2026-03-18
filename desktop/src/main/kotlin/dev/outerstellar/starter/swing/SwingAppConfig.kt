@@ -3,7 +3,7 @@ package dev.outerstellar.starter.swing
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addEnvironmentSource
-import com.sksamuel.hoplite.addMapSource
+import com.sksamuel.hoplite.addResourceSource
 
 data class SwingAppConfig(
     val serverBaseUrl: String = "http://localhost:8080",
@@ -22,12 +22,20 @@ data class SwingAppConfig(
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)
-        fun fromEnvironment(environment: Map<String, String> = System.getenv()): SwingAppConfig =
-            ConfigLoaderBuilder.default()
-                .withExplicitSealedTypes()
-                .addMapSource(environment)
-                .addEnvironmentSource()
-                .build()
-                .loadConfigOrThrow<SwingAppConfig>()
+        fun fromEnvironment(environment: Map<String, String> = System.getenv()): SwingAppConfig {
+            val profile = environment["APP_PROFILE"] ?: "default"
+            val builder =
+                ConfigLoaderBuilder.default()
+                    .withExplicitSealedTypes()
+                    .addEnvironmentSource()
+
+            if (profile != "default") {
+                builder.addResourceSource("/application-$profile.yaml", optional = true)
+            }
+
+            builder.addResourceSource("/application.yaml", optional = true)
+
+            return builder.build().loadConfigOrThrow<SwingAppConfig>()
+        }
     }
 }

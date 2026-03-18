@@ -50,7 +50,9 @@ fun main() {
                 )
                 logger.warn("Set ADMIN_PASSWORD to a secure value before deploying to production.")
             }
-    main.userRepository.seedAdminUser(main.passwordEncoder.encode(adminPassword))
+    if (main.userRepository.findByUsername("admin") == null) {
+        main.userRepository.seedAdminUser(main.passwordEncoder.encode(adminPassword))
+    }
 
     val outboxScheduler =
         Executors.newSingleThreadScheduledExecutor { r ->

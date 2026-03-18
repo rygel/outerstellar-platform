@@ -45,14 +45,13 @@ data class AppConfig(
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
             val builder =
-                ConfigLoaderBuilder.default()
-                    .withExplicitSealedTypes()
-                    .addEnvironmentSource()
-                    .addResourceSource("/application.yaml", optional = true)
+                ConfigLoaderBuilder.default().withExplicitSealedTypes().addEnvironmentSource()
 
             if (profile != "default") {
                 builder.addResourceSource("/application-$profile.yaml", optional = true)
             }
+
+            builder.addResourceSource("/application.yaml", optional = true)
 
             return builder.build().loadConfigOrThrow<AppConfig>()
         }

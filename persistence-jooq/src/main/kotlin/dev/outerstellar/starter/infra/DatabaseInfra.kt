@@ -12,7 +12,7 @@ fun createDataSource(jdbcUrl: String, jdbcUser: String, jdbcPassword: String): D
             username = jdbcUser
             password = jdbcPassword
             maximumPoolSize = 10
-            minimumIdle = 2
+            minimumIdle = 1
             idleTimeout = 300_000
             connectionTimeout = 10_000
             poolName = "outerstellar-pool"
