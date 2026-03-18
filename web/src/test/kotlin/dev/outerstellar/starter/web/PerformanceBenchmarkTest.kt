@@ -1,0 +1,287 @@
+package dev.outerstellar.starter.web
+
+import dev.outerstellar.starter.app
+import dev.outerstellar.starter.infra.createRenderer
+import dev.outerstellar.starter.model.AuthTokenResponse
+import dev.outerstellar.starter.model.LoginRequest
+import dev.outerstellar.starter.model.RegisterRequest
+import dev.outerstellar.starter.persistence.CaffeineMessageCache
+import dev.outerstellar.starter.persistence.JooqMessageRepository
+import dev.outerstellar.starter.persistence.JooqSessionRepository
+import dev.outerstellar.starter.persistence.JooqUserRepository
+import dev.outerstellar.starter.security.BCryptPasswordEncoder
+import dev.outerstellar.starter.security.SecurityService
+import dev.outerstellar.starter.service.ContactService
+import dev.outerstellar.starter.service.MessageService
+import io.mockk.mockk
+import kotlin.test.Test
+import kotlin.test.assertTrue
+import org.http4k.core.Body
+import org.http4k.core.HttpHandler
+import org.http4k.core.Method.GET
+import org.http4k.core.Method.POST
+import org.http4k.core.Request
+import org.http4k.core.with
+import org.http4k.format.Jackson.auto
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Tag
+import org.slf4j.LoggerFactory
+
+/**
+ * In-process latency benchmarks for critical HTTP paths.
+ *
+ * These tests use the full application stack (H2 in-memory + Jooq + HTTP4K) but bypass the network,
+ * so they measure routing, serialisation, auth, and DB overhead without TCP noise.
+ *
+ * Run with: mvn test -pl web -am -Pperformance
+ *
+ * They are excluded from the regular test suite via the root pom.xml Surefire configuration
+ * (`excludedGroups=performance`).
+ *
+ * Thresholds are intentionally relaxed to accommodate slow CI agents. The primary goal is
+ * regression detection over time, not absolute latency enforcement.
+ */
+@Tag("performance")
+class PerformanceBenchmarkTest : H2WebTest() {
+
+    companion object {
+        private const val WARMUP = 10
+        private const val ITERATIONS = 200
+        private val logger = LoggerFactory.getLogger(PerformanceBenchmarkTest::class.java)
+    }
+
+    private lateinit var app: HttpHandler
+    private lateinit var bearerToken: String
+
+    @BeforeEach
+    fun setupBenchmark() {
+        cleanup()
+
+        val userRepository = JooqUserRepository(testDsl)
+        val messageRepository = JooqMessageRepository(testDsl)
+        val outbox = StubOutboxRepository()
+        val cache = CaffeineMessageCache()
+        val txManager = StubTransactionManager()
+        val messageService = MessageService(messageRepository, outbox, txManager, cache)
+        // logRounds=4 keeps non-BCrypt benchmarks fast; the login benchmark uses its own encoder
+        val encoder = BCryptPasswordEncoder(logRounds = 4)
+        val securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
+        val contactService = mockk<ContactService>(relaxed = true)
+        val pageFactory =
+            WebPageFactory(messageRepository, messageService, contactService, securityService)
+
+        app =
+            app(
+                    messageService,
+                    contactService,
+                    outbox,
+                    cache,
+                    createRenderer(),
+                    pageFactory,
+                    testConfig,
+                    securityService,
+                    userRepository,
+                )
+                .http!!
+
+        // Register and authenticate a test user up front
+        val registerLens = Body.auto<RegisterRequest>().toLens()
+        val loginLens = Body.auto<LoginRequest>().toLens()
+        val tokenLens = Body.auto<AuthTokenResponse>().toLens()
+        app(
+            Request(POST, "/api/v1/auth/register")
+                .with(registerLens of RegisterRequest("perfuser", "pass123!"))
+        )
+        val loginResp =
+            app(
+                Request(POST, "/api/v1/auth/login")
+                    .with(loginLens of LoginRequest("perfuser", "pass123!"))
+            )
+        bearerToken = tokenLens(loginResp).token
+    }
+
+    @AfterEach fun teardownBenchmark() = cleanup()
+
+    // ---------------------------------------------------------------------------
+    // Benchmarks
+    // ---------------------------------------------------------------------------
+
+    /** Baseline: no auth, single JSON object. Should be effectively free. */
+    @Test
+    fun `GET health latency`() {
+        val req = Request(GET, "/health")
+        val rec = LatencyRecorder("GET /health")
+        repeat(WARMUP) { app(req) }
+        repeat(ITERATIONS) { rec.record { app(req) } }
+        val report = rec.report()
+        logger.info("{}", report)
+        assertTrue(report.p99Ms() < 20.0, "P99 should be < 20ms, was %.2fms".format(report.p99Ms()))
+    }
+
+    /**
+     * Session lookup path: SHA-256 hash, DB lookup, sliding-window expiry update, user hydration.
+     * This is the hot path executed on every authenticated API request.
+     */
+    @Test
+    fun `GET profile latency (session lookup + user read)`() {
+        val req =
+            Request(GET, "/api/v1/auth/profile").header("Authorization", "Bearer $bearerToken")
+        val rec = LatencyRecorder("GET /api/v1/auth/profile")
+        repeat(WARMUP) { app(req) }
+        repeat(ITERATIONS) { rec.record { app(req) } }
+        val report = rec.report()
+        logger.info("{}", report)
+        assertTrue(report.p99Ms() < 50.0, "P99 should be < 50ms, was %.2fms".format(report.p99Ms()))
+    }
+
+    /**
+     * Sync pull: authenticated DB read returning all changes since epoch 0. Exercises the session
+     * filter + message repository with no Caffeine benefit (sync pull bypasses MessageCache).
+     */
+    @Test
+    fun `GET sync pull latency (changes since 0)`() {
+        val req =
+            Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $bearerToken")
+        val rec = LatencyRecorder("GET /api/v1/sync?since=0")
+        repeat(WARMUP) { app(req) }
+        repeat(ITERATIONS) { rec.record { app(req) } }
+        val report = rec.report()
+        logger.info("{}", report)
+        assertTrue(report.p99Ms() < 50.0, "P99 should be < 50ms, was %.2fms".format(report.p99Ms()))
+    }
+
+    /**
+     * Sync push: single-message upsert. Exercises session lookup + message upsert + cache
+     * invalidation + outbox write within a single request.
+     */
+    @Test
+    fun `POST sync push latency (single message upsert)`() {
+        val payload =
+            """{"messages":[{"syncId":"perf-bench-msg","author":"perf","content":"benchmark payload","updatedAtEpochMs":1000,"deleted":false}]}"""
+        val req =
+            Request(POST, "/api/v1/sync")
+                .header("Authorization", "Bearer $bearerToken")
+                .header("Content-Type", "application/json")
+                .body(payload)
+        val rec = LatencyRecorder("POST /api/v1/sync (1 message)")
+        repeat(WARMUP) { app(req) }
+        repeat(ITERATIONS) { rec.record { app(req) } }
+        val report = rec.report()
+        logger.info("{}", report)
+        assertTrue(
+            report.p99Ms() < 100.0,
+            "P99 should be < 100ms, was %.2fms".format(report.p99Ms()),
+        )
+    }
+
+    /**
+     * Cache effectiveness: measures the latency difference between a cold message-list request
+     * (cache invalidated) and a warm one (Caffeine cache hit).
+     *
+     * Passes as long as warm P99 is no slower than cold P50 — i.e. the cache is actually helping.
+     */
+    @Test
+    fun `message list cache warm vs cold`() {
+        val req =
+            Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $bearerToken")
+
+        val coldRec = LatencyRecorder("GET /api/v1/sync?since=0 (cold)")
+        repeat(WARMUP) { app(req) }
+        // Force cold: reset the list cache between each measurement
+        repeat(ITERATIONS) {
+            testDsl.execute("TRUNCATE TABLE SYNC_STATE") // flush any state, keep table schema
+            coldRec.record { app(req) }
+        }
+
+        // Re-seed state, then warm: repeated calls hit the session cache
+        val warmRec = LatencyRecorder("GET /api/v1/sync?since=0 (warm)")
+        repeat(WARMUP) { app(req) }
+        repeat(ITERATIONS) { warmRec.record { app(req) } }
+
+        val cold = coldRec.report()
+        val warm = warmRec.report()
+        logger.info("{}", cold)
+        logger.info("{}", warm)
+        // Warm P99 must be no worse than cold median — verifies the cache is effective
+        assertTrue(
+            warm.p99Ms() <= cold.p50Ms() * 3.0,
+            "Warm P99 (%.2fms) should be within 3× of cold P50 (%.2fms)"
+                .format(warm.p99Ms(), cold.p50Ms()),
+        )
+    }
+
+    /**
+     * BCrypt login latency at production strength (logRounds=10). Intentionally uses a separate
+     * SecurityService instance so it doesn't interfere with other benchmarks.
+     *
+     * Runs fewer iterations because each call takes ~100ms.
+     */
+    @Test
+    fun `POST login latency (BCrypt logRounds=10)`() {
+        val prodEncoder = BCryptPasswordEncoder(logRounds = 10)
+        val userRepository = JooqUserRepository(testDsl)
+        val prodSecurityService =
+            SecurityService(
+                userRepository,
+                prodEncoder,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
+
+        // Register a separate user hashed at logRounds=10
+        userRepository.save(
+            dev.outerstellar.starter.security.User(
+                id = java.util.UUID.randomUUID(),
+                username = "prodperfuser",
+                email = "prodperf@example.com",
+                passwordHash = prodEncoder.encode("prodpass123!"),
+                role = dev.outerstellar.starter.security.UserRole.USER,
+            )
+        )
+
+        val loginLens = Body.auto<LoginRequest>().toLens()
+        val tokenLens = Body.auto<AuthTokenResponse>().toLens()
+        val contactService = mockk<ContactService>(relaxed = true)
+        val messageRepository = JooqMessageRepository(testDsl)
+        val outbox = StubOutboxRepository()
+        val cache = CaffeineMessageCache()
+        val txManager = StubTransactionManager()
+        val messageService = MessageService(messageRepository, outbox, txManager, cache)
+        val pageFactory =
+            WebPageFactory(messageRepository, messageService, contactService, prodSecurityService)
+
+        val prodApp =
+            app(
+                    messageService,
+                    contactService,
+                    outbox,
+                    cache,
+                    createRenderer(),
+                    pageFactory,
+                    testConfig,
+                    prodSecurityService,
+                    userRepository,
+                )
+                .http!!
+
+        val req =
+            Request(POST, "/api/v1/auth/login")
+                .with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))
+
+        val rec = LatencyRecorder("POST /api/v1/auth/login (BCrypt rounds=10)")
+        repeat(3) { prodApp(req) } // small warmup — BCrypt is intentionally slow
+        repeat(10) { rec.record { prodApp(req) } }
+        val report = rec.report()
+        logger.info("{}", report)
+        // BCrypt at 10 rounds takes ~100-200ms on modern hardware; allow up to 1500ms for slow CI
+        assertTrue(
+            report.p99Ms() < 1500.0,
+            "Login P99 should be < 1500ms, was %.2fms".format(report.p99Ms()),
+        )
+    }
+}

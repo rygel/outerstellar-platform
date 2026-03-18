@@ -61,6 +61,9 @@
         <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
+        <!-- Surefire tag filters — overridden by the performance profile -->
+        <surefire.excluded.groups>performance</surefire.excluded.groups>
+        <surefire.groups/>
         <!-- false: Swing tests always run; Docker/Xvfb provides virtual display in CI. -->
         <desktop.headless>false</desktop.headless>
         <runtime.profile>dev</runtime.profile>
@@ -450,6 +453,8 @@
                     <version>${maven.surefire.plugin.version}</version>
                     <configuration>
                         <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
+                        <excludedGroups>${surefire.excluded.groups}</excludedGroups>
+                        <groups>${surefire.groups}</groups>
                         <systemPropertyVariables>
                             <otel.traces.exporter>none</otel.traces.exporter>
                             <otel.metrics.exporter>none</otel.metrics.exporter>
@@ -918,6 +923,21 @@
                 <pmd.skip>true</pmd.skip>
                 <cpd.skip>true</cpd.skip>
                 <spotbugs.skip>true</spotbugs.skip>
+            </properties>
+        </profile>
+        <profile>
+            <!-- Run only @Tag("performance") benchmarks, skip all static analysis -->
+            <!-- Usage: mvn test -pl web -am -Pperformance -->
+            <id>performance</id>
+            <properties>
+                <surefire.groups>performance</surefire.groups>
+                <surefire.excluded.groups/>
+                <jacoco.skip>true</jacoco.skip>
+                <checkstyle.skip>true</checkstyle.skip>
+                <pmd.skip>true</pmd.skip>
+                <cpd.skip>true</cpd.skip>
+                <spotbugs.skip>true</spotbugs.skip>
+                <spotless.check.skip>true</spotless.check.skip>
             </properties>
         </profile>
     </profiles>
