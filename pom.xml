@@ -58,6 +58,22 @@
         <caffeine.version>3.2.3</caffeine.version>
         <opentelemetry.version>1.60.1</opentelemetry.version>
 
+        <jackson.version>2.21.1</jackson.version>
+        <slf4j.version>2.0.17</slf4j.version>
+        <logback.version>1.5.32</logback.version>
+        <jbcrypt.version>0.4</jbcrypt.version>
+        <hikaricp.version>6.2.1</hikaricp.version>
+        <angus.mail.version>2.0.3</angus.mail.version>
+        <konform.version>0.11.1</konform.version>
+        <playwright.version>1.58.0</playwright.version>
+        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
+        <maven.resources.plugin.version>3.5.0</maven.resources.plugin.version>
+        <exec.maven.plugin.version>3.6.3</exec.maven.plugin.version>
+        <maven.antrun.plugin.version>3.2.0</maven.antrun.plugin.version>
+        <fizzed.watcher.plugin.version>1.0.6</fizzed.watcher.plugin.version>
+        <detekt.version>1.23.8</detekt.version>
+        <miglayout.version>11.4.3</miglayout.version>
+        <assertj.swing.version>4.0.0-beta-3</assertj.swing.version>
         <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
@@ -147,14 +163,14 @@
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.21.1</version>
+                <version>${jackson.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
                 <artifactId>jackson-module-kotlin</artifactId>
-                <version>2.21.1</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.http4k</groupId>
@@ -244,12 +260,12 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>2.0.17</version>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.32</version>
+                <version>${logback.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.formdev</groupId>
@@ -370,17 +386,37 @@
             <dependency>
                 <groupId>org.mindrot</groupId>
                 <artifactId>jbcrypt</artifactId>
-                <version>0.4</version>
+                <version>${jbcrypt.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.zaxxer</groupId>
                 <artifactId>HikariCP</artifactId>
-                <version>6.2.1</version>
+                <version>${hikaricp.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.angus</groupId>
                 <artifactId>angus-mail</artifactId>
-                <version>2.0.3</version>
+                <version>${angus.mail.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.konform</groupId>
+                <artifactId>konform-jvm</artifactId>
+                <version>${konform.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.microsoft.playwright</groupId>
+                <artifactId>playwright</artifactId>
+                <version>${playwright.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.miglayout</groupId>
+                <artifactId>miglayout-swing</artifactId>
+                <version>${miglayout.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>tokyo.northside</groupId>
+                <artifactId>assertj-swing-junit-jupiter</artifactId>
+                <version>${assertj.swing.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -417,7 +453,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.15.0</version>
+                    <version>${maven.compiler.plugin.version}</version>
                     <configuration>
                         <release>${maven.compiler.release}</release>
                     </configuration>
@@ -477,17 +513,17 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.5.0</version>
+                    <version>${maven.resources.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
-                    <version>3.6.3</version>
+                    <version>${exec.maven.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-antrun-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>${maven.antrun.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>gg.jte</groupId>
@@ -502,12 +538,12 @@
                 <plugin>
                     <groupId>com.fizzed</groupId>
                     <artifactId>fizzed-watcher-maven-plugin</artifactId>
-                    <version>1.0.6</version>
+                    <version>${fizzed.watcher.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>com.github.ozsie</groupId>
                     <artifactId>detekt-maven-plugin</artifactId>
-                    <version>1.23.8</version>
+                    <version>${detekt.version}</version>
                     <executions>
                         <execution>
                             <phase>verify</phase>
@@ -529,7 +565,7 @@
                         <dependency>
                             <groupId>io.gitlab.arturbosch.detekt</groupId>
                             <artifactId>detekt-formatting</artifactId>
-                            <version>1.23.8</version>
+                            <version>${detekt.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
