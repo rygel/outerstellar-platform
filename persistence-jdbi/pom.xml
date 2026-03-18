@@ -42,6 +42,10 @@
             <artifactId>h2</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.http4k</groupId>
             <artifactId>http4k-format-jackson</artifactId>
         </dependency>
