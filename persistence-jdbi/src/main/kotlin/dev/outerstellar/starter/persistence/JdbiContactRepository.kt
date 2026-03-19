@@ -468,8 +468,10 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         conditions.add(if (includeDeleted) "deleted = true" else "deleted = false")
 
         if (!query.isNullOrBlank()) {
-            conditions.add("(LOWER(name) LIKE :likeQuery OR LOWER(company) LIKE :likeQuery)")
-            bindings["likeQuery"] = "%${query.lowercase()}%"
+            conditions.add(
+                "(LOWER(name) LIKE :likeQuery ESCAPE '!' OR LOWER(company) LIKE :likeQuery ESCAPE '!')"
+            )
+            bindings["likeQuery"] = "%${query.lowercase().escapeLike()}%"
         }
 
         val whereClause = conditions.joinToString(" AND ")
@@ -519,3 +521,5 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         private const val LAST_SYNC_STATE_KEY = "last_contact_sync_epoch_ms"
     }
 }
+
+private fun String.escapeLike(): String = replace("!", "!!").replace("%", "!%").replace("_", "!_")

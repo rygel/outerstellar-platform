@@ -28,6 +28,8 @@ class TokenBucket(private val maxRequests: Int, private val windowMs: Long) {
         }
         return count.incrementAndGet() <= maxRequests
     }
+
+    fun isExpired(): Boolean = System.currentTimeMillis() - windowStart.get() > windowMs
 }
 
 fun rateLimitFilter(
@@ -37,8 +39,11 @@ fun rateLimitFilter(
         listOf(
             "/api/v1/auth/login",
             "/api/v1/auth/register",
+            "/api/v1/auth/reset-request",
+            "/api/v1/auth/reset-confirm",
             // HTML form auth actions (sign-in, register, recover) all POST to the same path
             "/auth/components/result",
+            "/auth/components/reset-confirm",
         ),
 ): Filter {
     val buckets = ConcurrentHashMap<String, TokenBucket>()
@@ -66,12 +71,9 @@ fun rateLimitFilter(
                     next(request)
                 }
                 .also {
-                    // Periodic cleanup of old entries
+                    // Periodic cleanup: evict buckets whose window has already expired
                     if (buckets.size > CLEANUP_THRESHOLD) {
-                        buckets.keys.removeIf { key ->
-                            val b = buckets[key]
-                            b == null
-                        }
+                        buckets.entries.removeIf { (_, bucket) -> bucket.isExpired() }
                     }
                 }
         }

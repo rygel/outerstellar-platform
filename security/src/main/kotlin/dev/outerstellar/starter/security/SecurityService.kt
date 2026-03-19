@@ -211,7 +211,15 @@ class SecurityService(
             userRepository.updateUsername(userId, newUsername)
         }
         if (newAvatarUrl != user.avatarUrl) {
-            userRepository.updateAvatarUrl(userId, newAvatarUrl?.takeIf { it.isNotBlank() })
+            val sanitizedUrl = newAvatarUrl?.takeIf { it.isNotBlank() }
+            if (
+                sanitizedUrl != null &&
+                    !sanitizedUrl.startsWith("https://") &&
+                    !sanitizedUrl.startsWith("http://")
+            ) {
+                throw IllegalArgumentException("Avatar URL must use http or https scheme")
+            }
+            userRepository.updateAvatarUrl(userId, sanitizedUrl)
         }
         userRepository.save(user.copy(email = newEmail))
         logger.info("Profile updated for user {}", user.username)

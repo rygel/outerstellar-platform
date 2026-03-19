@@ -14,6 +14,9 @@ data class SwingAppConfig(
     val version: String = "1.0.0",
     val updateUrl: String = "",
     val devMode: Boolean = false,
+    /** Credentials used for dev auto-login. Only active when devMode=true. Never hardcode. */
+    val devUsername: String = "",
+    val devPassword: String = "",
     val segmentWriteKey: String = "",
     val analyticsEnabled: Boolean = false,
     val analyticsFlushIntervalHours: Long = 24,

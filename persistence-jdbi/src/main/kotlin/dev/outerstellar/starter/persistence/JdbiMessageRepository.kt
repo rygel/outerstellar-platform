@@ -335,8 +335,10 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
                 logger.debug("FTS not available, falling back to LIKE for query: {}", query)
             }
             if (!usedFts) {
-                conditions.add("(LOWER(content) LIKE :likeQuery OR LOWER(author) LIKE :likeQuery)")
-                bindings["likeQuery"] = "%${query.lowercase()}%"
+                conditions.add(
+                    "(LOWER(content) LIKE :likeQuery ESCAPE '!' OR LOWER(author) LIKE :likeQuery ESCAPE '!')"
+                )
+                bindings["likeQuery"] = "%${query.lowercase().escapeLike()}%"
             }
         }
 
@@ -375,3 +377,5 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         private const val LAST_SYNC_STATE_KEY = "last_sync_epoch_ms"
     }
 }
+
+private fun String.escapeLike(): String = replace("!", "!!").replace("%", "!%").replace("_", "!_")

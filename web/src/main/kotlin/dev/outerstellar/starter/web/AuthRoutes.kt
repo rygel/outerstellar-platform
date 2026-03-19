@@ -18,6 +18,7 @@ import org.http4k.lens.Path
 import org.http4k.lens.long
 import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
+import org.slf4j.LoggerFactory
 
 class AuthRoutes(
     private val pageFactory: WebPageFactory,
@@ -26,6 +27,7 @@ class AuthRoutes(
     private val sessionCookieSecure: Boolean,
     private val analytics: AnalyticsService = NoOpAnalyticsService(),
 ) : ServerRoutes {
+    private val logger = LoggerFactory.getLogger(AuthRoutes::class.java)
     private val modePath = Path.string().of("mode")
     private val apiKeyIdPath = Path.long().of("id")
 
@@ -246,7 +248,17 @@ class AuthRoutes(
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.reset.error.title"),
-                                    message = e.message ?: "Password reset failed",
+                                    message =
+                                        e.message ?: ctx.i18n.translate("web.reset.error.invalid"),
+                                    toneClass = "panel-danger",
+                                )
+                            )
+                        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                            logger.error("Unexpected error during password reset", e)
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = ctx.i18n.translate("web.reset.error.title"),
+                                    message = ctx.i18n.translate("web.reset.error.invalid"),
                                     toneClass = "panel-danger",
                                 )
                             )

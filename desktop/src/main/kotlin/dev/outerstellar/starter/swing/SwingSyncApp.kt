@@ -202,9 +202,12 @@ fun main() {
         window.show()
         splash.dispose()
 
-        // Auto-login in development mode
-        if (desktop.config.devMode) {
-            viewModel.login("admin", "admin123") { success, error ->
+        // Auto-login in development mode — credentials must be set via config/env, never hardcoded
+        if (desktop.config.devMode &&
+            desktop.config.devUsername.isNotBlank() &&
+            desktop.config.devPassword.isNotBlank()
+        ) {
+            viewModel.login(desktop.config.devUsername, desktop.config.devPassword) { success, error ->
                 if (!success) {
                     println("Dev auto-login failed: $error")
                 }
