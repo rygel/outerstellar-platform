@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.web
 
 import com.outerstellar.i18n.I18nService
+import dev.outerstellar.starter.security.JwtService
 import dev.outerstellar.starter.security.User
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.security.UserRole
@@ -16,6 +17,7 @@ class WebContext(
     private val devDashboardEnabled: Boolean = false,
     private val userRepository: UserRepository? = null,
     private val appVersion: String = "dev",
+    private val jwtService: JwtService? = null,
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
@@ -26,6 +28,7 @@ class WebContext(
         const val THEME_COOKIE = "app_theme"
         const val LAYOUT_COOKIE = "app_layout"
         const val SESSION_COOKIE = "app_session"
+        const val JWT_COOKIE = "app_jwt"
         const val CSRF_COOKIE = "_csrf"
     }
 
@@ -46,6 +49,7 @@ class WebContext(
     }
 
     val user: User? by lazy {
+        // 1. Session cookie — standard browser auth
         request.cookie(SESSION_COOKIE)?.value?.let { sessionUserId ->
             try {
                 val uid = UUID.fromString(sessionUserId)
@@ -55,6 +59,12 @@ class WebContext(
                 null
             }
         }
+            // 2. JWT cookie — device/API client auth (e.g. e-reader sync, mobile)
+            ?: request.cookie(JWT_COOKIE)?.value?.let { token ->
+                jwtService?.extractClaims(token)?.let { (userId, _) ->
+                    userRepository?.findById(userId)?.takeIf { it.enabled }
+                }
+            }
     }
 
     val i18n: I18nService by lazy {

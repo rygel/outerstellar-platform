@@ -74,6 +74,7 @@ fun app(
     deviceTokenRepository: dev.outerstellar.starter.security.DeviceTokenRepository? = null,
     analytics: AnalyticsService = NoOpAnalyticsService(),
     notificationService: dev.outerstellar.starter.service.NotificationService? = null,
+    jwtService: dev.outerstellar.starter.security.JwtService? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
 
@@ -267,7 +268,14 @@ fun app(
             .then(rateLimitFilter())
             .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
             .then(Filters.devAutoLogin(config.devMode, userRepository))
-            .then(Filters.stateFilter(config.devDashboardEnabled, userRepository, config.version))
+            .then(
+                Filters.stateFilter(
+                    config.devDashboardEnabled,
+                    userRepository,
+                    config.version,
+                    jwtService,
+                )
+            )
             .then(Filters.analyticsPageView(analytics))
             .then(
                 Filters.sessionTimeout(

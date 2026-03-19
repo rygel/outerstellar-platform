@@ -1,11 +1,13 @@
 package dev.outerstellar.starter.security
 
+import dev.outerstellar.starter.AppConfig
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val securityModule
     get() = module {
         single<PasswordEncoder> { BCryptPasswordEncoder() }
+        single { JwtService(get<AppConfig>().jwt) }
         single {
             SecurityService(
                 get(),

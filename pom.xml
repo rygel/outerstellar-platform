@@ -63,6 +63,7 @@
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.32</logback.version>
         <jbcrypt.version>0.4</jbcrypt.version>
+        <java-jwt.version>4.5.1</java-jwt.version>
         <hikaricp.version>6.2.1</hikaricp.version>
         <angus.mail.version>2.0.3</angus.mail.version>
         <konform.version>0.11.1</konform.version>
@@ -384,6 +385,11 @@
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
                 <version>${caffeine.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.auth0</groupId>
+                <artifactId>java-jwt</artifactId>
+                <version>${java-jwt.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.micrometer</groupId>

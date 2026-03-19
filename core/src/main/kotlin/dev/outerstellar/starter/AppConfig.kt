@@ -8,6 +8,18 @@ import com.sksamuel.hoplite.addResourceSource
 data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
 
 /**
+ * JWT authentication configuration. Disabled by default. Enable for apps that need stateless token
+ * auth (e.g. device/API clients). Set [enabled] = true and provide a strong random [secret] to
+ * activate.
+ */
+data class JwtConfig(
+    val enabled: Boolean = false,
+    val secret: String = "",
+    val issuer: String = "outerstellar",
+    val expirySeconds: Long = 86400L,
+)
+
+/**
  * SMTP email configuration. Email sending is **disabled by default**. Set [enabled] = true and
  * provide [host]/[username]/[password] to activate.
  */
@@ -42,6 +54,7 @@ data class AppConfig(
     val email: EmailConfig = EmailConfig(),
     /** Public-facing base URL used in emails, e.g. https://app.example.com */
     val appBaseUrl: String = "http://localhost:8080",
+    val jwt: JwtConfig = JwtConfig(),
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)

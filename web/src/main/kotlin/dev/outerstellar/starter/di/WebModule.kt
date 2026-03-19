@@ -11,6 +11,7 @@ import dev.outerstellar.starter.persistence.JooqNotificationRepository
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.NotificationRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
+import dev.outerstellar.starter.security.JwtService
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRepository
 import dev.outerstellar.starter.service.ContactService
@@ -79,6 +80,7 @@ val webModule
                 get<UserRepository>(),
                 analytics = get(),
                 notificationService = get(),
+                jwtService = getOrNull<JwtService>(),
             )
         }
     }

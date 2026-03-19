@@ -148,9 +148,11 @@ object Filters {
         devDashboardEnabled: Boolean,
         userRepository: UserRepository,
         appVersion: String = "dev",
+        jwtService: dev.outerstellar.starter.security.JwtService? = null,
     ): Filter = Filter { next: HttpHandler ->
         { request ->
-            val context = WebContext(request, devDashboardEnabled, userRepository, appVersion)
+            val context =
+                WebContext(request, devDashboardEnabled, userRepository, appVersion, jwtService)
             val contextUser =
                 try {
                     context.user
