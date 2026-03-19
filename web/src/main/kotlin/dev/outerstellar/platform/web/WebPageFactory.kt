@@ -25,6 +25,7 @@ data class ShellView(
     val themeSelectorUrl: String,
     val languageSelectorUrl: String,
     val layoutSelectorUrl: String,
+    val layoutStyle: String = "sidebar",
     val footerCopy: String,
     val footerVersion: String,
     val footerStatusUrl: String,

@@ -3,7 +3,7 @@
 
 @param model: Page<ApiKeysPage>
 
-@template.dev.outerstellar.platform.web.Layout(shell = model.shell, content = @`
+@template.dev.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
     @template.dev.outerstellar.platform.web.components.PageHeader(
         title = model.data.title,
         description = model.data.description,

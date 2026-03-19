@@ -28,6 +28,7 @@ class WebContext(
         const val LANG_COOKIE = "app_lang"
         const val THEME_COOKIE = "app_theme"
         const val LAYOUT_COOKIE = "app_layout"
+        const val SHELL_COOKIE = "app_shell"
         const val SESSION_COOKIE = "app_session"
         const val JWT_COOKIE = "app_jwt"
         const val CSRF_COOKIE = "_csrf"
@@ -47,6 +48,11 @@ class WebContext(
     val layout: String by lazy {
         val value = request.query("layout") ?: request.cookie(LAYOUT_COOKIE)?.value ?: "nice"
         if (listOf("nice", "cozy", "compact").any { it == value }) value else "nice"
+    }
+
+    val shellStyle: String by lazy {
+        val value = request.query("shell") ?: request.cookie(SHELL_COOKIE)?.value ?: "sidebar"
+        if (listOf("sidebar", "topbar").any { it == value }) value else "sidebar"
     }
 
     val user: User? by lazy {
@@ -181,6 +187,7 @@ class WebContext(
             themeId = theme,
             themeCss = themeCss,
             layoutClass = layoutClass,
+            layoutStyle = shellStyle,
             navLinks = navLinks,
             themeSelectorUrl = componentUrl("/components/sidebar/theme-selector", currentPath),
             languageSelectorUrl =

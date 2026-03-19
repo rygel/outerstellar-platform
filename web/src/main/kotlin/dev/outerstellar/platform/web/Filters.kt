@@ -192,11 +192,17 @@ object Filters {
                     ?.let {
                         Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/")
                     }
+            val shellCookie =
+                request
+                    .query("shell")
+                    ?.takeIf { it in setOf("sidebar", "topbar") }
+                    ?.let { Cookie(WebContext.SHELL_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
 
             var updatedResponse = response
             if (langCookie != null) updatedResponse = updatedResponse.cookie(langCookie)
             if (themeCookie != null) updatedResponse = updatedResponse.cookie(themeCookie)
             if (layoutCookie != null) updatedResponse = updatedResponse.cookie(layoutCookie)
+            if (shellCookie != null) updatedResponse = updatedResponse.cookie(shellCookie)
 
             updatedResponse
         }

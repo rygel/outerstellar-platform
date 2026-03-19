@@ -2,7 +2,7 @@
 @import dev.outerstellar.platform.web.Page
 @param model: Page<NotificationsPage>
 
-@template.dev.outerstellar.platform.web.Layout(shell = model.shell, content = @`
+@template.dev.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
     <div style="max-width: 760px; margin: 0 auto;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem;">
             <div>

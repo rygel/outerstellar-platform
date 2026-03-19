@@ -2,7 +2,7 @@
 @import dev.outerstellar.platform.web.Page
 @param model: Page<AuthViewModel>
 
-@template.dev.outerstellar.platform.web.Layout(shell = model.shell, content = @`
+@template.dev.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
     <section class="hero-grid">
         <div class="panel">
             <p class="topbar-label">${model.shell.pageTitle}</p>

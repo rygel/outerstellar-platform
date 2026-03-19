@@ -2,7 +2,7 @@
 @import dev.outerstellar.platform.web.Page
 @param model: Page<DevDashboardPage>
 
-@template.dev.outerstellar.platform.web.Layout(shell = model.shell, content = @`
+@template.dev.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
     <section class="panel hero-grid">
         <div>
             <p class="status-badge">${model.data.badge}</p>

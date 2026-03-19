@@ -2,7 +2,7 @@
 @import dev.outerstellar.platform.web.Page
 @param model: Page<ProfilePage>
 
-@template.dev.outerstellar.platform.web.Layout(shell = model.shell, content = @`
+@template.dev.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
     <div style="max-width: 560px; margin: 2rem auto; display: flex; flex-direction: column; gap: 1.5rem;">
 
         <%-- ── Section 1: Profile Info ─────────────────────────────────────── --%>
