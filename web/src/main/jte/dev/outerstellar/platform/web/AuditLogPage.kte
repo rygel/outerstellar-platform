@@ -1,0 +1,45 @@
+@import dev.outerstellar.platform.web.AuditLogPage
+@import dev.outerstellar.platform.web.Page
+
+@param model: Page<AuditLogPage>
+
+@template.dev.outerstellar.platform.web.Layout(shell = model.shell, content = @`
+    @template.dev.outerstellar.platform.web.components.PageHeader(
+        title = model.data.title
+    )
+
+    <section class="panel">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>${model.data.headerWhen}</th>
+                    <th>${model.data.headerActor}</th>
+                    <th>${model.data.headerAction}</th>
+                    <th>${model.data.headerTarget}</th>
+                    <th>${model.data.headerDetail}</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (entry in model.data.entries)
+                    <tr>
+                        <td style="white-space:nowrap;">${entry.timestamp}</td>
+                        <td>${entry.actorUsername}</td>
+                        <td><span class="chip">${entry.action}</span></td>
+                        <td>${entry.targetUsername}</td>
+                        <td>${entry.detail}</td>
+                    </tr>
+                @endfor
+            </tbody>
+        </table>
+
+        @template.dev.outerstellar.platform.web.components.Pagination(
+            hasPrevious = model.data.hasPrevious,
+            hasNext = model.data.hasNext,
+            previousUrl = model.data.previousUrl,
+            nextUrl = model.data.nextUrl,
+            currentPage = model.data.currentPage,
+            previousLabel = model.data.previousLabel,
+            nextLabel = model.data.nextLabel
+        )
+    </section>
+`)

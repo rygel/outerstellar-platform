@@ -1,6 +1,6 @@
 [
   {
-    "name": "dev.outerstellar.starter.web.HomePage",
+    "name": "dev.outerstellar.platform.web.HomePage",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,
@@ -9,7 +9,7 @@
     "allPublicFields": true
   },
   {
-    "name": "dev.outerstellar.starter.web.AuthPage",
+    "name": "dev.outerstellar.platform.web.AuthPage",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,
@@ -18,7 +18,7 @@
     "allPublicFields": true
   },
   {
-    "name": "dev.outerstellar.starter.web.ErrorPage",
+    "name": "dev.outerstellar.platform.web.ErrorPage",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,
@@ -27,7 +27,7 @@
     "allPublicFields": true
   },
   {
-    "name": "dev.outerstellar.starter.model.ThemeDefinition",
+    "name": "dev.outerstellar.platform.model.ThemeDefinition",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,
@@ -36,7 +36,7 @@
     "allPublicFields": true
   },
   {
-    "name": "dev.outerstellar.starter.model.MessageSummary",
+    "name": "dev.outerstellar.platform.model.MessageSummary",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,
@@ -45,7 +45,7 @@
     "allPublicFields": true
   },
   {
-    "name": "dev.outerstellar.starter.AppConfig",
+    "name": "dev.outerstellar.platform.AppConfig",
     "allDeclaredConstructors": true,
     "allPublicConstructors": true,
     "allDeclaredMethods": true,

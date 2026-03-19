@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>dev.outerstellar</groupId>
-    <artifactId>outerstellar-starter-parent</artifactId>
+    <artifactId>outerstellar-platform-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
@@ -902,7 +902,7 @@
                                     <arguments>
                                         <argument>build</argument>
                                         <argument>-t</argument>
-                                        <argument>outerstellar-starter:${project.version}</argument>
+                                        <argument>outerstellar-platform:${project.version}</argument>
                                         <argument>.</argument>
                                     </arguments>
                                 </configuration>
@@ -926,7 +926,7 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
-                            <mainClass>dev.outerstellar.starter.seed.SeedDataKt</mainClass>
+                            <mainClass>dev.outerstellar.platform.seed.SeedDataKt</mainClass>
                             <classpathScope>compile</classpathScope>
                         </configuration>
                     </plugin>

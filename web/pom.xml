@@ -5,7 +5,7 @@
 
     <parent>
         <groupId>dev.outerstellar</groupId>
-        <artifactId>outerstellar-starter-parent</artifactId>
+        <artifactId>outerstellar-platform-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
@@ -232,7 +232,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <mainClass>dev.outerstellar.starter.MainKt</mainClass>
+                    <mainClass>dev.outerstellar.platform.MainKt</mainClass>
                     <environmentVariables>
                         <APP_PROFILE>${runtime.profile}</APP_PROFILE>
                         <DEV_MODE>${runtime.dev.mode}</DEV_MODE>
@@ -279,7 +279,7 @@
                         </executions>
                         <configuration>
                             <imageName>outerstellar-web</imageName>
-                            <mainClass>dev.outerstellar.starter.MainKt</mainClass>
+                            <mainClass>dev.outerstellar.platform.MainKt</mainClass>
                             <buildArgs>
                                 <buildArg>--no-fallback</buildArg>
                                 <buildArg>--enable-http</buildArg>

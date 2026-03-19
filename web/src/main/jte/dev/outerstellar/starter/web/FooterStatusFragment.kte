@@ -1,4 +1,0 @@
-@import dev.outerstellar.starter.web.FooterStatusFragment
-@param model: FooterStatusFragment
-
-<span>${model.text}</span>

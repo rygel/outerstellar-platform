@@ -1,0 +1,42 @@
+@import dev.outerstellar.platform.web.HomePage
+@import dev.outerstellar.platform.web.Page
+@param model: Page<HomePage>
+
+@template.dev.outerstellar.platform.web.Layout(shell = model.shell, content = @`
+    <section class="hero-grid">
+        <div class="panel">
+            <p class="topbar-label">${model.data.eyebrow}</p>
+            <h1>${model.shell.appTitle}</h1>
+            <p class="text-muted">${model.shell.appTagline}</p>
+            
+            <div class="card-grid mt-6">
+                @for (feature in model.data.features)
+                    <div class="panel panel-muted">
+                        <strong style="display: block; margin-bottom: 0.25rem;">${feature.label}</strong>
+                        <p class="text-muted" style="margin: 0;">${feature.value}</p>
+                    </div>
+                @endfor
+            </div>
+        </div>
+    </section>
+
+    <section class="panel mt-6">
+        <h2>${model.data.composerTitle}</h2>
+        <p class="text-muted mb-6">${model.data.composerIntro}</p>
+        <form hx-post="${model.data.submitUrl}" 
+              hx-target="#message-list-container" 
+              hx-swap="outerHTML"
+              hx-indicator="#submit-indicator"
+              class="form-grid">
+            <input type="text" name="author" placeholder="${model.data.authorPlaceholder}">
+            <textarea name="content" placeholder="${model.data.contentPlaceholder}" required style="min-height: 120px;"></textarea>
+            <div class="flex justify-end">
+                <button type="submit">
+                    <i id="submit-indicator" class="ri-send-plane-fill htmx-indicator"></i>
+                    ${model.data.submitLabel}
+                </button>
+            </div>
+        </form>
+    </section>
+    @template.dev.outerstellar.platform.web.components.MessageList(model = model.data.messageList)
+`)

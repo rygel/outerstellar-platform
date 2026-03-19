@@ -1,0 +1,88 @@
+package dev.outerstellar.platform.web
+
+import dev.outerstellar.platform.app
+import dev.outerstellar.platform.infra.createRenderer
+import dev.outerstellar.platform.persistence.JooqMessageRepository
+import dev.outerstellar.platform.persistence.JooqSessionRepository
+import dev.outerstellar.platform.persistence.JooqUserRepository
+import dev.outerstellar.platform.security.BCryptPasswordEncoder
+import dev.outerstellar.platform.security.SecurityService
+import dev.outerstellar.platform.security.User
+import dev.outerstellar.platform.security.UserRole
+import dev.outerstellar.platform.service.MessageService
+import dev.outerstellar.platform.sync.SyncPullResponse
+import java.util.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import org.http4k.core.Method.GET
+import org.http4k.core.Request
+import org.http4k.core.Status
+import org.http4k.format.Jackson.asA
+import org.junit.jupiter.api.AfterEach
+
+class SyncIntegrationTest : H2WebTest() {
+
+    @AfterEach
+    fun teardown() {
+        cleanup()
+    }
+
+    @Test
+    fun `can pull changes from api`() {
+        val userRepository = JooqUserRepository(testDsl)
+        val repository = JooqMessageRepository(testDsl)
+        val outbox = StubOutboxRepository()
+        val cache = StubMessageCache()
+        val transactionManager = StubTransactionManager()
+        val messageService = MessageService(repository, outbox, transactionManager, cache)
+        val pageFactory = WebPageFactory(repository, messageService, null, null)
+        val encoder = BCryptPasswordEncoder(logRounds = 4)
+        val securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = JooqSessionRepository(testDsl),
+            )
+
+        // Pre-register an admin user for Bearer Auth
+        val adminId = UUID.randomUUID()
+        userRepository.save(
+            User(
+                id = adminId,
+                username = "admin",
+                email = "admin@test.com",
+                passwordHash = encoder.encode("password"),
+                role = UserRole.ADMIN,
+            )
+        )
+        val adminToken = securityService.createSession(adminId)
+        val contactService =
+            io.mockk.mockk<dev.outerstellar.platform.service.ContactService>(relaxed = true)
+
+        val app =
+            app(
+                    messageService,
+                    contactService,
+                    outbox,
+                    cache,
+                    createRenderer(),
+                    pageFactory,
+                    testConfig,
+                    securityService,
+                    userRepository,
+                )
+                .http!!
+
+        // Add some data
+        repository.createServerMessage("Alice", "Hello")
+        repository.createServerMessage("Bob", "Hi")
+
+        // Pull changes with Bearer Auth
+        val response =
+            app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $adminToken"))
+
+        assertEquals(Status.OK, response.status)
+        val pullResponse = asA(response.bodyString(), SyncPullResponse::class)
+        assertEquals(2, pullResponse.messages.size)
+    }
+}
