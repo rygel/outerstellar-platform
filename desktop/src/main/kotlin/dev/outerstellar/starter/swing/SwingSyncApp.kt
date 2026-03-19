@@ -7,7 +7,6 @@ import dev.outerstellar.starter.analytics.NoOpAnalyticsService
 import dev.outerstellar.starter.di.coreModule
 import dev.outerstellar.starter.di.desktopModule
 import dev.outerstellar.starter.di.persistenceModule
-import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.model.ConflictStrategy
 import dev.outerstellar.starter.model.MessageSummary
 import dev.outerstellar.starter.model.ThemeCatalog
@@ -33,7 +32,6 @@ import java.nio.file.Path
 import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import javax.sql.DataSource
 import javax.swing.BorderFactory
 import javax.swing.Box
 import javax.swing.DefaultListCellRenderer
@@ -82,7 +80,6 @@ private const val DIALOG_HEIGHT = 400
 
 object DesktopComponent : KoinComponent {
     val config: SwingAppConfig by inject()
-    val dataSource: DataSource by inject()
     val messageService: MessageService by inject()
     val contactService: dev.outerstellar.starter.service.ContactService by inject()
     val syncService: SyncService by inject()
@@ -97,12 +94,6 @@ fun main() {
     startKoin { modules(swingRuntimeModules()) }
 
     val desktop = DesktopComponent
-    try {
-        migrate(desktop.dataSource)
-    } catch (e: Exception) {
-        (desktop.dataSource as? com.zaxxer.hikari.HikariDataSource)?.close()
-        throw e
-    }
 
     val analytics =
         if (desktop.config.analyticsEnabled && desktop.config.segmentWriteKey.isNotBlank()) {

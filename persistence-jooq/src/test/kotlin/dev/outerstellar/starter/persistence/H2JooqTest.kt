@@ -15,11 +15,17 @@ abstract class H2JooqTest {
 
     @BeforeEach
     fun setupDatabase() {
-        val jdbcUrl =
-            "jdbc:h2:mem:${javaClass.simpleName.lowercase()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
-        dataSource = createDataSource(jdbcUrl, "sa", "")
-        migrate(dataSource)
-        dsl = DSL.using(dataSource, SQLDialect.H2)
+        val shared = postgresDataSource
+        if (shared != null) {
+            dataSource = shared
+            dsl = postgresDsl!!
+        } else {
+            val url =
+                "jdbc:h2:mem:${javaClass.simpleName.lowercase()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+            dataSource = createDataSource(url, "sa", "")
+            migrate(dataSource)
+            dsl = DSL.using(dataSource, SQLDialect.H2)
+        }
     }
 
     @AfterEach
@@ -39,5 +45,22 @@ abstract class H2JooqTest {
         dsl.execute("DELETE FROM messages")
         dsl.execute("DELETE FROM sync_state")
         dsl.execute("DELETE FROM users")
+    }
+
+    companion object {
+        private val postgresDataSource: DataSource? =
+            System.getProperty("test.jdbc.url")
+                ?.takeIf { it.startsWith("jdbc:postgresql:") }
+                ?.let { url ->
+                    createDataSource(
+                            url,
+                            System.getProperty("test.jdbc.user", "outerstellar"),
+                            System.getProperty("test.jdbc.password", "outerstellar"),
+                        )
+                        .also { migrate(it) }
+                }
+
+        private val postgresDsl: DSLContext? =
+            postgresDataSource?.let { DSL.using(it, SQLDialect.POSTGRES) }
     }
 }

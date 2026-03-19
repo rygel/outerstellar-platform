@@ -75,6 +75,7 @@
         <detekt.version>1.23.8</detekt.version>
         <miglayout.version>11.4.3</miglayout.version>
         <assertj.swing.version>4.0.0-beta-3</assertj.swing.version>
+        <i18n.tools.version>1.0.0-SNAPSHOT</i18n.tools.version>
         <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
@@ -503,6 +504,9 @@
                             <otel.logs.exporter>none</otel.logs.exporter>
                             <java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
                             <junit.jupiter.tempdir.cleanup.mode.default>ALWAYS</junit.jupiter.tempdir.cleanup.mode.default>
+                            <test.jdbc.url>${test.jdbc.url}</test.jdbc.url>
+                            <test.jdbc.user>${test.jdbc.user}</test.jdbc.user>
+                            <test.jdbc.password>${test.jdbc.password}</test.jdbc.password>
                         </systemPropertyVariables>
                     </configuration>
                 </plugin>
@@ -525,6 +529,11 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>${exec.maven.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>io.github.rygel</groupId>
+                    <artifactId>i18n-maven-plugin</artifactId>
+                    <version>${i18n.tools.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -967,6 +976,64 @@
                 <spotbugs.skip>true</spotbugs.skip>
             </properties>
         </profile>
+        <!-- mvn -Ptest-postgres verify -pl persistence-jooq,web -am -->
+        <!-- Starts a PostgreSQL 18 container via Podman, runs all tests against it, then stops it -->
+        <!-- Requires: podman and the compose sub-command (podman compose) to be installed -->
+        <profile>
+            <id>test-postgres</id>
+            <properties>
+                <test.jdbc.url>jdbc:postgresql://localhost:5432/outerstellar</test.jdbc.url>
+                <test.jdbc.user>outerstellar</test.jdbc.user>
+                <test.jdbc.password>outerstellar</test.jdbc.password>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>postgres-start</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>podman</executable>
+                                    <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+                                    <arguments>
+                                        <argument>compose</argument>
+                                        <argument>-f</argument>
+                                        <argument>podman-compose.yml</argument>
+                                        <argument>up</argument>
+                                        <argument>-d</argument>
+                                        <argument>--wait</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>postgres-stop</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <executable>podman</executable>
+                                    <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+                                    <arguments>
+                                        <argument>compose</argument>
+                                        <argument>-f</argument>
+                                        <argument>podman-compose.yml</argument>
+                                        <argument>down</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <!-- Run only @Tag("performance") benchmarks, skip all static analysis -->
             <!-- Usage: mvn test -pl web -am -Pperformance -->

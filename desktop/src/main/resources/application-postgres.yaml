@@ -1,3 +1,6 @@
+# WARNING: These are local development credentials only.
+# Override jdbcUser and jdbcPassword via environment variables (JDBCUSER / JDBCPASSWORD)
+# or a secrets manager before deploying to any non-local environment.
 jdbcUrl: "jdbc:postgresql://localhost:5432/outerstellar"
 jdbcUser: "outerstellar"
 jdbcPassword: "outerstellar"

@@ -124,6 +124,28 @@
                     </environmentVariables>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>io.github.rygel</groupId>
+                <artifactId>i18n-maven-plugin</artifactId>
+                <configuration>
+                    <resourcesDir>${project.basedir}/../core/src/main/resources</resourcesDir>
+                    <projectDir>${project.basedir}/src/main/kotlin</projectDir>
+                    <sourcePatterns>
+                        <pattern>.translate</pattern>
+                    </sourcePatterns>
+                    <scanExtensions>
+                        <extension>kt</extension>
+                    </scanExtensions>
+                    <failOnUndefined>true</failOnUndefined>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>validate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

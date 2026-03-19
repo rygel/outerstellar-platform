@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.di
 
 import dev.outerstellar.starter.infra.createDataSource
+import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.persistence.AuditRepository
 import dev.outerstellar.starter.persistence.ContactRepository
 import dev.outerstellar.starter.persistence.JdbiApiKeyRepository
@@ -33,7 +34,14 @@ val persistenceModule
     get() = module {
         single<DataSource> {
             val config = get<dev.outerstellar.starter.AppConfig>()
-            createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
+            val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
+            try {
+                migrate(ds)
+            } catch (e: Exception) {
+                ds.close()
+                throw e
+            }
+            ds
         }
 
         single<Jdbi> {

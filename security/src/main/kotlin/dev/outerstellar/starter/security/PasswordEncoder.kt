@@ -12,5 +12,10 @@ class BCryptPasswordEncoder(private val logRounds: Int = 12) : PasswordEncoder {
     override fun encode(password: String): String =
         BCrypt.hashpw(password, BCrypt.gensalt(logRounds))
 
-    override fun matches(password: String, hash: String): Boolean = BCrypt.checkpw(password, hash)
+    override fun matches(password: String, hash: String): Boolean =
+        try {
+            BCrypt.checkpw(password, hash)
+        } catch (_: IllegalArgumentException) {
+            false
+        }
 }

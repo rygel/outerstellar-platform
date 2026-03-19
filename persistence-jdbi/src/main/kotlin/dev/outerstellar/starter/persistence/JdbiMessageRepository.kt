@@ -10,12 +10,8 @@ import java.util.UUID
 import org.http4k.format.Jackson
 import org.jdbi.v3.core.Handle
 import org.jdbi.v3.core.Jdbi
-import org.slf4j.LoggerFactory
-
 @Suppress("TooManyFunctions")
 class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
-    private val logger = LoggerFactory.getLogger(JdbiMessageRepository::class.java)
-
     override fun listMessages(
         query: String?,
         year: Int?,
@@ -318,28 +314,10 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         }
 
         if (!query.isNullOrBlank()) {
-            var usedFts = false
-            try {
-                val ftsCount =
-                    handle
-                        .createQuery("SELECT COUNT(*) FROM FT_SEARCH_DATA(:query, 0, 0)")
-                        .bind("query", query)
-                        .mapTo(Long::class.java)
-                        .one()
-                if (ftsCount >= 0) {
-                    conditions.add("sync_id IN (SELECT KEYS[1] FROM FT_SEARCH_DATA(:query, 0, 0))")
-                    bindings["query"] = query
-                    usedFts = true
-                }
-            } catch (_: Exception) {
-                logger.debug("FTS not available, falling back to LIKE for query: {}", query)
-            }
-            if (!usedFts) {
-                conditions.add(
-                    "(LOWER(content) LIKE :likeQuery ESCAPE '!' OR LOWER(author) LIKE :likeQuery ESCAPE '!')"
-                )
-                bindings["likeQuery"] = "%${query.lowercase().escapeLike()}%"
-            }
+            conditions.add(
+                "(LOWER(content) LIKE :likeQuery ESCAPE '!' OR LOWER(author) LIKE :likeQuery ESCAPE '!')"
+            )
+            bindings["likeQuery"] = "%${query.lowercase().escapeLike()}%"
         }
 
         if (year != null) {
