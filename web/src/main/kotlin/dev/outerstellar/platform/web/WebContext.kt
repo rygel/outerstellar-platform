@@ -7,6 +7,7 @@ import dev.outerstellar.platform.security.UserRepository
 import dev.outerstellar.platform.security.UserRole
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestKey
@@ -32,6 +33,17 @@ class WebContext(
         const val SESSION_COOKIE = "app_session"
         const val JWT_COOKIE = "app_jwt"
         const val CSRF_COOKIE = "_csrf"
+
+        /** Stable cache-buster computed once at class load — survives the JVM lifetime. */
+        val assetVersion: String = System.currentTimeMillis().toString()
+
+        /** Cached I18nService per locale to avoid re-parsing .properties on every request. */
+        private val i18nCache = ConcurrentHashMap<String, I18nService>()
+
+        fun cachedI18n(lang: String): I18nService =
+            i18nCache.computeIfAbsent(lang) {
+                I18nService.create("messages").also { it.setLocale(Locale.of(lang)) }
+            }
     }
 
     val lang: String by lazy {
@@ -74,9 +86,7 @@ class WebContext(
             }
     }
 
-    val i18n: I18nService by lazy {
-        I18nService.create("messages").also { it.setLocale(Locale.of(lang)) }
-    }
+    val i18n: I18nService by lazy { cachedI18n(lang) }
 
     val csrfToken: String by lazy {
         request.cookie(CSRF_COOKIE)?.value ?: java.util.UUID.randomUUID().toString()
@@ -196,7 +206,7 @@ class WebContext(
             footerCopy = i18n.translate("web.footer.copy"),
             footerVersion = i18n.translate("web.footer.version", appVersion),
             footerStatusUrl = url("/components/footer-status"),
-            version = System.currentTimeMillis().toString(),
+            version = assetVersion,
             userName = user?.username,
             isLoggedIn = user != null,
             logoutUrl = url("/logout"),
