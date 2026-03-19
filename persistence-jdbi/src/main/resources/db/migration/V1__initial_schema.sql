@@ -17,7 +17,6 @@ CREATE TABLE messages (
     deleted             BOOLEAN      NOT NULL DEFAULT FALSE,
     dirty               BOOLEAN      NOT NULL DEFAULT FALSE,
     deleted_at          TIMESTAMP,
-    created_year        INT AS (YEAR(created_at)),
     version             BIGINT       NOT NULL DEFAULT 1,
     sync_conflict       TEXT
 );
@@ -26,13 +25,6 @@ CREATE UNIQUE INDEX ux_messages_sync_id  ON messages(sync_id);
 CREATE        INDEX idx_messages_author  ON messages(author);
 CREATE        INDEX idx_messages_created ON messages(created_at);
 CREATE        INDEX idx_messages_deleted ON messages(deleted_at);
-CREATE        INDEX idx_messages_year    ON messages(created_year);
-
--- H2 full-text search on author and content
-CREATE ALIAS IF NOT EXISTS FT_INIT         FOR "org.h2.fulltext.FullText.init";
-CALL FT_INIT();
-CREATE ALIAS IF NOT EXISTS FT_CREATE_INDEX FOR "org.h2.fulltext.FullText.createIndex";
-CALL FT_CREATE_INDEX('PUBLIC', 'MESSAGES', 'AUTHOR,CONTENT');
 
 -- -----------------------------------------------------------------------------
 -- Sync state (tracks last-sync epoch per domain)
@@ -72,16 +64,6 @@ CREATE TABLE users (
     enabled          BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     last_activity_at TIMESTAMP             DEFAULT CURRENT_TIMESTAMP
-);
-
--- Default admin user (password configured via ADMIN_PASSWORD env var at startup)
-INSERT INTO users (id, username, email, password_hash, role)
-VALUES (
-    RANDOM_UUID(),
-    'admin',
-    'admin@outerstellar.de',
-    '$2a$12$8.Un7u.6Z.6Z.6Z.6Z.6Z.6Z.6Z.6Z.6Z.6Z.6Z.6Z.6Z.6Z.6Z.',
-    'ADMIN'
 );
 
 -- -----------------------------------------------------------------------------

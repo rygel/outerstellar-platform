@@ -13,13 +13,9 @@ import org.http4k.format.Jackson
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Record
-import org.jooq.impl.DSL
-import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
 class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
-    private val logger = LoggerFactory.getLogger(JooqMessageRepository::class.java)
-
     private fun notSoftDeleted(): Condition =
         MESSAGES.DELETED.eq(false).and(MESSAGES.DELETED_AT.isNull)
 
@@ -33,23 +29,11 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
         var condition = if (includeDeleted) softDeleted() else notSoftDeleted()
 
         if (!query.isNullOrBlank()) {
-            try {
-                val ftsTable = DSL.table("FT_SEARCH_DATA({0}, 0, 0)", DSL.`val`(query))
-                val keyField = DSL.field("KEYS[1]", String::class.java)
-                condition =
-                    condition.and(MESSAGES.SYNC_ID.`in`(dsl.select(keyField).from(ftsTable)))
-            } catch (e: org.jooq.exception.DataAccessException) {
-                logger.debug(
-                    "FTS failed for query: {}. Fallback to LIKE. Error: {}",
-                    query,
-                    e.message,
+            condition =
+                condition.and(
+                    MESSAGES.CONTENT.containsIgnoreCase(query)
+                        .or(MESSAGES.AUTHOR.containsIgnoreCase(query))
                 )
-                condition =
-                    condition.and(
-                        MESSAGES.CONTENT.containsIgnoreCase(query)
-                            .or(MESSAGES.AUTHOR.containsIgnoreCase(query))
-                    )
-            }
         }
 
         if (year != null) {

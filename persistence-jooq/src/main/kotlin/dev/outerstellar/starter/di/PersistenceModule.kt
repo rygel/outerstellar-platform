@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.di
 
 import dev.outerstellar.starter.infra.createDataSource
+import dev.outerstellar.starter.infra.migrate
 import dev.outerstellar.starter.persistence.AuditRepository
 import dev.outerstellar.starter.persistence.ContactRepository
 import dev.outerstellar.starter.persistence.JooqApiKeyRepository
@@ -34,11 +35,28 @@ val persistenceModule
     get() = module {
         single<DataSource> {
             val config = get<dev.outerstellar.starter.AppConfig>()
-            createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
+            val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
+            try {
+                migrate(ds)
+            } catch (e: Exception) {
+                ds.close()
+                throw e
+            }
+            if (config.devMode) {
+                val dialect =
+                    if (config.jdbcUrl.startsWith("jdbc:postgresql:")) SQLDialect.POSTGRES
+                    else SQLDialect.H2
+                JooqUserRepository(DSL.using(ds, dialect)).seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
+            }
+            ds
         }
 
         single<DSLContext> {
-            DSL.using(get<DataSource>(), SQLDialect.H2).also {
+            val config = get<dev.outerstellar.starter.AppConfig>()
+            val dialect =
+                if (config.jdbcUrl.startsWith("jdbc:postgresql:")) SQLDialect.POSTGRES
+                else SQLDialect.H2
+            DSL.using(get<DataSource>(), dialect).also {
                 if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
                     Metrics.globalRegistry.gauge("database.connections.active", 1)
                 }
@@ -67,3 +85,11 @@ val persistenceModule
 
         single<SessionRepository> { JooqSessionRepository(get()) }
     }
+
+/**
+ * Syntactically valid BCrypt hash used when seeding the dev admin user in devMode. This hash cannot
+ * match any real password — devAutoLogin bypasses password checks entirely in dev mode, so only the
+ * existence of the admin user matters.
+ */
+private const val DEV_ADMIN_PLACEHOLDER_HASH =
+    "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"
