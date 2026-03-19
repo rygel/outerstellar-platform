@@ -149,10 +149,18 @@ object Filters {
         userRepository: UserRepository,
         appVersion: String = "dev",
         jwtService: dev.outerstellar.starter.security.JwtService? = null,
+        pluginNavItems: List<PluginNavItem> = emptyList(),
     ): Filter = Filter { next: HttpHandler ->
         { request ->
             val context =
-                WebContext(request, devDashboardEnabled, userRepository, appVersion, jwtService)
+                WebContext(
+                    request,
+                    devDashboardEnabled,
+                    userRepository,
+                    appVersion,
+                    jwtService,
+                    pluginNavItems,
+                )
             val contextUser =
                 try {
                     context.user

@@ -18,6 +18,7 @@ class WebContext(
     private val userRepository: UserRepository? = null,
     private val appVersion: String = "dev",
     private val jwtService: JwtService? = null,
+    private val pluginNavItems: List<PluginNavItem> = emptyList(),
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
@@ -86,39 +87,56 @@ class WebContext(
         val themeCss = ThemeCatalog.toCssVariables(theme)
         val layoutClass = if (layout == "nice") "" else "layout-$layout"
 
-        val navLinks =
-            mutableListOf(
-                ShellLink(
-                    i18n.translate("web.nav.home"),
-                    url("/"),
-                    "ri-home-5-line",
-                    activeSection == "/",
-                ),
-                ShellLink(
-                    i18n.translate("web.nav.contacts"),
-                    url("/contacts"),
-                    "ri-user-3-line",
-                    activeSection == "/contacts",
-                ),
-                ShellLink(
-                    i18n.translate("web.nav.trash"),
-                    url("/messages/trash"),
-                    "ri-delete-bin-7-line",
-                    activeSection == "/messages/trash",
-                ),
-                ShellLink(
-                    i18n.translate("web.nav.auth"),
-                    url("/auth"),
-                    "ri-shield-keyhole-line",
-                    activeSection == "/auth",
-                ),
-                ShellLink(
-                    i18n.translate("web.nav.errors"),
-                    url("/errors/not-found"),
-                    "ri-error-warning-line",
-                    activeSection == "/errors",
-                ),
-            )
+        val navLinks: MutableList<ShellLink>
+
+        if (pluginNavItems.isNotEmpty()) {
+            // Plugin replaces the default nav; admin links are still appended below.
+            navLinks =
+                pluginNavItems
+                    .map { item ->
+                        ShellLink(
+                            item.label,
+                            url(item.url),
+                            item.icon,
+                            activeSection == item.activeSection,
+                        )
+                    }
+                    .toMutableList()
+        } else {
+            navLinks =
+                mutableListOf(
+                    ShellLink(
+                        i18n.translate("web.nav.home"),
+                        url("/"),
+                        "ri-home-5-line",
+                        activeSection == "/",
+                    ),
+                    ShellLink(
+                        i18n.translate("web.nav.contacts"),
+                        url("/contacts"),
+                        "ri-user-3-line",
+                        activeSection == "/contacts",
+                    ),
+                    ShellLink(
+                        i18n.translate("web.nav.trash"),
+                        url("/messages/trash"),
+                        "ri-delete-bin-7-line",
+                        activeSection == "/messages/trash",
+                    ),
+                    ShellLink(
+                        i18n.translate("web.nav.auth"),
+                        url("/auth"),
+                        "ri-shield-keyhole-line",
+                        activeSection == "/auth",
+                    ),
+                    ShellLink(
+                        i18n.translate("web.nav.errors"),
+                        url("/errors/not-found"),
+                        "ri-error-warning-line",
+                        activeSection == "/errors",
+                    ),
+                )
+        }
 
         if (user?.role == UserRole.ADMIN) {
             navLinks.add(

@@ -1,7 +1,9 @@
 package dev.outerstellar.starter.di
 
+import dev.outerstellar.starter.PluginMigrationSource
 import dev.outerstellar.starter.infra.createDataSource
 import dev.outerstellar.starter.infra.migrate
+import dev.outerstellar.starter.infra.migratePlugin
 import dev.outerstellar.starter.persistence.AuditRepository
 import dev.outerstellar.starter.persistence.ContactRepository
 import dev.outerstellar.starter.persistence.JdbiApiKeyRepository
@@ -37,6 +39,11 @@ val persistenceModule
             val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
             try {
                 migrate(ds)
+                getOrNull<PluginMigrationSource>()?.let { plugin ->
+                    plugin.migrationLocation?.let { location ->
+                        migratePlugin(ds, location, plugin.migrationHistoryTable)
+                    }
+                }
             } catch (e: Exception) {
                 ds.close()
                 throw e

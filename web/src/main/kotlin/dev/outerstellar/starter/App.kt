@@ -22,6 +22,8 @@ import dev.outerstellar.starter.web.HomeRoutes
 import dev.outerstellar.starter.web.NotificationApi
 import dev.outerstellar.starter.web.NotificationRoutes
 import dev.outerstellar.starter.web.OAuthRoutes
+import dev.outerstellar.starter.web.PluginContext
+import dev.outerstellar.starter.web.StarterPlugin
 import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.SyncWebSocket
 import dev.outerstellar.starter.web.UserAdminApi
@@ -75,6 +77,7 @@ fun app(
     analytics: AnalyticsService = NoOpAnalyticsService(),
     notificationService: dev.outerstellar.starter.service.NotificationService? = null,
     jwtService: dev.outerstellar.starter.security.JwtService? = null,
+    plugin: StarterPlugin? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
 
@@ -139,6 +142,18 @@ fun app(
         routes += ErrorRoutes(pageFactory, jteRenderer).routes
         if (notificationService != null) {
             routes += NotificationRoutes(pageFactory, jteRenderer, notificationService).routes
+        }
+        if (plugin != null) {
+            val pluginContext =
+                PluginContext(
+                    jteRenderer,
+                    config,
+                    securityService,
+                    userRepository,
+                    analytics,
+                    notificationService,
+                )
+            routes += plugin.routes(pluginContext)
         }
 
         // Global Logout
@@ -274,6 +289,7 @@ fun app(
                     userRepository,
                     config.version,
                     jwtService,
+                    plugin?.navItems ?: emptyList(),
                 )
             )
             .then(Filters.analyticsPageView(analytics))

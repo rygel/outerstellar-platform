@@ -22,6 +22,7 @@ import dev.outerstellar.starter.service.NoOpEmailService
 import dev.outerstellar.starter.service.NotificationService
 import dev.outerstellar.starter.service.SmtpConfig
 import dev.outerstellar.starter.service.SmtpEmailService
+import dev.outerstellar.starter.web.StarterPlugin
 import dev.outerstellar.starter.web.SyncApi
 import dev.outerstellar.starter.web.SyncWebSocket
 import dev.outerstellar.starter.web.WebPageFactory
@@ -81,6 +82,7 @@ val webModule
                 analytics = get(),
                 notificationService = get(),
                 jwtService = getOrNull<JwtService>(),
+                plugin = getOrNull<StarterPlugin>(),
             )
         }
     }
