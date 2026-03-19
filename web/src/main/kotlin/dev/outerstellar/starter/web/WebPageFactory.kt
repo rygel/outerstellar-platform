@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.web
 
+import dev.outerstellar.starter.model.InsufficientPermissionException
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.service.MessageService
 import dev.outerstellar.starter.sync.SyncMessage
@@ -459,7 +460,7 @@ class WebPageFactory(
     private val messageService: MessageService,
     private val contactService: dev.outerstellar.starter.service.ContactService? = null,
     private val securityService: dev.outerstellar.starter.security.SecurityService? = null,
-    private val auditRepository: dev.outerstellar.starter.security.AuditRepository? = null,
+    private val auditRepository: dev.outerstellar.starter.persistence.AuditRepository? = null,
     private val notificationService: dev.outerstellar.starter.service.NotificationService? = null,
 ) {
     private val messageListComponent = MessageListComponent(messageService)
@@ -1072,7 +1073,7 @@ class WebPageFactory(
     fun buildProfilePage(ctx: WebContext): Page<ProfilePage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.profile.title"), "/auth/profile")
-        val user = ctx.user!!
+        val user = ctx.user ?: throw InsufficientPermissionException("Authentication required")
         val gravatarHash =
             java.security.MessageDigest.getInstance("MD5")
                 .digest(user.email.trim().lowercase().toByteArray())
@@ -1118,7 +1119,7 @@ class WebPageFactory(
 
     fun buildNotificationsPage(ctx: WebContext): Page<NotificationsPage> {
         val i18n = ctx.i18n
-        val user = ctx.user!!
+        val user = ctx.user ?: throw InsufficientPermissionException("Authentication required")
         val unreadCount = notificationService?.countUnread(user.id) ?: 0
         val shell =
             ctx.shell(i18n.translate("web.notifications.title"), "/notifications")

@@ -10,6 +10,7 @@ import dev.outerstellar.starter.model.UserNotFoundException
 import dev.outerstellar.starter.model.UserSummary
 import dev.outerstellar.starter.model.UsernameAlreadyExistsException
 import dev.outerstellar.starter.model.WeakPasswordException
+import dev.outerstellar.starter.persistence.AuditRepository
 import java.time.Instant
 import java.util.UUID
 import org.slf4j.LoggerFactory

@@ -44,10 +44,11 @@ class NotificationRoutes(
                 POST to
                 { request ->
                     val ctx = request.webContext
-                    if (ctx.user == null) {
+                    val user = ctx.user
+                    if (user == null) {
                         Response(Status.FORBIDDEN)
                     } else {
-                        notificationService.markAllRead(ctx.user!!.id)
+                        notificationService.markAllRead(user.id)
                         // Re-render the page via HTMX redirect
                         Response(Status.FOUND).header("location", "/notifications")
                     }
@@ -60,13 +61,14 @@ class NotificationRoutes(
                 { notificationId, _ ->
                     { request ->
                         val ctx = request.webContext
-                        if (ctx.user == null) {
+                        val user = ctx.user
+                        if (user == null) {
                             Response(Status.FORBIDDEN)
                         } else {
                             try {
                                 notificationService.markRead(
                                     UUID.fromString(notificationId),
-                                    ctx.user!!.id,
+                                    user.id,
                                 )
                             } catch (_: IllegalArgumentException) {
                                 // ignore invalid UUID

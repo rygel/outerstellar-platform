@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.di
 
 import dev.outerstellar.starter.infra.createDataSource
+import dev.outerstellar.starter.persistence.AuditRepository
 import dev.outerstellar.starter.persistence.ContactRepository
 import dev.outerstellar.starter.persistence.JooqApiKeyRepository
 import dev.outerstellar.starter.persistence.JooqAuditRepository
@@ -17,7 +18,6 @@ import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.OutboxRepository
 import dev.outerstellar.starter.persistence.TransactionManager
 import dev.outerstellar.starter.security.ApiKeyRepository
-import dev.outerstellar.starter.security.AuditRepository
 import dev.outerstellar.starter.security.DeviceTokenRepository
 import dev.outerstellar.starter.security.OAuthRepository
 import dev.outerstellar.starter.security.PasswordResetRepository

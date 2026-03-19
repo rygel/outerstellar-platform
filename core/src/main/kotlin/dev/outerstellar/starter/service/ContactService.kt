@@ -1,13 +1,18 @@
 package dev.outerstellar.starter.service
 
+import dev.outerstellar.starter.model.AuditEntry
 import dev.outerstellar.starter.model.ContactSummary
 import dev.outerstellar.starter.model.StoredContact
+import dev.outerstellar.starter.persistence.AuditRepository
 import dev.outerstellar.starter.persistence.ContactRepository
+import dev.outerstellar.starter.persistence.TransactionManager
 import org.slf4j.LoggerFactory
 
 class ContactService(
     private val repository: ContactRepository,
     private val eventPublisher: EventPublisher = NoOpEventPublisher,
+    private val transactionManager: TransactionManager? = null,
+    private val auditRepository: AuditRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(ContactService::class.java)
 
@@ -49,6 +54,16 @@ class ContactService(
                 companyAddress,
                 department,
             )
+        auditRepository?.log(
+            AuditEntry(
+                actorId = null,
+                actorUsername = null,
+                targetId = contact.syncId,
+                targetUsername = contact.name,
+                action = "CONTACT_CREATED",
+                detail = null,
+            )
+        )
         eventPublisher.publishRefresh("contact-list-panel")
         return contact
     }
@@ -56,6 +71,16 @@ class ContactService(
     fun updateContact(contact: StoredContact): StoredContact {
         val updated = contact.copy(dirty = true)
         val result = repository.updateContact(updated)
+        auditRepository?.log(
+            AuditEntry(
+                actorId = null,
+                actorUsername = null,
+                targetId = result.syncId,
+                targetUsername = result.name,
+                action = "CONTACT_UPDATED",
+                detail = null,
+            )
+        )
         eventPublisher.publishRefresh("contact-list-panel")
         return result
     }
@@ -63,6 +88,16 @@ class ContactService(
     fun deleteContact(syncId: String) {
         logger.info("Soft deleting contact syncId={}", syncId)
         repository.softDelete(syncId)
+        auditRepository?.log(
+            AuditEntry(
+                actorId = null,
+                actorUsername = null,
+                targetId = syncId,
+                targetUsername = null,
+                action = "CONTACT_DELETED",
+                detail = null,
+            )
+        )
         eventPublisher.publishRefresh("contact-list-panel")
     }
 
@@ -83,21 +118,27 @@ class ContactService(
         var applied = 0
         val conflicts = mutableListOf<dev.outerstellar.starter.sync.SyncContactConflict>()
 
-        request.contacts.forEach { pushedContact ->
-            val existing = repository.findBySyncId(pushedContact.syncId)
-            if (existing != null && existing.updatedAtEpochMs > pushedContact.updatedAtEpochMs) {
-                conflicts.add(
-                    dev.outerstellar.starter.sync.SyncContactConflict(
-                        syncId = pushedContact.syncId,
-                        reason = "Server has newer version",
-                        serverContact = existing.toSyncContact(),
+        val process = {
+            request.contacts.forEach { pushedContact ->
+                val existing = repository.findBySyncId(pushedContact.syncId)
+                if (
+                    existing != null && existing.updatedAtEpochMs > pushedContact.updatedAtEpochMs
+                ) {
+                    conflicts.add(
+                        dev.outerstellar.starter.sync.SyncContactConflict(
+                            syncId = pushedContact.syncId,
+                            reason = "Server has newer version",
+                            serverContact = existing.toSyncContact(),
+                        )
                     )
-                )
-            } else {
-                repository.upsertSyncedContact(pushedContact, false)
-                applied++
+                } else {
+                    repository.upsertSyncedContact(pushedContact, false)
+                    applied++
+                }
             }
         }
+
+        transactionManager?.inTransaction(process) ?: process()
 
         if (applied > 0 || conflicts.isNotEmpty()) {
             eventPublisher.publishRefresh("contact-list-panel")

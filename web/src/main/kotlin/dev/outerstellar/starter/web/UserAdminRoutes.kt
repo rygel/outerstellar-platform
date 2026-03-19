@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.infra.render
+import dev.outerstellar.starter.model.InsufficientPermissionException
 import dev.outerstellar.starter.model.UserSummary
 import dev.outerstellar.starter.security.SecurityService
 import dev.outerstellar.starter.security.UserRole
@@ -61,7 +62,8 @@ class UserAdminRoutes(
                 { userId, _ ->
                     { request: org.http4k.core.Request ->
                         val ctx = request.webContext
-                        val admin = ctx.user!!
+                        val admin =
+                            ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         val users = securityService.listUsers()
                         val target = users.find { it.id == userId }
                         if (target != null) {
@@ -108,7 +110,8 @@ class UserAdminRoutes(
                 { userId, _ ->
                     { request: org.http4k.core.Request ->
                         val ctx = request.webContext
-                        val admin = ctx.user!!
+                        val admin =
+                            ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         val users = securityService.listUsers()
                         val target = users.find { it.id == userId }
                         if (target != null) {

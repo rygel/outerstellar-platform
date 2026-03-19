@@ -1,6 +1,7 @@
 package dev.outerstellar.starter.web
 
 import dev.outerstellar.starter.analytics.AnalyticsService
+import dev.outerstellar.starter.model.InsufficientPermissionException
 import dev.outerstellar.starter.model.OuterstellarException
 import dev.outerstellar.starter.model.ValidationException
 import dev.outerstellar.starter.security.SecurityRules
@@ -143,54 +144,53 @@ object Filters {
         }
     }
 
-    fun stateFilter(devDashboardEnabled: Boolean, userRepository: UserRepository, appVersion: String = "dev"): Filter =
-        Filter { next: HttpHandler ->
-            { request ->
-                val context = WebContext(request, devDashboardEnabled, userRepository, appVersion)
-                val contextUser =
-                    try {
-                        context.user
-                    } catch (e: Exception) {
-                        null
-                    }
-                if (contextUser != null) {
-                    MDC.put("userId", contextUser.id.toString().take(8))
-                    MDC.put("username", contextUser.username)
+    fun stateFilter(
+        devDashboardEnabled: Boolean,
+        userRepository: UserRepository,
+        appVersion: String = "dev",
+    ): Filter = Filter { next: HttpHandler ->
+        { request ->
+            val context = WebContext(request, devDashboardEnabled, userRepository, appVersion)
+            val contextUser =
+                try {
+                    context.user
+                } catch (e: Exception) {
+                    null
                 }
-                val response = next(request.with(WebContext.KEY of context))
-
-                val cookieMaxAge = Duration.ofDays(COOKIE_MAX_AGE_DAYS).toSeconds()
-
-                val langCookie =
-                    request
-                        .query("lang")
-                        ?.takeIf { it in setOf("en", "fr") }
-                        ?.let {
-                            Cookie(WebContext.LANG_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                        }
-                val themeCookie =
-                    request
-                        .query("theme")
-                        ?.takeIf { v -> ThemeCatalog.allThemes().any { it.id == v } }
-                        ?.let {
-                            Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                        }
-                val layoutCookie =
-                    request
-                        .query("layout")
-                        ?.takeIf { it in setOf("nice", "cozy", "compact") }
-                        ?.let {
-                            Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                        }
-
-                var updatedResponse = response
-                if (langCookie != null) updatedResponse = updatedResponse.cookie(langCookie)
-                if (themeCookie != null) updatedResponse = updatedResponse.cookie(themeCookie)
-                if (layoutCookie != null) updatedResponse = updatedResponse.cookie(layoutCookie)
-
-                updatedResponse
+            if (contextUser != null) {
+                MDC.put("userId", contextUser.id.toString().take(8))
+                MDC.put("username", contextUser.username)
             }
+            val response = next(request.with(WebContext.KEY of context))
+
+            val cookieMaxAge = Duration.ofDays(COOKIE_MAX_AGE_DAYS).toSeconds()
+
+            val langCookie =
+                request
+                    .query("lang")
+                    ?.takeIf { it in setOf("en", "fr") }
+                    ?.let { Cookie(WebContext.LANG_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+            val themeCookie =
+                request
+                    .query("theme")
+                    ?.takeIf { v -> ThemeCatalog.allThemes().any { it.id == v } }
+                    ?.let { Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+            val layoutCookie =
+                request
+                    .query("layout")
+                    ?.takeIf { it in setOf("nice", "cozy", "compact") }
+                    ?.let {
+                        Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/")
+                    }
+
+            var updatedResponse = response
+            if (langCookie != null) updatedResponse = updatedResponse.cookie(langCookie)
+            if (themeCookie != null) updatedResponse = updatedResponse.cookie(themeCookie)
+            if (layoutCookie != null) updatedResponse = updatedResponse.cookie(layoutCookie)
+
+            updatedResponse
         }
+    }
 
     fun sessionTimeout(
         timeoutMinutes: Int,
@@ -386,6 +386,7 @@ object Filters {
         val status =
             when (e) {
                 is ValidationException -> Status.BAD_REQUEST
+                is InsufficientPermissionException -> Status.FORBIDDEN
                 is OuterstellarException -> Status.BAD_REQUEST
                 else -> Status.INTERNAL_SERVER_ERROR
             }

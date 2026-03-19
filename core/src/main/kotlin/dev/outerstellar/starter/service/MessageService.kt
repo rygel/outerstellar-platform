@@ -1,5 +1,6 @@
 package dev.outerstellar.starter.service
 
+import dev.outerstellar.starter.model.AuditEntry
 import dev.outerstellar.starter.model.ConflictStrategy
 import dev.outerstellar.starter.model.MessageNotFoundException
 import dev.outerstellar.starter.model.MessageSummary
@@ -7,6 +8,7 @@ import dev.outerstellar.starter.model.PagedResult
 import dev.outerstellar.starter.model.PaginationMetadata
 import dev.outerstellar.starter.model.StoredMessage
 import dev.outerstellar.starter.model.ValidationException
+import dev.outerstellar.starter.persistence.AuditRepository
 import dev.outerstellar.starter.persistence.MessageCache
 import dev.outerstellar.starter.persistence.MessageRepository
 import dev.outerstellar.starter.persistence.NoOpMessageCache
@@ -30,6 +32,7 @@ class MessageService(
     private val transactionManager: TransactionManager? = null,
     private val cache: MessageCache = NoOpMessageCache,
     private val eventPublisher: EventPublisher = NoOpEventPublisher,
+    private val auditRepository: AuditRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(MessageService::class.java)
 
@@ -116,6 +119,16 @@ class MessageService(
                 repository.createServerMessage(author, content)
             }
 
+        auditRepository?.log(
+            AuditEntry(
+                actorId = null,
+                actorUsername = null,
+                targetId = message.syncId,
+                targetUsername = null,
+                action = "MESSAGE_CREATED",
+                detail = "author=$author",
+            )
+        )
         cache.put("entity:${message.syncId}", message)
         cache.invalidateAll()
         eventPublisher.publishRefresh("message-list-panel")
@@ -128,6 +141,16 @@ class MessageService(
         }
 
         val message = repository.createLocalMessage(author, content)
+        auditRepository?.log(
+            AuditEntry(
+                actorId = null,
+                actorUsername = null,
+                targetId = message.syncId,
+                targetUsername = null,
+                action = "MESSAGE_CREATED",
+                detail = "author=$author",
+            )
+        )
         cache.put("entity:${message.syncId}", message)
         cache.invalidateAll()
         eventPublisher.publishRefresh("message-list-panel")
@@ -214,6 +237,16 @@ class MessageService(
         } else {
             repository.softDelete(syncId)
         }
+        auditRepository?.log(
+            AuditEntry(
+                actorId = null,
+                actorUsername = null,
+                targetId = syncId,
+                targetUsername = null,
+                action = "MESSAGE_DELETED",
+                detail = null,
+            )
+        )
         cache.invalidate("entity:$syncId")
         cache.invalidateAll()
         eventPublisher.publishRefresh("message-list-panel")
@@ -240,6 +273,16 @@ class MessageService(
             } else {
                 repository.updateMessage(message)
             }
+        auditRepository?.log(
+            AuditEntry(
+                actorId = null,
+                actorUsername = null,
+                targetId = updated.syncId,
+                targetUsername = null,
+                action = "MESSAGE_UPDATED",
+                detail = null,
+            )
+        )
         cache.put("entity:${updated.syncId}", updated)
         cache.invalidateAll()
         eventPublisher.publishRefresh("message-list-panel")

@@ -49,12 +49,6 @@ interface UserRepository {
     fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean)
 }
 
-interface AuditRepository {
-    fun log(entry: dev.outerstellar.starter.model.AuditEntry)
-
-    fun findRecent(limit: Int = 50): List<dev.outerstellar.starter.model.AuditEntry>
-}
-
 interface PasswordResetRepository {
     fun save(token: dev.outerstellar.starter.model.PasswordResetToken)
 

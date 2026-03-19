@@ -1,7 +1,6 @@
 package dev.outerstellar.starter.persistence
 
 import dev.outerstellar.starter.model.AuditEntry
-import dev.outerstellar.starter.security.AuditRepository
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 

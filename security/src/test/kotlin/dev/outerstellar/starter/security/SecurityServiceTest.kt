@@ -4,6 +4,7 @@ import dev.outerstellar.starter.model.ApiKey
 import dev.outerstellar.starter.model.InsufficientPermissionException
 import dev.outerstellar.starter.model.UsernameAlreadyExistsException
 import dev.outerstellar.starter.model.WeakPasswordException
+import dev.outerstellar.starter.persistence.AuditRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
