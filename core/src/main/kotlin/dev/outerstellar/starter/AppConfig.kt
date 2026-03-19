@@ -22,6 +22,7 @@ data class EmailConfig(
 )
 
 data class AppConfig(
+    val version: String = "dev",
     val port: Int = 8080,
     val jdbcUrl: String =
         "jdbc:h2:file:./data/outerstellar-starter;MODE=PostgreSQL;AUTO_SERVER=TRUE",

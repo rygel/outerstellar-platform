@@ -25,6 +25,7 @@ data class ShellView(
     val languageSelectorUrl: String,
     val layoutSelectorUrl: String,
     val footerCopy: String,
+    val footerVersion: String,
     val footerStatusUrl: String,
     val version: String,
     val userName: String? = null,

@@ -15,6 +15,7 @@ class WebContext(
     val request: Request,
     private val devDashboardEnabled: Boolean = false,
     private val userRepository: UserRepository? = null,
+    private val appVersion: String = "dev",
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
@@ -158,6 +159,7 @@ class WebContext(
                 componentUrl("/components/sidebar/language-selector", currentPath),
             layoutSelectorUrl = componentUrl("/components/sidebar/layout-selector", currentPath),
             footerCopy = i18n.translate("web.footer.copy"),
+            footerVersion = i18n.translate("web.footer.version", appVersion),
             footerStatusUrl = url("/components/footer-status"),
             version = System.currentTimeMillis().toString(),
             userName = user?.username,

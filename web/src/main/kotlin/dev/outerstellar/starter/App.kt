@@ -267,7 +267,7 @@ fun app(
             .then(rateLimitFilter())
             .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
             .then(Filters.devAutoLogin(config.devMode, userRepository))
-            .then(Filters.stateFilter(config.devDashboardEnabled, userRepository))
+            .then(Filters.stateFilter(config.devDashboardEnabled, userRepository, config.version))
             .then(Filters.analyticsPageView(analytics))
             .then(
                 Filters.sessionTimeout(

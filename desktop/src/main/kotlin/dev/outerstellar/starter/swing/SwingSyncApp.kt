@@ -1806,7 +1806,7 @@ class SyncWindow(
     }
 
     private fun applyTranslations() {
-        frame.title = i18nService.translate("swing.app.title")
+        frame.title = "${i18nService.translate("swing.app.title")} — v$appVersion"
         syncButton.text = i18nService.translate("swing.button.sync")
         createButton.text = i18nService.translate("swing.button.create")
         appMenu.text = i18nService.translate("swing.menu.file")

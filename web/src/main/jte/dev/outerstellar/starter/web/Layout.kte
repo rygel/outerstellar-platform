@@ -178,11 +178,14 @@
         </main>
         <footer class="footer">
             <span>${shell.footerCopy}</span>
-            <div id="footer-status"
-                 class="chip"
-                 hx-get="${shell.footerStatusUrl}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-left: auto;">
+                <span style="opacity: 0.6; font-size: 0.8rem;">${shell.footerVersion}</span>
+                <div id="footer-status"
+                     class="chip"
+                     hx-get="${shell.footerStatusUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
             </div>
         </footer>
     </div>

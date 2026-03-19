@@ -143,10 +143,10 @@ object Filters {
         }
     }
 
-    fun stateFilter(devDashboardEnabled: Boolean, userRepository: UserRepository): Filter =
+    fun stateFilter(devDashboardEnabled: Boolean, userRepository: UserRepository, appVersion: String = "dev"): Filter =
         Filter { next: HttpHandler ->
             { request ->
-                val context = WebContext(request, devDashboardEnabled, userRepository)
+                val context = WebContext(request, devDashboardEnabled, userRepository, appVersion)
                 val contextUser =
                     try {
                         context.user
