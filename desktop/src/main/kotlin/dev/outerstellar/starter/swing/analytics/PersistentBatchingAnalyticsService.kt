@@ -100,6 +100,7 @@ class PersistentBatchingAnalyticsService(
             return
         }
 
+        var malformedCount = 0
         val events =
             lines.mapNotNull { line ->
                 try {
@@ -107,12 +108,23 @@ class PersistentBatchingAnalyticsService(
                     mapper.readValue(line, Map::class.java) as Map<String, Any>
                 } catch (e: Exception) {
                     logger.warn("Skipping malformed analytics line: {}", e.message)
+                    malformedCount++
                     null
                 }
             }
 
+        if (malformedCount > 0) {
+            // Rewrite the file without the corrupt lines so they are not retried on future flushes
+            if (events.isEmpty()) {
+                deleteFile()
+            } else {
+                val clean = events.joinToString("\n") { mapper.writeValueAsString(it) } + "\n"
+                Files.writeString(file, clean)
+            }
+            logger.info("Removed {} malformed analytics lines from disk", malformedCount)
+        }
+
         if (events.isEmpty()) {
-            deleteFile()
             return
         }
 

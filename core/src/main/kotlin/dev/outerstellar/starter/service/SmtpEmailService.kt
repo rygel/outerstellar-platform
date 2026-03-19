@@ -54,6 +54,7 @@ class SmtpEmailService(private val config: SmtpConfig) : EmailService {
             logger.info("Email sent to {} subject='{}'", to, subject)
         } catch (e: MessagingException) {
             logger.warn("Failed to send email to {}: {}", to, e.message)
+            throw RuntimeException("Email delivery failed to $to: ${e.message}", e)
         }
     }
 }

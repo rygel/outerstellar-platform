@@ -97,7 +97,12 @@ fun main() {
     startKoin { modules(swingRuntimeModules()) }
 
     val desktop = DesktopComponent
-    migrate(desktop.dataSource)
+    try {
+        migrate(desktop.dataSource)
+    } catch (e: Exception) {
+        (desktop.dataSource as? com.zaxxer.hikari.HikariDataSource)?.close()
+        throw e
+    }
 
     val analytics =
         if (desktop.config.analyticsEnabled && desktop.config.segmentWriteKey.isNotBlank()) {

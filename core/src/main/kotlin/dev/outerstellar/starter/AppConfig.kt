@@ -34,6 +34,8 @@ data class AppConfig(
     // APP_PROFILE=prod or the SESSIONCOOKIESECURE environment variable.
     val sessionCookieSecure: Boolean = false,
     val sessionTimeoutMinutes: Int = 30,
+    // WARNING: "*" allows any origin. Override with a comma-separated allow-list in production
+    // (e.g. CORSORIGINS=https://app.example.com) to prevent cross-origin credential theft.
     val corsOrigins: String = "*",
     val csrfEnabled: Boolean = true,
     val segment: SegmentConfig = SegmentConfig(),

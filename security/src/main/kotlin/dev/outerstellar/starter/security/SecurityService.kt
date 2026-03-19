@@ -192,6 +192,9 @@ class SecurityService(
     ) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         if (newEmail != user.email) {
+            if (!EMAIL_REGEX.matches(newEmail)) {
+                throw IllegalArgumentException("Invalid email address: $newEmail")
+            }
             val existing = userRepository.findByEmail(newEmail)
             if (existing != null && existing.id != userId) {
                 throw UsernameAlreadyExistsException(newEmail)
@@ -407,6 +410,7 @@ class SecurityService(
         private const val API_KEY_HEX_LENGTH = 32
         private const val API_KEY_PREFIX_LENGTH = 8
         private const val SESSION_TOKEN_HEX_LENGTH = 48
+        private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }
 

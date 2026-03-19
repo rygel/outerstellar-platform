@@ -36,48 +36,62 @@ class SyncViewModel(
     private val observers = CopyOnWriteArrayList<() -> Unit>()
     private var autoSyncExecutor: ScheduledExecutorService? = null
 
+    @Volatile
     var isOnline: Boolean = connectivityChecker?.isOnline ?: true
         private set
 
+    @Volatile
     var messages: List<MessageSummary> = emptyList()
         private set
 
+    @Volatile
     var contacts: List<ContactSummary> = emptyList()
         private set
 
+    @Volatile
     var status: String = i18nService.translate("swing.status.ready")
         private set
 
+    @Volatile
     var isSyncing: Boolean = false
         private set
 
+    @Volatile
     var userName: String = ""
         private set
 
+    @Volatile
     var isLoggedIn: Boolean = false
         private set
 
+    @Volatile
     var userRole: String? = null
         private set
 
+    @Volatile
     var adminUsers: List<UserSummary> = emptyList()
         private set
 
+    @Volatile
     var notifications: List<dev.outerstellar.starter.model.NotificationSummary> = emptyList()
         private set
 
     val unreadNotificationCount: Int
         get() = notifications.count { !it.read }
 
+    @Volatile
     var userEmail: String = ""
         private set
 
+    @Volatile
     var userAvatarUrl: String? = null
         private set
 
+    @Volatile
     var emailNotificationsEnabled: Boolean = true
         private set
 
+    @Volatile
     var pushNotificationsEnabled: Boolean = true
         private set
 

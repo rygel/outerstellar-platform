@@ -100,8 +100,8 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
             id = rs.getLong("id"),
             tokenHash = rs.getString("token_hash"),
             userId = rs.getObject("user_id", UUID::class.java),
-            createdAt = createdAt?.toInstant() ?: Instant.now(),
-            expiresAt = expiresAt?.toInstant() ?: Instant.now(),
+            createdAt = createdAt?.toInstant() ?: error("sessions.created_at is unexpectedly null"),
+            expiresAt = expiresAt?.toInstant() ?: error("sessions.expires_at is unexpectedly null"),
         )
     }
 }

@@ -38,7 +38,12 @@ fun main() {
     startKoin { modules(persistenceModule, coreModule, webModule, securityModule) }
 
     val main = MainComponent
-    migrate(main.dataSource)
+    try {
+        migrate(main.dataSource)
+    } catch (e: Exception) {
+        (main.dataSource as? com.zaxxer.hikari.HikariDataSource)?.close()
+        throw e
+    }
     dev.outerstellar.starter.web.SyncWebSocket.userRepository = main.userRepository
 
     val adminPassword =

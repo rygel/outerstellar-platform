@@ -293,7 +293,15 @@ class MessageService(
         val current = repository.findBySyncId(syncId) ?: throw MessageNotFoundException(syncId)
         val currentConflict = current.syncConflict ?: return
 
-        val serverVersion = Jackson.asA(currentConflict, SyncMessage::class)
+        val serverVersion =
+            try {
+                Jackson.asA(currentConflict, SyncMessage::class)
+            } catch (e: Exception) {
+                throw IllegalStateException(
+                    "Cannot parse conflict data for message $syncId: ${e.message}",
+                    e,
+                )
+            }
 
         val resolved =
             if (strategy == ConflictStrategy.MINE) {

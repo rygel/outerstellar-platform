@@ -85,23 +85,24 @@ class ContactsRoutes(
                     { request: Request ->
                         val ctx = request.webContext
                         val params = request.bodyAsForm()
-                        val existing = contactService?.getContactBySyncId(syncId)
-                        if (existing != null) {
-                            val name = params.findSingle("name") ?: existing.name
-                            contactService.updateContact(
-                                existing.copy(
-                                    name = name,
-                                    emails = params.findSingle("emails").orEmpty().splitTrimmed(),
-                                    phones = params.findSingle("phones").orEmpty().splitTrimmed(),
-                                    socialMedia =
-                                        params.findSingle("socialMedia").orEmpty().splitTrimmed(),
-                                    company = params.findSingle("company").orEmpty(),
-                                    companyAddress = params.findSingle("companyAddress").orEmpty(),
-                                    department = params.findSingle("department").orEmpty(),
-                                    dirty = true,
-                                )
+                        val existing =
+                            contactService?.getContactBySyncId(syncId)
+                                ?: return@to Response(Status.NOT_FOUND)
+                                    .body("Contact not found: $syncId")
+                        val name = params.findSingle("name") ?: existing.name
+                        contactService.updateContact(
+                            existing.copy(
+                                name = name,
+                                emails = params.findSingle("emails").orEmpty().splitTrimmed(),
+                                phones = params.findSingle("phones").orEmpty().splitTrimmed(),
+                                socialMedia =
+                                    params.findSingle("socialMedia").orEmpty().splitTrimmed(),
+                                company = params.findSingle("company").orEmpty(),
+                                companyAddress = params.findSingle("companyAddress").orEmpty(),
+                                department = params.findSingle("department").orEmpty(),
+                                dirty = true,
                             )
-                        }
+                        )
                         renderer.render(pageFactory.buildContactsPage(ctx))
                     }
                 },

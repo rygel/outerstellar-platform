@@ -5,7 +5,7 @@ import com.zaxxer.hikari.HikariDataSource
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
 
-fun createDataSource(jdbcUrl: String, jdbcUser: String, jdbcPassword: String): DataSource =
+fun createDataSource(jdbcUrl: String, jdbcUser: String, jdbcPassword: String): HikariDataSource =
     HikariDataSource(
         HikariConfig().apply {
             this.jdbcUrl = jdbcUrl
