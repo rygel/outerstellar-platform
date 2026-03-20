@@ -45,7 +45,7 @@
         <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
-        <junit.version>5.12.0</junit.version>
+        <junit.version>6.0.3</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
