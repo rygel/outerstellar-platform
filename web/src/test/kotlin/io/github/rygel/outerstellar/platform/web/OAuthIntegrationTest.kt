@@ -5,9 +5,6 @@ import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.OAuthException
-import io.github.rygel.outerstellar.platform.security.OAuthProvider
-import io.github.rygel.outerstellar.platform.security.OAuthUserInfo
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
@@ -51,31 +48,6 @@ class OAuthIntegrationTest : H2WebTest() {
     private lateinit var userRepository: JooqUserRepository
     private lateinit var oauthRepository: InMemoryOAuthRepository
     private lateinit var securityService: SecurityService
-
-    // A configurable test provider stub — can succeed or fail on demand
-    private var providerShouldSucceed = true
-    private var providerReturnEmail: String? = "testuser@example.com"
-
-    private val testProvider =
-        object : OAuthProvider {
-            override val name = "apple"
-
-            override fun authorizationUrl(state: String, redirectUri: String): String =
-                "https://appleid.apple.com/auth/authorize?state=$state&redirect_uri=$redirectUri"
-
-            override fun exchangeCode(
-                code: String,
-                state: String,
-                redirectUri: String,
-            ): OAuthUserInfo {
-                if (!providerShouldSucceed) throw OAuthException("Test exchange failure")
-                return OAuthUserInfo(
-                    subject = "apple.sub.${code.take(8)}",
-                    email = providerReturnEmail,
-                    displayName = "Test User",
-                )
-            }
-        }
 
     @BeforeEach
     fun setupTest() {
@@ -424,6 +396,7 @@ class OAuthIntegrationTest : H2WebTest() {
             serviceWithoutOAuth.findOrCreateOAuthUser("apple", "sub", "e@example.com")
         } catch (e: IllegalStateException) {
             threw = true
+            assertTrue(e.message?.isNotBlank() == true, "Exception should have a message")
         }
         assertTrue(threw, "findOrCreateOAuthUser must throw when oauthRepository is null")
     }

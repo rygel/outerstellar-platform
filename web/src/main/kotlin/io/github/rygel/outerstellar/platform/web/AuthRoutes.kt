@@ -237,6 +237,7 @@ class AuthRoutes(
                                 )
                             )
                         } catch (e: IllegalArgumentException) {
+                            logger.debug("Password reset failed with invalid token: {}", e.message)
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.reset.error.title"),

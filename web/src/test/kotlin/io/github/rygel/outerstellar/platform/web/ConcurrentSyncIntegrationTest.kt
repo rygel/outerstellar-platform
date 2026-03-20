@@ -112,7 +112,9 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
     ): List<org.http4k.core.Response> {
         return syncIds.map { syncId ->
             val body =
-                """{"messages":[{"syncId":"$syncId","author":"$author","content":"Content for $syncId","updatedAtEpochMs":${System.currentTimeMillis()}}]}"""
+                """{"messages":[{"syncId":"$syncId","author":"$author",""" +
+                    """"content":"Content for $syncId",""" +
+                    """"updatedAtEpochMs":${System.currentTimeMillis()}}]}"""
             app(
                 Request(POST, "/api/v1/sync")
                     .header("Authorization", "Bearer $token")
@@ -216,7 +218,10 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
             pool.submit {
                 try {
                     val body =
-                        """{"messages":[{"syncId":"$sharedSyncId","author":"concurrent_user_a","content":"Version $i","updatedAtEpochMs":${1000L + i}}]}"""
+                        """{"messages":[{"syncId":"$sharedSyncId",""" +
+                            """"author":"concurrent_user_a",""" +
+                            """"content":"Version $i",""" +
+                            """"updatedAtEpochMs":${1000L + i}}]}"""
                     val r =
                         app(
                             Request(POST, "/api/v1/sync")

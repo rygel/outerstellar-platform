@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.MessageService
@@ -33,7 +32,6 @@ class StatePersistenceE2ETest : H2WebTest() {
 
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
         val contactService =
             io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
                 relaxed = true

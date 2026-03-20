@@ -96,18 +96,30 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
 
     private fun bearer() = "Bearer $sessionToken"
 
-    private fun pushContact(
-        syncId: String,
-        name: String,
-        emails: List<String> = emptyList(),
-        phones: List<String> = emptyList(),
-        socialMedia: List<String> = emptyList(),
-        company: String = "",
-        companyAddress: String = "",
-        department: String = "",
-        timestamp: Long = 1000L,
-        deleted: Boolean = false,
-    ): org.http4k.core.Response {
+    private data class PushContactParams(
+        val syncId: String,
+        val name: String,
+        val emails: List<String> = emptyList(),
+        val phones: List<String> = emptyList(),
+        val socialMedia: List<String> = emptyList(),
+        val company: String = "",
+        val companyAddress: String = "",
+        val department: String = "",
+        val timestamp: Long = 1000L,
+        val deleted: Boolean = false,
+    )
+
+    private fun pushContact(params: PushContactParams): org.http4k.core.Response {
+        val syncId = params.syncId
+        val name = params.name
+        val emails = params.emails
+        val phones = params.phones
+        val socialMedia = params.socialMedia
+        val company = params.company
+        val companyAddress = params.companyAddress
+        val department = params.department
+        val timestamp = params.timestamp
+        val deleted = params.deleted
         val emailsJson = emails.joinToString(",") { "\"$it\"" }
         val phonesJson = phones.joinToString(",") { "\"$it\"" }
         val socialJson = socialMedia.joinToString(",") { "\"$it\"" }
@@ -149,7 +161,7 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
         val syncId = UUID.randomUUID().toString()
         val emails = listOf("alice@example.com", "alice.work@corp.com")
 
-        val pushResponse = pushContact(syncId, "Alice", emails = emails)
+        val pushResponse = pushContact(PushContactParams(syncId, "Alice", emails = emails))
         assertEquals(Status.OK, pushResponse.status)
         val pushBody = Jackson.asA(pushResponse.bodyString(), SyncPushContactResponse::class)
         assertEquals(1, pushBody.appliedCount)
@@ -166,7 +178,7 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
         val syncId = UUID.randomUUID().toString()
         val phones = listOf("+1-555-0100", "+1-555-0200")
 
-        pushContact(syncId, "Bob", phones = phones)
+        pushContact(PushContactParams(syncId, "Bob", phones = phones))
 
         val pulled = pullContacts()
         val contact = pulled.contacts.find { it.syncId == syncId }
@@ -180,7 +192,7 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
         val syncId = UUID.randomUUID().toString()
         val social = listOf("@charlie_twitter", "linkedin.com/in/charlie")
 
-        pushContact(syncId, "Charlie", socialMedia = social)
+        pushContact(PushContactParams(syncId, "Charlie", socialMedia = social))
 
         val pulled = pullContacts()
         val contact = pulled.contacts.find { it.syncId == syncId }
@@ -197,11 +209,13 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
         val syncId = UUID.randomUUID().toString()
 
         pushContact(
-            syncId,
-            "Diana",
-            company = "Acme Corp",
-            companyAddress = "123 Main St",
-            department = "Engineering",
+            PushContactParams(
+                syncId = syncId,
+                name = "Diana",
+                company = "Acme Corp",
+                companyAddress = "123 Main St",
+                department = "Engineering",
+            )
         )
 
         val pulled = pullContacts()
@@ -216,14 +230,16 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
         val syncId = UUID.randomUUID().toString()
 
         pushContact(
-            syncId,
-            "Eve Complete",
-            emails = listOf("eve@home.com", "eve@work.com"),
-            phones = listOf("+44-20-1234-5678"),
-            socialMedia = listOf("@eve_social"),
-            company = "Eve Corp",
-            companyAddress = "42 Baker Street",
-            department = "Sales",
+            PushContactParams(
+                syncId = syncId,
+                name = "Eve Complete",
+                emails = listOf("eve@home.com", "eve@work.com"),
+                phones = listOf("+44-20-1234-5678"),
+                socialMedia = listOf("@eve_social"),
+                company = "Eve Corp",
+                companyAddress = "42 Baker Street",
+                department = "Sales",
+            )
         )
 
         val pulled = pullContacts()
@@ -244,22 +260,26 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
 
         // Push v1
         pushContact(
-            syncId,
-            "Frank v1",
-            emails = listOf("frank@old.com"),
-            company = "Old Corp",
-            timestamp = 1000L,
+            PushContactParams(
+                syncId = syncId,
+                name = "Frank v1",
+                emails = listOf("frank@old.com"),
+                company = "Old Corp",
+                timestamp = 1000L,
+            )
         )
 
         // Push v2 with more details and newer timestamp
         pushContact(
-            syncId,
-            "Frank v2",
-            emails = listOf("frank@new.com", "frank@backup.com"),
-            phones = listOf("+1-555-9999"),
-            company = "New Corp",
-            department = "R&D",
-            timestamp = 2000L,
+            PushContactParams(
+                syncId = syncId,
+                name = "Frank v2",
+                emails = listOf("frank@new.com", "frank@backup.com"),
+                phones = listOf("+1-555-9999"),
+                company = "New Corp",
+                department = "R&D",
+                timestamp = 2000L,
+            )
         )
 
         val pulled = pullContacts()

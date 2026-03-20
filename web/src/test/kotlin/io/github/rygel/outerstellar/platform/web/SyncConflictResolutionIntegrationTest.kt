@@ -99,7 +99,9 @@ class SyncConflictResolutionIntegrationTest : H2WebTest() {
                     .header("Authorization", bearer())
                     .header("content-type", "application/json")
                     .body(
-                        """{"messages":[{"syncId":"$syncId","author":"conflictuser","content":"$content","updatedAtEpochMs":$timestamp}]}"""
+                        """{"messages":[{"syncId":"$syncId",""" +
+                            """"author":"conflictuser","content":"$content",""" +
+                            """"updatedAtEpochMs":$timestamp}]}"""
                     )
             )
         assertEquals(Status.OK, response.status)

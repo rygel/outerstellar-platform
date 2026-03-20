@@ -22,7 +22,8 @@ data class MessageListViewModel(
     val localBadge: String = "Local",
     val conflictBadge: String = "Conflict",
 ) : ViewModel {
-    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/MessageList"
+    override fun template(): String =
+        "io/github/rygel/outerstellar/platform/web/components/MessageList"
 }
 
 private const val DEFAULT_PAGE_SIZE = 10

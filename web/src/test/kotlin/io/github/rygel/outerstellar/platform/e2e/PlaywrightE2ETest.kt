@@ -65,7 +65,8 @@ class PlaywrightE2ETest : KoinTest {
                     single {
                         AppConfig(
                             jdbcUrl =
-                                "jdbc:h2:mem:playwright_test_${System.currentTimeMillis()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+                                "jdbc:h2:mem:playwright_test_${System.currentTimeMillis()}" +
+                                    ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
                             devMode = true,
                         )
                     }

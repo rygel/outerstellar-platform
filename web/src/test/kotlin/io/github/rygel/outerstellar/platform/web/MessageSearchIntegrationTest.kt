@@ -105,7 +105,9 @@ class MessageSearchIntegrationTest : H2WebTest() {
                 .header("Authorization", bearer())
                 .header("content-type", "application/json")
                 .body(
-                    """{"messages":[{"syncId":"$syncId","author":"searchuser","content":"$content","updatedAtEpochMs":$timestamp,"deleted":$deleted}]}"""
+                    """{"messages":[{"syncId":"$syncId","author":"searchuser",""" +
+                        """"content":"$content","updatedAtEpochMs":$timestamp,""" +
+                        """"deleted":$deleted}]}"""
                 )
         )
 

@@ -8,6 +8,8 @@ import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsResponse
 import org.slf4j.LoggerFactory
 
+private const val WS_AUTH_REQUIRED_STATUS = 4401
+
 object SyncWebSocket :
     WebComponent<Nothing>, io.github.rygel.outerstellar.platform.service.EventPublisher {
     private val logger = LoggerFactory.getLogger(SyncWebSocket::class.java)
@@ -29,12 +31,18 @@ object SyncWebSocket :
                     try {
                         userRepository?.findById(java.util.UUID.fromString(it))
                     } catch (e: IllegalArgumentException) {
+                        logger.debug("Invalid session cookie UUID: {}", e.message)
                         null
                     }
                 }
             if (user == null) {
                 logger.warn("WebSocket connection rejected: no valid session")
-                ws.close(org.http4k.websocket.WsStatus(4401, "Authentication required"))
+                ws.close(
+                    org.http4k.websocket.WsStatus(
+                        WS_AUTH_REQUIRED_STATUS,
+                        "Authentication required",
+                    )
+                )
                 return@WsResponse
             }
 

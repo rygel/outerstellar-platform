@@ -160,7 +160,8 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
                     .header("Authorization", "Bearer ${result.key}")
                     .header("content-type", "application/json")
                     .body(
-                        """{"messages":[{"syncId":"$syncId","author":"apikeyuser","content":"via api key","updatedAtEpochMs":1000}]}"""
+                        """{"messages":[{"syncId":"$syncId","author":"apikeyuser",""" +
+                            """"content":"via api key","updatedAtEpochMs":1000}]}"""
                     )
             )
         assertEquals(Status.OK, response.status)

@@ -31,6 +31,7 @@ import org.slf4j.MDC
 
 private const val COOKIE_MAX_AGE_DAYS = 365L
 private const val REQUEST_ID_HEADER = "X-Request-Id"
+private const val LOG_ID_LENGTH = 8
 
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
@@ -39,7 +40,7 @@ object Filters {
         { request ->
             val requestId =
                 request.header(REQUEST_ID_HEADER) ?: java.util.UUID.randomUUID().toString()
-            MDC.put("requestId", requestId.take(8))
+            MDC.put("requestId", requestId.take(LOG_ID_LENGTH))
             MDC.put("method", request.method.name)
             MDC.put("path", request.uri.path)
             try {
@@ -104,7 +105,7 @@ object Filters {
             val requestId = request.header(REQUEST_ID_HEADER) ?: "-"
             logger.info(
                 "[{}] {} {} -> {} ({}ms)",
-                requestId.take(8),
+                requestId.take(LOG_ID_LENGTH),
                 request.method,
                 request.uri,
                 response.status,
@@ -165,10 +166,11 @@ object Filters {
                 try {
                     context.user
                 } catch (e: Exception) {
+                    logger.trace("Could not resolve user from context: {}", e.message)
                     null
                 }
             if (contextUser != null) {
-                MDC.put("userId", contextUser.id.toString().take(8))
+                MDC.put("userId", contextUser.id.toString().take(LOG_ID_LENGTH))
                 MDC.put("username", contextUser.username)
             }
             val response = next(request.with(WebContext.KEY of context))
@@ -219,6 +221,7 @@ object Filters {
                 try {
                     request.webContext.user
                 } catch (e: IllegalStateException) {
+                    logger.trace("Could not resolve user for session timeout check: {}", e.message)
                     null
                 }
 

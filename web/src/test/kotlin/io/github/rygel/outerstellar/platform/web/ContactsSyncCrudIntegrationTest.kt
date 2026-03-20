@@ -5,7 +5,6 @@ import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.JooqContactRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqTransactionManager
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
@@ -55,7 +54,6 @@ class ContactsSyncCrudIntegrationTest : H2WebTest() {
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
-        val jooqTxManager = JooqTransactionManager(testDsl)
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = ContactService(contactRepository)
         val securityService =

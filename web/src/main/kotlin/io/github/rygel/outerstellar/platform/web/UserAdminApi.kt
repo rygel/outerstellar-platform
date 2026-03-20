@@ -24,6 +24,7 @@ import org.http4k.lens.Path
 import org.http4k.lens.string
 
 class UserAdminApi(private val securityService: SecurityService) : ServerRoutes {
+    private val logger = org.slf4j.LoggerFactory.getLogger(UserAdminApi::class.java)
     private val userSummaryListLens = Body.auto<List<UserSummary>>().toLens()
     private val setUserEnabledLens = Body.auto<SetUserEnabledRequest>().toLens()
     private val setUserRoleLens = Body.auto<SetUserRoleRequest>().toLens()
@@ -84,6 +85,7 @@ class UserAdminApi(private val securityService: SecurityService) : ServerRoutes 
                         } catch (e: InsufficientPermissionException) {
                             Response(Status.BAD_REQUEST).body(e.message ?: "Not allowed")
                         } catch (e: IllegalArgumentException) {
+                            logger.debug("Invalid role value: {}", e.message)
                             Response(Status.BAD_REQUEST).body("Invalid role")
                         }
                     }

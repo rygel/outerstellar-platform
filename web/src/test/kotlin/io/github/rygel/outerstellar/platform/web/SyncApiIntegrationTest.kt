@@ -199,7 +199,9 @@ class SyncApiIntegrationTest : H2WebTest() {
                     .header("Authorization", bearerHeader())
                     .header("content-type", "application/json")
                     .body(
-                        """{"messages":[{"syncId":"$syncId","author":"syncuser","content":"Hello sync","updatedAtEpochMs":1000}]}"""
+                        """{"messages":[{"syncId":"$syncId",""" +
+                            """"author":"syncuser","content":"Hello sync",""" +
+                            """"updatedAtEpochMs":1000}]}"""
                     )
             )
         assertEquals(Status.OK, response.status)

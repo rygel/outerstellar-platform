@@ -302,7 +302,8 @@ class PerformanceBenchmarkTest : H2WebTest() {
     @Test
     fun `POST sync push latency (single message upsert)`() {
         val payload =
-            """{"messages":[{"syncId":"perf-bench-msg","author":"perf","content":"benchmark payload","updatedAtEpochMs":1000,"deleted":false}]}"""
+            """{"messages":[{"syncId":"perf-bench-msg","author":"perf",""" +
+                """"content":"benchmark payload","updatedAtEpochMs":1000,"deleted":false}]}"""
         val req =
             Request(POST, "/api/v1/sync")
                 .header("Authorization", "Bearer $bearerToken")

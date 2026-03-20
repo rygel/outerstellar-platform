@@ -38,6 +38,7 @@ private fun Notification.toDto() =
     )
 
 class NotificationApi(private val notificationService: NotificationService) : ServerRoutes {
+    private val logger = org.slf4j.LoggerFactory.getLogger(NotificationApi::class.java)
     private val notificationListLens = Body.auto<List<NotificationDto>>().toLens()
     private val notificationIdPath = Path.string().of("notificationId")
 
@@ -75,6 +76,7 @@ class NotificationApi(private val notificationService: NotificationService) : Se
                             notificationService.markRead(UUID.fromString(notificationId), user.id)
                             Response(Status.NO_CONTENT)
                         } catch (e: IllegalArgumentException) {
+                            logger.debug("Invalid notification id: {}", e.message)
                             Response(Status.BAD_REQUEST).body("Invalid notification id")
                         }
                     }

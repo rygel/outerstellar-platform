@@ -18,6 +18,7 @@ import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
 
 private const val DEFAULT_PAGE_LIMIT = 20
+private const val MAX_PAGE_LIMIT = 100
 
 class UserAdminRoutes(
     private val pageFactory: WebPageFactory,
@@ -35,7 +36,7 @@ class UserAdminRoutes(
                 GET to
                 { request: org.http4k.core.Request ->
                     val limit =
-                        request.query("limit")?.toIntOrNull()?.coerceIn(1, 100)
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT)
                             ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
                     renderer.render(
@@ -83,7 +84,7 @@ class UserAdminRoutes(
                 GET to
                 { request: org.http4k.core.Request ->
                     val limit =
-                        request.query("limit")?.toIntOrNull()?.coerceIn(1, 100)
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT)
                             ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
                     renderer.render(

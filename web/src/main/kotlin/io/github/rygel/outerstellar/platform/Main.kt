@@ -20,6 +20,9 @@ import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
 
+private const val OUTBOX_INTERVAL_SECONDS = 30L
+private const val SHUTDOWN_TIMEOUT_SECONDS = 5L
+
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.Main")
 
 object MainComponent : KoinComponent {
@@ -62,8 +65,8 @@ fun main() {
             main.outboxProcessor.processPending()
             main.activityUpdater.flush()
         },
-        30L,
-        30L,
+        OUTBOX_INTERVAL_SECONDS,
+        OUTBOX_INTERVAL_SECONDS,
         TimeUnit.SECONDS,
     )
     val server = main.app.asServer(Jetty(main.config.port)).start()
@@ -79,7 +82,12 @@ fun main() {
                     logger.info("Stopping outbox scheduler...")
                     outboxScheduler.shutdown()
                     try {
-                        if (!outboxScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                        if (
+                            !outboxScheduler.awaitTermination(
+                                SHUTDOWN_TIMEOUT_SECONDS,
+                                TimeUnit.SECONDS,
+                            )
+                        ) {
                             outboxScheduler.shutdownNow()
                         }
                     } catch (e: InterruptedException) {

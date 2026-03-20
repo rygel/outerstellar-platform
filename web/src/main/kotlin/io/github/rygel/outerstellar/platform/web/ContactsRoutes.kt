@@ -14,6 +14,9 @@ import org.http4k.lens.Path
 import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
 
+private const val MAX_CONTACTS_LIMIT = 50
+private const val DEFAULT_CONTACTS_LIMIT = 12
+
 class ContactsRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
@@ -32,7 +35,9 @@ class ContactsRoutes(
                 { request: Request ->
                     val ctx = request.webContext
                     val query = request.query("q")
-                    val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, 50) ?: 12
+                    val limit =
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
+                            ?: DEFAULT_CONTACTS_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
                     renderer.render(pageFactory.buildContactsPage(ctx, query, limit, offset))
                 },

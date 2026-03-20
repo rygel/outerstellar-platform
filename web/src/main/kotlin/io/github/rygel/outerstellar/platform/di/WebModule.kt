@@ -41,7 +41,7 @@ val webModule
         single<TemplateRenderer> { createRenderer() }
         single<NotificationRepository> { JooqNotificationRepository(get()) }
         single { NotificationService(get()) }
-        single { WebPageFactory(get(), get(), get(), get(), getOrNull(), get()) }
+        single { WebPageFactory(get(), get(), get(), get(), get()) }
         single { SyncApi(get(), get(), get()) }
         single<MessageCache> {
             io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache()

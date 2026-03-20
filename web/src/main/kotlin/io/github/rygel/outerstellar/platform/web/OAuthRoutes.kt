@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory
  * 2. GET /auth/oauth/{provider}/callback → exchange code, create/find user, set session cookie
  * 3. POST /auth/oauth/{provider}/callback → same as above (Apple uses form_post response mode)
  */
+private const val SESSION_MAX_AGE_SECONDS = 365L * 24 * 3600
+
 class OAuthRoutes(
     private val providers: Map<String, OAuthProvider>,
     private val securityService: SecurityService,
@@ -102,34 +104,40 @@ class OAuthRoutes(
         return Response(Status.FOUND).header("location", authUrl).cookie(stateCookie)
     }
 
-    private fun handleCallback(
-        request: Request,
-        providerName: String,
-        provider: OAuthProvider,
-    ): Response {
-        val code =
-            request.query("code")
-                ?: request.bodyString().parseFormField("code")
-                ?: return badCallbackResponse("Missing authorization code")
+    private data class ValidatedCallback(val code: String, val state: String)
+
+    private fun validateCallback(request: Request, providerName: String): ValidatedCallback? {
+        val code = request.query("code") ?: request.bodyString().parseFormField("code")
 
         val returnedState = request.query("state") ?: request.bodyString().parseFormField("state")
         val expectedState = request.cookie("oauth_state")?.value
+        val stateValid = returnedState != null && returnedState == expectedState
 
-        if (returnedState == null || returnedState != expectedState) {
+        if (!stateValid) {
             logger.warn(
                 "OAuth state mismatch for provider={}: expected={} got={}",
                 providerName,
                 expectedState,
                 returnedState,
             )
-            return badCallbackResponse("Invalid state parameter — possible CSRF attempt")
         }
+        return if (code != null && stateValid) ValidatedCallback(code, returnedState!!) else null
+    }
+
+    private fun handleCallback(
+        request: Request,
+        providerName: String,
+        provider: OAuthProvider,
+    ): Response {
+        val validated =
+            validateCallback(request, providerName)
+                ?: return badCallbackResponse("Invalid callback parameters")
 
         val redirectUri =
             "${request.uri.scheme}://${request.uri.authority}/auth/oauth/$providerName/callback"
 
         return try {
-            val userInfo = provider.exchangeCode(code, returnedState, redirectUri)
+            val userInfo = provider.exchangeCode(validated.code, validated.state, redirectUri)
             val user =
                 securityService.findOrCreateOAuthUser(
                     providerName,
@@ -142,15 +150,13 @@ class OAuthRoutes(
                 user.username,
                 providerName,
             )
-            val maxAge = 365L * 24 * 3600
-
             Response(Status.FOUND)
                 .header("location", "/")
                 .cookie(
                     Cookie(
                         WebContext.SESSION_COOKIE,
                         user.id.toString(),
-                        maxAge = maxAge,
+                        maxAge = SESSION_MAX_AGE_SECONDS,
                         path = "/",
                         secure = sessionCookieSecure,
                         httpOnly = true,

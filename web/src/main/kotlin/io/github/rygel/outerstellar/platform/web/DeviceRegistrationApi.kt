@@ -44,6 +44,10 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
                         try {
                             Jackson.asA(request.bodyString(), RegisterDeviceRequest::class)
                         } catch (e: Exception) {
+                            logger.debug(
+                                "Failed to parse device registration request: {}",
+                                e.message,
+                            )
                             return@to Response(Status.BAD_REQUEST).body("Invalid request body")
                         }
 
@@ -88,6 +92,10 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
                         try {
                             Jackson.asA(request.bodyString(), DeregisterDeviceRequest::class).token
                         } catch (e: Exception) {
+                            logger.debug(
+                                "Failed to parse deregister request, falling back to query param: {}",
+                                e.message,
+                            )
                             request.query("token")
                         } ?: return@to Response(Status.BAD_REQUEST).body("token is required")
 
@@ -102,6 +110,7 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
         try {
             SecurityRules.USER_KEY(this)
         } catch (e: Exception) {
+            logger.trace("No security user found on request: {}", e.message)
             null
         }
 

@@ -262,14 +262,12 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
 
     @Test
     fun `DELETE api-v1-auth-api-keys-id removes the key`() {
-        val createResponse =
-            app(
-                Request(POST, "/api/v1/auth/api-keys")
-                    .header("Authorization", bearerFor(testUser))
-                    .header("content-type", "application/json")
-                    .body("""{"name":"To Delete"}""")
-            )
-        val createdKey = createApiKeyResponseLens(createResponse)
+        app(
+            Request(POST, "/api/v1/auth/api-keys")
+                .header("Authorization", bearerFor(testUser))
+                .header("content-type", "application/json")
+                .body("""{"name":"To Delete"}""")
+        )
 
         // Find the key ID from the list
         val listResponse =

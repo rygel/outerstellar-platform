@@ -100,7 +100,9 @@ class ChangePasswordWebIntegrationTest : H2WebTest() {
                 .cookie(sessionCookie())
                 .header("content-type", "application/x-www-form-urlencoded")
                 .body(
-                    "currentPassword=${encode(currentPassword)}&newPassword=${encode(newPassword)}&confirmPassword=${encode(confirmPassword)}"
+                    "currentPassword=${encode(currentPassword)}" +
+                        "&newPassword=${encode(newPassword)}" +
+                        "&confirmPassword=${encode(confirmPassword)}"
                 )
         )
 
