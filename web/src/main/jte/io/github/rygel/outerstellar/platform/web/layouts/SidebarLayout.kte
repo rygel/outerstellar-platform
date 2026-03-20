@@ -77,7 +77,7 @@
             @if(shell.isLoggedIn)
                 <div class="topbar-user">
                     <div class="user-info">
-                        <span class="user-name">${shell.userName}</span>
+                        <span class="user-name">${shell.username}</span>
                         <div style="display:flex; gap:0.5rem; align-items:center;">
                             @if(shell.profileUrl != null)
                                 <a href="${shell.profileUrl}" class="sign-out-link" style="font-size:0.8rem;"><i class="ri-user-settings-line"></i> Profile</a>

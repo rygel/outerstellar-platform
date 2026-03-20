@@ -30,7 +30,7 @@ data class ShellView(
     val footerVersion: String,
     val footerStatusUrl: String,
     val version: String,
-    val userName: String? = null,
+    val username: String? = null,
     val isLoggedIn: Boolean = false,
     val logoutUrl: String? = null,
     val changePasswordUrl: String? = null,

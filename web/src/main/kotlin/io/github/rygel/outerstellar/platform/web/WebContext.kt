@@ -207,7 +207,7 @@ class WebContext(
             footerVersion = i18n.translate("web.footer.version", appVersion),
             footerStatusUrl = url("/components/footer-status"),
             version = assetVersion,
-            userName = user?.username,
+            username = user?.username,
             isLoggedIn = user != null,
             logoutUrl = url("/logout"),
             changePasswordUrl = if (user != null) url("/auth/change-password") else null,
