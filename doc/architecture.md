@@ -502,8 +502,8 @@ Available at `/swagger.html` — loads from CDN and points at the Auth, Sync, an
 
 ### Docker
 
-- `Dockerfile` — multi-stage build (Maven builder + JRE runtime)
-- `docker-compose.yml` — single service with persistent volume
+- `docker/Dockerfile` — multi-stage build (Maven builder + JRE runtime)
+- `docker/docker-compose.yml` — single service with persistent volume
 - Build with: `mvn -Pdocker package`
 
 ## Build profile strategy
