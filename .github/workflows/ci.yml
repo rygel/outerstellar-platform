@@ -1,19 +1,18 @@
-name: Outerstellar CI (Local Only)
+name: CI
 
 on:
-  # push:
-  #   branches: [ main ]
-  # pull_request:
-  #   branches: [ main ]
-  workflow_dispatch: # Allows manual trigger if ever needed, but prevents automatic runs on GitHub
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
 
 jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
-    
+
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
@@ -23,22 +22,71 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Install dependencies
-        run: mvn install -DskipTests
+      - name: Build and verify
+        run: mvn clean verify -pl core,persistence-jooq,persistence-jdbi,security,web,seed -Pfast
 
-      - name: Run Detekt and Checkstyle
-        run: mvn antrun:run@detekt checkstyle:check
+      - name: Run quality checks
+        run: mvn verify -pl core,persistence-jooq,security,web -DskipTests
 
-      - name: Run Web Tests
-        run: mvn test -pl web
+      - name: Upload JaCoCo coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: '**/target/site/jacoco/'
+          retention-days: 14
 
-      - name: Run Desktop Tests (Xvfb virtual display)
+  desktop-tests:
+    name: Desktop Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Install Xvfb
         run: |
-          # Xvfb provides a virtual framebuffer so Swing GUI tests run without a physical display.
-          # -Ddesktop.headless=false ensures java.awt.headless=false so tests are NOT skipped.
           sudo apt-get update
           sudo apt-get install -y xvfb
-          xvfb-run --auto-servernum mvn test -pl desktop -Ddesktop.headless=false
 
-      - name: Final Integration Test
-        run: mvn test -pl core,persistence-jooq
+      - name: Build dependencies
+        run: mvn install -pl core,persistence-jooq,security -DskipTests -q
+
+      - name: Run desktop tests with virtual display
+        run: xvfb-run --auto-servernum mvn test -pl desktop -Ddesktop.headless=false
+
+  dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: OWASP dependency check
+        run: mvn dependency-check:aggregate -DskipTests
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+
+      - name: Upload dependency check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: 'target/dependency-check-report.html'
+          retention-days: 30
