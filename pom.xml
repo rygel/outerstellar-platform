@@ -60,13 +60,13 @@
         <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
         <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
-        <bytebuddy.version>1.18.5</bytebuddy.version>
+        <bytebuddy.version>1.18.7</bytebuddy.version>
         <koin.version>4.2.0</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
         <archunit.version>1.4.1</archunit.version>
-        <micrometer.version>1.14.4</micrometer.version>
+        <micrometer.version>1.16.4</micrometer.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <caffeine.version>3.2.3</caffeine.version>
         <opentelemetry.version>1.60.1</opentelemetry.version>
@@ -76,8 +76,8 @@
         <logback.version>1.5.32</logback.version>
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.1</java-jwt.version>
-        <hikaricp.version>6.2.1</hikaricp.version>
-        <angus.mail.version>2.0.3</angus.mail.version>
+        <hikaricp.version>7.0.2</hikaricp.version>
+        <angus.mail.version>2.0.5</angus.mail.version>
         <konform.version>0.11.1</konform.version>
         <playwright.version>1.58.0</playwright.version>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
