@@ -57,7 +57,9 @@ class SyncIntegrationTest : H2WebTest() {
         )
         val adminToken = securityService.createSession(adminId)
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
+                relaxed = true
+            )
 
         val app =
             app(

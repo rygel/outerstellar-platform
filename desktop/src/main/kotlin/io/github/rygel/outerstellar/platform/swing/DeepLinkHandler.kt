@@ -5,7 +5,8 @@ import java.net.URI
 import java.net.URISyntaxException
 import org.slf4j.LoggerFactory
 
-private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.DeepLinkHandler")
+private val logger =
+    LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.DeepLinkHandler")
 
 object DeepLinkHandler {
     private var onSearchRequested: ((String) -> Unit)? = null

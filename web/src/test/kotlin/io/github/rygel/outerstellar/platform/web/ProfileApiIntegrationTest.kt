@@ -57,7 +57,12 @@ class ProfileApiIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
         val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, txManager, cache)
+            io.github.rygel.outerstellar.platform.service.MessageService(
+                repository,
+                outbox,
+                txManager,
+                cache,
+            )
         val pageFactory = WebPageFactory(repository, messageService, null, null)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService =
@@ -66,7 +71,8 @@ class ProfileApiIntegrationTest : H2WebTest() {
                 encoder,
                 sessionRepository = JooqSessionRepository(testDsl),
             )
-        val contactService = mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+        val contactService =
+            mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
         app =
             app(

@@ -51,7 +51,8 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService = mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+        val contactService =
+            mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)

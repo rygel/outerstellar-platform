@@ -8,7 +8,8 @@ import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsResponse
 import org.slf4j.LoggerFactory
 
-object SyncWebSocket : WebComponent<Nothing>, io.github.rygel.outerstellar.platform.service.EventPublisher {
+object SyncWebSocket :
+    WebComponent<Nothing>, io.github.rygel.outerstellar.platform.service.EventPublisher {
     private val logger = LoggerFactory.getLogger(SyncWebSocket::class.java)
     private val connections = ConcurrentHashMap.newKeySet<Websocket>()
 

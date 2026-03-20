@@ -1,12 +1,12 @@
 package io.github.rygel.outerstellar.platform.di
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.swing.SwingAppConfig
 import io.github.rygel.outerstellar.platform.swing.SystemTrayNotifier
 import io.github.rygel.outerstellar.platform.swing.analytics.PersistentBatchingAnalyticsService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.i18n.I18nService
 import java.nio.file.Path
 import org.koin.core.qualifier.named
 import org.koin.dsl.module

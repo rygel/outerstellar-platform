@@ -13,7 +13,9 @@ import org.slf4j.LoggerFactory
 class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val logger = LoggerFactory.getLogger(JooqUserRepository::class.java)
 
-    private fun mapUser(record: io.github.rygel.outerstellar.platform.jooq.tables.records.UsersRecord): User {
+    private fun mapUser(
+        record: io.github.rygel.outerstellar.platform.jooq.tables.records.UsersRecord
+    ): User {
         return User(
             id = record.id!!,
             username = record.username!!,

@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.swing.viewmodel
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
@@ -16,7 +17,6 @@ import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.ConnectivityChecker
 import io.github.rygel.outerstellar.platform.swing.SystemTrayNotifier
 import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.i18n.I18nService
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -73,7 +73,8 @@ class SyncViewModel(
         private set
 
     @Volatile
-    var notifications: List<io.github.rygel.outerstellar.platform.model.NotificationSummary> = emptyList()
+    var notifications: List<io.github.rygel.outerstellar.platform.model.NotificationSummary> =
+        emptyList()
         private set
 
     val unreadNotificationCount: Int

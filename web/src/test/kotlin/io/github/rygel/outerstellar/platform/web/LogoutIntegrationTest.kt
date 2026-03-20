@@ -48,7 +48,8 @@ class LogoutIntegrationTest : H2WebTest() {
     fun setupTest() {
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         userRepository = JooqUserRepository(testDsl)
-        val auditRepository = io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository(testDsl)
+        val auditRepository =
+            io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository(testDsl)
         val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()

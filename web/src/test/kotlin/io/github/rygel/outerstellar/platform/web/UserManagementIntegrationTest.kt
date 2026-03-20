@@ -93,7 +93,9 @@ class UserManagementIntegrationTest : H2WebTest() {
                 sessionRepository = JooqSessionRepository(testDsl),
             )
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
+                relaxed = true
+            )
         val pageFactory =
             WebPageFactory(repository, messageService, contactService, securityService)
 

@@ -5,7 +5,8 @@ import java.util.prefs.BackingStoreException
 import java.util.prefs.Preferences
 import org.slf4j.LoggerFactory
 
-private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.DesktopStateProvider")
+private val logger =
+    LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.DesktopStateProvider")
 
 private const val DEFAULT_X = 100
 private const val DEFAULT_Y = 0

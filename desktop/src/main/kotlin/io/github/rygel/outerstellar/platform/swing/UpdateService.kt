@@ -7,7 +7,8 @@ import java.net.URL
 import javax.swing.SwingWorker
 import org.slf4j.LoggerFactory
 
-private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.UpdateService")
+private val logger =
+    LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.UpdateService")
 
 class UpdateService(
     private val currentVersion: String,

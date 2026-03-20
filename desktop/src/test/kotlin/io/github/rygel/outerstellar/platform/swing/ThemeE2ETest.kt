@@ -143,7 +143,9 @@ class ThemeE2ETest {
         val themeManager = ThemeManager()
         val i18nService = io.github.rygel.outerstellar.i18n.I18nService.create("messages")
         val viewModel =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel>(relaxed = true)
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel>(
+                relaxed = true
+            )
 
         // Robot must be created BEFORE the frame so the robot's AWT hierarchy tracks it.
         val robot = org.assertj.swing.core.BasicRobot.robotWithNewAwtHierarchy()

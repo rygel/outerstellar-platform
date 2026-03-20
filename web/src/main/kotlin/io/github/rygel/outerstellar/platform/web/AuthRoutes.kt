@@ -369,7 +369,8 @@ class AuthRoutes(
                                 .header("location", ctx.url("/auth?deleted=true"))
                                 .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
                         } catch (
-                            e: io.github.rygel.outerstellar.platform.model.InsufficientPermissionException) {
+                            e:
+                                io.github.rygel.outerstellar.platform.model.InsufficientPermissionException) {
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.delete.error.title"),

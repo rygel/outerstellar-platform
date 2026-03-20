@@ -50,7 +50,8 @@ class StubMessageCache : MessageCache {
     override fun getStats(): Map<String, Any> = emptyMap()
 }
 
-class StubTransactionManager : io.github.rygel.outerstellar.platform.persistence.TransactionManager {
+class StubTransactionManager :
+    io.github.rygel.outerstellar.platform.persistence.TransactionManager {
     override fun <T> inTransaction(block: () -> T): T = block()
 }
 

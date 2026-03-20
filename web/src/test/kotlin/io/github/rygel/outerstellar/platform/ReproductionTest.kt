@@ -32,7 +32,9 @@ class ReproductionTest : H2WebTest() {
         val passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, passwordEncoder)
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
+                relaxed = true
+            )
 
         val app =
             app(

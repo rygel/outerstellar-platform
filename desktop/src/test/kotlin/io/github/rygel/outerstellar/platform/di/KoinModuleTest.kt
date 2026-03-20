@@ -1,10 +1,10 @@
 package io.github.rygel.outerstellar.platform.di
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.ConnectivityChecker
 import io.github.rygel.outerstellar.platform.swing.SystemTrayNotifier
 import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.i18n.I18nService
 import org.junit.jupiter.api.Test
 import org.koin.test.KoinTest
 import org.koin.test.verify.verify

@@ -472,10 +472,16 @@ data class ContactsPage(
 open class WebPageFactory(
     private val repository: MessageRepository,
     private val messageService: MessageService,
-    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? = null,
-    private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
-    private val auditRepository: io.github.rygel.outerstellar.platform.persistence.AuditRepository? = null,
-    private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
+    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? =
+        null,
+    private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? =
+        null,
+    private val auditRepository:
+        io.github.rygel.outerstellar.platform.persistence.AuditRepository? =
+        null,
+    private val notificationService:
+        io.github.rygel.outerstellar.platform.service.NotificationService? =
+        null,
 ) {
     private val messageListComponent = MessageListComponent(messageService)
 
@@ -796,7 +802,9 @@ open class WebPageFactory(
     fun buildConflictResolveModal(ctx: WebContext, syncId: String): ConflictResolveViewModel {
         val message =
             repository.findBySyncId(syncId)
-                ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(syncId)
+                ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(
+                    syncId
+                )
         val serverVersion =
             org.http4k.format.Jackson.asA(message.syncConflict!!, SyncMessage::class)
 

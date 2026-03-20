@@ -1,10 +1,10 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
-import io.github.rygel.outerstellar.i18n.I18nService
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap

@@ -136,7 +136,9 @@ class UserAdminRoutes(
             return sb.toString()
         }
 
-        fun auditAsCsv(entries: List<io.github.rygel.outerstellar.platform.model.AuditEntry>): String {
+        fun auditAsCsv(
+            entries: List<io.github.rygel.outerstellar.platform.model.AuditEntry>
+        ): String {
             val sb = StringBuilder()
             sb.appendLine("Timestamp,Actor,Action,Target,Detail")
             entries.forEach { e ->

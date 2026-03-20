@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import com.formdev.flatlaf.FlatLightLaf
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.di.coreModule
@@ -16,7 +17,6 @@ import io.github.rygel.outerstellar.platform.service.SyncProvider
 import io.github.rygel.outerstellar.platform.swing.analytics.PersistentBatchingAnalyticsService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.i18n.I18nService
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.awt.Color
@@ -831,7 +831,9 @@ class SyncWindow(
         notificationsPanel.add(notifHeaderPanel, "wrap, growx, gapbottom 10")
 
         val notifListModel =
-            javax.swing.DefaultListModel<io.github.rygel.outerstellar.platform.model.NotificationSummary>()
+            javax.swing.DefaultListModel<
+                io.github.rygel.outerstellar.platform.model.NotificationSummary
+            >()
         val notifList =
             javax.swing.JList(notifListModel).apply {
                 name = "notificationsList"
@@ -852,7 +854,9 @@ class SyncWindow(
                                 cellHasFocus,
                             )
                             val n =
-                                value as? io.github.rygel.outerstellar.platform.model.NotificationSummary
+                                value
+                                    as?
+                                    io.github.rygel.outerstellar.platform.model.NotificationSummary
                                     ?: return this
                             val unreadMark = if (!n.read) "● " else "  "
                             text =

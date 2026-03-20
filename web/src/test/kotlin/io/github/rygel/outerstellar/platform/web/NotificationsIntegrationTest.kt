@@ -57,7 +57,12 @@ class NotificationsIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
         val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, txManager, cache)
+            io.github.rygel.outerstellar.platform.service.MessageService(
+                repository,
+                outbox,
+                txManager,
+                cache,
+            )
         val contactService = mockk<ContactService>(relaxed = true)
         securityService =
             SecurityService(
