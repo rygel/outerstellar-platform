@@ -8,3 +8,4 @@ node_modules/
 .junie/
 package-lock.json
 .claude/worktrees/
+mcp.json

@@ -584,7 +584,7 @@
                                 <goal>check</goal>
                             </goals>
                             <configuration>
-                                <config>${maven.multiModuleProjectDirectory}/detekt.yml</config>
+                                <config>${maven.multiModuleProjectDirectory}/config/detekt.yml</config>
                                 <report>
                                     <report>xml:${project.build.directory}/detekt-reports/detekt.xml</report>
                                     <report>html:${project.build.directory}/detekt-reports/detekt.html</report>
@@ -612,7 +612,7 @@
                     <artifactId>spotbugs-maven-plugin</artifactId>
                     <version>${spotbugs.version}</version>
                     <configuration>
-                        <excludeFilterFile>${maven.multiModuleProjectDirectory}/spotbugs-exclude.xml</excludeFilterFile>
+                        <excludeFilterFile>${maven.multiModuleProjectDirectory}/config/spotbugs-exclude.xml</excludeFilterFile>
                         <effort>Max</effort>
                         <threshold>Low</threshold>
                     </configuration>
@@ -622,7 +622,7 @@
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>${checkstyle.version}</version>
                     <configuration>
-                        <configLocation>${maven.multiModuleProjectDirectory}/checkstyle.xml</configLocation>
+                        <configLocation>${maven.multiModuleProjectDirectory}/config/checkstyle.xml</configLocation>
                         <consoleOutput>true</consoleOutput>
                         <failsOnError>true</failsOnError>
                         <linkXRef>false</linkXRef>
@@ -634,7 +634,7 @@
                     <version>${pmd.version}</version>
                     <configuration>
                         <rulesets>
-                            <ruleset>${maven.multiModuleProjectDirectory}/pmd.xml</ruleset>
+                            <ruleset>${maven.multiModuleProjectDirectory}/config/pmd.xml</ruleset>
                         </rulesets>
                         <printFailingErrors>true</printFailingErrors>
                     </configuration>
