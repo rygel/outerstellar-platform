@@ -61,7 +61,7 @@
         <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <bytebuddy.version>1.18.5</bytebuddy.version>
-        <koin.version>4.0.2</koin.version>
+        <koin.version>4.2.0</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
