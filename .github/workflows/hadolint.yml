@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run Hadolint on docker/Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
@@ -38,14 +38,14 @@ jobs:
 
       - name: Upload Hadolint SARIF (docker)
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: hadolint-docker.sarif
           category: hadolint-docker
 
       - name: Upload Hadolint SARIF (test-desktop)
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: hadolint-test-desktop.sarif
           category: hadolint-test-desktop
