@@ -37,7 +37,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build and run all checks
-        run: mvn clean verify -pl core,persistence-jooq,persistence-jdbi,security,web,seed
+        run: mvn clean verify -pl core,persistence-jooq,persistence-jdbi,api-client,security,web,seed
 
       - name: Cache build output for desktop tests
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
