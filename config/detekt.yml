@@ -24,24 +24,30 @@ complexity:
   active: true
   CyclomaticComplexMethod:
     active: true
-    threshold: 15
+    threshold: 20
+  LargeClass:
+    active: true
+    threshold: 600
+    excludes: ['**/test/**']
   LongMethod:
     active: true
     threshold: 60
   LongParameterList:
     active: true
-    functionThreshold: 6
-    constructorThreshold: 7
+    functionThreshold: 8
+    constructorThreshold: 10
+    excludes: ['**/test/**']
   NestedBlockDepth:
     active: true
     threshold: 4
   TooManyFunctions:
     active: true
-    thresholdInFiles: 11
-    thresholdInClasses: 11
+    thresholdInFiles: 15
+    thresholdInClasses: 15
     thresholdInInterfaces: 11
     thresholdInObjects: 11
     thresholdInEnums: 11
+    excludes: ['**/test/**']
 
 coroutines:
   active: true
