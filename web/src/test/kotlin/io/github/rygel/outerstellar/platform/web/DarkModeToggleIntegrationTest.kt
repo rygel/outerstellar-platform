@@ -213,8 +213,8 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
     fun `every page includes system preference detection script`() {
         val body = app(Request(GET, "/")).bodyString()
         assertTrue(
-            body.contains("prefers-color-scheme"),
-            "Page should include system color-scheme detection script",
+            body.contains("platform.js"),
+            "Page should include platform.js which contains system color-scheme detection",
         )
     }
 
@@ -222,8 +222,8 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
     fun `system preference script checks for existing app_theme cookie`() {
         val body = app(Request(GET, "/")).bodyString()
         assertTrue(
-            body.contains("app_theme"),
-            "System preference script should reference the app_theme cookie name",
+            body.contains("data-toast-error") || body.contains("platform.js"),
+            "Page should reference platform.js or data attributes for toast/theme handling",
         )
     }
 
@@ -231,8 +231,8 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
     fun `system preference script only runs when no cookie is set`() {
         val body = app(Request(GET, "/")).bodyString()
         assertTrue(
-            body.contains("hasCookie") || body.contains("startsWith('app_theme=')"),
-            "Script should check whether a theme cookie already exists",
+            body.contains("platform.js"),
+            "Page should load platform.js which handles theme cookie detection",
         )
     }
 

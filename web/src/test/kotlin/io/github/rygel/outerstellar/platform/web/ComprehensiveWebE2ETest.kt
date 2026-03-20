@@ -92,8 +92,8 @@ class ComprehensiveWebE2ETest : KoinTest {
             app.http!!(Request(GET, "/components/navigation/page?theme=monokai&pagePath=/"))
         assertEquals(Status.OK, response.status)
         assertTrue(
-            response.bodyString().contains("site.css?v="),
-            "Refreshed page missing CSS cache buster",
+            response.header("HX-Redirect")?.contains("theme=monokai") == true,
+            "Navigation page should HX-Redirect with theme param",
         )
     }
 
@@ -103,8 +103,8 @@ class ComprehensiveWebE2ETest : KoinTest {
             app.http!!(Request(GET, "/components/navigation/page?lang=fr&pagePath=/contacts"))
         assertEquals(Status.OK, response.status)
         assertTrue(
-            response.bodyString().contains("site.css?v="),
-            "Refreshed page missing CSS cache buster",
+            response.header("HX-Redirect")?.contains("lang=fr") == true,
+            "Navigation page should HX-Redirect with lang param",
         )
     }
 }

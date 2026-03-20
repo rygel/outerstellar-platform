@@ -102,9 +102,12 @@ class ComponentFragmentIntegrationTest : H2WebTest() {
     }
 
     @Test
-    fun `GET components-navigation-page returns HTML content`() {
-        val body = app(Request(GET, "/components/navigation/page")).bodyString()
-        assertTrue(body.isNotBlank(), "Navigation refresh fragment should not be empty")
+    fun `GET components-navigation-page returns HX-Redirect`() {
+        val response = app(Request(GET, "/components/navigation/page"))
+        assertTrue(
+            response.header("HX-Redirect") != null,
+            "Navigation page endpoint should return an HX-Redirect header",
+        )
     }
 
     @Test
@@ -115,13 +118,16 @@ class ComponentFragmentIntegrationTest : H2WebTest() {
 
     @Test
     fun `GET components-navigation-page with dark theme cookie reflects theme`() {
-        val body =
+        val response =
             app(
-                    Request(GET, "/components/navigation/page")
-                        .cookie(Cookie(WebContext.THEME_COOKIE, "dark"))
-                )
-                .bodyString()
-        assertTrue(body.isNotBlank())
+                Request(GET, "/components/navigation/page?theme=dark&pagePath=/")
+                    .cookie(Cookie(WebContext.THEME_COOKIE, "dark"))
+            )
+        assertEquals(Status.OK, response.status)
+        assertTrue(
+            response.header("HX-Redirect")?.contains("theme=dark") == true,
+            "Navigation page should HX-Redirect with theme param",
+        )
     }
 
     // ---- /components/sidebar/theme-selector ----
