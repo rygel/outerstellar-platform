@@ -8,8 +8,10 @@ import jakarta.mail.Session
 import jakarta.mail.Transport
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
-import java.util.Properties
 import org.slf4j.LoggerFactory
+import java.util.Properties
+
+class EmailDeliveryException(message: String, cause: Throwable) : RuntimeException(message, cause)
 
 data class SmtpConfig(
     val host: String,
@@ -54,7 +56,7 @@ class SmtpEmailService(private val config: SmtpConfig) : EmailService {
             logger.info("Email sent to {} subject='{}'", to, subject)
         } catch (e: MessagingException) {
             logger.warn("Failed to send email to {}: {}", to, e.message)
-            throw RuntimeException("Email delivery failed to $to: ${e.message}", e)
+            throw EmailDeliveryException("Email delivery failed to $to: ${e.message}", e)
         }
     }
 }

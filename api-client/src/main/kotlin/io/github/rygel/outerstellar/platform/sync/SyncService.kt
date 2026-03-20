@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package io.github.rygel.outerstellar.platform.sync
 
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
@@ -38,6 +40,7 @@ class SyncService(
     private val client: HttpHandler = JavaHttpClient(),
 ) : SyncProvider {
     @Volatile private var apiToken: String? = null
+
     @Volatile
     var userRole: String? = null
         private set

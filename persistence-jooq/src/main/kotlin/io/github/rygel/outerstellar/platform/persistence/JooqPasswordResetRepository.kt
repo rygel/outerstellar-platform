@@ -14,7 +14,6 @@ class JooqPasswordResetRepository(private val dsl: DSLContext) : PasswordResetRe
     private val token = DSL.field("token", SQLDataType.VARCHAR)
     private val expiresAt = DSL.field("expires_at", SQLDataType.LOCALDATETIME)
     private val used = DSL.field("used", SQLDataType.BOOLEAN)
-    private val createdAt = DSL.field("created_at", SQLDataType.LOCALDATETIME)
 
     override fun save(resetToken: PasswordResetToken) {
         dsl.insertInto(table)

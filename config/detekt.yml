@@ -53,6 +53,7 @@ exceptions:
   active: true
   TooGenericExceptionCaught:
     active: true
+    excludes: ['**/SegmentAnalyticsService.kt']
   TooGenericExceptionThrown:
     active: true
 

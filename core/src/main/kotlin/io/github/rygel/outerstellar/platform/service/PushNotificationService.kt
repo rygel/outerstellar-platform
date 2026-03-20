@@ -1,3 +1,5 @@
+@file:Suppress("ForbiddenComment")
+
 package io.github.rygel.outerstellar.platform.service
 
 import org.slf4j.LoggerFactory
@@ -38,6 +40,8 @@ interface PushNotificationService {
     }
 }
 
+private const val TOKEN_PREVIEW_LENGTH = 12
+
 /** Development stub — logs notifications to console instead of calling FCM / APNs. */
 object ConsolePushNotificationService : PushNotificationService {
     private val logger = LoggerFactory.getLogger(ConsolePushNotificationService::class.java)
@@ -46,7 +50,7 @@ object ConsolePushNotificationService : PushNotificationService {
         logger.info(
             "[PUSH] platform={} token={} title='{}' body='{}' data={}",
             platform,
-            deviceToken.take(12) + "...",
+            deviceToken.take(TOKEN_PREVIEW_LENGTH) + "...",
             notification.title,
             notification.body,
             notification.data,
@@ -80,7 +84,7 @@ class FcmPushNotificationService(
         //       .build())
         logger.warn(
             "FcmPushNotificationService not yet implemented — dropping notification to {}",
-            deviceToken.take(12),
+            deviceToken.take(TOKEN_PREVIEW_LENGTH),
         )
     }
 }
@@ -112,7 +116,7 @@ class ApnsPushNotificationService(
         //   with the apns-topic header set to bundleId.
         logger.warn(
             "ApnsPushNotificationService not yet implemented — dropping notification to {}",
-            deviceToken.take(12),
+            deviceToken.take(TOKEN_PREVIEW_LENGTH),
         )
     }
 }

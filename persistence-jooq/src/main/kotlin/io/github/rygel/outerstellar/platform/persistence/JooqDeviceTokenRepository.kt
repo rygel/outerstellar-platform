@@ -18,7 +18,6 @@ class JooqDeviceTokenRepository(private val dsl: DSLContext) : DeviceTokenReposi
     private val platformField = DSL.field(DSL.name("PLATFORM"), SQLDataType.VARCHAR)
     private val tokenField = DSL.field(DSL.name("TOKEN"), SQLDataType.VARCHAR)
     private val appBundleField = DSL.field(DSL.name("APP_BUNDLE"), SQLDataType.VARCHAR)
-    private val createdAtField = DSL.field(DSL.name("CREATED_AT"), SQLDataType.TIMESTAMP)
     private val lastSeenField = DSL.field(DSL.name("LAST_SEEN"), SQLDataType.TIMESTAMP)
 
     private fun mapRecord(record: Record): DeviceToken =

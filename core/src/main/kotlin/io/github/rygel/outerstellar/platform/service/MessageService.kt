@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.service
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.MessageNotFoundException
@@ -21,9 +22,9 @@ import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
 import io.github.rygel.outerstellar.platform.sync.SyncPushResponse
 import io.konform.validation.Invalid
-import java.util.UUID
 import org.http4k.format.Jackson
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Suppress("TooManyFunctions")
 class MessageService(
@@ -51,11 +52,11 @@ class MessageService(
             PagedResult(
                 items = items,
                 metadata =
-                    PaginationMetadata(
-                        currentPage = (offset / limit) + 1,
-                        pageSize = limit,
-                        totalItems = total,
-                    ),
+                PaginationMetadata(
+                    currentPage = (offset / limit) + 1,
+                    pageSize = limit,
+                    totalItems = total,
+                ),
             )
         } as PagedResult<MessageSummary>
     }
@@ -72,11 +73,11 @@ class MessageService(
         return PagedResult(
             items = items,
             metadata =
-                PaginationMetadata(
-                    currentPage = (offset / limit) + 1,
-                    pageSize = limit,
-                    totalItems = total,
-                ),
+            PaginationMetadata(
+                currentPage = (offset / limit) + 1,
+                pageSize = limit,
+                totalItems = total,
+            ),
         )
     }
 
@@ -296,7 +297,7 @@ class MessageService(
         val serverVersion =
             try {
                 Jackson.asA(currentConflict, SyncMessage::class)
-            } catch (e: Exception) {
+            } catch (e: JsonProcessingException) {
                 throw IllegalStateException(
                     "Cannot parse conflict data for message $syncId: ${e.message}",
                     e,
