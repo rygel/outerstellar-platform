@@ -10,6 +10,8 @@ jobs:
   build-and-test:
     name: Build, Test, and Quality
     runs-on: ubuntu-latest
+    env:
+      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -24,8 +26,6 @@ jobs:
           server-id: github-rygel
           server-username: GITHUB_ACTOR
           server-password: GH_PACKAGES_TOKEN
-        env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - name: Set up Node.js 20
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -63,6 +63,8 @@ jobs:
     name: Desktop Tests (Xvfb)
     needs: build-and-test
     runs-on: ubuntu-latest
+    env:
+      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -77,8 +79,6 @@ jobs:
           server-id: github-rygel
           server-username: GITHUB_ACTOR
           server-password: GH_PACKAGES_TOKEN
-        env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - name: Restore build output
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
@@ -107,6 +107,8 @@ jobs:
     name: Security (OWASP + Enforcer)
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    env:
+      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -121,8 +123,6 @@ jobs:
           server-id: github-rygel
           server-username: GITHUB_ACTOR
           server-password: GH_PACKAGES_TOKEN
-        env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - name: Cache NVD database
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
