@@ -54,8 +54,8 @@ class ComprehensiveWebE2ETest : KoinTest {
         val ds = getKoin().get<javax.sql.DataSource>()
         dev.outerstellar.platform.infra.migrate(ds)
 
-        messageRepo.seedStarterMessages()
-        contactRepo.seedStarterContacts()
+        messageRepo.seedMessages()
+        contactRepo.seedContacts()
     }
 
     @AfterTest

@@ -1,6 +1,5 @@
 package dev.outerstellar.platform.di
 
-import com.outerstellar.i18n.I18nService
 import dev.outerstellar.platform.AppConfig
 import dev.outerstellar.platform.analytics.AnalyticsService
 import dev.outerstellar.platform.analytics.NoOpAnalyticsService
@@ -22,10 +21,11 @@ import dev.outerstellar.platform.service.NoOpEmailService
 import dev.outerstellar.platform.service.NotificationService
 import dev.outerstellar.platform.service.SmtpConfig
 import dev.outerstellar.platform.service.SmtpEmailService
-import dev.outerstellar.platform.web.StarterPlugin
+import dev.outerstellar.platform.web.PlatformPlugin
 import dev.outerstellar.platform.web.SyncApi
 import dev.outerstellar.platform.web.SyncWebSocket
 import dev.outerstellar.platform.web.WebPageFactory
+import io.github.rygel.outerstellar.i18n.I18nService
 import org.http4k.core.PolyHandler
 import org.http4k.template.TemplateRenderer
 import org.koin.core.qualifier.named
@@ -82,7 +82,7 @@ val webModule
                 analytics = get(),
                 notificationService = get(),
                 jwtService = getOrNull<JwtService>(),
-                plugin = getOrNull<StarterPlugin>(),
+                plugin = getOrNull<PlatformPlugin>(),
             )
         }
     }

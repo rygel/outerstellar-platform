@@ -221,15 +221,15 @@ class JooqContactRepositoryTest : H2JooqTest() {
     }
 
     @Test
-    fun `seedStarterContacts inserts three contacts`() {
-        repo.seedStarterContacts()
+    fun `seedContacts inserts three contacts`() {
+        repo.seedContacts()
         assertEquals(3, repo.countContacts(null, false))
     }
 
     @Test
-    fun `seedStarterContacts is idempotent`() {
-        repo.seedStarterContacts()
-        repo.seedStarterContacts()
+    fun `seedContacts is idempotent`() {
+        repo.seedContacts()
+        repo.seedContacts()
         assertEquals(3, repo.countContacts(null, false))
     }
 }

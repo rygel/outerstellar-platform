@@ -64,7 +64,7 @@ data class HomePage(
     val submitUrl: String,
     val messageList: MessageListViewModel,
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/HomePage"
+    override fun template(): String = "dev/outerstellar/platform/web/HomePage"
 }
 
 data class TrashPage(
@@ -72,7 +72,7 @@ data class TrashPage(
     val description: String,
     val messageList: MessageListViewModel,
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/TrashPage"
+    override fun template(): String = "dev/outerstellar/platform/web/TrashPage"
 }
 
 data class PaginationViewModel(
@@ -96,7 +96,7 @@ data class AuthViewModel(
     val tabs: List<AuthModeTab>,
     val defaultFormUrl: String,
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/AuthPage"
+    override fun template(): String = "dev/outerstellar/platform/web/AuthPage"
 }
 
 data class AuthFormFragment(
@@ -138,7 +138,7 @@ data class ErrorPage(
     val helpButtonLabel: String,
     val helpUrl: String,
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/ErrorPage"
+    override fun template(): String = "dev/outerstellar/platform/web/ErrorPage"
 }
 
 data class ErrorHelpFragment(val title: String, val items: List<String>) : ViewModel
@@ -163,7 +163,7 @@ data class DevDashboardPage(
     val metricsLabel: String = "Application Metrics",
     val triggerSyncLabel: String = "Trigger Sync",
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/DevDashboard"
+    override fun template(): String = "dev/outerstellar/platform/web/DevDashboard"
 }
 
 data class OutboxStatsViewModel(val pending: Int, val processed: Int, val failed: Int)
@@ -177,7 +177,7 @@ data class ModalViewModel(
     val actionUrl: String,
     val targetId: String,
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/components/Modal"
+    override fun template(): String = "dev/outerstellar/platform/web/components/Modal"
 }
 
 data class ConflictResolveViewModel(
@@ -199,7 +199,7 @@ data class ConflictResolveViewModel(
 ) : ViewModel
 
 data class ChangePasswordPage(val form: ChangePasswordForm) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/ChangePasswordPage"
+    override fun template(): String = "dev/outerstellar/platform/web/ChangePasswordPage"
 }
 
 data class ChangePasswordForm(
@@ -213,7 +213,7 @@ data class ChangePasswordForm(
     val newPasswordPlaceholder: String,
     val confirmPasswordPlaceholder: String,
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/ChangePasswordForm"
+    override fun template(): String = "dev/outerstellar/platform/web/ChangePasswordForm"
 }
 
 data class ResetPasswordPage(
@@ -225,7 +225,7 @@ data class ResetPasswordPage(
     val newPasswordPlaceholder: String = "At least 8 characters",
     val confirmPasswordPlaceholder: String = "Repeat your new password",
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/ResetPasswordPage"
+    override fun template(): String = "dev/outerstellar/platform/web/ResetPasswordPage"
 }
 
 data class UserAdminRow(
@@ -261,7 +261,7 @@ data class UserAdminPage(
     val previousLabel: String = "Previous",
     val nextLabel: String = "Next",
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/UserAdminPage"
+    override fun template(): String = "dev/outerstellar/platform/web/UserAdminPage"
 }
 
 data class AuditLogPage(
@@ -280,7 +280,7 @@ data class AuditLogPage(
     val previousLabel: String = "Previous",
     val nextLabel: String = "Next",
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/AuditLogPage"
+    override fun template(): String = "dev/outerstellar/platform/web/AuditLogPage"
 }
 
 data class AuditEntryViewModel(
@@ -321,7 +321,7 @@ data class ProfilePage(
     val deleteAccountConfirmLabel: String,
     val deleteAccountCancelLabel: String,
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/ProfilePage"
+    override fun template(): String = "dev/outerstellar/platform/web/ProfilePage"
 }
 
 data class SidebarSelector(
@@ -333,7 +333,7 @@ data class SidebarSelector(
     val hiddenFields: List<HiddenField>,
     val refreshUrl: String,
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/components/SidebarSelector"
+    override fun template(): String = "dev/outerstellar/platform/web/components/SidebarSelector"
 }
 
 data class ApiKeysPage(
@@ -358,7 +358,7 @@ data class ApiKeysPage(
     val deleteConfirm: String = "Delete this key?",
     val deleteLabel: String = "Delete",
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/ApiKeysPage"
+    override fun template(): String = "dev/outerstellar/platform/web/ApiKeysPage"
 }
 
 private const val MIN_PASSWORD_LENGTH = 8
@@ -397,12 +397,12 @@ data class NotificationsPage(
     val markReadLabel: String = "Mark as read",
     val readLabel: String = "Read",
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/NotificationsPage"
+    override fun template(): String = "dev/outerstellar/platform/web/NotificationsPage"
 }
 
 data class NotificationBellFragment(val unreadCount: Int, val notificationsUrl: String) :
     ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/components/NotificationBell"
+    override fun template(): String = "dev/outerstellar/platform/web/components/NotificationBell"
 }
 
 data class ContactFormFragment(
@@ -427,7 +427,7 @@ data class ContactFormFragment(
     val saveLabel: String = "Save",
     val cancelLabel: String = "Cancel",
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/components/ContactForm"
+    override fun template(): String = "dev/outerstellar/platform/web/components/ContactForm"
 }
 
 private const val DEFAULT_LIMIT = 10
@@ -465,11 +465,11 @@ data class ContactsPage(
     val previousPageTitle: String = "Previous page",
     val nextPageTitle: String = "Next page",
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/ContactsPage"
+    override fun template(): String = "dev/outerstellar/platform/web/ContactsPage"
 }
 
 @Suppress("TooManyFunctions")
-class WebPageFactory(
+open class WebPageFactory(
     private val repository: MessageRepository,
     private val messageService: MessageService,
     private val contactService: dev.outerstellar.platform.service.ContactService? = null,

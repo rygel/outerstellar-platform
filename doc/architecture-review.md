@@ -18,7 +18,7 @@ Koin's `getOrNull<TransactionManager>()` pattern lets services like `MessageServ
 
 ### Quality tooling
 
-The build enforces Detekt, SpotBugs, Checkstyle, PMD, Spotless/Ktlint, JaCoCo, Enforcer (dependency convergence, duplicate class banning), and OWASP dependency checks. Architecture rules are verified by ArchUnit tests. This goes beyond what most starters include and sets a high baseline for downstream projects.
+The build enforces Detekt, SpotBugs, Checkstyle, PMD, Spotless/Ktlint, JaCoCo, Enforcer (dependency convergence, duplicate class banning), and OWASP dependency checks. Architecture rules are verified by ArchUnit tests. This goes beyond what most projects include and sets a high baseline for downstream projects.
 
 ### Realistic sync protocol
 
@@ -26,18 +26,18 @@ The bidirectional sync between desktop and web demonstrates dirty tracking, time
 
 ### H2 as the persistence engine
 
-H2 is the intentional and permanent choice for this starter. It provides zero-setup local persistence, works identically for both web server and Swing desktop, integrates cleanly with Flyway and jOOQ, and keeps the starter runnable without any external infrastructure. This is a deliberate design decision, not a limitation.
+H2 is the intentional and permanent choice for this platform. It provides zero-setup local persistence, works identically for both web server and Swing desktop, integrates cleanly with Flyway and jOOQ, and keeps the platform runnable without any external infrastructure. This is a deliberate design decision, not a limitation.
 
 ## Package root convention
 
 The project uses two package roots:
 
-- `dev.outerstellar.starter` — the project's own code
+- `dev.outerstellar.platform` — the project's own code
 - `com.outerstellar` — external Outerstellar libraries, consumed as Maven dependencies
 
 The `com.outerstellar` packages (`com.outerstellar:outerstellar-i18n` and `com.outerstellar:outerstellar-theme`) are external dependencies declared in the POM and resolved from the Maven repository. They are not vendored — no source copies exist in this project. The `com.outerstellar` package root should never contain project-owned source files.
 
-**Rule:** all project-owned code uses `dev.outerstellar.starter`. The `com.outerstellar` namespace belongs to the external Outerstellar libraries and must not be used for project-owned classes.
+**Rule:** all project-owned code uses `dev.outerstellar.platform`. The `com.outerstellar` namespace belongs to the external Outerstellar libraries and must not be used for project-owned classes.
 
 ## Areas for improvement
 
@@ -72,7 +72,7 @@ Recommendation: gate seed data behind a profile flag (e.g., `runtime-dev`) so it
 
 ### Desktop UI framework
 
-Swing is effectively unmaintained by Oracle and receives no new features. For a Kotlin starter, Compose for Desktop (Kotlin Multiplatform) would be a more forward-looking choice that shares paradigms with the rest of the Kotlin ecosystem. This is a long-term consideration, not an immediate action item.
+Swing is effectively unmaintained by Oracle and receives no new features. For a Kotlin platform, Compose for Desktop (Kotlin Multiplatform) would be a more forward-looking choice that shares paradigms with the rest of the Kotlin ecosystem. This is a long-term consideration, not an immediate action item.
 
 ### Test base class inheritance
 
@@ -275,7 +275,7 @@ The `/logout` route was bound to `GET`, making it vulnerable to cross-site logou
 
 ### Read admin password from environment variable
 
-`Main.kt` hardcoded `"admin123"` as the password for the seeded admin user. Anyone who cloned the starter and deployed it without reading `Main.kt` would have a known credential in production.
+`Main.kt` hardcoded `"admin123"` as the password for the seeded admin user. Anyone who cloned the platform and deployed it without reading `Main.kt` would have a known credential in production.
 
 **What changed:** `Main.kt` now reads `ADMIN_PASSWORD` from the environment. If the variable is not set, a random UUID is generated and logged at WARN level as the first-boot password, with a reminder to set the variable before going to production. Because `seedAdminUser` only creates the admin user when none exists, the generated password is only meaningful on first boot.
 

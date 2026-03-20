@@ -37,7 +37,7 @@ data class AppConfig(
     val version: String = "dev",
     val port: Int = 8080,
     val jdbcUrl: String =
-        "jdbc:h2:file:./data/outerstellar-starter;MODE=PostgreSQL;AUTO_SERVER=TRUE",
+        "jdbc:h2:file:./data/outerstellar-platform;MODE=PostgreSQL;AUTO_SERVER=TRUE",
     val jdbcUser: String = "sa",
     val jdbcPassword: String = "",
     val devDashboardEnabled: Boolean = false,

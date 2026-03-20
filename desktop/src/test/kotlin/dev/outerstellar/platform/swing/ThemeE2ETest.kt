@@ -141,7 +141,7 @@ class ThemeE2ETest {
     @Test
     fun `settings dialog theme preview should update live when selection changes`() {
         val themeManager = ThemeManager()
-        val i18nService = com.outerstellar.i18n.I18nService.create("messages")
+        val i18nService = io.github.rygel.outerstellar.i18n.I18nService.create("messages")
         val viewModel =
             io.mockk.mockk<dev.outerstellar.platform.swing.viewmodel.SyncViewModel>(relaxed = true)
 

@@ -5,83 +5,11 @@
 
 <!DOCTYPE html>
 <html lang="${shell.localeTag}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="${shell.csrfToken}">
-    <title>${shell.pageTitle} - ${shell.appTitle}</title>
-    <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/site.css?v=${shell.version}">
-    <script src="/vendor/htmx.min.js"></script>
-    <script src="/vendor/htmx-ext-ws.js"></script>
-    <style>
-        .htmx-indicator { display: none; }
-        .htmx-request .htmx-indicator { display: inline-block; }
-        .htmx-request.htmx-indicator { display: inline-block; }
-
-        #toast-container {
-            position: fixed;
-            top: 1.5rem;
-            right: 1.5rem;
-            z-index: 9999;
-            pointer-events: none;
-            width: 320px;
-        }
-    </style>
-</head>
-<body class="${shell.layoutClass}" hx-ext="ws" ws-connect="/ws/sync">
+@template.dev.outerstellar.platform.web.layouts.LayoutHead(shell = shell)
+<body class="${shell.layoutClass}" hx-ext="ws" ws-connect="/ws/sync"
+      data-toast-error="${shell.toastErrorLabel}" data-toast-success="${shell.toastSuccessLabel}">
 <style id="theme-style">${shell.themeCss}</style>
 <div id="toast-container"></div>
-<script>
-    document.addEventListener('htmx:responseError', function(event) {
-        const errorBody = event.detail.xhr.responseText || 'An unexpected error occurred';
-        showToast(errorBody, 'error');
-    });
-
-    function showToast(message, type) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = "panel animate-in slide-in-from-right-10 fade-in duration-300 " + (type === 'error' ? 'panel-danger' : 'panel-success');
-        toast.style.padding = '0.75rem 1.25rem';
-        toast.style.marginBottom = '0.75rem';
-        toast.style.pointerEvents = 'auto';
-        toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-
-        const title = type === 'error' ? '${shell.toastErrorLabel}' : '${shell.toastSuccessLabel}';
-        const icon = type === 'error' ? 'ri-error-warning-fill' : 'ri-checkbox-circle-fill';
-
-        const row = document.createElement('div');
-        row.style.cssText = 'display: flex; align-items: center; gap: 0.75rem;';
-
-        const iconEl = document.createElement('i');
-        iconEl.className = icon;
-        iconEl.style.fontSize = '1.25rem';
-
-        const textEl = document.createElement('div');
-
-        const titleEl = document.createElement('strong');
-        titleEl.style.cssText = 'display: block; font-size: 0.9rem;';
-        titleEl.textContent = title;
-
-        const msgEl = document.createElement('p');
-        msgEl.style.cssText = 'margin:0; font-size: 0.85rem; opacity: 0.9;';
-        msgEl.textContent = message;
-
-        textEl.appendChild(titleEl);
-        textEl.appendChild(msgEl);
-        row.appendChild(iconEl);
-        row.appendChild(textEl);
-        toast.appendChild(row);
-
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(20px)';
-            toast.style.transition = 'all 0.3s ease-out';
-            setTimeout(() => toast.remove(), 300);
-        }, 5000);
-    }
-</script>
 <div class="shell">
     <aside class="sidebar">
         <div class="sidebar-brand">
@@ -190,31 +118,6 @@
         </footer>
     </div>
 </div>
-<script>
-    // Inject CSRF token into every HTMX request automatically
-    document.addEventListener('htmx:configRequest', function(event) {
-        var token = document.querySelector('meta[name="csrf-token"]');
-        if (token) {
-            event.detail.headers['X-CSRF-Token'] = token.content;
-        }
-    });
-</script>
-<script>
-    // On first visit (no theme cookie set), apply system color-scheme preference.
-    // The server defaults to dark; if the user prefers light we redirect once.
-    (function() {
-        var hasCookie = document.cookie.split(';').some(function(c) {
-            return c.trim().startsWith('app_theme=');
-        });
-        if (!hasCookie && window.matchMedia) {
-            var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-            if (prefersLight) {
-                var expires = new Date(Date.now() + 365 * 86400 * 1000).toUTCString();
-                document.cookie = 'app_theme=default;path=/;expires=' + expires;
-                window.location.reload();
-            }
-        }
-    })();
-</script>
+<script src="/platform.js?v=${shell.version}"></script>
 </body>
 </html>

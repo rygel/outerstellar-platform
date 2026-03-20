@@ -1,7 +1,7 @@
 package dev.outerstellar.platform.swing
 
 import com.formdev.flatlaf.FlatLightLaf
-import com.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.i18n.I18nService
 import dev.outerstellar.platform.AppConfig
 import dev.outerstellar.platform.analytics.NoOpAnalyticsService
 import dev.outerstellar.platform.di.coreModule

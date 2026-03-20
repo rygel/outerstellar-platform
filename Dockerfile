@@ -1,4 +1,4 @@
-# Multi-stage build for outerstellar-starter
+# Multi-stage build for outerstellar-platform
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
@@ -48,4 +48,4 @@ EXPOSE 8080
 ENV APP_PROFILE=prod
 ENV SESSIONCOOKIESECURE=true
 
-ENTRYPOINT ["java", "-cp", "app.jar:lib/*", "dev.outerstellar.starter.MainKt"]
+ENTRYPOINT ["java", "-cp", "app.jar:lib/*", "dev.outerstellar.platform.MainKt"]

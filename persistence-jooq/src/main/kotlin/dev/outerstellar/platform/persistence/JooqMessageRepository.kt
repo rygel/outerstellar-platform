@@ -179,12 +179,12 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
         }
     }
 
-    override fun seedStarterMessages() {
+    override fun seedMessages() {
         if (dsl.fetchCount(MESSAGES, notSoftDeleted()) > 0) {
             return
         }
 
-        createServerMessage("Outerstellar", "Flyway + jOOQ are already wired up for this starter.")
+        createServerMessage("Outerstellar", "Flyway + jOOQ are already wired up for this platform.")
         createServerMessage("http4k", "The home page is rendered with a Kotlin .kte JTE template.")
     }
 

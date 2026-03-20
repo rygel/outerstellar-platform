@@ -1,7 +1,7 @@
 $env:DEV_MODE = "true"
 $env:APP_PROFILE = "dev"
 
-Write-Host "Starting outerstellar-starter development mode..." -ForegroundColor Cyan
+Write-Host "Starting outerstellar-platform development mode..." -ForegroundColor Cyan
 
 $projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 

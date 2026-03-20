@@ -1,6 +1,6 @@
 package dev.outerstellar.platform.di
 
-import com.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.i18n.I18nService
 import dev.outerstellar.platform.service.MessageService
 import dev.outerstellar.platform.swing.ConnectivityChecker
 import dev.outerstellar.platform.swing.SystemTrayNotifier

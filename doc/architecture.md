@@ -1,8 +1,8 @@
-# Outerstellar Starter Architecture
+# Outerstellar Platform Architecture
 
 ## Purpose
 
-This starter is meant to provide a working vertical slice for:
+This platform is meant to provide a working vertical slice for:
 
 - Kotlin on JDK 21
 - http4k for the web server
@@ -60,12 +60,12 @@ This gives a concrete offline-capable sync example without introducing a second 
 
 ### H2
 
-H2 was chosen because it is ideal for a starter:
+H2 was chosen because it is ideal for a platform:
 
 - zero external setup
 - easy local use for both server and Swing demo
 - works well with Flyway and jOOQ
-- keeps the starter easy to run
+- keeps the platform easy to run
 
 ### Flyway
 
@@ -124,7 +124,7 @@ Sync is currently:
 - centered on one aggregate (`messages`)
 - simple in conflict handling
 
-This is acceptable for a starter and gives a clean base for expansion.
+This is acceptable for a platform and gives a clean base for expansion.
 
 ## Rendering and web UI decisions
 
@@ -166,7 +166,7 @@ This is meant to act as the default application shell for future pages.
 
 ### i18n
 
-The starter uses `outerstellar-i18n` for localization.
+The platform uses `outerstellar-i18n` for localization.
 
 Current bundles include:
 
@@ -177,7 +177,7 @@ Current bundles include:
 
 ### Theming
 
-The starter uses `outerstellar-theme` plus local theme selection.
+The platform uses `outerstellar-theme` plus local theme selection.
 
 Current web theme choices:
 
@@ -205,7 +205,7 @@ The build includes workbook-style quality tooling and project hygiene. **It is m
 - Versions Maven Plugin (dependency updates)
 - OWASP Dependency Check (security vulnerabilities)
 
-These are included and enforced so the starter begins with and maintains the exact same rigorous quality expectations as downstream projects.
+These are included and enforced so the platform begins with and maintains the exact same rigorous quality expectations as downstream projects.
 
 ### Build profile strategy
 
@@ -361,7 +361,7 @@ class SomeIntegrationTest : H2WebTest() {
 
 ### UI usability testing requirements
 
-**Every Swing dialog, form, and panel must have layout tests that verify the UI is actually usable — not just that components exist.** This is a binding requirement for all downstream projects that build on this starter.
+**Every Swing dialog, form, and panel must have layout tests that verify the UI is actually usable — not just that components exist.** This is a binding requirement for all downstream projects that build on this platform.
 
 Specifically, when adding or modifying Swing UI:
 
@@ -446,7 +446,7 @@ ViewModel-level tests (e.g., `SyncViewModelAuthTest`) always run in every mode s
 
 ## Authentication and user management
 
-The starter includes a complete authentication system:
+The platform includes a complete authentication system:
 
 - **Login / Register** — both web (session cookie) and API (bearer token)
 - **Password change** — API endpoint + web page with topbar link
@@ -525,7 +525,7 @@ All common operations use Maven profiles — no shell scripts needed:
 
 ## What is necessary right now
 
-For this starter to remain healthy, these pieces are important:
+For this platform to remain healthy, these pieces are important:
 
 - Flyway remains the schema authority
 - Detekt ensures Kotlin code style and formatting (configured in `detekt.yml`)
@@ -550,4 +550,4 @@ The most likely next architectural improvements are:
 4. add TOTP two-factor authentication
 5. add database backup/restore tooling
 
-For now, the current decisions are intentional because they optimize for a usable, teachable starter with working web, database, templating, theming, i18n, authentication, and sync examples.
+For now, the current decisions are intentional because they optimize for a usable, teachable platform with working web, database, templating, theming, i18n, authentication, and sync examples.

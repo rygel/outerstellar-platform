@@ -1,6 +1,6 @@
-### Outerstellar Starter Project
+### Outerstellar Platform Project
 
-A modern, full-stack Kotlin application designed as a starter template for building robust and scalable systems. This project showcases a clean, multi-module architecture with a focus on reliability, performance, and observability.
+A modern, full-stack Kotlin application designed as a platform template for building robust and scalable systems. This project showcases a clean, multi-module architecture with a focus on reliability, performance, and observability.
 
 ---
 
@@ -128,11 +128,11 @@ The web application uses **http4k** with **JTE** templates and **HTMX** for inte
 1. **Create a ViewModel**: Define a Kotlin `data class` implementing `ViewModel` in `WebPageFactory.kt`.
 2. **Create a Template**: Add a corresponding `.kte` file in `web/src/main/jte`. Wrap your content using the `Page<T>` wrapper to inherit the global shell:
    ```html
-   @import dev.outerstellar.starter.web.MyPage
-   @import dev.outerstellar.starter.web.Page
+   @import dev.outerstellar.platform.web.MyPage
+   @import dev.outerstellar.platform.web.Page
    @param model: Page<MyPage>
    
-   @template.dev.outerstellar.starter.web.Layout(shell = model.shell, content = @`
+   @template.dev.outerstellar.platform.web.Layout(shell = model.shell, content = @`
        <h1>${model.data.title}</h1>
    `)
    ```

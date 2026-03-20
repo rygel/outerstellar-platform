@@ -11,7 +11,7 @@ import dev.outerstellar.platform.web.WebPageFactory
 import io.mockk.mockk
 import kotlin.test.Test
 
-class StarterAppTest {
+class PlatformAppTest {
     @Test
     fun `can start the app and get home page`() {
         val messageService = mockk<MessageService>(relaxed = true)

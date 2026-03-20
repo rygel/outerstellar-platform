@@ -1,6 +1,6 @@
 package dev.outerstellar.platform.swing.viewmodel
 
-import com.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.i18n.I18nService
 import dev.outerstellar.platform.analytics.AnalyticsService
 import dev.outerstellar.platform.analytics.NoOpAnalyticsService
 import dev.outerstellar.platform.model.ConflictStrategy

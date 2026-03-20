@@ -35,10 +35,10 @@ fun main() {
     migrate(seed.dataSource)
 
     logger.info("Seeding messages...")
-    seed.messageRepository.seedStarterMessages()
+    seed.messageRepository.seedMessages()
 
     logger.info("Seeding contacts...")
-    seed.contactRepository.seedStarterContacts()
+    seed.contactRepository.seedContacts()
 
     logger.info("Seeding users...")
     seedUsers(seed.userRepository)

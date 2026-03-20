@@ -33,10 +33,11 @@ data class PluginContext(
     val userRepository: UserRepository,
     val analytics: AnalyticsService,
     val notificationService: NotificationService?,
+    val pageFactory: WebPageFactory,
 )
 
 /**
- * Single-plugin contract. One outerstellar-starter host accepts exactly one plugin.
+ * Single-plugin contract. One outerstellar-platform host accepts exactly one plugin.
  *
  * Implement this interface and register it as a Koin `single` in your plugin's Koin module. The
  * host will automatically:
@@ -49,9 +50,20 @@ data class PluginContext(
  * startKoin { modules(myPluginModule, persistenceModule, coreModule, webModule, securityModule) }
  * ```
  */
-interface StarterPlugin : PluginMigrationSource {
+interface PlatformPlugin : PluginMigrationSource {
     /** Unique identifier for this plugin (used in logging). */
     val id: String
+
+    /** Label used in OpenAPI info and branding. Defaults to "Outerstellar". */
+    val appLabel: String
+        get() = "Outerstellar"
+
+    /**
+     * Default route paths to exclude from the host app (e.g. `setOf("/contacts", "/")`). Routes
+     * whose path is in this set will not be registered by the host.
+     */
+    val excludeDefaultRoutes: Set<String>
+        get() = emptySet()
 
     /**
      * Navigation items shown in the shell sidebar. When non-empty these **replace** the host's

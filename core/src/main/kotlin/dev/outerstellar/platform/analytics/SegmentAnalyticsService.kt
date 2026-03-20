@@ -57,7 +57,7 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                         "context" to
                             mapOf(
                                 "library" to
-                                    mapOf("name" to "outerstellar-starter", "version" to "1.0")
+                                    mapOf("name" to "outerstellar-platform", "version" to "1.0")
                             ),
                     )
             val request =

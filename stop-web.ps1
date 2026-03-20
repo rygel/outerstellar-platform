@@ -52,7 +52,7 @@ foreach ($pidFile in $pidFiles) {
 # Fallback: Kill by process name and command line if PID file is missing or failed
 $javaProcesses = Get-CimInstance Win32_Process -Filter "Name = 'java.exe' OR Name = 'javaw.exe'" -ErrorAction SilentlyContinue
 foreach ($p in $javaProcesses) {
-    if ($p.CommandLine -like "*dev.outerstellar.starter.MainKt*" -or $p.CommandLine -like "*fizzed-watcher*") {
+    if ($p.CommandLine -like "*dev.outerstellar.platform.MainKt*" -or $p.CommandLine -like "*fizzed-watcher*") {
         Write-Host "Stopping existing web application instance (PID $($p.ProcessId))..." -ForegroundColor Yellow
         Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
     }

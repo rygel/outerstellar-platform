@@ -59,53 +59,20 @@
             </article>
         @endfor
 
-        <!-- Traditional Pagination Bar -->
         !{ val pagination = model.pagination }
         @if(pagination != null && pagination.totalPages > 1)
-            <nav class="pagination-bar mt-6">
-                <div class="flex items-center justify-between gap-4">
-                    <div class="pagination-info">
-                        ${model.showingPageLabel} <strong>${pagination.currentPage}</strong> ${model.ofLabel} <strong>${pagination.totalPages}</strong>
-                    </div>
-
-                    <div class="pagination-controls flex gap-1">
-                        @if(pagination.hasPrevious)
-                            <button class="button-link button-cozy"
-                                    hx-get="${pagination.previousUrl}"
-                                    hx-target="#message-list-container"
-                                    hx-push-url="true">
-                                <i class="ri-arrow-left-s-line"></i>
-                            </button>
-                        @else
-                            <button class="button-link button-cozy opacity-30 cursor-not-allowed" disabled>
-                                <i class="ri-arrow-left-s-line"></i>
-                            </button>
-                        @endif
-
-                        @for(page in pagination.pages)
-                            <button class="button-link button-cozy @if(page.isActive) border-accent text-accent font-bold @endif"
-                                    hx-get="${page.url}"
-                                    hx-target="#message-list-container"
-                                    hx-push-url="true">
-                                ${page.number}
-                            </button>
-                        @endfor
-
-                        @if(pagination.hasNext)
-                            <button class="button-link button-cozy"
-                                    hx-get="${pagination.nextUrl}"
-                                    hx-target="#message-list-container"
-                                    hx-push-url="true">
-                                <i class="ri-arrow-right-s-line"></i>
-                            </button>
-                        @else
-                            <button class="button-link button-cozy opacity-30 cursor-not-allowed" disabled>
-                                <i class="ri-arrow-right-s-line"></i>
-                            </button>
-                        @endif
-                    </div>
-                </div>
-            </nav>
+            @template.dev.outerstellar.platform.web.components.Pagination(
+                hasPrevious = pagination.hasPrevious,
+                hasNext = pagination.hasNext,
+                previousUrl = pagination.previousUrl ?: "",
+                nextUrl = pagination.nextUrl ?: "",
+                currentPage = pagination.currentPage,
+                hxTarget = "#message-list-container",
+                pages = pagination.pages,
+                totalPages = pagination.totalPages,
+                showingPageLabel = model.showingPageLabel,
+                ofLabel = model.ofLabel,
+            )
         @endif
     @endif
 </div>

@@ -22,8 +22,8 @@ import dev.outerstellar.platform.web.HomeRoutes
 import dev.outerstellar.platform.web.NotificationApi
 import dev.outerstellar.platform.web.NotificationRoutes
 import dev.outerstellar.platform.web.OAuthRoutes
+import dev.outerstellar.platform.web.PlatformPlugin
 import dev.outerstellar.platform.web.PluginContext
-import dev.outerstellar.platform.web.StarterPlugin
 import dev.outerstellar.platform.web.SyncApi
 import dev.outerstellar.platform.web.SyncWebSocket
 import dev.outerstellar.platform.web.UserAdminApi
@@ -77,7 +77,7 @@ fun app(
     analytics: AnalyticsService = NoOpAnalyticsService(),
     notificationService: dev.outerstellar.platform.service.NotificationService? = null,
     jwtService: dev.outerstellar.platform.security.JwtService? = null,
-    plugin: StarterPlugin? = null,
+    plugin: PlatformPlugin? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
 
@@ -107,9 +107,12 @@ fun app(
         }
     }
 
+    val appLabel = plugin?.appLabel ?: "Outerstellar"
+    val excludedRoutes = plugin?.excludeDefaultRoutes ?: emptySet()
+
     // 1. Data/Sync API (JSON)
     val apiRoutes = contract {
-        renderer = OpenApi3(ApiInfo("Outerstellar Sync API", "v1.0"), Jackson)
+        renderer = OpenApi3(ApiInfo("$appLabel Sync API", "v1.0"), Jackson)
         descriptionPath = "/api/openapi.json"
         routes += AuthApi(securityService).routes
 
@@ -119,10 +122,12 @@ fun app(
 
     // 2. Main UI (Full HTML Pages)
     val uiRoutes = contract {
-        renderer = OpenApi3(ApiInfo("Outerstellar UI", "v1.0"), Jackson)
+        renderer = OpenApi3(ApiInfo("$appLabel UI", "v1.0"), Jackson)
         descriptionPath = "/ui/openapi.json"
         routes += HomeRoutes(messageService, pageFactory, jteRenderer).routes
-        routes += ContactsRoutes(pageFactory, jteRenderer, contactService).routes
+        if ("/contacts" !in excludedRoutes) {
+            routes += ContactsRoutes(pageFactory, jteRenderer, contactService).routes
+        }
         routes +=
             AuthRoutes(
                     pageFactory,
@@ -152,6 +157,7 @@ fun app(
                     userRepository,
                     analytics,
                     notificationService,
+                    pageFactory,
                 )
             routes += plugin.routes(pluginContext)
         }
@@ -172,7 +178,7 @@ fun app(
 
     // 3. Protected Admin Routes
     val adminContract = contract {
-        renderer = OpenApi3(ApiInfo("Outerstellar Admin", "v1.0"), Jackson)
+        renderer = OpenApi3(ApiInfo("$appLabel Admin", "v1.0"), Jackson)
         descriptionPath = "/admin/openapi.json"
         security =
             object : org.http4k.security.Security {
@@ -222,7 +228,7 @@ fun app(
 
     // Bearer + Admin protected API routes (user admin)
     val bearerAdminApiContract = contract {
-        renderer = OpenApi3(ApiInfo("Outerstellar Admin API", "v1.0"), Jackson)
+        renderer = OpenApi3(ApiInfo("$appLabel Admin API", "v1.0"), Jackson)
         descriptionPath = "/api/v1/admin/api-openapi.json"
         security = bearerAdminSecurity
         routes += UserAdminApi(securityService).routes
@@ -230,7 +236,7 @@ fun app(
 
     // 4. HTMX Components (HTML Fragments)
     val componentRoutes = contract {
-        renderer = OpenApi3(ApiInfo("Outerstellar Components", "v1.0"), Jackson)
+        renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), Jackson)
         descriptionPath = "/components/openapi.json"
         routes += ComponentRoutes(pageFactory, jteRenderer).routes
     }
@@ -246,15 +252,22 @@ fun app(
                 Response(Status.OK).body(dev.outerstellar.platform.web.Metrics.registry.scrape())
             }
 
-    val baseApp: HttpHandler =
-        routes(
+    val coreRoutes =
+        mutableListOf(
             static(ResourceLoader.Classpath("static")),
             bearerAdminApiContract,
             apiRoutes,
             syncContract,
             uiRoutes,
             componentRoutes,
-            "/" bind filteredAdminHandler,
+        )
+    if ("/" !in excludedRoutes) {
+        coreRoutes += "/" bind filteredAdminHandler
+    }
+
+    val baseApp: HttpHandler =
+        routes(
+            *coreRoutes.toTypedArray(),
             "/health" bind
                 GET to
                 {

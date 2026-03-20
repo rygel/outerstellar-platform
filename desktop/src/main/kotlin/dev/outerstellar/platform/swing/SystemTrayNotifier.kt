@@ -1,6 +1,6 @@
 package dev.outerstellar.platform.swing
 
-import com.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.i18n.I18nService
 import java.awt.AWTException
 import java.awt.SystemTray
 import java.awt.TrayIcon

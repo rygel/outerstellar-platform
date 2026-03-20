@@ -81,8 +81,8 @@ class PlaywrightE2ETest : KoinTest {
         val ds = getKoin().get<javax.sql.DataSource>()
         dev.outerstellar.platform.infra.migrate(ds)
 
-        messageRepo.seedStarterMessages()
-        contactRepo.seedStarterContacts()
+        messageRepo.seedMessages()
+        contactRepo.seedContacts()
 
         // Start real HTTP server on random port
         server = app.asServer(Jetty(0)).start()
@@ -103,7 +103,7 @@ class PlaywrightE2ETest : KoinTest {
     fun `should load home page and verify title`() {
         page.navigate("http://localhost:${server.port()}")
         assertTrue(page.title().contains("Home"), "Title should contain Home")
-        assertTrue(page.content().contains("Outerstellar Starter"))
+        assertTrue(page.content().contains("Outerstellar Platform"))
     }
 
     @Test

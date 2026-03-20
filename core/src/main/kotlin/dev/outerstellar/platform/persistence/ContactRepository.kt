@@ -51,7 +51,7 @@ interface ContactRepository {
 
     fun setLastSyncEpochMs(value: Long)
 
-    fun seedStarterContacts()
+    fun seedContacts()
 
     fun softDelete(syncId: String)
 

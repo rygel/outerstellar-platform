@@ -61,7 +61,7 @@ fun main() {
         TimeUnit.SECONDS,
     )
     val server = main.app.asServer(Jetty(main.config.port)).start()
-    logger.info("Outerstellar starter running on http://localhost:{}", server.port())
+    logger.info("Outerstellar platform running on http://localhost:{}", server.port())
 
     Runtime.getRuntime()
         .addShutdownHook(

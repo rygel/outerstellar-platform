@@ -34,7 +34,7 @@ class HomePageEndToEndTest : H2WebTest() {
         val contactService =
             io.mockk.mockk<dev.outerstellar.platform.service.ContactService>(relaxed = true)
 
-        repository.seedStarterMessages()
+        repository.seedMessages()
 
         val appHandler =
             app(
@@ -57,7 +57,7 @@ class HomePageEndToEndTest : H2WebTest() {
 
         assertEquals(Status.OK, response.status)
         assertTrue(
-            response.bodyString().contains("Outerstellar Starter"),
+            response.bodyString().contains("Outerstellar Platform"),
             "Body should contain brand name",
         )
         assertTrue(response.header("content-type")?.contains("text/html") == true)

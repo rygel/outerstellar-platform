@@ -213,7 +213,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         }
     }
 
-    override fun seedStarterContacts() {
+    override fun seedContacts() {
         val count =
             jdbi.withHandle<Long, Exception> { handle ->
                 handle

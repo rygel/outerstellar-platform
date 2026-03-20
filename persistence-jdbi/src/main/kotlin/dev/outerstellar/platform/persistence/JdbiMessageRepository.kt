@@ -181,7 +181,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         }
     }
 
-    override fun seedStarterMessages() {
+    override fun seedMessages() {
         val count =
             jdbi.withHandle<Long, Exception> { handle ->
                 handle
@@ -193,7 +193,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             }
         if (count > 0) return
 
-        createServerMessage("Outerstellar", "Flyway + JDBI are already wired up for this starter.")
+        createServerMessage("Outerstellar", "Flyway + JDBI are already wired up for this platform.")
         createServerMessage("http4k", "The home page is rendered with a Kotlin .kte JTE template.")
     }
 

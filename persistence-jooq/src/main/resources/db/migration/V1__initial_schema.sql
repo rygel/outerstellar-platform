@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Initial schema — consolidated from V1-V18.
--- This is a starter project with no production data to migrate; all previous
+-- This is a platform project with no production data to migrate; all previous
 -- incremental migrations have been collapsed into this single baseline.
 -- =============================================================================
 

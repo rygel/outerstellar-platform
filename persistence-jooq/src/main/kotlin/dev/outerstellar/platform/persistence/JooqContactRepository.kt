@@ -204,7 +204,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
         }
     }
 
-    override fun seedStarterContacts() {
+    override fun seedContacts() {
         if (dsl.fetchCount(CONTACTS, CONTACTS.DELETED.eq(false)) > 0) return
 
         createServerContact(

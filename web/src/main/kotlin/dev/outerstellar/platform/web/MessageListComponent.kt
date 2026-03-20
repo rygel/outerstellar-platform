@@ -22,7 +22,7 @@ data class MessageListViewModel(
     val localBadge: String = "Local",
     val conflictBadge: String = "Conflict",
 ) : ViewModel {
-    override fun template(): String = "dev/outerstellar/starter/web/components/MessageList"
+    override fun template(): String = "dev/outerstellar/platform/web/components/MessageList"
 }
 
 private const val DEFAULT_PAGE_SIZE = 10
@@ -74,7 +74,7 @@ class MessageListComponent(private val messageService: MessageService) :
         query: String?,
         year: Int?,
         isTrash: Boolean,
-        i18n: com.outerstellar.i18n.I18nService,
+        i18n: io.github.rygel.outerstellar.i18n.I18nService,
     ): MessageListViewModel {
         val metadata =
             PaginationMetadata(

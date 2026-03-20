@@ -1,6 +1,6 @@
-### Outerstellar Starter Architecture (C4 Model)
+### Outerstellar Platform Architecture (C4 Model)
 
-This document provides a comprehensive overview of the Outerstellar starter project architecture using the C4 Model (Context, Container, Component).
+This document provides a comprehensive overview of the Outerstellar platform project architecture using the C4 Model (Context, Container, Component).
 
 ---
 

@@ -1,6 +1,6 @@
 package dev.outerstellar.platform.swing
 
-import com.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.i18n.I18nService
 import dev.outerstellar.platform.model.AuthTokenResponse
 import dev.outerstellar.platform.model.SyncException
 import dev.outerstellar.platform.service.MessageService

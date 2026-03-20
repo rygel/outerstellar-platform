@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
     <Match>
-        <Package name="~dev\.outerstellar\.starter\.jooq(\..*)?"/>
+        <Package name="~dev\.outerstellar\.platform\.jooq(\..*)?"/>
     </Match>
     <Match>
         <Package name="~gg\.jte\.generated(\..*)?"/>
     </Match>
     <Match>
-        <Package name="~dev\.outerstellar\.starter\.swing(\..*)?"/>
+        <Package name="~dev\.outerstellar\.platform\.swing(\..*)?"/>
     </Match>
     <Match>
         <Class name="dev.outerstellar.platform.web.WebContext$Companion"/>
