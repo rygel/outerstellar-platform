@@ -212,6 +212,7 @@ object Filters {
         timeoutMinutes: Int,
         userRepository: UserRepository,
         sessionCookieSecure: Boolean,
+        activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater? = null,
     ): Filter = Filter { next: HttpHandler ->
         { request ->
             val user =
@@ -239,12 +240,12 @@ object Filters {
                             .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
                     }
                 } else {
-                    userRepository.updateLastActivity(user.id)
+                    activityUpdater?.record(user.id) ?: userRepository.updateLastActivity(user.id)
                     next(request)
                 }
             } else {
                 if (user != null) {
-                    userRepository.updateLastActivity(user.id)
+                    activityUpdater?.record(user.id) ?: userRepository.updateLastActivity(user.id)
                 }
                 next(request)
             }

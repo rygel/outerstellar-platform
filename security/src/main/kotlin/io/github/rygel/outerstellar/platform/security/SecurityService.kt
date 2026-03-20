@@ -26,8 +26,10 @@ class SecurityService(
     private val appBaseUrl: String = "http://localhost:8080",
     private val sessionRepository: SessionRepository? = null,
     private val sessionTimeoutSeconds: Long = 1800L,
+    private val activityUpdater: AsyncActivityUpdater? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
+    private val secureRandom = java.security.SecureRandom()
 
     fun authenticate(username: String, password: String): User? {
         val user = userRepository.findByUsername(username)
@@ -375,7 +377,7 @@ class SecurityService(
             if (user != null && user.enabled) {
                 // Extend session on activity
                 repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(sessionTimeoutSeconds))
-                userRepository.updateLastActivity(user.id)
+                activityUpdater?.record(user.id) ?: userRepository.updateLastActivity(user.id)
                 return SessionLookup.Active(user)
             }
             return SessionLookup.NotFound
@@ -394,7 +396,7 @@ class SecurityService(
 
     private fun generateRandomHex(length: Int): String {
         val bytes = ByteArray(length / 2)
-        java.security.SecureRandom().nextBytes(bytes)
+        secureRandom.nextBytes(bytes)
         return bytes.joinToString("") { "%02x".format(it) }
     }
 

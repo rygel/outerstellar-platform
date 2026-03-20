@@ -4,6 +4,7 @@ import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.di.webModule
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
+import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
 import io.github.rygel.outerstellar.platform.security.PasswordEncoder
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.securityModule
@@ -24,10 +25,12 @@ private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platf
 object MainComponent : KoinComponent {
     val config: AppConfig by inject()
     val repository: MessageRepository by inject()
-    val contactRepository: io.github.rygel.outerstellar.platform.persistence.ContactRepository by inject()
+    val contactRepository: io.github.rygel.outerstellar.platform.persistence.ContactRepository by
+        inject()
     val userRepository: UserRepository by inject()
     val passwordEncoder: PasswordEncoder by inject()
     val outboxProcessor: OutboxProcessor by inject()
+    val activityUpdater: AsyncActivityUpdater by inject()
     val app: PolyHandler by inject(named("webServer"))
 }
 
@@ -55,7 +58,10 @@ fun main() {
             Thread(r, "outbox-processor").also { it.isDaemon = true }
         }
     outboxScheduler.scheduleWithFixedDelay(
-        { main.outboxProcessor.processPending() },
+        {
+            main.outboxProcessor.processPending()
+            main.activityUpdater.flush()
+        },
         30L,
         30L,
         TimeUnit.SECONDS,
@@ -68,6 +74,8 @@ fun main() {
             Thread(
                 {
                     logger.info("Graceful shutdown initiated")
+                    logger.info("Flushing pending activity updates...")
+                    main.activityUpdater.flush()
                     logger.info("Stopping outbox scheduler...")
                     outboxScheduler.shutdown()
                     try {

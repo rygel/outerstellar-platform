@@ -73,11 +73,13 @@ fun app(
     config: AppConfig,
     securityService: SecurityService,
     userRepository: UserRepository,
-    deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository? = null,
+    deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository? =
+        null,
     analytics: AnalyticsService = NoOpAnalyticsService(),
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
     plugin: PlatformPlugin? = null,
+    activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
 
@@ -249,7 +251,8 @@ fun app(
     val metricsHandler =
         Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
             .then {
-                Response(Status.OK).body(io.github.rygel.outerstellar.platform.web.Metrics.registry.scrape())
+                Response(Status.OK)
+                    .body(io.github.rygel.outerstellar.platform.web.Metrics.registry.scrape())
             }
 
     val coreRoutes =
@@ -313,6 +316,7 @@ fun app(
                     config.sessionTimeoutMinutes,
                     userRepository,
                     config.sessionCookieSecure,
+                    activityUpdater,
                 )
             )
             .then(Filters.securityFilter)

@@ -8,6 +8,7 @@ val securityModule
     get() = module {
         single<PasswordEncoder> { BCryptPasswordEncoder() }
         single { JwtService(get<AppConfig>().jwt) }
+        single { AsyncActivityUpdater(get()) }
         single {
             SecurityService(
                 get(),
@@ -22,6 +23,7 @@ val securityModule
                 get<io.github.rygel.outerstellar.platform.AppConfig>()
                     .sessionTimeoutMinutes
                     .toLong() * 60,
+                get(),
             )
         }
     }

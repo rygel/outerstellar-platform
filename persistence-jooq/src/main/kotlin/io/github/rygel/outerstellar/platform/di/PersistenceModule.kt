@@ -19,6 +19,7 @@ import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.security.ApiKeyRepository
+import io.github.rygel.outerstellar.platform.security.CachingUserRepository
 import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.security.OAuthRepository
 import io.github.rygel.outerstellar.platform.security.PasswordResetRepository
@@ -67,7 +68,7 @@ val persistenceModule
 
         single<ContactRepository> { JooqContactRepository(get()) }
 
-        single<UserRepository> { JooqUserRepository(get()) }
+        single<UserRepository> { CachingUserRepository(JooqUserRepository(get())) }
 
         single<OutboxRepository> { JooqOutboxRepository(get()) }
 

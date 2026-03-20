@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.di
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
@@ -10,6 +11,7 @@ import io.github.rygel.outerstellar.platform.persistence.JooqNotificationReposit
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.NotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.UserRepository
@@ -25,7 +27,6 @@ import io.github.rygel.outerstellar.platform.web.PlatformPlugin
 import io.github.rygel.outerstellar.platform.web.SyncApi
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
-import io.github.rygel.outerstellar.i18n.I18nService
 import org.http4k.core.PolyHandler
 import org.http4k.template.TemplateRenderer
 import org.koin.core.qualifier.named
@@ -42,7 +43,9 @@ val webModule
         single { NotificationService(get()) }
         single { WebPageFactory(get(), get(), get(), get(), getOrNull(), get()) }
         single { SyncApi(get(), get(), get()) }
-        single<MessageCache> { io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache() }
+        single<MessageCache> {
+            io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache()
+        }
         single<AnalyticsService> {
             val cfg = get<AppConfig>().segment
             if (cfg.enabled && cfg.writeKey.isNotBlank()) SegmentAnalyticsService(cfg.writeKey)
@@ -83,6 +86,7 @@ val webModule
                 notificationService = get(),
                 jwtService = getOrNull<JwtService>(),
                 plugin = getOrNull<PlatformPlugin>(),
+                activityUpdater = getOrNull<AsyncActivityUpdater>(),
             )
         }
     }
