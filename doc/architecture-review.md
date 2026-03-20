@@ -32,12 +32,12 @@ H2 is the intentional and permanent choice for this platform. It provides zero-s
 
 The project uses two package roots:
 
-- `dev.outerstellar.platform` — the project's own code
+- `io.github.rygel.outerstellar.platform` — the project's own code
 - `com.outerstellar` — external Outerstellar libraries, consumed as Maven dependencies
 
 The `com.outerstellar` packages (`com.outerstellar:outerstellar-i18n` and `com.outerstellar:outerstellar-theme`) are external dependencies declared in the POM and resolved from the Maven repository. They are not vendored — no source copies exist in this project. The `com.outerstellar` package root should never contain project-owned source files.
 
-**Rule:** all project-owned code uses `dev.outerstellar.platform`. The `com.outerstellar` namespace belongs to the external Outerstellar libraries and must not be used for project-owned classes.
+**Rule:** all project-owned code uses `io.github.rygel.outerstellar.platform`. The `com.outerstellar` namespace belongs to the external Outerstellar libraries and must not be used for project-owned classes.
 
 ## Areas for improvement
 

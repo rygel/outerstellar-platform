@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>dev.outerstellar</groupId>
+    <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -35,17 +35,17 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>21</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
-        <kotlin.version>2.3.10</kotlin.version>
+        <kotlin.version>2.3.20</kotlin.version>
         <outerstellar.version>1.0.3</outerstellar.version>
-        <http4k.version>6.35.0.0</http4k.version>
-        <flyway.version>12.0.0</flyway.version>
-        <postgresql.version>42.7.7</postgresql.version>
+        <http4k.version>6.36.0.0</http4k.version>
+        <flyway.version>12.1.1</flyway.version>
+        <postgresql.version>42.7.10</postgresql.version>
         <jooq.version>3.20.11</jooq.version>
         <jdbi.version>3.51.0</jdbi.version>
         <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
-        <junit.version>5.12.0</junit.version>
+        <junit.version>5.12.2</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
@@ -61,7 +61,7 @@
         <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <bytebuddy.version>1.18.5</bytebuddy.version>
-        <koin.version>4.0.2</koin.version>
+        <koin.version>4.2.0</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
@@ -109,6 +109,14 @@
         </repository>
     </repositories>
 
+    <distributionManagement>
+        <repository>
+            <id>github-rygel</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/rygel/outerstellar-platform</url>
+        </repository>
+    </distributionManagement>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -131,27 +139,27 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>persistence-jooq</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>persistence-jdbi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>api-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>web</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -938,7 +946,7 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
-                            <mainClass>dev.outerstellar.platform.seed.SeedDataKt</mainClass>
+                            <mainClass>io.github.rygel.outerstellar.platform.seed.SeedDataKt</mainClass>
                             <classpathScope>compile</classpathScope>
                         </configuration>
                     </plugin>

@@ -22,7 +22,7 @@ if (Test-Path $pidFile) {
 # Fallback: Kill by process name and command line if PID file is missing or failed
 $javaProcesses = Get-CimInstance Win32_Process -Filter "Name = 'java.exe' OR Name = 'javaw.exe'" -ErrorAction SilentlyContinue
 foreach ($p in $javaProcesses) {
-    if ($p.CommandLine -like "*dev.outerstellar.platform.swing.SwingSyncAppKt*") {
+    if ($p.CommandLine -like "*io.github.rygel.outerstellar.platform.swing.SwingSyncAppKt*") {
         Write-Host "Stopping existing Swing application instance (PID $($p.ProcessId))..." -ForegroundColor Yellow
         Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
     }

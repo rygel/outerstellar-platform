@@ -10,7 +10,7 @@
         <Package name="~dev\.outerstellar\.platform\.swing(\..*)?"/>
     </Match>
     <Match>
-        <Class name="dev.outerstellar.platform.web.WebContext$Companion"/>
+        <Class name="io.github.rygel.outerstellar.platform.web.WebContext$Companion"/>
         <Bug pattern="MS_EXPOSE_REP"/>
     </Match>
     <Match>

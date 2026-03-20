@@ -128,11 +128,11 @@ The web application uses **http4k** with **JTE** templates and **HTMX** for inte
 1. **Create a ViewModel**: Define a Kotlin `data class` implementing `ViewModel` in `WebPageFactory.kt`.
 2. **Create a Template**: Add a corresponding `.kte` file in `web/src/main/jte`. Wrap your content using the `Page<T>` wrapper to inherit the global shell:
    ```html
-   @import dev.outerstellar.platform.web.MyPage
-   @import dev.outerstellar.platform.web.Page
+   @import io.github.rygel.outerstellar.platform.web.MyPage
+   @import io.github.rygel.outerstellar.platform.web.Page
    @param model: Page<MyPage>
    
-   @template.dev.outerstellar.platform.web.Layout(shell = model.shell, content = @`
+   @template.io.github.rygel.outerstellar.platform.web.Layout(shell = model.shell, content = @`
        <h1>${model.data.title}</h1>
    `)
    ```
