@@ -22,8 +22,26 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ hashFiles('package-lock.json') }}
+
       - name: Build and run all checks
         run: mvn clean verify -pl core,persistence-jooq,persistence-jdbi,security,web,seed
+
+      - name: Cache build output for desktop tests
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            core/target/classes
+            core/target/*.jar
+            persistence-jooq/target/classes
+            persistence-jooq/target/*.jar
+            security/target/classes
+            security/target/*.jar
+          key: build-${{ github.sha }}
 
       - name: Upload JaCoCo coverage reports
         if: always()
@@ -35,6 +53,7 @@ jobs:
 
   desktop-tests:
     name: Desktop Tests (Xvfb)
+    needs: build-and-test
     runs-on: ubuntu-latest
 
     steps:
@@ -48,12 +67,24 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Restore build output
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            core/target/classes
+            core/target/*.jar
+            persistence-jooq/target/classes
+            persistence-jooq/target/*.jar
+            security/target/classes
+            security/target/*.jar
+          key: build-${{ github.sha }}
+
       - name: Install Xvfb
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Build dependencies
+      - name: Install cached modules
         run: mvn install -pl core,persistence-jooq,security -DskipTests -q
 
       - name: Run desktop tests with virtual display
@@ -74,6 +105,13 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
+
+      - name: Cache NVD database
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-${{ github.run_id }}
+          restore-keys: nvd-
 
       - name: OWASP dependency check
         run: mvn dependency-check:aggregate -DskipTests
