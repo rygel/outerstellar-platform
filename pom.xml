@@ -76,7 +76,7 @@
         <logback.version>1.5.32</logback.version>
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.1</java-jwt.version>
-        <hikaricp.version>6.2.1</hikaricp.version>
+        <hikaricp.version>7.0.2</hikaricp.version>
         <angus.mail.version>2.0.3</angus.mail.version>
         <konform.version>0.11.1</konform.version>
         <playwright.version>1.58.0</playwright.version>
