@@ -28,9 +28,7 @@ data class SwingAppConfig(
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): SwingAppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
             val builder =
-                ConfigLoaderBuilder.default()
-                    .withExplicitSealedTypes()
-                    .addEnvironmentSource()
+                ConfigLoaderBuilder.default().withExplicitSealedTypes().addEnvironmentSource()
 
             if (profile != "default") {
                 builder.addResourceSource("/application-$profile.yaml", optional = true)

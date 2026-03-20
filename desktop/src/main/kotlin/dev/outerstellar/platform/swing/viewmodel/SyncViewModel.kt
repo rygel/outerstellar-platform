@@ -1,6 +1,5 @@
 package dev.outerstellar.platform.swing.viewmodel
 
-import io.github.rygel.outerstellar.i18n.I18nService
 import dev.outerstellar.platform.analytics.AnalyticsService
 import dev.outerstellar.platform.analytics.NoOpAnalyticsService
 import dev.outerstellar.platform.model.ConflictStrategy
@@ -17,6 +16,7 @@ import dev.outerstellar.platform.service.MessageService
 import dev.outerstellar.platform.swing.ConnectivityChecker
 import dev.outerstellar.platform.swing.SystemTrayNotifier
 import dev.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.i18n.I18nService
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService

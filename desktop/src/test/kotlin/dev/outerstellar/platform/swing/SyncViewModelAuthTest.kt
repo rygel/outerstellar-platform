@@ -1,6 +1,5 @@
 package dev.outerstellar.platform.swing
 
-import io.github.rygel.outerstellar.i18n.I18nService
 import dev.outerstellar.platform.model.AuthTokenResponse
 import dev.outerstellar.platform.model.SessionExpiredException
 import dev.outerstellar.platform.model.SyncException
@@ -8,6 +7,7 @@ import dev.outerstellar.platform.model.UserSummary
 import dev.outerstellar.platform.service.MessageService
 import dev.outerstellar.platform.swing.viewmodel.SyncViewModel
 import dev.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

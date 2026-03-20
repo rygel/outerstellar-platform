@@ -76,7 +76,7 @@
         <detekt.version>1.23.8</detekt.version>
         <miglayout.version>11.4.3</miglayout.version>
         <assertj.swing.version>4.0.0-beta-3</assertj.swing.version>
-        <i18n.tools.version>1.0.0-SNAPSHOT</i18n.tools.version>
+        <i18n.tools.version>${outerstellar.version}</i18n.tools.version>
         <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
@@ -538,7 +538,7 @@
                 </plugin>
                 <plugin>
                     <groupId>io.github.rygel</groupId>
-                    <artifactId>i18n-maven-plugin</artifactId>
+                    <artifactId>outerstellar-i18n-validator-maven-plugin</artifactId>
                     <version>${i18n.tools.version}</version>
                 </plugin>
                 <plugin>

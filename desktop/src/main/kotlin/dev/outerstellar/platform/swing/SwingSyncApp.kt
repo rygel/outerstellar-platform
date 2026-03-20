@@ -1,7 +1,6 @@
 package dev.outerstellar.platform.swing
 
 import com.formdev.flatlaf.FlatLightLaf
-import io.github.rygel.outerstellar.i18n.I18nService
 import dev.outerstellar.platform.AppConfig
 import dev.outerstellar.platform.analytics.NoOpAnalyticsService
 import dev.outerstellar.platform.di.coreModule
@@ -17,6 +16,7 @@ import dev.outerstellar.platform.service.SyncProvider
 import dev.outerstellar.platform.swing.analytics.PersistentBatchingAnalyticsService
 import dev.outerstellar.platform.swing.viewmodel.SyncViewModel
 import dev.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.i18n.I18nService
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.awt.Color
@@ -194,11 +194,13 @@ fun main() {
         splash.dispose()
 
         // Auto-login in development mode — credentials must be set via config/env, never hardcoded
-        if (desktop.config.devMode &&
-            desktop.config.devUsername.isNotBlank() &&
-            desktop.config.devPassword.isNotBlank()
+        if (
+            desktop.config.devMode &&
+                desktop.config.devUsername.isNotBlank() &&
+                desktop.config.devPassword.isNotBlank()
         ) {
-            viewModel.login(desktop.config.devUsername, desktop.config.devPassword) { success, error ->
+            viewModel.login(desktop.config.devUsername, desktop.config.devPassword) { success, error
+                ->
                 if (!success) {
                     println("Dev auto-login failed: $error")
                 }

@@ -126,7 +126,7 @@
             </plugin>
             <plugin>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>i18n-maven-plugin</artifactId>
+                <artifactId>outerstellar-i18n-validator-maven-plugin</artifactId>
                 <configuration>
                     <resourcesDir>${project.basedir}/../core/src/main/resources</resourcesDir>
                     <projectDir>${project.basedir}/src/main/kotlin</projectDir>

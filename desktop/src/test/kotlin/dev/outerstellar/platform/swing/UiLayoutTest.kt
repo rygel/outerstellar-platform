@@ -1,9 +1,9 @@
 package dev.outerstellar.platform.swing
 
-import io.github.rygel.outerstellar.i18n.I18nService
 import dev.outerstellar.platform.service.MessageService
 import dev.outerstellar.platform.swing.viewmodel.SyncViewModel
 import dev.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.mockk.mockk
 import java.awt.Component
 import java.awt.Container
