@@ -94,6 +94,12 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
             .where(MESSAGES.DIRTY.eq(true).and(MESSAGES.DELETED_AT.isNull))
             .fetch(::toStoredMessage)
 
+    override fun countDirtyMessages(): Long =
+        dsl.selectCount()
+            .from(MESSAGES)
+            .where(MESSAGES.DIRTY.eq(true).and(MESSAGES.DELETED_AT.isNull))
+            .fetchOne(0, Long::class.java) ?: 0L
+
     override fun findBySyncId(syncId: String): StoredMessage? =
         dsl.select(MESSAGES.fields().toList())
             .from(MESSAGES)

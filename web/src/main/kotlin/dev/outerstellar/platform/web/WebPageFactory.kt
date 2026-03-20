@@ -363,6 +363,19 @@ data class ApiKeysPage(
 
 private const val MIN_PASSWORD_LENGTH = 8
 
+private val gravatarCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+private fun gravatarUrl(email: String, customUrl: String?): String {
+    if (!customUrl.isNullOrBlank()) return customUrl
+    return gravatarCache.computeIfAbsent(email.trim().lowercase()) { normalized ->
+        val hash =
+            java.security.MessageDigest.getInstance("MD5")
+                .digest(normalized.toByteArray())
+                .joinToString("") { "%02x".format(it) }
+        "https://www.gravatar.com/avatar/$hash?d=identicon&s=80"
+    }
+}
+
 data class NotificationViewModel(
     val id: String,
     val title: String,
@@ -739,8 +752,8 @@ class WebPageFactory(
 
     fun buildFooterStatus(ctx: WebContext): FooterStatusFragment {
         val i18n = ctx.i18n
-        val msgCount = repository.listMessages().size
-        val dirtyCount = repository.listDirtyMessages().size
+        val msgCount = repository.countMessages()
+        val dirtyCount = repository.countDirtyMessages()
         return FooterStatusFragment(
             text = i18n.translate("web.footer.status", msgCount, dirtyCount)
         )
@@ -881,21 +894,6 @@ class WebPageFactory(
         )
     }
 
-    fun buildNavigationRefresh(ctx: WebContext): Page<out ViewModel> {
-        val pagePath = ctx.request.query("pagePath") ?: "/"
-        return when {
-            pagePath == "/" -> buildHomePage(ctx)
-            pagePath == "/contacts" -> buildContactsPage(ctx)
-            pagePath == "/auth" -> buildAuthPage(ctx)
-            pagePath == "/admin/dev" ->
-                buildDevDashboardPage(ctx, "", emptyMap(), OutboxStatsViewModel(0, 0, 0), "")
-            pagePath == "/admin/users" -> buildUserAdminPage(ctx)
-            pagePath == "/admin/audit" -> buildAuditLogPage(ctx)
-            pagePath.startsWith("/errors") -> buildErrorPage(ctx, "not-found")
-            else -> buildHomePage(ctx)
-        }
-    }
-
     fun buildChangePasswordPage(ctx: WebContext): Page<ChangePasswordPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.password.title"), "/auth")
@@ -938,13 +936,13 @@ class WebPageFactory(
     fun buildUserAdminPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<UserAdminPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.admin.users.title"), "/admin/users")
-        val allUsers = securityService?.listUsers() ?: emptyList()
+        val totalCount = securityService?.countUsers() ?: 0L
+        val safeOffset = offset.coerceIn(0, maxOf(0, totalCount.toInt() - 1))
+        val pageUsers = securityService?.listUsers(limit, safeOffset) ?: emptyList()
         val currentUserId = ctx.user?.id?.toString()
-        val safeOffset = offset.coerceIn(0, maxOf(0, allUsers.size - 1))
-        val pageUsers = allUsers.drop(safeOffset).take(limit)
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
-        val hasNext = safeOffset + limit < allUsers.size
+        val hasNext = safeOffset + limit < totalCount
         val previousUrl =
             ctx.url("/admin/users?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
         val nextUrl = ctx.url("/admin/users?limit=$limit&offset=${safeOffset + limit}")
@@ -992,12 +990,12 @@ class WebPageFactory(
     fun buildAuditLogPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<AuditLogPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.admin.audit.title"), "/admin/audit")
-        val allEntries = securityService?.getAuditLog(limit = limit + offset + 1) ?: emptyList()
-        val safeOffset = offset.coerceIn(0, maxOf(0, allEntries.size - 1))
-        val pageEntries = allEntries.drop(safeOffset).take(limit)
+        val totalCount = securityService?.countAuditEntries() ?: 0L
+        val safeOffset = offset.coerceIn(0, maxOf(0, totalCount.toInt() - 1))
+        val pageEntries = securityService?.getAuditLog(limit, safeOffset) ?: emptyList()
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
-        val hasNext = allEntries.size > safeOffset + limit
+        val hasNext = safeOffset + limit < totalCount
         val previousUrl =
             ctx.url("/admin/audit?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
         val nextUrl = ctx.url("/admin/audit?limit=$limit&offset=${safeOffset + limit}")
@@ -1075,13 +1073,7 @@ class WebPageFactory(
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.profile.title"), "/auth/profile")
         val user = ctx.user ?: throw InsufficientPermissionException("Authentication required")
-        val gravatarHash =
-            java.security.MessageDigest.getInstance("MD5")
-                .digest(user.email.trim().lowercase().toByteArray())
-                .joinToString("") { "%02x".format(it) }
-        val avatarUrl =
-            user.avatarUrl?.takeIf { it.isNotBlank() }
-                ?: "https://www.gravatar.com/avatar/$gravatarHash?d=identicon&s=80"
+        val avatarUrl = gravatarUrl(user.email, user.avatarUrl)
 
         return Page(
             shell = shell,

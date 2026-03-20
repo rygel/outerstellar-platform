@@ -4,6 +4,8 @@ import dev.outerstellar.platform.infra.render
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
 import org.http4k.core.Method.GET
+import org.http4k.core.Response
+import org.http4k.core.Status
 import org.http4k.lens.Query
 import org.http4k.lens.int
 import org.http4k.lens.string
@@ -29,7 +31,15 @@ class ComponentRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    renderer.render(pageFactory.buildNavigationRefresh(request.webContext))
+                    val pagePath = request.query("pagePath")?.ifBlank { "/" } ?: "/"
+                    val forwardParams =
+                        request.uri.query
+                            .split("&")
+                            .filter { !it.startsWith("pagePath=") }
+                            .joinToString("&")
+                    val redirectUrl =
+                        if (forwardParams.isBlank()) pagePath else "$pagePath?$forwardParams"
+                    Response(Status.OK).header("HX-Redirect", redirectUrl)
                 },
             "/components/sidebar/theme-selector" meta
                 {

@@ -95,6 +95,11 @@ class SecurityService(
         return userRepository.findAll().map { it.toSummary() }
     }
 
+    fun listUsers(limit: Int, offset: Int): List<UserSummary> =
+        userRepository.findPage(limit, offset).map { it.toSummary() }
+
+    fun countUsers(): Long = userRepository.countAll()
+
     fun setUserEnabled(adminId: UUID, targetId: UUID, enabled: Boolean) {
         if (adminId == targetId) {
             throw InsufficientPermissionException("Cannot change your own enabled status")
@@ -183,6 +188,11 @@ class SecurityService(
     fun getAuditLog(limit: Int = 50): List<AuditEntry> {
         return auditRepository?.findRecent(limit) ?: emptyList()
     }
+
+    fun getAuditLog(limit: Int, offset: Int): List<AuditEntry> =
+        auditRepository?.findPage(limit, offset) ?: emptyList()
+
+    fun countAuditEntries(): Long = auditRepository?.countAll() ?: 0L
 
     fun updateProfile(
         userId: UUID,

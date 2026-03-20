@@ -89,6 +89,21 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         }
     }
 
+    override fun findPage(limit: Int, offset: Int): List<User> =
+        jdbi.withHandle<List<User>, Exception> { handle ->
+            handle
+                .createQuery("SELECT * FROM users ORDER BY username LIMIT :limit OFFSET :offset")
+                .bind("limit", limit)
+                .bind("offset", offset)
+                .map { rs, _ -> mapUser(rs) }
+                .list()
+        }
+
+    override fun countAll(): Long =
+        jdbi.withHandle<Long, Exception> { handle ->
+            handle.createQuery("SELECT COUNT(*) FROM users").mapTo(Long::class.java).one()
+        }
+
     override fun updateRole(userId: UUID, role: UserRole) {
         jdbi.useHandle<Exception> { handle ->
             handle

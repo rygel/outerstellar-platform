@@ -22,6 +22,8 @@ interface MessageRepository {
 
     fun listDirtyMessages(): List<StoredMessage>
 
+    fun countDirtyMessages(): Long
+
     fun findBySyncId(syncId: String): StoredMessage?
 
     fun createServerMessage(author: String, content: String): StoredMessage

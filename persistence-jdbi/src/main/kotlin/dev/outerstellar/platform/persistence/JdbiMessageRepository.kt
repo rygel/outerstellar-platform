@@ -57,6 +57,16 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
                 .list()
         }
 
+    override fun countDirtyMessages(): Long =
+        jdbi.withHandle<Long, Exception> { handle ->
+            handle
+                .createQuery(
+                    "SELECT COUNT(*) FROM messages WHERE dirty = true AND deleted_at IS NULL"
+                )
+                .mapTo(Long::class.java)
+                .one()
+        }
+
     override fun findBySyncId(syncId: String): StoredMessage? =
         jdbi.withHandle<StoredMessage?, Exception> { handle -> findBySyncId(handle, syncId) }
 

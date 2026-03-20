@@ -34,6 +34,10 @@ interface UserRepository {
 
     fun findAll(): List<User>
 
+    fun findPage(limit: Int, offset: Int): List<User>
+
+    fun countAll(): Long
+
     fun updateRole(userId: UUID, role: UserRole)
 
     fun updateEnabled(userId: UUID, enabled: Boolean)

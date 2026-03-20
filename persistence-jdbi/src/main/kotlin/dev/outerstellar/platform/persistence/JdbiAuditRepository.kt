@@ -46,4 +46,33 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
                 .list()
         }
     }
+
+    override fun findPage(limit: Int, offset: Int): List<AuditEntry> =
+        jdbi.withHandle<List<AuditEntry>, Exception> { handle ->
+            handle
+                .createQuery(
+                    "SELECT * FROM audit_log ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
+                )
+                .bind("limit", limit)
+                .bind("offset", offset)
+                .map { rs, _ ->
+                    AuditEntry(
+                        id = rs.getLong("id"),
+                        actorId = rs.getObject("actor_id")?.toString(),
+                        actorUsername = rs.getString("actor_username"),
+                        targetId = rs.getObject("target_id")?.toString(),
+                        targetUsername = rs.getString("target_username"),
+                        action = rs.getString("action"),
+                        detail = rs.getString("detail"),
+                        createdAt =
+                            rs.getTimestamp("created_at")?.toInstant() ?: java.time.Instant.now(),
+                    )
+                }
+                .list()
+        }
+
+    override fun countAll(): Long =
+        jdbi.withHandle<Long, Exception> { handle ->
+            handle.createQuery("SELECT COUNT(*) FROM audit_log").mapTo(Long::class.java).one()
+        }
 }

@@ -77,6 +77,14 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
         return dsl.selectFrom(USERS).orderBy(USERS.USERNAME).fetch().map { mapUser(it) }
     }
 
+    override fun findPage(limit: Int, offset: Int): List<User> =
+        dsl.selectFrom(USERS).orderBy(USERS.USERNAME).limit(limit).offset(offset).fetch().map {
+            mapUser(it)
+        }
+
+    override fun countAll(): Long =
+        dsl.selectCount().from(USERS).fetchOne(0, Long::class.java) ?: 0L
+
     override fun updateRole(userId: UUID, role: UserRole) {
         dsl.update(USERS).set(USERS.ROLE, role.name).where(USERS.ID.eq(userId)).execute()
     }
