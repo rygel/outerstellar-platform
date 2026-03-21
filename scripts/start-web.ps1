@@ -31,6 +31,12 @@ Remove-Item $watcherLog, $watcherErrorLog, $appLog, $appErrorLog, $tailwindLog, 
 $env:DEV_MODE = "true"
 $port = if ($env:PORT) { [int]$env:PORT } else { 8080 }
 
+Write-Host "Ensuring Node dependencies..." -ForegroundColor Cyan
+& $npmCommand.Source run css:ensure
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to ensure Node dependencies for Tailwind."
+}
+
 Write-Host "Starting watcher..." -ForegroundColor Cyan
 $watcherProcess = Start-Process `
     -FilePath $mavenCommand.Source `

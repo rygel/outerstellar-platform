@@ -7,16 +7,18 @@
     "doc": "doc"
   },
   "scripts": {
-    "build:css": "tailwindcss -i web/src/main/resources/static/input.css -o web/src/main/resources/static/site.css --minify",
-    "watch:css": "tailwindcss -i web/src/main/resources/static/input.css -o web/src/main/resources/static/site.css --watch"
+    "css:ensure": "node scripts/tailwind-runner.mjs --ensure-only",
+    "build:css": "node scripts/tailwind-runner.mjs --minify",
+    "watch:css": "node scripts/tailwind-runner.mjs --watch"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
+    "@tailwindcss/cli": "^4.2.2",
     "autoprefixer": "^10.4.27",
     "postcss": "^8.5.8",
-    "tailwindcss": "^4.2.1"
+    "tailwindcss": "^4.2.2"
   }
 }

@@ -22,7 +22,7 @@ COPY package.json package-lock.json* ./
 
 # Download dependencies (cached layer)
 RUN mvn dependency:go-offline -pl web -am -DskipTests -Denforcer.skip=true || true
-RUN npm install || true
+RUN npm ci --no-audit --no-fund
 
 # Copy source code
 COPY . .
