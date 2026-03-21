@@ -26,7 +26,9 @@ import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Tag
 
+@Tag("e2e")
 class PlaywrightE2ETest : KoinTest {
 
     private val app: PolyHandler by inject(named("webServer"))

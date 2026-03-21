@@ -125,6 +125,55 @@ jobs:
           -Dspotless.apply.skip=true
           -Djacoco.skip=true
 
+  e2e-tests:
+    name: Playwright E2E Tests
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: ci
+    permissions:
+      contents: read
+    env:
+      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: github-rygel
+          server-username: GITHUB_ACTOR
+          server-password: GH_PACKAGES_TOKEN
+
+      - name: Install parent POM locally
+        run: mvn install -N -q
+
+      - name: Build dependencies
+        run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -q
+
+      - name: Install Playwright browsers
+        run: mvn exec:java -pl web -Dexec.mainClass="com.microsoft.playwright.CLI" -Dexec.args="install chromium" -q
+
+      - name: Run E2E tests
+        run: >
+          mvn test -pl web
+          -Dgroups=e2e
+          -DexcludedGroups=
+          -Denforcer.skip=true
+          -Dcheckstyle.skip=true
+          -Dpmd.skip=true
+          -Dcpd.skip=true
+          -Dspotbugs.skip=true
+          -Dspotless.apply.skip=true
+          -Djacoco.skip=true
+          -Ddetekt.skip=true
+
   security:
     name: Security (OWASP + Enforcer)
     runs-on: ubuntu-latest
