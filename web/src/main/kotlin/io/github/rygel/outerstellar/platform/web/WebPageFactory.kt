@@ -365,7 +365,7 @@ private const val MIN_PASSWORD_LENGTH = 8
 
 private val gravatarCache = java.util.concurrent.ConcurrentHashMap<String, String>()
 
-internal fun gravatarUrl(email: String, customUrl: String?): String {
+fun gravatarUrl(email: String, customUrl: String?): String {
     if (!customUrl.isNullOrBlank()) return customUrl
     return gravatarCache.computeIfAbsent(email.trim().lowercase()) { normalized ->
         val hash =

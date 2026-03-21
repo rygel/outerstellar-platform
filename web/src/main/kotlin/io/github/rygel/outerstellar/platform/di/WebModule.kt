@@ -34,13 +34,12 @@ import org.koin.dsl.module
 
 val webModule
     get() = module {
+        includes(adminWebModule)
         single { AppConfig.fromEnvironment() }
         single(named("jdbcUrl")) { get<AppConfig>().jdbcUrl }
         single(named("serverBaseUrl")) { "http://localhost:8080" }
         single(named("appBaseUrl")) { get<AppConfig>().appBaseUrl }
         single<TemplateRenderer> { createRenderer() }
-        single<NotificationRepository> { JooqNotificationRepository(get()) }
-        single { NotificationService(get()) }
         single { WebPageFactory(get(), get(), get(), get(), get()) }
         single { SyncApi(get(), get(), get()) }
         single<MessageCache> {
