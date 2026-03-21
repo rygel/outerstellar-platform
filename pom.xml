@@ -77,7 +77,7 @@
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.1</java-jwt.version>
         <hikaricp.version>6.2.1</hikaricp.version>
-        <angus.mail.version>2.0.3</angus.mail.version>
+        <simplejavamail.version>8.12.6</simplejavamail.version>
         <konform.version>0.11.1</konform.version>
         <playwright.version>1.58.0</playwright.version>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
@@ -435,9 +435,9 @@
                 <version>${hikaricp.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.angus</groupId>
-                <artifactId>angus-mail</artifactId>
-                <version>${angus.mail.version}</version>
+                <groupId>org.simplejavamail</groupId>
+                <artifactId>simple-java-mail</artifactId>
+                <version>${simplejavamail.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.konform</groupId>
