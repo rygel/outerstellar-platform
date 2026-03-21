@@ -131,6 +131,8 @@ jobs:
     name: Playwright E2E Tests
     needs: build-and-test
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright/java:v1.58.0-noble
     environment: ci
     permissions:
       contents: read
@@ -170,17 +172,6 @@ jobs:
       - name: Install cached modules
         run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -q
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('pom.xml') }}
-
-      - name: Install Playwright browsers
-        run: |
-          CLASSPATH=$(mvn -pl web dependency:build-classpath -q -DincludeScope=test -Dmdep.outputFile=/dev/stdout)
-          PLAYWRIGHT_BROWSERS_PATH=~/.cache/ms-playwright java -cp "$CLASSPATH" com.microsoft.playwright.CLI install --with-deps chromium
-
       - name: Run E2E tests
         run: >
           mvn test -pl web
@@ -194,8 +185,6 @@ jobs:
           -Dspotless.apply.skip=true
           -Djacoco.skip=true
           -Ddetekt.skip=true
-        env:
-          PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
 
   security:
     name: Security (OWASP + Enforcer)
