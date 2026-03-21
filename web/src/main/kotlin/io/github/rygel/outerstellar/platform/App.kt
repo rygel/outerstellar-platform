@@ -437,6 +437,8 @@ private fun buildFilterChain(
 ): Filter =
     Filters.correlationId
         .then(Filters.cors(config.corsOrigins))
+        .then(Filters.etagCaching)
+        .then(Filters.staticCacheControl)
         .then(Filters.securityHeaders)
         .then(Filters.telemetry)
         .then(rateLimitFilter())

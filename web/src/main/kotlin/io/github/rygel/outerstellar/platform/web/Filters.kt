@@ -32,9 +32,20 @@ import java.util.UUID
 private const val COOKIE_MAX_AGE_DAYS = 365L
 private const val REQUEST_ID_HEADER = "X-Request-Id"
 private const val LOG_ID_LENGTH = 8
+private const val STATIC_ASSET_MAX_AGE = 31536000L
 
 private fun isNonPagePath(path: String): Boolean =
     path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
+
+private fun isStaticAsset(path: String): Boolean =
+    path.endsWith(".css") ||
+        path.endsWith(".js") ||
+        path.endsWith(".woff2") ||
+        path.endsWith(".woff") ||
+        path.endsWith(".ttf") ||
+        path.endsWith(".png") ||
+        path.endsWith(".svg") ||
+        path.endsWith(".ico")
 
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
@@ -127,6 +138,40 @@ object Filters {
             .then(ServerFilters.MicrometerMetrics.RequestTimer(Metrics.registry))
 
     val telemetry: Filter = ServerFilters.OpenTelemetryTracing(Telemetry.openTelemetry)
+
+    /** Adds ETag headers based on response body hash and returns 304 Not Modified when matched. */
+    val etagCaching: Filter = Filter { next: HttpHandler ->
+        {
+                request ->
+            val response = next(request)
+            if (response.status == Status.OK && response.header("ETag") == null) {
+                val body = response.bodyString()
+                val hash = body.hashCode().toUInt().toString(radix = 16)
+                val etag = "\"$hash\""
+                val ifNoneMatch = request.header("If-None-Match")
+                if (ifNoneMatch == etag) {
+                    Response(Status.NOT_MODIFIED)
+                } else {
+                    response.header("ETag", etag)
+                }
+            } else {
+                response
+            }
+        }
+    }
+
+    /** Adds Cache-Control headers for static assets (CSS, JS, images, fonts). */
+    val staticCacheControl: Filter = Filter { next: HttpHandler ->
+        {
+                request ->
+            val response = next(request)
+            if (isStaticAsset(request.uri.path)) {
+                response.header("Cache-Control", "public, max-age=$STATIC_ASSET_MAX_AGE, immutable")
+            } else {
+                response
+            }
+        }
+    }
 
     fun devAutoLogin(enabled: Boolean, userRepository: UserRepository): Filter = Filter { next ->
         {

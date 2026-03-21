@@ -41,6 +41,10 @@
             <artifactId>micrometer-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-circuitbreaker</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.insert-koin</groupId>
             <artifactId>koin-core-jvm</artifactId>
         </dependency>
