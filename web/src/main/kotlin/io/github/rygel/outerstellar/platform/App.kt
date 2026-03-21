@@ -74,6 +74,7 @@ fun app(
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
     plugin: PlatformPlugin? = null,
     activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater? = null,
+    syncWebSocket: SyncWebSocket? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
 
@@ -110,7 +111,7 @@ fun app(
             config, userRepository, analytics, jwtService, plugin, activityUpdater,
             pageFactory, jteRenderer,
         ).then(baseApp)
-    val wsHandler = websockets("/ws/sync" wsBind SyncWebSocket.handler)
+    val wsHandler = syncWebSocket?.let { websockets("/ws/sync" wsBind it.handler) }
 
     return PolyHandler(httpHandler, wsHandler)
 }

@@ -43,7 +43,6 @@ fun main() {
     startKoin { modules(persistenceModule, coreModule, webModule, securityModule) }
 
     val main = MainComponent
-    io.github.rygel.outerstellar.platform.web.SyncWebSocket.userRepository = main.userRepository
 
     val adminPassword =
         System.getenv("ADMIN_PASSWORD")

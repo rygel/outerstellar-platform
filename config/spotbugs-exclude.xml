@@ -44,9 +44,4 @@
     <Match>
         <Bug pattern="DB_DUPLICATE_BRANCHES"/>
     </Match>
-    <!-- Kotlin object singletons: writing to properties is intentional, not a static field bug -->
-    <Match>
-        <Class name="io.github.rygel.outerstellar.platform.web.SyncWebSocket"/>
-        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
-    </Match>
 </FindBugsFilter>

@@ -70,7 +70,8 @@ val webModule
         }
 
         single<I18nService> { I18nService.create("messages") }
-        single<EventPublisher> { SyncWebSocket }
+        single { SyncWebSocket(get()) }
+        single<EventPublisher> { get<SyncWebSocket>() }
         single<PolyHandler>(named("webServer")) {
             app(
                 get<MessageService>(),
@@ -87,6 +88,7 @@ val webModule
                 jwtService = getOrNull<JwtService>(),
                 plugin = getOrNull<PlatformPlugin>(),
                 activityUpdater = getOrNull<AsyncActivityUpdater>(),
+                syncWebSocket = get<SyncWebSocket>(),
             )
         }
     }

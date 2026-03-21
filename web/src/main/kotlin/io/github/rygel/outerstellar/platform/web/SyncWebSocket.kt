@@ -1,21 +1,23 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.security.UserRepository
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
 import org.http4k.websocket.Websocket
 import org.http4k.websocket.WsHandler
 import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsResponse
+import org.http4k.websocket.WsStatus
 import org.slf4j.LoggerFactory
 
 private const val WS_AUTH_REQUIRED_STATUS = 4401
 
-object SyncWebSocket :
-    WebComponent<Nothing>, io.github.rygel.outerstellar.platform.service.EventPublisher {
+class SyncWebSocket(
+    private val userRepository: UserRepository,
+) : io.github.rygel.outerstellar.platform.service.EventPublisher {
     private val logger = LoggerFactory.getLogger(SyncWebSocket::class.java)
     private val connections = ConcurrentHashMap.newKeySet<Websocket>()
-
-    var userRepository: io.github.rygel.outerstellar.platform.security.UserRepository? = null
 
     val handler: WsHandler = { request: Request ->
         WsResponse { ws: Websocket ->
@@ -29,7 +31,7 @@ object SyncWebSocket :
             val user =
                 sessionCookie?.let {
                     try {
-                        userRepository?.findById(java.util.UUID.fromString(it))
+                        userRepository.findById(UUID.fromString(it))
                     } catch (e: IllegalArgumentException) {
                         logger.debug("Invalid session cookie UUID: {}", e.message)
                         null
@@ -37,12 +39,7 @@ object SyncWebSocket :
                 }
             if (user == null) {
                 logger.warn("WebSocket connection rejected: no valid session")
-                ws.close(
-                    org.http4k.websocket.WsStatus(
-                        WS_AUTH_REQUIRED_STATUS,
-                        "Authentication required",
-                    )
-                )
+                ws.close(WsStatus(WS_AUTH_REQUIRED_STATUS, "Authentication required"))
                 return@WsResponse
             }
 
@@ -79,9 +76,5 @@ object SyncWebSocket :
             }
         }
         connections.removeAll(failed.toSet())
-    }
-
-    override fun build(ctx: WebContext, vararg args: Any?): Nothing {
-        throw UnsupportedOperationException("SyncWebSocket is a handler, not a view component")
     }
 }
