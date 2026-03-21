@@ -77,6 +77,47 @@ fun app(
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
 
+    val appLabel = plugin?.appLabel ?: "Outerstellar"
+    val excludedRoutes = plugin?.excludeDefaultRoutes ?: emptySet()
+    val (bearerSecurity, bearerAdminSecurity) =
+        buildBearerSecurityPair(securityService)
+
+    val apiRoutes =
+        buildApiRoutes(
+            appLabel, securityService, bearerSecurity, bearerAdminSecurity,
+            messageService, contactService, analytics, deviceTokenRepository, notificationService,
+        )
+    val uiRoutes =
+        buildUiRoutes(
+            appLabel, excludedRoutes, messageService, pageFactory, jteRenderer,
+            contactService, securityService, config, analytics, notificationService,
+            userRepository, plugin,
+        )
+    val adminRoutes =
+        buildAdminRoutes(
+            appLabel, outboxRepository, cache, pageFactory, jteRenderer, config, securityService,
+        )
+    val componentRoutes = contract {
+        renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), Jackson)
+        descriptionPath = "/components/openapi.json"
+        routes += ComponentRoutes(pageFactory, jteRenderer).routes
+    }
+
+    val baseApp =
+        buildBaseApp(excludedRoutes, adminRoutes, apiRoutes, uiRoutes, componentRoutes, userRepository)
+    val httpHandler =
+        buildFilterChain(
+            config, userRepository, analytics, jwtService, plugin, activityUpdater,
+            pageFactory, jteRenderer,
+        ).then(baseApp)
+    val wsHandler = websockets("/ws/sync" wsBind SyncWebSocket.handler)
+
+    return PolyHandler(httpHandler, wsHandler)
+}
+
+private fun buildBearerSecurityPair(
+    securityService: SecurityService,
+): Pair<org.http4k.security.Security, org.http4k.security.Security> {
     val bearerAuthFilter = Filter { next ->
         { req ->
             val token = req.header("Authorization")?.removePrefix("Bearer ")
@@ -102,15 +143,10 @@ fun app(
             }
         }
     }
-
-    val appLabel = plugin?.appLabel ?: "Outerstellar"
-    val excludedRoutes = plugin?.excludeDefaultRoutes ?: emptySet()
-
     val bearerSecurity =
         object : org.http4k.security.Security {
             override val filter = bearerAuthFilter
         }
-
     val bearerAdminSecurity =
         object : org.http4k.security.Security {
             override val filter = Filter { next ->
@@ -119,79 +155,7 @@ fun app(
                 )(next)
             }
         }
-
-    val apiRoutes =
-        buildApiRoutes(
-            appLabel,
-            securityService,
-            bearerSecurity,
-            bearerAdminSecurity,
-            messageService,
-            contactService,
-            analytics,
-            deviceTokenRepository,
-            notificationService,
-        )
-
-    val uiRoutes =
-        buildUiRoutes(
-            appLabel,
-            excludedRoutes,
-            messageService,
-            pageFactory,
-            jteRenderer,
-            contactService,
-            securityService,
-            config,
-            analytics,
-            notificationService,
-            userRepository,
-            plugin,
-        )
-
-    val adminRoutes =
-        buildAdminRoutes(
-            appLabel,
-            outboxRepository,
-            cache,
-            pageFactory,
-            jteRenderer,
-            config,
-            securityService,
-        )
-
-    val componentRoutes = contract {
-        renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), Jackson)
-        descriptionPath = "/components/openapi.json"
-        routes += ComponentRoutes(pageFactory, jteRenderer).routes
-    }
-
-    val baseApp =
-        buildBaseApp(
-            excludedRoutes,
-            adminRoutes,
-            apiRoutes,
-            uiRoutes,
-            componentRoutes,
-            userRepository,
-        )
-
-    val httpHandler =
-        buildFilterChain(
-                config,
-                userRepository,
-                analytics,
-                jwtService,
-                plugin,
-                activityUpdater,
-                pageFactory,
-                jteRenderer,
-            )
-            .then(baseApp)
-
-    val wsHandler = websockets("/ws/sync" wsBind SyncWebSocket.handler)
-
-    return PolyHandler(httpHandler, wsHandler)
+    return bearerSecurity to bearerAdminSecurity
 }
 
 @Suppress("LongParameterList")
@@ -354,12 +318,10 @@ private fun buildBaseApp(
     if ("/" !in excludedRoutes) {
         coreRoutes += "/" bind filteredAdminHandler
     }
+    coreRoutes += "/health" bind GET to { buildHealthResponse(userRepository) }
+    coreRoutes += "/metrics" bind GET to metricsHandler
 
-    return routes(
-        *coreRoutes.toTypedArray(),
-        "/health" bind GET to { buildHealthResponse(userRepository) },
-        "/metrics" bind GET to metricsHandler,
-    )
+    return routes(coreRoutes)
 }
 
 @Suppress("TooGenericExceptionCaught", "SwallowedException")

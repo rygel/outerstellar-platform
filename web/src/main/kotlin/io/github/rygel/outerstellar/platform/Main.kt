@@ -10,7 +10,9 @@ import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.securityModule
 import io.github.rygel.outerstellar.platform.service.OutboxProcessor
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.PolyHandler
 import org.http4k.server.asServer
@@ -72,6 +74,14 @@ fun main() {
     val server = main.app.asServer(Jetty(main.config.port)).start()
     logger.info("Outerstellar platform running on http://localhost:{}", server.port())
 
+    registerShutdownHook(main, outboxScheduler, server)
+}
+
+private fun registerShutdownHook(
+    main: MainComponent,
+    outboxScheduler: ScheduledExecutorService,
+    server: Http4kServer,
+) {
     Runtime.getRuntime()
         .addShutdownHook(
             Thread(

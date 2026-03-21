@@ -109,7 +109,7 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
     private fun Request.getSecurityUser() =
         try {
             SecurityRules.USER_KEY(this)
-        } catch (e: Exception) {
+        } catch (e: IllegalStateException) {
             logger.trace("No security user found on request: {}", e.message)
             null
         }

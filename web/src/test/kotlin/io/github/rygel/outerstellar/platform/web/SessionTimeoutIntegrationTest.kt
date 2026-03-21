@@ -52,37 +52,12 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
     fun setupTest() {
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         userRepository = JooqUserRepository(testDsl)
-        val sessionRepository = JooqSessionRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService = mockk<ContactService>(relaxed = true)
-        securityService =
-            SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        securityService = createSecurityService(encoder)
 
         // User with recent activity (1 minute ago)
-        activeUser =
-            User(
-                id = UUID.randomUUID(),
-                username = "activeuser",
-                email = "active@test.com",
-                passwordHash = encoder.encode("pass"),
-                role = UserRole.USER,
-            )
-
+        activeUser = createTestUser(encoder, "activeuser", "active@test.com")
         // User with expired session (activity > 30 minutes ago)
-        expiredUser =
-            User(
-                id = UUID.randomUUID(),
-                username = "expireduser",
-                email = "expired@test.com",
-                passwordHash = encoder.encode("pass"),
-                role = UserRole.USER,
-            )
+        expiredUser = createTestUser(encoder, "expireduser", "expired@test.com")
 
         userRepository.save(activeUser)
         userRepository.save(expiredUser)
@@ -97,35 +72,44 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
                 " WHERE user_id = '${expiredUser.id}'"
         )
 
-        // Set lastActivityAt for cookie-based timeout tests
+        configureActivityTimestamps()
+
+        app = buildTestApp()
+    }
+
+    private fun createSecurityService(encoder: BCryptPasswordEncoder): SecurityService =
+        SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+
+    private fun createTestUser(encoder: BCryptPasswordEncoder, name: String, email: String): User =
+        User(
+            id = UUID.randomUUID(),
+            username = name,
+            email = email,
+            passwordHash = encoder.encode("pass"),
+            role = UserRole.USER,
+        )
+
+    private fun configureActivityTimestamps() {
         val twoHoursAgo = LocalDateTime.now(ZoneOffset.UTC).minusHours(2)
         val oneMinuteAgo = LocalDateTime.now(ZoneOffset.UTC).minusMinutes(1)
+        testDsl.update(USERS).set(USERS.LAST_ACTIVITY_AT, twoHoursAgo)
+            .where(USERS.ID.eq(expiredUser.id)).execute()
+        testDsl.update(USERS).set(USERS.LAST_ACTIVITY_AT, oneMinuteAgo)
+            .where(USERS.ID.eq(activeUser.id)).execute()
+    }
 
-        testDsl
-            .update(USERS)
-            .set(USERS.LAST_ACTIVITY_AT, twoHoursAgo)
-            .where(USERS.ID.eq(expiredUser.id))
-            .execute()
-
-        testDsl
-            .update(USERS)
-            .set(USERS.LAST_ACTIVITY_AT, oneMinuteAgo)
-            .where(USERS.ID.eq(activeUser.id))
-            .execute()
-
-        app =
-            app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                )
-                .http!!
+    private fun buildTestApp(): HttpHandler {
+        val repository = JooqMessageRepository(testDsl)
+        val outbox = StubOutboxRepository()
+        val cache = StubMessageCache()
+        val txManager = StubTransactionManager()
+        val messageService = MessageService(repository, outbox, txManager, cache)
+        val contactService = mockk<ContactService>(relaxed = true)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
+        return app(
+            messageService, contactService, outbox, cache, createRenderer(), pageFactory,
+            testConfig, securityService, userRepository,
+        ).http!!
     }
 
     @AfterEach fun teardown() = cleanup()

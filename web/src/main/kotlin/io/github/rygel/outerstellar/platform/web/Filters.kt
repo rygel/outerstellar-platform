@@ -165,7 +165,7 @@ object Filters {
             val contextUser =
                 try {
                     context.user
-                } catch (e: Exception) {
+                } catch (e: IllegalStateException) {
                     logger.trace("Could not resolve user from context: {}", e.message)
                     null
                 }
@@ -339,12 +339,9 @@ object Filters {
     fun analyticsPageView(analytics: AnalyticsService): Filter = Filter { next ->
         { request ->
             val response = next(request)
-            if (
-                request.method == org.http4k.core.Method.GET &&
-                    !request.uri.path.startsWith("/api/") &&
-                    !request.uri.path.startsWith("/static/") &&
-                    !request.uri.path.startsWith("/ws/")
-            ) {
+            val isTrackablePage =
+                request.method == org.http4k.core.Method.GET && !isNonPagePath(request.uri.path)
+            if (isTrackablePage) {
                 try {
                     val userId = request.webContext.user?.id?.toString()
                     if (userId != null) {
@@ -433,6 +430,9 @@ object Filters {
                 .body(renderer(errorPage))
         }
     }
+
+    private fun isNonPagePath(path: String): Boolean =
+        path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
 
     private fun jsonErrorResponse(status: Status, message: String): Response {
         val body =

@@ -122,44 +122,53 @@ class PerformanceBenchmarkTest : H2WebTest() {
         @JvmStatic
         fun writeBaselineAndCompare() {
             if (collectedReports.isEmpty()) return
+            printComparisonTable()
+            writeBaseline()
+        }
 
-            // -- Comparison table -------------------------------------------------
-            val prev = previousBaseline?.byName()
-            if (prev != null) {
-                val header =
-                    "%-44s  %8s  %8s  %8s  %8s"
-                        .format("benchmark", "prev P99", "curr P99", "delta", "status")
-                val divider = "-".repeat(header.length)
-                logger.info("Benchmark comparison vs previous baseline:")
-                logger.info(divider)
-                logger.info(header)
-                logger.info(divider)
-                for ((name, report) in collectedReports.entries.sortedBy { it.key }) {
-                    val prevEntry = prev[name]
-                    if (prevEntry != null) {
-                        val delta = report.p99Ms() - prevEntry.p99Ms
-                        val pct = if (prevEntry.p99Ms > 0) delta / prevEntry.p99Ms * 100 else 0.0
-                        val status =
-                            when {
-                                delta > prevEntry.p99Ms -> "REGRESSION" // >2× slower
-                                delta > 0 -> "slower"
-                                delta < 0 -> "faster"
-                                else -> "unchanged"
-                            }
-                        logger.info(
-                            "%-44s  %7.2fms  %7.2fms  %+7.2f%%  %s"
-                                .format(name, prevEntry.p99Ms, report.p99Ms(), pct, status)
-                        )
-                    } else {
-                        logger.info(
-                            "%-44s  %8s  %7.2fms  %8s  new".format(name, "—", report.p99Ms(), "—")
-                        )
-                    }
-                }
-                logger.info(divider)
+        private fun printComparisonTable() {
+            val prev = previousBaseline?.byName() ?: return
+            val header =
+                "%-44s  %8s  %8s  %8s  %8s"
+                    .format("benchmark", "prev P99", "curr P99", "delta", "status")
+            val divider = "-".repeat(header.length)
+            logger.info("Benchmark comparison vs previous baseline:")
+            logger.info(divider)
+            logger.info(header)
+            logger.info(divider)
+            for ((name, report) in collectedReports.entries.sortedBy { it.key }) {
+                logBenchmarkRow(name, report, prev[name])
             }
+            logger.info(divider)
+        }
 
-            // -- Write new baseline -----------------------------------------------
+        private fun logBenchmarkRow(
+            name: String,
+            report: LatencyReport,
+            prevEntry: BenchmarkEntry?,
+        ) {
+            if (prevEntry != null) {
+                val delta = report.p99Ms() - prevEntry.p99Ms
+                val pct = if (prevEntry.p99Ms > 0) delta / prevEntry.p99Ms * 100 else 0.0
+                val status =
+                    when {
+                        delta > prevEntry.p99Ms -> "REGRESSION"
+                        delta > 0 -> "slower"
+                        delta < 0 -> "faster"
+                        else -> "unchanged"
+                    }
+                logger.info(
+                    "%-44s  %7.2fms  %7.2fms  %+7.2f%%  %s"
+                        .format(name, prevEntry.p99Ms, report.p99Ms(), pct, status)
+                )
+            } else {
+                logger.info(
+                    "%-44s  %8s  %7.2fms  %8s  new".format(name, "—", report.p99Ms(), "—")
+                )
+            }
+        }
+
+        private fun writeBaseline() {
             baselineFile.parentFile.mkdirs()
             val baseline =
                 BenchmarkBaseline(
