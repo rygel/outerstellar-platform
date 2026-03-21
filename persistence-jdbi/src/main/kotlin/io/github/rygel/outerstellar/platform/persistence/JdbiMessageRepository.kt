@@ -60,9 +60,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     override fun countDirtyMessages(): Long =
         jdbi.withHandle<Long, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT COUNT(*) FROM messages WHERE dirty = true AND deleted_at IS NULL"
-                )
+                .createQuery("SELECT COUNT(*) FROM messages WHERE dirty = true AND deleted_at IS NULL")
                 .mapTo(Long::class.java)
                 .one()
         }
@@ -142,8 +140,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     override fun markClean(syncIds: Collection<String>) {
         if (syncIds.isEmpty()) return
         jdbi.useHandle<Exception> { handle ->
-            val batch =
-                handle.prepareBatch("UPDATE messages SET dirty = false WHERE sync_id = :syncId")
+            val batch = handle.prepareBatch("UPDATE messages SET dirty = false WHERE sync_id = :syncId")
             syncIds.forEach { batch.bind("syncId", it).add() }
             batch.execute()
         }
@@ -163,17 +160,13 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         jdbi.useHandle<Exception> { handle ->
             val updated =
                 handle
-                    .createUpdate(
-                        "UPDATE sync_state SET state_value = :value WHERE state_key = :key"
-                    )
+                    .createUpdate("UPDATE sync_state SET state_value = :value WHERE state_key = :key")
                     .bind("key", LAST_SYNC_STATE_KEY)
                     .bind("value", value)
                     .execute()
             if (updated == 0) {
                 handle
-                    .createUpdate(
-                        "INSERT INTO sync_state (state_key, state_value) VALUES (:key, :value)"
-                    )
+                    .createUpdate("INSERT INTO sync_state (state_key, state_value) VALUES (:key, :value)")
                     .bind("key", LAST_SYNC_STATE_KEY)
                     .bind("value", value)
                     .execute()
@@ -185,9 +178,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         val count =
             jdbi.withHandle<Long, Exception> { handle ->
                 handle
-                    .createQuery(
-                        "SELECT COUNT(*) FROM messages WHERE deleted = false AND deleted_at IS NULL"
-                    )
+                    .createQuery("SELECT COUNT(*) FROM messages WHERE deleted = false AND deleted_at IS NULL")
                     .mapTo(Long::class.java)
                     .one()
             }
@@ -304,17 +295,9 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         return requireNotNull(findBySyncId(syncId))
     }
 
-    private data class FilterClause(
-        val sql: String,
-        val binder: (org.jdbi.v3.core.statement.Query) -> Unit,
-    )
+    private data class FilterClause(val sql: String, val binder: (org.jdbi.v3.core.statement.Query) -> Unit)
 
-    private fun buildFilterClause(
-        handle: Handle,
-        query: String?,
-        year: Int?,
-        includeDeleted: Boolean,
-    ): FilterClause {
+    private fun buildFilterClause(handle: Handle, query: String?, year: Int?, includeDeleted: Boolean): FilterClause {
         val conditions = mutableListOf<String>()
         val bindings = mutableMapOf<String, Any>()
 
@@ -325,28 +308,20 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         }
 
         if (!query.isNullOrBlank()) {
-            conditions.add(
-                "(LOWER(content) LIKE :likeQuery ESCAPE '!' OR LOWER(author) LIKE :likeQuery ESCAPE '!')"
-            )
+            conditions.add("(LOWER(content) LIKE :likeQuery ESCAPE '!' OR LOWER(author) LIKE :likeQuery ESCAPE '!')")
             bindings["likeQuery"] = "%${query.lowercase().escapeLike()}%"
         }
 
         if (year != null) {
-            val startOfYear =
-                ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant().toEpochMilli()
-            val endOfYear =
-                ZonedDateTime.of(year + 1, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC)
-                    .toInstant()
-                    .toEpochMilli() - 1
+            val startOfYear = ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant().toEpochMilli()
+            val endOfYear = ZonedDateTime.of(year + 1, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant().toEpochMilli() - 1
             conditions.add("updated_at_epoch_ms BETWEEN :yearStart AND :yearEnd")
             bindings["yearStart"] = startOfYear
             bindings["yearEnd"] = endOfYear
         }
 
         val whereClause = conditions.joinToString(" AND ")
-        return FilterClause(whereClause) { q ->
-            bindings.forEach { (key, value) -> q.bind(key, value) }
-        }
+        return FilterClause(whereClause) { q -> bindings.forEach { (key, value) -> q.bind(key, value) } }
     }
 
     private fun mapMessage(rs: java.sql.ResultSet): StoredMessage {

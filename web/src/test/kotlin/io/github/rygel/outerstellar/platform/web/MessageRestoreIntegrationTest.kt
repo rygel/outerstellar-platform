@@ -61,8 +61,7 @@ class MessageRestoreIntegrationTest : H2WebTest() {
     /** Creates a server message and returns its syncId. */
     private fun createAndSoftDelete(author: String, content: String): String {
         messageService.createServerMessage(author, content)
-        val msg =
-            repository.listMessages(limit = 1, includeDeleted = false).first { it.author == author }
+        val msg = repository.listMessages(limit = 1, includeDeleted = false).first { it.author == author }
         repository.softDelete(msg.syncId)
         return msg.syncId
     }
@@ -85,18 +84,12 @@ class MessageRestoreIntegrationTest : H2WebTest() {
 
         // Verify it's in trash before restore
         val trashBefore = app(Request(GET, "/messages/trash"))
-        assertTrue(
-            trashBefore.bodyString().contains("Ghost Author"),
-            "Should be in trash before restore",
-        )
+        assertTrue(trashBefore.bodyString().contains("Ghost Author"), "Should be in trash before restore")
 
         app(Request(POST, "/messages/restore/$syncId"))
 
         val trashAfter = app(Request(GET, "/messages/trash"))
-        assertFalse(
-            trashAfter.bodyString().contains("Ghost Author"),
-            "Should be gone from trash after restore",
-        )
+        assertFalse(trashAfter.bodyString().contains("Ghost Author"), "Should be gone from trash after restore")
     }
 
     @Test
@@ -106,18 +99,12 @@ class MessageRestoreIntegrationTest : H2WebTest() {
 
         // Confirm it's absent from home before restore
         val homeBefore = app(Request(GET, "/"))
-        assertFalse(
-            homeBefore.bodyString().contains("Risen Author"),
-            "Should not be on home page while deleted",
-        )
+        assertFalse(homeBefore.bodyString().contains("Risen Author"), "Should not be on home page while deleted")
 
         app(Request(POST, "/messages/restore/$syncId"))
 
         val homeAfter = app(Request(GET, "/"))
-        assertTrue(
-            homeAfter.bodyString().contains("Risen Author"),
-            "Should reappear on home page after restore",
-        )
+        assertTrue(homeAfter.bodyString().contains("Risen Author"), "Should reappear on home page after restore")
     }
 
     @Test
@@ -141,17 +128,13 @@ class MessageRestoreIntegrationTest : H2WebTest() {
 
         // Soft-delete it directly
         repository.softDelete(syncId)
-        assertFalse(
-            repository.listMessages(limit = 10, includeDeleted = false).any { it.syncId == syncId }
-        )
+        assertFalse(repository.listMessages(limit = 10, includeDeleted = false).any { it.syncId == syncId })
 
         // Restore via HTTP
         val restoreResponse = app(Request(POST, "/messages/restore/$syncId"))
         assertEquals(Status.FOUND, restoreResponse.status)
 
         // Confirm restored
-        assertTrue(
-            repository.listMessages(limit = 10, includeDeleted = false).any { it.syncId == syncId }
-        )
+        assertTrue(repository.listMessages(limit = 10, includeDeleted = false).any { it.syncId == syncId })
     }
 }

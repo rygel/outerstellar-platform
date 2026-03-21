@@ -68,33 +68,17 @@ class JooqMessageRepositoryTest : H2JooqTest() {
     fun `softDelete excludes message from active list`() {
         val m = repo.createLocalMessage("Alice", "To delete")
         repo.softDelete(m.syncId)
-        assertTrue(
-            repo.listMessages(null, null, 10, 0, includeDeleted = false).none {
-                it.syncId == m.syncId
-            }
-        )
-        assertTrue(
-            repo.listMessages(null, null, 10, 0, includeDeleted = true).any {
-                it.syncId == m.syncId
-            }
-        )
+        assertTrue(repo.listMessages(null, null, 10, 0, includeDeleted = false).none { it.syncId == m.syncId })
+        assertTrue(repo.listMessages(null, null, 10, 0, includeDeleted = true).any { it.syncId == m.syncId })
     }
 
     @Test
     fun `restore undeletes a soft-deleted message`() {
         val m = repo.createLocalMessage("Alice", "Restore me")
         repo.softDelete(m.syncId)
-        assertTrue(
-            repo.listMessages(null, null, 10, 0, includeDeleted = false).none {
-                it.syncId == m.syncId
-            }
-        )
+        assertTrue(repo.listMessages(null, null, 10, 0, includeDeleted = false).none { it.syncId == m.syncId })
         repo.restore(m.syncId)
-        assertTrue(
-            repo.listMessages(null, null, 10, 0, includeDeleted = false).any {
-                it.syncId == m.syncId
-            }
-        )
+        assertTrue(repo.listMessages(null, null, 10, 0, includeDeleted = false).any { it.syncId == m.syncId })
     }
 
     @Test

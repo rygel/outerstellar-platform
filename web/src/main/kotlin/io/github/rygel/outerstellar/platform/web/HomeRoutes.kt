@@ -47,9 +47,7 @@ class HomeRoutes(
                     val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
                     val offset = offsetLens(request).coerceAtLeast(0)
                     val year = yearLens(request)
-                    renderer.render(
-                        pageFactory.buildHomePage(request.webContext, query, limit, offset, year)
-                    )
+                    renderer.render(pageFactory.buildHomePage(request.webContext, query, limit, offset, year))
                 },
             "/messages/trash" meta
                 {
@@ -79,8 +77,7 @@ class HomeRoutes(
                     {
                             request: org.http4k.core.Request ->
                         messageService.restore(syncId)
-                        Response(Status.FOUND)
-                            .header("location", request.webContext.url("/messages/trash"))
+                        Response(Status.FOUND).header("location", request.webContext.url("/messages/trash"))
                     }
                 },
             "/messages/resolve" / syncIdPath meta
@@ -91,8 +88,7 @@ class HomeRoutes(
                 { syncId ->
                     {
                             request: org.http4k.core.Request ->
-                        val viewModel =
-                            pageFactory.buildConflictResolveModal(request.webContext, syncId)
+                        val viewModel = pageFactory.buildConflictResolveModal(request.webContext, syncId)
                         renderer.render(viewModel)
                     }
                 },
@@ -104,8 +100,7 @@ class HomeRoutes(
                 { syncId ->
                     {
                             request: org.http4k.core.Request ->
-                        val strategy =
-                            ConflictStrategy.fromString(request.form("strategy") ?: "server")
+                        val strategy = ConflictStrategy.fromString(request.form("strategy") ?: "server")
                         messageService.resolveConflict(syncId, strategy)
                         Response(Status.OK).header("HX-Trigger", "refresh")
                     }

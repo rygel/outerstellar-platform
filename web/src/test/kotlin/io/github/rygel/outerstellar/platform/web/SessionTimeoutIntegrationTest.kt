@@ -33,8 +33,7 @@ import kotlin.test.assertTrue
  *
  * Covers:
  * - Active session (recent lastActivityAt) is not expired
- * - Expired bearer token (lastActivityAt > sessionTimeoutMinutes ago) returns 401 +
- *   X-Session-Expired header
+ * - Expired bearer token (lastActivityAt > sessionTimeoutMinutes ago) returns 401 + X-Session-Expired header
  * - Expired session cookie redirects to /auth?expired=true on HTML routes
  * - Fresh user with null lastActivityAt is not expired
  */
@@ -92,16 +91,8 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
     private fun configureActivityTimestamps() {
         val twoHoursAgo = LocalDateTime.now(ZoneOffset.UTC).minusHours(2)
         val oneMinuteAgo = LocalDateTime.now(ZoneOffset.UTC).minusMinutes(1)
-        testDsl
-            .update(USERS)
-            .set(USERS.LAST_ACTIVITY_AT, twoHoursAgo)
-            .where(USERS.ID.eq(expiredUser.id))
-            .execute()
-        testDsl
-            .update(USERS)
-            .set(USERS.LAST_ACTIVITY_AT, oneMinuteAgo)
-            .where(USERS.ID.eq(activeUser.id))
-            .execute()
+        testDsl.update(USERS).set(USERS.LAST_ACTIVITY_AT, twoHoursAgo).where(USERS.ID.eq(expiredUser.id)).execute()
+        testDsl.update(USERS).set(USERS.LAST_ACTIVITY_AT, oneMinuteAgo).where(USERS.ID.eq(activeUser.id)).execute()
     }
 
     private fun buildTestApp(): HttpHandler {
@@ -111,8 +102,7 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
         return app(
             messageService,
             contactService,
@@ -133,21 +123,15 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
 
     @Test
     fun `expired bearer token returns 401 with X-Session-Expired header`() {
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $expiredToken"))
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $expiredToken"))
 
         assertEquals(Status.UNAUTHORIZED, response.status)
-        assertEquals(
-            "true",
-            response.header("X-Session-Expired"),
-            "X-Session-Expired header must be set to true",
-        )
+        assertEquals("true", response.header("X-Session-Expired"), "X-Session-Expired header must be set to true")
     }
 
     @Test
     fun `active bearer token is not expired and accesses sync endpoint`() {
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $activeToken"))
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $activeToken"))
 
         assertEquals(Status.OK, response.status)
     }
@@ -166,8 +150,7 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
         userRepository.save(freshUser)
         val freshToken = securityService.createSession(freshUser.id)
 
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $freshToken"))
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $freshToken"))
 
         assertEquals(Status.OK, response.status)
     }
@@ -176,36 +159,24 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
 
     @Test
     fun `expired session cookie on HTML route redirects to auth with expired param`() {
-        val response =
-            app(
-                Request(GET, "/")
-                    .cookie(Cookie(WebContext.SESSION_COOKIE, expiredUser.id.toString()))
-            )
+        val response = app(Request(GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, expiredUser.id.toString())))
 
         // Redirect to /auth?expired=true
         assertEquals(Status.FOUND, response.status, "Expired session should cause redirect")
         val location = response.header("location").orEmpty()
-        assertTrue(
-            location.contains("expired"),
-            "Redirect location should indicate session expired, got: $location",
-        )
+        assertTrue(location.contains("expired"), "Redirect location should indicate session expired, got: $location")
     }
 
     @Test
     fun `active session cookie on HTML route is accepted`() {
-        val response =
-            app(
-                Request(GET, "/")
-                    .cookie(Cookie(WebContext.SESSION_COOKIE, activeUser.id.toString()))
-            )
+        val response = app(Request(GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, activeUser.id.toString())))
 
         assertEquals(Status.OK, response.status, "Active session should succeed")
     }
 
     @Test
     fun `expired bearer token response body mentions expiry`() {
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $expiredToken"))
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $expiredToken"))
 
         val body = response.bodyString()
         assertTrue(

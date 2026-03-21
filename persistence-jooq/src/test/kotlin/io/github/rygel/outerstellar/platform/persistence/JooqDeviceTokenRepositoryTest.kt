@@ -34,14 +34,7 @@ class JooqDeviceTokenRepositoryTest : H2JooqTest() {
         token: String = "tok_${UUID.randomUUID()}",
         platform: String = "fcm",
         appBundle: String? = "com.example.app",
-    ) =
-        DeviceToken(
-            id = 0,
-            userId = userId,
-            platform = platform,
-            token = token,
-            appBundle = appBundle,
-        )
+    ) = DeviceToken(id = 0, userId = userId, platform = platform, token = token, appBundle = appBundle)
 
     @Test
     fun `upsert and findByUserId round-trips`() {

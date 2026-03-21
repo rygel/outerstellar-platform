@@ -8,13 +8,7 @@ data class AuthTokenResponse(val token: String, val username: String, val role: 
 
 data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
 
-data class UserSummary(
-    val id: String,
-    val username: String,
-    val email: String,
-    val role: String,
-    val enabled: Boolean,
-)
+data class UserSummary(val id: String, val username: String, val email: String, val role: String, val enabled: Boolean)
 
 data class SetUserEnabledRequest(val enabled: Boolean)
 
@@ -67,11 +61,7 @@ data class CreateApiKeyRequest(val name: String)
 
 data class CreateApiKeyResponse(val key: String, val name: String, val keyPrefix: String)
 
-data class UpdateProfileRequest(
-    val email: String,
-    val username: String? = null,
-    val avatarUrl: String? = null,
-)
+data class UpdateProfileRequest(val email: String, val username: String? = null, val avatarUrl: String? = null)
 
 data class UpdateNotificationPrefsRequest(val emailEnabled: Boolean, val pushEnabled: Boolean)
 

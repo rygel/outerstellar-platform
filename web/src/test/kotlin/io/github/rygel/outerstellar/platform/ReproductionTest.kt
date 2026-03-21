@@ -32,9 +32,7 @@ class ReproductionTest : H2WebTest() {
         val passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, passwordEncoder)
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
-                relaxed = true
-            )
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
         val app =
             app(
@@ -54,9 +52,6 @@ class ReproductionTest : H2WebTest() {
         // Verify that the theme is applied in the body (CSS variables)
         // In Dracula theme, background color is #282A36
         val body = response.bodyString()
-        assertTrue(
-            body.contains("--color-background: #282A36"),
-            "Should contain Dracula background color",
-        )
+        assertTrue(body.contains("--color-background: #282A36"), "Should contain Dracula background color")
     }
 }

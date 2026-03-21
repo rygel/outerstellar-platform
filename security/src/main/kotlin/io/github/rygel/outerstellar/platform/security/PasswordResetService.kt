@@ -39,17 +39,14 @@ class PasswordResetService(
         emailService?.send(
             to = user.email,
             subject = "Password Reset Request",
-            body =
-                "Use this link to reset your password:\n$resetLink\n\nThis link expires in 1 hour.",
+            body = "Use this link to reset your password:\n$resetLink\n\nThis link expires in 1 hour.",
         )
         audit("PASSWORD_RESET_REQUESTED", actor = user)
         return tokenValue
     }
 
     fun resetPassword(token: String, newPassword: String) {
-        val resetToken =
-            resetRepository?.findByToken(token)
-                ?: throw IllegalArgumentException("Invalid reset token")
+        val resetToken = resetRepository?.findByToken(token) ?: throw IllegalArgumentException("Invalid reset token")
 
         if (resetToken.used) {
             throw IllegalArgumentException("Reset token has already been used")
@@ -58,14 +55,11 @@ class PasswordResetService(
             throw IllegalArgumentException("Reset token has expired")
         }
         if (newPassword.length < MIN_PASSWORD_LENGTH) {
-            throw WeakPasswordException(
-                "New password must be at least $MIN_PASSWORD_LENGTH characters"
-            )
+            throw WeakPasswordException("New password must be at least $MIN_PASSWORD_LENGTH characters")
         }
 
         val user =
-            userRepository.findById(resetToken.userId)
-                ?: throw UserNotFoundException(resetToken.userId.toString())
+            userRepository.findById(resetToken.userId) ?: throw UserNotFoundException(resetToken.userId.toString())
 
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
@@ -74,12 +68,7 @@ class PasswordResetService(
         audit("PASSWORD_RESET_COMPLETED", actor = user)
     }
 
-    private fun audit(
-        action: String,
-        actor: User? = null,
-        target: User? = null,
-        detail: String? = null,
-    ) {
+    private fun audit(action: String, actor: User? = null, target: User? = null, detail: String? = null) {
         auditRepository?.log(
             AuditEntry(
                 actorId = actor?.id?.toString(),

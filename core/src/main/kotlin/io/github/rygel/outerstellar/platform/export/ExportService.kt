@@ -3,7 +3,9 @@ package io.github.rygel.outerstellar.platform.export
 interface ExportProvider {
     val entityType: String
     val displayName: String
+
     fun exportCsv(): String
+
     fun headers(): List<String>
 }
 
@@ -18,6 +20,5 @@ object CsvUtils {
         }
     }
 
-    fun toCsvRow(values: List<String?>): String =
-        values.joinToString(",") { escapeCsv(it) }
+    fun toCsvRow(values: List<String?>): String = values.joinToString(",") { escapeCsv(it) }
 }

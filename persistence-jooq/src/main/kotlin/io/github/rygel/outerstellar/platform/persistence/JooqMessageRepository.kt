@@ -16,35 +16,23 @@ import org.jooq.Record
 
 @Suppress("TooManyFunctions")
 class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
-    private fun notSoftDeleted(): Condition =
-        MESSAGES.DELETED.eq(false).and(MESSAGES.DELETED_AT.isNull)
+    private fun notSoftDeleted(): Condition = MESSAGES.DELETED.eq(false).and(MESSAGES.DELETED_AT.isNull)
 
     private fun softDeleted(): Condition = MESSAGES.DELETED_AT.isNotNull
 
-    private fun getFilterConditions(
-        query: String?,
-        year: Int?,
-        includeDeleted: Boolean = false,
-    ): Condition {
+    private fun getFilterConditions(query: String?, year: Int?, includeDeleted: Boolean = false): Condition {
         var condition = if (includeDeleted) softDeleted() else notSoftDeleted()
 
         if (!query.isNullOrBlank()) {
             condition =
-                condition.and(
-                    MESSAGES.CONTENT.containsIgnoreCase(query)
-                        .or(MESSAGES.AUTHOR.containsIgnoreCase(query))
-                )
+                condition.and(MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query)))
         }
 
         if (year != null) {
             val startOfYear =
-                java.time.ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC)
-                    .toInstant()
-                    .toEpochMilli()
+                java.time.ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant().toEpochMilli()
             val endOfYear =
-                java.time.ZonedDateTime.of(year + 1, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC)
-                    .toInstant()
-                    .toEpochMilli() - 1
+                java.time.ZonedDateTime.of(year + 1, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant().toEpochMilli() - 1
             condition = condition.and(MESSAGES.UPDATED_AT_EPOCH_MS.between(startOfYear, endOfYear))
         }
 
@@ -109,9 +97,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
     override fun findChangesSince(updatedAtEpochMs: Long): List<StoredMessage> =
         dsl.select(MESSAGES.fields().toList())
             .from(MESSAGES)
-            .where(
-                MESSAGES.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs).and(MESSAGES.DELETED_AT.isNull)
-            )
+            .where(MESSAGES.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs).and(MESSAGES.DELETED_AT.isNull))
             .fetch(::toStoredMessage)
 
     override fun createServerMessage(author: String, content: String): StoredMessage =
@@ -152,10 +138,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
             return
         }
 
-        dsl.update(MESSAGES)
-            .set(MESSAGES.DIRTY, false)
-            .where(MESSAGES.SYNC_ID.`in`(syncIds))
-            .execute()
+        dsl.update(MESSAGES).set(MESSAGES.DIRTY, false).where(MESSAGES.SYNC_ID.`in`(syncIds)).execute()
     }
 
     override fun getLastSyncEpochMs(): Long =
@@ -224,10 +207,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
 
     override fun markConflict(syncId: String, serverVersion: SyncMessage) {
         val json = Jackson.asFormatString(serverVersion)
-        dsl.update(MESSAGES)
-            .set(MESSAGES.SYNC_CONFLICT, json)
-            .where(MESSAGES.SYNC_ID.eq(syncId))
-            .execute()
+        dsl.update(MESSAGES).set(MESSAGES.SYNC_CONFLICT, json).where(MESSAGES.SYNC_ID.eq(syncId)).execute()
     }
 
     override fun resolveConflict(syncId: String, resolvedMessage: StoredMessage) {

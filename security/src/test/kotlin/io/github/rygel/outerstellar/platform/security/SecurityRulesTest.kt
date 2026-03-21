@@ -17,11 +17,7 @@ class SecurityRulesTest {
 
     private val contexts = RequestContexts()
 
-    private fun requestWithUser(
-        user: User,
-        method: Method = Method.GET,
-        path: String = "/test",
-    ): Request {
+    private fun requestWithUser(user: User, method: Method = Method.GET, path: String = "/test"): Request {
         var contextualRequest: Request? = null
         ServerFilters.InitialiseRequestContext(contexts).then { req ->
             contextualRequest = req
@@ -98,8 +94,7 @@ class SecurityRulesTest {
     @Test
     fun `hasRole allows request when user has correct role`() {
         val request = requestWithUser(adminUser)
-        val handler =
-            SecurityRules.hasRole(UserRole.ADMIN) { Response(Status.OK).body("admin area") }
+        val handler = SecurityRules.hasRole(UserRole.ADMIN) { Response(Status.OK).body("admin area") }
 
         val response = handler(request)
 

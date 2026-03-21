@@ -20,9 +20,7 @@ class KoinModuleTest : KoinTest {
                 module {
                     single { mockk<MessageRepository>(relaxed = true) }
                     single {
-                        mockk<io.github.rygel.outerstellar.platform.persistence.ContactRepository>(
-                            relaxed = true
-                        )
+                        mockk<io.github.rygel.outerstellar.platform.persistence.ContactRepository>(relaxed = true)
                     }
                     single { mockk<OutboxRepository>(relaxed = true) }
                     single { mockk<MessageCache>(relaxed = true) }

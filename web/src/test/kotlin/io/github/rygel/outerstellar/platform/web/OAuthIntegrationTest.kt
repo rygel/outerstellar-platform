@@ -66,8 +66,7 @@ class OAuthIntegrationTest : H2WebTest() {
                 passwordEncoder = encoder,
                 oauthRepository = oauthRepository,
             )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -107,10 +106,7 @@ class OAuthIntegrationTest : H2WebTest() {
     fun `GET auth-oauth-apple sets oauth_state cookie`() {
         val response = app(Request(GET, "/auth/oauth/apple"))
         val setCookie = response.header("Set-Cookie").orEmpty()
-        assertTrue(
-            setCookie.contains("oauth_state="),
-            "Initiating OAuth must set oauth_state cookie, got: $setCookie",
-        )
+        assertTrue(setCookie.contains("oauth_state="), "Initiating OAuth must set oauth_state cookie, got: $setCookie")
     }
 
     @Test
@@ -120,16 +116,9 @@ class OAuthIntegrationTest : H2WebTest() {
         assertTrue(setCookie.contains("HttpOnly"), "oauth_state must be HttpOnly")
         // Max-Age should be ≤ 600 seconds (10 minutes)
         val maxAge =
-            Regex("Max-Age=(\\d+)", RegexOption.IGNORE_CASE)
-                .find(setCookie)
-                ?.groupValues
-                ?.get(1)
-                ?.toLongOrNull()
+            Regex("Max-Age=(\\d+)", RegexOption.IGNORE_CASE).find(setCookie)?.groupValues?.get(1)?.toLongOrNull()
         assertNotNull(maxAge, "oauth_state cookie should have Max-Age")
-        assertTrue(
-            maxAge <= 600L,
-            "oauth_state should expire within 10 minutes, got Max-Age=$maxAge",
-        )
+        assertTrue(maxAge <= 600L, "oauth_state should expire within 10 minutes, got Max-Age=$maxAge")
     }
 
     @Test
@@ -170,11 +159,7 @@ class OAuthIntegrationTest : H2WebTest() {
     @Test
     fun `GET callback without code param redirects to auth with oauth_error`() {
         val state = UUID.randomUUID().toString()
-        val response =
-            app(
-                Request(GET, "/auth/oauth/apple/callback?state=$state")
-                    .cookie(Cookie("oauth_state", state))
-            )
+        val response = app(Request(GET, "/auth/oauth/apple/callback?state=$state").cookie(Cookie("oauth_state", state)))
         assertEquals(Status.FOUND, response.status)
         val location = response.header("location").orEmpty()
         assertTrue(
@@ -279,10 +264,7 @@ class OAuthIntegrationTest : H2WebTest() {
     @Test
     fun `GET not-configured response body contains a back link to auth`() {
         val body = app(Request(GET, "/auth/oauth/apple/not-configured")).bodyString()
-        assertTrue(
-            body.contains("/auth"),
-            "Not-configured page should link back to /auth, got: $body",
-        )
+        assertTrue(body.contains("/auth"), "Not-configured page should link back to /auth, got: $body")
     }
 
     // ---- Sign-in form includes Apple button ----
@@ -300,10 +282,7 @@ class OAuthIntegrationTest : H2WebTest() {
     @Test
     fun `sign-in form fragment Apple button links to oauth initiation route`() {
         val body = app(Request(GET, "/auth/components/forms/sign-in")).bodyString()
-        assertTrue(
-            body.contains("/auth/oauth/apple"),
-            "Apple sign-in button must link to /auth/oauth/apple",
-        )
+        assertTrue(body.contains("/auth/oauth/apple"), "Apple sign-in button must link to /auth/oauth/apple")
     }
 
     @Test
@@ -320,15 +299,11 @@ class OAuthIntegrationTest : H2WebTest() {
 
     @Test
     fun `findOrCreateOAuthUser creates a new user on first call`() {
-        val user =
-            securityService.findOrCreateOAuthUser("apple", "apple.sub.001", "newuser@example.com")
+        val user = securityService.findOrCreateOAuthUser("apple", "apple.sub.001", "newuser@example.com")
 
         assertNotNull(user)
         assertEquals("newuser", user.username)
-        assertNotNull(
-            userRepository.findById(user.id),
-            "Created user must be persisted in the repository",
-        )
+        assertNotNull(userRepository.findById(user.id), "Created user must be persisted in the repository")
     }
 
     @Test
@@ -342,10 +317,8 @@ class OAuthIntegrationTest : H2WebTest() {
 
     @Test
     fun `findOrCreateOAuthUser returns same user on repeated call with identical identity`() {
-        val first =
-            securityService.findOrCreateOAuthUser("apple", "apple.sub.003", "same@example.com")
-        val second =
-            securityService.findOrCreateOAuthUser("apple", "apple.sub.003", "same@example.com")
+        val first = securityService.findOrCreateOAuthUser("apple", "apple.sub.003", "same@example.com")
+        val second = securityService.findOrCreateOAuthUser("apple", "apple.sub.003", "same@example.com")
 
         assertEquals(first.id, second.id, "Repeated OAuth login must return the same user")
         assertEquals(first.username, second.username)
@@ -366,8 +339,7 @@ class OAuthIntegrationTest : H2WebTest() {
 
         // Now sign in with Apple as alice@example.com → username 'alice' is taken → should be
         // alice2
-        val oauthUser =
-            securityService.findOrCreateOAuthUser("apple", "apple.sub.alice", "alice@example.com")
+        val oauthUser = securityService.findOrCreateOAuthUser("apple", "apple.sub.alice", "alice@example.com")
 
         assertEquals("alice2", oauthUser.username, "Username should get numeric suffix when taken")
     }

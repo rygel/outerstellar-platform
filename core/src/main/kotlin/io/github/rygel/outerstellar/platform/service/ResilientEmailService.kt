@@ -11,9 +11,8 @@ private const val SLIDING_WINDOW_SIZE = 10
 private const val PERMITTED_CALLS_IN_HALF_OPEN = 3
 
 /**
- * Wraps an [EmailService] with a Resilience4j circuit breaker. When the SMTP server is down, the
- * circuit opens after [SLIDING_WINDOW_SIZE] calls with a [FAILURE_RATE_THRESHOLD]% failure rate,
- * preventing cascading failures.
+ * Wraps an [EmailService] with a Resilience4j circuit breaker. When the SMTP server is down, the circuit opens after
+ * [SLIDING_WINDOW_SIZE] calls with a [FAILURE_RATE_THRESHOLD]% failure rate, preventing cascading failures.
  */
 class ResilientEmailService(private val delegate: EmailService) : EmailService {
     private val logger = LoggerFactory.getLogger(ResilientEmailService::class.java)

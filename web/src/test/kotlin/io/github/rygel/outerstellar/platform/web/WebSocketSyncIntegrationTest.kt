@@ -52,9 +52,7 @@ class WebSocketSyncIntegrationTest : H2WebTest() {
 
     @Test
     fun `invalid non-UUID session cookie is rejected with 4401`() {
-        val request =
-            Request(GET, "/ws/sync")
-                .header("Cookie", "${WebContext.SESSION_COOKIE}=not-a-uuid-at-all")
+        val request = Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=not-a-uuid-at-all")
         val wsResponse = syncWebSocket.handler(request)
         val mockWs = mockk<Websocket>(relaxed = true)
 
@@ -65,9 +63,7 @@ class WebSocketSyncIntegrationTest : H2WebTest() {
 
     @Test
     fun `unknown UUID in session cookie is rejected with 4401`() {
-        val request =
-            Request(GET, "/ws/sync")
-                .header("Cookie", "${WebContext.SESSION_COOKIE}=${UUID.randomUUID()}")
+        val request = Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=${UUID.randomUUID()}")
         val wsResponse = syncWebSocket.handler(request)
         val mockWs = mockk<Websocket>(relaxed = true)
 
@@ -78,8 +74,7 @@ class WebSocketSyncIntegrationTest : H2WebTest() {
 
     @Test
     fun `valid session cookie accepts connection and registers handlers`() {
-        val request =
-            Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=${testUser.id}")
+        val request = Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=${testUser.id}")
         val wsResponse = syncWebSocket.handler(request)
         val mockWs = mockk<Websocket>(relaxed = true)
 
@@ -93,8 +88,7 @@ class WebSocketSyncIntegrationTest : H2WebTest() {
 
     @Test
     fun `publishRefresh broadcasts to authenticated connection`() {
-        val request =
-            Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=${testUser.id}")
+        val request = Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=${testUser.id}")
         val wsResponse = syncWebSocket.handler(request)
         val mockWs = mockk<Websocket>(relaxed = true)
 

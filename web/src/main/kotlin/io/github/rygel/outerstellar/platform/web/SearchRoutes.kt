@@ -30,8 +30,8 @@ class SearchRoutes(
                 { request ->
                     val ctx = request.webContext
                     val query = request.query("q").orEmpty()
-                    val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_SEARCH_LIMIT)
-                        ?: DEFAULT_SEARCH_LIMIT
+                    val limit =
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_SEARCH_LIMIT) ?: DEFAULT_SEARCH_LIMIT
                     renderer.render(pageFactory.buildSearchPage(ctx, query, providers, limit))
                 },
             "/api/v1/search" meta
@@ -41,21 +41,17 @@ class SearchRoutes(
                 GET to
                 { request ->
                     val query = request.query("q").orEmpty()
-                    val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_SEARCH_LIMIT)
-                        ?: DEFAULT_SEARCH_LIMIT
-                    val results = if (query.isBlank()) {
-                        emptyList()
-                    } else {
-                        providers.flatMap { it.search(query, limit) }
-                            .sortedByDescending { it.score }
-                            .take(limit)
-                    }
-                    val json = Jackson.asJsonObject(
-                        mapOf("query" to query, "results" to results, "total" to results.size)
-                    )
-                    Response(Status.OK)
-                        .header("content-type", "application/json; charset=utf-8")
-                        .body(json.toString())
+                    val limit =
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_SEARCH_LIMIT) ?: DEFAULT_SEARCH_LIMIT
+                    val results =
+                        if (query.isBlank()) {
+                            emptyList()
+                        } else {
+                            providers.flatMap { it.search(query, limit) }.sortedByDescending { it.score }.take(limit)
+                        }
+                    val json =
+                        Jackson.asJsonObject(mapOf("query" to query, "results" to results, "total" to results.size))
+                    Response(Status.OK).header("content-type", "application/json; charset=utf-8").body(json.toString())
                 },
         )
 }

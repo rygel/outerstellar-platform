@@ -43,8 +43,7 @@ class CsrfProtectionIntegrationTest : H2WebTest() {
     fun setupTest() {
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val userRepository = JooqUserRepository(testDsl)
-        val auditRepository =
-            io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository(testDsl)
+        val auditRepository = io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository(testDsl)
         val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
@@ -52,8 +51,7 @@ class CsrfProtectionIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder, auditRepository)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         // Use csrfEnabled = true specifically for these tests
         val csrfConfig = testConfig.copy(csrfEnabled = true)
@@ -118,13 +116,7 @@ class CsrfProtectionIntegrationTest : H2WebTest() {
     @Test
     fun `POST with matching cookie and X-CSRF-Token header is accepted`() {
         val token = "test-csrf-token"
-        val response =
-            app(
-                Request(POST, "/logout")
-                    .cookie(csrfCookie(token))
-                    .header("X-CSRF-Token", token)
-                    .body("")
-            )
+        val response = app(Request(POST, "/logout").cookie(csrfCookie(token)).header("X-CSRF-Token", token).body(""))
 
         assertNotEquals(Status.FORBIDDEN, response.status)
     }

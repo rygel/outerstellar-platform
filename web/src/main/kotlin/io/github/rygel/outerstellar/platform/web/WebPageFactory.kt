@@ -12,9 +12,9 @@ fun gravatarUrl(email: String, customUrl: String?): String {
     if (!customUrl.isNullOrBlank()) return customUrl
     return gravatarCache.computeIfAbsent(email.trim().lowercase()) { normalized ->
         val hash =
-            java.security.MessageDigest.getInstance("MD5")
-                .digest(normalized.toByteArray())
-                .joinToString("") { "%02x".format(it) }
+            java.security.MessageDigest.getInstance("MD5").digest(normalized.toByteArray()).joinToString("") {
+                "%02x".format(it)
+            }
         "https://www.gravatar.com/avatar/$hash?d=identicon&s=80"
     }
 }
@@ -27,13 +27,9 @@ private const val HTTP_STATUS_SERVER_ERROR = 500
 open class WebPageFactory(
     private val repository: MessageRepository,
     private val messageService: MessageService,
-    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? =
-        null,
-    private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? =
-        null,
-    private val notificationService:
-    io.github.rygel.outerstellar.platform.service.NotificationService? =
-        null,
+    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? = null,
+    private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
+    private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
 ) {
     private val messageListComponent = MessageListComponent(messageService)
 
@@ -115,10 +111,7 @@ open class WebPageFactory(
                         i18n.translate("web.feature.http.label"),
                         i18n.translate("web.feature.http.value"),
                     ),
-                    HomeFeature(
-                        i18n.translate("web.feature.db.label"),
-                        i18n.translate("web.feature.db.value"),
-                    ),
+                    HomeFeature(i18n.translate("web.feature.db.label"), i18n.translate("web.feature.db.value")),
                     HomeFeature(
                         i18n.translate("web.feature.sync.label"),
                         i18n.translate("web.feature.sync.value"),
@@ -312,9 +305,7 @@ open class WebPageFactory(
         val i18n = ctx.i18n
         val msgCount = repository.countMessages()
         val dirtyCount = repository.countDirtyMessages()
-        return FooterStatusFragment(
-            text = i18n.translate("web.footer.status", msgCount, dirtyCount)
-        )
+        return FooterStatusFragment(text = i18n.translate("web.footer.status", msgCount, dirtyCount))
     }
 
     fun buildDevDashboardPage(
@@ -354,11 +345,8 @@ open class WebPageFactory(
     fun buildConflictResolveModal(ctx: WebContext, syncId: String): ConflictResolveViewModel {
         val message =
             repository.findBySyncId(syncId)
-                ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(
-                    syncId
-                )
-        val serverVersion =
-            org.http4k.format.Jackson.asA(message.syncConflict!!, SyncMessage::class)
+                ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(syncId)
+        val serverVersion = org.http4k.format.Jackson.asA(message.syncConflict!!, SyncMessage::class)
 
         val i18n = ctx.i18n
         return ConflictResolveViewModel(
@@ -388,10 +376,7 @@ open class WebPageFactory(
             label = i18n.translate("web.sidebar.theme.label"),
             selectId = "theme-selector",
             selectName = "theme",
-            options =
-            ThemeCatalog.allThemes().map {
-                ShellOption(it.id, it.name, it.id, it.id == ctx.theme)
-            },
+            options = ThemeCatalog.allThemes().map { ShellOption(it.id, it.name, it.id, it.id == ctx.theme) },
             hiddenFields =
             listOf(
                 HiddenField("pagePath", pagePath),
@@ -412,8 +397,7 @@ open class WebPageFactory(
             selectId = "language-selector",
             selectName = "lang",
             options =
-            listOf("en" to "web.language.english", "fr" to "web.language.french").map {
-                    (id, key) ->
+            listOf("en" to "web.language.english", "fr" to "web.language.french").map { (id, key) ->
                 ShellOption(id, i18n.translate(key), id, id == ctx.lang)
             },
             hiddenFields =
@@ -436,14 +420,8 @@ open class WebPageFactory(
             selectId = "layout-selector",
             selectName = "layout",
             options =
-            listOf(
-                "nice" to "web.layout.nice",
-                "cozy" to "web.layout.cozy",
-                "compact" to "web.layout.compact",
-            )
-                .map { (id, key) ->
-                    ShellOption(id, i18n.translate(key), id, id == ctx.layout)
-                },
+            listOf("nice" to "web.layout.nice", "cozy" to "web.layout.cozy", "compact" to "web.layout.compact")
+                .map { (id, key) -> ShellOption(id, i18n.translate(key), id, id == ctx.layout) },
             hiddenFields =
             listOf(
                 HiddenField("pagePath", pagePath),
@@ -502,20 +480,14 @@ open class WebPageFactory(
     fun buildAuditLogPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<AuditLogPage> =
         adminPageFactory.buildAuditLogPage(ctx, limit, offset)
 
-    fun buildApiKeysPage(
-        ctx: WebContext,
-        newKey: String? = null,
-        newKeyName: String? = null,
-    ): Page<ApiKeysPage> = adminPageFactory.buildApiKeysPage(ctx, newKey, newKeyName)
+    fun buildApiKeysPage(ctx: WebContext, newKey: String? = null, newKeyName: String? = null): Page<ApiKeysPage> =
+        adminPageFactory.buildApiKeysPage(ctx, newKey, newKeyName)
 
-    fun buildProfilePage(ctx: WebContext): Page<ProfilePage> =
-        adminPageFactory.buildProfilePage(ctx)
+    fun buildProfilePage(ctx: WebContext): Page<ProfilePage> = adminPageFactory.buildProfilePage(ctx)
 
-    fun buildNotificationsPage(ctx: WebContext): Page<NotificationsPage> =
-        adminPageFactory.buildNotificationsPage(ctx)
+    fun buildNotificationsPage(ctx: WebContext): Page<NotificationsPage> = adminPageFactory.buildNotificationsPage(ctx)
 
-    fun buildNotificationBell(ctx: WebContext): NotificationBellFragment =
-        adminPageFactory.buildNotificationBell(ctx)
+    fun buildNotificationBell(ctx: WebContext): NotificationBellFragment = adminPageFactory.buildNotificationBell(ctx)
 
     fun buildSearchPage(
         ctx: WebContext,
@@ -525,25 +497,28 @@ open class WebPageFactory(
     ): Page<SearchPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.search.title"), "/search")
-        val results = if (query.isBlank()) {
-            emptyList()
-        } else {
-            providers.flatMap { it.search(query, limit) }
-                .sortedByDescending { it.score }
-                .take(limit)
-                .map { r ->
-                    SearchResultViewModel(
-                        id = r.id,
-                        title = r.title,
-                        subtitle = r.subtitle,
-                        url = r.url,
-                        type = r.type,
-                    )
-                }
-        }
+        val results =
+            if (query.isBlank()) {
+                emptyList()
+            } else {
+                providers
+                    .flatMap { it.search(query, limit) }
+                    .sortedByDescending { it.score }
+                    .take(limit)
+                    .map { r ->
+                        SearchResultViewModel(
+                            id = r.id,
+                            title = r.title,
+                            subtitle = r.subtitle,
+                            url = r.url,
+                            type = r.type,
+                        )
+                    }
+            }
         return Page(
             shell = shell,
-            data = SearchPage(
+            data =
+            SearchPage(
                 title = i18n.translate("web.search.title"),
                 query = query,
                 results = results,
@@ -559,45 +534,42 @@ open class WebPageFactory(
         val shell = ctx.shell(i18n.translate("web.settings.title"), "/settings")
         val validTabs = listOf("profile", "password", "api-keys", "notifications", "appearance")
         val normalizedTab = if (activeTab in validTabs) activeTab else "profile"
-        val tabs = listOf(
-            SettingsTab(
-                "profile",
-                i18n.translate("web.settings.tab.profile"),
-                ctx.url("/settings?tab=profile"),
-                normalizedTab == "profile",
-            ),
-            SettingsTab(
-                "password",
-                i18n.translate("web.settings.tab.password"),
-                ctx.url("/settings?tab=password"),
-                normalizedTab == "password",
-            ),
-            SettingsTab(
-                "api-keys",
-                i18n.translate("web.settings.tab.api-keys"),
-                ctx.url("/settings?tab=api-keys"),
-                normalizedTab == "api-keys",
-            ),
-            SettingsTab(
-                "notifications",
-                i18n.translate("web.settings.tab.notifications"),
-                ctx.url("/settings?tab=notifications"),
-                normalizedTab == "notifications",
-            ),
-            SettingsTab(
-                "appearance",
-                i18n.translate("web.settings.tab.appearance"),
-                ctx.url("/settings?tab=appearance"),
-                normalizedTab == "appearance",
-            ),
-        )
+        val tabs =
+            listOf(
+                SettingsTab(
+                    "profile",
+                    i18n.translate("web.settings.tab.profile"),
+                    ctx.url("/settings?tab=profile"),
+                    normalizedTab == "profile",
+                ),
+                SettingsTab(
+                    "password",
+                    i18n.translate("web.settings.tab.password"),
+                    ctx.url("/settings?tab=password"),
+                    normalizedTab == "password",
+                ),
+                SettingsTab(
+                    "api-keys",
+                    i18n.translate("web.settings.tab.api-keys"),
+                    ctx.url("/settings?tab=api-keys"),
+                    normalizedTab == "api-keys",
+                ),
+                SettingsTab(
+                    "notifications",
+                    i18n.translate("web.settings.tab.notifications"),
+                    ctx.url("/settings?tab=notifications"),
+                    normalizedTab == "notifications",
+                ),
+                SettingsTab(
+                    "appearance",
+                    i18n.translate("web.settings.tab.appearance"),
+                    ctx.url("/settings?tab=appearance"),
+                    normalizedTab == "appearance",
+                ),
+            )
         return Page(
             shell = shell,
-            data = SettingsPage(
-                title = i18n.translate("web.settings.title"),
-                tabs = tabs,
-                activeTab = normalizedTab,
-            ),
+            data = SettingsPage(title = i18n.translate("web.settings.title"), tabs = tabs, activeTab = normalizedTab),
         )
     }
 

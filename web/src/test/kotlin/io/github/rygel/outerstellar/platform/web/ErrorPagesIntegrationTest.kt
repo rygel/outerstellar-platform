@@ -54,8 +54,7 @@ class ErrorPagesIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -140,20 +139,14 @@ class ErrorPagesIntegrationTest : H2WebTest() {
     fun `404 for HTML path returns text-html`() {
         val response = app(Request(GET, "/this-does-not-exist"))
         val contentType = response.header("content-type").orEmpty()
-        assertTrue(
-            contentType.contains("text/html"),
-            "404 for HTML route should return text/html, got: $contentType",
-        )
+        assertTrue(contentType.contains("text/html"), "404 for HTML route should return text/html, got: $contentType")
     }
 
     @Test
     fun `404 for API path returns JSON`() {
         val response = app(Request(GET, "/api/v1/nonexistent"))
         val contentType = response.header("content-type").orEmpty()
-        assertTrue(
-            contentType.contains("application/json"),
-            "404 for API route should return JSON, got: $contentType",
-        )
+        assertTrue(contentType.contains("application/json"), "404 for API route should return JSON, got: $contentType")
     }
 
     @Test
@@ -193,10 +186,7 @@ class ErrorPagesIntegrationTest : H2WebTest() {
     fun `GET health response is JSON`() {
         val response = app(Request(GET, "/health"))
         val contentType = response.header("content-type").orEmpty()
-        assertTrue(
-            contentType.contains("application/json"),
-            "Health endpoint must return JSON, got: $contentType",
-        )
+        assertTrue(contentType.contains("application/json"), "Health endpoint must return JSON, got: $contentType")
     }
 
     @Test
@@ -208,19 +198,13 @@ class ErrorPagesIntegrationTest : H2WebTest() {
     @Test
     fun `GET health JSON body contains database key`() {
         val body = app(Request(GET, "/health")).bodyString()
-        assertTrue(
-            body.contains("database"),
-            "Health response should contain 'database' key, got: $body",
-        )
+        assertTrue(body.contains("database"), "Health response should contain 'database' key, got: $body")
     }
 
     @Test
     fun `GET health JSON body contains timestamp`() {
         val body = app(Request(GET, "/health")).bodyString()
-        assertTrue(
-            body.contains("timestamp"),
-            "Health response should contain 'timestamp', got: $body",
-        )
+        assertTrue(body.contains("timestamp"), "Health response should contain 'timestamp', got: $body")
     }
 
     // ---- Security headers still present on error pages ----
@@ -242,11 +226,7 @@ class ErrorPagesIntegrationTest : H2WebTest() {
     @Test
     fun `POST to unknown API path returns 404 JSON`() {
         val response =
-            app(
-                Request(POST, "/api/v1/unknown-endpoint")
-                    .header("content-type", "application/json")
-                    .body("{}")
-            )
+            app(Request(POST, "/api/v1/unknown-endpoint").header("content-type", "application/json").body("{}"))
         assertEquals(Status.NOT_FOUND, response.status)
         val contentType = response.header("content-type").orEmpty()
         assertTrue(contentType.contains("application/json"))

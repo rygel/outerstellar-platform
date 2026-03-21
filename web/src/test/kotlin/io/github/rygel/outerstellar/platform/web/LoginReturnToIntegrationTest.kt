@@ -49,8 +49,7 @@ class LoginReturnToIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -150,10 +149,7 @@ class LoginReturnToIntegrationTest : H2WebTest() {
                     .body("mode=sign-in&email=${testUser.email}&password=WRONG")
             )
         // Failed login returns a rendered HTML fragment, not a redirect
-        assertTrue(
-            response.status != Status.FOUND,
-            "Failed login should not redirect, got status: ${response.status}",
-        )
+        assertTrue(response.status != Status.FOUND, "Failed login should not redirect, got status: ${response.status}")
     }
 
     @Test

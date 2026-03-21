@@ -106,9 +106,7 @@ class JooqUserRepositoryTest : H2JooqTest() {
         val u = user("grace")
         repo.save(u)
         // Reset to a known past time so we can verify the update
-        dsl.execute(
-            "UPDATE users SET last_activity_at = '2000-01-01 00:00:00' WHERE id = '${u.id}'"
-        )
+        dsl.execute("UPDATE users SET last_activity_at = '2000-01-01 00:00:00' WHERE id = '${u.id}'")
         repo.updateLastActivity(u.id)
         val updated = repo.findById(u.id)!!.lastActivityAt
         assertNotNull(updated)

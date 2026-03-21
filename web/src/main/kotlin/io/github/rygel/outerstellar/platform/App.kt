@@ -23,15 +23,18 @@ import io.github.rygel.outerstellar.platform.web.NotificationApi
 import io.github.rygel.outerstellar.platform.web.NotificationRoutes
 import io.github.rygel.outerstellar.platform.web.OAuthRoutes
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
+import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.SearchRoutes
 import io.github.rygel.outerstellar.platform.web.SettingsRoutes
-import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.SyncApi
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import io.github.rygel.outerstellar.platform.web.UserAdminApi
 import io.github.rygel.outerstellar.platform.web.UserAdminRoutes
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
+import io.github.rygel.outerstellar.platform.web.analyticsPageViewFilter
+import io.github.rygel.outerstellar.platform.web.etagCachingFilter
 import io.github.rygel.outerstellar.platform.web.rateLimitFilter
+import io.github.rygel.outerstellar.platform.web.staticCacheControlFilter
 import io.github.rygel.outerstellar.platform.web.webContext
 import org.http4k.contract.bindContract
 import org.http4k.contract.contract
@@ -70,8 +73,7 @@ fun app(
     config: AppConfig,
     securityService: SecurityService,
     userRepository: UserRepository,
-    deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository? =
-        null,
+    deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository? = null,
     analytics: AnalyticsService = NoOpAnalyticsService(),
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
@@ -157,25 +159,9 @@ private fun assembleHttpHandler(
             plugin,
         )
     val adminRoutes =
-        buildAdminRoutes(
-            appLabel,
-            outboxRepository,
-            cache,
-            pageFactory,
-            jteRenderer,
-            config,
-            securityService,
-        )
+        buildAdminRoutes(appLabel, outboxRepository, cache, pageFactory, jteRenderer, config, securityService)
     val componentRoutes = buildComponentRoutes(appLabel, pageFactory, jteRenderer)
-    val baseApp =
-        buildBaseApp(
-            excludedRoutes,
-            adminRoutes,
-            apiRoutes,
-            uiRoutes,
-            componentRoutes,
-            userRepository,
-        )
+    val baseApp = buildBaseApp(excludedRoutes, adminRoutes, apiRoutes, uiRoutes, componentRoutes, userRepository)
     return buildFilterChain(
         config,
         userRepository,
@@ -203,9 +189,7 @@ private fun buildBearerSecurityPair(
                     is io.github.rygel.outerstellar.platform.security.SessionLookup.Active ->
                         next(req.with(SecurityRules.USER_KEY of result.user))
                     is io.github.rygel.outerstellar.platform.security.SessionLookup.Expired ->
-                        Response(Status.UNAUTHORIZED)
-                            .header("X-Session-Expired", "true")
-                            .body("Session expired")
+                        Response(Status.UNAUTHORIZED).header("X-Session-Expired", "true").body("Session expired")
                     is io.github.rygel.outerstellar.platform.security.SessionLookup.NotFound -> {
                         val apiKeyUser = securityService.authenticateApiKey(token)
                         if (apiKeyUser != null) {
@@ -225,9 +209,7 @@ private fun buildBearerSecurityPair(
     val bearerAdminSecurity =
         object : org.http4k.security.Security {
             override val filter = Filter { next ->
-                bearerAuthFilter.then(
-                    Filter { inner -> SecurityRules.hasRole(UserRole.ADMIN, inner) }
-                )(next)
+                bearerAuthFilter.then(Filter { inner -> SecurityRules.hasRole(UserRole.ADMIN, inner) })(next)
             }
         }
     return bearerSecurity to bearerAdminSecurity
@@ -297,9 +279,7 @@ private fun buildUiRoutes(
     if ("/contacts" !in excludedRoutes) {
         routes += ContactsRoutes(pageFactory, jteRenderer, contactService).routes
     }
-    routes +=
-        AuthRoutes(pageFactory, jteRenderer, securityService, config.sessionCookieSecure, analytics)
-            .routes
+    routes += AuthRoutes(pageFactory, jteRenderer, securityService, config.sessionCookieSecure, analytics).routes
     routes +=
         OAuthRoutes(
             providers = mapOf("apple" to AppleOAuthProvider()),
@@ -332,9 +312,7 @@ private fun buildUiRoutes(
                 .header("location", request.webContext.url("/"))
                 .header(
                     "Set-Cookie",
-                    io.github.rygel.outerstellar.platform.web.SessionCookie.clear(
-                        config.sessionCookieSecure
-                    ),
+                    io.github.rygel.outerstellar.platform.web.SessionCookie.clear(config.sessionCookieSecure),
                 )
         }
 }
@@ -367,15 +345,7 @@ private fun buildAdminRoutes(
                 SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
             }
         }
-    routes +=
-        DevDashboardRoutes(
-            outboxRepository,
-            cache,
-            pageFactory,
-            jteRenderer,
-            config.devDashboardEnabled,
-        )
-            .routes
+    routes += DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
     routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
 }
 
@@ -389,18 +359,13 @@ private fun buildBaseApp(
     userRepository: UserRepository,
 ): HttpHandler {
     val filteredAdminHandler =
-        Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
-            .then(adminContract)
+        Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }.then(adminContract)
 
     val metricsHandler =
         Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
-            .then {
-                Response(Status.OK)
-                    .body(io.github.rygel.outerstellar.platform.web.Metrics.registry.scrape())
-            }
+            .then { Response(Status.OK).body(io.github.rygel.outerstellar.platform.web.Metrics.registry.scrape()) }
 
-    val coreRoutes =
-        mutableListOf(static(ResourceLoader.Classpath("static")), uiRoutes, componentRoutes)
+    val coreRoutes = mutableListOf(static(ResourceLoader.Classpath("static")), uiRoutes, componentRoutes)
     coreRoutes.addAll(apiRoutes)
     if ("/" !in excludedRoutes) {
         coreRoutes += "/" bind filteredAdminHandler
@@ -441,8 +406,8 @@ private fun buildFilterChain(
 ): Filter =
     Filters.correlationId
         .then(Filters.cors(config.corsOrigins))
-        .then(Filters.etagCaching)
-        .then(Filters.staticCacheControl)
+        .then(etagCachingFilter)
+        .then(staticCacheControlFilter)
         .then(Filters.securityHeaders(config.cspPolicy))
         .then(Filters.telemetry)
         .then(rateLimitFilter())
@@ -457,7 +422,7 @@ private fun buildFilterChain(
                 plugin?.navItems ?: emptyList(),
             )
         )
-        .then(Filters.analyticsPageView(analytics))
+        .then(analyticsPageViewFilter(analytics))
         .then(
             Filters.sessionTimeout(
                 config.sessionTimeoutMinutes,

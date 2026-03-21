@@ -11,5 +11,6 @@ data class SearchResult(
 
 interface SearchProvider {
     val type: String
+
     fun search(query: String, limit: Int = 20): List<SearchResult>
 }

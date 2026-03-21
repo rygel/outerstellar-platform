@@ -59,13 +59,8 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         userA =
             User(
@@ -105,11 +100,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun pushBatch(
-        token: String,
-        syncIds: List<String>,
-        author: String,
-    ): List<org.http4k.core.Response> {
+    private fun pushBatch(token: String, syncIds: List<String>, author: String): List<org.http4k.core.Response> {
         return syncIds.map { syncId ->
             val body =
                 """{"messages":[{"syncId":"$syncId","author":"$author",""" +
@@ -125,8 +116,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
     }
 
     private fun pullMessages(token: String): SyncPullResponse {
-        val response =
-            app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $token"))
+        val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $token"))
         assertEquals(Status.OK, response.status)
         return Jackson.asA(response.bodyString(), SyncPullResponse::class)
     }
@@ -142,9 +132,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
         pool.submit {
             try {
                 val responses = pushBatch(tokenA, syncIdsA, "concurrent_user_a")
-                responses.forEach { r ->
-                    if (r.status != Status.OK) errors.add("UserA got ${r.status}")
-                }
+                responses.forEach { r -> if (r.status != Status.OK) errors.add("UserA got ${r.status}") }
             } finally {
                 latch.countDown()
             }
@@ -153,9 +141,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
         pool.submit {
             try {
                 val responses = pushBatch(tokenB, syncIdsB, "concurrent_user_b")
-                responses.forEach { r ->
-                    if (r.status != Status.OK) errors.add("UserB got ${r.status}")
-                }
+                responses.forEach { r -> if (r.status != Status.OK) errors.add("UserB got ${r.status}") }
             } finally {
                 latch.countDown()
             }
@@ -198,9 +184,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
         val pulled = pullMessages(tokenA)
         val pulledIds = pulled.messages.map { it.syncId }.toSet()
 
-        allIds.forEach { syncId ->
-            assertTrue(syncId in pulledIds, "Message $syncId should appear in pull response")
-        }
+        allIds.forEach { syncId -> assertTrue(syncId in pulledIds, "Message $syncId should appear in pull response") }
     }
 
     @Test
@@ -242,10 +226,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
         // At least one request must have received a proper HTTP response (not a timeout)
         assertEquals(2, statuses.size, "Both requests should have completed with an HTTP response")
         // At least one should succeed
-        assertTrue(
-            statuses.any { it == 200 },
-            "At least one concurrent push should succeed, got statuses: $statuses",
-        )
+        assertTrue(statuses.any { it == 200 }, "At least one concurrent push should succeed, got statuses: $statuses")
     }
 
     @Test
@@ -276,10 +257,6 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
         pool.shutdown()
 
         val pulled = pullMessages(tokenA)
-        assertEquals(
-            uniqueCount,
-            pulled.messages.size,
-            "Message count should equal unique syncIds pushed",
-        )
+        assertEquals(uniqueCount, pulled.messages.size, "Message count should equal unique syncIds pushed")
     }
 }

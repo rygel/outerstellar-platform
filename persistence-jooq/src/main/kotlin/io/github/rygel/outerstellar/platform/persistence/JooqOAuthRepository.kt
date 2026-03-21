@@ -40,19 +40,14 @@ class JooqOAuthRepository(private val dsl: DSLContext) : OAuthRepository {
     }
 
     override fun findByProviderSubject(provider: String, subject: String): OAuthConnection? =
-        dsl.select()
-            .from(table)
-            .where(providerField.eq(provider).and(subjectField.eq(subject)))
-            .fetchOne()
-            ?.let { mapRecord(it) }
+        dsl.select().from(table).where(providerField.eq(provider).and(subjectField.eq(subject))).fetchOne()?.let {
+            mapRecord(it)
+        }
 
     override fun findByUserId(userId: UUID): List<OAuthConnection> =
-        dsl.select()
-            .from(table)
-            .where(userIdField.eq(userId))
-            .orderBy(createdAtField.desc())
-            .fetch()
-            .map { mapRecord(it) }
+        dsl.select().from(table).where(userIdField.eq(userId)).orderBy(createdAtField.desc()).fetch().map {
+            mapRecord(it)
+        }
 
     override fun delete(id: Long, userId: UUID) {
         dsl.deleteFrom(table).where(idField.eq(id).and(userIdField.eq(userId))).execute()

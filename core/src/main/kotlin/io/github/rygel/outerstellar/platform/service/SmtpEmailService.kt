@@ -23,9 +23,7 @@ class SmtpEmailService(private val config: SmtpConfig) : EmailService {
     private val mailer: Mailer by lazy {
         val builder =
             MailerBuilder.withSMTPServer(config.host, config.port)
-                .withTransportStrategy(
-                    if (config.startTls) TransportStrategy.SMTP_TLS else TransportStrategy.SMTP
-                )
+                .withTransportStrategy(if (config.startTls) TransportStrategy.SMTP_TLS else TransportStrategy.SMTP)
 
         if (config.username.isNotBlank()) {
             builder.withSMTPServerUsername(config.username)

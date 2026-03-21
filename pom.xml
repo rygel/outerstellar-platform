@@ -677,6 +677,7 @@
                             <ktfmt>
                                 <version>${ktfmt.version}</version>
                                 <style>KOTLINLANG</style>
+                                <maxWidth>120</maxWidth>
                             </ktfmt>
                         </kotlin>
                     </configuration>

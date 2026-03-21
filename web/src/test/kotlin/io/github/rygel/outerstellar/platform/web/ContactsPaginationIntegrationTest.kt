@@ -67,8 +67,7 @@ class ContactsPaginationIntegrationTest : H2WebTest() {
 
         contactService = mockk(relaxed = true)
         val securityService = SecurityService(userRepository, BCryptPasswordEncoder(logRounds = 4))
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -106,9 +105,7 @@ class ContactsPaginationIntegrationTest : H2WebTest() {
 
         val body = app(Request(GET, "/contacts")).bodyString()
 
-        contacts.forEach { c ->
-            assertTrue(body.contains(c.name), "Page should render card for ${c.name}")
-        }
+        contacts.forEach { c -> assertTrue(body.contains(c.name), "Page should render card for ${c.name}") }
         assertTrue(body.contains("contact-card"), "Page should use contact-card CSS class")
     }
 
@@ -131,9 +128,7 @@ class ContactsPaginationIntegrationTest : H2WebTest() {
         every { contactService.countContacts(null) } returns 5L
 
         val body = app(Request(GET, "/contacts")).bodyString()
-        contacts.forEach { c ->
-            assertTrue(body.contains(c.name), "Default page should include ${c.name}")
-        }
+        contacts.forEach { c -> assertTrue(body.contains(c.name), "Default page should include ${c.name}") }
     }
 
     // ---- Pagination controls ----
@@ -160,10 +155,7 @@ class ContactsPaginationIntegrationTest : H2WebTest() {
         every { contactService.countContacts(null) } returns 25L // 25 total → page 2 exists
 
         val body = app(Request(GET, "/contacts")).bodyString()
-        assertTrue(
-            body.contains("ri-arrow-right-s-line"),
-            "Next button should appear when more pages exist",
-        )
+        assertTrue(body.contains("ri-arrow-right-s-line"), "Next button should appear when more pages exist")
     }
 
     @Test
@@ -194,10 +186,7 @@ class ContactsPaginationIntegrationTest : H2WebTest() {
             body.contains("offset=0") || body.contains("previousUrl"),
             "Second page should link back to offset=0",
         )
-        assertTrue(
-            body.contains("ri-arrow-left-s-line"),
-            "Second page should show enabled Previous arrow",
-        )
+        assertTrue(body.contains("ri-arrow-left-s-line"), "Second page should show enabled Previous arrow")
     }
 
     @Test
@@ -209,10 +198,7 @@ class ContactsPaginationIntegrationTest : H2WebTest() {
         val body = app(Request(GET, "/contacts?limit=12&offset=24")).bodyString()
 
         // hasNext should be false because 24 + 12 = 36 > 25
-        assertTrue(
-            body.contains("ri-arrow-right-s-line"),
-            "Next arrow element exists but should be disabled",
-        )
+        assertTrue(body.contains("ri-arrow-right-s-line"), "Next arrow element exists but should be disabled")
         // The disabled button has no href; check it is NOT an anchor link
         assertFalse(
             body.contains("href=\"/contacts?limit=12&amp;offset=36\"") ||
@@ -299,8 +285,7 @@ class ContactsPaginationIntegrationTest : H2WebTest() {
 
     @Test
     fun `search query is forwarded to contact service`() {
-        every { contactService.listContacts("alice", 12, 0) } returns
-            listOf(makeContact("Alice Wonder", 1))
+        every { contactService.listContacts("alice", 12, 0) } returns listOf(makeContact("Alice Wonder", 1))
         every { contactService.countContacts("alice") } returns 1L
 
         val body = app(Request(GET, "/contacts?q=alice")).bodyString()

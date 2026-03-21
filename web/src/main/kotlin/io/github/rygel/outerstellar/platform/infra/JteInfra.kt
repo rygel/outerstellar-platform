@@ -19,8 +19,7 @@ fun TemplateRenderer.render(viewModel: ViewModel, status: Status = Status.OK): R
         .body(this(viewModel))
 
 fun createRenderer(): TemplateRenderer {
-    val isProduction =
-        System.getProperty("jte.production") == "true" || System.getenv("JTE_PRODUCTION") == "true"
+    val isProduction = System.getProperty("jte.production") == "true" || System.getenv("JTE_PRODUCTION") == "true"
     val applicationClassLoader = Thread.currentThread().contextClassLoader
 
     val templateEngine =
@@ -29,8 +28,7 @@ fun createRenderer(): TemplateRenderer {
         } else {
             val projectDirectory = Path.of(System.getProperty("user.dir"))
             val sourceTemplates = projectDirectory.resolve(Path.of("web", "src", "main", "jte"))
-            val generatedTemplateClasses =
-                projectDirectory.resolve(Path.of("web", "target", "jte-classes"))
+            val generatedTemplateClasses = projectDirectory.resolve(Path.of("web", "target", "jte-classes"))
 
             if (Files.isDirectory(sourceTemplates)) {
                 val directoryResolver = DirectoryCodeResolver(sourceTemplates)
@@ -55,14 +53,13 @@ fun createRenderer(): TemplateRenderer {
     return renderUsing { templateEngine }
 }
 
-private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer =
-    { viewModel: ViewModel ->
-        val templateName = "${viewModel.template()}.kte"
-        val templateEngine = engineProvider()
+private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer = { viewModel: ViewModel ->
+    val templateName = "${viewModel.template()}.kte"
+    val templateEngine = engineProvider()
 
-        if (templateEngine.hasTemplate(templateName)) {
-            StringOutput().also { templateEngine.render(templateName, viewModel, it) }.toString()
-        } else {
-            throw ViewNotFound(viewModel)
-        }
+    if (templateEngine.hasTemplate(templateName)) {
+        StringOutput().also { templateEngine.render(templateName, viewModel, it) }.toString()
+    } else {
+        throw ViewNotFound(viewModel)
     }
+}

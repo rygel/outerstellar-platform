@@ -67,8 +67,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         regularUser =
             User(
@@ -160,10 +159,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
     @Test
     fun `non-UUID session cookie is rejected and redirects to auth`() {
         val response =
-            app(
-                Request(GET, "/auth/change-password")
-                    .cookie(Cookie(WebContext.SESSION_COOKIE, "not-a-uuid-at-all"))
-            )
+            app(Request(GET, "/auth/change-password").cookie(Cookie(WebContext.SESSION_COOKIE, "not-a-uuid-at-all")))
         assertEquals(Status.FOUND, response.status)
         assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
@@ -185,10 +181,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
     fun `disabled user session cannot access admin-only route`() {
         // Disabled USER-role users are not admin, so /admin/users returns 403, not 200
         val response = app(Request(GET, "/admin/users").cookie(sessionFor(disabledUser)))
-        assertFalse(
-            response.status == Status.OK,
-            "Disabled user should not receive 200 on admin route",
-        )
+        assertFalse(response.status == Status.OK, "Disabled user should not receive 200 on admin route")
     }
 
     // ---- Admin-only routes ----
@@ -254,10 +247,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
     @Test
     fun `HTML pages include Content-Security-Policy header`() {
         val response = app(Request(GET, "/auth"))
-        assertNotNull(
-            response.header("Content-Security-Policy"),
-            "HTML pages should have a CSP header",
-        )
+        assertNotNull(response.header("Content-Security-Policy"), "HTML pages should have a CSP header")
     }
 
     @Test
@@ -287,20 +277,14 @@ class SessionSecurityIntegrationTest : H2WebTest() {
                     .header("Access-Control-Request-Method", "POST")
             )
         assertEquals(Status.NO_CONTENT, response.status)
-        assertNotNull(
-            response.header("Access-Control-Allow-Methods"),
-            "Preflight should return allowed methods",
-        )
+        assertNotNull(response.header("Access-Control-Allow-Methods"), "Preflight should return allowed methods")
     }
 
     @Test
     fun `normal response includes Access-Control-Expose-Headers with X-Request-Id`() {
         val response = app(Request(GET, "/health"))
         val expose = response.header("Access-Control-Expose-Headers").orEmpty()
-        assertTrue(
-            expose.contains("X-Request-Id"),
-            "X-Request-Id must be in Expose-Headers, got: $expose",
-        )
+        assertTrue(expose.contains("X-Request-Id"), "X-Request-Id must be in Expose-Headers, got: $expose")
     }
 
     // ---- Theme / lang state cookies ----
@@ -319,29 +303,20 @@ class SessionSecurityIntegrationTest : H2WebTest() {
     fun `?lang=fr sets lang cookie`() {
         val response = app(Request(GET, "/auth?lang=fr"))
         val setCookie = response.header("Set-Cookie").orEmpty()
-        assertTrue(
-            setCookie.contains(WebContext.LANG_COOKIE),
-            "?lang=fr should set a lang cookie, got: $setCookie",
-        )
+        assertTrue(setCookie.contains(WebContext.LANG_COOKIE), "?lang=fr should set a lang cookie, got: $setCookie")
     }
 
     @Test
     fun `invalid lang value does not set a cookie`() {
         val response = app(Request(GET, "/auth?lang=klingon"))
         val setCookie = response.header("Set-Cookie").orEmpty()
-        assertFalse(
-            setCookie.contains("klingon"),
-            "Invalid lang should not be persisted as a cookie",
-        )
+        assertFalse(setCookie.contains("klingon"), "Invalid lang should not be persisted as a cookie")
     }
 
     @Test
     fun `invalid theme value does not set a cookie`() {
         val response = app(Request(GET, "/auth?theme=hacker_green"))
         val setCookie = response.header("Set-Cookie").orEmpty()
-        assertFalse(
-            setCookie.contains("hacker_green"),
-            "Invalid theme value should not be persisted as a cookie",
-        )
+        assertFalse(setCookie.contains("hacker_green"), "Invalid theme value should not be persisted as a cookie")
     }
 }

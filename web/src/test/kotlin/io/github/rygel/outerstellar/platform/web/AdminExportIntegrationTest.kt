@@ -62,8 +62,7 @@ class AdminExportIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         adminUser =
             User(
@@ -112,24 +111,15 @@ class AdminExportIntegrationTest : H2WebTest() {
         val response = app(Request(GET, "/admin/users/export").cookie(adminSession()))
         assertEquals(Status.OK, response.status)
         val contentType = response.header("Content-Type").orEmpty()
-        assertTrue(
-            contentType.contains("text/csv"),
-            "Export should return text/csv, got: $contentType",
-        )
+        assertTrue(contentType.contains("text/csv"), "Export should return text/csv, got: $contentType")
     }
 
     @Test
     fun `GET admin-users-export returns Content-Disposition attachment with filename`() {
         val response = app(Request(GET, "/admin/users/export").cookie(adminSession()))
         val disposition = response.header("Content-Disposition").orEmpty()
-        assertTrue(
-            disposition.contains("attachment"),
-            "Export should be an attachment, got: $disposition",
-        )
-        assertTrue(
-            disposition.contains("users.csv"),
-            "Export filename should be users.csv, got: $disposition",
-        )
+        assertTrue(disposition.contains("attachment"), "Export should be an attachment, got: $disposition")
+        assertTrue(disposition.contains("users.csv"), "Export filename should be users.csv, got: $disposition")
     }
 
     @Test
@@ -198,34 +188,22 @@ class AdminExportIntegrationTest : H2WebTest() {
         val response = app(Request(GET, "/admin/audit/export").cookie(adminSession()))
         assertEquals(Status.OK, response.status)
         val contentType = response.header("Content-Type").orEmpty()
-        assertTrue(
-            contentType.contains("text/csv"),
-            "Audit export should be CSV, got: $contentType",
-        )
+        assertTrue(contentType.contains("text/csv"), "Audit export should be CSV, got: $contentType")
     }
 
     @Test
     fun `GET admin-audit-export has correct header row`() {
         val response = app(Request(GET, "/admin/audit/export").cookie(adminSession()))
         val firstLine = response.bodyString().lines().firstOrNull().orEmpty()
-        assertTrue(
-            firstLine.contains("Action"),
-            "Audit CSV header should contain Action, got: $firstLine",
-        )
-        assertTrue(
-            firstLine.contains("Actor"),
-            "Audit CSV header should contain Actor, got: $firstLine",
-        )
+        assertTrue(firstLine.contains("Action"), "Audit CSV header should contain Action, got: $firstLine")
+        assertTrue(firstLine.contains("Actor"), "Audit CSV header should contain Actor, got: $firstLine")
     }
 
     @Test
     fun `GET admin-audit-export Content-Disposition is attachment with filename audit-csv`() {
         val response = app(Request(GET, "/admin/audit/export").cookie(adminSession()))
         val disposition = response.header("Content-Disposition").orEmpty()
-        assertTrue(
-            disposition.contains("audit.csv"),
-            "Disposition should reference audit.csv, got: $disposition",
-        )
+        assertTrue(disposition.contains("audit.csv"), "Disposition should reference audit.csv, got: $disposition")
     }
 
     @Test

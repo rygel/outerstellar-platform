@@ -30,8 +30,7 @@ private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platf
 object MainComponent : KoinComponent {
     val config: AppConfig by inject()
     val repository: MessageRepository by inject()
-    val contactRepository: io.github.rygel.outerstellar.platform.persistence.ContactRepository by
-        inject()
+    val contactRepository: io.github.rygel.outerstellar.platform.persistence.ContactRepository by inject()
     val userRepository: UserRepository by inject()
     val passwordEncoder: PasswordEncoder by inject()
     val outboxProcessor: OutboxProcessor by inject()
@@ -58,9 +57,7 @@ fun main() {
     }
 
     val outboxScheduler =
-        Executors.newSingleThreadScheduledExecutor { r ->
-            Thread(r, "outbox-processor").also { it.isDaemon = true }
-        }
+        Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "outbox-processor").also { it.isDaemon = true } }
     outboxScheduler.scheduleWithFixedDelay(
         {
             main.outboxProcessor.processPending()
@@ -76,11 +73,7 @@ fun main() {
     registerShutdownHook(main, outboxScheduler, server)
 }
 
-private fun registerShutdownHook(
-    main: MainComponent,
-    outboxScheduler: ScheduledExecutorService,
-    server: Http4kServer,
-) {
+private fun registerShutdownHook(main: MainComponent, outboxScheduler: ScheduledExecutorService, server: Http4kServer) {
     Runtime.getRuntime()
         .addShutdownHook(
             Thread(
@@ -91,12 +84,7 @@ private fun registerShutdownHook(
                     logger.info("Stopping outbox scheduler...")
                     outboxScheduler.shutdown()
                     try {
-                        if (
-                            !outboxScheduler.awaitTermination(
-                                SHUTDOWN_TIMEOUT_SECONDS,
-                                TimeUnit.SECONDS,
-                            )
-                        ) {
+                        if (!outboxScheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                             outboxScheduler.shutdownNow()
                         }
                     } catch (e: InterruptedException) {

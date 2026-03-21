@@ -89,8 +89,7 @@ class AuditLogIntegrationTest : H2WebTest() {
                 auditRepository,
                 sessionRepository = JooqSessionRepository(testDsl),
             )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         adminUser =
             User(
@@ -130,8 +129,7 @@ class AuditLogIntegrationTest : H2WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun bearerHeader(user: User) =
-        if (user == adminUser) "Bearer $adminToken" else "Bearer $targetToken"
+    private fun bearerHeader(user: User) = if (user == adminUser) "Bearer $adminToken" else "Bearer $targetToken"
 
     @Test
     fun `enable user action creates audit log entry`() {
@@ -172,11 +170,7 @@ class AuditLogIntegrationTest : H2WebTest() {
                 .body("""{"enabled":false}""")
         )
 
-        assertEquals(
-            targetUser.username,
-            latestTargetUsername(),
-            "Target username should be recorded",
-        )
+        assertEquals(targetUser.username, latestTargetUsername(), "Target username should be recorded")
         assertEquals("USER_DISABLED", latestAction(), "Action should be USER_DISABLED")
     }
 
@@ -191,11 +185,7 @@ class AuditLogIntegrationTest : H2WebTest() {
                 .body("""{"role":"ADMIN"}""")
         )
 
-        assertEquals(
-            countBefore + 1,
-            auditCount(),
-            "One audit entry should be created for role change",
-        )
+        assertEquals(countBefore + 1, auditCount(), "One audit entry should be created for role change")
     }
 
     @Test
@@ -208,11 +198,7 @@ class AuditLogIntegrationTest : H2WebTest() {
         )
 
         assertEquals("USER_ROLE_CHANGED", latestAction(), "Action should be USER_ROLE_CHANGED")
-        assertEquals(
-            targetUser.username,
-            latestTargetUsername(),
-            "Target username should be recorded",
-        )
+        assertEquals(targetUser.username, latestTargetUsername(), "Target username should be recorded")
     }
 
     @Test

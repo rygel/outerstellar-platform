@@ -3,12 +3,10 @@ package io.github.rygel.outerstellar.platform.infra
 import gg.jte.CodeResolver
 
 /**
- * Composite resolver that tries [primary] first, falling back to [fallback]. This lets downstream
- * projects resolve their own templates from disk while picking up shared platform templates from
- * the classpath JAR.
+ * Composite resolver that tries [primary] first, falling back to [fallback]. This lets downstream projects resolve
+ * their own templates from disk while picking up shared platform templates from the classpath JAR.
  */
-class CompositeCodeResolver(private val primary: CodeResolver, private val fallback: CodeResolver) :
-    CodeResolver {
+class CompositeCodeResolver(private val primary: CodeResolver, private val fallback: CodeResolver) : CodeResolver {
     override fun resolve(name: String): String =
         if (primary.exists(name)) primary.resolve(name) else fallback.resolve(name)
 

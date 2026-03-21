@@ -13,23 +13,9 @@ import org.koin.dsl.module
 
 val coreModule
     get() = module {
+        single { MessageService(get(), get(), get(), get(), get<EventPublisher>(), getOrNull<AuditRepository>()) }
         single {
-            MessageService(
-                get(),
-                get(),
-                get(),
-                get(),
-                get<EventPublisher>(),
-                getOrNull<AuditRepository>(),
-            )
-        }
-        single {
-            ContactService(
-                get(),
-                get<EventPublisher>(),
-                getOrNull<TransactionManager>(),
-                getOrNull<AuditRepository>(),
-            )
+            ContactService(get(), get<EventPublisher>(), getOrNull<TransactionManager>(), getOrNull<AuditRepository>())
         }
         single { OutboxProcessor(get(), getOrNull<TransactionManager>()) }
         single<EventPublisher> { NoOpEventPublisher }

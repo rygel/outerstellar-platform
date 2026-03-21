@@ -9,9 +9,7 @@ object ThemeCatalog {
 
     private val themes: List<ThemeDefinition> by lazy {
         val resourceStream =
-            requireNotNull(
-                ThemeCatalog::class.java.classLoader.getResourceAsStream("themes.json")
-            ) {
+            requireNotNull(ThemeCatalog::class.java.classLoader.getResourceAsStream("themes.json")) {
                 "Unable to load themes.json from the classpath."
             }
 

@@ -50,8 +50,7 @@ class StubMessageCache : MessageCache {
     override fun getStats(): Map<String, Any> = emptyMap()
 }
 
-class StubTransactionManager :
-    io.github.rygel.outerstellar.platform.persistence.TransactionManager {
+class StubTransactionManager : io.github.rygel.outerstellar.platform.persistence.TransactionManager {
     override fun <T> inTransaction(block: () -> T): T = block()
 }
 
@@ -63,14 +62,11 @@ class InMemoryOAuthRepository : OAuthRepository {
         connections.find { it.provider == provider && it.subject == subject }
 
     override fun save(connection: OAuthConnection) {
-        connections.removeAll {
-            it.provider == connection.provider && it.subject == connection.subject
-        }
+        connections.removeAll { it.provider == connection.provider && it.subject == connection.subject }
         connections.add(connection.copy(id = connections.size.toLong() + 1))
     }
 
-    override fun findByUserId(userId: UUID): List<OAuthConnection> =
-        connections.filter { it.userId == userId }
+    override fun findByUserId(userId: UUID): List<OAuthConnection> = connections.filter { it.userId == userId }
 
     override fun delete(id: Long, userId: UUID) {
         connections.removeAll { it.id == id && it.userId == userId }
@@ -125,8 +121,7 @@ class InMemoryDeviceTokenRepository : DeviceTokenRepository {
         tokens.remove(token)
     }
 
-    override fun findByUserId(userId: UUID): List<DeviceToken> =
-        tokens.values.filter { it.userId == userId }
+    override fun findByUserId(userId: UUID): List<DeviceToken> = tokens.values.filter { it.userId == userId }
 
     override fun deleteAllForUser(userId: UUID) {
         tokens.values.removeAll { it.userId == userId }

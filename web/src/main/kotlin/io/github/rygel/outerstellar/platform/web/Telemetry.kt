@@ -4,7 +4,5 @@ import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk
 
 object Telemetry {
-    val openTelemetry: OpenTelemetry by lazy {
-        AutoConfiguredOpenTelemetrySdk.initialize().openTelemetrySdk
-    }
+    val openTelemetry: OpenTelemetry by lazy { AutoConfiguredOpenTelemetrySdk.initialize().openTelemetrySdk }
 }

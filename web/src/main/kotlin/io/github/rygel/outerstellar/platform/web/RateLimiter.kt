@@ -9,8 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
-private val logger =
-    LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.web.RateLimiter")
+private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.web.RateLimiter")
 
 private const val DEFAULT_MAX_REQUESTS = 10
 private const val DEFAULT_WINDOW_MS = 60_000L
@@ -66,8 +65,7 @@ fun rateLimitFilter(
                     next(request)
                 } else {
                     logger.warn("Rate limit exceeded for {} on {}", clientIp, path)
-                    Response(Status.TOO_MANY_REQUESTS)
-                        .body("Too many requests. Please try again later.")
+                    Response(Status.TOO_MANY_REQUESTS).body("Too many requests. Please try again later.")
                 }
             } else {
                 next(request)

@@ -41,9 +41,7 @@ class WebContext(
         private val i18nCache = ConcurrentHashMap<String, I18nService>()
 
         fun cachedI18n(lang: String): I18nService =
-            i18nCache.computeIfAbsent(lang) {
-                I18nService.create("messages").also { it.setLocale(Locale.of(lang)) }
-            }
+            i18nCache.computeIfAbsent(lang) { I18nService.create("messages").also { it.setLocale(Locale.of(lang)) } }
     }
 
     val lang: String by lazy {
@@ -88,9 +86,7 @@ class WebContext(
 
     val i18n: I18nService by lazy { cachedI18n(lang) }
 
-    val csrfToken: String by lazy {
-        request.cookie(CSRF_COOKIE)?.value ?: java.util.UUID.randomUUID().toString()
-    }
+    val csrfToken: String by lazy { request.cookie(CSRF_COOKIE)?.value ?: java.util.UUID.randomUUID().toString() }
 
     fun url(path: String): String = path
 
@@ -110,23 +106,13 @@ class WebContext(
             navLinks =
                 pluginNavItems
                     .map { item ->
-                        ShellLink(
-                            item.label,
-                            url(item.url),
-                            item.icon,
-                            activeSection == item.activeSection,
-                        )
+                        ShellLink(item.label, url(item.url), item.icon, activeSection == item.activeSection)
                     }
                     .toMutableList()
         } else {
             navLinks =
                 mutableListOf(
-                    ShellLink(
-                        i18n.translate("web.nav.home"),
-                        url("/"),
-                        "ri-home-5-line",
-                        activeSection == "/",
-                    ),
+                    ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
                     ShellLink(
                         i18n.translate("web.nav.contacts"),
                         url("/contacts"),
@@ -200,8 +186,7 @@ class WebContext(
             layoutStyle = shellStyle,
             navLinks = navLinks,
             themeSelectorUrl = componentUrl("/components/sidebar/theme-selector", currentPath),
-            languageSelectorUrl =
-            componentUrl("/components/sidebar/language-selector", currentPath),
+            languageSelectorUrl = componentUrl("/components/sidebar/language-selector", currentPath),
             layoutSelectorUrl = componentUrl("/components/sidebar/layout-selector", currentPath),
             footerCopy = i18n.translate("web.footer.copy"),
             footerVersion = i18n.translate("web.footer.version", appVersion),

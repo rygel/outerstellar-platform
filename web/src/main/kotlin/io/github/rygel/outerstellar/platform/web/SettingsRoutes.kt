@@ -9,10 +9,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.template.TemplateRenderer
 
-class SettingsRoutes(
-    private val pageFactory: WebPageFactory,
-    private val renderer: TemplateRenderer,
-) : ServerRoutes {
+class SettingsRoutes(private val pageFactory: WebPageFactory, private val renderer: TemplateRenderer) : ServerRoutes {
 
     override val routes: List<ContractRoute> =
         listOf(
@@ -29,6 +26,6 @@ class SettingsRoutes(
                         val tab = request.query("tab") ?: "profile"
                         renderer.render(pageFactory.buildSettingsPage(ctx, tab))
                     }
-                },
+                }
         )
 }

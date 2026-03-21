@@ -44,13 +44,7 @@ class OAuthService(
         userRepository.save(user)
 
         repo.save(
-            OAuthConnection(
-                id = 0L,
-                userId = user.id,
-                provider = providerName,
-                subject = oauthSubject,
-                email = email,
-            )
+            OAuthConnection(id = 0L, userId = user.id, provider = providerName, subject = oauthSubject, email = email)
         )
         logger.info("Created new user {} via OAuth provider {}", username, providerName)
         audit("OAUTH_USER_CREATED", actor = user, detail = "provider=$providerName")
@@ -64,12 +58,7 @@ class OAuthService(
         return "$base$i"
     }
 
-    private fun audit(
-        action: String,
-        actor: User? = null,
-        target: User? = null,
-        detail: String? = null,
-    ) {
+    private fun audit(action: String, actor: User? = null, target: User? = null, detail: String? = null) {
         auditRepository?.log(
             AuditEntry(
                 actorId = actor?.id?.toString(),

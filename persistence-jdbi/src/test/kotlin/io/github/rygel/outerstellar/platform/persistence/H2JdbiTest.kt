@@ -12,8 +12,7 @@ abstract class H2JdbiTest {
 
     @BeforeEach
     fun setupDatabase() {
-        val jdbcUrl =
-            "jdbc:h2:mem:${javaClass.simpleName.lowercase()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+        val jdbcUrl = "jdbc:h2:mem:${javaClass.simpleName.lowercase()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
         val dataSource = createDataSource(jdbcUrl, "sa", "")
         migrate(dataSource)
         jdbi = Jdbi.create(dataSource)

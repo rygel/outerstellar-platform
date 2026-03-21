@@ -42,11 +42,7 @@ class JdbiSessionRepositoryTest : H2JdbiTest() {
         val rawToken = "oss_test_token_${UUID.randomUUID()}"
         val tokenHash = hashToken(rawToken)
         val session =
-            Session(
-                tokenHash = tokenHash,
-                userId = userId,
-                expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES),
-            )
+            Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES))
         repo.save(session)
         val found = repo.findByTokenHash(tokenHash)!!
         assertEquals(userId, found.userId)
@@ -64,11 +60,7 @@ class JdbiSessionRepositoryTest : H2JdbiTest() {
         val userId = createUser()
         val tokenHash = hashToken("expired_token")
         val session =
-            Session(
-                tokenHash = tokenHash,
-                userId = userId,
-                expiresAt = Instant.now().minus(1, ChronoUnit.HOURS),
-            )
+            Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().minus(1, ChronoUnit.HOURS))
         repo.save(session)
         assertNull(repo.findByTokenHash(tokenHash))
     }
@@ -78,11 +70,7 @@ class JdbiSessionRepositoryTest : H2JdbiTest() {
         val userId = createUser()
         val tokenHash = hashToken("extend_token")
         val session =
-            Session(
-                tokenHash = tokenHash,
-                userId = userId,
-                expiresAt = Instant.now().plus(5, ChronoUnit.MINUTES),
-            )
+            Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().plus(5, ChronoUnit.MINUTES))
         repo.save(session)
         val newExpiry = Instant.now().plus(60, ChronoUnit.MINUTES)
         repo.updateExpiresAt(tokenHash, newExpiry)
@@ -97,11 +85,7 @@ class JdbiSessionRepositoryTest : H2JdbiTest() {
         val userId = createUser()
         val tokenHash = hashToken("delete_token")
         val session =
-            Session(
-                tokenHash = tokenHash,
-                userId = userId,
-                expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES),
-            )
+            Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES))
         repo.save(session)
         repo.deleteByTokenHash(tokenHash)
         assertNull(repo.findByTokenHash(tokenHash))
@@ -112,20 +96,8 @@ class JdbiSessionRepositoryTest : H2JdbiTest() {
         val userId = createUser()
         val hash1 = hashToken("token1")
         val hash2 = hashToken("token2")
-        repo.save(
-            Session(
-                tokenHash = hash1,
-                userId = userId,
-                expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES),
-            )
-        )
-        repo.save(
-            Session(
-                tokenHash = hash2,
-                userId = userId,
-                expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES),
-            )
-        )
+        repo.save(Session(tokenHash = hash1, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES)))
+        repo.save(Session(tokenHash = hash2, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES)))
         repo.deleteByUserId(userId)
         assertNull(repo.findByTokenHash(hash1))
         assertNull(repo.findByTokenHash(hash2))
@@ -137,18 +109,10 @@ class JdbiSessionRepositoryTest : H2JdbiTest() {
         val expiredHash = hashToken("expired")
         val activeHash = hashToken("active")
         repo.save(
-            Session(
-                tokenHash = expiredHash,
-                userId = userId,
-                expiresAt = Instant.now().minus(1, ChronoUnit.HOURS),
-            )
+            Session(tokenHash = expiredHash, userId = userId, expiresAt = Instant.now().minus(1, ChronoUnit.HOURS))
         )
         repo.save(
-            Session(
-                tokenHash = activeHash,
-                userId = userId,
-                expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES),
-            )
+            Session(tokenHash = activeHash, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES))
         )
         repo.deleteExpired()
         assertNull(repo.findByTokenHash(expiredHash))

@@ -51,11 +51,9 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService =
-            mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+        val contactService = mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -76,9 +74,7 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
 
     private fun seedAdmin(): UUID {
         val id = UUID.randomUUID()
-        userRepository.save(
-            User(id, "admin", "admin@test.com", encoder.encode("pass1234"), UserRole.ADMIN)
-        )
+        userRepository.save(User(id, "admin", "admin@test.com", encoder.encode("pass1234"), UserRole.ADMIN))
         return id
     }
 
@@ -91,10 +87,7 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
         // The toggle button has ri-sun-line (on dark) or ri-moon-line (on light)
         val hasSun = body.contains("ri-sun-line")
         val hasMoon = body.contains("ri-moon-line")
-        assertTrue(
-            hasSun || hasMoon,
-            "Topbar must have a sun or moon icon for the dark mode toggle",
-        )
+        assertTrue(hasSun || hasMoon, "Topbar must have a sun or moon icon for the dark mode toggle")
     }
 
     @Test
@@ -114,19 +107,13 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
     fun `dark theme toggle URL points to default theme`() {
         // Server defaults to dark; the toggle URL should switch to default (light)
         val body = app(Request(GET, "/")).bodyString()
-        assertTrue(
-            body.contains("?theme=default"),
-            "Dark mode page toggle should link to ?theme=default",
-        )
+        assertTrue(body.contains("?theme=default"), "Dark mode page toggle should link to ?theme=default")
     }
 
     @Test
     fun `light theme toggle URL points to dark theme`() {
         val body = app(Request(GET, "/").cookie(Cookie("app_theme", "default"))).bodyString()
-        assertTrue(
-            body.contains("?theme=dark"),
-            "Light mode page toggle should link to ?theme=dark",
-        )
+        assertTrue(body.contains("?theme=dark"), "Light mode page toggle should link to ?theme=dark")
     }
 
     // ---- Cookie setting via ?theme query param ----
@@ -172,10 +159,7 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
         val response = app(Request(GET, "/?theme=invalid_theme_xyz"))
 
         val setCookie = response.header("Set-Cookie").orEmpty()
-        assertFalse(
-            setCookie.contains("app_theme=invalid_theme_xyz"),
-            "Invalid theme should not be set in cookie",
-        )
+        assertFalse(setCookie.contains("app_theme=invalid_theme_xyz"), "Invalid theme should not be set in cookie")
     }
 
     // ---- Theme cookie respected on subsequent requests ----
@@ -201,10 +185,7 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
         val body = app(Request(GET, "/")).bodyString()
         // The theme CSS variables are rendered; dark theme has a dark background variable
         // We can check that the dark theme CSS variables block is present
-        assertTrue(
-            body.contains("theme-style"),
-            "Page should have an inline style block with theme CSS variables",
-        )
+        assertTrue(body.contains("theme-style"), "Page should have an inline style block with theme CSS variables")
     }
 
     // ---- System preference detection JS ----
@@ -230,10 +211,7 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
     @Test
     fun `system preference script only runs when no cookie is set`() {
         val body = app(Request(GET, "/")).bodyString()
-        assertTrue(
-            body.contains("platform.js"),
-            "Page should load platform.js which handles theme cookie detection",
-        )
+        assertTrue(body.contains("platform.js"), "Page should load platform.js which handles theme cookie detection")
     }
 
     // ---- Toggle button on admin pages ----
@@ -242,9 +220,7 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
     fun `dark mode toggle is present on admin pages too`() {
         val adminId = seedAdmin()
 
-        val body =
-            app(Request(GET, "/admin/users").cookie(Cookie("app_session", adminId.toString())))
-                .bodyString()
+        val body = app(Request(GET, "/admin/users").cookie(Cookie("app_session", adminId.toString()))).bodyString()
 
         val hasSun = body.contains("ri-sun-line")
         val hasMoon = body.contains("ri-moon-line")
@@ -264,9 +240,6 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
     @Test
     fun `sidebar theme selector is still present when dark mode toggle exists`() {
         val body = app(Request(GET, "/")).bodyString()
-        assertTrue(
-            body.contains("theme-selector"),
-            "Sidebar theme selector component should still be rendered",
-        )
+        assertTrue(body.contains("theme-selector"), "Sidebar theme selector component should still be rendered")
     }
 }

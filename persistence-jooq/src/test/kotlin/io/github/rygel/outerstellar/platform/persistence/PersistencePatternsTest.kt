@@ -20,15 +20,9 @@ class PersistencePatternsTest {
 
         // Use jOOQ meta to verify fields exist
         val messagesMeta = dsl.meta().getTables("MESSAGES").firstOrNull()
-        assertNotNull(
-            messagesMeta?.field("DELETED_AT"),
-            "MESSAGES table should have DELETED_AT field",
-        )
+        assertNotNull(messagesMeta?.field("DELETED_AT"), "MESSAGES table should have DELETED_AT field")
 
         val outboxMeta = dsl.meta().getTables("OUTBOX").firstOrNull()
-        assertNotNull(
-            outboxMeta?.field("PROCESSED_AT"),
-            "OUTBOX table should have PROCESSED_AT field",
-        )
+        assertNotNull(outboxMeta?.field("PROCESSED_AT"), "OUTBOX table should have PROCESSED_AT field")
     }
 }

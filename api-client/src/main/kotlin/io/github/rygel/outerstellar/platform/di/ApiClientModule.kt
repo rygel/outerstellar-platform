@@ -8,11 +8,7 @@ import org.koin.dsl.module
 val apiClientModule
     get() = module {
         single<SyncService> {
-            SyncService(
-                baseUrl = get(named("serverBaseUrl")),
-                repository = get(),
-                transactionManager = get(),
-            )
+            SyncService(baseUrl = get(named("serverBaseUrl")), repository = get(), transactionManager = get())
         }
         single<SyncProvider> { get<SyncService>() }
     }

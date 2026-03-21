@@ -13,9 +13,7 @@ import org.slf4j.LoggerFactory
 class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val logger = LoggerFactory.getLogger(JooqUserRepository::class.java)
 
-    private fun mapUser(
-        record: io.github.rygel.outerstellar.platform.jooq.tables.records.UsersRecord
-    ): User {
+    private fun mapUser(record: io.github.rygel.outerstellar.platform.jooq.tables.records.UsersRecord): User {
         return User(
             id = record.id!!,
             username = record.username!!,
@@ -35,9 +33,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findByUsername(username: String): User? {
-        return dsl.selectFrom(USERS).where(USERS.USERNAME.eq(username)).fetchOne()?.let {
-            mapUser(it)
-        }
+        return dsl.selectFrom(USERS).where(USERS.USERNAME.eq(username)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun findByEmail(email: String): User? {
@@ -80,12 +76,9 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findPage(limit: Int, offset: Int): List<User> =
-        dsl.selectFrom(USERS).orderBy(USERS.USERNAME).limit(limit).offset(offset).fetch().map {
-            mapUser(it)
-        }
+        dsl.selectFrom(USERS).orderBy(USERS.USERNAME).limit(limit).offset(offset).fetch().map { mapUser(it) }
 
-    override fun countAll(): Long =
-        dsl.selectCount().from(USERS).fetchOne(0, Long::class.java) ?: 0L
+    override fun countAll(): Long = dsl.selectCount().from(USERS).fetchOne(0, Long::class.java) ?: 0L
 
     override fun updateRole(userId: UUID, role: UserRole) {
         dsl.update(USERS).set(USERS.ROLE, role.name).where(USERS.ID.eq(userId)).execute()
@@ -114,11 +107,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
         dsl.update(USERS).set(USERS.AVATAR_URL, avatarUrl).where(USERS.ID.eq(userId)).execute()
     }
 
-    override fun updateNotificationPreferences(
-        userId: UUID,
-        emailEnabled: Boolean,
-        pushEnabled: Boolean,
-    ) {
+    override fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) {
         dsl.update(USERS)
             .set(USERS.EMAIL_NOTIFICATIONS_ENABLED, emailEnabled)
             .set(USERS.PUSH_NOTIFICATIONS_ENABLED, pushEnabled)
