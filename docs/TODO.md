@@ -16,6 +16,14 @@
 - [ ] Add PostgreSQL integration test profile to CI (`-Ptest-postgres` with Podman)
 - [ ] Split SwingSyncApp.kt (1,895 lines) into smaller components
 
+## MAIA Backport (Utilities)
+- [x] DialogUtil — copyable info/warning/error/confirmation dialogs (desktop)
+- [x] UnicodeIcon — Unicode emoji/symbol rendering as Swing Icons (desktop)
+- [x] SpellChecker + SpellCheckingTextArea — dictionary-based spell checking (desktop)
+- [x] SpellCheckingTextField — inline spell-check for text fields (desktop)
+- [x] ChipCellRenderer — generic rounded-chip table cell renderer (desktop)
+- [x] Enhanced ThemeCatalog — brightness adjustments, luminance detection, typography scale (web)
+
 ## MAIA Rebase
 - [ ] Rebase MAIA onto outerstellar-platform (based on origin/master with 100+ commits)
 - [ ] Implement MaiaCrmPlugin against PlatformPlugin interface
