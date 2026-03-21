@@ -14,11 +14,7 @@ interface MessageRepository {
         includeDeleted: Boolean = false,
     ): List<MessageSummary>
 
-    fun countMessages(
-        query: String? = null,
-        year: Int? = null,
-        includeDeleted: Boolean = false,
-    ): Long
+    fun countMessages(query: String? = null, year: Int? = null, includeDeleted: Boolean = false): Long
 
     fun listDirtyMessages(): List<StoredMessage>
 

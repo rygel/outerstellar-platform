@@ -16,11 +16,7 @@ class ContactService(
 ) {
     private val logger = LoggerFactory.getLogger(ContactService::class.java)
 
-    fun listContacts(
-        query: String? = null,
-        limit: Int = 100,
-        offset: Int = 0,
-    ): List<ContactSummary> {
+    fun listContacts(query: String? = null, limit: Int = 100, offset: Int = 0): List<ContactSummary> {
         logger.debug("Listing contacts query='{}' limit={} offset={}", query, limit, offset)
         return repository.listContacts(query, limit, offset)
     }
@@ -45,15 +41,7 @@ class ContactService(
     ): StoredContact {
         logger.info("Creating contact name={}", name)
         val contact =
-            repository.createLocalContact(
-                name,
-                emails,
-                phones,
-                socialMedia,
-                company,
-                companyAddress,
-                department,
-            )
+            repository.createLocalContact(name, emails, phones, socialMedia, company, companyAddress, department)
         auditRepository?.log(
             AuditEntry(
                 actorId = null,
@@ -101,9 +89,7 @@ class ContactService(
         eventPublisher.publishRefresh("contact-list-panel")
     }
 
-    fun getChangesSince(
-        updatedAtEpochMs: Long
-    ): io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse {
+    fun getChangesSince(updatedAtEpochMs: Long): io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse {
         val changes = repository.findChangesSince(updatedAtEpochMs)
         val serverTimestamp = System.currentTimeMillis()
         return io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse(
@@ -116,15 +102,12 @@ class ContactService(
         request: io.github.rygel.outerstellar.platform.sync.SyncPushContactRequest
     ): io.github.rygel.outerstellar.platform.sync.SyncPushContactResponse {
         var applied = 0
-        val conflicts =
-            mutableListOf<io.github.rygel.outerstellar.platform.sync.SyncContactConflict>()
+        val conflicts = mutableListOf<io.github.rygel.outerstellar.platform.sync.SyncContactConflict>()
 
         val process = {
             request.contacts.forEach { pushedContact ->
                 val existing = repository.findBySyncId(pushedContact.syncId)
-                if (
-                    existing != null && existing.updatedAtEpochMs > pushedContact.updatedAtEpochMs
-                ) {
+                if (existing != null && existing.updatedAtEpochMs > pushedContact.updatedAtEpochMs) {
                     conflicts.add(
                         io.github.rygel.outerstellar.platform.sync.SyncContactConflict(
                             syncId = pushedContact.syncId,

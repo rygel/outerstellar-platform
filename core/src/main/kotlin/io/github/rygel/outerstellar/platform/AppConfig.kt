@@ -8,9 +8,8 @@ import com.sksamuel.hoplite.addResourceSource
 data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
 
 /**
- * JWT authentication configuration. Disabled by default. Enable for apps that need stateless token
- * auth (e.g. device/API clients). Set [enabled] = true and provide a strong random [secret] to
- * activate.
+ * JWT authentication configuration. Disabled by default. Enable for apps that need stateless token auth (e.g.
+ * device/API clients). Set [enabled] = true and provide a strong random [secret] to activate.
  */
 data class JwtConfig(
     val enabled: Boolean = false,
@@ -20,8 +19,8 @@ data class JwtConfig(
 )
 
 /**
- * SMTP email configuration. Email sending is **disabled by default**. Set [enabled] = true and
- * provide [host]/[username]/[password] to activate.
+ * SMTP email configuration. Email sending is **disabled by default**. Set [enabled] = true and provide
+ * [host]/[username]/[password] to activate.
  */
 data class EmailConfig(
     val enabled: Boolean = false,
@@ -36,8 +35,7 @@ data class EmailConfig(
 data class AppConfig(
     val version: String = "dev",
     val port: Int = 8080,
-    val jdbcUrl: String =
-        "jdbc:h2:file:./data/outerstellar-platform;MODE=PostgreSQL;AUTO_SERVER=TRUE",
+    val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-platform;MODE=PostgreSQL;AUTO_SERVER=TRUE",
     val jdbcUser: String = "sa",
     val jdbcPassword: String = "",
     val devDashboardEnabled: Boolean = false,
@@ -55,13 +53,19 @@ data class AppConfig(
     /** Public-facing base URL used in emails, e.g. https://app.example.com */
     val appBaseUrl: String = "http://localhost:8080",
     val jwt: JwtConfig = JwtConfig(),
+    val cspPolicy: String =
+        "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline'; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "font-src 'self'; " +
+            "connect-src 'self' ws: wss:; " +
+            "img-src 'self' data:;",
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
-            val builder =
-                ConfigLoaderBuilder.default().withExplicitSealedTypes().addEnvironmentSource()
+            val builder = ConfigLoaderBuilder.default().withExplicitSealedTypes().addEnvironmentSource()
 
             if (profile != "default") {
                 builder.addResourceSource("/application-$profile.yaml", optional = true)

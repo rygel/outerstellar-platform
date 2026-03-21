@@ -48,9 +48,7 @@ class MdcLoggingIntegrationTest : H2WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val rootLogger =
-            LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
-                as ch.qos.logback.classic.Logger
+        val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as ch.qos.logback.classic.Logger
         testAppender.context = rootLogger.loggerContext
         testAppender.name = "MDC_TEST_APPENDER"
         testAppender.start()
@@ -62,11 +60,9 @@ class MdcLoggingIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService =
-            mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+        val contactService = mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, BCryptPasswordEncoder(logRounds = 4))
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -85,9 +81,7 @@ class MdcLoggingIntegrationTest : H2WebTest() {
 
     @AfterEach
     fun teardown() {
-        val rootLogger =
-            LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME)
-                as ch.qos.logback.classic.Logger
+        val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as ch.qos.logback.classic.Logger
         rootLogger.detachAppender(testAppender)
         capturedEvents.clear()
         cleanup()
@@ -110,10 +104,7 @@ class MdcLoggingIntegrationTest : H2WebTest() {
         val requestId = response.header("X-Request-Id")!!
 
         // UUID format: 8-4-4-4-12 hex chars separated by dashes
-        assertTrue(
-            requestId.matches(Regex("[0-9a-f-]{36}")),
-            "Generated request ID should be a UUID, got: $requestId",
-        )
+        assertTrue(requestId.matches(Regex("[0-9a-f-]{36}")), "Generated request ID should be a UUID, got: $requestId")
     }
 
     @Test
@@ -160,29 +151,22 @@ class MdcLoggingIntegrationTest : H2WebTest() {
         val customId = "full-uuid-goes-here-abcde12345678"
         app(Request(GET, "/health").header("X-Request-Id", customId))
 
-        val eventsWithRequestId =
-            capturedEvents.filter { e -> e.mdcPropertyMap?.containsKey("requestId") == true }
+        val eventsWithRequestId = capturedEvents.filter { e -> e.mdcPropertyMap?.containsKey("requestId") == true }
         assertTrue(eventsWithRequestId.isNotEmpty())
 
         val mdcRequestId = eventsWithRequestId.first().mdcPropertyMap["requestId"]!!
-        assertEquals(
-            customId.take(8),
-            mdcRequestId,
-            "MDC requestId should be first 8 chars of the full ID",
-        )
+        assertEquals(customId.take(8), mdcRequestId, "MDC requestId should be first 8 chars of the full ID")
     }
 
     @Test
     fun `MDC method and path are set during request processing`() {
         app(Request(GET, "/health"))
 
-        val eventsWithMethod =
-            capturedEvents.filter { e -> e.mdcPropertyMap?.containsKey("method") == true }
+        val eventsWithMethod = capturedEvents.filter { e -> e.mdcPropertyMap?.containsKey("method") == true }
         assertTrue(eventsWithMethod.isNotEmpty(), "Log events should have MDC.method set")
         assertEquals("GET", eventsWithMethod.first().mdcPropertyMap["method"])
 
-        val eventsWithPath =
-            capturedEvents.filter { e -> e.mdcPropertyMap?.containsKey("path") == true }
+        val eventsWithPath = capturedEvents.filter { e -> e.mdcPropertyMap?.containsKey("path") == true }
         assertTrue(eventsWithPath.isNotEmpty(), "Log events should have MDC.path set")
         assertEquals("/health", eventsWithPath.first().mdcPropertyMap["path"])
     }
@@ -197,12 +181,8 @@ class MdcLoggingIntegrationTest : H2WebTest() {
         app(Request(GET, "/health").header("X-Request-Id", "second-req-id"))
 
         val secondRequestEvents = capturedEvents.drop(countAfterFirst)
-        val wrongEvents =
-            secondRequestEvents.filter { e -> e.mdcPropertyMap?.get("requestId") == "first-re" }
-        assertTrue(
-            wrongEvents.isEmpty(),
-            "Second request must not carry first request's MDC requestId",
-        )
+        val wrongEvents = secondRequestEvents.filter { e -> e.mdcPropertyMap?.get("requestId") == "first-re" }
+        assertTrue(wrongEvents.isEmpty(), "Second request must not carry first request's MDC requestId")
     }
 
     @Test
@@ -212,14 +192,10 @@ class MdcLoggingIntegrationTest : H2WebTest() {
         // The logback pattern uses %X{username:-anon}, so if not set the rendered text is "anon"
         // We verify directly that no "username" key was set (since user is null for /health)
         // which means the pattern renders the default "anon"
-        val eventsWithUsername =
-            capturedEvents.filter { e -> e.mdcPropertyMap?.containsKey("username") == true }
+        val eventsWithUsername = capturedEvents.filter { e -> e.mdcPropertyMap?.containsKey("username") == true }
         // For unauthenticated requests, username MDC key should NOT be present
         // (the :-anon is the logback default substitution, not an MDC value)
-        assertTrue(
-            eventsWithUsername.isEmpty(),
-            "Unauthenticated requests should not set MDC.username",
-        )
+        assertTrue(eventsWithUsername.isEmpty(), "Unauthenticated requests should not set MDC.username")
     }
 
     @Test
@@ -237,10 +213,7 @@ class MdcLoggingIntegrationTest : H2WebTest() {
         val exposeHeader = response.header("Access-Control-Expose-Headers")
 
         assertNotNull(exposeHeader)
-        assertTrue(
-            exposeHeader.contains("X-Request-Id"),
-            "X-Request-Id should be listed in CORS Expose-Headers",
-        )
+        assertTrue(exposeHeader.contains("X-Request-Id"), "X-Request-Id should be listed in CORS Expose-Headers")
     }
 
     // ---- Log pattern verification ----

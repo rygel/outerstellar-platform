@@ -32,9 +32,7 @@ class HomePageEndToEndTest : H2WebTest() {
         val passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, passwordEncoder)
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
-                relaxed = true
-            )
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
         repository.seedMessages()
 
@@ -58,10 +56,7 @@ class HomePageEndToEndTest : H2WebTest() {
         }
 
         assertEquals(Status.OK, response.status)
-        assertTrue(
-            response.bodyString().contains("Outerstellar Platform"),
-            "Body should contain brand name",
-        )
+        assertTrue(response.bodyString().contains("Outerstellar Platform"), "Body should contain brand name")
         assertTrue(response.header("content-type")?.contains("text/html") == true)
     }
 }

@@ -44,9 +44,7 @@ val persistenceModule
                 throw e
             }
             if (config.devMode) {
-                val dialect =
-                    if (config.jdbcUrl.startsWith("jdbc:postgresql:")) SQLDialect.POSTGRES
-                    else SQLDialect.H2
+                val dialect = if (config.jdbcUrl.startsWith("jdbc:postgresql:")) SQLDialect.POSTGRES else SQLDialect.H2
                 JooqUserRepository(DSL.using(ds, dialect)).seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
             }
             ds
@@ -54,9 +52,7 @@ val persistenceModule
 
         single<DSLContext> {
             val config = get<io.github.rygel.outerstellar.platform.AppConfig>()
-            val dialect =
-                if (config.jdbcUrl.startsWith("jdbc:postgresql:")) SQLDialect.POSTGRES
-                else SQLDialect.H2
+            val dialect = if (config.jdbcUrl.startsWith("jdbc:postgresql:")) SQLDialect.POSTGRES else SQLDialect.H2
             DSL.using(get<DataSource>(), dialect).also {
                 if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
                     Metrics.globalRegistry.gauge("database.connections.active", 1)
@@ -88,9 +84,8 @@ val persistenceModule
     }
 
 /**
- * Syntactically valid BCrypt hash used when seeding the dev admin user in devMode. This hash cannot
- * match any real password — devAutoLogin bypasses password checks entirely in dev mode, so only the
- * existence of the admin user matters.
+ * Syntactically valid BCrypt hash used when seeding the dev admin user in devMode. This hash cannot match any real
+ * password — devAutoLogin bypasses password checks entirely in dev mode, so only the existence of the admin user
+ * matters.
  */
-private const val DEV_ADMIN_PLACEHOLDER_HASH =
-    "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"
+private const val DEV_ADMIN_PLACEHOLDER_HASH = "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"

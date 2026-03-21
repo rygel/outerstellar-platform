@@ -56,13 +56,8 @@ class MessageSearchIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -112,8 +107,7 @@ class MessageSearchIntegrationTest : H2WebTest() {
         )
 
     private fun pullMessages(since: Long = 0L): SyncPullResponse {
-        val response =
-            app(Request(GET, "/api/v1/sync?since=$since").header("Authorization", bearer()))
+        val response = app(Request(GET, "/api/v1/sync?since=$since").header("Authorization", bearer()))
         assertEquals(Status.OK, response.status)
         return Jackson.asA(response.bodyString(), SyncPullResponse::class)
     }
@@ -148,16 +142,11 @@ class MessageSearchIntegrationTest : H2WebTest() {
     @Test
     fun `multiple pushed messages all appear in pull`() {
         val ids = (1..3).map { UUID.randomUUID().toString() }
-        ids.forEachIndexed { i, syncId ->
-            pushMessage(syncId, "Message content $i", timestamp = (1000L + i * 100))
-        }
+        ids.forEachIndexed { i, syncId -> pushMessage(syncId, "Message content $i", timestamp = (1000L + i * 100)) }
 
         val response = pullMessages()
         ids.forEach { syncId ->
-            assertTrue(
-                response.messages.any { it.syncId == syncId },
-                "Message $syncId should appear in pull",
-            )
+            assertTrue(response.messages.any { it.syncId == syncId }, "Message $syncId should appear in pull")
         }
     }
 
@@ -201,9 +190,7 @@ class MessageSearchIntegrationTest : H2WebTest() {
     @Test
     fun `pull since=0 returns all messages`() {
         val count = 3
-        repeat(count) { i ->
-            pushMessage(UUID.randomUUID().toString(), "Msg $i", timestamp = 1000L + i)
-        }
+        repeat(count) { i -> pushMessage(UUID.randomUUID().toString(), "Msg $i", timestamp = 1000L + i) }
 
         val response = pullMessages(since = 0L)
         assertEquals(count, response.messages.size, "Should return all $count messages")

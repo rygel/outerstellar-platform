@@ -61,13 +61,7 @@ interface PasswordResetRepository {
     fun markUsed(token: String)
 }
 
-data class DeviceToken(
-    val id: Long,
-    val userId: UUID,
-    val platform: String,
-    val token: String,
-    val appBundle: String?,
-)
+data class DeviceToken(val id: Long, val userId: UUID, val platform: String, val token: String, val appBundle: String?)
 
 interface DeviceTokenRepository {
     /** Register or update a device token. Upserts by token value. */

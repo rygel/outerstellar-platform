@@ -58,13 +58,8 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = ContactService(contactRepository)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -150,8 +145,7 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
     }
 
     private fun pullContacts(): SyncPullContactResponse {
-        val response =
-            app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
+        val response = app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
         assertEquals(Status.OK, response.status)
         return Jackson.asA(response.bodyString(), SyncPullContactResponse::class)
     }
@@ -198,10 +192,7 @@ class ContactDetailsSyncIntegrationTest : H2WebTest() {
         val contact = pulled.contacts.find { it.syncId == syncId }
         assertNotNull(contact, "Contact should be present")
         assertEquals(social.size, contact.socialMedia.size, "SocialMedia count should match")
-        assertTrue(
-            contact.socialMedia.containsAll(social),
-            "All social handles should be preserved",
-        )
+        assertTrue(contact.socialMedia.containsAll(social), "All social handles should be preserved")
     }
 
     @Test

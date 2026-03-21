@@ -9,8 +9,7 @@ import org.http4k.lens.Path
 import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
 
-class ErrorRoutes(private val pageFactory: WebPageFactory, private val renderer: TemplateRenderer) :
-    ServerRoutes {
+class ErrorRoutes(private val pageFactory: WebPageFactory, private val renderer: TemplateRenderer) : ServerRoutes {
     private val kindPath = Path.string().of("kind")
 
     override val routes =

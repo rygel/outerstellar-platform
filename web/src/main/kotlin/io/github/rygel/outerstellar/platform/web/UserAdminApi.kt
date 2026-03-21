@@ -54,11 +54,7 @@ class UserAdminApi(private val securityService: SecurityService) : ServerRoutes 
                         val admin = SecurityRules.USER_KEY(request)!!
                         try {
                             val body = setUserEnabledLens(request)
-                            securityService.setUserEnabled(
-                                admin.id,
-                                UUID.fromString(userId),
-                                body.enabled,
-                            )
+                            securityService.setUserEnabled(admin.id, UUID.fromString(userId), body.enabled)
                             Response(Status.OK).body("User updated")
                         } catch (e: UserNotFoundException) {
                             Response(Status.NOT_FOUND).body(e.message ?: "User not found")

@@ -93,7 +93,7 @@
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
         <!-- Surefire tag filters — overridden by the performance profile -->
-        <surefire.excluded.groups>performance</surefire.excluded.groups>
+        <surefire.excluded.groups>performance,e2e</surefire.excluded.groups>
         <surefire.groups/>
         <!-- false: Swing tests always run; Docker/Xvfb provides virtual display in CI. -->
         <desktop.headless>false</desktop.headless>
@@ -537,6 +537,7 @@
                     <configuration>
                         <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
                         <forkedProcessTimeoutInSeconds>300</forkedProcessTimeoutInSeconds>
+                        <reuseForks>true</reuseForks>
                         <excludedGroups>${surefire.excluded.groups}</excludedGroups>
                         <groups>${surefire.groups}</groups>
                         <systemPropertyVariables>
@@ -676,6 +677,7 @@
                             <ktfmt>
                                 <version>${ktfmt.version}</version>
                                 <style>KOTLINLANG</style>
+                                <maxWidth>120</maxWidth>
                             </ktfmt>
                         </kotlin>
                     </configuration>

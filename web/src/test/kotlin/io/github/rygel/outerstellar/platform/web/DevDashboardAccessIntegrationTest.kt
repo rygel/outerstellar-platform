@@ -54,8 +54,7 @@ class DevDashboardAccessIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder, auditRepository)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         adminUser =
             User(
@@ -141,9 +140,7 @@ class DevDashboardAccessIntegrationTest : H2WebTest() {
         val response = app(Request(GET, "/admin/dev").cookie(adminSession()))
 
         val body = response.bodyString()
-        assertTrue(
-            body.contains("Outbox", ignoreCase = true) || body.contains("outbox", ignoreCase = true)
-        )
+        assertTrue(body.contains("Outbox", ignoreCase = true) || body.contains("outbox", ignoreCase = true))
     }
 
     @Test

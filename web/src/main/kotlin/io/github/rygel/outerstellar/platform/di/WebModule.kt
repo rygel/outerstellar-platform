@@ -18,6 +18,7 @@ import io.github.rygel.outerstellar.platform.service.EmailService
 import io.github.rygel.outerstellar.platform.service.EventPublisher
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.NoOpEmailService
+import io.github.rygel.outerstellar.platform.service.ResilientEmailService
 import io.github.rygel.outerstellar.platform.service.SmtpConfig
 import io.github.rygel.outerstellar.platform.service.SmtpEmailService
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
@@ -39,9 +40,7 @@ val webModule
         single<TemplateRenderer> { createRenderer() }
         single { WebPageFactory(get(), get(), get(), get(), get()) }
         single { SyncApi(get(), get(), get()) }
-        single<MessageCache> {
-            io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache()
-        }
+        single<MessageCache> { io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache() }
         single<AnalyticsService> {
             val cfg = get<AppConfig>().segment
             if (cfg.enabled && cfg.writeKey.isNotBlank()) {
@@ -53,14 +52,16 @@ val webModule
         single<EmailService> {
             val cfg = get<AppConfig>().email
             if (cfg.enabled && cfg.host.isNotBlank()) {
-                SmtpEmailService(
-                    SmtpConfig(
-                        host = cfg.host,
-                        port = cfg.port,
-                        username = cfg.username,
-                        password = cfg.password,
-                        from = cfg.from,
-                        startTls = cfg.startTls,
+                ResilientEmailService(
+                    SmtpEmailService(
+                        SmtpConfig(
+                            host = cfg.host,
+                            port = cfg.port,
+                            username = cfg.username,
+                            password = cfg.password,
+                            from = cfg.from,
+                            startTls = cfg.startTls,
+                        )
                     )
                 )
             } else {

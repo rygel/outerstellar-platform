@@ -11,11 +11,7 @@ import org.slf4j.LoggerFactory
  * @param body notification body text
  * @param data optional key/value data delivered to the app in the background
  */
-data class PushNotification(
-    val title: String,
-    val body: String,
-    val data: Map<String, String> = emptyMap(),
-)
+data class PushNotification(val title: String, val body: String, val data: Map<String, String> = emptyMap())
 
 /**
  * Strategy interface for delivering push notifications.
@@ -68,8 +64,7 @@ object ConsolePushNotificationService : PushNotificationService {
  */
 class FcmPushNotificationService(
     /** Path to or contents of the Firebase service account JSON. */
-    @Suppress("UnusedPrivateMember")
-    private val serviceAccountJson: String = "TODO_FCM_SERVICE_ACCOUNT_JSON"
+    @Suppress("UnusedPrivateMember") private val serviceAccountJson: String = "TODO_FCM_SERVICE_ACCOUNT_JSON"
 ) : PushNotificationService {
     private val logger = LoggerFactory.getLogger(FcmPushNotificationService::class.java)
 
@@ -92,8 +87,8 @@ class FcmPushNotificationService(
 /**
  * Apple Push Notification service (APNs) stub for iOS push notifications.
  *
- * Replace with a real implementation using the Apple HTTP/2 APNs API or a library like java-apns or
- * pushy: https://github.com/jchambers/pushy
+ * Replace with a real implementation using the Apple HTTP/2 APNs API or a library like java-apns or pushy:
+ * https://github.com/jchambers/pushy
  *
  * Required:
  * - An APNs auth key (.p8 file) from the Apple Developer portal
@@ -101,8 +96,7 @@ class FcmPushNotificationService(
  * - Your app's bundle identifier
  */
 class ApnsPushNotificationService(
-    @Suppress("UnusedPrivateMember")
-    private val privateKeyPem: String = "TODO_APNS_PRIVATE_KEY_PEM",
+    @Suppress("UnusedPrivateMember") private val privateKeyPem: String = "TODO_APNS_PRIVATE_KEY_PEM",
     @Suppress("UnusedPrivateMember") private val teamId: String = "TODO_TEAM_ID",
     @Suppress("UnusedPrivateMember") private val keyId: String = "TODO_KEY_ID",
     @Suppress("UnusedPrivateMember") private val bundleId: String = "TODO_BUNDLE_ID",

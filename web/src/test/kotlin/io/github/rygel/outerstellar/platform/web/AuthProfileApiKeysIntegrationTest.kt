@@ -31,8 +31,8 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Integration tests for profile, notification preferences, account deletion, API keys page, and
- * password reset HTML form flows.
+ * Integration tests for profile, notification preferences, account deletion, API keys page, and password reset HTML
+ * form flows.
  */
 class AuthProfileApiKeysIntegrationTest : H2WebTest() {
 
@@ -62,8 +62,7 @@ class AuthProfileApiKeysIntegrationTest : H2WebTest() {
                 apiKeyRepository = apiKeyRepository,
                 resetRepository = resetRepository,
             )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -179,17 +178,9 @@ class AuthProfileApiKeysIntegrationTest : H2WebTest() {
             Request(POST, "/auth/components/profile-update")
                 .cookie(sessionCookie())
                 .header("content-type", "application/x-www-form-urlencoded")
-                .body(
-                    formBody(
-                        "email" to testUser.email,
-                        "avatarUrl" to "https://example.com/avatar.png",
-                    )
-                )
+                .body(formBody("email" to testUser.email, "avatarUrl" to "https://example.com/avatar.png"))
         )
-        assertEquals(
-            "https://example.com/avatar.png",
-            userRepository.findById(testUser.id)?.avatarUrl,
-        )
+        assertEquals("https://example.com/avatar.png", userRepository.findById(testUser.id)?.avatarUrl)
     }
 
     // ---- Notification preferences ----

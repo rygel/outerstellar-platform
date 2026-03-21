@@ -31,24 +31,13 @@ class AuthApiIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
         val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(
-                repository,
-                outbox,
-                transactionManager,
-                cache,
-            )
+            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, transactionManager, cache)
         val pageFactory = WebPageFactory(repository, messageService, null, null)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
-                relaxed = true
-            )
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
         app =
             app(
@@ -73,26 +62,17 @@ class AuthApiIntegrationTest : H2WebTest() {
     @Test
     fun `register api creates user and allows login`() {
         val registerLens =
-            org.http4k.core.Body.auto<io.github.rygel.outerstellar.platform.model.RegisterRequest>()
-                .toLens()
-        val loginLens =
-            org.http4k.core.Body.auto<io.github.rygel.outerstellar.platform.model.LoginRequest>()
-                .toLens()
+            org.http4k.core.Body.auto<io.github.rygel.outerstellar.platform.model.RegisterRequest>().toLens()
+        val loginLens = org.http4k.core.Body.auto<io.github.rygel.outerstellar.platform.model.LoginRequest>().toLens()
         val tokenLens =
-            org.http4k.core.Body.auto<
-                io.github.rygel.outerstellar.platform.model.AuthTokenResponse
-                >()
-                .toLens()
+            org.http4k.core.Body.auto<io.github.rygel.outerstellar.platform.model.AuthTokenResponse>().toLens()
 
         val registerResponse =
             app(
                 Request(POST, "/api/v1/auth/register")
                     .with(
                         registerLens of
-                            io.github.rygel.outerstellar.platform.model.RegisterRequest(
-                                "api-user",
-                                "secret123",
-                            )
+                            io.github.rygel.outerstellar.platform.model.RegisterRequest("api-user", "secret123")
                     )
             )
         assertEquals(Status.OK, registerResponse.status)
@@ -102,11 +82,7 @@ class AuthApiIntegrationTest : H2WebTest() {
             app(
                 Request(POST, "/api/v1/auth/login")
                     .with(
-                        loginLens of
-                            io.github.rygel.outerstellar.platform.model.LoginRequest(
-                                "api-user",
-                                "secret123",
-                            )
+                        loginLens of io.github.rygel.outerstellar.platform.model.LoginRequest("api-user", "secret123")
                     )
             )
         assertEquals(Status.OK, loginResponse.status)

@@ -15,8 +15,7 @@ class ArchitectureTest {
 
     @Test
     fun `core should not depend on web or desktop or persistence`() {
-        val importedClasses =
-            ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+        val importedClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
 
         val rule =
             noClasses()
@@ -32,8 +31,7 @@ class ArchitectureTest {
 
     @Test
     fun `persistence implementation should not depend on web or desktop`() {
-        val importedClasses =
-            ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+        val importedClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
 
         val rule =
             noClasses()
@@ -51,8 +49,7 @@ class ArchitectureTest {
     fun `security module should not depend on web or desktop`() {
         // NOTE: security module classes are not on core's test classpath.
         // This rule uses allowEmptyShould(true) so it passes without false positives.
-        val importedClasses =
-            ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+        val importedClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
 
         val rule =
             noClasses()
@@ -71,8 +68,7 @@ class ArchitectureTest {
         // NOTE: api-client module (package ..sync..) is not on core's test classpath.
         // The api-client SyncService lives in io.github.rygel.outerstellar.platform.sync.
         // This rule uses allowEmptyShould(true) so it passes without false positives.
-        val importedClasses =
-            ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+        val importedClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
 
         val rule =
             noClasses()
@@ -80,12 +76,7 @@ class ArchitectureTest {
                 .resideInAPackage("..sync..")
                 .should()
                 .dependOnClassesThat()
-                .resideInAnyPackage(
-                    "..persistence.jooq..",
-                    "..persistence.jdbi..",
-                    "..desktop..",
-                    "..web..",
-                )
+                .resideInAnyPackage("..persistence.jooq..", "..persistence.jdbi..", "..desktop..", "..web..")
                 .allowEmptyShould(true)
 
         rule.check(importedClasses)
@@ -96,8 +87,7 @@ class ArchitectureTest {
         // Classes in ..service.. should not depend on ..web.. or ..desktop..
         // core's service classes only depend on core persistence interfaces and models — no
         // violation expected.
-        val importedClasses =
-            ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+        val importedClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
 
         val rule =
             noClasses()
@@ -118,8 +108,7 @@ class ArchitectureTest {
         // (core).
         // On the core test classpath only core interfaces are present; this verifies they are in
         // the right package.
-        val importedClasses =
-            ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+        val importedClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
 
         val rule =
             classes()
@@ -140,8 +129,7 @@ class ArchitectureTest {
         // persistence-jooq and persistence-jdbi are not on core's classpath so this checks 0
         // classes,
         // but allowEmptyShould(true) ensures no failure.
-        val importedClasses =
-            ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+        val importedClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
 
         val rule =
             noClasses()
@@ -160,8 +148,7 @@ class ArchitectureTest {
     fun `desktop should not depend on web`() {
         // NOTE: desktop module classes are not on core's test classpath.
         // This rule uses allowEmptyShould(true) so it passes without false positives.
-        val importedClasses =
-            ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+        val importedClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
 
         val rule =
             noClasses()

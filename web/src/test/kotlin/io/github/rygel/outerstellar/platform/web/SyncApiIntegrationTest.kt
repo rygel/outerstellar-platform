@@ -68,13 +68,8 @@ class SyncApiIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         contactService = mockk(relaxed = true)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -129,22 +124,15 @@ class SyncApiIntegrationTest : H2WebTest() {
     fun `GET sync response is JSON with messages and serverTimestamp fields`() {
         val response = app(Request(GET, "/api/v1/sync").header("Authorization", bearerHeader()))
         val contentType = response.header("content-type").orEmpty()
-        assertTrue(
-            contentType.contains("application/json"),
-            "Sync response must be JSON, got: $contentType",
-        )
+        assertTrue(contentType.contains("application/json"), "Sync response must be JSON, got: $contentType")
         val body = response.bodyString()
         assertTrue(body.contains("messages"), "Pull response must have 'messages' field")
-        assertTrue(
-            body.contains("serverTimestamp"),
-            "Pull response must have 'serverTimestamp' field",
-        )
+        assertTrue(body.contains("serverTimestamp"), "Pull response must have 'serverTimestamp' field")
     }
 
     @Test
     fun `GET sync with since=0 returns all messages`() {
-        val response =
-            app(Request(GET, "/api/v1/sync?since=0").header("Authorization", bearerHeader()))
+        val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", bearerHeader()))
         assertEquals(Status.OK, response.status)
         val body = Jackson.asA(response.bodyString(), SyncPullResponse::class)
         assertNotNull(body.messages)
@@ -153,10 +141,7 @@ class SyncApiIntegrationTest : H2WebTest() {
     @Test
     fun `GET sync with since= large timestamp returns empty list`() {
         val response =
-            app(
-                Request(GET, "/api/v1/sync?since=${Long.MAX_VALUE - 1}")
-                    .header("Authorization", bearerHeader())
-            )
+            app(Request(GET, "/api/v1/sync?since=${Long.MAX_VALUE - 1}").header("Authorization", bearerHeader()))
         assertEquals(Status.OK, response.status)
         val body = Jackson.asA(response.bodyString(), SyncPullResponse::class)
         assertTrue(body.messages.isEmpty(), "No messages should exist after max timestamp")
@@ -167,11 +152,7 @@ class SyncApiIntegrationTest : H2WebTest() {
     @Test
     fun `POST sync without bearer returns 401`() {
         val response =
-            app(
-                Request(POST, "/api/v1/sync")
-                    .header("content-type", "application/json")
-                    .body("""{"messages":[]}""")
-            )
+            app(Request(POST, "/api/v1/sync").header("content-type", "application/json").body("""{"messages":[]}"""))
         assertEquals(Status.UNAUTHORIZED, response.status)
     }
 
@@ -231,10 +212,7 @@ class SyncApiIntegrationTest : H2WebTest() {
                     .header("content-type", "application/json")
                     .body("{invalid json{{{")
             )
-        assertTrue(
-            response.status.code >= 400,
-            "Malformed JSON should return 4xx or 5xx, got: ${response.status}",
-        )
+        assertTrue(response.status.code >= 400, "Malformed JSON should return 4xx or 5xx, got: ${response.status}")
     }
 
     // ---- GET /api/v1/sync/contacts ----
@@ -247,21 +225,16 @@ class SyncApiIntegrationTest : H2WebTest() {
 
     @Test
     fun `GET sync-contacts with valid bearer returns 200`() {
-        val response =
-            app(Request(GET, "/api/v1/sync/contacts").header("Authorization", bearerHeader()))
+        val response = app(Request(GET, "/api/v1/sync/contacts").header("Authorization", bearerHeader()))
         assertEquals(Status.OK, response.status)
     }
 
     @Test
     fun `GET sync-contacts response contains contacts and serverTimestamp fields`() {
-        val response =
-            app(Request(GET, "/api/v1/sync/contacts").header("Authorization", bearerHeader()))
+        val response = app(Request(GET, "/api/v1/sync/contacts").header("Authorization", bearerHeader()))
         val body = response.bodyString()
         assertTrue(body.contains("contacts"), "Contacts pull response must have 'contacts' field")
-        assertTrue(
-            body.contains("serverTimestamp"),
-            "Contacts pull response must have 'serverTimestamp' field",
-        )
+        assertTrue(body.contains("serverTimestamp"), "Contacts pull response must have 'serverTimestamp' field")
     }
 
     @Test

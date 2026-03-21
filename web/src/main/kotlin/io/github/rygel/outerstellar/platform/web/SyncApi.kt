@@ -49,10 +49,7 @@ class SyncApi(
                 {
                     summary = "Pull changes from server"
                     queries += sinceLens
-                    returning(
-                        Status.OK,
-                        pullResponseLens to SyncPullResponse(emptyList<SyncMessage>(), 0L),
-                    )
+                    returning(Status.OK, pullResponseLens to SyncPullResponse(emptyList<SyncMessage>(), 0L))
                 } bindContract
                 GET to
                 { request ->
@@ -64,10 +61,7 @@ class SyncApi(
                 {
                     summary = "Push changes to server"
                     receiving(pushRequestLens)
-                    returning(
-                        Status.OK,
-                        pushResponseLens to SyncPushResponse(0, emptyList<SyncConflict>()),
-                    )
+                    returning(Status.OK, pushResponseLens to SyncPushResponse(0, emptyList<SyncConflict>()))
                 } bindContract
                 POST to
                 { request ->
@@ -78,10 +72,7 @@ class SyncApi(
                         analytics.track(
                             userId,
                             "Messages Synced",
-                            mapOf(
-                                "pushed" to syncRequest.messages.size,
-                                "conflicts" to syncResponse.conflicts.size,
-                            ),
+                            mapOf("pushed" to syncRequest.messages.size, "conflicts" to syncResponse.conflicts.size),
                         )
                     }
                     Response(Status.OK).with(pushResponseLens of syncResponse)
@@ -92,8 +83,7 @@ class SyncApi(
                     queries += sinceLens
                     returning(
                         Status.OK,
-                        pullContactResponseLens to
-                            SyncPullContactResponse(emptyList<SyncContact>(), 0L),
+                        pullContactResponseLens to SyncPullContactResponse(emptyList<SyncContact>(), 0L),
                     )
                 } bindContract
                 GET to
@@ -108,8 +98,7 @@ class SyncApi(
                     receiving(pushContactRequestLens)
                     returning(
                         Status.OK,
-                        pushContactResponseLens to
-                            SyncPushContactResponse(0, emptyList<SyncContactConflict>()),
+                        pushContactResponseLens to SyncPushContactResponse(0, emptyList<SyncContactConflict>()),
                     )
                 } bindContract
                 POST to

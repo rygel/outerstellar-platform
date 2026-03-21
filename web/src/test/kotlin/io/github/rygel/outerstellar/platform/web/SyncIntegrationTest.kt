@@ -38,11 +38,7 @@ class SyncIntegrationTest : H2WebTest() {
         val pageFactory = WebPageFactory(repository, messageService, null, null)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
 
         // Pre-register an admin user for Bearer Auth
         val adminId = UUID.randomUUID()
@@ -57,9 +53,7 @@ class SyncIntegrationTest : H2WebTest() {
         )
         val adminToken = securityService.createSession(adminId)
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
-                relaxed = true
-            )
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
         val app =
             app(
@@ -80,8 +74,7 @@ class SyncIntegrationTest : H2WebTest() {
         repository.createServerMessage("Bob", "Hi")
 
         // Pull changes with Bearer Auth
-        val response =
-            app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $adminToken"))
+        val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $adminToken"))
 
         assertEquals(Status.OK, response.status)
         val pullResponse = asA(response.bodyString(), SyncPullResponse::class)

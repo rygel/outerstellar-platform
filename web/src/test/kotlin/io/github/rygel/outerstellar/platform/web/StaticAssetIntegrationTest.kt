@@ -46,8 +46,7 @@ class StaticAssetIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -94,8 +93,7 @@ class StaticAssetIntegrationTest : H2WebTest() {
     fun `GET site css has CSS content type`() {
         val contentType = app(Request(GET, "/site.css")).header("content-type").orEmpty()
         assertTrue(
-            contentType.contains("css", ignoreCase = true) ||
-                contentType.contains("text/plain", ignoreCase = true),
+            contentType.contains("css", ignoreCase = true) || contentType.contains("text/plain", ignoreCase = true),
             "site.css should have a CSS-related content type, got: $contentType",
         )
     }
@@ -112,10 +110,7 @@ class StaticAssetIntegrationTest : H2WebTest() {
     @Test
     fun `non-existent static file does not return 500`() {
         val response = app(Request(GET, "/this-file-does-not-exist-at-all.xyz"))
-        assertTrue(
-            response.status.code != 500,
-            "Non-existent file should not return 500, got: ${response.status}",
-        )
+        assertTrue(response.status.code != 500, "Non-existent file should not return 500, got: ${response.status}")
     }
 
     @Test

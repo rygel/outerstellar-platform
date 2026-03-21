@@ -60,12 +60,8 @@ class JdbiNotificationRepositoryTest : H2JdbiTest() {
     @Test
     fun `findByUserId orders newest first`() {
         val userId = createUser()
-        repo.save(
-            notification(userId, "First").copy(createdAt = java.time.Instant.now().minusSeconds(10))
-        )
-        repo.save(
-            notification(userId, "Second").copy(createdAt = java.time.Instant.now().minusSeconds(5))
-        )
+        repo.save(notification(userId, "First").copy(createdAt = java.time.Instant.now().minusSeconds(10)))
+        repo.save(notification(userId, "Second").copy(createdAt = java.time.Instant.now().minusSeconds(5)))
         repo.save(notification(userId, "Third"))
         val results = repo.findByUserId(userId)
         assertEquals("Third", results[0].title)

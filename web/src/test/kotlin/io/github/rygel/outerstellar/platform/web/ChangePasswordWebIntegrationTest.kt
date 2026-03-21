@@ -58,8 +58,7 @@ class ChangePasswordWebIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -199,8 +198,7 @@ class ChangePasswordWebIntegrationTest : H2WebTest() {
         assertEquals(Status.OK, changeResponse.status)
         val changeBody = changeResponse.bodyString()
         assertTrue(
-            changeBody.contains("success", ignoreCase = true) ||
-                changeBody.contains("panel-success"),
+            changeBody.contains("success", ignoreCase = true) || changeBody.contains("panel-success"),
             "Password change should succeed before testing new password",
         )
 

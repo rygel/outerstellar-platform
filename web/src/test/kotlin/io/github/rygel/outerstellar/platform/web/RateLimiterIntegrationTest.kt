@@ -45,8 +45,7 @@ class RateLimiterIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -92,11 +91,7 @@ class RateLimiterIntegrationTest : H2WebTest() {
         repeat(10) { loginRequest(ip) }
 
         val response = loginRequest(ip)
-        assertEquals(
-            Status.TOO_MANY_REQUESTS,
-            response.status,
-            "11th request from same IP should be rate limited",
-        )
+        assertEquals(Status.TOO_MANY_REQUESTS, response.status, "11th request from same IP should be rate limited")
     }
 
     @Test
@@ -141,12 +136,8 @@ class RateLimiterIntegrationTest : H2WebTest() {
     fun `rate limiter does not apply to health endpoint`() {
         val ip = "203.0.113.1"
         repeat(15) {
-            val response =
-                app(Request(org.http4k.core.Method.GET, "/health").header("X-Forwarded-For", ip))
-            assertTrue(
-                response.status != Status.TOO_MANY_REQUESTS,
-                "Health endpoint should never be rate limited",
-            )
+            val response = app(Request(org.http4k.core.Method.GET, "/health").header("X-Forwarded-For", ip))
+            assertTrue(response.status != Status.TOO_MANY_REQUESTS, "Health endpoint should never be rate limited")
         }
     }
 }

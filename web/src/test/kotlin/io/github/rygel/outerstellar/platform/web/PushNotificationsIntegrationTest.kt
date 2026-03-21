@@ -66,17 +66,11 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
         val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService =
-            mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+        val contactService = mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         // Create a real user to use as the authenticated caller
         testUser =
@@ -145,9 +139,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
                 Request(POST, "/api/v1/devices/register")
                     .header("Authorization", "Bearer $sessionToken")
                     .header("content-type", "application/json")
-                    .body(
-                        """{"platform":"ios","token":"apns-bundle-token","appBundle":"com.example.app"}"""
-                    )
+                    .body("""{"platform":"ios","token":"apns-bundle-token","appBundle":"com.example.app"}""")
             )
         assertEquals(Status.NO_CONTENT, response.status)
     }
@@ -228,9 +220,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
             Request(POST, "/api/v1/devices/register")
                 .header("Authorization", "Bearer $sessionToken")
                 .header("content-type", "application/json")
-                .body(
-                    """{"platform":"ios","token":"apns-bundle-stored","appBundle":"com.myapp.bundle"}"""
-                )
+                .body("""{"platform":"ios","token":"apns-bundle-stored","appBundle":"com.myapp.bundle"}""")
         )
 
         val stored = deviceTokenRepository.findByUserId(testUser.id)
@@ -293,10 +283,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         )
 
         val remaining = deviceTokenRepository.findByUserId(testUser.id)
-        assertFalse(
-            remaining.any { it.token == tokenValue },
-            "Token should be removed from repository after DELETE",
-        )
+        assertFalse(remaining.any { it.token == tokenValue }, "Token should be removed from repository after DELETE")
     }
 
     @Test
@@ -405,17 +392,12 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         val received = mutableListOf<Pair<String, String>>()
         val capturingService =
             object : io.github.rygel.outerstellar.platform.service.PushNotificationService {
-                override fun send(
-                    platform: String,
-                    deviceToken: String,
-                    notification: PushNotification,
-                ) {
+                override fun send(platform: String, deviceToken: String, notification: PushNotification) {
                     received.add(platform to deviceToken)
                 }
             }
 
-        val tokens =
-            listOf("android" to "fcm-token-1", "ios" to "apns-token-2", "android" to "fcm-token-3")
+        val tokens = listOf("android" to "fcm-token-1", "ios" to "apns-token-2", "android" to "fcm-token-3")
         val notification = PushNotification(title = "Broadcast", body = "All devices")
 
         capturingService.sendToAll(tokens, notification)
@@ -431,11 +413,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
         var sendCallCount = 0
         val countingService =
             object : io.github.rygel.outerstellar.platform.service.PushNotificationService {
-                override fun send(
-                    platform: String,
-                    deviceToken: String,
-                    notification: PushNotification,
-                ) {
+                override fun send(platform: String, deviceToken: String, notification: PushNotification) {
                     sendCallCount++
                 }
             }
@@ -451,13 +429,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
     fun `DeviceToken data class holds expected fields`() {
         val userId = UUID.randomUUID()
         val token =
-            DeviceToken(
-                id = 1L,
-                userId = userId,
-                platform = "ios",
-                token = "apns-abc",
-                appBundle = "com.example.myapp",
-            )
+            DeviceToken(id = 1L, userId = userId, platform = "ios", token = "apns-abc", appBundle = "com.example.myapp")
         assertEquals(1L, token.id)
         assertEquals(userId, token.userId)
         assertEquals("ios", token.platform)

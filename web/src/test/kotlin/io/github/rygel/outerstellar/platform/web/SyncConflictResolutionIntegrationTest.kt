@@ -54,13 +54,8 @@ class SyncConflictResolutionIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -138,11 +133,7 @@ class SyncConflictResolutionIntegrationTest : H2WebTest() {
         pushMessage(syncId, "Server version", 2000L)
         val result = pushMessage(syncId, "Stale version", 500L)
 
-        assertEquals(
-            syncId,
-            result.conflicts[0].syncId,
-            "Conflict syncId must match pushed message",
-        )
+        assertEquals(syncId, result.conflicts[0].syncId, "Conflict syncId must match pushed message")
     }
 
     @Test

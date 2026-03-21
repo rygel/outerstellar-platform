@@ -22,10 +22,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
                 .bind("title", notification.title)
                 .bind("body", notification.body)
                 .bind("type", notification.type)
-                .bind(
-                    "createdAt",
-                    notification.createdAt.atOffset(ZoneOffset.UTC).toLocalDateTime(),
-                )
+                .bind("createdAt", notification.createdAt.atOffset(ZoneOffset.UTC).toLocalDateTime())
                 .execute()
         }
     }
@@ -46,9 +43,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
     override fun countUnread(userId: UUID): Int {
         return jdbi.withHandle<Int, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT COUNT(*) FROM notifications WHERE user_id = :userId AND read_at IS NULL"
-                )
+                .createQuery("SELECT COUNT(*) FROM notifications WHERE user_id = :userId AND read_at IS NULL")
                 .bind("userId", userId)
                 .mapTo(Int::class.java)
                 .one()
@@ -58,9 +53,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
     override fun markRead(id: UUID, userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate(
-                    "UPDATE notifications SET read_at = :readAt WHERE id = :id AND user_id = :userId"
-                )
+                .createUpdate("UPDATE notifications SET read_at = :readAt WHERE id = :id AND user_id = :userId")
                 .bind("readAt", LocalDateTime.now(ZoneOffset.UTC))
                 .bind("id", id)
                 .bind("userId", userId)
@@ -71,9 +64,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
     override fun markAllRead(userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate(
-                    "UPDATE notifications SET read_at = :readAt WHERE user_id = :userId AND read_at IS NULL"
-                )
+                .createUpdate("UPDATE notifications SET read_at = :readAt WHERE user_id = :userId AND read_at IS NULL")
                 .bind("readAt", LocalDateTime.now(ZoneOffset.UTC))
                 .bind("userId", userId)
                 .execute()

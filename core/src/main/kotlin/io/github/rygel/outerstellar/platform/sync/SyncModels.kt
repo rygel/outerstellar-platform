@@ -24,31 +24,18 @@ data class SyncMessage(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncPushRequest(val messages: List<SyncMessage> = emptyList()) {
     companion object {
-        val validate =
-            Validation<SyncPushRequest> {
-                SyncPushRequest::messages onEach { run(SyncMessage.validate) }
-            }
+        val validate = Validation<SyncPushRequest> { SyncPushRequest::messages onEach { run(SyncMessage.validate) } }
     }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncConflict(
-    val syncId: String,
-    val reason: String,
-    val serverMessage: SyncMessage? = null,
-)
+data class SyncConflict(val syncId: String, val reason: String, val serverMessage: SyncMessage? = null)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncPushResponse(
-    val appliedCount: Int = 0,
-    val conflicts: List<SyncConflict> = emptyList(),
-)
+data class SyncPushResponse(val appliedCount: Int = 0, val conflicts: List<SyncConflict> = emptyList())
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncPullResponse(
-    val messages: List<SyncMessage> = emptyList(),
-    val serverTimestamp: Long = 0,
-)
+data class SyncPullResponse(val messages: List<SyncMessage> = emptyList(), val serverTimestamp: Long = 0)
 
 data class SyncStats(val pushedCount: Int = 0, val pulledCount: Int = 0, val conflictCount: Int = 0)
 
@@ -78,34 +65,22 @@ data class SyncContact(
 data class SyncPushContactRequest(val contacts: List<SyncContact> = emptyList()) {
     companion object {
         val validate =
-            Validation<SyncPushContactRequest> {
-                SyncPushContactRequest::contacts onEach { run(SyncContact.validate) }
-            }
+            Validation<SyncPushContactRequest> { SyncPushContactRequest::contacts onEach { run(SyncContact.validate) } }
     }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncContactConflict(
-    val syncId: String,
-    val reason: String,
-    val serverContact: SyncContact? = null,
-)
+data class SyncContactConflict(val syncId: String, val reason: String, val serverContact: SyncContact? = null)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncPushContactResponse(
-    val appliedCount: Int = 0,
-    val conflicts: List<SyncContactConflict> = emptyList(),
-)
+data class SyncPushContactResponse(val appliedCount: Int = 0, val conflicts: List<SyncContactConflict> = emptyList())
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncPullContactResponse(
-    val contacts: List<SyncContact> = emptyList(),
-    val serverTimestamp: Long = 0,
-)
+data class SyncPullContactResponse(val contacts: List<SyncContact> = emptyList(), val serverTimestamp: Long = 0)
 
 /**
- * Annotation to ignore unknown properties during JSON deserialization. Replaces Jackson's
- * JsonIgnoreProperties to avoid dependency conflicts with http4k 6.x.
+ * Annotation to ignore unknown properties during JSON deserialization. Replaces Jackson's JsonIgnoreProperties to avoid
+ * dependency conflicts with http4k 6.x.
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)

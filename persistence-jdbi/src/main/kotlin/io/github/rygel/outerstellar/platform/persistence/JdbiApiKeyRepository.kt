@@ -42,9 +42,7 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
     override fun findByUserId(userId: UUID): List<ApiKey> {
         return jdbi.withHandle<List<ApiKey>, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT * FROM api_keys WHERE user_id = :userId ORDER BY created_at DESC"
-                )
+                .createQuery("SELECT * FROM api_keys WHERE user_id = :userId ORDER BY created_at DESC")
                 .bind("userId", userId)
                 .map { rs, _ -> mapApiKey(rs) }
                 .list()

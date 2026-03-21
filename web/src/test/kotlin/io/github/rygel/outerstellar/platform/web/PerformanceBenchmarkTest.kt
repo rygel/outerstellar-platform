@@ -65,20 +65,18 @@ data class BenchmarkBaseline(
 /**
  * In-process latency benchmarks for critical HTTP paths.
  *
- * These tests use the full application stack (H2 in-memory + Jooq + HTTP4K) but bypass the network,
- * so they measure routing, serialisation, auth, and DB overhead without TCP noise.
+ * These tests use the full application stack (H2 in-memory + Jooq + HTTP4K) but bypass the network, so they measure
+ * routing, serialisation, auth, and DB overhead without TCP noise.
  *
  * **Run with:** `mvn test -pl web -am -Pperformance`
  *
- * Excluded from the regular test suite via `surefire.excluded.groups=performance` in root
- * `pom.xml`.
+ * Excluded from the regular test suite via `surefire.excluded.groups=performance` in root `pom.xml`.
  *
- * After each run the results are written to `benchmarks/baseline.json` at the project root. Commit
- * that file to capture a new reference point. The next run prints a comparison table so regressions
- * are immediately visible in the log.
+ * After each run the results are written to `benchmarks/baseline.json` at the project root. Commit that file to capture
+ * a new reference point. The next run prints a comparison table so regressions are immediately visible in the log.
  *
- * Absolute P99 thresholds (20–1500 ms depending on the endpoint) catch gross regressions even
- * without a committed baseline. The baseline file is the historical record.
+ * Absolute P99 thresholds (20–1500 ms depending on the endpoint) catch gross regressions even without a committed
+ * baseline. The baseline file is the historical record.
  */
 @Tag("performance")
 class PerformanceBenchmarkTest : H2WebTest() {
@@ -97,10 +95,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
 
         /** Path of the baseline file relative to the project root. */
         private val baselineFile =
-            Path.of(System.getProperty("user.dir"))
-                .resolve("../benchmarks/baseline.json")
-                .normalize()
-                .toFile()
+            Path.of(System.getProperty("user.dir")).resolve("../benchmarks/baseline.json").normalize().toFile()
 
         @BeforeAll
         @JvmStatic
@@ -128,9 +123,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
 
         private fun printComparisonTable() {
             val prev = previousBaseline?.byName() ?: return
-            val header =
-                "%-44s  %8s  %8s  %8s  %8s"
-                    .format("benchmark", "prev P99", "curr P99", "delta", "status")
+            val header = "%-44s  %8s  %8s  %8s  %8s".format("benchmark", "prev P99", "curr P99", "delta", "status")
             val divider = "-".repeat(header.length)
             logger.info("Benchmark comparison vs previous baseline:")
             logger.info(divider)
@@ -142,11 +135,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
             logger.info(divider)
         }
 
-        private fun logBenchmarkRow(
-            name: String,
-            report: LatencyReport,
-            prevEntry: BenchmarkEntry?,
-        ) {
+        private fun logBenchmarkRow(name: String, report: LatencyReport, prevEntry: BenchmarkEntry?) {
             if (prevEntry != null) {
                 val delta = report.p99Ms() - prevEntry.p99Ms
                 val pct = if (prevEntry.p99Ms > 0) delta / prevEntry.p99Ms * 100 else 0.0
@@ -158,8 +147,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
                         else -> "unchanged"
                     }
                 logger.info(
-                    "%-44s  %7.2fms  %7.2fms  %+7.2f%%  %s"
-                        .format(name, prevEntry.p99Ms, report.p99Ms(), pct, status)
+                    "%-44s  %7.2fms  %7.2fms  %+7.2f%%  %s".format(name, prevEntry.p99Ms, report.p99Ms(), pct, status)
                 )
             } else {
                 logger.info("%-44s  %8s  %7.2fms  %8s  new".format(name, "—", report.p99Ms(), "—"))
@@ -211,14 +199,9 @@ class PerformanceBenchmarkTest : H2WebTest() {
         // logRounds=4 keeps non-BCrypt benchmarks fast; the login benchmark uses its own encoder
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
         val contactService = mockk<ContactService>(relaxed = true)
-        val pageFactory =
-            WebPageFactory(messageRepository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(messageRepository, messageService, contactService, securityService)
 
         app =
             app(
@@ -237,15 +220,8 @@ class PerformanceBenchmarkTest : H2WebTest() {
         val registerLens = Body.auto<RegisterRequest>().toLens()
         val loginLens = Body.auto<LoginRequest>().toLens()
         val tokenLens = Body.auto<AuthTokenResponse>().toLens()
-        app(
-            Request(POST, "/api/v1/auth/register")
-                .with(registerLens of RegisterRequest("perfuser", "pass123!"))
-        )
-        val loginResp =
-            app(
-                Request(POST, "/api/v1/auth/login")
-                    .with(loginLens of LoginRequest("perfuser", "pass123!"))
-            )
+        app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest("perfuser", "pass123!")))
+        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("perfuser", "pass123!")))
         bearerToken = tokenLens(loginResp).token
     }
 
@@ -269,13 +245,12 @@ class PerformanceBenchmarkTest : H2WebTest() {
     }
 
     /**
-     * Session lookup path: SHA-256 hash, DB lookup, sliding-window expiry update, user hydration.
-     * This is the hot path executed on every authenticated API request.
+     * Session lookup path: SHA-256 hash, DB lookup, sliding-window expiry update, user hydration. This is the hot path
+     * executed on every authenticated API request.
      */
     @Test
     fun `GET profile latency (session lookup + user read)`() {
-        val req =
-            Request(GET, "/api/v1/auth/profile").header("Authorization", "Bearer $bearerToken")
+        val req = Request(GET, "/api/v1/auth/profile").header("Authorization", "Bearer $bearerToken")
         val rec = LatencyRecorder("GET /api/v1/auth/profile")
         repeat(WARMUP) { app(req) }
         repeat(ITERATIONS) { rec.record { app(req) } }
@@ -286,13 +261,12 @@ class PerformanceBenchmarkTest : H2WebTest() {
     }
 
     /**
-     * Sync pull: authenticated DB read returning all changes since epoch 0. Exercises the session
-     * filter + message repository with no Caffeine benefit (sync pull bypasses MessageCache).
+     * Sync pull: authenticated DB read returning all changes since epoch 0. Exercises the session filter + message
+     * repository with no Caffeine benefit (sync pull bypasses MessageCache).
      */
     @Test
     fun `GET sync pull latency (changes since 0)`() {
-        val req =
-            Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $bearerToken")
+        val req = Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $bearerToken")
         val rec = LatencyRecorder("GET /api/v1/sync?since=0")
         repeat(WARMUP) { app(req) }
         repeat(ITERATIONS) { rec.record { app(req) } }
@@ -303,8 +277,8 @@ class PerformanceBenchmarkTest : H2WebTest() {
     }
 
     /**
-     * Sync push: single-message upsert. Exercises session lookup + message upsert + cache
-     * invalidation + outbox write within a single request.
+     * Sync push: single-message upsert. Exercises session lookup + message upsert + cache invalidation + outbox write
+     * within a single request.
      */
     @Test
     fun `POST sync push latency (single message upsert)`() {
@@ -322,21 +296,17 @@ class PerformanceBenchmarkTest : H2WebTest() {
         val report = rec.report()
         logger.info("{}", report)
         record(report)
-        assertTrue(
-            report.p99Ms() < 100.0,
-            "P99 should be < 100ms, was %.2fms".format(report.p99Ms()),
-        )
+        assertTrue(report.p99Ms() < 100.0, "P99 should be < 100ms, was %.2fms".format(report.p99Ms()))
     }
 
     /**
-     * Cache effectiveness: measures the latency difference between a cold message-list request
-     * (cache invalidated) and a warm one (Caffeine hit). Both variants are recorded in the baseline
-     * so the warm/cold ratio is tracked over time.
+     * Cache effectiveness: measures the latency difference between a cold message-list request (cache invalidated) and
+     * a warm one (Caffeine hit). Both variants are recorded in the baseline so the warm/cold ratio is tracked over
+     * time.
      */
     @Test
     fun `message list cache warm vs cold`() {
-        val req =
-            Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $bearerToken")
+        val req = Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $bearerToken")
 
         val coldRec = LatencyRecorder("GET /api/v1/sync?since=0 (cold)")
         repeat(WARMUP) { app(req) }
@@ -357,14 +327,13 @@ class PerformanceBenchmarkTest : H2WebTest() {
         record(warm)
         assertTrue(
             warm.p99Ms() <= cold.p50Ms() * 3.0,
-            "Warm P99 (%.2fms) should be within 3× of cold P50 (%.2fms)"
-                .format(warm.p99Ms(), cold.p50Ms()),
+            "Warm P99 (%.2fms) should be within 3× of cold P50 (%.2fms)".format(warm.p99Ms(), cold.p50Ms()),
         )
     }
 
     /**
-     * BCrypt login latency at production strength (logRounds=10). Intentionally uses a separate
-     * SecurityService instance so it doesn't affect the main app or other benchmarks.
+     * BCrypt login latency at production strength (logRounds=10). Intentionally uses a separate SecurityService
+     * instance so it doesn't affect the main app or other benchmarks.
      *
      * Runs fewer iterations because each call takes ~100 ms.
      */
@@ -373,11 +342,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
         val prodEncoder = BCryptPasswordEncoder(logRounds = 10)
         val userRepository = JooqUserRepository(testDsl)
         val prodSecurityService =
-            SecurityService(
-                userRepository,
-                prodEncoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
+            SecurityService(userRepository, prodEncoder, sessionRepository = JooqSessionRepository(testDsl))
 
         userRepository.save(
             io.github.rygel.outerstellar.platform.security.User(
@@ -396,8 +361,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
         val cache = CaffeineMessageCache()
         val txManager = StubTransactionManager()
         val messageService = MessageService(messageRepository, outbox, txManager, cache)
-        val pageFactory =
-            WebPageFactory(messageRepository, messageService, contactService, prodSecurityService)
+        val pageFactory = WebPageFactory(messageRepository, messageService, contactService, prodSecurityService)
 
         val prodApp =
             app(
@@ -413,9 +377,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
             )
                 .http!!
 
-        val req =
-            Request(POST, "/api/v1/auth/login")
-                .with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))
+        val req = Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))
 
         val rec = LatencyRecorder("POST /api/v1/auth/login (BCrypt rounds=10)")
         repeat(3) { prodApp(req) }
@@ -423,9 +385,6 @@ class PerformanceBenchmarkTest : H2WebTest() {
         val report = rec.report()
         logger.info("{}", report)
         record(report)
-        assertTrue(
-            report.p99Ms() < 1500.0,
-            "Login P99 should be < 1500ms, was %.2fms".format(report.p99Ms()),
-        )
+        assertTrue(report.p99Ms() < 1500.0, "Login P99 should be < 1500ms, was %.2fms".format(report.p99Ms()))
     }
 }

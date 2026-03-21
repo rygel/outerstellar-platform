@@ -43,8 +43,8 @@ class JwtService(private val config: JwtConfig) {
     }
 
     /**
-     * Verify [token] and return (userId, isAdmin). Returns null if JWT is not enabled, the token is
-     * invalid, or it has expired.
+     * Verify [token] and return (userId, isAdmin). Returns null if JWT is not enabled, the token is invalid, or it has
+     * expired.
      */
     fun extractClaims(token: String): Pair<UUID, Boolean>? {
         if (!isEnabled) return null

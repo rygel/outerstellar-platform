@@ -79,14 +79,9 @@ class OAuthRoutes(
             )
         }
 
-    private fun initiateOAuth(
-        request: Request,
-        providerName: String,
-        provider: OAuthProvider,
-    ): Response {
+    private fun initiateOAuth(request: Request, providerName: String, provider: OAuthProvider): Response {
         val state = java.util.UUID.randomUUID().toString()
-        val redirectUri =
-            "${request.uri.scheme}://${request.uri.authority}/auth/oauth/$providerName/callback"
+        val redirectUri = "${request.uri.scheme}://${request.uri.authority}/auth/oauth/$providerName/callback"
 
         val stateCookie =
             Cookie(
@@ -124,32 +119,17 @@ class OAuthRoutes(
         return if (code != null && stateValid) ValidatedCallback(code, returnedState!!) else null
     }
 
-    private fun handleCallback(
-        request: Request,
-        providerName: String,
-        provider: OAuthProvider,
-    ): Response {
+    private fun handleCallback(request: Request, providerName: String, provider: OAuthProvider): Response {
         val validated =
-            validateCallback(request, providerName)
-                ?: return badCallbackResponse("Invalid callback parameters")
+            validateCallback(request, providerName) ?: return badCallbackResponse("Invalid callback parameters")
 
-        val redirectUri =
-            "${request.uri.scheme}://${request.uri.authority}/auth/oauth/$providerName/callback"
+        val redirectUri = "${request.uri.scheme}://${request.uri.authority}/auth/oauth/$providerName/callback"
 
         return try {
             val userInfo = provider.exchangeCode(validated.code, validated.state, redirectUri)
-            val user =
-                securityService.findOrCreateOAuthUser(
-                    providerName,
-                    userInfo.subject,
-                    userInfo.email,
-                )
+            val user = securityService.findOrCreateOAuthUser(providerName, userInfo.subject, userInfo.email)
 
-            logger.info(
-                "OAuth sign-in successful: user={} provider={}",
-                user.username,
-                providerName,
-            )
+            logger.info("OAuth sign-in successful: user={} provider={}", user.username, providerName)
             Response(Status.FOUND)
                 .header("location", "/")
                 .cookie(

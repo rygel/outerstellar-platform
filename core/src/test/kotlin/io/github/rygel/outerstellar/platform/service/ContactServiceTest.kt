@@ -103,9 +103,7 @@ class ContactServiceTest {
     @Test
     fun `createContact delegates to repository and publishes refresh`() {
         val contact = storedContact()
-        every {
-            repository.createLocalContact(any(), any(), any(), any(), any(), any(), any())
-        } returns contact
+        every { repository.createLocalContact(any(), any(), any(), any(), any(), any(), any()) } returns contact
 
         service.createContact(
             "Alice",
@@ -124,9 +122,7 @@ class ContactServiceTest {
     @Test
     fun `createContact returns the created contact`() {
         val contact = storedContact()
-        every {
-            repository.createLocalContact(any(), any(), any(), any(), any(), any(), any())
-        } returns contact
+        every { repository.createLocalContact(any(), any(), any(), any(), any(), any(), any()) } returns contact
 
         val result =
             service.createContact(

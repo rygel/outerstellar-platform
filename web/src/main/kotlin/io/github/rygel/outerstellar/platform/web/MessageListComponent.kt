@@ -22,8 +22,7 @@ data class MessageListViewModel(
     val localBadge: String = "Local",
     val conflictBadge: String = "Conflict",
 ) : ViewModel {
-    override fun template(): String =
-        "io/github/rygel/outerstellar/platform/web/components/MessageList"
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/MessageList"
 }
 
 private const val DEFAULT_PAGE_SIZE = 10
@@ -33,8 +32,7 @@ private const val ARG_OFFSET = 2
 private const val ARG_YEAR = 3
 private const val ARG_IS_TRASH = 4
 
-class MessageListComponent(private val messageService: MessageService) :
-    WebComponent<MessageListViewModel> {
+class MessageListComponent(private val messageService: MessageService) : WebComponent<MessageListViewModel> {
 
     override fun build(ctx: WebContext, vararg args: Any?): MessageListViewModel {
         val query = args.getOrNull(ARG_QUERY) as? String
@@ -52,17 +50,7 @@ class MessageListComponent(private val messageService: MessageService) :
                 messageService.listMessages(query, year, limit, offset)
             }
 
-        return buildViewModel(
-            ctx,
-            result.items,
-            result.metadata.totalItems,
-            limit,
-            offset,
-            query,
-            year,
-            isTrash,
-            i18n,
-        )
+        return buildViewModel(ctx, result.items, result.metadata.totalItems, limit, offset, query, year, isTrash, i18n)
     }
 
     @Suppress("LongParameterList")
@@ -77,12 +65,7 @@ class MessageListComponent(private val messageService: MessageService) :
         isTrash: Boolean,
         i18n: io.github.rygel.outerstellar.i18n.I18nService,
     ): MessageListViewModel {
-        val metadata =
-            PaginationMetadata(
-                currentPage = (offset / limit) + 1,
-                pageSize = limit,
-                totalItems = total,
-            )
+        val metadata = PaginationMetadata(currentPage = (offset / limit) + 1, pageSize = limit, totalItems = total)
 
         fun createUrl(page: Int): String {
             val newOffset = (page - 1) * limit

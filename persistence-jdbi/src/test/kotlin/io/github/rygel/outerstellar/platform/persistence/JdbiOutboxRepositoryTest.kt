@@ -10,12 +10,7 @@ class JdbiOutboxRepositoryTest : H2JdbiTest() {
     private val repo by lazy { JdbiOutboxRepository(jdbi) }
 
     private fun entry(payloadType: String = "TestEvent", payload: String = "{}") =
-        OutboxEntry(
-            id = UUID.randomUUID(),
-            payloadType = payloadType,
-            payload = payload,
-            status = "PENDING",
-        )
+        OutboxEntry(id = UUID.randomUUID(), payloadType = payloadType, payload = payload, status = "PENDING")
 
     @Test
     fun `save and listPending round-trips`() {

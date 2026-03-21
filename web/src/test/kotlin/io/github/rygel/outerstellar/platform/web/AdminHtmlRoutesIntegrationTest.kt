@@ -59,8 +59,7 @@ class AdminHtmlRoutesIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         securityService = SecurityService(userRepository, encoder, auditRepository)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         adminUser =
             User(
@@ -113,10 +112,7 @@ class AdminHtmlRoutesIntegrationTest : H2WebTest() {
         val response = app(Request(GET, "/admin/users").cookie(adminCookie()))
         val body = response.bodyString()
         assertTrue(body.isNotBlank(), "Response body should not be empty")
-        assertTrue(
-            body.contains("html", ignoreCase = true),
-            "Response should be HTML, got: ${body.take(200)}",
-        )
+        assertTrue(body.contains("html", ignoreCase = true), "Response should be HTML, got: ${body.take(200)}")
     }
 
     @Test
@@ -136,10 +132,7 @@ class AdminHtmlRoutesIntegrationTest : H2WebTest() {
         val response = app(Request(GET, "/admin/users/export").cookie(adminCookie()))
         assertEquals(Status.OK, response.status)
         val contentType = response.header("Content-Type") ?: ""
-        assertTrue(
-            contentType.contains("text/csv"),
-            "Should return CSV content-type, got: $contentType",
-        )
+        assertTrue(contentType.contains("text/csv"), "Should return CSV content-type, got: $contentType")
     }
 
     @Test
@@ -156,20 +149,14 @@ class AdminHtmlRoutesIntegrationTest : H2WebTest() {
     fun `GET admin-users-export CSV contains admin user entry`() {
         val response = app(Request(GET, "/admin/users/export").cookie(adminCookie()))
         val body = response.bodyString()
-        assertTrue(
-            body.contains(adminUser.username),
-            "CSV should contain admin username, got: ${body.take(500)}",
-        )
+        assertTrue(body.contains(adminUser.username), "CSV should contain admin username, got: ${body.take(500)}")
     }
 
     @Test
     fun `GET admin-users-export has content-disposition attachment header`() {
         val response = app(Request(GET, "/admin/users/export").cookie(adminCookie()))
         val disposition = response.header("Content-Disposition") ?: ""
-        assertTrue(
-            disposition.contains("attachment"),
-            "Should have attachment content-disposition, got: $disposition",
-        )
+        assertTrue(disposition.contains("attachment"), "Should have attachment content-disposition, got: $disposition")
     }
 
     @Test
@@ -186,17 +173,13 @@ class AdminHtmlRoutesIntegrationTest : H2WebTest() {
 
     @Test
     fun `POST admin-users toggle-enabled returns 200 for admin`() {
-        val response =
-            app(
-                Request(POST, "/admin/users/${regularUser.id}/toggle-enabled").cookie(adminCookie())
-            )
+        val response = app(Request(POST, "/admin/users/${regularUser.id}/toggle-enabled").cookie(adminCookie()))
         assertEquals(Status.OK, response.status)
     }
 
     @Test
     fun `POST admin-users toggle-role returns 200 for admin`() {
-        val response =
-            app(Request(POST, "/admin/users/${regularUser.id}/toggle-role").cookie(adminCookie()))
+        val response = app(Request(POST, "/admin/users/${regularUser.id}/toggle-role").cookie(adminCookie()))
         assertEquals(Status.OK, response.status)
     }
 }

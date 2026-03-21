@@ -51,12 +51,7 @@ class MessageService(
             val total = repository.countMessages(query, year)
             PagedResult(
                 items = items,
-                metadata =
-                PaginationMetadata(
-                    currentPage = (offset / limit) + 1,
-                    pageSize = limit,
-                    totalItems = total,
-                ),
+                metadata = PaginationMetadata(currentPage = (offset / limit) + 1, pageSize = limit, totalItems = total),
             )
         } as PagedResult<MessageSummary>
     }
@@ -72,12 +67,7 @@ class MessageService(
 
         return PagedResult(
             items = items,
-            metadata =
-            PaginationMetadata(
-                currentPage = (offset / limit) + 1,
-                pageSize = limit,
-                totalItems = total,
-            ),
+            metadata = PaginationMetadata(currentPage = (offset / limit) + 1, pageSize = limit, totalItems = total),
         )
     }
 
@@ -166,9 +156,7 @@ class MessageService(
     fun processPushRequest(request: SyncPushRequest): SyncPushResponse {
         val validationResult = SyncPushRequest.validate(request)
         if (validationResult is Invalid) {
-            throw ValidationException(
-                validationResult.errors.map { "${it.dataPath}: ${it.message}" }
-            )
+            throw ValidationException(validationResult.errors.map { "${it.dataPath}: ${it.message}" })
         }
 
         val conflicts = mutableListOf<SyncConflict>()
@@ -179,11 +167,7 @@ class MessageService(
                 try {
                     findBySyncId(incoming.syncId)
                 } catch (e: MessageNotFoundException) {
-                    logger.trace(
-                        "No existing message found for syncId: {}. Exception: {}",
-                        incoming.syncId,
-                        e.message,
-                    )
+                    logger.trace("No existing message found for syncId: {}. Exception: {}", incoming.syncId, e.message)
                     null
                 }
             when {
@@ -298,10 +282,7 @@ class MessageService(
             try {
                 Jackson.asA(currentConflict, SyncMessage::class)
             } catch (e: JsonProcessingException) {
-                throw IllegalStateException(
-                    "Cannot parse conflict data for message $syncId: ${e.message}",
-                    e,
-                )
+                throw IllegalStateException("Cannot parse conflict data for message $syncId: ${e.message}", e)
             }
 
         val resolved =

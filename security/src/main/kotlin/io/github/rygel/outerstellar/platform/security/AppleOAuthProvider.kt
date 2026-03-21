@@ -5,14 +5,13 @@ import org.slf4j.LoggerFactory
 /**
  * Sign in with Apple OAuth 2.0 provider stub.
  *
- * This implementation logs intent and returns placeholder values so the full OAuth flow can be
- * wired end-to-end without an Apple Developer account. Replace the TODO sections once you have:
+ * This implementation logs intent and returns placeholder values so the full OAuth flow can be wired end-to-end without
+ * an Apple Developer account. Replace the TODO sections once you have:
  * - A valid Apple Developer Team ID
  * - A Services ID (OAuth client_id)
  * - A Key ID and the corresponding .p8 private key for generating client_secret JWTs
  *
- * Apple documentation:
- * https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api
+ * Apple documentation: https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api
  */
 class AppleOAuthProvider(
     /** Your Apple Developer Team ID (10-character string). */

@@ -37,8 +37,7 @@ class ComprehensiveWebE2ETest : KoinTest {
                 module {
                     single {
                         AppConfig(
-                            jdbcUrl =
-                            "jdbc:h2:mem:comprehensive_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+                            jdbcUrl = "jdbc:h2:mem:comprehensive_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
                             devMode = true,
                         )
                     }
@@ -88,8 +87,7 @@ class ComprehensiveWebE2ETest : KoinTest {
 
     @Test
     fun `theme switching should refresh the page correctly`() {
-        val response =
-            app.http!!(Request(GET, "/components/navigation/page?theme=monokai&pagePath=/"))
+        val response = app.http!!(Request(GET, "/components/navigation/page?theme=monokai&pagePath=/"))
         assertEquals(Status.OK, response.status)
         assertTrue(
             response.header("HX-Redirect")?.contains("theme=monokai") == true,
@@ -99,8 +97,7 @@ class ComprehensiveWebE2ETest : KoinTest {
 
     @Test
     fun `language switching should refresh the page correctly`() {
-        val response =
-            app.http!!(Request(GET, "/components/navigation/page?lang=fr&pagePath=/contacts"))
+        val response = app.http!!(Request(GET, "/components/navigation/page?lang=fr&pagePath=/contacts"))
         assertEquals(Status.OK, response.status)
         assertTrue(
             response.header("HX-Redirect")?.contains("lang=fr") == true,

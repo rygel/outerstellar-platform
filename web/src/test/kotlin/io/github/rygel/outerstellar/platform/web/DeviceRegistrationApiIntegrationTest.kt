@@ -57,13 +57,8 @@ class DeviceRegistrationApiIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
         deviceTokenRepository = InMemoryDeviceTokenRepository()
 
         testUser =
@@ -101,11 +96,7 @@ class DeviceRegistrationApiIntegrationTest : H2WebTest() {
 
     private fun bearer() = "Bearer $sessionToken"
 
-    private fun registerRequest(
-        platform: String,
-        token: String,
-        appBundle: String? = null,
-    ): org.http4k.core.Response {
+    private fun registerRequest(platform: String, token: String, appBundle: String? = null): org.http4k.core.Response {
         val bundleField = if (appBundle != null) ""","appBundle":"$appBundle"""" else ""
         return app(
             Request(POST, "/api/v1/devices/register")
@@ -191,10 +182,7 @@ class DeviceRegistrationApiIntegrationTest : H2WebTest() {
     fun `token is removed after deregistration`() {
         val token = "removable-token-${UUID.randomUUID()}"
         registerRequest("android", token)
-        assertTrue(
-            deviceTokenRepository.all().any { it.token == token },
-            "Token should exist before deregistration",
-        )
+        assertTrue(deviceTokenRepository.all().any { it.token == token }, "Token should exist before deregistration")
 
         deregisterRequest(token)
 
@@ -225,11 +213,7 @@ class DeviceRegistrationApiIntegrationTest : H2WebTest() {
         registerRequest("ios", token)
 
         val stored = deviceTokenRepository.all().find { it.token == token }
-        assertEquals(
-            testUser.id,
-            stored?.userId,
-            "Stored token should have the authenticated user's id",
-        )
+        assertEquals(testUser.id, stored?.userId, "Stored token should have the authenticated user's id")
     }
 
     @Test

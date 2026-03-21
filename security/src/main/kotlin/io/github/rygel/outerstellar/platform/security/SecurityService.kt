@@ -80,8 +80,7 @@ class SecurityService(
         require(username.isNotBlank()) { "Username is required" }
         if (password.length < MIN_PASSWORD_LENGTH)
             throw WeakPasswordException("Password must be at least $MIN_PASSWORD_LENGTH characters")
-        if (userRepository.findByUsername(username) != null)
-            throw UsernameAlreadyExistsException(username)
+        if (userRepository.findByUsername(username) != null) throw UsernameAlreadyExistsException(username)
 
         val created =
             User(
@@ -104,9 +103,7 @@ class SecurityService(
             throw WeakPasswordException("Current password is incorrect")
         }
         if (newPassword.length < MIN_PASSWORD_LENGTH) {
-            throw WeakPasswordException(
-                "New password must be at least $MIN_PASSWORD_LENGTH characters"
-            )
+            throw WeakPasswordException("New password must be at least $MIN_PASSWORD_LENGTH characters")
         }
 
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
@@ -128,8 +125,7 @@ class SecurityService(
         if (adminId == targetId) {
             throw InsufficientPermissionException("Cannot change your own enabled status")
         }
-        val target =
-            userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
+        val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateEnabled(targetId, enabled)
         logger.info("User {} enabled set to {} by admin {}", target.username, enabled, adminId)
         val admin = userRepository.findById(adminId)
@@ -141,17 +137,11 @@ class SecurityService(
         if (adminId == targetId) {
             throw InsufficientPermissionException("Cannot change your own role")
         }
-        val target =
-            userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
+        val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateRole(targetId, role)
         logger.info("User {} role set to {} by admin {}", target.username, role, adminId)
         val admin = userRepository.findById(adminId)
-        audit(
-            "USER_ROLE_CHANGED",
-            actor = admin,
-            target = target,
-            detail = "from ${target.role} to $role",
-        )
+        audit("USER_ROLE_CHANGED", actor = admin, target = target, detail = "from ${target.role} to $role")
     }
 
     fun countAuditEntries(): Long = auditRepository?.countAll() ?: 0L
@@ -160,21 +150,17 @@ class SecurityService(
         return auditRepository?.findRecent(limit) ?: emptyList()
     }
 
-    fun getAuditLog(limit: Int, offset: Int): List<AuditEntry> =
-        auditRepository?.findPage(limit, offset) ?: emptyList()
+    fun getAuditLog(limit: Int, offset: Int): List<AuditEntry> = auditRepository?.findPage(limit, offset) ?: emptyList()
 
     // Delegated to PasswordResetService
 
-    fun requestPasswordReset(email: String): String? =
-        passwordResetService.requestPasswordReset(email)
+    fun requestPasswordReset(email: String): String? = passwordResetService.requestPasswordReset(email)
 
-    fun resetPassword(token: String, newPassword: String) =
-        passwordResetService.resetPassword(token, newPassword)
+    fun resetPassword(token: String, newPassword: String) = passwordResetService.resetPassword(token, newPassword)
 
     // Delegated to ApiKeyService
 
-    fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse =
-        apiKeyService.createApiKey(userId, name)
+    fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse = apiKeyService.createApiKey(userId, name)
 
     fun authenticateApiKey(rawKey: String): User? = apiKeyService.authenticateApiKey(rawKey)
 
@@ -189,12 +175,7 @@ class SecurityService(
 
     // Session management
 
-    fun updateProfile(
-        userId: UUID,
-        newEmail: String,
-        newUsername: String? = null,
-        newAvatarUrl: String? = null,
-    ) {
+    fun updateProfile(userId: UUID, newEmail: String, newUsername: String? = null, newAvatarUrl: String? = null) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         if (newEmail != user.email) {
             if (!EMAIL_REGEX.matches(newEmail)) {
@@ -217,11 +198,7 @@ class SecurityService(
         }
         if (newAvatarUrl != user.avatarUrl) {
             val sanitizedUrl = newAvatarUrl?.takeIf { it.isNotBlank() }
-            if (
-                sanitizedUrl != null &&
-                    !sanitizedUrl.startsWith("https://") &&
-                    !sanitizedUrl.startsWith("http://")
-            ) {
+            if (sanitizedUrl != null && !sanitizedUrl.startsWith("https://") && !sanitizedUrl.startsWith("http://")) {
                 throw IllegalArgumentException("Avatar URL must use http or https scheme")
             }
             userRepository.updateAvatarUrl(userId, sanitizedUrl)
@@ -235,9 +212,7 @@ class SecurityService(
         if (user.role == UserRole.ADMIN) {
             val adminCount = userRepository.findAll().count { it.role == UserRole.ADMIN }
             if (adminCount <= 1) {
-                throw InsufficientPermissionException(
-                    "Cannot delete the only remaining admin account"
-                )
+                throw InsufficientPermissionException("Cannot delete the only remaining admin account")
             }
         }
         userRepository.deleteById(userId)
@@ -304,12 +279,7 @@ class SecurityService(
         return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 
-    private fun audit(
-        action: String,
-        actor: User? = null,
-        target: User? = null,
-        detail: String? = null,
-    ) {
+    private fun audit(action: String, actor: User? = null, target: User? = null, detail: String? = null) {
         auditRepository?.log(
             AuditEntry(
                 actorId = actor?.id?.toString(),
@@ -331,10 +301,4 @@ class SecurityService(
 }
 
 private fun User.toSummary() =
-    UserSummary(
-        id = id.toString(),
-        username = username,
-        email = email,
-        role = role.name,
-        enabled = enabled,
-    )
+    UserSummary(id = id.toString(), username = username, email = email, role = role.name, enabled = enabled)

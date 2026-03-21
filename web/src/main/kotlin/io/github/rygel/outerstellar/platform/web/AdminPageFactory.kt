@@ -7,11 +7,8 @@ private const val ADMIN_SECONDS_PER_HOUR = 3600
 private const val ADMIN_SECONDS_PER_DAY = 86400
 
 class AdminPageFactory(
-    private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? =
-        null,
-    private val notificationService:
-    io.github.rygel.outerstellar.platform.service.NotificationService? =
-        null,
+    private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
+    private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
 ) {
 
     fun buildUserAdminPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<UserAdminPage> {
@@ -24,8 +21,7 @@ class AdminPageFactory(
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
         val hasNext = safeOffset + limit < totalCount
-        val previousUrl =
-            ctx.url("/admin/users?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
+        val previousUrl = ctx.url("/admin/users?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
         val nextUrl = ctx.url("/admin/users?limit=$limit&offset=${safeOffset + limit}")
 
         return Page(
@@ -77,8 +73,7 @@ class AdminPageFactory(
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
         val hasNext = safeOffset + limit < totalCount
-        val previousUrl =
-            ctx.url("/admin/audit?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
+        val previousUrl = ctx.url("/admin/audit?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
         val nextUrl = ctx.url("/admin/audit?limit=$limit&offset=${safeOffset + limit}")
 
         return Page(
@@ -112,11 +107,7 @@ class AdminPageFactory(
         )
     }
 
-    fun buildApiKeysPage(
-        ctx: WebContext,
-        newKey: String? = null,
-        newKeyName: String? = null,
-    ): Page<ApiKeysPage> {
+    fun buildApiKeysPage(ctx: WebContext, newKey: String? = null, newKeyName: String? = null): Page<ApiKeysPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.apikeys.title"), "/auth/api-keys")
         val userId = checkNotNull(ctx.user?.id) { "User not logged in" }
@@ -183,8 +174,7 @@ class AdminPageFactory(
                 deleteAccountUrl = ctx.url("/auth/account/delete"),
                 dangerZoneLabel = i18n.translate("web.profile.danger.zone"),
                 deleteAccountLabel = i18n.translate("web.profile.delete.account"),
-                deleteAccountDescription =
-                i18n.translate("web.profile.delete.account.description"),
+                deleteAccountDescription = i18n.translate("web.profile.delete.account.description"),
                 deleteAccountConfirmLabel = i18n.translate("web.profile.delete.confirm"),
                 deleteAccountCancelLabel = i18n.translate("web.profile.delete.cancel"),
             ),
@@ -197,10 +187,7 @@ class AdminPageFactory(
         val unreadCount = notificationService?.countUnread(user.id) ?: 0
         val shell =
             ctx.shell(i18n.translate("web.notifications.title"), "/notifications")
-                .copy(
-                    notificationsUrl = ctx.url("/notifications"),
-                    unreadNotificationCount = unreadCount,
-                )
+                .copy(notificationsUrl = ctx.url("/notifications"), unreadNotificationCount = unreadCount)
         val notifications = notificationService?.listForUser(user.id) ?: emptyList()
         return Page(
             shell = shell,
@@ -232,10 +219,7 @@ class AdminPageFactory(
 
     fun buildNotificationBell(ctx: WebContext): NotificationBellFragment {
         val unreadCount = ctx.user?.id?.let { notificationService?.countUnread(it) } ?: 0
-        return NotificationBellFragment(
-            unreadCount = unreadCount,
-            notificationsUrl = ctx.url("/notifications"),
-        )
+        return NotificationBellFragment(unreadCount = unreadCount, notificationsUrl = ctx.url("/notifications"))
     }
 
     fun formatTimeAgo(instant: java.time.Instant): String {

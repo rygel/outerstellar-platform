@@ -43,11 +43,7 @@ class SyncWebSocket(private val userRepository: UserRepository) :
             }
 
             connections.add(ws)
-            logger.info(
-                "WebSocket connection established for user {}. Total: {}",
-                user.username,
-                connections.size,
-            )
+            logger.info("WebSocket connection established for user {}. Total: {}", user.username, connections.size)
 
             ws.onMessage { msg -> logger.debug("Received message: {}", msg.bodyString()) }
 

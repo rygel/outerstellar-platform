@@ -39,8 +39,7 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
                         targetUsername = rs.getString("target_username"),
                         action = rs.getString("action"),
                         detail = rs.getString("detail"),
-                        createdAt =
-                            rs.getTimestamp("created_at")?.toInstant() ?: java.time.Instant.now(),
+                        createdAt = rs.getTimestamp("created_at")?.toInstant() ?: java.time.Instant.now(),
                     )
                 }
                 .list()
@@ -50,9 +49,7 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
     override fun findPage(limit: Int, offset: Int): List<AuditEntry> =
         jdbi.withHandle<List<AuditEntry>, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT * FROM audit_log ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
-                )
+                .createQuery("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
                 .bind("limit", limit)
                 .bind("offset", offset)
                 .map { rs, _ ->
@@ -64,8 +61,7 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
                         targetUsername = rs.getString("target_username"),
                         action = rs.getString("action"),
                         detail = rs.getString("detail"),
-                        createdAt =
-                            rs.getTimestamp("created_at")?.toInstant() ?: java.time.Instant.now(),
+                        createdAt = rs.getTimestamp("created_at")?.toInstant() ?: java.time.Instant.now(),
                     )
                 }
                 .list()
