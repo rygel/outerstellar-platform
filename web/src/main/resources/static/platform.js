@@ -76,3 +76,16 @@ document.addEventListener('htmx:configRequest', function (event) {
         }
     }
 })();
+
+// Mobile menu toggle
+function toggleMobileMenu() {
+    document.querySelector('.sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeMobileMenu() {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+}
+document.querySelectorAll('.nav-link').forEach(function(link) {
+    link.addEventListener('click', closeMobileMenu);
+});

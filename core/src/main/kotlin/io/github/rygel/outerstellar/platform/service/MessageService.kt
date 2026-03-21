@@ -22,9 +22,9 @@ import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
 import io.github.rygel.outerstellar.platform.sync.SyncPushResponse
 import io.konform.validation.Invalid
+import java.util.UUID
 import org.http4k.format.Jackson
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 @Suppress("TooManyFunctions")
 class MessageService(
