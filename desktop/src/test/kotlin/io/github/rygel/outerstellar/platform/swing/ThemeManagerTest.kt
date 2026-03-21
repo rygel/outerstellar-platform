@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.platform.model.ThemeCatalog
 import java.awt.Color
+import javax.swing.SwingUtilities
 import javax.swing.UIManager
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -11,6 +12,10 @@ class ThemeManagerTest {
 
     private val themeManager = ThemeManager()
 
+    private fun onEdt(block: () -> Unit) {
+        SwingUtilities.invokeAndWait(block)
+    }
+
     @Test
     fun `applyTheme updates toolbar and core ui color defaults`() {
         val dark = ThemeCatalog.allThemes().first { it.name == "Dark" }
@@ -18,19 +23,24 @@ class ThemeManagerTest {
         val expectedForeground = Color.decode(dark.colors.getValue("foreground"))
         val expectedComponentBackground = Color.decode(dark.colors.getValue("componentBackground"))
 
-        themeManager.applyTheme(dark)
+        onEdt { themeManager.applyTheme(dark) }
 
-        assertEquals("Dark", UIManager.get("current_theme_name"))
-        assertEquals(expectedBackground.rgb, UIManager.getColor("Panel.background").rgb)
-        assertEquals(expectedBackground.rgb, UIManager.getColor("MenuBar.background").rgb)
-        assertEquals(expectedBackground.rgb, UIManager.getColor("ToolBar.background").rgb)
-        assertEquals(expectedForeground.rgb, UIManager.getColor("ToolBar.foreground").rgb)
-        assertEquals(expectedComponentBackground.rgb, UIManager.getColor("List.background").rgb)
-        assertEquals(
-            expectedComponentBackground.rgb,
-            UIManager.getColor("TextField.background").rgb,
-        )
-        assertEquals(expectedComponentBackground.rgb, UIManager.getColor("TextArea.background").rgb)
+        onEdt {
+            assertEquals("Dark", UIManager.get("current_theme_name"))
+            assertEquals(expectedBackground.rgb, UIManager.getColor("Panel.background").rgb)
+            assertEquals(expectedBackground.rgb, UIManager.getColor("MenuBar.background").rgb)
+            assertEquals(expectedBackground.rgb, UIManager.getColor("ToolBar.background").rgb)
+            assertEquals(expectedForeground.rgb, UIManager.getColor("ToolBar.foreground").rgb)
+            assertEquals(expectedComponentBackground.rgb, UIManager.getColor("List.background").rgb)
+            assertEquals(
+                expectedComponentBackground.rgb,
+                UIManager.getColor("TextField.background").rgb,
+            )
+            assertEquals(
+                expectedComponentBackground.rgb,
+                UIManager.getColor("TextArea.background").rgb,
+            )
+        }
     }
 
     @Test
@@ -40,14 +50,18 @@ class ThemeManagerTest {
         val expectedDarkBg = Color.decode(dark.colors.getValue("background"))
         val expectedLightBg = Color.decode(light.colors.getValue("background"))
 
-        themeManager.applyTheme(dark)
-        assertEquals(expectedDarkBg.rgb, UIManager.getColor("Panel.background").rgb)
-        assertEquals(expectedDarkBg.rgb, UIManager.getColor("ToolBar.background").rgb)
+        onEdt { themeManager.applyTheme(dark) }
+        onEdt {
+            assertEquals(expectedDarkBg.rgb, UIManager.getColor("Panel.background").rgb)
+            assertEquals(expectedDarkBg.rgb, UIManager.getColor("ToolBar.background").rgb)
+        }
 
-        themeManager.applyTheme(light)
-        assertEquals("Default", UIManager.get("current_theme_name"))
-        assertEquals(expectedLightBg.rgb, UIManager.getColor("Panel.background").rgb)
-        assertEquals(expectedLightBg.rgb, UIManager.getColor("ToolBar.background").rgb)
+        onEdt { themeManager.applyTheme(light) }
+        onEdt {
+            assertEquals("Default", UIManager.get("current_theme_name"))
+            assertEquals(expectedLightBg.rgb, UIManager.getColor("Panel.background").rgb)
+            assertEquals(expectedLightBg.rgb, UIManager.getColor("ToolBar.background").rgb)
+        }
     }
 
     @Test
@@ -57,18 +71,20 @@ class ThemeManagerTest {
             val expectedComponentBackground =
                 Color.decode(theme.colors.getValue("componentBackground"))
 
-            themeManager.applyTheme(theme)
+            onEdt { themeManager.applyTheme(theme) }
 
-            assertEquals(theme.name, UIManager.get("current_theme_name"))
-            assertNotNull(UIManager.getColor("Panel.background"))
-            assertNotNull(UIManager.getColor("ToolBar.background"))
-            assertNotNull(UIManager.getColor("TextField.background"))
-            assertEquals(expectedBackground.rgb, UIManager.getColor("Panel.background").rgb)
-            assertEquals(expectedBackground.rgb, UIManager.getColor("ToolBar.background").rgb)
-            assertEquals(
-                expectedComponentBackground.rgb,
-                UIManager.getColor("TextField.background").rgb,
-            )
+            onEdt {
+                assertEquals(theme.name, UIManager.get("current_theme_name"))
+                assertNotNull(UIManager.getColor("Panel.background"))
+                assertNotNull(UIManager.getColor("ToolBar.background"))
+                assertNotNull(UIManager.getColor("TextField.background"))
+                assertEquals(expectedBackground.rgb, UIManager.getColor("Panel.background").rgb)
+                assertEquals(expectedBackground.rgb, UIManager.getColor("ToolBar.background").rgb)
+                assertEquals(
+                    expectedComponentBackground.rgb,
+                    UIManager.getColor("TextField.background").rgb,
+                )
+            }
         }
     }
 }

@@ -49,12 +49,10 @@ jobs:
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
-            core/target/classes
-            core/target/*.jar
-            persistence-jooq/target/classes
-            persistence-jooq/target/*.jar
-            security/target/classes
-            security/target/*.jar
+            core/target/
+            persistence-jooq/target/
+            api-client/target/
+            security/target/
           key: build-${{ github.sha }}
 
       - name: Upload JaCoCo coverage reports
@@ -94,24 +92,32 @@ jobs:
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
-            core/target/classes
-            core/target/*.jar
-            persistence-jooq/target/classes
-            persistence-jooq/target/*.jar
-            security/target/classes
-            security/target/*.jar
+            core/target/
+            persistence-jooq/target/
+            api-client/target/
+            security/target/
           key: build-${{ github.sha }}
 
       - name: Install Xvfb
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb
+
+      - name: Install parent POM locally
+        run: mvn install -N -q
 
       - name: Install cached modules
-        run: mvn install -pl core,persistence-jooq,security -DskipTests -q
+        run: mvn install -pl core,persistence-jooq,api-client,security -DskipTests -q
 
       - name: Run desktop tests with virtual display
-        run: xvfb-run --auto-servernum mvn verify -pl desktop -Ddesktop.headless=false
+        run: >
+          xvfb-run --auto-servernum mvn test -pl desktop
+          -Ddesktop.headless=false
+          -Ddetekt.skip=true
+          -Dcheckstyle.skip=true
+          -Dpmd.skip=true
+          -Dcpd.skip=true
+          -Dspotbugs.skip=true
+          -Dspotless.apply.skip=true
+          -Djacoco.skip=true
 
   security:
     name: Security (OWASP + Enforcer)

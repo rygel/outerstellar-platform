@@ -536,6 +536,7 @@
                     <version>${maven.surefire.plugin.version}</version>
                     <configuration>
                         <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
+                        <forkedProcessTimeoutInSeconds>300</forkedProcessTimeoutInSeconds>
                         <excludedGroups>${surefire.excluded.groups}</excludedGroups>
                         <groups>${surefire.groups}</groups>
                         <systemPropertyVariables>
@@ -544,10 +545,15 @@
                             <otel.logs.exporter>none</otel.logs.exporter>
                             <java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
                             <junit.jupiter.tempdir.cleanup.mode.default>ALWAYS</junit.jupiter.tempdir.cleanup.mode.default>
+                            <junit.jupiter.execution.timeout.default>120 s</junit.jupiter.execution.timeout.default>
+                            <PLAYWRIGHT_BROWSERS_PATH>${project.build.directory}/playwright-browsers</PLAYWRIGHT_BROWSERS_PATH>
                             <test.jdbc.url>${test.jdbc.url}</test.jdbc.url>
                             <test.jdbc.user>${test.jdbc.user}</test.jdbc.user>
                             <test.jdbc.password>${test.jdbc.password}</test.jdbc.password>
                         </systemPropertyVariables>
+                        <environmentVariables>
+                            <PLAYWRIGHT_BROWSERS_PATH>${project.build.directory}/playwright-browsers</PLAYWRIGHT_BROWSERS_PATH>
+                        </environmentVariables>
                     </configuration>
                 </plugin>
                 <plugin>
