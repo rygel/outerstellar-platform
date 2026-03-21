@@ -170,15 +170,6 @@ jobs:
       - name: Install cached modules
         run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -q
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ hashFiles('pom.xml') }}
-
-      - name: Install Playwright browsers
-        run: mvn exec:java -pl web -Dexec.mainClass="com.microsoft.playwright.CLI" -Dexec.classpathScope=test -Dexec.args="install --with-deps chromium"
-
       - name: Run E2E tests
         run: >
           mvn test -pl web
