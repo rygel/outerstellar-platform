@@ -479,7 +479,7 @@ open class WebPageFactory(
     private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? =
         null,
     private val notificationService:
-        io.github.rygel.outerstellar.platform.service.NotificationService? =
+    io.github.rygel.outerstellar.platform.service.NotificationService? =
         null,
 ) {
     private val messageListComponent = MessageListComponent(messageService)
@@ -504,38 +504,38 @@ open class WebPageFactory(
         return Page(
             shell = shell,
             data =
-                ContactsPage(
-                    title = "Contacts Directory",
-                    description = "A list of all your contacts.",
-                    contacts =
-                        dbContacts.map {
-                            ContactViewModel(
-                                syncId = it.syncId,
-                                name = it.name,
-                                emails = it.emails,
-                                phones = it.phones,
-                                socialMedia = it.socialMedia,
-                                company = it.company,
-                                companyAddress = it.companyAddress,
-                                department = it.department,
-                                deleteUrl = ctx.url("/contacts/${it.syncId}/delete"),
-                                editUrl = ctx.url("/contacts/${it.syncId}/edit"),
-                            )
-                        },
-                    currentPage = currentPage,
-                    hasPrevious = hasPrevious,
-                    hasNext = hasNext,
-                    previousUrl = previousUrl,
-                    nextUrl = nextUrl,
-                    totalCount = totalCount,
-                    createLabel = i18n.translate("web.contacts.create"),
-                    editTitle = i18n.translate("web.contacts.edit"),
-                    deleteTitle = i18n.translate("web.contacts.delete"),
-                    deleteConfirmLabel = i18n.translate("web.contacts.delete.confirm"),
-                    contactsTotalLabel = i18n.translate("web.contacts.total"),
-                    previousPageTitle = i18n.translate("web.contacts.previous.page"),
-                    nextPageTitle = i18n.translate("web.contacts.next.page"),
-                ),
+            ContactsPage(
+                title = "Contacts Directory",
+                description = "A list of all your contacts.",
+                contacts =
+                dbContacts.map {
+                    ContactViewModel(
+                        syncId = it.syncId,
+                        name = it.name,
+                        emails = it.emails,
+                        phones = it.phones,
+                        socialMedia = it.socialMedia,
+                        company = it.company,
+                        companyAddress = it.companyAddress,
+                        department = it.department,
+                        deleteUrl = ctx.url("/contacts/${it.syncId}/delete"),
+                        editUrl = ctx.url("/contacts/${it.syncId}/edit"),
+                    )
+                },
+                currentPage = currentPage,
+                hasPrevious = hasPrevious,
+                hasNext = hasNext,
+                previousUrl = previousUrl,
+                nextUrl = nextUrl,
+                totalCount = totalCount,
+                createLabel = i18n.translate("web.contacts.create"),
+                editTitle = i18n.translate("web.contacts.edit"),
+                deleteTitle = i18n.translate("web.contacts.delete"),
+                deleteConfirmLabel = i18n.translate("web.contacts.delete.confirm"),
+                contactsTotalLabel = i18n.translate("web.contacts.total"),
+                previousPageTitle = i18n.translate("web.contacts.previous.page"),
+                nextPageTitle = i18n.translate("web.contacts.next.page"),
+            ),
         )
     }
 
@@ -553,36 +553,36 @@ open class WebPageFactory(
         return Page(
             shell = shell,
             data =
-                HomePage(
-                    eyebrow = i18n.translate("web.home.eyebrow"),
-                    intro = i18n.translate("web.home.intro"),
-                    features =
-                        listOf(
-                            HomeFeature(
-                                i18n.translate("web.feature.http.label"),
-                                i18n.translate("web.feature.http.value"),
-                            ),
-                            HomeFeature(
-                                i18n.translate("web.feature.db.label"),
-                                i18n.translate("web.feature.db.value"),
-                            ),
-                            HomeFeature(
-                                i18n.translate("web.feature.sync.label"),
-                                i18n.translate("web.feature.sync.value"),
-                            ),
-                            HomeFeature(
-                                i18n.translate("web.feature.desktop.label"),
-                                i18n.translate("web.feature.desktop.value"),
-                            ),
-                        ),
-                    composerTitle = i18n.translate("web.home.composer.title"),
-                    composerIntro = i18n.translate("web.home.composer.intro"),
-                    authorPlaceholder = i18n.translate("web.home.composer.author"),
-                    contentPlaceholder = i18n.translate("web.home.composer.content"),
-                    submitLabel = i18n.translate("web.home.composer.submit"),
-                    submitUrl = ctx.url("/messages"),
-                    messageList = messageList,
+            HomePage(
+                eyebrow = i18n.translate("web.home.eyebrow"),
+                intro = i18n.translate("web.home.intro"),
+                features =
+                listOf(
+                    HomeFeature(
+                        i18n.translate("web.feature.http.label"),
+                        i18n.translate("web.feature.http.value"),
+                    ),
+                    HomeFeature(
+                        i18n.translate("web.feature.db.label"),
+                        i18n.translate("web.feature.db.value"),
+                    ),
+                    HomeFeature(
+                        i18n.translate("web.feature.sync.label"),
+                        i18n.translate("web.feature.sync.value"),
+                    ),
+                    HomeFeature(
+                        i18n.translate("web.feature.desktop.label"),
+                        i18n.translate("web.feature.desktop.value"),
+                    ),
                 ),
+                composerTitle = i18n.translate("web.home.composer.title"),
+                composerIntro = i18n.translate("web.home.composer.intro"),
+                authorPlaceholder = i18n.translate("web.home.composer.author"),
+                contentPlaceholder = i18n.translate("web.home.composer.content"),
+                submitLabel = i18n.translate("web.home.composer.submit"),
+                submitUrl = ctx.url("/messages"),
+                messageList = messageList,
+            ),
         )
     }
 
@@ -595,30 +595,30 @@ open class WebPageFactory(
         return Page(
             shell = shell,
             data =
-                AuthViewModel(
-                    heading = i18n.translate("web.auth.heading"),
-                    intro = i18n.translate("web.auth.intro"),
-                    helperText = i18n.translate("web.auth.helper"),
-                    tabs =
-                        listOf(
-                            AuthModeTab(
-                                "sign-in",
-                                i18n.translate("web.auth.signin"),
-                                ctx.url("$formsUrl/sign-in?returnTo=$returnTo"),
-                            ),
-                            AuthModeTab(
-                                "register",
-                                i18n.translate("web.auth.register"),
-                                ctx.url("$formsUrl/register?returnTo=$returnTo"),
-                            ),
-                            AuthModeTab(
-                                "recover",
-                                i18n.translate("web.auth.recover"),
-                                ctx.url("$formsUrl/recover?returnTo=$returnTo"),
-                            ),
-                        ),
-                    defaultFormUrl = ctx.url("$formsUrl/sign-in?returnTo=$returnTo"),
+            AuthViewModel(
+                heading = i18n.translate("web.auth.heading"),
+                intro = i18n.translate("web.auth.intro"),
+                helperText = i18n.translate("web.auth.helper"),
+                tabs =
+                listOf(
+                    AuthModeTab(
+                        "sign-in",
+                        i18n.translate("web.auth.signin"),
+                        ctx.url("$formsUrl/sign-in?returnTo=$returnTo"),
+                    ),
+                    AuthModeTab(
+                        "register",
+                        i18n.translate("web.auth.register"),
+                        ctx.url("$formsUrl/register?returnTo=$returnTo"),
+                    ),
+                    AuthModeTab(
+                        "recover",
+                        i18n.translate("web.auth.recover"),
+                        ctx.url("$formsUrl/recover?returnTo=$returnTo"),
+                    ),
                 ),
+                defaultFormUrl = ctx.url("$formsUrl/sign-in?returnTo=$returnTo"),
+            ),
         )
     }
 
@@ -698,17 +698,17 @@ open class WebPageFactory(
         return Page(
             shell = shell,
             data =
-                ErrorPage(
-                    statusCode = statusCode,
-                    heading = i18n.translate("web.error.$normalizedKind.title"),
-                    message = i18n.translate("web.error.$normalizedKind.message"),
-                    primaryActionLabel = i18n.translate("web.error.primary"),
-                    primaryActionUrl = ctx.url("/"),
-                    secondaryActionLabel = i18n.translate("web.error.secondary"),
-                    secondaryActionUrl = ctx.url("/auth"),
-                    helpButtonLabel = i18n.translate("web.error.help"),
-                    helpUrl = ctx.url("/errors/components/help/$normalizedKind"),
-                ),
+            ErrorPage(
+                statusCode = statusCode,
+                heading = i18n.translate("web.error.$normalizedKind.title"),
+                message = i18n.translate("web.error.$normalizedKind.message"),
+                primaryActionLabel = i18n.translate("web.error.primary"),
+                primaryActionUrl = ctx.url("/"),
+                secondaryActionLabel = i18n.translate("web.error.secondary"),
+                secondaryActionUrl = ctx.url("/auth"),
+                helpButtonLabel = i18n.translate("web.error.help"),
+                helpUrl = ctx.url("/errors/components/help/$normalizedKind"),
+            ),
         )
     }
 
@@ -719,11 +719,11 @@ open class WebPageFactory(
         return ErrorHelpFragment(
             title = i18n.translate("web.error.$normalizedKind.help.title"),
             items =
-                listOf(
-                    i18n.translate("web.error.$normalizedKind.help.item1"),
-                    i18n.translate("web.error.$normalizedKind.help.item2"),
-                    i18n.translate("web.error.$normalizedKind.help.item3"),
-                ),
+            listOf(
+                i18n.translate("web.error.$normalizedKind.help.item1"),
+                i18n.translate("web.error.$normalizedKind.help.item2"),
+                i18n.translate("web.error.$normalizedKind.help.item3"),
+            ),
         )
     }
 
@@ -747,11 +747,11 @@ open class WebPageFactory(
         return Page(
             shell = shell,
             data =
-                TrashPage(
-                    title = i18n.translate("web.trash.title"),
-                    description = i18n.translate("web.trash.description"),
-                    messageList = messageList,
-                ),
+            TrashPage(
+                title = i18n.translate("web.trash.title"),
+                description = i18n.translate("web.trash.description"),
+                messageList = messageList,
+            ),
         )
     }
 
@@ -777,24 +777,24 @@ open class WebPageFactory(
         return Page(
             shell = shell,
             data =
-                DevDashboardPage(
-                    metrics = metrics,
-                    cacheStats = cacheStats,
-                    outboxStats = outboxStats,
-                    telemetryStatus = telemetryStatus,
-                    badge = i18n.translate("web.dev.badge"),
-                    heading = i18n.translate("web.dev.heading"),
-                    description = i18n.translate("web.dev.description"),
-                    outboxLabel = i18n.translate("web.dev.outbox"),
-                    pendingLabel = i18n.translate("web.dev.outbox.pending"),
-                    processedLabel = i18n.translate("web.dev.outbox.processed"),
-                    failedLabel = i18n.translate("web.dev.outbox.failed"),
-                    cacheLabel = i18n.translate("web.dev.cache"),
-                    protocolLabel = i18n.translate("web.dev.protocol"),
-                    telemetryLabel = i18n.translate("web.dev.telemetry"),
-                    metricsLabel = i18n.translate("web.dev.metrics"),
-                    triggerSyncLabel = i18n.translate("web.dev.trigger.sync"),
-                ),
+            DevDashboardPage(
+                metrics = metrics,
+                cacheStats = cacheStats,
+                outboxStats = outboxStats,
+                telemetryStatus = telemetryStatus,
+                badge = i18n.translate("web.dev.badge"),
+                heading = i18n.translate("web.dev.heading"),
+                description = i18n.translate("web.dev.description"),
+                outboxLabel = i18n.translate("web.dev.outbox"),
+                pendingLabel = i18n.translate("web.dev.outbox.pending"),
+                processedLabel = i18n.translate("web.dev.outbox.processed"),
+                failedLabel = i18n.translate("web.dev.outbox.failed"),
+                cacheLabel = i18n.translate("web.dev.cache"),
+                protocolLabel = i18n.translate("web.dev.protocol"),
+                telemetryLabel = i18n.translate("web.dev.telemetry"),
+                metricsLabel = i18n.translate("web.dev.metrics"),
+                triggerSyncLabel = i18n.translate("web.dev.trigger.sync"),
+            ),
         )
     }
 
@@ -836,15 +836,15 @@ open class WebPageFactory(
             selectId = "theme-selector",
             selectName = "theme",
             options =
-                ThemeCatalog.allThemes().map {
-                    ShellOption(it.id, it.name, it.id, it.id == ctx.theme)
-                },
+            ThemeCatalog.allThemes().map {
+                ShellOption(it.id, it.name, it.id, it.id == ctx.theme)
+            },
             hiddenFields =
-                listOf(
-                    HiddenField("pagePath", pagePath),
-                    HiddenField("lang", ctx.lang),
-                    HiddenField("layout", ctx.layout),
-                ),
+            listOf(
+                HiddenField("pagePath", pagePath),
+                HiddenField("lang", ctx.lang),
+                HiddenField("layout", ctx.layout),
+            ),
             refreshUrl = "/components/navigation/page",
         )
     }
@@ -859,16 +859,16 @@ open class WebPageFactory(
             selectId = "language-selector",
             selectName = "lang",
             options =
-                listOf("en" to "web.language.english", "fr" to "web.language.french").map {
+            listOf("en" to "web.language.english", "fr" to "web.language.french").map {
                     (id, key) ->
-                    ShellOption(id, i18n.translate(key), id, id == ctx.lang)
-                },
+                ShellOption(id, i18n.translate(key), id, id == ctx.lang)
+            },
             hiddenFields =
-                listOf(
-                    HiddenField("pagePath", pagePath),
-                    HiddenField("theme", ctx.theme),
-                    HiddenField("layout", ctx.layout),
-                ),
+            listOf(
+                HiddenField("pagePath", pagePath),
+                HiddenField("theme", ctx.theme),
+                HiddenField("layout", ctx.layout),
+            ),
             refreshUrl = "/components/navigation/page",
         )
     }
@@ -883,20 +883,20 @@ open class WebPageFactory(
             selectId = "layout-selector",
             selectName = "layout",
             options =
-                listOf(
-                        "nice" to "web.layout.nice",
-                        "cozy" to "web.layout.cozy",
-                        "compact" to "web.layout.compact",
-                    )
-                    .map { (id, key) ->
-                        ShellOption(id, i18n.translate(key), id, id == ctx.layout)
-                    },
+            listOf(
+                "nice" to "web.layout.nice",
+                "cozy" to "web.layout.cozy",
+                "compact" to "web.layout.compact",
+            )
+                .map { (id, key) ->
+                    ShellOption(id, i18n.translate(key), id, id == ctx.layout)
+                },
             hiddenFields =
-                listOf(
-                    HiddenField("pagePath", pagePath),
-                    HiddenField("theme", ctx.theme),
-                    HiddenField("lang", ctx.lang),
-                ),
+            listOf(
+                HiddenField("pagePath", pagePath),
+                HiddenField("theme", ctx.theme),
+                HiddenField("lang", ctx.lang),
+            ),
             refreshUrl = "/components/navigation/page",
         )
     }
@@ -928,15 +928,15 @@ open class WebPageFactory(
         return Page(
             shell = shell,
             data =
-                ResetPasswordPage(
-                    token = token,
-                    newPasswordLabel = i18n.translate("web.reset.newPassword"),
-                    confirmPasswordLabel = i18n.translate("web.reset.confirmPassword"),
-                    submitLabel = i18n.translate("web.reset.submit"),
-                    submitUrl = ctx.url("/auth/components/reset-confirm"),
-                    newPasswordPlaceholder = i18n.translate("web.auth.placeholder.password"),
-                    confirmPasswordPlaceholder = i18n.translate("web.password.confirm.placeholder"),
-                ),
+            ResetPasswordPage(
+                token = token,
+                newPasswordLabel = i18n.translate("web.reset.newPassword"),
+                confirmPasswordLabel = i18n.translate("web.reset.confirmPassword"),
+                submitLabel = i18n.translate("web.reset.submit"),
+                submitUrl = ctx.url("/auth/components/reset-confirm"),
+                newPasswordPlaceholder = i18n.translate("web.auth.placeholder.password"),
+                confirmPasswordPlaceholder = i18n.translate("web.password.confirm.placeholder"),
+            ),
         )
     }
 
@@ -979,8 +979,11 @@ open class WebPageFactory(
             submitUrl = ctx.url(if (syncId != null) "/contacts/$syncId/update" else "/contacts"),
             isEdit = syncId != null,
             titleLabel =
-                if (syncId != null) i18n.translate("web.contacts.edit")
-                else i18n.translate("web.contacts.create"),
+            if (syncId != null) {
+                i18n.translate("web.contacts.edit")
+            } else {
+                i18n.translate("web.contacts.create")
+            },
             nameLabel = i18n.translate("web.contacts.form.name"),
             emailsLabel = i18n.translate("web.contacts.form.emails"),
             phonesLabel = i18n.translate("web.contacts.form.phones"),

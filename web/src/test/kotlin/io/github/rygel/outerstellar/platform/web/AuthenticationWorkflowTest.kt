@@ -8,10 +8,6 @@ import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.MessageService
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -22,6 +18,10 @@ import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class AuthenticationWorkflowTest : H2WebTest() {
 
@@ -46,16 +46,16 @@ class AuthenticationWorkflowTest : H2WebTest() {
 
         app =
             app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                )
+                messageService,
+                contactService,
+                outbox,
+                cache,
+                createRenderer(),
+                pageFactory,
+                testConfig,
+                securityService,
+                userRepository,
+            )
                 .http!!
     }
 

@@ -1,8 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.security.UserRepository
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
 import org.http4k.websocket.Websocket
 import org.http4k.websocket.WsHandler
@@ -10,12 +8,13 @@ import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsResponse
 import org.http4k.websocket.WsStatus
 import org.slf4j.LoggerFactory
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 private const val WS_AUTH_REQUIRED_STATUS = 4401
 
-class SyncWebSocket(
-    private val userRepository: UserRepository,
-) : io.github.rygel.outerstellar.platform.service.EventPublisher {
+class SyncWebSocket(private val userRepository: UserRepository) :
+    io.github.rygel.outerstellar.platform.service.EventPublisher {
     private val logger = LoggerFactory.getLogger(SyncWebSocket::class.java)
     private val connections = ConcurrentHashMap.newKeySet<Websocket>()
 

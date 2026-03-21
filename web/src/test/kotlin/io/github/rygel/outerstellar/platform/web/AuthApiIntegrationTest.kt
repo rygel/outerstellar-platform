@@ -7,9 +7,6 @@ import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
@@ -18,6 +15,9 @@ import org.http4k.core.with
 import org.http4k.format.Jackson.auto
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class AuthApiIntegrationTest : H2WebTest() {
 
@@ -52,16 +52,16 @@ class AuthApiIntegrationTest : H2WebTest() {
 
         app =
             app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                )
+                messageService,
+                contactService,
+                outbox,
+                cache,
+                createRenderer(),
+                pageFactory,
+                testConfig,
+                securityService,
+                userRepository,
+            )
                 .http!!
     }
 
@@ -80,7 +80,7 @@ class AuthApiIntegrationTest : H2WebTest() {
                 .toLens()
         val tokenLens =
             org.http4k.core.Body.auto<
-                    io.github.rygel.outerstellar.platform.model.AuthTokenResponse
+                io.github.rygel.outerstellar.platform.model.AuthTokenResponse
                 >()
                 .toLens()
 

@@ -11,14 +11,14 @@ import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
-import java.util.*
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.Jackson.asA
 import org.junit.jupiter.api.AfterEach
+import java.util.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class SyncIntegrationTest : H2WebTest() {
 
@@ -63,16 +63,16 @@ class SyncIntegrationTest : H2WebTest() {
 
         val app =
             app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                )
+                messageService,
+                contactService,
+                outbox,
+                cache,
+                createRenderer(),
+                pageFactory,
+                testConfig,
+                securityService,
+                userRepository,
+            )
                 .http!!
 
         // Add some data

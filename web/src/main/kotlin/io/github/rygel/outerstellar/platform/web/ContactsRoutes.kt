@@ -77,7 +77,8 @@ class ContactsRoutes(
                 } bindContract
                 GET to
                 { syncId: String, _ ->
-                    { request: Request ->
+                    {
+                            request: Request ->
                         renderer.render(pageFactory.buildContactForm(request.webContext, syncId))
                     }
                 },
@@ -87,7 +88,8 @@ class ContactsRoutes(
                 } bindContract
                 POST to
                 { syncId: String, _ ->
-                    { request: Request ->
+                    {
+                            request: Request ->
                         val ctx = request.webContext
                         val params = request.bodyAsForm()
                         val existing =
@@ -101,7 +103,7 @@ class ContactsRoutes(
                                 emails = params.findSingle("emails").orEmpty().splitTrimmed(),
                                 phones = params.findSingle("phones").orEmpty().splitTrimmed(),
                                 socialMedia =
-                                    params.findSingle("socialMedia").orEmpty().splitTrimmed(),
+                                params.findSingle("socialMedia").orEmpty().splitTrimmed(),
                                 company = params.findSingle("company").orEmpty(),
                                 companyAddress = params.findSingle("companyAddress").orEmpty(),
                                 department = params.findSingle("department").orEmpty(),
@@ -117,7 +119,8 @@ class ContactsRoutes(
                 } bindContract
                 POST to
                 { syncId: String, _ ->
-                    { _: Request ->
+                    {
+                            _: Request ->
                         contactService?.deleteContact(syncId)
                         Response(Status.OK).body("")
                     }
@@ -127,10 +130,12 @@ class ContactsRoutes(
     private fun Request.bodyAsForm(): List<Pair<String, String>> =
         bodyString().split("&").mapNotNull { pair ->
             val idx = pair.indexOf('=')
-            if (idx < 0) null
-            else
+            if (idx < 0) {
+                null
+            } else {
                 java.net.URLDecoder.decode(pair.substring(0, idx), "UTF-8") to
                     java.net.URLDecoder.decode(pair.substring(idx + 1), "UTF-8")
+            }
         }
 
     private fun List<Pair<String, String>>.findSingle(key: String): String? =

@@ -48,8 +48,11 @@ val webModule
         }
         single<AnalyticsService> {
             val cfg = get<AppConfig>().segment
-            if (cfg.enabled && cfg.writeKey.isNotBlank()) SegmentAnalyticsService(cfg.writeKey)
-            else NoOpAnalyticsService()
+            if (cfg.enabled && cfg.writeKey.isNotBlank()) {
+                SegmentAnalyticsService(cfg.writeKey)
+            } else {
+                NoOpAnalyticsService()
+            }
         }
         single<EmailService> {
             val cfg = get<AppConfig>().email

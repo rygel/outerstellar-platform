@@ -6,9 +6,6 @@ import io.github.rygel.outerstellar.platform.model.OuterstellarException
 import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.UserRepository
-import java.time.Duration
-import java.time.Instant
-import java.util.UUID
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method
@@ -28,16 +25,23 @@ import org.http4k.format.Jackson
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
 
 private const val COOKIE_MAX_AGE_DAYS = 365L
 private const val REQUEST_ID_HEADER = "X-Request-Id"
 private const val LOG_ID_LENGTH = 8
 
+private fun isNonPagePath(path: String): Boolean =
+    path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
+
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
 
     val correlationId: Filter = Filter { next: HttpHandler ->
-        { request ->
+        {
+                request ->
             val requestId =
                 request.header(REQUEST_ID_HEADER) ?: java.util.UUID.randomUUID().toString()
             MDC.put("requestId", requestId.take(LOG_ID_LENGTH))
@@ -53,7 +57,8 @@ object Filters {
     }
 
     fun cors(allowedOrigins: String): Filter = Filter { next: HttpHandler ->
-        { request ->
+        {
+                request ->
             if (request.method == org.http4k.core.Method.OPTIONS) {
                 Response(Status.NO_CONTENT)
                     .header("Access-Control-Allow-Origin", allowedOrigins)
@@ -73,7 +78,8 @@ object Filters {
     }
 
     val securityHeaders: Filter = Filter { next: HttpHandler ->
-        { request ->
+        {
+                request ->
             next(request)
                 .header("X-Content-Type-Options", "nosniff")
                 .header("X-Frame-Options", "DENY")
@@ -98,7 +104,8 @@ object Filters {
     }
 
     val requestLogging: Filter = Filter { next: HttpHandler ->
-        { request ->
+        {
+                request ->
             val start = System.currentTimeMillis()
             val response = next(request)
             val duration = System.currentTimeMillis() - start
@@ -122,7 +129,8 @@ object Filters {
     val telemetry: Filter = ServerFilters.OpenTelemetryTracing(Telemetry.openTelemetry)
 
     fun devAutoLogin(enabled: Boolean, userRepository: UserRepository): Filter = Filter { next ->
-        { request ->
+        {
+                request ->
             if (enabled && request.cookie(WebContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {
@@ -152,7 +160,8 @@ object Filters {
         jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
         pluginNavItems: List<PluginNavItem> = emptyList(),
     ): Filter = Filter { next: HttpHandler ->
-        { request ->
+        {
+                request ->
             val context =
                 WebContext(
                     request,
@@ -216,7 +225,8 @@ object Filters {
         sessionCookieSecure: Boolean,
         activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater? = null,
     ): Filter = Filter { next: HttpHandler ->
-        { request ->
+        {
+                request ->
             val user =
                 try {
                     request.webContext.user
@@ -257,7 +267,8 @@ object Filters {
 
     // Bridge WebContext user into SecurityRules
     val securityFilter: Filter = Filter { next: HttpHandler ->
-        { request ->
+        {
+                request ->
             val user =
                 try {
                     request.webContext.user
@@ -278,7 +289,8 @@ object Filters {
      */
     fun csrfProtection(sessionCookieSecure: Boolean, enabled: Boolean = true): Filter =
         Filter { next ->
-            { request ->
+            {
+                    request ->
                 if (!enabled) return@Filter next(request)
 
                 val unsafeMethods = setOf(Method.POST, Method.PUT, Method.DELETE, Method.PATCH)
@@ -325,7 +337,7 @@ object Filters {
                                 path = "/",
                                 secure = sessionCookieSecure,
                                 httpOnly =
-                                    false, // must be readable by JS for HTMX header injection
+                                false, // must be readable by JS for HTMX header injection
                                 sameSite = SameSite.Strict,
                             )
                         )
@@ -337,7 +349,8 @@ object Filters {
         }
 
     fun analyticsPageView(analytics: AnalyticsService): Filter = Filter { next ->
-        { request ->
+        {
+                request ->
             val response = next(request)
             val isTrackablePage =
                 request.method == org.http4k.core.Method.GET && !isNonPagePath(request.uri.path)
@@ -358,7 +371,8 @@ object Filters {
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     fun globalErrorHandler(pageFactory: WebPageFactory, renderer: TemplateRenderer): Filter =
         Filter { next: HttpHandler ->
-            { request ->
+            {
+                    request ->
                 try {
                     val response = next(request)
                     if (response.status == Status.NOT_FOUND) {
@@ -430,9 +444,6 @@ object Filters {
                 .body(renderer(errorPage))
         }
     }
-
-    private fun isNonPagePath(path: String): Boolean =
-        path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
 
     private fun jsonErrorResponse(status: Status, message: String): Response {
         val body =

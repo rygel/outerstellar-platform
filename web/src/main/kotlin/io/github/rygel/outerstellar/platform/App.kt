@@ -45,14 +45,15 @@ import org.http4k.core.then
 import org.http4k.core.with
 import org.http4k.format.Jackson
 import org.http4k.routing.ResourceLoader
+import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 import org.http4k.routing.static
-import org.http4k.routing.websocket.bind as wsBind
 import org.http4k.routing.websockets
 import org.http4k.server.PolyHandler
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
+import org.http4k.routing.websocket.bind as wsBind
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.App")
 
@@ -80,47 +81,118 @@ fun app(
 
     val appLabel = plugin?.appLabel ?: "Outerstellar"
     val excludedRoutes = plugin?.excludeDefaultRoutes ?: emptySet()
-    val (bearerSecurity, bearerAdminSecurity) =
-        buildBearerSecurityPair(securityService)
-
-    val apiRoutes =
-        buildApiRoutes(
-            appLabel, securityService, bearerSecurity, bearerAdminSecurity,
-            messageService, contactService, analytics, deviceTokenRepository, notificationService,
-        )
-    val uiRoutes =
-        buildUiRoutes(
-            appLabel, excludedRoutes, messageService, pageFactory, jteRenderer,
-            contactService, securityService, config, analytics, notificationService,
-            userRepository, plugin,
-        )
-    val adminRoutes =
-        buildAdminRoutes(
-            appLabel, outboxRepository, cache, pageFactory, jteRenderer, config, securityService,
-        )
-    val componentRoutes = contract {
-        renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), Jackson)
-        descriptionPath = "/components/openapi.json"
-        routes += ComponentRoutes(pageFactory, jteRenderer).routes
-    }
-
-    val baseApp =
-        buildBaseApp(excludedRoutes, adminRoutes, apiRoutes, uiRoutes, componentRoutes, userRepository)
     val httpHandler =
-        buildFilterChain(
-            config, userRepository, analytics, jwtService, plugin, activityUpdater,
-            pageFactory, jteRenderer,
-        ).then(baseApp)
+        assembleHttpHandler(
+            appLabel,
+            excludedRoutes,
+            messageService,
+            contactService,
+            outboxRepository,
+            cache,
+            jteRenderer,
+            pageFactory,
+            config,
+            securityService,
+            userRepository,
+            deviceTokenRepository,
+            analytics,
+            notificationService,
+            jwtService,
+            plugin,
+            activityUpdater,
+        )
     val wsHandler = syncWebSocket?.let { websockets("/ws/sync" wsBind it.handler) }
 
     return PolyHandler(httpHandler, wsHandler)
 }
 
-private fun buildBearerSecurityPair(
+@Suppress("LongParameterList")
+private fun assembleHttpHandler(
+    appLabel: String,
+    excludedRoutes: Set<String>,
+    messageService: MessageService,
+    contactService: io.github.rygel.outerstellar.platform.service.ContactService,
+    outboxRepository: OutboxRepository,
+    cache: MessageCache,
+    jteRenderer: TemplateRenderer,
+    pageFactory: WebPageFactory,
+    config: AppConfig,
     securityService: SecurityService,
+    userRepository: UserRepository,
+    deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository?,
+    analytics: AnalyticsService,
+    notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
+    jwtService: io.github.rygel.outerstellar.platform.security.JwtService?,
+    plugin: PlatformPlugin?,
+    activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater?,
+): HttpHandler {
+    val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(securityService)
+    val apiRoutes =
+        buildApiRoutes(
+            appLabel,
+            securityService,
+            bearerSecurity,
+            bearerAdminSecurity,
+            messageService,
+            contactService,
+            analytics,
+            deviceTokenRepository,
+            notificationService,
+        )
+    val uiRoutes =
+        buildUiRoutes(
+            appLabel,
+            excludedRoutes,
+            messageService,
+            pageFactory,
+            jteRenderer,
+            contactService,
+            securityService,
+            config,
+            analytics,
+            notificationService,
+            userRepository,
+            plugin,
+        )
+    val adminRoutes =
+        buildAdminRoutes(
+            appLabel,
+            outboxRepository,
+            cache,
+            pageFactory,
+            jteRenderer,
+            config,
+            securityService,
+        )
+    val componentRoutes = buildComponentRoutes(appLabel, pageFactory, jteRenderer)
+    val baseApp =
+        buildBaseApp(
+            excludedRoutes,
+            adminRoutes,
+            apiRoutes,
+            uiRoutes,
+            componentRoutes,
+            userRepository,
+        )
+    return buildFilterChain(
+        config,
+        userRepository,
+        analytics,
+        jwtService,
+        plugin,
+        activityUpdater,
+        pageFactory,
+        jteRenderer,
+    )
+        .then(baseApp)
+}
+
+private fun buildBearerSecurityPair(
+    securityService: SecurityService
 ): Pair<org.http4k.security.Security, org.http4k.security.Security> {
     val bearerAuthFilter = Filter { next ->
-        { req ->
+        {
+                req ->
             val token = req.header("Authorization")?.removePrefix("Bearer ")
             if (token == null) {
                 Response(Status.UNAUTHORIZED).body("API token required")
@@ -228,10 +300,10 @@ private fun buildUiRoutes(
             .routes
     routes +=
         OAuthRoutes(
-                providers = mapOf("apple" to AppleOAuthProvider()),
-                securityService = securityService,
-                sessionCookieSecure = config.sessionCookieSecure,
-            )
+            providers = mapOf("apple" to AppleOAuthProvider()),
+            securityService = securityService,
+            sessionCookieSecure = config.sessionCookieSecure,
+        )
             .routes
     routes += ErrorRoutes(pageFactory, jteRenderer).routes
     if (notificationService != null) {
@@ -263,6 +335,16 @@ private fun buildUiRoutes(
         }
 }
 
+private fun buildComponentRoutes(
+    appLabel: String,
+    pageFactory: WebPageFactory,
+    jteRenderer: TemplateRenderer,
+): RoutingHttpHandler = contract {
+    renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), Jackson)
+    descriptionPath = "/components/openapi.json"
+    routes += ComponentRoutes(pageFactory, jteRenderer).routes
+}
+
 @Suppress("LongParameterList")
 private fun buildAdminRoutes(
     appLabel: String,
@@ -283,12 +365,12 @@ private fun buildAdminRoutes(
         }
     routes +=
         DevDashboardRoutes(
-                outboxRepository,
-                cache,
-                pageFactory,
-                jteRenderer,
-                config.devDashboardEnabled,
-            )
+            outboxRepository,
+            cache,
+            pageFactory,
+            jteRenderer,
+            config.devDashboardEnabled,
+        )
             .routes
     routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
 }

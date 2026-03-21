@@ -2,10 +2,10 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
-import javax.sql.DataSource
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
+import javax.sql.DataSource
 
 @Suppress("UtilityClassWithPublicConstructor")
 abstract class H2WebTest {
@@ -20,8 +20,11 @@ abstract class H2WebTest {
             if (postgresUrl != null) System.getProperty("test.jdbc.user", "outerstellar") else "sa"
 
         private val jdbcPassword =
-            if (postgresUrl != null) System.getProperty("test.jdbc.password", "outerstellar")
-            else ""
+            if (postgresUrl != null) {
+                System.getProperty("test.jdbc.password", "outerstellar")
+            } else {
+                ""
+            }
 
         private val dataSource: DataSource by lazy {
             createDataSource(jdbcUrl, jdbcUser, jdbcPassword).also { migrate(it) }

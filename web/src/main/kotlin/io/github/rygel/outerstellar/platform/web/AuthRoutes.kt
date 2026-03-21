@@ -47,7 +47,8 @@ class AuthRoutes(
                 } bindContract
                 GET to
                 { mode ->
-                    { request: org.http4k.core.Request ->
+                    {
+                            request: org.http4k.core.Request ->
                         renderer.render(pageFactory.buildAuthForm(request.webContext, mode))
                     }
                 },
@@ -250,7 +251,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.reset.error.title"),
                                     message =
-                                        e.message ?: ctx.i18n.translate("web.reset.error.invalid"),
+                                    e.message ?: ctx.i18n.translate("web.reset.error.invalid"),
                                     toneClass = "panel-danger",
                                 )
                             )
@@ -371,7 +372,8 @@ class AuthRoutes(
                                 .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
                         } catch (
                             e:
-                                io.github.rygel.outerstellar.platform.model.InsufficientPermissionException) {
+                            io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
+                        ) {
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.delete.error.title"),
@@ -427,7 +429,8 @@ class AuthRoutes(
                 } bindContract
                 POST to
                 { id, _ ->
-                    { request: org.http4k.core.Request ->
+                    {
+                            request: org.http4k.core.Request ->
                         val ctx = request.webContext
                         val user = ctx.user
                         if (user == null) {

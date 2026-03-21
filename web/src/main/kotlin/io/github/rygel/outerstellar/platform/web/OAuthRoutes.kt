@@ -181,7 +181,9 @@ class OAuthRoutes(
                 val parts = pair.split('=', limit = 2)
                 if (parts.size == 2 && java.net.URLDecoder.decode(parts[0], "UTF-8") == name) {
                     java.net.URLDecoder.decode(parts[1], "UTF-8")
-                } else null
+                } else {
+                    null
+                }
             }
             .firstOrNull()
 }

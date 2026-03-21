@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.service.NotificationService
-import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -14,6 +13,7 @@ import org.http4k.core.Status
 import org.http4k.lens.Path
 import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
+import java.util.UUID
 
 class NotificationRoutes(
     private val pageFactory: WebPageFactory,
@@ -59,7 +59,8 @@ class NotificationRoutes(
                 } bindContract
                 POST to
                 { notificationId, _ ->
-                    { request ->
+                    {
+                            request ->
                         val ctx = request.webContext
                         val user = ctx.user
                         if (user == null) {

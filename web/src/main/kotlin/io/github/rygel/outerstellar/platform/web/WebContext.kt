@@ -5,13 +5,13 @@ import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
-import java.util.Locale
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestKey
 import org.slf4j.LoggerFactory
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 class WebContext(
     val request: Request,
@@ -201,7 +201,7 @@ class WebContext(
             navLinks = navLinks,
             themeSelectorUrl = componentUrl("/components/sidebar/theme-selector", currentPath),
             languageSelectorUrl =
-                componentUrl("/components/sidebar/language-selector", currentPath),
+            componentUrl("/components/sidebar/language-selector", currentPath),
             layoutSelectorUrl = componentUrl("/components/sidebar/layout-selector", currentPath),
             footerCopy = i18n.translate("web.footer.copy"),
             footerVersion = i18n.translate("web.footer.version", appVersion),
