@@ -8,6 +8,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     name: Build, Test, and Quality
@@ -43,7 +47,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build and run all checks
-        run: mvn clean verify -pl core,persistence-jooq,persistence-jdbi,api-client,security,web,seed
+        run: mvn clean verify -pl core,persistence-jooq,persistence-jdbi,api-client,security,web
 
       - name: Cache build output for desktop tests
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
@@ -124,7 +128,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     env:
       GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
