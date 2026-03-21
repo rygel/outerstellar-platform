@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.export.CsvUtils
 import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.UserSummary
@@ -130,10 +131,12 @@ class UserAdminRoutes(
     companion object {
         fun usersAsCsv(users: List<UserSummary>): String {
             val sb = StringBuilder()
-            sb.appendLine("Username,Email,Role,Enabled")
+            sb.appendLine(CsvUtils.toCsvRow(listOf("Username", "Email", "Role", "Enabled")))
             users.forEach { u ->
                 sb.appendLine(
-                    "${escapeCsv(u.username)},${escapeCsv(u.email)},${u.role},${u.enabled}"
+                    CsvUtils.toCsvRow(
+                        listOf(u.username, u.email, u.role, u.enabled.toString())
+                    )
                 )
             }
             return sb.toString()
@@ -143,25 +146,23 @@ class UserAdminRoutes(
             entries: List<io.github.rygel.outerstellar.platform.model.AuditEntry>
         ): String {
             val sb = StringBuilder()
-            sb.appendLine("Timestamp,Actor,Action,Target,Detail")
+            sb.appendLine(
+                CsvUtils.toCsvRow(listOf("Timestamp", "Actor", "Action", "Target", "Detail"))
+            )
             entries.forEach { e ->
                 sb.appendLine(
-                    "${escapeCsv(e.createdAt.toString())}," +
-                        "${escapeCsv(e.actorUsername ?: "")}," +
-                        "${escapeCsv(e.action)}," +
-                        "${escapeCsv(e.targetUsername ?: "")}," +
-                        escapeCsv(e.detail ?: "")
+                    CsvUtils.toCsvRow(
+                        listOf(
+                            e.createdAt.toString(),
+                            e.actorUsername ?: "",
+                            e.action,
+                            e.targetUsername ?: "",
+                            e.detail ?: "",
+                        )
+                    )
                 )
             }
             return sb.toString()
-        }
-
-        private fun escapeCsv(value: String): String {
-            return if (value.contains(',') || value.contains('"') || value.contains('\n')) {
-                "\"${value.replace("\"", "\"\"")}\""
-            } else {
-                value
-            }
         }
     }
 }
