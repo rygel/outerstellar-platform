@@ -164,7 +164,7 @@ jobs:
         run: mvn install -N -q -s /github/home/.m2/settings.xml
 
       - name: Install cached modules
-        run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -q -s /github/home/.m2/settings.xml
+        run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -Dexec.skip=true -q -s /github/home/.m2/settings.xml
 
       - name: Run E2E tests
         run: >
