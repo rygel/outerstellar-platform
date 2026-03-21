@@ -6,6 +6,7 @@
 - [ ] Export SPI (ExportService interface, escapeCsv utility, CSV/JSON export for any entity)
 - [ ] Configurable CSP policy via AppConfig (currently hardcoded in Filters.kt)
 - [ ] Layout engine performance (cache ThemeCatalog CSS, nav link caching)
+- [ ] Mobile responsive layout (responsive sidebar, touch-friendly controls, viewport meta)
 
 ## Security
 - [ ] Add Jazzer fuzz tests for high-risk surfaces (sync API payloads, OAuth callback parsing, i18n message resolution)

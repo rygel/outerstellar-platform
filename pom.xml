@@ -29,6 +29,7 @@
         <module>desktop</module>
         <module>security</module>
         <module>seed</module>
+        <module>outerstellar-myspace-plugin</module>
     </modules>
 
     <properties>
