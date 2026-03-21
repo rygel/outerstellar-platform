@@ -133,7 +133,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright/java:v1.58.0-noble
-    environment: ci
     permissions:
       contents: read
     env:
