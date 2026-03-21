@@ -23,6 +23,7 @@ import io.github.rygel.outerstellar.platform.web.NotificationApi
 import io.github.rygel.outerstellar.platform.web.NotificationRoutes
 import io.github.rygel.outerstellar.platform.web.OAuthRoutes
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
+import io.github.rygel.outerstellar.platform.web.SearchRoutes
 import io.github.rygel.outerstellar.platform.web.SettingsRoutes
 import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.SyncApi
@@ -307,6 +308,7 @@ private fun buildUiRoutes(
         )
             .routes
     routes += ErrorRoutes(pageFactory, jteRenderer).routes
+    routes += SearchRoutes(pageFactory, jteRenderer, emptyList()).routes
     routes += SettingsRoutes(pageFactory, jteRenderer).routes
     if (notificationService != null) {
         routes += NotificationRoutes(pageFactory, jteRenderer, notificationService).routes

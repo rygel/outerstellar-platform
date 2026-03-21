@@ -427,6 +427,25 @@ data class ContactViewModel(
     val editUrl: String = "",
 )
 
+data class SearchResultViewModel(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val url: String,
+    val type: String,
+)
+
+data class SearchPage(
+    val title: String,
+    val query: String,
+    val results: List<SearchResultViewModel>,
+    val emptyLabel: String,
+    val searchPlaceholder: String,
+    val searchLabel: String,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/SearchPage"
+}
+
 data class SettingsTab(val key: String, val label: String, val url: String, val active: Boolean)
 
 data class SettingsPage(
