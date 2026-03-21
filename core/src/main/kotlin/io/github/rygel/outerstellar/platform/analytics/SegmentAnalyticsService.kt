@@ -1,9 +1,9 @@
-@file:Suppress("TooGenericExceptionCaught")
-
 package io.github.rygel.outerstellar.platform.analytics
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
+import java.io.IOException
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -73,8 +73,10 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                 logger.warn("Segment {} call failed: {}", endpoint, e.message)
                 null
             }
-        } catch (e: Exception) {
-            logger.warn("Segment analytics error on {}: {}", endpoint, e.message)
+        } catch (e: JsonProcessingException) {
+            logger.warn("Segment analytics serialization error on {}: {}", endpoint, e.message)
+        } catch (e: IOException) {
+            logger.warn("Segment analytics IO error on {}: {}", endpoint, e.message)
         }
     }
 }
