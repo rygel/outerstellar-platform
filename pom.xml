@@ -105,9 +105,17 @@
         <repository>
             <id>github-rygel</id>
             <name>Rygel GitHub Packages</name>
-            <url>https://maven.pkg.github.com/rygel/*</url>
+            <url>https://maven.pkg.github.com/rygel/outerstellar-framework</url>
         </repository>
     </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>github-rygel</id>
+            <name>Rygel GitHub Packages</name>
+            <url>https://maven.pkg.github.com/rygel/outerstellar-framework</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <distributionManagement>
         <repository>
