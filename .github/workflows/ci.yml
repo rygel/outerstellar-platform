@@ -39,7 +39,7 @@ jobs:
           server-password: GH_PACKAGES_TOKEN
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '20'
           cache: 'npm'
@@ -48,9 +48,9 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build and run all checks
-        run: mvn clean verify -pl core,persistence-jooq,persistence-jdbi,api-client,security,web
+        run: mvn verify -T 1C -pl core,persistence-jooq,persistence-jdbi,api-client,security,web
 
-      - name: Cache build output for desktop tests
+      - name: Cache build output for downstream jobs
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
@@ -58,11 +58,12 @@ jobs:
             persistence-jooq/target/
             api-client/target/
             security/target/
+            web/target/
           key: build-${{ github.sha }}
 
       - name: Upload JaCoCo coverage reports
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: coverage-reports
           path: '**/target/site/jacoco/'
@@ -102,6 +103,7 @@ jobs:
             persistence-jooq/target/
             api-client/target/
             security/target/
+            web/target/
           key: build-${{ github.sha }}
 
       - name: Install Xvfb
@@ -124,6 +126,62 @@ jobs:
           -Dspotbugs.skip=true
           -Dspotless.apply.skip=true
           -Djacoco.skip=true
+
+  e2e-tests:
+    name: Playwright E2E Tests
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright/java:v1.58.0-noble
+    environment: ci
+    permissions:
+      contents: read
+    env:
+      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Configure Maven settings for GitHub Packages
+        uses: s4u/maven-settings-action@64e42c454dbd42ef6370ac8539685755aedd205b # v3.1.0
+        with:
+          servers: '[{"id": "github-rygel", "username": "${{ github.actor }}", "password": "${{ secrets.GH_PACKAGES_TOKEN }}"}]'
+
+      - name: Restore build output
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+        with:
+          path: |
+            core/target/
+            persistence-jooq/target/
+            api-client/target/
+            security/target/
+            web/target/
+          key: build-${{ github.sha }}
+
+      - name: Install parent POM locally
+        run: mvn install -N -q -s /github/home/.m2/settings.xml
+
+      - name: Install cached modules
+        run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -Dexec.skip=true -q -s /github/home/.m2/settings.xml
+
+      - name: Run E2E tests
+        run: >
+          mvn test -pl web
+          -s /github/home/.m2/settings.xml
+          -Dgroups=e2e
+          -DexcludedGroups=
+          -Denforcer.skip=true
+          -Dcheckstyle.skip=true
+          -Dpmd.skip=true
+          -Dcpd.skip=true
+          -Dspotbugs.skip=true
+          -Dspotless.apply.skip=true
+          -Djacoco.skip=true
+          -Ddetekt.skip=true
+          -Dexec.skip=true
 
   security:
     name: Security (OWASP + Enforcer)
@@ -165,7 +223,7 @@ jobs:
 
       - name: Upload dependency check report
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: dependency-check-report
           path: 'target/dependency-check-report.html'

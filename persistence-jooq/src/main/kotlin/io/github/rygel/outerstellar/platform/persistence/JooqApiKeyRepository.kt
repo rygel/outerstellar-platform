@@ -47,18 +47,13 @@ class JooqApiKeyRepository(private val dsl: DSLContext) : ApiKeyRepository {
     }
 
     override fun findByKeyHash(keyHash: String): ApiKey? {
-        return dsl.select().from(table).where(keyHashField.eq(keyHash)).fetchOne()?.let {
-            mapRecord(it)
-        }
+        return dsl.select().from(table).where(keyHashField.eq(keyHash)).fetchOne()?.let { mapRecord(it) }
     }
 
     override fun findByUserId(userId: UUID): List<ApiKey> {
-        return dsl.select()
-            .from(table)
-            .where(userIdField.eq(userId))
-            .orderBy(createdAtField.desc())
-            .fetch()
-            .map { mapRecord(it) }
+        return dsl.select().from(table).where(userIdField.eq(userId)).orderBy(createdAtField.desc()).fetch().map {
+            mapRecord(it)
+        }
     }
 
     override fun delete(id: Long, userId: UUID) {

@@ -54,9 +54,7 @@ class JooqAuditRepository(private val dsl: DSLContext) : AuditRepository {
                     targetUsername = record.get(targetUsernameField),
                     action = record.get(actionField) ?: "",
                     detail = record.get(detailField),
-                    createdAt =
-                        record.get(createdAtField)?.toInstant(ZoneOffset.UTC)
-                            ?: java.time.Instant.now(),
+                    createdAt = record.get(createdAtField)?.toInstant(ZoneOffset.UTC) ?: java.time.Instant.now(),
                 )
             }
     }
@@ -86,12 +84,9 @@ class JooqAuditRepository(private val dsl: DSLContext) : AuditRepository {
                     targetUsername = record.get(targetUsernameField),
                     action = record.get(actionField) ?: "",
                     detail = record.get(detailField),
-                    createdAt =
-                        record.get(createdAtField)?.toInstant(ZoneOffset.UTC)
-                            ?: java.time.Instant.now(),
+                    createdAt = record.get(createdAtField)?.toInstant(ZoneOffset.UTC) ?: java.time.Instant.now(),
                 )
             }
 
-    override fun countAll(): Long =
-        dsl.selectCount().from(table).fetchOne(0, Long::class.java) ?: 0L
+    override fun countAll(): Long = dsl.selectCount().from(table).fetchOne(0, Long::class.java) ?: 0L
 }

@@ -40,35 +40,25 @@ class JooqOutboxRepository(private val dsl: DSLContext) : OutboxRepository {
     }
 
     override fun markFailed(id: UUID, error: String) {
-        dsl.update(OUTBOX)
-            .set(OUTBOX.STATUS, "FAILED")
-            .set(OUTBOX.LAST_ERROR, error)
-            .where(OUTBOX.ID.eq(id))
-            .execute()
+        dsl.update(OUTBOX).set(OUTBOX.STATUS, "FAILED").set(OUTBOX.LAST_ERROR, error).where(OUTBOX.ID.eq(id)).execute()
     }
 
     override fun getStats(): Map<String, Int> {
-        val results =
-            dsl.select(OUTBOX.STATUS, org.jooq.impl.DSL.count())
-                .from(OUTBOX)
-                .groupBy(OUTBOX.STATUS)
-                .fetch()
+        val results = dsl.select(OUTBOX.STATUS, org.jooq.impl.DSL.count()).from(OUTBOX).groupBy(OUTBOX.STATUS).fetch()
 
         return results.associate { it.value1()!! to it.value2() }
     }
 
     override fun listFailed(): List<OutboxEntry> {
-        return dsl.selectFrom(OUTBOX)
-            .where(OUTBOX.STATUS.eq("FAILED"))
-            .orderBy(OUTBOX.CREATED_AT.desc())
-            .fetch { record ->
-                OutboxEntry(
-                    id = record.id!!,
-                    payloadType = record.payloadType!!,
-                    payload = record.payload!!,
-                    status = record.status!!,
-                    createdAt = record.createdAt!!.toInstant(java.time.ZoneOffset.UTC),
-                )
-            }
+        return dsl.selectFrom(OUTBOX).where(OUTBOX.STATUS.eq("FAILED")).orderBy(OUTBOX.CREATED_AT.desc()).fetch { record
+            ->
+            OutboxEntry(
+                id = record.id!!,
+                payloadType = record.payloadType!!,
+                payload = record.payload!!,
+                status = record.status!!,
+                createdAt = record.createdAt!!.toInstant(java.time.ZoneOffset.UTC),
+            )
+        }
     }
 }

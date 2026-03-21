@@ -67,10 +67,7 @@ class NotificationRoutes(
                             Response(Status.FORBIDDEN)
                         } else {
                             try {
-                                notificationService.markRead(
-                                    UUID.fromString(notificationId),
-                                    user.id,
-                                )
+                                notificationService.markRead(UUID.fromString(notificationId), user.id)
                             } catch (_: IllegalArgumentException) {
                                 // ignore invalid UUID
                             }
@@ -86,9 +83,7 @@ class NotificationRoutes(
                 { request ->
                     val ctx = request.webContext
                     val fragment = pageFactory.buildNotificationBell(ctx)
-                    Response(Status.OK)
-                        .header("content-type", "text/html; charset=utf-8")
-                        .body(renderer(fragment))
+                    Response(Status.OK).header("content-type", "text/html; charset=utf-8").body(renderer(fragment))
                 },
         )
 }

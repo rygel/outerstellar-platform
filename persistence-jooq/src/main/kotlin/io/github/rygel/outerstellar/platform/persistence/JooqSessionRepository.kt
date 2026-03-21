@@ -43,24 +43,17 @@ class JooqSessionRepository(private val dsl: DSLContext) : SessionRepository {
     override fun findByTokenHash(tokenHash: String): Session? {
         return dsl.select()
             .from(table)
-            .where(
-                tokenHashField.eq(tokenHash).and(expiresAtField.gt(Timestamp.from(Instant.now())))
-            )
+            .where(tokenHashField.eq(tokenHash).and(expiresAtField.gt(Timestamp.from(Instant.now()))))
             .fetchOne()
             ?.let { mapRecord(it) }
     }
 
     override fun findByTokenHashIncludingExpired(tokenHash: String): Session? {
-        return dsl.select().from(table).where(tokenHashField.eq(tokenHash)).fetchOne()?.let {
-            mapRecord(it)
-        }
+        return dsl.select().from(table).where(tokenHashField.eq(tokenHash)).fetchOne()?.let { mapRecord(it) }
     }
 
     override fun updateExpiresAt(tokenHash: String, expiresAt: Instant) {
-        dsl.update(table)
-            .set(expiresAtField, Timestamp.from(expiresAt))
-            .where(tokenHashField.eq(tokenHash))
-            .execute()
+        dsl.update(table).set(expiresAtField, Timestamp.from(expiresAt)).where(tokenHashField.eq(tokenHash)).execute()
     }
 
     override fun deleteByTokenHash(tokenHash: String) {

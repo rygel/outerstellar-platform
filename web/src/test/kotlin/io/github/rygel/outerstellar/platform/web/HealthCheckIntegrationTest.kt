@@ -51,8 +51,7 @@ class HealthCheckIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -81,10 +80,7 @@ class HealthCheckIntegrationTest : H2WebTest() {
     fun `GET health returns JSON content-type`() {
         val response = app(Request(GET, "/health"))
         val contentType = response.header("content-type") ?: ""
-        assertTrue(
-            contentType.contains("application/json"),
-            "Should return JSON, got: $contentType",
-        )
+        assertTrue(contentType.contains("application/json"), "Should return JSON, got: $contentType")
     }
 
     @Test

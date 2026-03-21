@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.export.CsvUtils
 import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.UserSummary
@@ -35,13 +36,9 @@ class UserAdminRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    val limit =
-                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT)
-                            ?: DEFAULT_PAGE_LIMIT
+                    val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT) ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(
-                        pageFactory.buildUserAdminPage(request.webContext, limit, offset)
-                    )
+                    renderer.render(pageFactory.buildUserAdminPage(request.webContext, limit, offset))
                 },
             "/admin/users/export" meta
                 {
@@ -64,16 +61,11 @@ class UserAdminRoutes(
                     {
                             request: org.http4k.core.Request ->
                         val ctx = request.webContext
-                        val admin =
-                            ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
+                        val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         val users = securityService.listUsers()
                         val target = users.find { it.id == userId }
                         if (target != null) {
-                            securityService.setUserEnabled(
-                                admin.id,
-                                UUID.fromString(userId),
-                                !target.enabled,
-                            )
+                            securityService.setUserEnabled(admin.id, UUID.fromString(userId), !target.enabled)
                         }
                         renderer.render(pageFactory.buildUserAdminPage(ctx))
                     }
@@ -84,13 +76,9 @@ class UserAdminRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    val limit =
-                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT)
-                            ?: DEFAULT_PAGE_LIMIT
+                    val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT) ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(
-                        pageFactory.buildAuditLogPage(request.webContext, limit, offset)
-                    )
+                    renderer.render(pageFactory.buildAuditLogPage(request.webContext, limit, offset))
                 },
             "/admin/audit/export" meta
                 {
@@ -113,13 +101,11 @@ class UserAdminRoutes(
                     {
                             request: org.http4k.core.Request ->
                         val ctx = request.webContext
-                        val admin =
-                            ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
+                        val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         val users = securityService.listUsers()
                         val target = users.find { it.id == userId }
                         if (target != null) {
-                            val newRole =
-                                if (target.role == "ADMIN") UserRole.USER else UserRole.ADMIN
+                            val newRole = if (target.role == "ADMIN") UserRole.USER else UserRole.ADMIN
                             securityService.setUserRole(admin.id, UUID.fromString(userId), newRole)
                         }
                         renderer.render(pageFactory.buildUserAdminPage(ctx))
@@ -130,38 +116,30 @@ class UserAdminRoutes(
     companion object {
         fun usersAsCsv(users: List<UserSummary>): String {
             val sb = StringBuilder()
-            sb.appendLine("Username,Email,Role,Enabled")
+            sb.appendLine(CsvUtils.toCsvRow(listOf("Username", "Email", "Role", "Enabled")))
             users.forEach { u ->
-                sb.appendLine(
-                    "${escapeCsv(u.username)},${escapeCsv(u.email)},${u.role},${u.enabled}"
-                )
+                sb.appendLine(CsvUtils.toCsvRow(listOf(u.username, u.email, u.role, u.enabled.toString())))
             }
             return sb.toString()
         }
 
-        fun auditAsCsv(
-            entries: List<io.github.rygel.outerstellar.platform.model.AuditEntry>
-        ): String {
+        fun auditAsCsv(entries: List<io.github.rygel.outerstellar.platform.model.AuditEntry>): String {
             val sb = StringBuilder()
-            sb.appendLine("Timestamp,Actor,Action,Target,Detail")
+            sb.appendLine(CsvUtils.toCsvRow(listOf("Timestamp", "Actor", "Action", "Target", "Detail")))
             entries.forEach { e ->
                 sb.appendLine(
-                    "${escapeCsv(e.createdAt.toString())}," +
-                        "${escapeCsv(e.actorUsername ?: "")}," +
-                        "${escapeCsv(e.action)}," +
-                        "${escapeCsv(e.targetUsername ?: "")}," +
-                        escapeCsv(e.detail ?: "")
+                    CsvUtils.toCsvRow(
+                        listOf(
+                            e.createdAt.toString(),
+                            e.actorUsername ?: "",
+                            e.action,
+                            e.targetUsername ?: "",
+                            e.detail ?: "",
+                        )
+                    )
                 )
             }
             return sb.toString()
-        }
-
-        private fun escapeCsv(value: String): String {
-            return if (value.contains(',') || value.contains('"') || value.contains('\n')) {
-                "\"${value.replace("\"", "\"\"")}\""
-            } else {
-                value
-            }
         }
     }
 }

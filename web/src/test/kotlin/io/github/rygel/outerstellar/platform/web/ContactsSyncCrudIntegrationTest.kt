@@ -57,13 +57,8 @@ class ContactsSyncCrudIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = ContactService(contactRepository)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -144,8 +139,7 @@ class ContactsSyncCrudIntegrationTest : H2WebTest() {
         )
 
         // Pull contacts
-        val response =
-            app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
+        val response = app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
         assertEquals(Status.OK, response.status)
 
         val body = Jackson.asA(response.bodyString(), SyncPullContactResponse::class)
@@ -164,8 +158,7 @@ class ContactsSyncCrudIntegrationTest : H2WebTest() {
                 .body(contactJson(syncId, "Charlie Brown"))
         )
 
-        val response =
-            app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
+        val response = app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
         val body = Jackson.asA(response.bodyString(), SyncPullContactResponse::class)
         val contact = body.contacts.find { it.syncId == syncId }
         assertEquals(syncId, contact?.syncId, "SyncId should match pushed value")
@@ -254,10 +247,7 @@ class ContactsSyncCrudIntegrationTest : H2WebTest() {
 
         // Pull with since=Long.MAX_VALUE — should be empty
         val response =
-            app(
-                Request(GET, "/api/v1/sync/contacts?since=${Long.MAX_VALUE - 1}")
-                    .header("Authorization", bearer())
-            )
+            app(Request(GET, "/api/v1/sync/contacts?since=${Long.MAX_VALUE - 1}").header("Authorization", bearer()))
         val body = Jackson.asA(response.bodyString(), SyncPullContactResponse::class)
         assertTrue(body.contacts.isEmpty(), "No contacts should be returned with future timestamp")
     }

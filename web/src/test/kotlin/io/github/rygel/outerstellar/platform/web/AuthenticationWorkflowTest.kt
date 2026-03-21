@@ -40,9 +40,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService = SecurityService(userRepository, encoder)
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
-                relaxed = true
-            )
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
         app =
             app(

@@ -16,14 +16,10 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
     private val logger = LoggerFactory.getLogger(SegmentAnalyticsService::class.java)
     private val client = HttpClient.newHttpClient()
     private val mapper = jacksonObjectMapper()
-    private val authHeader =
-        "Basic " + Base64.getEncoder().encodeToString("$writeKey:".toByteArray())
+    private val authHeader = "Basic " + Base64.getEncoder().encodeToString("$writeKey:".toByteArray())
 
     override fun identify(userId: String, traits: Map<String, Any>) {
-        send(
-            "identify",
-            mapOf("userId" to userId, "traits" to traits, "timestamp" to Instant.now().toString()),
-        )
+        send("identify", mapOf("userId" to userId, "traits" to traits, "timestamp" to Instant.now().toString()))
     }
 
     override fun track(userId: String, event: String, properties: Map<String, Any>) {
@@ -56,11 +52,7 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                 body +
                     mapOf(
                         "messageId" to UUID.randomUUID().toString(),
-                        "context" to
-                            mapOf(
-                                "library" to
-                                    mapOf("name" to "outerstellar-platform", "version" to "1.0")
-                            ),
+                        "context" to mapOf("library" to mapOf("name" to "outerstellar-platform", "version" to "1.0")),
                     )
             val request =
                 HttpRequest.newBuilder()

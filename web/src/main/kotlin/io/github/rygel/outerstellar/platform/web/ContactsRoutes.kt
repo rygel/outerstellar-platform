@@ -36,8 +36,7 @@ class ContactsRoutes(
                     val ctx = request.webContext
                     val query = request.query("q")
                     val limit =
-                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
-                            ?: DEFAULT_CONTACTS_LIMIT
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT) ?: DEFAULT_CONTACTS_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
                     renderer.render(pageFactory.buildContactsPage(ctx, query, limit, offset))
                 },
@@ -57,9 +56,7 @@ class ContactsRoutes(
                 { request: Request ->
                     val ctx = request.webContext
                     val params = request.bodyAsForm()
-                    val name =
-                        params.findSingle("name")
-                            ?: return@to Response(Status.BAD_REQUEST).body("name required")
+                    val name = params.findSingle("name") ?: return@to Response(Status.BAD_REQUEST).body("name required")
                     contactService?.createContact(
                         name = name,
                         emails = params.findSingle("emails").orEmpty().splitTrimmed(),
@@ -94,16 +91,14 @@ class ContactsRoutes(
                         val params = request.bodyAsForm()
                         val existing =
                             contactService?.getContactBySyncId(syncId)
-                                ?: return@to Response(Status.NOT_FOUND)
-                                    .body("Contact not found: $syncId")
+                                ?: return@to Response(Status.NOT_FOUND).body("Contact not found: $syncId")
                         val name = params.findSingle("name") ?: existing.name
                         contactService.updateContact(
                             existing.copy(
                                 name = name,
                                 emails = params.findSingle("emails").orEmpty().splitTrimmed(),
                                 phones = params.findSingle("phones").orEmpty().splitTrimmed(),
-                                socialMedia =
-                                params.findSingle("socialMedia").orEmpty().splitTrimmed(),
+                                socialMedia = params.findSingle("socialMedia").orEmpty().splitTrimmed(),
                                 company = params.findSingle("company").orEmpty(),
                                 companyAddress = params.findSingle("companyAddress").orEmpty(),
                                 department = params.findSingle("department").orEmpty(),
@@ -141,6 +136,5 @@ class ContactsRoutes(
     private fun List<Pair<String, String>>.findSingle(key: String): String? =
         firstOrNull { it.first == key }?.second?.takeIf { it.isNotBlank() }
 
-    private fun String.splitTrimmed(): List<String> =
-        split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    private fun String.splitTrimmed(): List<String> = split(",").map { it.trim() }.filter { it.isNotEmpty() }
 }

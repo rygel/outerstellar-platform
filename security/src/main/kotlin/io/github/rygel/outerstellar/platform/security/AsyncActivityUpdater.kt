@@ -5,12 +5,11 @@ import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
 
 /**
- * Buffers `updateLastActivity` calls and flushes them in a single batch on a schedule, removing
- * this write from the per-request hot path.
+ * Buffers `updateLastActivity` calls and flushes them in a single batch on a schedule, removing this write from the
+ * per-request hot path.
  *
- * Each unique user is deduplicated — 100 requests from the same user before the next flush produce
- * exactly one DB write. Flush is driven externally (e.g. by the outbox scheduler) so no additional
- * threads are created.
+ * Each unique user is deduplicated — 100 requests from the same user before the next flush produce exactly one DB
+ * write. Flush is driven externally (e.g. by the outbox scheduler) so no additional threads are created.
  *
  * Usage:
  * - Call [record] in request filters instead of `userRepository.updateLastActivity`.
@@ -28,8 +27,8 @@ class AsyncActivityUpdater(private val userRepository: UserRepository) {
     }
 
     /**
-     * Drain all pending records and write them to the database. Intended to be called on a
-     * fixed-delay schedule, not from the request path.
+     * Drain all pending records and write them to the database. Intended to be called on a fixed-delay schedule, not
+     * from the request path.
      */
     fun flush() {
         if (pending.isEmpty()) return

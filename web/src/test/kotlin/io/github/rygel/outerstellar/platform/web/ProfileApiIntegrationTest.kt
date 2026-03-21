@@ -57,22 +57,12 @@ class ProfileApiIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
         val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(
-                repository,
-                outbox,
-                txManager,
-                cache,
-            )
+            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, txManager, cache)
         val pageFactory = WebPageFactory(repository, messageService, null, null)
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val contactService =
-            mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val contactService = mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
         app =
             app(
@@ -93,18 +83,9 @@ class ProfileApiIntegrationTest : H2WebTest() {
 
     // ---- Helpers ----
 
-    private fun registerAndLogin(
-        username: String = "profuser${UUID.randomUUID().toString().take(6)}"
-    ): String {
-        app(
-            Request(POST, "/api/v1/auth/register")
-                .with(registerLens of RegisterRequest(username, "pass123!"))
-        )
-        val loginResp =
-            app(
-                Request(POST, "/api/v1/auth/login")
-                    .with(loginLens of LoginRequest(username, "pass123!"))
-            )
+    private fun registerAndLogin(username: String = "profuser${UUID.randomUUID().toString().take(6)}"): String {
+        app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, "pass123!")))
+        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest(username, "pass123!")))
         return tokenLens(loginResp).token
     }
 
@@ -158,10 +139,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
         val response =
             app(
                 bearer(PUT, "/api/v1/auth/profile", token)
-                    .with(
-                        updateProfileLens of
-                            UpdateProfileRequest(email = user.email, username = "carol_v2")
-                    )
+                    .with(updateProfileLens of UpdateProfileRequest(email = user.email, username = "carol_v2"))
             )
 
         assertEquals(Status.OK, response.status)
@@ -179,10 +157,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
                 bearer(PUT, "/api/v1/auth/profile", token)
                     .with(
                         updateProfileLens of
-                            UpdateProfileRequest(
-                                email = user.email,
-                                avatarUrl = "https://example.com/avatar.png",
-                            )
+                            UpdateProfileRequest(email = user.email, avatarUrl = "https://example.com/avatar.png")
                     )
             )
 
@@ -199,10 +174,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
         val response =
             app(
                 bearer(PUT, "/api/v1/auth/profile", token1)
-                    .with(
-                        updateProfileLens of
-                            UpdateProfileRequest(email = user.email, username = "frank")
-                    )
+                    .with(updateProfileLens of UpdateProfileRequest(email = user.email, username = "frank"))
             )
 
         assertEquals(Status.CONFLICT, response.status)
@@ -232,10 +204,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
                 bearer(PUT, "/api/v1/auth/notification-preferences", token)
                     .with(
                         updateNotifPrefsLens of
-                            UpdateNotificationPrefsRequest(
-                                emailEnabled = false,
-                                pushEnabled = false,
-                            )
+                            UpdateNotificationPrefsRequest(emailEnabled = false, pushEnabled = false)
                     )
             )
 
@@ -252,17 +221,11 @@ class ProfileApiIntegrationTest : H2WebTest() {
 
         app(
             bearer(PUT, "/api/v1/auth/notification-preferences", token)
-                .with(
-                    updateNotifPrefsLens of
-                        UpdateNotificationPrefsRequest(emailEnabled = false, pushEnabled = false)
-                )
+                .with(updateNotifPrefsLens of UpdateNotificationPrefsRequest(emailEnabled = false, pushEnabled = false))
         )
         app(
             bearer(PUT, "/api/v1/auth/notification-preferences", token)
-                .with(
-                    updateNotifPrefsLens of
-                        UpdateNotificationPrefsRequest(emailEnabled = true, pushEnabled = false)
-                )
+                .with(updateNotifPrefsLens of UpdateNotificationPrefsRequest(emailEnabled = true, pushEnabled = false))
         )
 
         val saved = userRepository.findById(user.id)!!
@@ -277,10 +240,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
                 Request(PUT, "/api/v1/auth/notification-preferences")
                     .with(
                         updateNotifPrefsLens of
-                            UpdateNotificationPrefsRequest(
-                                emailEnabled = false,
-                                pushEnabled = false,
-                            )
+                            UpdateNotificationPrefsRequest(emailEnabled = false, pushEnabled = false)
                     )
             )
         assertEquals(Status.UNAUTHORIZED, response.status)
@@ -312,11 +272,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
                 role = UserRole.ADMIN,
             )
         )
-        val loginResp =
-            app(
-                Request(POST, "/api/v1/auth/login")
-                    .with(loginLens of LoginRequest("soleadmin", password))
-            )
+        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("soleadmin", password)))
         val adminToken = tokenLens(loginResp).token
 
         val response = app(bearer(DELETE, "/api/v1/auth/account", adminToken))
@@ -348,11 +304,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
                 role = UserRole.ADMIN,
             )
         )
-        val loginResp =
-            app(
-                Request(POST, "/api/v1/auth/login")
-                    .with(loginLens of LoginRequest("admin1", "adminpass1"))
-            )
+        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1", "adminpass1")))
         val token1 = tokenLens(loginResp).token
 
         val response = app(bearer(DELETE, "/api/v1/auth/account", token1))
@@ -388,10 +340,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
         )
         app(
             bearer(PUT, "/api/v1/auth/notification-preferences", token)
-                .with(
-                    updateNotifPrefsLens of
-                        UpdateNotificationPrefsRequest(emailEnabled = false, pushEnabled = true)
-                )
+                .with(updateNotifPrefsLens of UpdateNotificationPrefsRequest(emailEnabled = false, pushEnabled = true))
         )
 
         val profile = userProfileLens(app(bearer(GET, "/api/v1/auth/profile", token)))

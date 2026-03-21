@@ -14,10 +14,7 @@ import org.http4k.template.TemplateRenderer
 private const val DEFAULT_LIMIT = 10
 private const val MAX_LIMIT = 100
 
-class ComponentRoutes(
-    private val pageFactory: WebPageFactory,
-    private val renderer: TemplateRenderer,
-) : ServerRoutes {
+class ComponentRoutes(private val pageFactory: WebPageFactory, private val renderer: TemplateRenderer) : ServerRoutes {
     private val queryLens = Query.string().optional("q")
     private val limitLens = Query.int().defaulted("limit", DEFAULT_LIMIT)
     private val offsetLens = Query.int().defaulted("offset", 0)
@@ -33,12 +30,8 @@ class ComponentRoutes(
                 { request: org.http4k.core.Request ->
                     val pagePath = request.query("pagePath")?.ifBlank { "/" } ?: "/"
                     val forwardParams =
-                        request.uri.query
-                            .split("&")
-                            .filter { !it.startsWith("pagePath=") }
-                            .joinToString("&")
-                    val redirectUrl =
-                        if (forwardParams.isBlank()) pagePath else "$pagePath?$forwardParams"
+                        request.uri.query.split("&").filter { !it.startsWith("pagePath=") }.joinToString("&")
+                    val redirectUrl = if (forwardParams.isBlank()) pagePath else "$pagePath?$forwardParams"
                     Response(Status.OK).header("HX-Redirect", redirectUrl)
                 },
             "/components/sidebar/theme-selector" meta
@@ -79,9 +72,7 @@ class ComponentRoutes(
                     val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
                     val offset = offsetLens(request).coerceAtLeast(0)
                     val year = yearLens(request)
-                    renderer.render(
-                        pageFactory.buildMessageList(request.webContext, query, limit, offset, year)
-                    )
+                    renderer.render(pageFactory.buildMessageList(request.webContext, query, limit, offset, year))
                 },
         )
 }

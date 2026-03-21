@@ -35,9 +35,7 @@ class MessageActionE2ETest : H2WebTest() {
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
-                relaxed = true
-            )
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
         val app =
             app(
@@ -53,11 +51,7 @@ class MessageActionE2ETest : H2WebTest() {
             )
 
         val response =
-            app.http!!(
-                Request(POST, "/messages")
-                    .form("author", "Test Author")
-                    .form("content", "Test Content")
-            )
+            app.http!!(Request(POST, "/messages").form("author", "Test Author").form("content", "Test Content"))
 
         assertEquals(Status.FOUND, response.status)
 

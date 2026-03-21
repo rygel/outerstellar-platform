@@ -61,8 +61,7 @@ class AuthRoutes(
                     val mode = request.form("mode") ?: "sign-in"
                     val email = request.form("email").orEmpty()
                     val password = request.form("password").orEmpty()
-                    val returnTo =
-                        safeReturnTo(request.query("returnTo") ?: request.form("returnTo"))
+                    val returnTo = safeReturnTo(request.query("returnTo") ?: request.form("returnTo"))
 
                     if (mode == "sign-in") {
                         val ctx = request.webContext
@@ -75,10 +74,7 @@ class AuthRoutes(
                             analytics.track(user.id.toString(), "User Logged In")
                             Response(Status.FOUND)
                                 .header("location", ctx.url(returnTo))
-                                .header(
-                                    "Set-Cookie",
-                                    SessionCookie.create(user.id.toString(), sessionCookieSecure),
-                                )
+                                .header("Set-Cookie", SessionCookie.create(user.id.toString(), sessionCookieSecure))
                         } else {
                             renderer.render(
                                 AuthResultFragment(
@@ -174,11 +170,7 @@ class AuthRoutes(
                             )
                         } else {
                             try {
-                                securityService.changePassword(
-                                    user.id,
-                                    currentPassword,
-                                    newPassword,
-                                )
+                                securityService.changePassword(user.id, currentPassword, newPassword)
                                 renderer.render(
                                     AuthResultFragment(
                                         title = ctx.i18n.translate("web.password.success.title"),
@@ -250,8 +242,7 @@ class AuthRoutes(
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.reset.error.title"),
-                                    message =
-                                    e.message ?: ctx.i18n.translate("web.reset.error.invalid"),
+                                    message = e.message ?: ctx.i18n.translate("web.reset.error.invalid"),
                                     toneClass = "panel-danger",
                                 )
                             )
@@ -295,12 +286,7 @@ class AuthRoutes(
                         val newUsername = request.form("username")?.takeIf { it.isNotBlank() }
                         val newAvatarUrl = request.form("avatarUrl")
                         try {
-                            securityService.updateProfile(
-                                user.id,
-                                newEmail,
-                                newUsername,
-                                newAvatarUrl,
-                            )
+                            securityService.updateProfile(user.id, newEmail, newUsername, newAvatarUrl)
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.success.title"),
@@ -340,11 +326,7 @@ class AuthRoutes(
                     } else {
                         val emailEnabled = request.form("emailNotifications") == "on"
                         val pushEnabled = request.form("pushNotifications") == "on"
-                        securityService.updateNotificationPreferences(
-                            user.id,
-                            emailEnabled,
-                            pushEnabled,
-                        )
+                        securityService.updateNotificationPreferences(user.id, emailEnabled, pushEnabled)
                         renderer.render(
                             AuthResultFragment(
                                 title = ctx.i18n.translate("web.profile.notif.success.title"),
@@ -370,10 +352,7 @@ class AuthRoutes(
                             Response(Status.FOUND)
                                 .header("location", ctx.url("/auth?deleted=true"))
                                 .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
-                        } catch (
-                            e:
-                            io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
-                        ) {
+                        } catch (e: io.github.rygel.outerstellar.platform.model.InsufficientPermissionException) {
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.delete.error.title"),
@@ -414,11 +393,7 @@ class AuthRoutes(
                         } else {
                             val result = securityService.createApiKey(user.id, name)
                             renderer.render(
-                                pageFactory.buildApiKeysPage(
-                                    ctx,
-                                    newKey = result.key,
-                                    newKeyName = result.name,
-                                )
+                                pageFactory.buildApiKeysPage(ctx, newKey = result.key, newKeyName = result.name)
                             )
                         }
                     }

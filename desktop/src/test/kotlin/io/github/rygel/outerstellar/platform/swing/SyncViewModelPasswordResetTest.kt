@@ -227,6 +227,8 @@ class SyncViewModelPasswordResetTest {
         vm.resetPassword("token-abc", "newpass123") { _, _ -> latch.countDown() }
 
         assertTrue(latch.await(3, TimeUnit.SECONDS))
+        // Observer notification fires on the EDT after onResult — give it time to dispatch
+        javax.swing.SwingUtilities.invokeAndWait {}
         assertTrue(notified, "Observers should be notified after resetPassword")
     }
 }

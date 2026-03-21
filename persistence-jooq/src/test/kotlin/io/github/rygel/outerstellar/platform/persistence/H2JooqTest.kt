@@ -20,8 +20,7 @@ abstract class H2JooqTest {
             dataSource = shared
             dsl = postgresDsl!!
         } else {
-            val url =
-                "jdbc:h2:mem:${javaClass.simpleName.lowercase()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+            val url = "jdbc:h2:mem:${javaClass.simpleName.lowercase()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
             dataSource = createDataSource(url, "sa", "")
             migrate(dataSource)
             dsl = DSL.using(dataSource, SQLDialect.H2)
@@ -60,7 +59,6 @@ abstract class H2JooqTest {
                         .also { migrate(it) }
                 }
 
-        private val postgresDsl: DSLContext? =
-            postgresDataSource?.let { DSL.using(it, SQLDialect.POSTGRES) }
+        private val postgresDsl: DSLContext? = postgresDataSource?.let { DSL.using(it, SQLDialect.POSTGRES) }
     }
 }

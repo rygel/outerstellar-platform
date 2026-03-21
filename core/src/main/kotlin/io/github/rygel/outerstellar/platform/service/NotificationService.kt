@@ -10,8 +10,7 @@ class NotificationService(private val repository: NotificationRepository) {
         repository.save(Notification(userId = userId, title = title, body = body, type = type))
     }
 
-    fun listForUser(userId: UUID, limit: Int = 50): List<Notification> =
-        repository.findByUserId(userId, limit)
+    fun listForUser(userId: UUID, limit: Int = 50): List<Notification> = repository.findByUserId(userId, limit)
 
     fun countUnread(userId: UUID): Int = repository.countUnread(userId)
 

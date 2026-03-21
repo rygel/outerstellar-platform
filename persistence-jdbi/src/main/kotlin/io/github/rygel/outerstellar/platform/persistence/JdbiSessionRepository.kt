@@ -57,9 +57,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
     override fun updateExpiresAt(tokenHash: String, expiresAt: Instant) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate(
-                    "UPDATE sessions SET expires_at = :expiresAt WHERE token_hash = :tokenHash"
-                )
+                .createUpdate("UPDATE sessions SET expires_at = :expiresAt WHERE token_hash = :tokenHash")
                 .bind("expiresAt", Timestamp.from(expiresAt))
                 .bind("tokenHash", tokenHash)
                 .execute()
@@ -77,10 +75,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
 
     override fun deleteByUserId(userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
-            handle
-                .createUpdate("DELETE FROM sessions WHERE user_id = :userId")
-                .bind("userId", userId)
-                .execute()
+            handle.createUpdate("DELETE FROM sessions WHERE user_id = :userId").bind("userId", userId).execute()
         }
     }
 

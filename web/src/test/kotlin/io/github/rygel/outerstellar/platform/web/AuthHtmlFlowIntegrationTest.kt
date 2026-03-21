@@ -82,8 +82,7 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
                 apiKeyRepository = apiKeyRepository,
                 resetRepository = resetRepository,
             )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -154,13 +153,7 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
             app(
                 Request(POST, "/auth/components/result")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(
-                        formBody(
-                            "mode" to "sign-in",
-                            "email" to testUser.username,
-                            "password" to "correct-password",
-                        )
-                    )
+                    .body(formBody("mode" to "sign-in", "email" to testUser.username, "password" to "correct-password"))
             )
 
         assertEquals(Status.FOUND, response.status)
@@ -180,13 +173,7 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
             app(
                 Request(POST, "/auth/components/result")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(
-                        formBody(
-                            "mode" to "sign-in",
-                            "email" to testUser.username,
-                            "password" to "wrong-password",
-                        )
-                    )
+                    .body(formBody("mode" to "sign-in", "email" to testUser.username, "password" to "wrong-password"))
             )
 
         assertEquals(Status.OK, response.status)
@@ -195,10 +182,7 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
             body.contains("Invalid") || body.contains("invalid") || body.contains("error"),
             "Wrong password should return error in body, got: ${body.take(200)}",
         )
-        assertFalse(
-            response.header("location") != null,
-            "Wrong password must not produce a redirect",
-        )
+        assertFalse(response.header("location") != null, "Wrong password must not produce a redirect")
     }
 
     @Test
@@ -207,20 +191,11 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
             app(
                 Request(POST, "/auth/components/result")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(
-                        formBody(
-                            "mode" to "sign-in",
-                            "email" to testUser.username,
-                            "password" to "bad",
-                        )
-                    )
+                    .body(formBody("mode" to "sign-in", "email" to testUser.username, "password" to "bad"))
             )
 
         val setCookie = response.header("Set-Cookie").orEmpty()
-        assertFalse(
-            setCookie.contains(WebContext.SESSION_COOKIE),
-            "Failed sign-in must not set a session cookie",
-        )
+        assertFalse(setCookie.contains(WebContext.SESSION_COOKIE), "Failed sign-in must not set a session cookie")
     }
 
     // ---- Register ----
@@ -231,21 +206,12 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
             app(
                 Request(POST, "/auth/components/result")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(
-                        formBody(
-                            "mode" to "register",
-                            "email" to "newuser@test.com",
-                            "password" to "strongpassword",
-                        )
-                    )
+                    .body(formBody("mode" to "register", "email" to "newuser@test.com", "password" to "strongpassword"))
             )
 
         assertEquals(Status.FOUND, response.status)
         val location = response.header("location").orEmpty()
-        assertTrue(
-            location.contains("registered=true"),
-            "Register should redirect to ?registered=true, got: $location",
-        )
+        assertTrue(location.contains("registered=true"), "Register should redirect to ?registered=true, got: $location")
     }
 
     @Test
@@ -277,13 +243,7 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
             app(
                 Request(POST, "/auth/components/result")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(
-                        formBody(
-                            "mode" to "register",
-                            "email" to "weak@test.com",
-                            "password" to "abc",
-                        )
-                    )
+                    .body(formBody("mode" to "register", "email" to "weak@test.com", "password" to "abc"))
             )
 
         assertEquals(Status.OK, response.status)

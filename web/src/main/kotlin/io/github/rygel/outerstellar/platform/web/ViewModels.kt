@@ -63,11 +63,7 @@ data class HomePage(
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/HomePage"
 }
 
-data class TrashPage(
-    val title: String,
-    val description: String,
-    val messageList: MessageListViewModel,
-) : ViewModel {
+data class TrashPage(val title: String, val description: String, val messageList: MessageListViewModel) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/TrashPage"
 }
 
@@ -120,8 +116,7 @@ data class AuthFormFragment(
     val signInWithApple: String = "Sign in with Apple",
 ) : ViewModel
 
-data class AuthResultFragment(val title: String, val message: String, val toneClass: String) :
-    ViewModel
+data class AuthResultFragment(val title: String, val message: String, val toneClass: String) : ViewModel
 
 data class ErrorPage(
     val statusCode: Int,
@@ -329,8 +324,7 @@ data class SidebarSelector(
     val hiddenFields: List<HiddenField>,
     val refreshUrl: String,
 ) : ViewModel {
-    override fun template(): String =
-        "io/github/rygel/outerstellar/platform/web/components/SidebarSelector"
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/SidebarSelector"
 }
 
 data class ApiKeysPage(
@@ -382,10 +376,8 @@ data class NotificationsPage(
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/NotificationsPage"
 }
 
-data class NotificationBellFragment(val unreadCount: Int, val notificationsUrl: String) :
-    ViewModel {
-    override fun template(): String =
-        "io/github/rygel/outerstellar/platform/web/components/NotificationBell"
+data class NotificationBellFragment(val unreadCount: Int, val notificationsUrl: String) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/NotificationBell"
 }
 
 data class ContactFormFragment(
@@ -410,8 +402,7 @@ data class ContactFormFragment(
     val saveLabel: String = "Save",
     val cancelLabel: String = "Cancel",
 ) : ViewModel {
-    override fun template(): String =
-        "io/github/rygel/outerstellar/platform/web/components/ContactForm"
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/ContactForm"
 }
 
 data class ContactViewModel(
@@ -426,6 +417,31 @@ data class ContactViewModel(
     val deleteUrl: String = "",
     val editUrl: String = "",
 )
+
+data class SearchResultViewModel(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val url: String,
+    val type: String,
+)
+
+data class SearchPage(
+    val title: String,
+    val query: String,
+    val results: List<SearchResultViewModel>,
+    val emptyLabel: String,
+    val searchPlaceholder: String,
+    val searchLabel: String,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/SearchPage"
+}
+
+data class SettingsTab(val key: String, val label: String, val url: String, val active: Boolean)
+
+data class SettingsPage(val title: String, val tabs: List<SettingsTab>, val activeTab: String) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/SettingsPage"
+}
 
 data class ContactsPage(
     val title: String,

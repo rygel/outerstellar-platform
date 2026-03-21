@@ -140,9 +140,7 @@ class SecurityServiceTest {
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("wrongcurrent", testUser.passwordHash) } returns false
 
-        assertThrows<WeakPasswordException> {
-            service.changePassword(testUser.id, "wrongcurrent", "newpassword1")
-        }
+        assertThrows<WeakPasswordException> { service.changePassword(testUser.id, "wrongcurrent", "newpassword1") }
     }
 
     @Test
@@ -163,18 +161,14 @@ class SecurityServiceTest {
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
 
-        assertThrows<WeakPasswordException> {
-            service.changePassword(testUser.id, "currentpass", "short")
-        }
+        assertThrows<WeakPasswordException> { service.changePassword(testUser.id, "currentpass", "short") }
     }
 
     // ---- setUserEnabled ----
 
     @Test
     fun `setUserEnabled prevents self-disable`() {
-        assertThrows<InsufficientPermissionException> {
-            service.setUserEnabled(adminUser.id, adminUser.id, false)
-        }
+        assertThrows<InsufficientPermissionException> { service.setUserEnabled(adminUser.id, adminUser.id, false) }
     }
 
     @Test
@@ -191,9 +185,7 @@ class SecurityServiceTest {
 
     @Test
     fun `setUserRole prevents self-demotion`() {
-        assertThrows<InsufficientPermissionException> {
-            service.setUserRole(adminUser.id, adminUser.id, UserRole.USER)
-        }
+        assertThrows<InsufficientPermissionException> { service.setUserRole(adminUser.id, adminUser.id, UserRole.USER) }
     }
 
     @Test
@@ -228,17 +220,10 @@ class SecurityServiceTest {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
         // Compute the expected hash the same way SecurityService does
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val expectedHash =
-            digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
+        val expectedHash = digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
 
         val apiKey =
-            ApiKey(
-                id = 1L,
-                userId = testUser.id,
-                keyHash = expectedHash,
-                keyPrefix = "osk_abcd",
-                name = "test-key",
-            )
+            ApiKey(id = 1L, userId = testUser.id, keyHash = expectedHash, keyPrefix = "osk_abcd", name = "test-key")
 
         every { apiKeyRepository.findByKeyHash(expectedHash) } returns apiKey
         every { userRepository.findById(testUser.id) } returns testUser
@@ -254,8 +239,7 @@ class SecurityServiceTest {
     fun `authenticateApiKey returns null for disabled key`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val expectedHash =
-            digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
+        val expectedHash = digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
 
         val disabledKey =
             ApiKey(
@@ -278,17 +262,10 @@ class SecurityServiceTest {
     fun `authenticateApiKey returns null for disabled user`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val expectedHash =
-            digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
+        val expectedHash = digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
 
         val apiKey =
-            ApiKey(
-                id = 3L,
-                userId = testUser.id,
-                keyHash = expectedHash,
-                keyPrefix = "osk_abcd",
-                name = "test-key",
-            )
+            ApiKey(id = 3L, userId = testUser.id, keyHash = expectedHash, keyPrefix = "osk_abcd", name = "test-key")
 
         val disabledUser = testUser.copy(enabled = false)
         every { apiKeyRepository.findByKeyHash(expectedHash) } returns apiKey
@@ -360,11 +337,7 @@ class SecurityServiceTest {
         every { userRepository.findById(testUser.id) } returns testUser
         every { userRepository.findByEmail(testUser.email) } returns null
 
-        service.updateProfile(
-            testUser.id,
-            testUser.email,
-            newAvatarUrl = "https://example.com/avatar.png",
-        )
+        service.updateProfile(testUser.id, testUser.email, newAvatarUrl = "https://example.com/avatar.png")
 
         verify { userRepository.updateAvatarUrl(testUser.id, "https://example.com/avatar.png") }
     }
@@ -429,11 +402,7 @@ class SecurityServiceTest {
     fun `updateNotificationPreferences disables all notifications`() {
         every { userRepository.findById(testUser.id) } returns testUser
 
-        service.updateNotificationPreferences(
-            testUser.id,
-            emailEnabled = false,
-            pushEnabled = false,
-        )
+        service.updateNotificationPreferences(testUser.id, emailEnabled = false, pushEnabled = false)
 
         verify { userRepository.updateNotificationPreferences(testUser.id, false, false) }
     }

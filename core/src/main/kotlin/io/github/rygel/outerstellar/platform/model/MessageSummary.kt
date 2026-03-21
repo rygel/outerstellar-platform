@@ -15,8 +15,6 @@ data class MessageSummary(
 ) {
     fun updatedAtLabel(): String {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-        return Instant.ofEpochMilli(updatedAtEpochMs)
-            .atZone(ZoneId.systemDefault())
-            .format(formatter)
+        return Instant.ofEpochMilli(updatedAtEpochMs).atZone(ZoneId.systemDefault()).format(formatter)
     }
 }

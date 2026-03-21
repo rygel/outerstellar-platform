@@ -19,15 +19,12 @@ class PlatformAppTest {
         val outbox = mockk<OutboxRepository>(relaxed = true)
         val cache = StubMessageCache()
         val pageFactory = WebPageFactory(repository, messageService, null, null)
-        val config =
-            AppConfig(port = 8080, jdbcUrl = "jdbc:h2:mem:test", devDashboardEnabled = true)
+        val config = AppConfig(port = 8080, jdbcUrl = "jdbc:h2:mem:test", devDashboardEnabled = true)
 
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
-                relaxed = true
-            )
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
         val app =
             app(

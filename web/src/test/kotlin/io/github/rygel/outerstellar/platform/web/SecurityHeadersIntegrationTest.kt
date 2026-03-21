@@ -57,13 +57,8 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -103,8 +98,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
 
     @Test
     fun `API route has X-Content-Type-Options nosniff`() {
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         assertEquals("nosniff", response.header("X-Content-Type-Options"))
     }
 
@@ -124,8 +118,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
 
     @Test
     fun `API route has X-Frame-Options DENY`() {
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         assertEquals("DENY", response.header("X-Frame-Options"))
     }
 
@@ -141,12 +134,8 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
 
     @Test
     fun `API route has Referrer-Policy header`() {
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
-        assertNotNull(
-            response.header("Referrer-Policy"),
-            "Referrer-Policy should be present on API routes",
-        )
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
+        assertNotNull(response.header("Referrer-Policy"), "Referrer-Policy should be present on API routes")
     }
 
     // ---- Permissions-Policy ----
@@ -172,8 +161,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
 
     @Test
     fun `API route does NOT have Content-Security-Policy`() {
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         val csp = response.header("Content-Security-Policy")
         assertNull(csp, "CSP should not be set on /api/ routes, got: $csp")
     }
@@ -193,10 +181,7 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
     @Test
     fun `response includes Access-Control-Allow-Origin header`() {
         val response = app(Request(GET, "/health"))
-        assertNotNull(
-            response.header("Access-Control-Allow-Origin"),
-            "CORS Allow-Origin should be present",
-        )
+        assertNotNull(response.header("Access-Control-Allow-Origin"), "CORS Allow-Origin should be present")
     }
 
     @Test
@@ -208,20 +193,13 @@ class SecurityHeadersIntegrationTest : H2WebTest() {
                     .header("Access-Control-Request-Method", "POST")
             )
         assertEquals(Status.NO_CONTENT, response.status)
-        assertNotNull(
-            response.header("Access-Control-Allow-Origin"),
-            "CORS preflight should include Allow-Origin",
-        )
-        assertNotNull(
-            response.header("Access-Control-Allow-Methods"),
-            "CORS preflight should include Allow-Methods",
-        )
+        assertNotNull(response.header("Access-Control-Allow-Origin"), "CORS preflight should include Allow-Origin")
+        assertNotNull(response.header("Access-Control-Allow-Methods"), "CORS preflight should include Allow-Methods")
     }
 
     @Test
     fun `CORS Expose-Headers includes X-Session-Expired`() {
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         val exposeHeaders = response.header("Access-Control-Expose-Headers") ?: ""
         assertTrue(
             exposeHeaders.contains("X-Session-Expired"),

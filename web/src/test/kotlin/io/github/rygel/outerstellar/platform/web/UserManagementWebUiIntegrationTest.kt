@@ -35,8 +35,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Integration tests for web UI rendering, navigation, CORS, security headers, correlation IDs,
- * health check, rate limiting, and session timeout.
+ * Integration tests for web UI rendering, navigation, CORS, security headers, correlation IDs, health check, rate
+ * limiting, and session timeout.
  */
 class UserManagementWebUiIntegrationTest : H2WebTest() {
 
@@ -57,12 +57,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
         val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(
-                repository,
-                outbox,
-                transactionManager,
-                cache,
-            )
+            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, transactionManager, cache)
         encoder = BCryptPasswordEncoder(logRounds = 4)
         val auditRepository = JooqAuditRepository(testDsl)
         val resetRepository = JooqPasswordResetRepository(testDsl)
@@ -77,11 +72,8 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
                 sessionRepository = JooqSessionRepository(testDsl),
             )
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
-                relaxed = true
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -104,10 +96,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
 
     private fun registerUser(username: String, password: String): RegisteredUser {
         val response =
-            app(
-                Request(POST, "/api/v1/auth/register")
-                    .with(registerLens of RegisterRequest(username, password))
-            )
+            app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, password)))
         assertEquals(Status.OK, response.status)
         val auth = tokenLens(response)
         val userId = userRepository.findByUsername(username)!!.id
@@ -138,10 +127,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     fun `admin can access user admin page`() {
         val admin = seedAdmin()
         val response =
-            app(
-                Request(GET, "/admin/users")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
-            )
+            app(Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
         assertEquals(Status.OK, response.status)
         assertTrue(response.bodyString().contains("User Administration"))
     }
@@ -187,15 +173,9 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     fun `session timeout redirects HTML requests to auth page`() {
         val admin = seedAdmin()
         testDsl.execute(
-            "UPDATE users SET last_activity_at = " +
-                "TIMESTAMP '2020-01-01 00:00:00' " +
-                "WHERE id = '${admin.id}'"
+            "UPDATE users SET last_activity_at = " + "TIMESTAMP '2020-01-01 00:00:00' " + "WHERE id = '${admin.id}'"
         )
-        val response =
-            app(
-                Request(GET, "/")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
-            )
+        val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
         assertEquals(Status.FOUND, response.status)
         assertEquals("/auth?expired=true", response.header("location"))
     }
@@ -209,10 +189,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
                 "WHERE id = '${admin.id}'"
         )
         val response =
-            app(
-                Request(GET, "/admin/users")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
-            )
+            app(Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
         assertEquals(Status.OK, response.status)
     }
 
@@ -221,11 +198,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     @Test
     fun `admin user sees Users nav link`() {
         val admin = seedAdmin()
-        val response =
-            app(
-                Request(GET, "/")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
-            )
+        val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
         assertTrue(response.bodyString().contains("/admin/users"))
     }
 
@@ -233,10 +206,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     fun `regular user does not see Users nav link`() {
         val userAuth = registerUser("navuser", "password123")
         val response =
-            app(
-                Request(GET, "/")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.id.toString()))
-            )
+            app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.id.toString())))
         assertFalse(response.bodyString().contains("/admin/users"))
     }
 

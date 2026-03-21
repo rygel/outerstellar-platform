@@ -48,8 +48,7 @@ class LogoutIntegrationTest : H2WebTest() {
     fun setupTest() {
         val encoder = BCryptPasswordEncoder(logRounds = 4)
         userRepository = JooqUserRepository(testDsl)
-        val auditRepository =
-            io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository(testDsl)
+        val auditRepository = io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository(testDsl)
         val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
@@ -57,8 +56,7 @@ class LogoutIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder, auditRepository)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         user =
             User(
@@ -101,12 +99,8 @@ class LogoutIntegrationTest : H2WebTest() {
     fun `POST logout clears the session cookie`() {
         val response = app(Request(POST, "/logout").cookie(sessionCookie()))
 
-        val sessionCookieInResponse =
-            response.cookies().find { it.name == WebContext.SESSION_COOKIE }
-        assertNotNull(
-            sessionCookieInResponse,
-            "Session cookie should be present in Set-Cookie to clear it",
-        )
+        val sessionCookieInResponse = response.cookies().find { it.name == WebContext.SESSION_COOKIE }
+        assertNotNull(sessionCookieInResponse, "Session cookie should be present in Set-Cookie to clear it")
         // A cleared cookie has maxAge 0 or a past expiry
         assertTrue(
             (sessionCookieInResponse.maxAge ?: 1L) <= 0L || sessionCookieInResponse.value.isEmpty(),

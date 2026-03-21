@@ -18,11 +18,10 @@ import org.slf4j.LoggerFactory
  *
  * All routes require a valid bearer token (authenticated user).
  *
- * POST /api/v1/devices/register — register or refresh a device token DELETE
- * /api/v1/devices/register — deregister a token by value (body: { "token": "..." })
+ * POST /api/v1/devices/register — register or refresh a device token DELETE /api/v1/devices/register — deregister a
+ * token by value (body: { "token": "..." })
  */
-class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenRepository) :
-    ServerRoutes {
+class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenRepository) : ServerRoutes {
 
     private val logger = LoggerFactory.getLogger(DeviceRegistrationApi::class.java)
 
@@ -36,18 +35,14 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
                 { request: Request ->
                     val user =
                         request.getSecurityUser()
-                            ?: return@to Response(Status.UNAUTHORIZED)
-                                .body("Authentication required")
+                            ?: return@to Response(Status.UNAUTHORIZED).body("Authentication required")
 
                     @Suppress("TooGenericExceptionCaught")
                     val body =
                         try {
                             Jackson.asA(request.bodyString(), RegisterDeviceRequest::class)
                         } catch (e: Exception) {
-                            logger.debug(
-                                "Failed to parse device registration request: {}",
-                                e.message,
-                            )
+                            logger.debug("Failed to parse device registration request: {}", e.message)
                             return@to Response(Status.BAD_REQUEST).body("Invalid request body")
                         }
 
@@ -68,11 +63,7 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
                             appBundle = body.appBundle,
                         )
                     deviceTokenRepository.upsert(deviceToken)
-                    logger.info(
-                        "Device token registered for user={} platform={}",
-                        user.username,
-                        body.platform,
-                    )
+                    logger.info("Device token registered for user={} platform={}", user.username, body.platform)
 
                     Response(Status.NO_CONTENT)
                 },
@@ -84,8 +75,7 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
                 { request: Request ->
                     val user =
                         request.getSecurityUser()
-                            ?: return@to Response(Status.UNAUTHORIZED)
-                                .body("Authentication required")
+                            ?: return@to Response(Status.UNAUTHORIZED).body("Authentication required")
 
                     @Suppress("TooGenericExceptionCaught")
                     val token =
@@ -119,10 +109,6 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
     }
 }
 
-data class RegisterDeviceRequest(
-    val platform: String,
-    val token: String,
-    val appBundle: String? = null,
-)
+data class RegisterDeviceRequest(val platform: String, val token: String, val appBundle: String? = null)
 
 data class DeregisterDeviceRequest(val token: String)

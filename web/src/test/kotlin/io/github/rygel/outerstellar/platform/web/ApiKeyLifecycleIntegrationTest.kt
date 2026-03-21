@@ -75,8 +75,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
                 apiKeyRepository = apiKeyRepository,
                 sessionRepository = JooqSessionRepository(testDsl),
             )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -116,8 +115,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun bearerFor(user: User) =
-        if (user == testUser) "Bearer $testToken" else "Bearer $otherToken"
+    private fun bearerFor(user: User) = if (user == testUser) "Bearer $testToken" else "Bearer $otherToken"
 
     private val createApiKeyResponseLens = Body.auto<CreateApiKeyResponse>().toLens()
     private val apiKeySummaryListLens = Body.auto<List<ApiKeySummary>>().toLens()
@@ -160,10 +158,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
             )
         val body = createApiKeyResponseLens(response)
         assertTrue(body.keyPrefix.isNotBlank(), "Response should include keyPrefix")
-        assertTrue(
-            body.key.startsWith(body.keyPrefix),
-            "keyPrefix should be the beginning of the full key",
-        )
+        assertTrue(body.key.startsWith(body.keyPrefix), "keyPrefix should be the beginning of the full key")
     }
 
     @Test
@@ -193,8 +188,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
 
     @Test
     fun `GET api-v1-auth-api-keys returns empty list when no keys exist`() {
-        val response =
-            app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
+        val response = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
         assertEquals(Status.OK, response.status)
         val keys = apiKeySummaryListLens(response)
         assertTrue(keys.isEmpty(), "Should return empty list when no keys have been created")
@@ -209,8 +203,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
                 .body("""{"name":"Listed Key"}""")
         )
 
-        val response =
-            app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
+        val response = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
         val keys = apiKeySummaryListLens(response)
         assertEquals(1, keys.size, "One key should be in the list")
         assertEquals("Listed Key", keys.first().name)
@@ -226,13 +219,9 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
                 .body("""{"name":"Other User Key"}""")
         )
 
-        val response =
-            app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
+        val response = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
         val keys = apiKeySummaryListLens(response)
-        assertTrue(
-            keys.none { it.name == "Other User Key" },
-            "testUser should not see otherUser's keys",
-        )
+        assertTrue(keys.none { it.name == "Other User Key" }, "testUser should not see otherUser's keys")
     }
 
     @Test
@@ -246,8 +235,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
             )
         }
 
-        val response =
-            app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
+        val response = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
         val keys = apiKeySummaryListLens(response)
         assertEquals(3, keys.size, "Three keys should be listed")
     }
@@ -270,24 +258,17 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
         )
 
         // Find the key ID from the list
-        val listResponse =
-            app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
+        val listResponse = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
         val keys = apiKeySummaryListLens(listResponse)
         val keyId = keys.first().id
 
         val deleteResponse =
-            app(
-                Request(DELETE, "/api/v1/auth/api-keys/$keyId")
-                    .header("Authorization", bearerFor(testUser))
-            )
+            app(Request(DELETE, "/api/v1/auth/api-keys/$keyId").header("Authorization", bearerFor(testUser)))
         assertEquals(Status.OK, deleteResponse.status)
 
         val afterDelete =
             apiKeySummaryListLens(
-                app(
-                    Request(GET, "/api/v1/auth/api-keys")
-                        .header("Authorization", bearerFor(testUser))
-                )
+                app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
             )
         assertTrue(afterDelete.isEmpty(), "Key should be gone after deletion")
     }
@@ -311,8 +292,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
             )
         val apiKey = createApiKeyResponseLens(createResponse).key
 
-        val syncResponse =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $apiKey"))
+        val syncResponse = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $apiKey"))
         assertEquals(Status.OK, syncResponse.status, "API key should work as sync bearer token")
     }
 
@@ -328,22 +308,13 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
         val apiKey = createApiKeyResponseLens(createResponse).key
 
         // Delete it
-        val listResponse =
-            app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
+        val listResponse = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
         val keyId = apiKeySummaryListLens(listResponse).first().id
-        app(
-            Request(DELETE, "/api/v1/auth/api-keys/$keyId")
-                .header("Authorization", bearerFor(testUser))
-        )
+        app(Request(DELETE, "/api/v1/auth/api-keys/$keyId").header("Authorization", bearerFor(testUser)))
 
         // Now try to use it
-        val syncResponse =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $apiKey"))
-        assertEquals(
-            Status.UNAUTHORIZED,
-            syncResponse.status,
-            "Deleted API key must not authenticate",
-        )
+        val syncResponse = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $apiKey"))
+        assertEquals(Status.UNAUTHORIZED, syncResponse.status, "Deleted API key must not authenticate")
     }
 
     // ---- PUT /api/v1/auth/password (bearer protected) ----

@@ -12,11 +12,7 @@ class JooqAuditRepositoryTest : H2JooqTest() {
 
     private val repo by lazy { JooqAuditRepository(dsl) }
 
-    private fun entry(
-        action: String = "LOGIN",
-        actorUsername: String = "admin",
-        detail: String = "",
-    ) =
+    private fun entry(action: String = "LOGIN", actorUsername: String = "admin", detail: String = "") =
         AuditEntry(
             actorId = UUID.randomUUID().toString(),
             actorUsername = actorUsername,

@@ -25,18 +25,14 @@ class JooqPasswordResetRepository(private val dsl: DSLContext) : PasswordResetRe
     }
 
     override fun findByToken(tokenValue: String): PasswordResetToken? {
-        return dsl.select(userId, token, expiresAt, used)
-            .from(table)
-            .where(token.eq(tokenValue))
-            .fetchOne()
-            ?.let {
-                PasswordResetToken(
-                    userId = it.get(userId)!!,
-                    token = it.get(token)!!,
-                    expiresAt = it.get(expiresAt)!!.toInstant(ZoneOffset.UTC),
-                    used = it.get(used)!!,
-                )
-            }
+        return dsl.select(userId, token, expiresAt, used).from(table).where(token.eq(tokenValue)).fetchOne()?.let {
+            PasswordResetToken(
+                userId = it.get(userId)!!,
+                token = it.get(token)!!,
+                expiresAt = it.get(expiresAt)!!.toInstant(ZoneOffset.UTC),
+                used = it.get(used)!!,
+            )
+        }
     }
 
     override fun markUsed(tokenValue: String) {

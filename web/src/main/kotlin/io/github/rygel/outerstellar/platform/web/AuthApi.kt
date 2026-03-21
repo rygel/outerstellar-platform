@@ -63,11 +63,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
                         val body = changePasswordLens(request)
-                        securityService.changePassword(
-                            user.id,
-                            body.currentPassword,
-                            body.newPassword,
-                        )
+                        securityService.changePassword(user.id, body.currentPassword, body.newPassword)
                         Response(Status.OK).body("Password changed successfully")
                     } catch (e: WeakPasswordException) {
                         Response(Status.BAD_REQUEST).body(e.message ?: "Invalid password")
@@ -119,10 +115,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
             "/api/v1/auth/profile" meta
                 {
                     summary = "Get current user profile"
-                    returning(
-                        Status.OK,
-                        userProfileResponseLens to UserProfileResponse("", "", null, true, true),
-                    )
+                    returning(Status.OK, userProfileResponseLens to UserProfileResponse("", "", null, true, true))
                 } bindContract
                 GET to
                 { request ->
@@ -152,12 +145,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
                         val body = updateProfileLens(request)
-                        securityService.updateProfile(
-                            user.id,
-                            body.email,
-                            body.username,
-                            body.avatarUrl,
-                        )
+                        securityService.updateProfile(user.id, body.email, body.username, body.avatarUrl)
                         Response(Status.OK).body("Profile updated")
                     } catch (e: UsernameAlreadyExistsException) {
                         Response(Status.CONFLICT).body(e.message ?: "Username already taken")
@@ -175,11 +163,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 { request ->
                     val user = SecurityRules.USER_KEY(request)!!
                     val body = updateNotifPrefsLens(request)
-                    securityService.updateNotificationPreferences(
-                        user.id,
-                        body.emailEnabled,
-                        body.pushEnabled,
-                    )
+                    securityService.updateNotificationPreferences(user.id, body.emailEnabled, body.pushEnabled)
                     Response(Status.OK).body("Preferences updated")
                 },
             "/api/v1/auth/account" meta
@@ -256,11 +240,9 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     } catch (e: UsernameAlreadyExistsException) {
                         Response(Status.CONFLICT).body(e.message ?: "Username already taken")
                     } catch (e: WeakPasswordException) {
-                        Response(Status.BAD_REQUEST)
-                            .body(e.message ?: "Invalid registration request")
+                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
                     } catch (e: IllegalArgumentException) {
-                        Response(Status.BAD_REQUEST)
-                            .body(e.message ?: "Invalid registration request")
+                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
                     }
                 },
             "/api/v1/auth/reset-request" meta

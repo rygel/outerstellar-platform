@@ -32,9 +32,80 @@ import java.util.UUID
 private const val COOKIE_MAX_AGE_DAYS = 365L
 private const val REQUEST_ID_HEADER = "X-Request-Id"
 private const val LOG_ID_LENGTH = 8
+private const val STATIC_ASSET_MAX_AGE = 31536000L
+private const val DEFAULT_CSP_POLICY =
+    "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline'; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "font-src 'self'; " +
+        "connect-src 'self' ws: wss:; " +
+        "img-src 'self' data:;"
 
 private fun isNonPagePath(path: String): Boolean =
     path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
+
+/** Adds ETag headers based on response body hash and returns 304 Not Modified when matched. */
+val etagCachingFilter: Filter = Filter { next: HttpHandler ->
+    {
+            request ->
+        val response = next(request)
+        if (response.status == Status.OK && response.header("ETag") == null) {
+            val body = response.bodyString()
+            val hash = body.hashCode().toUInt().toString(radix = 16)
+            val etag = "\"$hash\""
+            val ifNoneMatch = request.header("If-None-Match")
+            if (ifNoneMatch == etag) {
+                Response(Status.NOT_MODIFIED)
+            } else {
+                response.header("ETag", etag)
+            }
+        } else {
+            response
+        }
+    }
+}
+
+/** Adds Cache-Control headers for static assets (CSS, JS, images, fonts). */
+val staticCacheControlFilter: Filter = Filter { next: HttpHandler ->
+    {
+            request ->
+        val response = next(request)
+        if (isStaticAsset(request.uri.path)) {
+            response.header("Cache-Control", "public, max-age=$STATIC_ASSET_MAX_AGE, immutable")
+        } else {
+            response
+        }
+    }
+}
+
+fun analyticsPageViewFilter(analytics: AnalyticsService): Filter = Filter { next ->
+    {
+            request ->
+        val response = next(request)
+        val isTrackablePage = request.method == Method.GET && !isNonPagePath(request.uri.path)
+        if (isTrackablePage) {
+            try {
+                val userId = request.webContext.user?.id?.toString()
+                if (userId != null) {
+                    analytics.page(userId, request.uri.path)
+                }
+            } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
+                // Not authenticated or context unavailable — skip page view
+            }
+        }
+        response
+    }
+}
+
+private fun isStaticAsset(path: String): Boolean =
+    path.endsWith(".css") ||
+        path.endsWith(".js") ||
+        path.endsWith(".woff2") ||
+        path.endsWith(".woff") ||
+        path.endsWith(".ttf") ||
+        path.endsWith(".png") ||
+        path.endsWith(".svg") ||
+        path.endsWith(".ico")
 
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
@@ -42,8 +113,7 @@ object Filters {
     val correlationId: Filter = Filter { next: HttpHandler ->
         {
                 request ->
-            val requestId =
-                request.header(REQUEST_ID_HEADER) ?: java.util.UUID.randomUUID().toString()
+            val requestId = request.header(REQUEST_ID_HEADER) ?: java.util.UUID.randomUUID().toString()
             MDC.put("requestId", requestId.take(LOG_ID_LENGTH))
             MDC.put("method", request.method.name)
             MDC.put("path", request.uri.path)
@@ -63,10 +133,7 @@ object Filters {
                 Response(Status.NO_CONTENT)
                     .header("Access-Control-Allow-Origin", allowedOrigins)
                     .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-                    .header(
-                        "Access-Control-Allow-Headers",
-                        "Authorization, Content-Type, X-Request-Id",
-                    )
+                    .header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id")
                     .header("Access-Control-Max-Age", "3600")
             } else {
                 val response = next(request)
@@ -77,7 +144,7 @@ object Filters {
         }
     }
 
-    val securityHeaders: Filter = Filter { next: HttpHandler ->
+    fun securityHeaders(cspPolicy: String = DEFAULT_CSP_POLICY): Filter = Filter { next: HttpHandler ->
         {
                 request ->
             next(request)
@@ -87,15 +154,7 @@ object Filters {
                 .header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
                 .let { response ->
                     if (!request.uri.path.startsWith("/api/")) {
-                        response.header(
-                            "Content-Security-Policy",
-                            "default-src 'self'; " +
-                                "script-src 'self' 'unsafe-inline'; " +
-                                "style-src 'self' 'unsafe-inline'; " +
-                                "font-src 'self'; " +
-                                "connect-src 'self' ws: wss:; " +
-                                "img-src 'self' data:;",
-                        )
+                        response.header("Content-Security-Policy", cspPolicy)
                     } else {
                         response
                     }
@@ -134,13 +193,10 @@ object Filters {
             if (enabled && request.cookie(WebContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {
-                    val response =
-                        next(request.cookie(Cookie(WebContext.SESSION_COOKIE, admin.id.toString())))
+                    val response = next(request.cookie(Cookie(WebContext.SESSION_COOKIE, admin.id.toString())))
                     // Also ensure the cookie is set in the response so the browser keeps it
                     if (response.cookies().none { it.name == WebContext.SESSION_COOKIE }) {
-                        response.cookie(
-                            Cookie(WebContext.SESSION_COOKIE, admin.id.toString(), path = "/")
-                        )
+                        response.cookie(Cookie(WebContext.SESSION_COOKIE, admin.id.toString(), path = "/"))
                     } else {
                         response
                     }
@@ -163,14 +219,7 @@ object Filters {
         {
                 request ->
             val context =
-                WebContext(
-                    request,
-                    devDashboardEnabled,
-                    userRepository,
-                    appVersion,
-                    jwtService,
-                    pluginNavItems,
-                )
+                WebContext(request, devDashboardEnabled, userRepository, appVersion, jwtService, pluginNavItems)
             val contextUser =
                 try {
                     context.user
@@ -200,9 +249,7 @@ object Filters {
                 request
                     .query("layout")
                     ?.takeIf { it in setOf("nice", "cozy", "compact") }
-                    ?.let {
-                        Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/")
-                    }
+                    ?.let { Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
             val shellCookie =
                 request
                     .query("shell")
@@ -238,15 +285,9 @@ object Filters {
             if (user != null && user.lastActivityAt != null) {
                 val elapsed = Duration.between(user.lastActivityAt, Instant.now())
                 if (elapsed.toMinutes() >= timeoutMinutes) {
-                    logger.info(
-                        "Session expired for user {} after {} minutes",
-                        user.username,
-                        elapsed.toMinutes(),
-                    )
+                    logger.info("Session expired for user {} after {} minutes", user.username, elapsed.toMinutes())
                     if (request.uri.path.startsWith("/api/")) {
-                        Response(Status.UNAUTHORIZED)
-                            .header("X-Session-Expired", "true")
-                            .body("Session expired")
+                        Response(Status.UNAUTHORIZED).header("X-Session-Expired", "true").body("Session expired")
                     } else {
                         Response(Status.FOUND)
                             .header("location", "/auth?expired=true")
@@ -283,88 +324,66 @@ object Filters {
     /**
      * Double-submit cookie CSRF protection for HTML form routes.
      * - Ensures every response carries a `_csrf` cookie with a random token.
-     * - On unsafe methods (POST/PUT/DELETE/PATCH): rejects requests where the form field `_csrf` or
-     *   header `X-CSRF-Token` does not match the cookie.
+     * - On unsafe methods (POST/PUT/DELETE/PATCH): rejects requests where the form field `_csrf` or header
+     *   `X-CSRF-Token` does not match the cookie.
      * - Exempts `/api/v1/` routes (Bearer-token auth) and `/oauth/` routes.
      */
-    fun csrfProtection(sessionCookieSecure: Boolean, enabled: Boolean = true): Filter =
-        Filter { next ->
-            {
-                    request ->
-                if (!enabled) return@Filter next(request)
-
-                val unsafeMethods = setOf(Method.POST, Method.PUT, Method.DELETE, Method.PATCH)
-                val path = request.uri.path
-                val exempt = path.startsWith("/api/v1/") || path.startsWith("/oauth/")
-
-                if (request.method in unsafeMethods && !exempt) {
-                    val cookieToken = request.cookie(WebContext.CSRF_COOKIE)?.value
-                    val formToken = request.form("_csrf")
-                    val headerToken = request.header("X-CSRF-Token")
-                    val submitted = formToken ?: headerToken
-
-                    if (cookieToken == null || submitted == null || cookieToken != submitted) {
-                        logger.warn("CSRF check failed for {} {}", request.method, path)
-                        Response(Status.FORBIDDEN).body("Invalid or missing CSRF token")
-                    } else {
-                        next(request)
-                    }
-                } else {
-                    // On safe methods: ensure the CSRF cookie is present; set it if missing.
-                    // IMPORTANT: pre-generate the token and inject it into the request's Cookie
-                    // header *before* calling the handler, so that WebContext.csrfToken reads the
-                    // same value that we set in the response cookie. Without this, WebContext would
-                    // generate an independent random UUID for the meta tag while the filter sets a
-                    // different one in the cookie — making the first-visit CSRF check always fail.
-                    val existingToken = request.cookie(WebContext.CSRF_COOKIE)?.value
-                    if (existingToken == null) {
-                        val newToken = UUID.randomUUID().toString()
-                        val existingCookieHeader = request.header("Cookie")
-                        val augmentedRequest =
-                            request.header(
-                                "Cookie",
-                                if (existingCookieHeader != null) {
-                                    "${WebContext.CSRF_COOKIE}=$newToken; $existingCookieHeader"
-                                } else {
-                                    "${WebContext.CSRF_COOKIE}=$newToken"
-                                },
-                            )
-                        val response = next(augmentedRequest)
-                        response.cookie(
-                            Cookie(
-                                WebContext.CSRF_COOKIE,
-                                newToken,
-                                path = "/",
-                                secure = sessionCookieSecure,
-                                httpOnly =
-                                false, // must be readable by JS for HTMX header injection
-                                sameSite = SameSite.Strict,
-                            )
-                        )
-                    } else {
-                        next(request)
-                    }
-                }
-            }
-        }
-
-    fun analyticsPageView(analytics: AnalyticsService): Filter = Filter { next ->
+    fun csrfProtection(sessionCookieSecure: Boolean, enabled: Boolean = true): Filter = Filter { next ->
         {
                 request ->
-            val response = next(request)
-            val isTrackablePage =
-                request.method == org.http4k.core.Method.GET && !isNonPagePath(request.uri.path)
-            if (isTrackablePage) {
-                try {
-                    val userId = request.webContext.user?.id?.toString()
-                    if (userId != null) {
-                        analytics.page(userId, request.uri.path)
-                    }
-                } catch (_: Exception) {
-                    // Not authenticated or context unavailable — skip page view
+            if (!enabled) return@Filter next(request)
+
+            val unsafeMethods = setOf(Method.POST, Method.PUT, Method.DELETE, Method.PATCH)
+            val path = request.uri.path
+            val exempt = path.startsWith("/api/v1/") || path.startsWith("/oauth/")
+
+            if (request.method in unsafeMethods && !exempt) {
+                val cookieToken = request.cookie(WebContext.CSRF_COOKIE)?.value
+                val formToken = request.form("_csrf")
+                val headerToken = request.header("X-CSRF-Token")
+                val submitted = formToken ?: headerToken
+
+                if (cookieToken == null || submitted == null || cookieToken != submitted) {
+                    logger.warn("CSRF check failed for {} {}", request.method, path)
+                    Response(Status.FORBIDDEN).body("Invalid or missing CSRF token")
+                } else {
+                    next(request)
+                }
+            } else {
+                // On safe methods: ensure the CSRF cookie is present; set it if missing.
+                // IMPORTANT: pre-generate the token and inject it into the request's Cookie
+                // header *before* calling the handler, so that WebContext.csrfToken reads the
+                // same value that we set in the response cookie. Without this, WebContext would
+                // generate an independent random UUID for the meta tag while the filter sets a
+                // different one in the cookie — making the first-visit CSRF check always fail.
+                val existingToken = request.cookie(WebContext.CSRF_COOKIE)?.value
+                if (existingToken == null) {
+                    val newToken = UUID.randomUUID().toString()
+                    val existingCookieHeader = request.header("Cookie")
+                    val augmentedRequest =
+                        request.header(
+                            "Cookie",
+                            if (existingCookieHeader != null) {
+                                "${WebContext.CSRF_COOKIE}=$newToken; $existingCookieHeader"
+                            } else {
+                                "${WebContext.CSRF_COOKIE}=$newToken"
+                            },
+                        )
+                    val response = next(augmentedRequest)
+                    response.cookie(
+                        Cookie(
+                            WebContext.CSRF_COOKIE,
+                            newToken,
+                            path = "/",
+                            secure = sessionCookieSecure,
+                            httpOnly = false, // must be readable by JS for HTMX header injection
+                            sameSite = SameSite.Strict,
+                        )
+                    )
+                } else {
+                    next(request)
                 }
             }
-            response
         }
     }
 
@@ -402,9 +421,7 @@ object Filters {
                     WebContext(request)
                 }
             val errorPage = pageFactory.buildErrorPage(ctx, "not-found")
-            Response(Status.NOT_FOUND)
-                .header("content-type", "text/html; charset=utf-8")
-                .body(renderer(errorPage))
+            Response(Status.NOT_FOUND).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
         }
     }
 
@@ -436,18 +453,14 @@ object Filters {
                     logger.debug("WebContext not found for error page: {}", ex.message)
                     WebContext(request)
                 }
-            val errorKind =
-                if (status == Status.INTERNAL_SERVER_ERROR) "server-error" else "not-found"
+            val errorKind = if (status == Status.INTERNAL_SERVER_ERROR) "server-error" else "not-found"
             val errorPage = pageFactory.buildErrorPage(ctx, errorKind)
-            Response(status)
-                .header("content-type", "text/html; charset=utf-8")
-                .body(renderer(errorPage))
+            Response(status).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
         }
     }
 
     private fun jsonErrorResponse(status: Status, message: String): Response {
-        val body =
-            Jackson.asJsonObject(mapOf("message" to message, "status" to status.code)).toString()
+        val body = Jackson.asJsonObject(mapOf("message" to message, "status" to status.code)).toString()
         return Response(status).header("content-type", "application/json; charset=utf-8").body(body)
     }
 }

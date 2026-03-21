@@ -44,9 +44,7 @@ class JdbiOAuthRepository(private val jdbi: Jdbi) : OAuthRepository {
     override fun findByUserId(userId: UUID): List<OAuthConnection> =
         jdbi.withHandle<List<OAuthConnection>, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT * FROM oauth_connections WHERE user_id = :userId ORDER BY created_at DESC"
-                )
+                .createQuery("SELECT * FROM oauth_connections WHERE user_id = :userId ORDER BY created_at DESC")
                 .bind("userId", userId)
                 .map { rs, _ -> mapRow(rs) }
                 .list()

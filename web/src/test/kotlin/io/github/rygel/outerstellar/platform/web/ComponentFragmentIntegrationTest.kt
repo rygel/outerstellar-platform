@@ -61,8 +61,7 @@ class ComponentFragmentIntegrationTest : H2WebTest() {
         val messageService = MessageService(repository, outbox, txManager, cache)
         val contactService = mockk<ContactService>(relaxed = true)
         val securityService = SecurityService(userRepository, encoder)
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -153,10 +152,7 @@ class ComponentFragmentIntegrationTest : H2WebTest() {
         val body = app(Request(GET, "/components/sidebar/theme-selector")).bodyString()
         // The selector renders <option value="..."> elements, not ?theme= URLs
         val optionCount = body.split("<option").size - 1
-        assertTrue(
-            optionCount >= 2,
-            "Theme selector should have at least 2 options, found $optionCount",
-        )
+        assertTrue(optionCount >= 2, "Theme selector should have at least 2 options, found $optionCount")
     }
 
     // ---- /components/sidebar/language-selector ----
@@ -223,8 +219,7 @@ class ComponentFragmentIntegrationTest : H2WebTest() {
 
     @Test
     fun `GET components-message-list returns HTML content`() {
-        val body =
-            app(Request(GET, "/components/message-list").cookie(sessionCookie())).bodyString()
+        val body = app(Request(GET, "/components/message-list").cookie(sessionCookie())).bodyString()
         assertTrue(body.isNotBlank(), "Message list fragment should not be empty")
     }
 
@@ -236,8 +231,7 @@ class ComponentFragmentIntegrationTest : H2WebTest() {
 
     @Test
     fun `GET components-message-list with offset=10 returns 200`() {
-        val response =
-            app(Request(GET, "/components/message-list?offset=10").cookie(sessionCookie()))
+        val response = app(Request(GET, "/components/message-list?offset=10").cookie(sessionCookie()))
         assertEquals(Status.OK, response.status)
     }
 
@@ -249,23 +243,20 @@ class ComponentFragmentIntegrationTest : H2WebTest() {
 
     @Test
     fun `GET components-message-list with year= returns 200`() {
-        val response =
-            app(Request(GET, "/components/message-list?year=2024").cookie(sessionCookie()))
+        val response = app(Request(GET, "/components/message-list?year=2024").cookie(sessionCookie()))
         assertEquals(Status.OK, response.status)
     }
 
     @Test
     fun `GET components-message-list with limit over 100 is clamped`() {
         // limit=999 should be clamped to 100 and not crash
-        val response =
-            app(Request(GET, "/components/message-list?limit=999").cookie(sessionCookie()))
+        val response = app(Request(GET, "/components/message-list?limit=999").cookie(sessionCookie()))
         assertEquals(Status.OK, response.status)
     }
 
     @Test
     fun `GET components-message-list with negative offset is clamped to 0`() {
-        val response =
-            app(Request(GET, "/components/message-list?offset=-99").cookie(sessionCookie()))
+        val response = app(Request(GET, "/components/message-list?offset=-99").cookie(sessionCookie()))
         assertEquals(Status.OK, response.status)
     }
 

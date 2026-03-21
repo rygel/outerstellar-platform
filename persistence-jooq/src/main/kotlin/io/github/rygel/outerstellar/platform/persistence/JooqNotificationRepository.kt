@@ -43,15 +43,7 @@ class JooqNotificationRepository(private val dsl: DSLContext) : NotificationRepo
     }
 
     override fun findByUserId(userId: UUID, limit: Int): List<Notification> =
-        dsl.select(
-                idField,
-                userIdField,
-                titleField,
-                bodyField,
-                typeField,
-                readAtField,
-                createdAtField,
-            )
+        dsl.select(idField, userIdField, titleField, bodyField, typeField, readAtField, createdAtField)
             .from(table)
             .where(userIdField.eq(userId))
             .orderBy(createdAtField.desc())
@@ -60,10 +52,8 @@ class JooqNotificationRepository(private val dsl: DSLContext) : NotificationRepo
             .map { map(it) }
 
     override fun countUnread(userId: UUID): Int =
-        dsl.selectCount()
-            .from(table)
-            .where(userIdField.eq(userId).and(readAtField.isNull))
-            .fetchOne(0, Int::class.java) ?: 0
+        dsl.selectCount().from(table).where(userIdField.eq(userId).and(readAtField.isNull)).fetchOne(0, Int::class.java)
+            ?: 0
 
     override fun markRead(id: UUID, userId: UUID) {
         dsl.update(table)

@@ -24,10 +24,5 @@ fun migrate(dataSource: DataSource) {
 }
 
 fun migratePlugin(dataSource: DataSource, location: String, historyTable: String) {
-    Flyway.configure()
-        .dataSource(dataSource)
-        .locations(location)
-        .table(historyTable)
-        .load()
-        .migrate()
+    Flyway.configure().dataSource(dataSource).locations(location).table(historyTable).load().migrate()
 }

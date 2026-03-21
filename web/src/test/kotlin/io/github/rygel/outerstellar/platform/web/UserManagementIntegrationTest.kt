@@ -59,12 +59,7 @@ class UserManagementIntegrationTest : H2WebTest() {
         val cache = StubMessageCache()
         val transactionManager = StubTransactionManager()
         val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(
-                repository,
-                outbox,
-                transactionManager,
-                cache,
-            )
+            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, transactionManager, cache)
         encoder = BCryptPasswordEncoder(logRounds = 4)
         val auditRepository = JooqAuditRepository(testDsl)
         val resetRepository = JooqPasswordResetRepository(testDsl)
@@ -79,11 +74,8 @@ class UserManagementIntegrationTest : H2WebTest() {
                 sessionRepository = JooqSessionRepository(testDsl),
             )
         val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(
-                relaxed = true
-            )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         app =
             app(
@@ -111,10 +103,7 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     private fun registerUser(username: String, password: String): RegisteredUser {
         val response =
-            app(
-                Request(POST, "/api/v1/auth/register")
-                    .with(registerLens of RegisterRequest(username, password))
-            )
+            app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, password)))
         assertEquals(Status.OK, response.status, "Registration should succeed for $username")
         val auth = tokenLens(response)
         val userId = userRepository.findByUsername(username)!!.id
@@ -122,11 +111,7 @@ class UserManagementIntegrationTest : H2WebTest() {
     }
 
     private fun loginUser(username: String, password: String): AuthTokenResponse {
-        val response =
-            app(
-                Request(POST, "/api/v1/auth/login")
-                    .with(loginLens of LoginRequest(username, password))
-            )
+        val response = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest(username, password)))
         assertEquals(Status.OK, response.status, "Login should succeed for $username")
         return tokenLens(response)
     }
@@ -161,18 +146,13 @@ class UserManagementIntegrationTest : H2WebTest() {
         val response =
             app(
                 bearerRequest(PUT, "/api/v1/auth/password", auth.token)
-                    .with(
-                        changePasswordLens of ChangePasswordRequest("oldpassword1", "newpassword1")
-                    )
+                    .with(changePasswordLens of ChangePasswordRequest("oldpassword1", "newpassword1"))
             )
         assertEquals(Status.OK, response.status)
 
         // Verify old password no longer works
         val failLogin =
-            app(
-                Request(POST, "/api/v1/auth/login")
-                    .with(loginLens of LoginRequest("pwduser", "oldpassword1"))
-            )
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("pwduser", "oldpassword1")))
         assertEquals(Status.UNAUTHORIZED, failLogin.status)
 
         // Verify new password works
@@ -187,9 +167,7 @@ class UserManagementIntegrationTest : H2WebTest() {
         val response =
             app(
                 bearerRequest(PUT, "/api/v1/auth/password", auth.token)
-                    .with(
-                        changePasswordLens of ChangePasswordRequest("wrongpassword", "newpassword1")
-                    )
+                    .with(changePasswordLens of ChangePasswordRequest("wrongpassword", "newpassword1"))
             )
         assertEquals(Status.BAD_REQUEST, response.status)
     }
@@ -262,10 +240,7 @@ class UserManagementIntegrationTest : H2WebTest() {
 
         // Verify the disabled user cannot log in
         val loginResponse =
-            app(
-                Request(POST, "/api/v1/auth/login")
-                    .with(loginLens of LoginRequest("disableuser", "password123"))
-            )
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("disableuser", "password123")))
         assertEquals(Status.UNAUTHORIZED, loginResponse.status)
     }
 

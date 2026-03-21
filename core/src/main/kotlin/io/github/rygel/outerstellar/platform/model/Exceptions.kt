@@ -14,14 +14,11 @@ enum class ConflictStrategy {
     }
 }
 
-sealed class OuterstellarException(message: String, cause: Throwable? = null) :
-    RuntimeException(message, cause)
+sealed class OuterstellarException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
-class MessageNotFoundException(syncId: String) :
-    OuterstellarException("Message with sync ID $syncId was not found.")
+class MessageNotFoundException(syncId: String) : OuterstellarException("Message with sync ID $syncId was not found.")
 
-class ContactNotFoundException(syncId: String) :
-    OuterstellarException("Contact with sync ID $syncId was not found.")
+class ContactNotFoundException(syncId: String) : OuterstellarException("Contact with sync ID $syncId was not found.")
 
 class DuplicateMessageException(syncId: String) :
     OuterstellarException("A message with sync ID $syncId already exists.")
@@ -35,18 +32,14 @@ class ValidationException(val errors: List<String>) :
 class OptimisticLockException(entityType: String, syncId: String) :
     OuterstellarException("$entityType with sync ID $syncId was modified by another process.")
 
-class SyncException(message: String, cause: Throwable? = null) :
-    OuterstellarException(message, cause)
+class SyncException(message: String, cause: Throwable? = null) : OuterstellarException(message, cause)
 
-class UsernameAlreadyExistsException(username: String) :
-    OuterstellarException("Username '$username' is already taken.")
+class UsernameAlreadyExistsException(username: String) : OuterstellarException("Username '$username' is already taken.")
 
 class WeakPasswordException(message: String) : OuterstellarException(message)
 
-class UserNotFoundException(userId: String) :
-    OuterstellarException("User with ID $userId was not found.")
+class UserNotFoundException(userId: String) : OuterstellarException("User with ID $userId was not found.")
 
 class InsufficientPermissionException(message: String) : OuterstellarException(message)
 
-class SessionExpiredException(message: String = "Session has expired") :
-    OuterstellarException(message)
+class SessionExpiredException(message: String = "Session has expired") : OuterstellarException(message)

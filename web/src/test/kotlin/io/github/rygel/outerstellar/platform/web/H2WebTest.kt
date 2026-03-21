@@ -13,11 +13,9 @@ abstract class H2WebTest {
         private val postgresUrl: String? =
             System.getProperty("test.jdbc.url")?.takeIf { it.startsWith("jdbc:postgresql:") }
 
-        private val jdbcUrl =
-            postgresUrl ?: "jdbc:h2:mem:webtestdb_unique;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+        private val jdbcUrl = postgresUrl ?: "jdbc:h2:mem:webtestdb_unique;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
 
-        private val jdbcUser =
-            if (postgresUrl != null) System.getProperty("test.jdbc.user", "outerstellar") else "sa"
+        private val jdbcUser = if (postgresUrl != null) System.getProperty("test.jdbc.user", "outerstellar") else "sa"
 
         private val jdbcPassword =
             if (postgresUrl != null) {

@@ -66,9 +66,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
     override fun markFailed(id: UUID, error: String) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate(
-                    "UPDATE outbox SET status = 'FAILED', last_error = :error WHERE id = :id"
-                )
+                .createUpdate("UPDATE outbox SET status = 'FAILED', last_error = :error WHERE id = :id")
                 .bind("id", id)
                 .bind("error", error)
                 .execute()

@@ -64,8 +64,7 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
                 apiKeyRepository = apiKeyRepository,
                 sessionRepository = JooqSessionRepository(testDsl),
             )
-        val pageFactory =
-            WebPageFactory(repository, messageService, contactService, securityService)
+        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
         testUser =
             User(
@@ -144,8 +143,7 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
     fun `named API key can authenticate sync endpoint`() {
         val result = createApiKey("sync-key")
 
-        val response =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${result.key}"))
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${result.key}"))
         assertEquals(Status.OK, response.status, "Named API key should authenticate sync endpoint")
     }
 
@@ -171,8 +169,7 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
     fun `GET api-keys lists created keys`() {
         createApiKey("list-key")
 
-        val response =
-            app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", uuidBearer()))
+        val response = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", uuidBearer()))
         assertEquals(Status.OK, response.status)
         val body = response.bodyString()
         assertTrue(body.contains("list-key"), "Key list should include created key name")
@@ -183,8 +180,7 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
         val result = createApiKey("delete-me")
 
         // Get the key ID from the list
-        val listResponse =
-            app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", uuidBearer()))
+        val listResponse = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", uuidBearer()))
         val listBody = listResponse.bodyString()
         // Extract ID from response (list returns ApiKeySummary with id field)
         val idMatch = """"id"\s*:\s*(\d+)""".toRegex().find(listBody)
@@ -193,18 +189,13 @@ class ApiKeyAuthIntegrationTest : H2WebTest() {
         app(Request(DELETE, "/api/v1/auth/api-keys/$keyId").header("Authorization", uuidBearer()))
 
         // Now the key should be rejected
-        val syncResponse =
-            app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${result.key}"))
+        val syncResponse = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${result.key}"))
         assertEquals(Status.UNAUTHORIZED, syncResponse.status, "Deleted API key should be rejected")
     }
 
     @Test
     fun `invalid random string as Bearer is rejected`() {
-        val response =
-            app(
-                Request(GET, "/api/v1/sync")
-                    .header("Authorization", "Bearer totally-not-a-valid-key")
-            )
+        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer totally-not-a-valid-key"))
         assertEquals(Status.UNAUTHORIZED, response.status)
     }
 }

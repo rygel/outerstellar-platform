@@ -18,16 +18,7 @@ class JdbiContactRepositoryTest : H2JdbiTest() {
         company: String = "Acme",
         companyAddress: String = "1 Main St",
         department: String = "Engineering",
-    ) =
-        repo.createLocalContact(
-            name,
-            emails,
-            phones,
-            socialMedia,
-            company,
-            companyAddress,
-            department,
-        )
+    ) = repo.createLocalContact(name, emails, phones, socialMedia, company, companyAddress, department)
 
     @Test
     fun `createLocalContact and findBySyncId round-trips`() {
@@ -58,16 +49,7 @@ class JdbiContactRepositoryTest : H2JdbiTest() {
 
     @Test
     fun `createServerContact is not dirty`() {
-        val c =
-            repo.createServerContact(
-                "Server Contact",
-                emptyList(),
-                emptyList(),
-                emptyList(),
-                "",
-                "",
-                "",
-            )
+        val c = repo.createServerContact("Server Contact", emptyList(), emptyList(), emptyList(), "", "", "")
         assertFalse(repo.findBySyncId(c.syncId)!!.dirty)
     }
 
@@ -156,16 +138,7 @@ class JdbiContactRepositoryTest : H2JdbiTest() {
     @Test
     fun `listDirtyContacts returns only local contacts`() {
         val local = createLocal("Local Contact")
-        val server =
-            repo.createServerContact(
-                "Server Contact",
-                emptyList(),
-                emptyList(),
-                emptyList(),
-                "",
-                "",
-                "",
-            )
+        val server = repo.createServerContact("Server Contact", emptyList(), emptyList(), emptyList(), "", "", "")
         val dirty = repo.listDirtyContacts()
         assertTrue(dirty.any { it.syncId == local.syncId })
         assertTrue(dirty.none { it.syncId == server.syncId })

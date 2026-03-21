@@ -82,10 +82,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
 
     override fun findAll(): List<User> {
         return jdbi.withHandle<List<User>, Exception> { handle ->
-            handle
-                .createQuery("SELECT * FROM users ORDER BY username")
-                .map { rs, _ -> mapUser(rs) }
-                .list()
+            handle.createQuery("SELECT * FROM users ORDER BY username").map { rs, _ -> mapUser(rs) }.list()
         }
     }
 
@@ -160,11 +157,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         }
     }
 
-    override fun updateNotificationPreferences(
-        userId: UUID,
-        emailEnabled: Boolean,
-        pushEnabled: Boolean,
-    ) {
+    override fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate(

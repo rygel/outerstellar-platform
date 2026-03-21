@@ -34,9 +34,7 @@ class AsyncActivityUpdaterTest {
 
         assertEquals(
             5,
-            ids.count { id ->
-                runCatching { verify(exactly = 1) { repo.updateLastActivity(id) } }.isSuccess
-            },
+            ids.count { id -> runCatching { verify(exactly = 1) { repo.updateLastActivity(id) } }.isSuccess },
         )
         verify(exactly = 5) { repo.updateLastActivity(any()) }
     }
