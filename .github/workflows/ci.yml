@@ -144,21 +144,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up JDK 21 and Maven settings
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+      - name: Configure Maven settings for GitHub Packages
+        uses: s4u/maven-settings-action@v3.1.0
         with:
-          java-version: '21'
-          distribution: 'temurin'
-          server-id: github-rygel
-          server-username: GITHUB_ACTOR
-          server-password: GH_PACKAGES_TOKEN
-
-      - name: Copy settings.xml to Maven home
-        run: |
-          if [ -f /github/home/.m2/settings.xml ] && [ ! -f "$HOME/.m2/settings.xml" ]; then
-            mkdir -p "$HOME/.m2"
-            cp /github/home/.m2/settings.xml "$HOME/.m2/settings.xml"
-          fi
+          servers: '[{"id": "github-rygel", "username": "${{ github.actor }}", "password": "${{ secrets.GH_PACKAGES_TOKEN }}"}]'
 
       - name: Restore build output
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
