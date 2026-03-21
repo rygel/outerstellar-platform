@@ -50,7 +50,7 @@ jobs:
       - name: Build and run all checks
         run: mvn verify -T 1C -pl core,persistence-jooq,persistence-jdbi,api-client,security,web
 
-      - name: Cache build output for desktop tests
+      - name: Cache build output for downstream jobs
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
@@ -58,6 +58,7 @@ jobs:
             persistence-jooq/target/
             api-client/target/
             security/target/
+            web/target/
           key: build-${{ github.sha }}
 
       - name: Upload JaCoCo coverage reports
@@ -102,6 +103,7 @@ jobs:
             persistence-jooq/target/
             api-client/target/
             security/target/
+            web/target/
           key: build-${{ github.sha }}
 
       - name: Install Xvfb
@@ -159,12 +161,13 @@ jobs:
             persistence-jooq/target/
             api-client/target/
             security/target/
+            web/target/
           key: build-${{ github.sha }}
 
       - name: Install parent POM locally
         run: mvn install -N -q
 
-      - name: Install cached modules and web
+      - name: Install cached modules
         run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -q
 
       - name: Cache Playwright browsers
@@ -174,7 +177,7 @@ jobs:
           key: playwright-${{ hashFiles('pom.xml') }}
 
       - name: Install Playwright browsers
-        run: mvn compile test-compile -pl web -q && mvn exec:java -pl web -Dexec.mainClass="com.microsoft.playwright.CLI" -Dexec.classpathScope=test -Dexec.args="install --with-deps chromium"
+        run: mvn exec:java -pl web -Dexec.mainClass="com.microsoft.playwright.CLI" -Dexec.classpathScope=test -Dexec.args="install --with-deps chromium"
 
       - name: Run E2E tests
         run: >
