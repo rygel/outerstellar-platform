@@ -146,19 +146,11 @@ jobs:
           persist-credentials: false
 
       - name: Configure Maven for GitHub Packages
+        env:
+          ACTOR: ${{ github.actor }}
         run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOF
-          <settings>
-            <servers>
-              <server>
-                <id>github-rygel</id>
-                <username>${GITHUB_ACTOR}</username>
-                <password>${GH_PACKAGES_TOKEN}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
+          mkdir -p $HOME/.m2
+          printf '<settings><servers><server><id>github-rygel</id><username>%s</username><password>%s</password></server></servers></settings>' "$ACTOR" "$GH_PACKAGES_TOKEN" > $HOME/.m2/settings.xml
 
       - name: Restore build output
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
