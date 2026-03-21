@@ -2,11 +2,13 @@ name: GitHub Actions Security
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
     paths: ['.github/workflows/**']
   pull_request:
-    branches: [main, develop]
+    branches: [main]
     paths: ['.github/workflows/**']
+  schedule:
+    - cron: '0 6 * * 1'
 
 permissions: {}
 
