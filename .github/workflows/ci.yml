@@ -180,6 +180,7 @@ jobs:
           -Dspotless.apply.skip=true
           -Djacoco.skip=true
           -Ddetekt.skip=true
+          -Dexec.skip=true
 
   security:
     name: Security (OWASP + Enforcer)
