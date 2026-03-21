@@ -176,10 +176,10 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ hashFiles('pom.xml') }}
 
-      - name: Install Playwright browsers and system deps
-        run: mvn exec:java -pl web -Dexec.mainClass="com.microsoft.playwright.CLI" -Dexec.classpathScope=test -Dexec.args="install --with-deps chromium"
-        env:
-          PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
+      - name: Install Playwright browsers
+        run: |
+          CLASSPATH=$(mvn -pl web dependency:build-classpath -q -DincludeScope=test -Dmdep.outputFile=/dev/stdout)
+          PLAYWRIGHT_BROWSERS_PATH=~/.cache/ms-playwright java -cp "$CLASSPATH" com.microsoft.playwright.CLI install --with-deps chromium
 
       - name: Run E2E tests
         run: >
