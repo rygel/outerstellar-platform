@@ -55,6 +55,13 @@ data class AppConfig(
     /** Public-facing base URL used in emails, e.g. https://app.example.com */
     val appBaseUrl: String = "http://localhost:8080",
     val jwt: JwtConfig = JwtConfig(),
+    val cspPolicy: String =
+        "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline'; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "font-src 'self'; " +
+            "connect-src 'self' ws: wss:; " +
+            "img-src 'self' data:;",
 ) {
     companion object {
         @OptIn(ExperimentalHoplite::class)

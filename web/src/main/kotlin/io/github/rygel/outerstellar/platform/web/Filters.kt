@@ -33,6 +33,13 @@ private const val COOKIE_MAX_AGE_DAYS = 365L
 private const val REQUEST_ID_HEADER = "X-Request-Id"
 private const val LOG_ID_LENGTH = 8
 private const val STATIC_ASSET_MAX_AGE = 31536000L
+private const val DEFAULT_CSP_POLICY =
+    "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline'; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "font-src 'self'; " +
+        "connect-src 'self' ws: wss:; " +
+        "img-src 'self' data:;"
 
 private fun isNonPagePath(path: String): Boolean =
     path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
@@ -88,31 +95,26 @@ object Filters {
         }
     }
 
-    val securityHeaders: Filter = Filter { next: HttpHandler ->
-        {
-                request ->
-            next(request)
-                .header("X-Content-Type-Options", "nosniff")
-                .header("X-Frame-Options", "DENY")
-                .header("Referrer-Policy", "strict-origin-when-cross-origin")
-                .header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-                .let { response ->
-                    if (!request.uri.path.startsWith("/api/")) {
-                        response.header(
-                            "Content-Security-Policy",
-                            "default-src 'self'; " +
-                                "script-src 'self' 'unsafe-inline'; " +
-                                "style-src 'self' 'unsafe-inline'; " +
-                                "font-src 'self'; " +
-                                "connect-src 'self' ws: wss:; " +
-                                "img-src 'self' data:;",
-                        )
-                    } else {
-                        response
+    val securityHeaders: Filter = securityHeaders()
+
+    fun securityHeaders(cspPolicy: String = DEFAULT_CSP_POLICY): Filter =
+        Filter { next: HttpHandler ->
+            {
+                    request ->
+                next(request)
+                    .header("X-Content-Type-Options", "nosniff")
+                    .header("X-Frame-Options", "DENY")
+                    .header("Referrer-Policy", "strict-origin-when-cross-origin")
+                    .header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+                    .let { response ->
+                        if (!request.uri.path.startsWith("/api/")) {
+                            response.header("Content-Security-Policy", cspPolicy)
+                        } else {
+                            response
+                        }
                     }
-                }
+            }
         }
-    }
 
     val requestLogging: Filter = Filter { next: HttpHandler ->
         {

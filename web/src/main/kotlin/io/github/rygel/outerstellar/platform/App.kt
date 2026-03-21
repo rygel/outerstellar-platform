@@ -443,7 +443,7 @@ private fun buildFilterChain(
         .then(Filters.cors(config.corsOrigins))
         .then(Filters.etagCaching)
         .then(Filters.staticCacheControl)
-        .then(Filters.securityHeaders)
+        .then(Filters.securityHeaders(config.cspPolicy))
         .then(Filters.telemetry)
         .then(rateLimitFilter())
         .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
