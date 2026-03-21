@@ -16,6 +16,7 @@ jobs:
   build-and-test:
     name: Build, Test, and Quality
     runs-on: ubuntu-latest
+    environment: ci
     permissions:
       contents: read
     env:
@@ -71,6 +72,7 @@ jobs:
     name: Desktop Tests (Xvfb)
     needs: build-and-test
     runs-on: ubuntu-latest
+    environment: ci
     permissions:
       contents: read
     env:
@@ -126,6 +128,7 @@ jobs:
   security:
     name: Security (OWASP + Enforcer)
     runs-on: ubuntu-latest
+    environment: ci
     permissions:
       contents: read
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
