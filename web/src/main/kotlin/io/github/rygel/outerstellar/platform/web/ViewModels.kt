@@ -427,6 +427,16 @@ data class ContactViewModel(
     val editUrl: String = "",
 )
 
+data class SettingsTab(val key: String, val label: String, val url: String, val active: Boolean)
+
+data class SettingsPage(
+    val title: String,
+    val tabs: List<SettingsTab>,
+    val activeTab: String,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/SettingsPage"
+}
+
 data class ContactsPage(
     val title: String,
     val description: String,
