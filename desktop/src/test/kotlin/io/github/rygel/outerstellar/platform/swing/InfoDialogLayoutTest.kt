@@ -21,7 +21,7 @@ class InfoDialogLayoutTest {
     fun `info dialog action button is anchored below content`() {
         val i18n = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
         val viewModel = SyncViewModel(messageService, null, syncService, i18n)
-        val window = SyncWindow(viewModel, ThemeManager(), i18n)
+        val window = runOnEdtResult { SyncWindow(viewModel, ThemeManager(), i18n) }
 
         runOnEdt { window.configureForTest() }
         val dialog = runOnEdtResult { window.buildInfoDialog("About", "Some message text", null) }

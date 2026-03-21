@@ -26,7 +26,8 @@ class SyncWindowI18nTest {
         val en = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
         val fr = I18nService.create("messages").also { it.setLocale(Locale.FRENCH) }
         val viewModel = SyncViewModel(messageService, null, syncService, en)
-        val window = SyncWindow(viewModel, ThemeManager(), en)
+        lateinit var window: SyncWindow
+        runOnEdt { window = SyncWindow(viewModel, ThemeManager(), en) }
 
         runOnEdt { window.configureForTest() }
         runOnEdt { window.refreshTranslations(fr) }
