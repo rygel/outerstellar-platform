@@ -47,6 +47,8 @@ jobs:
             core/target/*.jar
             persistence-jooq/target/classes
             persistence-jooq/target/*.jar
+            api-client/target/classes
+            api-client/target/*.jar
             security/target/classes
             security/target/*.jar
           key: build-${{ github.sha }}
@@ -88,6 +90,8 @@ jobs:
             core/target/*.jar
             persistence-jooq/target/classes
             persistence-jooq/target/*.jar
+            api-client/target/classes
+            api-client/target/*.jar
             security/target/classes
             security/target/*.jar
           key: build-${{ github.sha }}
@@ -97,8 +101,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
+      - name: Install parent POM locally
+        run: mvn install -N -q
+
       - name: Install cached modules
-        run: mvn install -pl core,persistence-jooq,security -DskipTests -q
+        run: mvn install -pl core,persistence-jooq,api-client,security -DskipTests -q
 
       - name: Run desktop tests with virtual display
         run: xvfb-run --auto-servernum mvn verify -pl desktop -Ddesktop.headless=false
