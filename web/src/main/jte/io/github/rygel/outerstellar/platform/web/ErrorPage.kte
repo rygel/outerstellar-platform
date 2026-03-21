@@ -1,0 +1,29 @@
+@import io.github.rygel.outerstellar.platform.web.ErrorPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<ErrorPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+    <section class="panel hero-grid">
+        <div>
+            <p class="status-badge">Error ${model.data.statusCode}</p>
+            <h1>${model.data.heading}</h1>
+            <p>${model.data.message}</p>
+        </div>
+        <div class="button-row">
+            <a href="${model.data.primaryActionUrl}" class="button-link">${model.data.primaryActionLabel}</a>
+            <a href="${model.data.secondaryActionUrl}" class="button-link button-secondary">${model.data.secondaryActionLabel}</a>
+        </div>
+    </section>
+
+    <section class="panel">
+        <button class="button-link button-secondary"
+                hx-get="${model.data.helpUrl}"
+                hx-target="#error-help-slot"
+                hx-swap="innerHTML">
+            ${model.data.helpButtonLabel}
+        </button>
+        <div id="error-help-slot" class="panel panel-muted mt-6" style="margin-top: 1.5rem; display: none;" :style="{ display: 'block' }">
+            <!-- Content loaded via HTMX -->
+        </div>
+    </section>
+`)

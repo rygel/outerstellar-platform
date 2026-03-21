@@ -1,0 +1,123 @@
+@import io.github.rygel.outerstellar.platform.web.ShellView
+@import gg.jte.Content
+@param shell: ShellView
+@param content: Content
+
+<!DOCTYPE html>
+<html lang="${shell.localeTag}">
+@template.io.github.rygel.outerstellar.platform.web.layouts.LayoutHead(shell = shell)
+<body class="${shell.layoutClass}" hx-ext="ws" ws-connect="/ws/sync"
+      data-toast-error="${shell.toastErrorLabel}" data-toast-success="${shell.toastSuccessLabel}">
+<style id="theme-style">${shell.themeCss}</style>
+<div id="toast-container"></div>
+<div class="shell">
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <a href="/" class="logo">
+                <i class="ri-planet-fill"></i>
+                ${shell.appTitle}
+            </a>
+        </div>
+        <nav class="nav-links">
+            @for (link in shell.navLinks)
+                <a class="nav-link@if (link.active) active@endif" href="${link.url}">
+                    <i class="${link.icon}" style="font-size: 1.1rem; opacity: 0.8; margin-right: 0.5rem; width: 20px; text-align: center;"></i>
+                    ${link.label}
+                </a>
+            @endfor
+        </nav>
+        <div class="sidebar-footer" ws-subscribe>
+            <section class="sidebar-select-wrapper">
+                <div id="theme-selector"
+                     hx-get="${shell.themeSelectorUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </section>
+            <section class="sidebar-select-wrapper">
+                <div id="language-selector"
+                     hx-get="${shell.languageSelectorUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </section>
+            <section class="sidebar-select-wrapper" style="padding-bottom: 0; margin-bottom: 0;">
+                <div id="layout-selector"
+                     hx-get="${shell.layoutSelectorUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </section>
+        </div>
+    </aside>
+    <div class="main-shell">
+        <header class="topbar">
+            <div style="display: flex; flex-direction: column;">
+                <span class="topbar-label">${shell.pageTitle}</span>
+                <strong>${shell.appTagline}</strong>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
+                <a href="${shell.darkModeToggleUrl}"
+                   class="button-icon"
+                   title="Toggle dark/light mode"
+                   style="text-decoration: none; font-size: 1.1rem;">
+                    @if(shell.isDarkMode)
+                        <i class="ri-sun-line"></i>
+                    @else
+                        <i class="ri-moon-line"></i>
+                    @endif
+                </a>
+            @if(shell.notificationsUrl != null)
+                <div id="notification-bell"
+                     hx-get="/components/notification-bell"
+                     hx-trigger="load, every 60s"
+                     hx-swap="innerHTML">
+                </div>
+            @endif
+            @if(shell.isLoggedIn)
+                <div class="topbar-user">
+                    <div class="user-info">
+                        <span class="user-name">${shell.username}</span>
+                        <div style="display:flex; gap:0.5rem; align-items:center;">
+                            @if(shell.profileUrl != null)
+                                <a href="${shell.profileUrl}" class="sign-out-link" style="font-size:0.8rem;"><i class="ri-user-settings-line"></i> Profile</a>
+                                <span style="opacity:0.3;">|</span>
+                            @endif
+                            @if(shell.changePasswordUrl != null)
+                                <a href="${shell.changePasswordUrl}" class="sign-out-link" style="font-size:0.8rem;"><i class="ri-lock-password-line"></i> ${shell.changePasswordLabel}</a>
+                                <span style="opacity:0.3;">|</span>
+                            @endif
+                            <form method="post" action="${shell.logoutUrl}" style="display:inline;">
+                                <input type="hidden" name="_csrf" value="${shell.csrfToken}">
+                                <button type="submit" class="sign-out-link" style="background:none;border:none;padding:0;cursor:pointer;">${shell.signOutLabel}</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="user-avatar">
+                        <i class="ri-user-smile-line"></i>
+                    </div>
+                </div>
+            @endif
+            </div>
+        </header>
+        <main class="content">
+            <div id="ws-updates" ws-subscribe></div>
+            ${content}
+        </main>
+        <footer class="footer">
+            <span>${shell.footerCopy}</span>
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-left: auto;">
+                <span style="opacity: 0.6; font-size: 0.8rem;">${shell.footerVersion}</span>
+                <div id="footer-status"
+                     class="chip"
+                     hx-get="${shell.footerStatusUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+<script src="/platform.js?v=${shell.version}"></script>
+</body>
+</html>

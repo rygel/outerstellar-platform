@@ -1,7 +1,0 @@
-@import dev.outerstellar.platform.web.AuthResultFragment
-@param model: AuthResultFragment
-
-<div class="panel ${model.toneClass}">
-    <h3>${model.title}</h3>
-    <p>${model.message}</p>
-</div>

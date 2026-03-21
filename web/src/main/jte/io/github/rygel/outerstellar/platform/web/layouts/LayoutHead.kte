@@ -1,0 +1,13 @@
+@import io.github.rygel.outerstellar.platform.web.ShellView
+@param shell: ShellView
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="${shell.csrfToken}">
+    <title>${shell.pageTitle} - ${shell.appTitle}</title>
+    <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/site.css?v=${shell.version}">
+    <script src="/vendor/htmx.min.js"></script>
+    <script src="/vendor/htmx-ext-ws.js"></script>
+</head>

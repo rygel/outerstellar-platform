@@ -4,9 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>dev.outerstellar</groupId>
+        <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.0</version>
     </parent>
 
     <artifactId>desktop</artifactId>
@@ -17,11 +17,11 @@
 
     <dependencies>
         <dependency>
-            <groupId>dev.outerstellar</groupId>
+            <groupId>io.github.rygel</groupId>
             <artifactId>persistence-jooq</artifactId>
         </dependency>
         <dependency>
-            <groupId>dev.outerstellar</groupId>
+            <groupId>io.github.rygel</groupId>
             <artifactId>api-client</artifactId>
         </dependency>
         <dependency>
@@ -117,7 +117,7 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>dev.outerstellar.platform.swing.SwingSyncAppKt</mainClass>
+                    <mainClass>io.github.rygel.outerstellar.platform.swing.SwingSyncAppKt</mainClass>
                     <environmentVariables>
                         <APP_PROFILE>${runtime.profile}</APP_PROFILE>
                         <DEV_MODE>${runtime.dev.mode}</DEV_MODE>

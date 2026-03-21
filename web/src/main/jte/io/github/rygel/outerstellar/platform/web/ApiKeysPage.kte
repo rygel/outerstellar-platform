@@ -1,0 +1,70 @@
+@import io.github.rygel.outerstellar.platform.web.ApiKeysPage
+@import io.github.rygel.outerstellar.platform.web.Page
+
+@param model: Page<ApiKeysPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+    @template.io.github.rygel.outerstellar.platform.web.components.PageHeader(
+        title = model.data.title,
+        description = model.data.description,
+        breadcrumb = model.shell.pageTitle
+    )
+
+    @if(model.data.newKey != null)
+        <section class="panel panel-success" style="margin-bottom: 1rem;">
+            <h3>${model.data.newKeyBanner}</h3>
+            <p style="font-family: monospace; word-break: break-all; padding: 0.75rem; background: var(--color-background); border-radius: 4px;">
+                ${model.data.newKey}
+            </p>
+            <p class="text-muted">Name: ${model.data.newKeyName}</p>
+        </section>
+    @endif
+
+    <section class="panel">
+        <h2>${model.data.createLabel}</h2>
+        <form method="post" action="${model.data.createUrl}" style="display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap;">
+            <div>
+                <label for="key-name">${model.data.keyNameLabel}</label>
+                <input type="text" id="key-name" name="name" placeholder="${model.data.keyNamePlaceholder}" required style="min-width: 250px;" />
+            </div>
+            <button type="submit">${model.data.createLabel}</button>
+        </form>
+    </section>
+
+    <section class="panel" style="margin-top: 1rem;">
+        <h2>${model.data.yourKeysHeading}</h2>
+        @if(model.data.keys.isEmpty())
+            <p class="text-muted">${model.data.emptyLabel}</p>
+        @else
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>${model.data.headerPrefix}</th>
+                        <th>${model.data.headerName}</th>
+                        <th>${model.data.headerCreated}</th>
+                        <th>${model.data.headerLastUsed}</th>
+                        <th class="th-center">${model.data.headerActions}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (key in model.data.keys)
+                        <tr>
+                            <td class="td-mono">${key.keyPrefix}...</td>
+                            <td>${key.name}</td>
+                            <td>${key.createdAt}</td>
+                            <td>${key.lastUsedAt ?: model.data.neverLabel}</td>
+                            <td class="td-center">
+                                <form method="post" action="/auth/api-keys/${key.id}/delete" style="display: inline;"
+                                      onsubmit="return confirm('${model.data.deleteConfirm}');">
+                                    <button type="submit" class="secondary" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                        ${model.data.deleteLabel}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @endfor
+                </tbody>
+            </table>
+        @endif
+    </section>
+`)

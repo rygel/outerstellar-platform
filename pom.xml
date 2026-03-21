@@ -3,9 +3,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>dev.outerstellar</groupId>
+    <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>pom</packaging>
 
     <name>Outerstellar Platform</name>
@@ -36,21 +36,21 @@
         <java.version>21</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
-        <outerstellar.version>1.0.3</outerstellar.version>
-        <http4k.version>6.35.0.0</http4k.version>
-        <flyway.version>12.0.0</flyway.version>
-        <postgresql.version>42.7.7</postgresql.version>
+        <outerstellar.version>1.0.4</outerstellar.version>
+        <http4k.version>6.36.0.0</http4k.version>
+        <flyway.version>12.1.1</flyway.version>
+        <postgresql.version>42.7.10</postgresql.version>
         <jooq.version>3.20.11</jooq.version>
         <jdbi.version>3.51.0</jdbi.version>
         <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
-        <junit.version>5.12.0</junit.version>
+        <junit.version>5.12.2</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
         <spotbugs.version>4.9.8.2</spotbugs.version>
-        <spotless.version>3.3.0</spotless.version>
+        <spotless.version>3.4.0</spotless.version>
         <ktfmt.version>0.61</ktfmt.version>
         <jacoco.version>0.8.14</jacoco.version>
         <extra-enforcer-rules.version>1.12.0</extra-enforcer-rules.version>
@@ -61,7 +61,7 @@
         <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <bytebuddy.version>1.18.5</bytebuddy.version>
-        <koin.version>4.0.2</koin.version>
+        <koin.version>4.2.0</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
@@ -71,13 +71,13 @@
         <caffeine.version>3.2.3</caffeine.version>
         <opentelemetry.version>1.60.1</opentelemetry.version>
 
-        <jackson.version>2.21.1</jackson.version>
+        <jackson.version>2.21.2</jackson.version>
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.32</logback.version>
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.1</java-jwt.version>
-        <hikaricp.version>6.2.1</hikaricp.version>
-        <angus.mail.version>2.0.3</angus.mail.version>
+        <hikaricp.version>7.0.2</hikaricp.version>
+        <simplejavamail.version>8.12.6</simplejavamail.version>
         <konform.version>0.11.1</konform.version>
         <playwright.version>1.58.0</playwright.version>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
@@ -105,9 +105,25 @@
         <repository>
             <id>github-rygel</id>
             <name>Rygel GitHub Packages</name>
-            <url>https://maven.pkg.github.com/rygel/*</url>
+            <url>https://maven.pkg.github.com/rygel/outerstellar-framework</url>
         </repository>
     </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>github-rygel</id>
+            <name>Rygel GitHub Packages</name>
+            <url>https://maven.pkg.github.com/rygel/outerstellar-framework</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <distributionManagement>
+        <repository>
+            <id>github-rygel</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/rygel/outerstellar-platform</url>
+        </repository>
+    </distributionManagement>
 
     <dependencyManagement>
         <dependencies>
@@ -131,27 +147,27 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>persistence-jooq</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>persistence-jdbi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>api-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>dev.outerstellar</groupId>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>web</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -419,9 +435,15 @@
                 <version>${hikaricp.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.angus</groupId>
-                <artifactId>angus-mail</artifactId>
-                <version>${angus.mail.version}</version>
+                <groupId>org.simplejavamail</groupId>
+                <artifactId>simple-java-mail</artifactId>
+                <version>${simplejavamail.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.github.bbottema</groupId>
+                        <artifactId>jetbrains-runtime-annotations</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.konform</groupId>
@@ -514,6 +536,7 @@
                     <version>${maven.surefire.plugin.version}</version>
                     <configuration>
                         <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
+                        <forkedProcessTimeoutInSeconds>300</forkedProcessTimeoutInSeconds>
                         <excludedGroups>${surefire.excluded.groups}</excludedGroups>
                         <groups>${surefire.groups}</groups>
                         <systemPropertyVariables>
@@ -522,10 +545,15 @@
                             <otel.logs.exporter>none</otel.logs.exporter>
                             <java.io.tmpdir>${project.build.directory}/tmp</java.io.tmpdir>
                             <junit.jupiter.tempdir.cleanup.mode.default>ALWAYS</junit.jupiter.tempdir.cleanup.mode.default>
+                            <junit.jupiter.execution.timeout.default>120 s</junit.jupiter.execution.timeout.default>
+                            <PLAYWRIGHT_BROWSERS_PATH>${project.build.directory}/playwright-browsers</PLAYWRIGHT_BROWSERS_PATH>
                             <test.jdbc.url>${test.jdbc.url}</test.jdbc.url>
                             <test.jdbc.user>${test.jdbc.user}</test.jdbc.user>
                             <test.jdbc.password>${test.jdbc.password}</test.jdbc.password>
                         </systemPropertyVariables>
+                        <environmentVariables>
+                            <PLAYWRIGHT_BROWSERS_PATH>${project.build.directory}/playwright-browsers</PLAYWRIGHT_BROWSERS_PATH>
+                        </environmentVariables>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -584,7 +612,7 @@
                                 <goal>check</goal>
                             </goals>
                             <configuration>
-                                <config>${maven.multiModuleProjectDirectory}/detekt.yml</config>
+                                <config>${maven.multiModuleProjectDirectory}/config/detekt.yml</config>
                                 <report>
                                     <report>xml:${project.build.directory}/detekt-reports/detekt.xml</report>
                                     <report>html:${project.build.directory}/detekt-reports/detekt.html</report>
@@ -612,7 +640,7 @@
                     <artifactId>spotbugs-maven-plugin</artifactId>
                     <version>${spotbugs.version}</version>
                     <configuration>
-                        <excludeFilterFile>${maven.multiModuleProjectDirectory}/spotbugs-exclude.xml</excludeFilterFile>
+                        <excludeFilterFile>${maven.multiModuleProjectDirectory}/config/spotbugs-exclude.xml</excludeFilterFile>
                         <effort>Max</effort>
                         <threshold>Low</threshold>
                     </configuration>
@@ -622,7 +650,7 @@
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>${checkstyle.version}</version>
                     <configuration>
-                        <configLocation>${maven.multiModuleProjectDirectory}/checkstyle.xml</configLocation>
+                        <configLocation>${maven.multiModuleProjectDirectory}/config/checkstyle.xml</configLocation>
                         <consoleOutput>true</consoleOutput>
                         <failsOnError>true</failsOnError>
                         <linkXRef>false</linkXRef>
@@ -634,7 +662,7 @@
                     <version>${pmd.version}</version>
                     <configuration>
                         <rulesets>
-                            <ruleset>${maven.multiModuleProjectDirectory}/pmd.xml</ruleset>
+                            <ruleset>${maven.multiModuleProjectDirectory}/config/pmd.xml</ruleset>
                         </rulesets>
                         <printFailingErrors>true</printFailingErrors>
                     </configuration>
@@ -938,7 +966,7 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
-                            <mainClass>dev.outerstellar.platform.seed.SeedDataKt</mainClass>
+                            <mainClass>io.github.rygel.outerstellar.platform.seed.SeedDataKt</mainClass>
                             <classpathScope>compile</classpathScope>
                         </configuration>
                     </plugin>

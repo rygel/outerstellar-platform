@@ -4,7 +4,9 @@ target/
 data/
 *.log
 node_modules/
+.tailwind-runner.lock
 .jj/
 .junie/
 package-lock.json
 .claude/worktrees/
+mcp.json
