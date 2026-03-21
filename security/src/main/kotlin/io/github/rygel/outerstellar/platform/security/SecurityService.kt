@@ -1,11 +1,9 @@
 package io.github.rygel.outerstellar.platform.security
 
-import io.github.rygel.outerstellar.platform.model.ApiKey
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
-import io.github.rygel.outerstellar.platform.model.PasswordResetToken
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
@@ -30,6 +28,30 @@ class SecurityService(
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
     private val secureRandom = java.security.SecureRandom()
+
+    private val passwordResetService by lazy {
+        PasswordResetService(
+            userRepository = userRepository,
+            passwordEncoder = passwordEncoder,
+            resetRepository = resetRepository,
+            auditRepository = auditRepository,
+            emailService = emailService,
+            appBaseUrl = appBaseUrl,
+        )
+    }
+
+    private val apiKeyService by lazy {
+        ApiKeyService(userRepository = userRepository, apiKeyRepository = apiKeyRepository)
+    }
+
+    private val oauthService by lazy {
+        OAuthService(
+            userRepository = userRepository,
+            passwordEncoder = passwordEncoder,
+            oauthRepository = oauthRepository,
+            auditRepository = auditRepository,
+        )
+    }
 
     fun authenticate(username: String, password: String): User? {
         val user = userRepository.findByUsername(username)
@@ -132,60 +154,7 @@ class SecurityService(
         )
     }
 
-    fun requestPasswordReset(email: String): String? {
-        val user = userRepository.findByEmail(email)
-        if (user == null) {
-            logger.info("Password reset requested for unknown email {}", email)
-            return null
-        }
-
-        val tokenValue = UUID.randomUUID().toString()
-        val resetToken =
-            PasswordResetToken(
-                userId = user.id,
-                token = tokenValue,
-                expiresAt = Instant.now().plusSeconds(RESET_TOKEN_TTL_SECONDS),
-            )
-        resetRepository?.save(resetToken)
-        logger.info("Password reset token generated for user {}", user.username)
-        val resetLink = "$appBaseUrl/auth/reset?token=$tokenValue"
-        emailService?.send(
-            to = user.email,
-            subject = "Password Reset Request",
-            body =
-                "Use this link to reset your password:\n$resetLink\n\nThis link expires in 1 hour.",
-        )
-        audit("PASSWORD_RESET_REQUESTED", actor = user)
-        return tokenValue
-    }
-
-    fun resetPassword(token: String, newPassword: String) {
-        val resetToken =
-            resetRepository?.findByToken(token)
-                ?: throw IllegalArgumentException("Invalid reset token")
-
-        if (resetToken.used) {
-            throw IllegalArgumentException("Reset token has already been used")
-        }
-        if (resetToken.expiresAt.isBefore(Instant.now())) {
-            throw IllegalArgumentException("Reset token has expired")
-        }
-        if (newPassword.length < MIN_PASSWORD_LENGTH) {
-            throw WeakPasswordException(
-                "New password must be at least $MIN_PASSWORD_LENGTH characters"
-            )
-        }
-
-        val user =
-            userRepository.findById(resetToken.userId)
-                ?: throw UserNotFoundException(resetToken.userId.toString())
-
-        val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
-        userRepository.save(updated)
-        resetRepository.markUsed(token)
-        logger.info("Password reset completed for user {}", user.username)
-        audit("PASSWORD_RESET_COMPLETED", actor = user)
-    }
+    fun countAuditEntries(): Long = auditRepository?.countAll() ?: 0L
 
     fun getAuditLog(limit: Int = 50): List<AuditEntry> {
         return auditRepository?.findRecent(limit) ?: emptyList()
@@ -194,7 +163,31 @@ class SecurityService(
     fun getAuditLog(limit: Int, offset: Int): List<AuditEntry> =
         auditRepository?.findPage(limit, offset) ?: emptyList()
 
-    fun countAuditEntries(): Long = auditRepository?.countAll() ?: 0L
+    // Delegated to PasswordResetService
+
+    fun requestPasswordReset(email: String): String? =
+        passwordResetService.requestPasswordReset(email)
+
+    fun resetPassword(token: String, newPassword: String) =
+        passwordResetService.resetPassword(token, newPassword)
+
+    // Delegated to ApiKeyService
+
+    fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse =
+        apiKeyService.createApiKey(userId, name)
+
+    fun authenticateApiKey(rawKey: String): User? = apiKeyService.authenticateApiKey(rawKey)
+
+    fun listApiKeys(userId: UUID): List<ApiKeySummary> = apiKeyService.listApiKeys(userId)
+
+    fun deleteApiKey(userId: UUID, keyId: Long) = apiKeyService.deleteApiKey(userId, keyId)
+
+    // Delegated to OAuthService
+
+    fun findOrCreateOAuthUser(providerName: String, oauthSubject: String, email: String?): User =
+        oauthService.findOrCreateOAuthUser(providerName, oauthSubject, email)
+
+    // Session management
 
     fun updateProfile(
         userId: UUID,
@@ -257,100 +250,6 @@ class SecurityService(
         userRepository.updateNotificationPreferences(userId, emailEnabled, pushEnabled)
         logger.info("Notification preferences updated for user {}", user.username)
         audit("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
-    }
-
-    fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse {
-        require(name.isNotBlank()) { "API key name is required" }
-        val rawKey = "osk_" + generateRandomHex(API_KEY_HEX_LENGTH)
-        val keyPrefix = rawKey.take(API_KEY_PREFIX_LENGTH)
-        val keyHash = hashToken(rawKey)
-
-        val apiKey = ApiKey(userId = userId, keyHash = keyHash, keyPrefix = keyPrefix, name = name)
-        apiKeyRepository?.save(apiKey)
-        logger.info("API key created for user {}", userId)
-        return CreateApiKeyResponse(key = rawKey, name = name, keyPrefix = keyPrefix)
-    }
-
-    fun listApiKeys(userId: UUID): List<ApiKeySummary> {
-        return apiKeyRepository?.findByUserId(userId)?.map { key ->
-            ApiKeySummary(
-                id = key.id,
-                keyPrefix = key.keyPrefix,
-                name = key.name,
-                enabled = key.enabled,
-                createdAt = key.createdAt.toString(),
-                lastUsedAt = key.lastUsedAt?.toString(),
-            )
-        } ?: emptyList()
-    }
-
-    fun deleteApiKey(userId: UUID, keyId: Long) {
-        apiKeyRepository?.delete(keyId, userId)
-        logger.info("API key {} deleted for user {}", keyId, userId)
-    }
-
-    /**
-     * Find an existing user linked to an OAuth provider identity, or create a new one.
-     *
-     * If [oauthRepository] is not configured this throws [IllegalStateException].
-     */
-    fun findOrCreateOAuthUser(providerName: String, oauthSubject: String, email: String?): User {
-        val repo = oauthRepository ?: error("OAuthRepository is not configured")
-
-        val existing = repo.findByProviderSubject(providerName, oauthSubject)
-        if (existing != null) {
-            return userRepository.findById(existing.userId)
-                ?: error("OAuth user record found but linked user missing: ${existing.userId}")
-        }
-
-        // Derive a username from the email or generate a random one
-        val baseUsername =
-            email?.substringBefore('@')?.filter { it.isLetterOrDigit() }?.take(30)
-                ?: providerName + "_" + UUID.randomUUID().toString().take(8)
-        val username = ensureUniqueUsername(baseUsername)
-
-        val user =
-            User(
-                id = UUID.randomUUID(),
-                username = username,
-                email = email ?: "$username@$providerName.oauth",
-                passwordHash = passwordEncoder.encode(UUID.randomUUID().toString()),
-                role = UserRole.USER,
-            )
-        userRepository.save(user)
-
-        repo.save(
-            OAuthConnection(
-                id = 0L,
-                userId = user.id,
-                provider = providerName,
-                subject = oauthSubject,
-                email = email,
-            )
-        )
-        logger.info("Created new user {} via OAuth provider {}", username, providerName)
-        audit("OAUTH_USER_CREATED", actor = user, detail = "provider=$providerName")
-        return user
-    }
-
-    private fun ensureUniqueUsername(base: String): String {
-        if (userRepository.findByUsername(base) == null) return base
-        var i = 2
-        while (userRepository.findByUsername("$base$i") != null) i++
-        return "$base$i"
-    }
-
-    fun authenticateApiKey(rawKey: String): User? {
-        val keyHash = hashToken(rawKey)
-        val apiKey = apiKeyRepository?.findByKeyHash(keyHash) ?: return null
-        if (!apiKey.enabled) return null
-
-        val user = userRepository.findById(apiKey.userId)
-        if (user != null && user.enabled) {
-            apiKeyRepository.updateLastUsed(apiKey.id)
-            return user
-        }
-        return null
     }
 
     fun createSession(userId: UUID): String {
@@ -426,9 +325,6 @@ class SecurityService(
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
         private const val MAX_USERNAME_LENGTH = 50
-        private const val RESET_TOKEN_TTL_SECONDS = 3600L
-        private const val API_KEY_HEX_LENGTH = 32
-        private const val API_KEY_PREFIX_LENGTH = 8
         private const val SESSION_TOKEN_HEX_LENGTH = 48
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
