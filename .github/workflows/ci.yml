@@ -16,6 +16,7 @@ jobs:
   build-and-test:
     name: Build, Test, and Quality
     runs-on: ubuntu-latest
+    environment: ci
     permissions:
       contents: read
     env:
@@ -38,7 +39,7 @@ jobs:
           server-password: GH_PACKAGES_TOKEN
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '20'
           cache: 'npm'
@@ -61,7 +62,7 @@ jobs:
 
       - name: Upload JaCoCo coverage reports
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: coverage-reports
           path: '**/target/site/jacoco/'
@@ -71,6 +72,7 @@ jobs:
     name: Desktop Tests (Xvfb)
     needs: build-and-test
     runs-on: ubuntu-latest
+    environment: ci
     permissions:
       contents: read
     env:
@@ -126,6 +128,7 @@ jobs:
   security:
     name: Security (OWASP + Enforcer)
     runs-on: ubuntu-latest
+    environment: ci
     permissions:
       contents: read
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
@@ -162,7 +165,7 @@ jobs:
 
       - name: Upload dependency check report
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: dependency-check-report
           path: 'target/dependency-check-report.html'

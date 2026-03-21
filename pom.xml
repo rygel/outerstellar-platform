@@ -5,7 +5,7 @@
 
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>pom</packaging>
 
     <name>Outerstellar Platform</name>
@@ -36,7 +36,7 @@
         <java.version>21</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
-        <outerstellar.version>1.0.3</outerstellar.version>
+        <outerstellar.version>1.0.4</outerstellar.version>
         <http4k.version>6.36.0.0</http4k.version>
         <flyway.version>12.1.1</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
@@ -71,12 +71,12 @@
         <caffeine.version>3.2.3</caffeine.version>
         <opentelemetry.version>1.60.1</opentelemetry.version>
 
-        <jackson.version>2.21.1</jackson.version>
+        <jackson.version>2.21.2</jackson.version>
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.32</logback.version>
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.1</java-jwt.version>
-        <hikaricp.version>6.2.1</hikaricp.version>
+        <hikaricp.version>7.0.2</hikaricp.version>
         <simplejavamail.version>8.12.6</simplejavamail.version>
         <konform.version>0.11.1</konform.version>
         <playwright.version>1.58.0</playwright.version>
