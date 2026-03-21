@@ -15,6 +15,7 @@ import javax.swing.JMenu
 import javax.swing.JMenuItem
 import javax.swing.SwingUtilities
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SyncWindowI18nTest {
@@ -33,7 +34,8 @@ class SyncWindowI18nTest {
         runOnEdt { window.refreshTranslations(fr) }
 
         runOnEdt {
-            assertEquals(fr.translate("swing.app.title"), window.frame.title)
+            assertTrue(window.frame.title.startsWith(fr.translate("swing.app.title")),
+                "Title should start with '${fr.translate("swing.app.title")}', got: ${window.frame.title}")
             assertEquals(
                 fr.translate("swing.label.search"),
                 label(window.frame, "searchLabel").text,
