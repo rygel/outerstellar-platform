@@ -161,14 +161,15 @@ jobs:
           key: build-${{ github.sha }}
 
       - name: Install parent POM locally
-        run: mvn install -N -q
+        run: mvn install -N -q -s /github/home/.m2/settings.xml
 
       - name: Install cached modules
-        run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -q
+        run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -q -s /github/home/.m2/settings.xml
 
       - name: Run E2E tests
         run: >
           mvn test -pl web
+          -s /github/home/.m2/settings.xml
           -Dgroups=e2e
           -DexcludedGroups=
           -Denforcer.skip=true
