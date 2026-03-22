@@ -1,13 +1,13 @@
 package io.github.rygel.outerstellar.platform.web
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.web.RateLimiter")
 
@@ -49,26 +49,27 @@ fun rateLimitFilter(
     val buckets = ConcurrentHashMap<String, TokenBucket>()
 
     return Filter { next: HttpHandler ->
-        { request ->
+        {
+                request ->
             val path = request.uri.path
             if (pathPrefixes.any { path.startsWith(it) }) {
-                    val clientIp =
-                        request.header("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
-                            ?: request.header("X-Real-IP")
-                            ?: "unknown"
+                val clientIp =
+                    request.header("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
+                        ?: request.header("X-Real-IP")
+                        ?: "unknown"
 
-                    val key = "$clientIp:$path"
-                    val bucket = buckets.computeIfAbsent(key) { TokenBucket(maxRequests, windowMs) }
+                val key = "$clientIp:$path"
+                val bucket = buckets.computeIfAbsent(key) { TokenBucket(maxRequests, windowMs) }
 
-                    if (bucket.tryConsume()) {
-                        next(request)
-                    } else {
-                        logger.warn("Rate limit exceeded for {} on {}", clientIp, path)
-                        Response(Status.TOO_MANY_REQUESTS).body("Too many requests. Please try again later.")
-                    }
-                } else {
+                if (bucket.tryConsume()) {
                     next(request)
+                } else {
+                    logger.warn("Rate limit exceeded for {} on {}", clientIp, path)
+                    Response(Status.TOO_MANY_REQUESTS).body("Too many requests. Please try again later.")
                 }
+            } else {
+                next(request)
+            }
                 .also {
                     // Periodic cleanup: evict buckets whose window has already expired
                     if (buckets.size > CLEANUP_THRESHOLD) {

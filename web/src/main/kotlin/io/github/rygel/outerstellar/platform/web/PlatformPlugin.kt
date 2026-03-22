@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import org.http4k.contract.ContractRoute
+import org.http4k.core.Filter
 import org.http4k.template.TemplateRenderer
 import org.koin.core.module.Module
 
@@ -68,6 +69,12 @@ interface PlatformPlugin : PluginMigrationSource {
 
     /** HTTP routes contributed to the application. */
     fun routes(context: PluginContext): List<ContractRoute> = emptyList()
+
+    /**
+     * Filters added to the request chain after the platform's own filters (auth, CSRF, state, etc.) but before route
+     * dispatch. Use this to set up plugin-specific request context (e.g. custom session resolution, context keys).
+     */
+    fun filters(context: PluginContext): List<Filter> = emptyList()
 
     /** Koin modules this plugin needs. Register in `startKoin` rather than relying on this. */
     fun koinModules(): List<Module> = emptyList()
