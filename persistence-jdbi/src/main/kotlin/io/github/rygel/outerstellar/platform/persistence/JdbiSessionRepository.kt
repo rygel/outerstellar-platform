@@ -14,7 +14,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
             handle
                 .createUpdate(
                     """
-                    INSERT INTO sessions (token_hash, user_id, created_at, expires_at)
+                    INSERT INTO plt_sessions (token_hash, user_id, created_at, expires_at)
                     VALUES (:tokenHash, :userId, :createdAt, :expiresAt)
                     """
                 )
@@ -31,7 +31,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
             handle
                 .createQuery(
                     """
-                    SELECT * FROM sessions
+                    SELECT * FROM plt_sessions
                     WHERE token_hash = :tokenHash AND expires_at > :now
                     """
                 )
@@ -46,7 +46,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
     override fun findByTokenHashIncludingExpired(tokenHash: String): Session? {
         return jdbi.withHandle<Session?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM sessions WHERE token_hash = :tokenHash")
+                .createQuery("SELECT * FROM plt_sessions WHERE token_hash = :tokenHash")
                 .bind("tokenHash", tokenHash)
                 .map { rs, _ -> mapSession(rs) }
                 .findOne()
@@ -57,7 +57,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
     override fun updateExpiresAt(tokenHash: String, expiresAt: Instant) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE sessions SET expires_at = :expiresAt WHERE token_hash = :tokenHash")
+                .createUpdate("UPDATE plt_sessions SET expires_at = :expiresAt WHERE token_hash = :tokenHash")
                 .bind("expiresAt", Timestamp.from(expiresAt))
                 .bind("tokenHash", tokenHash)
                 .execute()
@@ -67,7 +67,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
     override fun deleteByTokenHash(tokenHash: String) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("DELETE FROM sessions WHERE token_hash = :tokenHash")
+                .createUpdate("DELETE FROM plt_sessions WHERE token_hash = :tokenHash")
                 .bind("tokenHash", tokenHash)
                 .execute()
         }
@@ -75,14 +75,14 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
 
     override fun deleteByUserId(userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
-            handle.createUpdate("DELETE FROM sessions WHERE user_id = :userId").bind("userId", userId).execute()
+            handle.createUpdate("DELETE FROM plt_sessions WHERE user_id = :userId").bind("userId", userId).execute()
         }
     }
 
     override fun deleteExpired() {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("DELETE FROM sessions WHERE expires_at <= :now")
+                .createUpdate("DELETE FROM plt_sessions WHERE expires_at <= :now")
                 .bind("now", Timestamp.from(Instant.now()))
                 .execute()
         }
@@ -95,8 +95,8 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
             id = rs.getLong("id"),
             tokenHash = rs.getString("token_hash"),
             userId = rs.getObject("user_id", UUID::class.java),
-            createdAt = createdAt?.toInstant() ?: error("sessions.created_at is unexpectedly null"),
-            expiresAt = expiresAt?.toInstant() ?: error("sessions.expires_at is unexpectedly null"),
+            createdAt = createdAt?.toInstant() ?: error("plt_sessions.created_at is unexpectedly null"),
+            expiresAt = expiresAt?.toInstant() ?: error("plt_sessions.expires_at is unexpectedly null"),
         )
     }
 }

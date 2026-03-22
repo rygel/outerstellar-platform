@@ -21,21 +21,21 @@ abstract class H2JdbiTest {
     @AfterEach
     fun cleanDatabase() {
         jdbi.useHandle<Exception> { handle ->
-            handle.execute("DELETE FROM sessions")
-            handle.execute("DELETE FROM notifications")
-            handle.execute("DELETE FROM device_tokens")
-            handle.execute("DELETE FROM oauth_connections")
-            handle.execute("DELETE FROM api_keys")
-            handle.execute("DELETE FROM password_reset_tokens")
-            handle.execute("DELETE FROM audit_log")
-            handle.execute("DELETE FROM outbox")
-            handle.execute("DELETE FROM contact_emails")
-            handle.execute("DELETE FROM contact_phones")
-            handle.execute("DELETE FROM contact_socials")
-            handle.execute("DELETE FROM contacts")
-            handle.execute("DELETE FROM messages")
-            handle.execute("DELETE FROM sync_state")
-            handle.execute("DELETE FROM users")
+            handle.execute("DELETE FROM plt_sessions")
+            handle.execute("DELETE FROM plt_notifications")
+            handle.execute("DELETE FROM plt_device_tokens")
+            handle.execute("DELETE FROM plt_oauth_connections")
+            handle.execute("DELETE FROM plt_api_keys")
+            handle.execute("DELETE FROM plt_password_reset_tokens")
+            handle.execute("DELETE FROM plt_audit_log")
+            handle.execute("DELETE FROM plt_outbox")
+            handle.execute("DELETE FROM plt_contact_emails")
+            handle.execute("DELETE FROM plt_contact_phones")
+            handle.execute("DELETE FROM plt_contact_socials")
+            handle.execute("DELETE FROM plt_contacts")
+            handle.execute("DELETE FROM plt_messages")
+            handle.execute("DELETE FROM plt_sync_state")
+            handle.execute("DELETE FROM plt_users")
         }
     }
 }

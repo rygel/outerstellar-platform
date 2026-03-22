@@ -9,7 +9,7 @@ import org.jooq.impl.DSL
 import org.jooq.impl.SQLDataType
 
 class JooqPasswordResetRepository(private val dsl: DSLContext) : PasswordResetRepository {
-    private val table = DSL.table("password_reset_tokens")
+    private val table = DSL.table("plt_password_reset_tokens")
     private val userId = DSL.field("user_id", SQLDataType.UUID)
     private val token = DSL.field("token", SQLDataType.VARCHAR)
     private val expiresAt = DSL.field("expires_at", SQLDataType.LOCALDATETIME)

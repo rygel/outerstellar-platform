@@ -25,7 +25,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             val sql =
                 """
                 SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict
-                FROM messages
+                FROM plt_messages
                 WHERE $whereClause
                 ORDER BY updated_at_epoch_ms DESC, id DESC
                 LIMIT :limit OFFSET :offset
@@ -43,7 +43,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     override fun countMessages(query: String?, year: Int?, includeDeleted: Boolean): Long {
         return jdbi.withHandle<Long, Exception> { handle ->
             val (whereClause, bindings) = buildFilterClause(handle, query, year, includeDeleted)
-            val q = handle.createQuery("SELECT COUNT(*) FROM messages WHERE $whereClause")
+            val q = handle.createQuery("SELECT COUNT(*) FROM plt_messages WHERE $whereClause")
             bindings(q)
             q.mapTo(Long::class.java).one()
         }
@@ -52,7 +52,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     override fun listDirtyMessages(): List<StoredMessage> =
         jdbi.withHandle<List<StoredMessage>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM messages WHERE dirty = true AND deleted_at IS NULL")
+                .createQuery("SELECT * FROM plt_messages WHERE dirty = true AND deleted_at IS NULL")
                 .map { rs, _ -> mapMessage(rs) }
                 .list()
         }
@@ -60,7 +60,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     override fun countDirtyMessages(): Long =
         jdbi.withHandle<Long, Exception> { handle ->
             handle
-                .createQuery("SELECT COUNT(*) FROM messages WHERE dirty = true AND deleted_at IS NULL")
+                .createQuery("SELECT COUNT(*) FROM plt_messages WHERE dirty = true AND deleted_at IS NULL")
                 .mapTo(Long::class.java)
                 .one()
         }
@@ -70,7 +70,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
 
     private fun findBySyncId(handle: Handle, syncId: String): StoredMessage? =
         handle
-            .createQuery("SELECT * FROM messages WHERE sync_id = :syncId")
+            .createQuery("SELECT * FROM plt_messages WHERE sync_id = :syncId")
             .bind("syncId", syncId)
             .map { rs, _ -> mapMessage(rs) }
             .findOne()
@@ -81,7 +81,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             handle
                 .createQuery(
                     """
-                    SELECT * FROM messages
+                    SELECT * FROM plt_messages
                     WHERE updated_at_epoch_ms > :since AND deleted_at IS NULL
                     """
                 )
@@ -103,7 +103,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
                 handle
                     .createUpdate(
                         """
-                        INSERT INTO messages (sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version)
+                        INSERT INTO plt_messages (sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version)
                         VALUES (:syncId, :author, :content, :updatedAtEpochMs, :dirty, :deleted, 1)
                         """
                     )
@@ -118,7 +118,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
                 handle
                     .createUpdate(
                         """
-                        UPDATE messages
+                        UPDATE plt_messages
                         SET author = :author, content = :content, updated_at_epoch_ms = :updatedAtEpochMs,
                             dirty = :dirty, deleted = :deleted, version = :version
                         WHERE sync_id = :syncId
@@ -140,7 +140,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     override fun markClean(syncIds: Collection<String>) {
         if (syncIds.isEmpty()) return
         jdbi.useHandle<Exception> { handle ->
-            val batch = handle.prepareBatch("UPDATE messages SET dirty = false WHERE sync_id = :syncId")
+            val batch = handle.prepareBatch("UPDATE plt_messages SET dirty = false WHERE sync_id = :syncId")
             syncIds.forEach { batch.bind("syncId", it).add() }
             batch.execute()
         }
@@ -149,7 +149,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     override fun getLastSyncEpochMs(): Long =
         jdbi.withHandle<Long, Exception> { handle ->
             handle
-                .createQuery("SELECT state_value FROM sync_state WHERE state_key = :key")
+                .createQuery("SELECT state_value FROM plt_sync_state WHERE state_key = :key")
                 .bind("key", LAST_SYNC_STATE_KEY)
                 .mapTo(Long::class.java)
                 .findOne()
@@ -160,13 +160,13 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         jdbi.useHandle<Exception> { handle ->
             val updated =
                 handle
-                    .createUpdate("UPDATE sync_state SET state_value = :value WHERE state_key = :key")
+                    .createUpdate("UPDATE plt_sync_state SET state_value = :value WHERE state_key = :key")
                     .bind("key", LAST_SYNC_STATE_KEY)
                     .bind("value", value)
                     .execute()
             if (updated == 0) {
                 handle
-                    .createUpdate("INSERT INTO sync_state (state_key, state_value) VALUES (:key, :value)")
+                    .createUpdate("INSERT INTO plt_sync_state (state_key, state_value) VALUES (:key, :value)")
                     .bind("key", LAST_SYNC_STATE_KEY)
                     .bind("value", value)
                     .execute()
@@ -178,7 +178,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         val count =
             jdbi.withHandle<Long, Exception> { handle ->
                 handle
-                    .createQuery("SELECT COUNT(*) FROM messages WHERE deleted = false AND deleted_at IS NULL")
+                    .createQuery("SELECT COUNT(*) FROM plt_messages WHERE deleted = false AND deleted_at IS NULL")
                     .mapTo(Long::class.java)
                     .one()
             }
@@ -193,7 +193,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             handle
                 .createUpdate(
                     """
-                    UPDATE messages SET deleted_at = CURRENT_TIMESTAMP(), version = version + 1
+                    UPDATE plt_messages SET deleted_at = CURRENT_TIMESTAMP(), version = version + 1
                     WHERE sync_id = :syncId
                     """
                 )
@@ -207,7 +207,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             handle
                 .createUpdate(
                     """
-                    UPDATE messages SET deleted_at = NULL, version = version + 1
+                    UPDATE plt_messages SET deleted_at = NULL, version = version + 1
                     WHERE sync_id = :syncId
                     """
                 )
@@ -222,7 +222,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
                 handle
                     .createUpdate(
                         """
-                        UPDATE messages
+                        UPDATE plt_messages
                         SET author = :author, content = :content,
                             updated_at_epoch_ms = :updatedAtEpochMs, dirty = :dirty,
                             deleted = :deleted, version = :newVersion
@@ -247,7 +247,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         val json = Jackson.asFormatString(serverVersion)
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE messages SET sync_conflict = :json WHERE sync_id = :syncId")
+                .createUpdate("UPDATE plt_messages SET sync_conflict = :json WHERE sync_id = :syncId")
                 .bind("json", json)
                 .bind("syncId", syncId)
                 .execute()
@@ -259,7 +259,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             handle
                 .createUpdate(
                     """
-                    UPDATE messages
+                    UPDATE plt_messages
                     SET author = :author, content = :content,
                         updated_at_epoch_ms = :updatedAtEpochMs, dirty = :dirty,
                         version = version + 1, sync_conflict = NULL
@@ -281,7 +281,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             handle
                 .createUpdate(
                     """
-                    INSERT INTO messages (sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version)
+                    INSERT INTO plt_messages (sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version)
                     VALUES (:syncId, :author, :content, :updatedAtEpochMs, :dirty, false, 1)
                     """
                 )

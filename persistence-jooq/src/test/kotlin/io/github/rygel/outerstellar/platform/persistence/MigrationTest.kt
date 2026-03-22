@@ -17,11 +17,11 @@ class MigrationTest {
 
         // Verify that tables exist by trying to query them
         dataSource.connection.use { conn ->
-            val rs = conn.metaData.getTables(null, "PUBLIC", "MESSAGES", null)
-            assertTrue(rs.next(), "MESSAGES table should exist")
+            val rs = conn.metaData.getTables(null, "PUBLIC", "PLT_MESSAGES", null)
+            assertTrue(rs.next(), "PLT_MESSAGES table should exist")
 
-            val rsSync = conn.metaData.getColumns(null, "PUBLIC", "MESSAGES", "SYNC_ID")
-            assertTrue(rsSync.next(), "SYNC_ID column should exist in MESSAGES table")
+            val rsSync = conn.metaData.getColumns(null, "PUBLIC", "PLT_MESSAGES", "SYNC_ID")
+            assertTrue(rsSync.next(), "SYNC_ID column should exist in PLT_MESSAGES table")
         }
     }
 }

@@ -15,7 +15,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findById(id: UUID): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM users WHERE id = :id")
+                .createQuery("SELECT * FROM plt_users WHERE id = :id")
                 .bind("id", id)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -26,7 +26,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findByUsername(username: String): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM users WHERE username = :username")
+                .createQuery("SELECT * FROM plt_users WHERE username = :username")
                 .bind("username", username)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -37,7 +37,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findByEmail(email: String): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM users WHERE email = :email")
+                .createQuery("SELECT * FROM plt_users WHERE email = :email")
                 .bind("email", email)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -50,7 +50,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             handle
                 .createUpdate(
                     """
-                    MERGE INTO users (id, username, email, password_hash, role, enabled)
+                    MERGE INTO plt_users (id, username, email, password_hash, role, enabled)
                     KEY (id)
                     VALUES (:id, :username, :email, :passwordHash, :role, :enabled)
                     """
@@ -82,14 +82,14 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
 
     override fun findAll(): List<User> {
         return jdbi.withHandle<List<User>, Exception> { handle ->
-            handle.createQuery("SELECT * FROM users ORDER BY username").map { rs, _ -> mapUser(rs) }.list()
+            handle.createQuery("SELECT * FROM plt_users ORDER BY username").map { rs, _ -> mapUser(rs) }.list()
         }
     }
 
     override fun findPage(limit: Int, offset: Int): List<User> =
         jdbi.withHandle<List<User>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM users ORDER BY username LIMIT :limit OFFSET :offset")
+                .createQuery("SELECT * FROM plt_users ORDER BY username LIMIT :limit OFFSET :offset")
                 .bind("limit", limit)
                 .bind("offset", offset)
                 .map { rs, _ -> mapUser(rs) }
@@ -98,13 +98,13 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
 
     override fun countAll(): Long =
         jdbi.withHandle<Long, Exception> { handle ->
-            handle.createQuery("SELECT COUNT(*) FROM users").mapTo(Long::class.java).one()
+            handle.createQuery("SELECT COUNT(*) FROM plt_users").mapTo(Long::class.java).one()
         }
 
     override fun updateRole(userId: UUID, role: UserRole) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE users SET role = :role WHERE id = :id")
+                .createUpdate("UPDATE plt_users SET role = :role WHERE id = :id")
                 .bind("role", role.name)
                 .bind("id", userId)
                 .execute()
@@ -114,7 +114,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun updateEnabled(userId: UUID, enabled: Boolean) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE users SET enabled = :enabled WHERE id = :id")
+                .createUpdate("UPDATE plt_users SET enabled = :enabled WHERE id = :id")
                 .bind("enabled", enabled)
                 .bind("id", userId)
                 .execute()
@@ -124,7 +124,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun updateLastActivity(userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE users SET last_activity_at = :lastActivity WHERE id = :id")
+                .createUpdate("UPDATE plt_users SET last_activity_at = :lastActivity WHERE id = :id")
                 .bind("lastActivity", LocalDateTime.now(ZoneOffset.UTC))
                 .bind("id", userId)
                 .execute()
@@ -133,14 +133,14 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
 
     override fun deleteById(userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
-            handle.createUpdate("DELETE FROM users WHERE id = :id").bind("id", userId).execute()
+            handle.createUpdate("DELETE FROM plt_users WHERE id = :id").bind("id", userId).execute()
         }
     }
 
     override fun updateUsername(userId: UUID, newUsername: String) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE users SET username = :username WHERE id = :id")
+                .createUpdate("UPDATE plt_users SET username = :username WHERE id = :id")
                 .bind("username", newUsername)
                 .bind("id", userId)
                 .execute()
@@ -150,7 +150,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun updateAvatarUrl(userId: UUID, avatarUrl: String?) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE users SET avatar_url = :avatarUrl WHERE id = :id")
+                .createUpdate("UPDATE plt_users SET avatar_url = :avatarUrl WHERE id = :id")
                 .bind("avatarUrl", avatarUrl)
                 .bind("id", userId)
                 .execute()
@@ -161,7 +161,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate(
-                    "UPDATE users SET email_notifications_enabled = :emailEnabled, push_notifications_enabled = :pushEnabled WHERE id = :id"
+                    "UPDATE plt_users SET email_notifications_enabled = :emailEnabled, push_notifications_enabled = :pushEnabled WHERE id = :id"
                 )
                 .bind("emailEnabled", emailEnabled)
                 .bind("pushEnabled", pushEnabled)
@@ -173,7 +173,9 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE users SET language = :language, theme = :theme, layout = :layout WHERE id = :id")
+                .createUpdate(
+                    "UPDATE plt_users SET language = :language, theme = :theme, layout = :layout WHERE id = :id"
+                )
                 .bind("language", language)
                 .bind("theme", theme)
                 .bind("layout", layout)

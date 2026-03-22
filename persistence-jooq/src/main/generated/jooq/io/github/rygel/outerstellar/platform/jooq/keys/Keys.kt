@@ -5,38 +5,38 @@
 package io.github.rygel.outerstellar.platform.jooq.keys
 
 
-import io.github.rygel.outerstellar.platform.jooq.tables.ApiKeys
-import io.github.rygel.outerstellar.platform.jooq.tables.AuditLog
-import io.github.rygel.outerstellar.platform.jooq.tables.ContactEmails
-import io.github.rygel.outerstellar.platform.jooq.tables.ContactPhones
-import io.github.rygel.outerstellar.platform.jooq.tables.ContactSocials
-import io.github.rygel.outerstellar.platform.jooq.tables.Contacts
-import io.github.rygel.outerstellar.platform.jooq.tables.DeviceTokens
 import io.github.rygel.outerstellar.platform.jooq.tables.FlywaySchemaHistory
-import io.github.rygel.outerstellar.platform.jooq.tables.Messages
-import io.github.rygel.outerstellar.platform.jooq.tables.Notifications
-import io.github.rygel.outerstellar.platform.jooq.tables.OauthConnections
-import io.github.rygel.outerstellar.platform.jooq.tables.Outbox
-import io.github.rygel.outerstellar.platform.jooq.tables.PasswordResetTokens
-import io.github.rygel.outerstellar.platform.jooq.tables.Sessions
-import io.github.rygel.outerstellar.platform.jooq.tables.SyncState
-import io.github.rygel.outerstellar.platform.jooq.tables.Users
-import io.github.rygel.outerstellar.platform.jooq.tables.records.ApiKeysRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.AuditLogRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.ContactEmailsRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.ContactPhonesRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.ContactSocialsRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.ContactsRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.DeviceTokensRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.PltApiKeys
+import io.github.rygel.outerstellar.platform.jooq.tables.PltAuditLog
+import io.github.rygel.outerstellar.platform.jooq.tables.PltContactEmails
+import io.github.rygel.outerstellar.platform.jooq.tables.PltContactPhones
+import io.github.rygel.outerstellar.platform.jooq.tables.PltContactSocials
+import io.github.rygel.outerstellar.platform.jooq.tables.PltContacts
+import io.github.rygel.outerstellar.platform.jooq.tables.PltDeviceTokens
+import io.github.rygel.outerstellar.platform.jooq.tables.PltMessages
+import io.github.rygel.outerstellar.platform.jooq.tables.PltNotifications
+import io.github.rygel.outerstellar.platform.jooq.tables.PltOauthConnections
+import io.github.rygel.outerstellar.platform.jooq.tables.PltOutbox
+import io.github.rygel.outerstellar.platform.jooq.tables.PltPasswordResetTokens
+import io.github.rygel.outerstellar.platform.jooq.tables.PltSessions
+import io.github.rygel.outerstellar.platform.jooq.tables.PltSyncState
+import io.github.rygel.outerstellar.platform.jooq.tables.PltUsers
 import io.github.rygel.outerstellar.platform.jooq.tables.records.FlywaySchemaHistoryRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.MessagesRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.NotificationsRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.OauthConnectionsRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.OutboxRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.PasswordResetTokensRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.SessionsRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.SyncStateRecord
-import io.github.rygel.outerstellar.platform.jooq.tables.records.UsersRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltApiKeysRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltAuditLogRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltContactEmailsRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltContactPhonesRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltContactSocialsRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltContactsRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltDeviceTokensRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltMessagesRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltNotificationsRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltOauthConnectionsRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltOutboxRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltPasswordResetTokensRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltSessionsRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltSyncStateRecord
+import io.github.rygel.outerstellar.platform.jooq.tables.records.PltUsersRecord
 
 import org.jooq.ForeignKey
 import org.jooq.UniqueKey
@@ -50,35 +50,35 @@ import org.jooq.impl.QOM.ForeignKeyRule
 // UNIQUE and PRIMARY KEY definitions
 // -------------------------------------------------------------------------
 
-val CONSTRAINT_6: UniqueKey<ApiKeysRecord> = Internal.createUniqueKey(ApiKeys.API_KEYS, DSL.name("CONSTRAINT_6"), arrayOf(ApiKeys.API_KEYS.ID), true)
-val CONSTRAINT_B1: UniqueKey<AuditLogRecord> = Internal.createUniqueKey(AuditLog.AUDIT_LOG, DSL.name("CONSTRAINT_B1"), arrayOf(AuditLog.AUDIT_LOG.ID), true)
-val CONSTRAINT_C: UniqueKey<ContactsRecord> = Internal.createUniqueKey(Contacts.CONTACTS, DSL.name("CONSTRAINT_C"), arrayOf(Contacts.CONTACTS.ID), true)
-val CONSTRAINT_1E: UniqueKey<DeviceTokensRecord> = Internal.createUniqueKey(DeviceTokens.DEVICE_TOKENS, DSL.name("CONSTRAINT_1E"), arrayOf(DeviceTokens.DEVICE_TOKENS.ID), true)
-val UQ_DEVICE_TOKEN: UniqueKey<DeviceTokensRecord> = Internal.createUniqueKey(DeviceTokens.DEVICE_TOKENS, DSL.name("UQ_DEVICE_TOKEN"), arrayOf(DeviceTokens.DEVICE_TOKENS.TOKEN), true)
 val FLYWAY_SCHEMA_HISTORY_PK: UniqueKey<FlywaySchemaHistoryRecord> = Internal.createUniqueKey(FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY, DSL.name("flyway_schema_history_pk"), arrayOf(FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY.INSTALLED_RANK), true)
-val CONSTRAINT_1: UniqueKey<MessagesRecord> = Internal.createUniqueKey(Messages.MESSAGES, DSL.name("CONSTRAINT_1"), arrayOf(Messages.MESSAGES.ID), true)
-val CONSTRAINT_5: UniqueKey<NotificationsRecord> = Internal.createUniqueKey(Notifications.NOTIFICATIONS, DSL.name("CONSTRAINT_5"), arrayOf(Notifications.NOTIFICATIONS.ID), true)
-val CONSTRAINT_F3: UniqueKey<OauthConnectionsRecord> = Internal.createUniqueKey(OauthConnections.OAUTH_CONNECTIONS, DSL.name("CONSTRAINT_F3"), arrayOf(OauthConnections.OAUTH_CONNECTIONS.ID), true)
-val UQ_OAUTH_PROVIDER_SUBJECT: UniqueKey<OauthConnectionsRecord> = Internal.createUniqueKey(OauthConnections.OAUTH_CONNECTIONS, DSL.name("UQ_OAUTH_PROVIDER_SUBJECT"), arrayOf(OauthConnections.OAUTH_CONNECTIONS.PROVIDER, OauthConnections.OAUTH_CONNECTIONS.SUBJECT), true)
-val CONSTRAINT_8: UniqueKey<OutboxRecord> = Internal.createUniqueKey(Outbox.OUTBOX, DSL.name("CONSTRAINT_8"), arrayOf(Outbox.OUTBOX.ID), true)
-val CONSTRAINT_86: UniqueKey<PasswordResetTokensRecord> = Internal.createUniqueKey(PasswordResetTokens.PASSWORD_RESET_TOKENS, DSL.name("CONSTRAINT_86"), arrayOf(PasswordResetTokens.PASSWORD_RESET_TOKENS.ID), true)
-val CONSTRAINT_86F: UniqueKey<PasswordResetTokensRecord> = Internal.createUniqueKey(PasswordResetTokens.PASSWORD_RESET_TOKENS, DSL.name("CONSTRAINT_86F"), arrayOf(PasswordResetTokens.PASSWORD_RESET_TOKENS.TOKEN), true)
-val CONSTRAINT_82: UniqueKey<SessionsRecord> = Internal.createUniqueKey(Sessions.SESSIONS, DSL.name("CONSTRAINT_82"), arrayOf(Sessions.SESSIONS.ID), true)
-val CONSTRAINT_E: UniqueKey<SyncStateRecord> = Internal.createUniqueKey(SyncState.SYNC_STATE, DSL.name("CONSTRAINT_E"), arrayOf(SyncState.SYNC_STATE.STATE_KEY), true)
-val CONSTRAINT_4: UniqueKey<UsersRecord> = Internal.createUniqueKey(Users.USERS, DSL.name("CONSTRAINT_4"), arrayOf(Users.USERS.ID), true)
-val CONSTRAINT_4D: UniqueKey<UsersRecord> = Internal.createUniqueKey(Users.USERS, DSL.name("CONSTRAINT_4D"), arrayOf(Users.USERS.USERNAME), true)
-val CONSTRAINT_4D4: UniqueKey<UsersRecord> = Internal.createUniqueKey(Users.USERS, DSL.name("CONSTRAINT_4D4"), arrayOf(Users.USERS.EMAIL), true)
+val CONSTRAINT_3: UniqueKey<PltApiKeysRecord> = Internal.createUniqueKey(PltApiKeys.PLT_API_KEYS, DSL.name("CONSTRAINT_3"), arrayOf(PltApiKeys.PLT_API_KEYS.ID), true)
+val CONSTRAINT_5: UniqueKey<PltAuditLogRecord> = Internal.createUniqueKey(PltAuditLog.PLT_AUDIT_LOG, DSL.name("CONSTRAINT_5"), arrayOf(PltAuditLog.PLT_AUDIT_LOG.ID), true)
+val CONSTRAINT_D5: UniqueKey<PltContactsRecord> = Internal.createUniqueKey(PltContacts.PLT_CONTACTS, DSL.name("CONSTRAINT_D5"), arrayOf(PltContacts.PLT_CONTACTS.ID), true)
+val CONSTRAINT_98: UniqueKey<PltDeviceTokensRecord> = Internal.createUniqueKey(PltDeviceTokens.PLT_DEVICE_TOKENS, DSL.name("CONSTRAINT_98"), arrayOf(PltDeviceTokens.PLT_DEVICE_TOKENS.ID), true)
+val UQ_PLT_DEVICE_TOKEN: UniqueKey<PltDeviceTokensRecord> = Internal.createUniqueKey(PltDeviceTokens.PLT_DEVICE_TOKENS, DSL.name("UQ_PLT_DEVICE_TOKEN"), arrayOf(PltDeviceTokens.PLT_DEVICE_TOKENS.TOKEN), true)
+val CONSTRAINT_D: UniqueKey<PltMessagesRecord> = Internal.createUniqueKey(PltMessages.PLT_MESSAGES, DSL.name("CONSTRAINT_D"), arrayOf(PltMessages.PLT_MESSAGES.ID), true)
+val CONSTRAINT_7: UniqueKey<PltNotificationsRecord> = Internal.createUniqueKey(PltNotifications.PLT_NOTIFICATIONS, DSL.name("CONSTRAINT_7"), arrayOf(PltNotifications.PLT_NOTIFICATIONS.ID), true)
+val CONSTRAINT_15: UniqueKey<PltOauthConnectionsRecord> = Internal.createUniqueKey(PltOauthConnections.PLT_OAUTH_CONNECTIONS, DSL.name("CONSTRAINT_15"), arrayOf(PltOauthConnections.PLT_OAUTH_CONNECTIONS.ID), true)
+val UQ_PLT_OAUTH_PROVIDER_SUBJECT: UniqueKey<PltOauthConnectionsRecord> = Internal.createUniqueKey(PltOauthConnections.PLT_OAUTH_CONNECTIONS, DSL.name("UQ_PLT_OAUTH_PROVIDER_SUBJECT"), arrayOf(PltOauthConnections.PLT_OAUTH_CONNECTIONS.PROVIDER, PltOauthConnections.PLT_OAUTH_CONNECTIONS.SUBJECT), true)
+val CONSTRAINT_9: UniqueKey<PltOutboxRecord> = Internal.createUniqueKey(PltOutbox.PLT_OUTBOX, DSL.name("CONSTRAINT_9"), arrayOf(PltOutbox.PLT_OUTBOX.ID), true)
+val CONSTRAINT_E: UniqueKey<PltPasswordResetTokensRecord> = Internal.createUniqueKey(PltPasswordResetTokens.PLT_PASSWORD_RESET_TOKENS, DSL.name("CONSTRAINT_E"), arrayOf(PltPasswordResetTokens.PLT_PASSWORD_RESET_TOKENS.ID), true)
+val CONSTRAINT_EA: UniqueKey<PltPasswordResetTokensRecord> = Internal.createUniqueKey(PltPasswordResetTokens.PLT_PASSWORD_RESET_TOKENS, DSL.name("CONSTRAINT_EA"), arrayOf(PltPasswordResetTokens.PLT_PASSWORD_RESET_TOKENS.TOKEN), true)
+val CONSTRAINT_4: UniqueKey<PltSessionsRecord> = Internal.createUniqueKey(PltSessions.PLT_SESSIONS, DSL.name("CONSTRAINT_4"), arrayOf(PltSessions.PLT_SESSIONS.ID), true)
+val CONSTRAINT_1: UniqueKey<PltSyncStateRecord> = Internal.createUniqueKey(PltSyncState.PLT_SYNC_STATE, DSL.name("CONSTRAINT_1"), arrayOf(PltSyncState.PLT_SYNC_STATE.STATE_KEY), true)
+val CONSTRAINT_2: UniqueKey<PltUsersRecord> = Internal.createUniqueKey(PltUsers.PLT_USERS, DSL.name("CONSTRAINT_2"), arrayOf(PltUsers.PLT_USERS.ID), true)
+val CONSTRAINT_2E: UniqueKey<PltUsersRecord> = Internal.createUniqueKey(PltUsers.PLT_USERS, DSL.name("CONSTRAINT_2E"), arrayOf(PltUsers.PLT_USERS.USERNAME), true)
+val CONSTRAINT_2EB: UniqueKey<PltUsersRecord> = Internal.createUniqueKey(PltUsers.PLT_USERS, DSL.name("CONSTRAINT_2EB"), arrayOf(PltUsers.PLT_USERS.EMAIL), true)
 
 // -------------------------------------------------------------------------
 // FOREIGN KEY definitions
 // -------------------------------------------------------------------------
 
-val CONSTRAINT_6A: ForeignKey<ApiKeysRecord, UsersRecord> = Internal.createForeignKey(ApiKeys.API_KEYS, DSL.name("CONSTRAINT_6A"), arrayOf(ApiKeys.API_KEYS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_4, arrayOf(Users.USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
-val CONSTRAINT_F: ForeignKey<ContactEmailsRecord, ContactsRecord> = Internal.createForeignKey(ContactEmails.CONTACT_EMAILS, DSL.name("CONSTRAINT_F"), arrayOf(ContactEmails.CONTACT_EMAILS.CONTACT_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_C, arrayOf(Contacts.CONTACTS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
-val CONSTRAINT_3: ForeignKey<ContactPhonesRecord, ContactsRecord> = Internal.createForeignKey(ContactPhones.CONTACT_PHONES, DSL.name("CONSTRAINT_3"), arrayOf(ContactPhones.CONTACT_PHONES.CONTACT_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_C, arrayOf(Contacts.CONTACTS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
-val CONSTRAINT_B: ForeignKey<ContactSocialsRecord, ContactsRecord> = Internal.createForeignKey(ContactSocials.CONTACT_SOCIALS, DSL.name("CONSTRAINT_B"), arrayOf(ContactSocials.CONTACT_SOCIALS.CONTACT_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_C, arrayOf(Contacts.CONTACTS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
-val CONSTRAINT_1E5: ForeignKey<DeviceTokensRecord, UsersRecord> = Internal.createForeignKey(DeviceTokens.DEVICE_TOKENS, DSL.name("CONSTRAINT_1E5"), arrayOf(DeviceTokens.DEVICE_TOKENS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_4, arrayOf(Users.USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
-val CONSTRAINT_59: ForeignKey<NotificationsRecord, UsersRecord> = Internal.createForeignKey(Notifications.NOTIFICATIONS, DSL.name("CONSTRAINT_59"), arrayOf(Notifications.NOTIFICATIONS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_4, arrayOf(Users.USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
-val CONSTRAINT_F3F: ForeignKey<OauthConnectionsRecord, UsersRecord> = Internal.createForeignKey(OauthConnections.OAUTH_CONNECTIONS, DSL.name("CONSTRAINT_F3F"), arrayOf(OauthConnections.OAUTH_CONNECTIONS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_4, arrayOf(Users.USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
-val CONSTRAINT_86F0: ForeignKey<PasswordResetTokensRecord, UsersRecord> = Internal.createForeignKey(PasswordResetTokens.PASSWORD_RESET_TOKENS, DSL.name("CONSTRAINT_86F0"), arrayOf(PasswordResetTokens.PASSWORD_RESET_TOKENS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_4, arrayOf(Users.USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
-val CONSTRAINT_826: ForeignKey<SessionsRecord, UsersRecord> = Internal.createForeignKey(Sessions.SESSIONS, DSL.name("CONSTRAINT_826"), arrayOf(Sessions.SESSIONS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_4, arrayOf(Users.USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
+val CONSTRAINT_32: ForeignKey<PltApiKeysRecord, PltUsersRecord> = Internal.createForeignKey(PltApiKeys.PLT_API_KEYS, DSL.name("CONSTRAINT_32"), arrayOf(PltApiKeys.PLT_API_KEYS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_2, arrayOf(PltUsers.PLT_USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
+val CONSTRAINT_A: ForeignKey<PltContactEmailsRecord, PltContactsRecord> = Internal.createForeignKey(PltContactEmails.PLT_CONTACT_EMAILS, DSL.name("CONSTRAINT_A"), arrayOf(PltContactEmails.PLT_CONTACT_EMAILS.CONTACT_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_D5, arrayOf(PltContacts.PLT_CONTACTS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
+val CONSTRAINT_B: ForeignKey<PltContactPhonesRecord, PltContactsRecord> = Internal.createForeignKey(PltContactPhones.PLT_CONTACT_PHONES, DSL.name("CONSTRAINT_B"), arrayOf(PltContactPhones.PLT_CONTACT_PHONES.CONTACT_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_D5, arrayOf(PltContacts.PLT_CONTACTS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
+val CONSTRAINT_D9: ForeignKey<PltContactSocialsRecord, PltContactsRecord> = Internal.createForeignKey(PltContactSocials.PLT_CONTACT_SOCIALS, DSL.name("CONSTRAINT_D9"), arrayOf(PltContactSocials.PLT_CONTACT_SOCIALS.CONTACT_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_D5, arrayOf(PltContacts.PLT_CONTACTS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
+val CONSTRAINT_980: ForeignKey<PltDeviceTokensRecord, PltUsersRecord> = Internal.createForeignKey(PltDeviceTokens.PLT_DEVICE_TOKENS, DSL.name("CONSTRAINT_980"), arrayOf(PltDeviceTokens.PLT_DEVICE_TOKENS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_2, arrayOf(PltUsers.PLT_USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
+val CONSTRAINT_7F: ForeignKey<PltNotificationsRecord, PltUsersRecord> = Internal.createForeignKey(PltNotifications.PLT_NOTIFICATIONS, DSL.name("CONSTRAINT_7F"), arrayOf(PltNotifications.PLT_NOTIFICATIONS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_2, arrayOf(PltUsers.PLT_USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
+val CONSTRAINT_15D: ForeignKey<PltOauthConnectionsRecord, PltUsersRecord> = Internal.createForeignKey(PltOauthConnections.PLT_OAUTH_CONNECTIONS, DSL.name("CONSTRAINT_15D"), arrayOf(PltOauthConnections.PLT_OAUTH_CONNECTIONS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_2, arrayOf(PltUsers.PLT_USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
+val CONSTRAINT_EA6: ForeignKey<PltPasswordResetTokensRecord, PltUsersRecord> = Internal.createForeignKey(PltPasswordResetTokens.PLT_PASSWORD_RESET_TOKENS, DSL.name("CONSTRAINT_EA6"), arrayOf(PltPasswordResetTokens.PLT_PASSWORD_RESET_TOKENS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_2, arrayOf(PltUsers.PLT_USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)
+val CONSTRAINT_4B: ForeignKey<PltSessionsRecord, PltUsersRecord> = Internal.createForeignKey(PltSessions.PLT_SESSIONS, DSL.name("CONSTRAINT_4B"), arrayOf(PltSessions.PLT_SESSIONS.USER_ID), io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_2, arrayOf(PltUsers.PLT_USERS.ID), true, ForeignKeyRule.CASCADE, ForeignKeyRule.NO_ACTION)

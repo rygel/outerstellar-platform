@@ -29,21 +29,21 @@ abstract class H2JooqTest {
 
     @AfterEach
     fun cleanDatabase() {
-        dsl.execute("DELETE FROM sessions")
-        dsl.execute("DELETE FROM notifications")
-        dsl.execute("DELETE FROM device_tokens")
-        dsl.execute("DELETE FROM oauth_connections")
-        dsl.execute("DELETE FROM api_keys")
-        dsl.execute("DELETE FROM password_reset_tokens")
-        dsl.execute("DELETE FROM audit_log")
-        dsl.execute("DELETE FROM outbox")
-        dsl.execute("DELETE FROM contact_emails")
-        dsl.execute("DELETE FROM contact_phones")
-        dsl.execute("DELETE FROM contact_socials")
-        dsl.execute("DELETE FROM contacts")
-        dsl.execute("DELETE FROM messages")
-        dsl.execute("DELETE FROM sync_state")
-        dsl.execute("DELETE FROM users")
+        dsl.execute("DELETE FROM plt_sessions")
+        dsl.execute("DELETE FROM plt_notifications")
+        dsl.execute("DELETE FROM plt_device_tokens")
+        dsl.execute("DELETE FROM plt_oauth_connections")
+        dsl.execute("DELETE FROM plt_api_keys")
+        dsl.execute("DELETE FROM plt_password_reset_tokens")
+        dsl.execute("DELETE FROM plt_audit_log")
+        dsl.execute("DELETE FROM plt_outbox")
+        dsl.execute("DELETE FROM plt_contact_emails")
+        dsl.execute("DELETE FROM plt_contact_phones")
+        dsl.execute("DELETE FROM plt_contact_socials")
+        dsl.execute("DELETE FROM plt_contacts")
+        dsl.execute("DELETE FROM plt_messages")
+        dsl.execute("DELETE FROM plt_sync_state")
+        dsl.execute("DELETE FROM plt_users")
     }
 
     companion object {

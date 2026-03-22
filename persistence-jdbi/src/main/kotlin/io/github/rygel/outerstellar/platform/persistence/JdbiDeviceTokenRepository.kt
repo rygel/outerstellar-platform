@@ -15,7 +15,7 @@ class JdbiDeviceTokenRepository(private val jdbi: Jdbi) : DeviceTokenRepository 
             handle
                 .createUpdate(
                     """
-                    MERGE INTO device_tokens (user_id, platform, token, app_bundle, created_at, last_seen)
+                    MERGE INTO plt_device_tokens (user_id, platform, token, app_bundle, created_at, last_seen)
                     KEY(token) VALUES (:userId, :platform, :token, :appBundle, :now, :now)
                     """
                 )
@@ -30,14 +30,14 @@ class JdbiDeviceTokenRepository(private val jdbi: Jdbi) : DeviceTokenRepository 
 
     override fun delete(token: String) {
         jdbi.useHandle<Exception> { handle ->
-            handle.createUpdate("DELETE FROM device_tokens WHERE token = :token").bind("token", token).execute()
+            handle.createUpdate("DELETE FROM plt_device_tokens WHERE token = :token").bind("token", token).execute()
         }
     }
 
     override fun findByUserId(userId: UUID): List<DeviceToken> =
         jdbi.withHandle<List<DeviceToken>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM device_tokens WHERE user_id = :userId ORDER BY last_seen DESC")
+                .createQuery("SELECT * FROM plt_device_tokens WHERE user_id = :userId ORDER BY last_seen DESC")
                 .bind("userId", userId)
                 .map { rs, _ -> mapRow(rs) }
                 .list()
@@ -45,7 +45,10 @@ class JdbiDeviceTokenRepository(private val jdbi: Jdbi) : DeviceTokenRepository 
 
     override fun deleteAllForUser(userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
-            handle.createUpdate("DELETE FROM device_tokens WHERE user_id = :userId").bind("userId", userId).execute()
+            handle
+                .createUpdate("DELETE FROM plt_device_tokens WHERE user_id = :userId")
+                .bind("userId", userId)
+                .execute()
         }
     }
 
