@@ -64,6 +64,18 @@ open class UsersRecord() : UpdatableRecordImpl<UsersRecord>(Users.USERS) {
         set(value): Unit = set(10, value)
         get(): Boolean? = get(10) as Boolean?
 
+    open var language: String?
+        set(value): Unit = set(11, value)
+        get(): String? = get(11) as String?
+
+    open var theme: String?
+        set(value): Unit = set(12, value)
+        get(): String? = get(12) as String?
+
+    open var layout: String?
+        set(value): Unit = set(13, value)
+        get(): String? = get(13) as String?
+
     // -------------------------------------------------------------------------
     // Primary key information
     // -------------------------------------------------------------------------
@@ -73,7 +85,7 @@ open class UsersRecord() : UpdatableRecordImpl<UsersRecord>(Users.USERS) {
     /**
      * Create a detached, initialised UsersRecord
      */
-    constructor(id: UUID? = null, username: String? = null, email: String? = null, passwordHash: String? = null, role: String? = null, enabled: Boolean? = null, createdAt: OffsetDateTime? = null, lastActivityAt: LocalDateTime? = null, avatarUrl: String? = null, emailNotificationsEnabled: Boolean? = null, pushNotificationsEnabled: Boolean? = null): this() {
+    constructor(id: UUID? = null, username: String? = null, email: String? = null, passwordHash: String? = null, role: String? = null, enabled: Boolean? = null, createdAt: OffsetDateTime? = null, lastActivityAt: LocalDateTime? = null, avatarUrl: String? = null, emailNotificationsEnabled: Boolean? = null, pushNotificationsEnabled: Boolean? = null, language: String? = null, theme: String? = null, layout: String? = null): this() {
         this.id = id
         this.username = username
         this.email = email
@@ -85,6 +97,9 @@ open class UsersRecord() : UpdatableRecordImpl<UsersRecord>(Users.USERS) {
         this.avatarUrl = avatarUrl
         this.emailNotificationsEnabled = emailNotificationsEnabled
         this.pushNotificationsEnabled = pushNotificationsEnabled
+        this.language = language
+        this.theme = theme
+        this.layout = layout
         resetTouchedOnNotNull()
     }
 }
