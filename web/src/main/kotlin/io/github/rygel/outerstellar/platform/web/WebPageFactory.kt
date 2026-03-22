@@ -376,7 +376,22 @@ open class WebPageFactory(
             label = i18n.translate("web.sidebar.theme.label"),
             selectId = "theme-selector",
             selectName = "theme",
-            options = ThemeCatalog.allThemes().map { ShellOption(it.id, it.name, it.id, it.id == ctx.theme) },
+            options =
+            ThemeCatalog.allThemes().map { theme ->
+                ShellOption(
+                    id = theme.id,
+                    label = theme.name,
+                    url = theme.id,
+                    active = theme.id == ctx.theme,
+                    previewColors =
+                    ThemePreviewColors(
+                        background = theme.colors["background"] ?: "#1e1e1e",
+                        foreground = theme.colors["foreground"] ?: "#d4d4d4",
+                        accent = theme.colors["accent"] ?: "#007acc",
+                        componentBackground = theme.colors["componentBackground"] ?: "#252526",
+                    ),
+                )
+            },
             hiddenFields =
             listOf(
                 HiddenField("pagePath", pagePath),
