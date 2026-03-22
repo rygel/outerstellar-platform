@@ -5,13 +5,13 @@ import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestKey
 import org.slf4j.LoggerFactory
-import java.util.Locale
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 
 class WebContext(
     val request: Request,
@@ -47,16 +47,17 @@ class WebContext(
     val lang: String by lazy {
         request.query("lang")
             ?: request.cookie(LANG_COOKIE)?.value
+            ?: user?.language
             ?: Locale.getDefault().language.lowercase().let { if (it == "fr") "fr" else "en" }
     }
 
     val theme: String by lazy {
-        val value = request.query("theme") ?: request.cookie(THEME_COOKIE)?.value ?: "dark"
+        val value = request.query("theme") ?: request.cookie(THEME_COOKIE)?.value ?: user?.theme ?: "dark"
         if (ThemeCatalog.allThemes().any { it.id == value }) value else "dark"
     }
 
     val layout: String by lazy {
-        val value = request.query("layout") ?: request.cookie(LAYOUT_COOKIE)?.value ?: "nice"
+        val value = request.query("layout") ?: request.cookie(LAYOUT_COOKIE)?.value ?: user?.layout ?: "nice"
         if (listOf("nice", "cozy", "compact").any { it == value }) value else "nice"
     }
 

@@ -18,12 +18,14 @@
 - **Audit log** — timestamped record of admin actions
 - **Profile management** — username, email, avatar (Gravatar), notification preferences
 - **Account deletion** — self-service account removal
+- **User preferences persistence** — language, theme, and layout stored in User model, follow user across devices
 
 ### Settings
 - **Unified settings page** — tabbed UI at `/settings` (Profile, Password, API Keys, Notifications, Appearance)
-- **Theme selection** — dark/light mode toggle + theme catalog with 30+ themes
-- **Language selection** — i18n with locale switching (English, French)
+- **Theme selection** — dark/light mode toggle + theme catalog with 30+ themes, dark mode preview swatches
+- **Language selection** — i18n with locale switching (English, French, German)
 - **Layout selection** — sidebar or topbar layout
+- **Preferences sync** — settings saved to user account when logged in, cookies for anonymous users
 
 ### Search
 - **Search SPI** — `SearchProvider` interface for plugins to register searchable entities

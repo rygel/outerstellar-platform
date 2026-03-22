@@ -170,6 +170,18 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         }
     }
 
+    override fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate("UPDATE users SET language = :language, theme = :theme, layout = :layout WHERE id = :id")
+                .bind("language", language)
+                .bind("theme", theme)
+                .bind("layout", layout)
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
     private fun mapUser(rs: java.sql.ResultSet): User {
         val lastActivity = rs.getTimestamp("last_activity_at")
         return User(
@@ -183,6 +195,9 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             avatarUrl = rs.getString("avatar_url"),
             emailNotificationsEnabled = rs.getBoolean("email_notifications_enabled"),
             pushNotificationsEnabled = rs.getBoolean("push_notifications_enabled"),
+            language = rs.getString("language"),
+            theme = rs.getString("theme"),
+            layout = rs.getString("layout"),
         )
     }
 }

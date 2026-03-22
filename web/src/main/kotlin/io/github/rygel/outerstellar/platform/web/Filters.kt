@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.model.InsufficientPermissionExcepti
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
 import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.security.SecurityRules
+import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
@@ -106,6 +107,24 @@ private fun isStaticAsset(path: String): Boolean =
         path.endsWith(".png") ||
         path.endsWith(".svg") ||
         path.endsWith(".ico")
+
+private fun persistUserPreferences(
+    user: User?,
+    langCookie: Cookie?,
+    themeCookie: Cookie?,
+    layoutCookie: Cookie?,
+    userRepository: UserRepository,
+) {
+    if (user == null) return
+    val hasChange = langCookie != null || themeCookie != null || layoutCookie != null
+    if (!hasChange) return
+    userRepository.updatePreferences(
+        user.id,
+        langCookie?.value ?: user.language,
+        themeCookie?.value ?: user.theme,
+        layoutCookie?.value ?: user.layout,
+    )
+}
 
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
@@ -255,6 +274,8 @@ object Filters {
                     .query("shell")
                     ?.takeIf { it in setOf("sidebar", "topbar") }
                     ?.let { Cookie(WebContext.SHELL_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+
+            persistUserPreferences(contextUser, langCookie, themeCookie, layoutCookie, userRepository)
 
             var updatedResponse = response
             if (langCookie != null) updatedResponse = updatedResponse.cookie(langCookie)

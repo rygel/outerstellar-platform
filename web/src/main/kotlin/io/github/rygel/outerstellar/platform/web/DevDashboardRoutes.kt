@@ -33,11 +33,11 @@ class DevDashboardRoutes(
                                 metrics = "Prometheus export would go here",
                                 cacheStats = cache.getStats(),
                                 outboxStats =
-                                OutboxStatsViewModel(
-                                    pending = outboxStats["PENDING"] ?: 0,
-                                    processed = outboxStats["PROCESSED"] ?: 0,
-                                    failed = outboxStats["FAILED"] ?: 0,
-                                ),
+                                    OutboxStatsViewModel(
+                                        pending = outboxStats["PENDING"] ?: 0,
+                                        processed = outboxStats["PROCESSED"] ?: 0,
+                                        failed = outboxStats["FAILED"] ?: 0,
+                                    ),
                                 telemetryStatus = "Enabled",
                             )
                         renderer.render(viewModel)
