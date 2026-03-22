@@ -9,8 +9,6 @@ import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.di.webModule
 import io.github.rygel.outerstellar.platform.security.securityModule
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.PolyHandler
@@ -27,6 +25,8 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @Tag("e2e")
 class ResponsiveLayoutE2ETest : KoinTest {
@@ -72,8 +72,8 @@ class ResponsiveLayoutE2ETest : KoinTest {
                     single {
                         AppConfig(
                             jdbcUrl =
-                                "jdbc:h2:mem:responsive_test_${System.currentTimeMillis()}" +
-                                    ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+                            "jdbc:h2:mem:responsive_test_${System.currentTimeMillis()}" +
+                                ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
                             devMode = true,
                         )
                     }

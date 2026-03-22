@@ -44,7 +44,8 @@ class SyncApi(
     private val sinceLens = Query.long().optional("since")
 
     override val routes: List<ContractRoute> = buildList {
-        if (messageService != null) {
+        val msgSvc = messageService
+        if (msgSvc != null) {
             add(
                 "/api/v1/sync" meta
                     {
@@ -55,7 +56,7 @@ class SyncApi(
                     GET to
                     { request ->
                         val since = sinceLens(request) ?: 0L
-                        val response = messageService.getChangesSince(since)
+                        val response = msgSvc.getChangesSince(since)
                         Response(Status.OK).with(pullResponseLens of response)
                     }
             )
@@ -69,7 +70,7 @@ class SyncApi(
                     POST to
                     { request ->
                         val syncRequest = pushRequestLens(request)
-                        val syncResponse = messageService.processPushRequest(syncRequest)
+                        val syncResponse = msgSvc.processPushRequest(syncRequest)
                         val userId = SecurityRules.USER_KEY(request)?.id?.toString()
                         if (userId != null) {
                             analytics.track(
@@ -82,7 +83,8 @@ class SyncApi(
                     }
             )
         }
-        if (contactService != null) {
+        val ctcSvc = contactService
+        if (ctcSvc != null) {
             add(
                 "/api/v1/sync/contacts" meta
                     {
@@ -96,7 +98,7 @@ class SyncApi(
                     GET to
                     { request ->
                         val since = sinceLens(request) ?: 0L
-                        val response = contactService.getChangesSince(since)
+                        val response = ctcSvc.getChangesSince(since)
                         Response(Status.OK).with(pullContactResponseLens of response)
                     }
             )
@@ -113,7 +115,7 @@ class SyncApi(
                     POST to
                     { request ->
                         val syncRequest = pushContactRequestLens(request)
-                        val syncResponse = contactService.processPushRequest(syncRequest)
+                        val syncResponse = ctcSvc.processPushRequest(syncRequest)
                         Response(Status.OK).with(pushContactResponseLens of syncResponse)
                     }
             )
