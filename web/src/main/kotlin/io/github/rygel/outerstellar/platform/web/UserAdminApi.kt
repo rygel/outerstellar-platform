@@ -8,6 +8,7 @@ import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.UserRole
+import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -21,7 +22,6 @@ import org.http4k.core.with
 import org.http4k.format.Jackson.auto
 import org.http4k.lens.Path
 import org.http4k.lens.string
-import java.util.UUID
 
 class UserAdminApi(private val securityService: SecurityService) : ServerRoutes {
     private val logger = org.slf4j.LoggerFactory.getLogger(UserAdminApi::class.java)
@@ -49,8 +49,7 @@ class UserAdminApi(private val securityService: SecurityService) : ServerRoutes 
                 } bindContract
                 PUT to
                 { userId, _ ->
-                    {
-                            request ->
+                    { request ->
                         val admin = SecurityRules.USER_KEY(request)!!
                         try {
                             val body = setUserEnabledLens(request)
@@ -70,8 +69,7 @@ class UserAdminApi(private val securityService: SecurityService) : ServerRoutes 
                 } bindContract
                 PUT to
                 { userId, _ ->
-                    {
-                            request ->
+                    { request ->
                         val admin = SecurityRules.USER_KEY(request)!!
                         try {
                             val body = setUserRoleLens(request)
