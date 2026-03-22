@@ -1,6 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.jooq.tables.references.USERS
+import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_USERS
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val logger = LoggerFactory.getLogger(JooqUserRepository::class.java)
 
-    private fun mapUser(record: io.github.rygel.outerstellar.platform.jooq.tables.records.UsersRecord): User {
+    private fun mapUser(record: io.github.rygel.outerstellar.platform.jooq.tables.records.PltUsersRecord): User {
         return User(
             id = record.id!!,
             username = record.username!!,
@@ -32,30 +32,30 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findById(id: UUID): User? {
-        return dsl.selectFrom(USERS).where(USERS.ID.eq(id)).fetchOne()?.let { mapUser(it) }
+        return dsl.selectFrom(USERS).where(PLT_USERS.ID.eq(id)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun findByUsername(username: String): User? {
-        return dsl.selectFrom(USERS).where(USERS.USERNAME.eq(username)).fetchOne()?.let { mapUser(it) }
+        return dsl.selectFrom(USERS).where(PLT_USERS.USERNAME.eq(username)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun findByEmail(email: String): User? {
-        return dsl.selectFrom(USERS).where(USERS.EMAIL.eq(email)).fetchOne()?.let { mapUser(it) }
+        return dsl.selectFrom(USERS).where(PLT_USERS.EMAIL.eq(email)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun save(user: User) {
         dsl.insertInto(USERS)
-            .set(USERS.ID, user.id)
-            .set(USERS.USERNAME, user.username)
-            .set(USERS.EMAIL, user.email)
-            .set(USERS.PASSWORD_HASH, user.passwordHash)
-            .set(USERS.ROLE, user.role.name)
-            .set(USERS.ENABLED, user.enabled)
+            .set(PLT_USERS.ID, user.id)
+            .set(PLT_USERS.USERNAME, user.username)
+            .set(PLT_USERS.EMAIL, user.email)
+            .set(PLT_USERS.PASSWORD_HASH, user.passwordHash)
+            .set(PLT_USERS.ROLE, user.role.name)
+            .set(PLT_USERS.ENABLED, user.enabled)
             .onDuplicateKeyUpdate()
-            .set(USERS.EMAIL, user.email)
-            .set(USERS.PASSWORD_HASH, user.passwordHash)
-            .set(USERS.ROLE, user.role.name)
-            .set(USERS.ENABLED, user.enabled)
+            .set(PLT_USERS.EMAIL, user.email)
+            .set(PLT_USERS.PASSWORD_HASH, user.passwordHash)
+            .set(PLT_USERS.ROLE, user.role.name)
+            .set(PLT_USERS.ENABLED, user.enabled)
             .execute()
     }
 
@@ -75,55 +75,55 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findAll(): List<User> {
-        return dsl.selectFrom(USERS).orderBy(USERS.USERNAME).fetch().map { mapUser(it) }
+        return dsl.selectFrom(USERS).orderBy(PLT_USERS.USERNAME).fetch().map { mapUser(it) }
     }
 
     override fun findPage(limit: Int, offset: Int): List<User> =
-        dsl.selectFrom(USERS).orderBy(USERS.USERNAME).limit(limit).offset(offset).fetch().map { mapUser(it) }
+        dsl.selectFrom(USERS).orderBy(PLT_USERS.USERNAME).limit(limit).offset(offset).fetch().map { mapUser(it) }
 
     override fun countAll(): Long = dsl.selectCount().from(USERS).fetchOne(0, Long::class.java) ?: 0L
 
     override fun updateRole(userId: UUID, role: UserRole) {
-        dsl.update(USERS).set(USERS.ROLE, role.name).where(USERS.ID.eq(userId)).execute()
+        dsl.update(USERS).set(PLT_USERS.ROLE, role.name).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateEnabled(userId: UUID, enabled: Boolean) {
-        dsl.update(USERS).set(USERS.ENABLED, enabled).where(USERS.ID.eq(userId)).execute()
+        dsl.update(USERS).set(PLT_USERS.ENABLED, enabled).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateLastActivity(userId: UUID) {
         dsl.update(USERS)
-            .set(USERS.LAST_ACTIVITY_AT, LocalDateTime.now(ZoneOffset.UTC))
-            .where(USERS.ID.eq(userId))
+            .set(PLT_USERS.LAST_ACTIVITY_AT, LocalDateTime.now(ZoneOffset.UTC))
+            .where(PLT_USERS.ID.eq(userId))
             .execute()
     }
 
     override fun deleteById(userId: UUID) {
-        dsl.deleteFrom(USERS).where(USERS.ID.eq(userId)).execute()
+        dsl.deleteFrom(USERS).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateUsername(userId: UUID, newUsername: String) {
-        dsl.update(USERS).set(USERS.USERNAME, newUsername).where(USERS.ID.eq(userId)).execute()
+        dsl.update(USERS).set(PLT_USERS.USERNAME, newUsername).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateAvatarUrl(userId: UUID, avatarUrl: String?) {
-        dsl.update(USERS).set(USERS.AVATAR_URL, avatarUrl).where(USERS.ID.eq(userId)).execute()
+        dsl.update(USERS).set(PLT_USERS.AVATAR_URL, avatarUrl).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) {
         dsl.update(USERS)
-            .set(USERS.EMAIL_NOTIFICATIONS_ENABLED, emailEnabled)
-            .set(USERS.PUSH_NOTIFICATIONS_ENABLED, pushEnabled)
-            .where(USERS.ID.eq(userId))
+            .set(PLT_USERS.EMAIL_NOTIFICATIONS_ENABLED, emailEnabled)
+            .set(PLT_USERS.PUSH_NOTIFICATIONS_ENABLED, pushEnabled)
+            .where(PLT_USERS.ID.eq(userId))
             .execute()
     }
 
     override fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?) {
         dsl.update(USERS)
-            .set(USERS.LANGUAGE, language)
-            .set(USERS.THEME, theme)
-            .set(USERS.LAYOUT, layout)
-            .where(USERS.ID.eq(userId))
+            .set(PLT_USERS.LANGUAGE, language)
+            .set(PLT_USERS.THEME, theme)
+            .set(PLT_USERS.LAYOUT, layout)
+            .where(PLT_USERS.ID.eq(userId))
             .execute()
     }
 }

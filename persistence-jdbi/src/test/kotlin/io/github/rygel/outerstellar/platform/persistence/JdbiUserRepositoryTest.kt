@@ -108,7 +108,7 @@ class JdbiUserRepositoryTest : H2JdbiTest() {
         // Reset to a known past time so we can verify the update
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE users SET last_activity_at = '2000-01-01 00:00:00' WHERE id = :id")
+                .createUpdate("UPDATE plt_users SET last_activity_at = '2000-01-01 00:00:00' WHERE id = :id")
                 .bind("id", u.id)
                 .execute()
         }

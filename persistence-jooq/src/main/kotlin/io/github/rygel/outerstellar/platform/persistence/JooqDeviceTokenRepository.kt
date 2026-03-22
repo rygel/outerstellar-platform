@@ -12,7 +12,7 @@ import org.jooq.impl.SQLDataType
 
 class JooqDeviceTokenRepository(private val dsl: DSLContext) : DeviceTokenRepository {
 
-    private val table = DSL.table("DEVICE_TOKENS")
+    private val table = DSL.table("plt_device_tokens")
     private val idField = DSL.field(DSL.name("ID"), SQLDataType.BIGINT)
     private val userIdField = DSL.field(DSL.name("USER_ID"), SQLDataType.UUID)
     private val platformField = DSL.field(DSL.name("PLATFORM"), SQLDataType.VARCHAR)

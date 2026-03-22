@@ -9,7 +9,7 @@ import org.jooq.impl.DSL
 
 class JooqNotificationRepository(private val dsl: DSLContext) : NotificationRepository {
 
-    private val table = DSL.table("notifications")
+    private val table = DSL.table("plt_notifications")
     private val idField = DSL.field("id", UUID::class.java)
     private val userIdField = DSL.field("user_id", UUID::class.java)
     private val titleField = DSL.field("title", String::class.java)

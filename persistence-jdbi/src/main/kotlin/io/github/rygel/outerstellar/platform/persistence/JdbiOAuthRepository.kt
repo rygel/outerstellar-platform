@@ -13,7 +13,7 @@ class JdbiOAuthRepository(private val jdbi: Jdbi) : OAuthRepository {
             handle
                 .createUpdate(
                     """
-                    INSERT INTO oauth_connections (user_id, provider, subject, email)
+                    INSERT INTO plt_oauth_connections (user_id, provider, subject, email)
                     VALUES (:userId, :provider, :subject, :email)
                     """
                 )
@@ -30,7 +30,7 @@ class JdbiOAuthRepository(private val jdbi: Jdbi) : OAuthRepository {
             handle
                 .createQuery(
                     """
-                    SELECT * FROM oauth_connections
+                    SELECT * FROM plt_oauth_connections
                     WHERE provider = :provider AND subject = :subject
                     """
                 )
@@ -44,7 +44,7 @@ class JdbiOAuthRepository(private val jdbi: Jdbi) : OAuthRepository {
     override fun findByUserId(userId: UUID): List<OAuthConnection> =
         jdbi.withHandle<List<OAuthConnection>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM oauth_connections WHERE user_id = :userId ORDER BY created_at DESC")
+                .createQuery("SELECT * FROM plt_oauth_connections WHERE user_id = :userId ORDER BY created_at DESC")
                 .bind("userId", userId)
                 .map { rs, _ -> mapRow(rs) }
                 .list()
@@ -53,7 +53,7 @@ class JdbiOAuthRepository(private val jdbi: Jdbi) : OAuthRepository {
     override fun delete(id: Long, userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("DELETE FROM oauth_connections WHERE id = :id AND user_id = :userId")
+                .createUpdate("DELETE FROM plt_oauth_connections WHERE id = :id AND user_id = :userId")
                 .bind("id", id)
                 .bind("userId", userId)
                 .execute()

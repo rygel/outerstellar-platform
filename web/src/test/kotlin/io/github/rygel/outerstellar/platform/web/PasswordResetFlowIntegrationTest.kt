@@ -97,7 +97,7 @@ class PasswordResetFlowIntegrationTest : H2WebTest() {
     /** Fetch the most recent reset token from the DB. */
     private fun fetchResetToken(): String? =
         testDsl
-            .fetchOne("SELECT token FROM password_reset_tokens WHERE used = false ORDER BY created_at DESC LIMIT 1")
+            .fetchOne("SELECT token FROM plt_password_reset_tokens WHERE used = false ORDER BY created_at DESC LIMIT 1")
             ?.get(0, String::class.java)
 
     @Test
@@ -127,7 +127,7 @@ class PasswordResetFlowIntegrationTest : H2WebTest() {
 
     @Test
     fun `POST reset-request stores token in database`() {
-        val tokensBefore = testDsl.fetchCount(testDsl.selectFrom(org.jooq.impl.DSL.table("password_reset_tokens")))
+        val tokensBefore = testDsl.fetchCount(testDsl.selectFrom(org.jooq.impl.DSL.table("plt_password_reset_tokens")))
 
         app(
             Request(POST, "/api/v1/auth/reset-request")
@@ -135,7 +135,7 @@ class PasswordResetFlowIntegrationTest : H2WebTest() {
                 .body("""{"email":"${testUser.email}"}""")
         )
 
-        val tokensAfter = testDsl.fetchCount(testDsl.selectFrom(org.jooq.impl.DSL.table("password_reset_tokens")))
+        val tokensAfter = testDsl.fetchCount(testDsl.selectFrom(org.jooq.impl.DSL.table("plt_password_reset_tokens")))
         assertEquals(tokensBefore + 1, tokensAfter, "One token should be stored in the DB")
     }
 

@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.jooq.tables.references.MESSAGES
-import io.github.rygel.outerstellar.platform.jooq.tables.references.SYNC_STATE
+import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_MESSAGES
+import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_SYNC_STATE
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.OptimisticLockException
 import io.github.rygel.outerstellar.platform.model.StoredMessage
@@ -16,16 +16,18 @@ import org.jooq.Record
 
 @Suppress("TooManyFunctions")
 class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
-    private fun notSoftDeleted(): Condition = MESSAGES.DELETED.eq(false).and(MESSAGES.DELETED_AT.isNull)
+    private fun notSoftDeleted(): Condition = PLT_MESSAGES.DELETED.eq(false).and(PLT_MESSAGES.DELETED_AT.isNull)
 
-    private fun softDeleted(): Condition = MESSAGES.DELETED_AT.isNotNull
+    private fun softDeleted(): Condition = PLT_MESSAGES.DELETED_AT.isNotNull
 
     private fun getFilterConditions(query: String?, year: Int?, includeDeleted: Boolean = false): Condition {
         var condition = if (includeDeleted) softDeleted() else notSoftDeleted()
 
         if (!query.isNullOrBlank()) {
             condition =
-                condition.and(MESSAGES.CONTENT.containsIgnoreCase(query).or(MESSAGES.AUTHOR.containsIgnoreCase(query)))
+                condition.and(
+                    PLT_MESSAGES.CONTENT.containsIgnoreCase(query).or(PLT_MESSAGES.AUTHOR.containsIgnoreCase(query))
+                )
         }
 
         if (year != null) {
@@ -33,7 +35,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
                 java.time.ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant().toEpochMilli()
             val endOfYear =
                 java.time.ZonedDateTime.of(year + 1, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC).toInstant().toEpochMilli() - 1
-            condition = condition.and(MESSAGES.UPDATED_AT_EPOCH_MS.between(startOfYear, endOfYear))
+            condition = condition.and(PLT_MESSAGES.UPDATED_AT_EPOCH_MS.between(startOfYear, endOfYear))
         }
 
         return condition
@@ -48,19 +50,19 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
     ): List<MessageSummary> {
         val results =
             dsl.select(
-                    MESSAGES.ID,
-                    MESSAGES.SYNC_ID,
-                    MESSAGES.AUTHOR,
-                    MESSAGES.CONTENT,
-                    MESSAGES.UPDATED_AT_EPOCH_MS,
-                    MESSAGES.DIRTY,
-                    MESSAGES.DELETED,
-                    MESSAGES.VERSION,
-                    MESSAGES.SYNC_CONFLICT,
+                    PLT_MESSAGES.ID,
+                    PLT_MESSAGES.SYNC_ID,
+                    PLT_MESSAGES.AUTHOR,
+                    PLT_MESSAGES.CONTENT,
+                    PLT_MESSAGES.UPDATED_AT_EPOCH_MS,
+                    PLT_MESSAGES.DIRTY,
+                    PLT_MESSAGES.DELETED,
+                    PLT_MESSAGES.VERSION,
+                    PLT_MESSAGES.SYNC_CONFLICT,
                 )
                 .from(MESSAGES)
                 .where(getFilterConditions(query, year, includeDeleted))
-                .orderBy(MESSAGES.UPDATED_AT_EPOCH_MS.desc(), MESSAGES.ID.desc())
+                .orderBy(PLT_MESSAGES.UPDATED_AT_EPOCH_MS.desc(), PLT_MESSAGES.ID.desc())
                 .limit(limit)
                 .offset(offset)
                 .fetch(::toStoredMessage)
@@ -77,27 +79,27 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
     }
 
     override fun listDirtyMessages(): List<StoredMessage> =
-        dsl.select(MESSAGES.fields().toList())
+        dsl.select(PLT_MESSAGES.fields().toList())
             .from(MESSAGES)
-            .where(MESSAGES.DIRTY.eq(true).and(MESSAGES.DELETED_AT.isNull))
+            .where(PLT_MESSAGES.DIRTY.eq(true).and(PLT_MESSAGES.DELETED_AT.isNull))
             .fetch(::toStoredMessage)
 
     override fun countDirtyMessages(): Long =
         dsl.selectCount()
             .from(MESSAGES)
-            .where(MESSAGES.DIRTY.eq(true).and(MESSAGES.DELETED_AT.isNull))
+            .where(PLT_MESSAGES.DIRTY.eq(true).and(PLT_MESSAGES.DELETED_AT.isNull))
             .fetchOne(0, Long::class.java) ?: 0L
 
     override fun findBySyncId(syncId: String): StoredMessage? =
-        dsl.select(MESSAGES.fields().toList())
+        dsl.select(PLT_MESSAGES.fields().toList())
             .from(MESSAGES)
-            .where(MESSAGES.SYNC_ID.eq(syncId))
+            .where(PLT_MESSAGES.SYNC_ID.eq(syncId))
             .fetchOne(::toStoredMessage)
 
     override fun findChangesSince(updatedAtEpochMs: Long): List<StoredMessage> =
-        dsl.select(MESSAGES.fields().toList())
+        dsl.select(PLT_MESSAGES.fields().toList())
             .from(MESSAGES)
-            .where(MESSAGES.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs).and(MESSAGES.DELETED_AT.isNull))
+            .where(PLT_MESSAGES.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs).and(PLT_MESSAGES.DELETED_AT.isNull))
             .fetch(::toStoredMessage)
 
     override fun createServerMessage(author: String, content: String): StoredMessage =
@@ -110,23 +112,23 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
         val existing = findBySyncId(message.syncId)
         if (existing == null) {
             dsl.insertInto(MESSAGES)
-                .set(MESSAGES.SYNC_ID, message.syncId)
-                .set(MESSAGES.AUTHOR, message.author)
-                .set(MESSAGES.CONTENT, message.content)
-                .set(MESSAGES.UPDATED_AT_EPOCH_MS, message.updatedAtEpochMs)
-                .set(MESSAGES.DIRTY, dirty)
-                .set(MESSAGES.DELETED, message.deleted)
-                .set(MESSAGES.VERSION, 1L)
+                .set(PLT_MESSAGES.SYNC_ID, message.syncId)
+                .set(PLT_MESSAGES.AUTHOR, message.author)
+                .set(PLT_MESSAGES.CONTENT, message.content)
+                .set(PLT_MESSAGES.UPDATED_AT_EPOCH_MS, message.updatedAtEpochMs)
+                .set(PLT_MESSAGES.DIRTY, dirty)
+                .set(PLT_MESSAGES.DELETED, message.deleted)
+                .set(PLT_MESSAGES.VERSION, 1L)
                 .execute()
         } else {
             dsl.update(MESSAGES)
-                .set(MESSAGES.AUTHOR, message.author)
-                .set(MESSAGES.CONTENT, message.content)
-                .set(MESSAGES.UPDATED_AT_EPOCH_MS, message.updatedAtEpochMs)
-                .set(MESSAGES.DIRTY, dirty)
-                .set(MESSAGES.DELETED, message.deleted)
-                .set(MESSAGES.VERSION, existing.version + 1)
-                .where(MESSAGES.SYNC_ID.eq(message.syncId))
+                .set(PLT_MESSAGES.AUTHOR, message.author)
+                .set(PLT_MESSAGES.CONTENT, message.content)
+                .set(PLT_MESSAGES.UPDATED_AT_EPOCH_MS, message.updatedAtEpochMs)
+                .set(PLT_MESSAGES.DIRTY, dirty)
+                .set(PLT_MESSAGES.DELETED, message.deleted)
+                .set(PLT_MESSAGES.VERSION, existing.version + 1)
+                .where(PLT_MESSAGES.SYNC_ID.eq(message.syncId))
                 .execute()
         }
 
@@ -138,26 +140,26 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
             return
         }
 
-        dsl.update(MESSAGES).set(MESSAGES.DIRTY, false).where(MESSAGES.SYNC_ID.`in`(syncIds)).execute()
+        dsl.update(MESSAGES).set(PLT_MESSAGES.DIRTY, false).where(PLT_MESSAGES.SYNC_ID.`in`(syncIds)).execute()
     }
 
     override fun getLastSyncEpochMs(): Long =
-        dsl.select(SYNC_STATE.STATE_VALUE)
+        dsl.select(PLT_SYNC_STATE.STATE_VALUE)
             .from(SYNC_STATE)
-            .where(SYNC_STATE.STATE_KEY.eq(lastSyncStateKey))
-            .fetchOne(SYNC_STATE.STATE_VALUE) ?: 0L
+            .where(PLT_SYNC_STATE.STATE_KEY.eq(lastSyncStateKey))
+            .fetchOne(PLT_SYNC_STATE.STATE_VALUE) ?: 0L
 
     override fun setLastSyncEpochMs(value: Long) {
-        val hasState = dsl.fetchCount(SYNC_STATE, SYNC_STATE.STATE_KEY.eq(lastSyncStateKey)) > 0
+        val hasState = dsl.fetchCount(SYNC_STATE, PLT_SYNC_STATE.STATE_KEY.eq(lastSyncStateKey)) > 0
         if (hasState) {
             dsl.update(SYNC_STATE)
-                .set(SYNC_STATE.STATE_VALUE, value)
-                .where(SYNC_STATE.STATE_KEY.eq(lastSyncStateKey))
+                .set(PLT_SYNC_STATE.STATE_VALUE, value)
+                .where(PLT_SYNC_STATE.STATE_KEY.eq(lastSyncStateKey))
                 .execute()
         } else {
             dsl.insertInto(SYNC_STATE)
-                .set(SYNC_STATE.STATE_KEY, lastSyncStateKey)
-                .set(SYNC_STATE.STATE_VALUE, value)
+                .set(PLT_SYNC_STATE.STATE_KEY, lastSyncStateKey)
+                .set(PLT_SYNC_STATE.STATE_VALUE, value)
                 .execute()
         }
     }
@@ -173,31 +175,31 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
 
     override fun softDelete(syncId: String) {
         dsl.update(MESSAGES)
-            .set(MESSAGES.DELETED_AT, LocalDateTime.now(ZoneOffset.UTC))
-            .set(MESSAGES.VERSION, MESSAGES.VERSION.plus(1))
-            .where(MESSAGES.SYNC_ID.eq(syncId))
+            .set(PLT_MESSAGES.DELETED_AT, LocalDateTime.now(ZoneOffset.UTC))
+            .set(PLT_MESSAGES.VERSION, PLT_MESSAGES.VERSION.plus(1))
+            .where(PLT_MESSAGES.SYNC_ID.eq(syncId))
             .execute()
     }
 
     override fun restore(syncId: String) {
         dsl.update(MESSAGES)
-            .setNull(MESSAGES.DELETED_AT)
-            .set(MESSAGES.VERSION, MESSAGES.VERSION.plus(1))
-            .where(MESSAGES.SYNC_ID.eq(syncId))
+            .setNull(PLT_MESSAGES.DELETED_AT)
+            .set(PLT_MESSAGES.VERSION, PLT_MESSAGES.VERSION.plus(1))
+            .where(PLT_MESSAGES.SYNC_ID.eq(syncId))
             .execute()
     }
 
     override fun updateMessage(message: StoredMessage): StoredMessage {
         val rows =
             dsl.update(MESSAGES)
-                .set(MESSAGES.AUTHOR, message.author)
-                .set(MESSAGES.CONTENT, message.content)
-                .set(MESSAGES.UPDATED_AT_EPOCH_MS, System.currentTimeMillis())
-                .set(MESSAGES.DIRTY, message.dirty)
-                .set(MESSAGES.DELETED, message.deleted)
-                .set(MESSAGES.VERSION, message.version + 1)
-                .where(MESSAGES.SYNC_ID.eq(message.syncId))
-                .and(MESSAGES.VERSION.eq(message.version))
+                .set(PLT_MESSAGES.AUTHOR, message.author)
+                .set(PLT_MESSAGES.CONTENT, message.content)
+                .set(PLT_MESSAGES.UPDATED_AT_EPOCH_MS, System.currentTimeMillis())
+                .set(PLT_MESSAGES.DIRTY, message.dirty)
+                .set(PLT_MESSAGES.DELETED, message.deleted)
+                .set(PLT_MESSAGES.VERSION, message.version + 1)
+                .where(PLT_MESSAGES.SYNC_ID.eq(message.syncId))
+                .and(PLT_MESSAGES.VERSION.eq(message.version))
                 .execute()
 
         if (rows == 0) throw OptimisticLockException("Message", message.syncId)
@@ -207,31 +209,31 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
 
     override fun markConflict(syncId: String, serverVersion: SyncMessage) {
         val json = Jackson.asFormatString(serverVersion)
-        dsl.update(MESSAGES).set(MESSAGES.SYNC_CONFLICT, json).where(MESSAGES.SYNC_ID.eq(syncId)).execute()
+        dsl.update(MESSAGES).set(PLT_MESSAGES.SYNC_CONFLICT, json).where(PLT_MESSAGES.SYNC_ID.eq(syncId)).execute()
     }
 
     override fun resolveConflict(syncId: String, resolvedMessage: StoredMessage) {
         dsl.update(MESSAGES)
-            .set(MESSAGES.AUTHOR, resolvedMessage.author)
-            .set(MESSAGES.CONTENT, resolvedMessage.content)
-            .set(MESSAGES.UPDATED_AT_EPOCH_MS, resolvedMessage.updatedAtEpochMs)
-            .set(MESSAGES.DIRTY, resolvedMessage.dirty)
-            .set(MESSAGES.VERSION, MESSAGES.VERSION.plus(1))
-            .setNull(MESSAGES.SYNC_CONFLICT)
-            .where(MESSAGES.SYNC_ID.eq(syncId))
+            .set(PLT_MESSAGES.AUTHOR, resolvedMessage.author)
+            .set(PLT_MESSAGES.CONTENT, resolvedMessage.content)
+            .set(PLT_MESSAGES.UPDATED_AT_EPOCH_MS, resolvedMessage.updatedAtEpochMs)
+            .set(PLT_MESSAGES.DIRTY, resolvedMessage.dirty)
+            .set(PLT_MESSAGES.VERSION, PLT_MESSAGES.VERSION.plus(1))
+            .setNull(PLT_MESSAGES.SYNC_CONFLICT)
+            .where(PLT_MESSAGES.SYNC_ID.eq(syncId))
             .execute()
     }
 
     private fun insertMessage(author: String, content: String, dirty: Boolean): StoredMessage {
         val syncId = UUID.randomUUID().toString()
         dsl.insertInto(MESSAGES)
-            .set(MESSAGES.SYNC_ID, syncId)
-            .set(MESSAGES.AUTHOR, author)
-            .set(MESSAGES.CONTENT, content)
-            .set(MESSAGES.UPDATED_AT_EPOCH_MS, System.currentTimeMillis())
-            .set(MESSAGES.DIRTY, dirty)
-            .set(MESSAGES.DELETED, false)
-            .set(MESSAGES.VERSION, 1L)
+            .set(PLT_MESSAGES.SYNC_ID, syncId)
+            .set(PLT_MESSAGES.AUTHOR, author)
+            .set(PLT_MESSAGES.CONTENT, content)
+            .set(PLT_MESSAGES.UPDATED_AT_EPOCH_MS, System.currentTimeMillis())
+            .set(PLT_MESSAGES.DIRTY, dirty)
+            .set(PLT_MESSAGES.DELETED, false)
+            .set(PLT_MESSAGES.VERSION, 1L)
             .execute()
         return requireNotNull(findBySyncId(syncId))
     }
@@ -250,14 +252,14 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
             )
         }
         return StoredMessage(
-            syncId = record.get(MESSAGES.SYNC_ID) ?: "unknown",
-            author = record.get(MESSAGES.AUTHOR) ?: "unknown",
-            content = record.get(MESSAGES.CONTENT) ?: "unknown",
-            updatedAtEpochMs = record.get(MESSAGES.UPDATED_AT_EPOCH_MS) ?: 0L,
-            dirty = record.get(MESSAGES.DIRTY) ?: false,
-            deleted = record.get(MESSAGES.DELETED) ?: false,
-            version = record.get(MESSAGES.VERSION) ?: 1L,
-            syncConflict = record.get(MESSAGES.SYNC_CONFLICT),
+            syncId = record.get(PLT_MESSAGES.SYNC_ID) ?: "unknown",
+            author = record.get(PLT_MESSAGES.AUTHOR) ?: "unknown",
+            content = record.get(PLT_MESSAGES.CONTENT) ?: "unknown",
+            updatedAtEpochMs = record.get(PLT_MESSAGES.UPDATED_AT_EPOCH_MS) ?: 0L,
+            dirty = record.get(PLT_MESSAGES.DIRTY) ?: false,
+            deleted = record.get(PLT_MESSAGES.DELETED) ?: false,
+            version = record.get(PLT_MESSAGES.VERSION) ?: 1L,
+            syncConflict = record.get(PLT_MESSAGES.SYNC_CONFLICT),
         )
     }
 

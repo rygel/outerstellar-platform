@@ -11,7 +11,7 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
             handle
                 .createUpdate(
                     """
-                    INSERT INTO audit_log (actor_id, actor_username, target_id, target_username, action, detail)
+                    INSERT INTO plt_audit_log (actor_id, actor_username, target_id, target_username, action, detail)
                     VALUES (:actorId, :actorUsername, :targetId, :targetUsername, :action, :detail)
                     """
                 )
@@ -28,7 +28,7 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
     override fun findRecent(limit: Int): List<AuditEntry> {
         return jdbi.withHandle<List<AuditEntry>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT :limit")
+                .createQuery("SELECT * FROM plt_audit_log ORDER BY created_at DESC LIMIT :limit")
                 .bind("limit", limit)
                 .map { rs, _ ->
                     AuditEntry(
@@ -49,7 +49,7 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
     override fun findPage(limit: Int, offset: Int): List<AuditEntry> =
         jdbi.withHandle<List<AuditEntry>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
+                .createQuery("SELECT * FROM plt_audit_log ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
                 .bind("limit", limit)
                 .bind("offset", offset)
                 .map { rs, _ ->
@@ -69,6 +69,6 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
 
     override fun countAll(): Long =
         jdbi.withHandle<Long, Exception> { handle ->
-            handle.createQuery("SELECT COUNT(*) FROM audit_log").mapTo(Long::class.java).one()
+            handle.createQuery("SELECT COUNT(*) FROM plt_audit_log").mapTo(Long::class.java).one()
         }
 }
