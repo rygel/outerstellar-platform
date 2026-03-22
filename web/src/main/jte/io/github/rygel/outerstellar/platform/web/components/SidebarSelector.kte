@@ -16,10 +16,11 @@
                             title="${option.label}"
                             aria-label="Switch to ${option.label} theme">
                         @if(option.previewColors != null)
+                            !{val colors = option.previewColors!!}
                             <div class="theme-preview-swatch"
-                                 style="background: ${option.previewColors.background}; color: ${option.previewColors.foreground}; border: 1px solid ${option.previewColors.componentBackground};">
-                                <span class="theme-preview-accent" style="background: ${option.previewColors.accent};"></span>
-                                <span class="theme-preview-component" style="background: ${option.previewColors.componentBackground};"></span>
+                                 style="background: ${colors.background}; color: ${colors.foreground}; border: 1px solid ${colors.componentBackground};">
+                                <span class="theme-preview-accent" style="background: ${colors.accent};"></span>
+                                <span class="theme-preview-component" style="background: ${colors.componentBackground};"></span>
                             </div>
                         @endif
                         <span class="theme-preview-label">${option.label}</span>

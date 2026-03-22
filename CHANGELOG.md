@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Performance
+- ThemeCatalog CSS caching — `toCssVariables()` and `toExtendedCssVariables()` results are cached in `ConcurrentHashMap`, eliminating repeated string building on every profile page load
+
+### Fixed
+- SidebarSelector JTE template compilation error — nullable `previewColors` accessed without smart-cast inside null-checked block
+- ThemeCatalog `parseHexRgb` returns empty `IntArray` instead of `null` to satisfy SpotBugs `PZLA_PREFER_ZERO_LENGTH_ARRAYS`
+
+### Changed
+- ktfmt formatting applied across web and desktop modules (import ordering, line wrapping at 120 chars)
+
+---
+
 ## [1.0.6] – 2026-03-18
 
 ### Added
