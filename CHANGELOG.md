@@ -5,7 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased]
+## [1.2.2] – 2026-03-22
+
+### Added
+- User preferences persistence — language, theme, and layout are stored in the User model (V4 migration) so preferences follow the user across devices and sessions
+- `persistUserPreferences` — authenticated users' preference changes are automatically saved to the database via `stateFilter`
+- Automated main→develop sync workflow — no more manual sync PRs after releases
+- ktfmt/detekt import ordering conflict resolved via `.editorconfig` (`ktlint_standard_import-ordering = disabled`)
 
 ### Performance
 - ThemeCatalog CSS caching — `toCssVariables()` and `toExtendedCssVariables()` results are cached in `ConcurrentHashMap`, eliminating repeated string building on every profile page load
@@ -13,8 +19,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - SidebarSelector JTE template compilation error — nullable `previewColors` accessed without smart-cast inside null-checked block
 - ThemeCatalog `parseHexRgb` returns empty `IntArray` instead of `null` to satisfy SpotBugs `PZLA_PREFER_ZERO_LENGTH_ARRAYS`
+- jOOQ generated code directory path corrected from `dev/outerstellar` to `io/github/rygel/outerstellar`
 
 ### Changed
+- Framework dependency bumped to 1.0.6 (Translatable listener pattern, Language registry)
+- WebContext reads preferences from User model first, then cookies, then defaults (backward compatible for anonymous users)
 - ktfmt formatting applied across web and desktop modules (import ordering, line wrapping at 120 chars)
 
 ---
