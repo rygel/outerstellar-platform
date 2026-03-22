@@ -3,14 +3,41 @@
 
 <div>
     <h3 class="sidebar-select-label">${model.heading}</h3>
-    <form hx-get="${model.refreshUrl}" hx-target="body" hx-push-url="true">
-        <select id="${model.selectId}" name="${model.selectName}" class="sidebar-select" onchange="htmx.trigger(this.form, 'submit')" aria-label="${model.label}">
+    @if(model.options.any { it.previewColors != null })
+        <%-- Theme selector with color previews --%>
+        <div class="theme-preview-grid">
             @for (option in model.options)
-                <option value="${option.id}" selected="${option.active}">${option.label}</option>
+                <form hx-get="${model.refreshUrl}" hx-target="body" hx-push-url="true" style="display: contents;">
+                    <input type="hidden" name="${model.selectName}" value="${option.id}">
+                    @for (field in model.hiddenFields)
+                        <input type="hidden" name="${field.name}" value="${field.value}">
+                    @endfor
+                    <button type="submit" class="theme-preview-card@if(option.active) active@endif"
+                            title="${option.label}"
+                            aria-label="Switch to ${option.label} theme">
+                        @if(option.previewColors != null)
+                            <div class="theme-preview-swatch"
+                                 style="background: ${option.previewColors.background}; color: ${option.previewColors.foreground}; border: 1px solid ${option.previewColors.componentBackground};">
+                                <span class="theme-preview-accent" style="background: ${option.previewColors.accent};"></span>
+                                <span class="theme-preview-component" style="background: ${option.previewColors.componentBackground};"></span>
+                            </div>
+                        @endif
+                        <span class="theme-preview-label">${option.label}</span>
+                    </button>
+                </form>
             @endfor
-        </select>
-        @for (field in model.hiddenFields)
-            <input type="hidden" name="${field.name}" value="${field.value}">
-        @endfor
-    </form>
+        </div>
+    @else
+        <%-- Standard select dropdown (for language, layout, etc.) --%>
+        <form hx-get="${model.refreshUrl}" hx-target="body" hx-push-url="true">
+            <select id="${model.selectId}" name="${model.selectName}" class="sidebar-select" onchange="htmx.trigger(this.form, 'submit')" aria-label="${model.label}">
+                @for (option in model.options)
+                    <option value="${option.id}" selected="${option.active}">${option.label}</option>
+                @endfor
+            </select>
+            @for (field in model.hiddenFields)
+                <input type="hidden" name="${field.name}" value="${field.value}">
+            @endfor
+        </form>
+    @endif
 </div>

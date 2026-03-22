@@ -4,7 +4,20 @@ import org.http4k.template.ViewModel
 
 data class ShellLink(val label: String, val url: String, val icon: String, val active: Boolean)
 
-data class ShellOption(val id: String, val label: String, val url: String, val active: Boolean)
+data class ShellOption(
+    val id: String,
+    val label: String,
+    val url: String,
+    val active: Boolean,
+    val previewColors: ThemePreviewColors? = null,
+)
+
+data class ThemePreviewColors(
+    val background: String,
+    val foreground: String,
+    val accent: String,
+    val componentBackground: String,
+)
 
 data class HiddenField(val name: String, val value: String)
 
