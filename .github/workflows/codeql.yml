@@ -22,8 +22,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    env:
-      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -37,9 +35,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          server-id: github-rygel
-          server-username: GITHUB_ACTOR
-          server-password: GH_PACKAGES_TOKEN
+
+      - name: Configure Maven settings for GitHub Packages
+        uses: s4u/maven-settings-action@64e42c454dbd42ef6370ac8539685755aedd205b # v3.1.0
+        with:
+          servers: '[{"id": "github-rygel", "username": "${{ github.actor }}", "password": "${{ secrets.GH_PACKAGES_TOKEN }}"}]'
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@256d634097be96e792d6764f9edaefc4320557b1 # v4
@@ -48,7 +48,7 @@ jobs:
           build-mode: manual
 
       - name: Build
-        run: mvn compile -Pfast -q
+        run: mvn compile -q
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@256d634097be96e792d6764f9edaefc4320557b1 # v4
