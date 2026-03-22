@@ -53,7 +53,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
                     PLT_CONTACTS.VERSION,
                     PLT_CONTACTS.SYNC_CONFLICT,
                 )
-                .from(CONTACTS)
+                .from(PLT_CONTACTS)
                 .where(getFilterConditions(query, includeDeleted))
                 .orderBy(PLT_CONTACTS.NAME.asc())
                 .limit(limit)
@@ -64,18 +64,18 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
     }
 
     override fun countContacts(query: String?, includeDeleted: Boolean): Long {
-        return dsl.fetchCount(CONTACTS, getFilterConditions(query, includeDeleted)).toLong()
+        return dsl.fetchCount(PLT_CONTACTS, getFilterConditions(query, includeDeleted)).toLong()
     }
 
     override fun listDirtyContacts(): List<StoredContact> =
-        dsl.select(allFields).from(CONTACTS).where(PLT_CONTACTS.DIRTY.eq(true)).fetch(::toStoredContact)
+        dsl.select(allFields).from(PLT_CONTACTS).where(PLT_CONTACTS.DIRTY.eq(true)).fetch(::toStoredContact)
 
     override fun findBySyncId(syncId: String): StoredContact? =
-        dsl.select(allFields).from(CONTACTS).where(PLT_CONTACTS.SYNC_ID.eq(syncId)).fetchOne(::toStoredContact)
+        dsl.select(allFields).from(PLT_CONTACTS).where(PLT_CONTACTS.SYNC_ID.eq(syncId)).fetchOne(::toStoredContact)
 
     override fun findChangesSince(updatedAtEpochMs: Long): List<StoredContact> =
         dsl.select(allFields)
-            .from(CONTACTS)
+            .from(PLT_CONTACTS)
             .where(PLT_CONTACTS.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs))
             .fetch(::toStoredContact)
 
@@ -107,7 +107,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
             if (existing == null) {
                 val contactId =
                     txDsl
-                        .insertInto(CONTACTS)
+                        .insertInto(PLT_CONTACTS)
                         .set(PLT_CONTACTS.SYNC_ID, contact.syncId)
                         .set(PLT_CONTACTS.NAME, contact.name)
                         .set(PLT_CONTACTS.COMPANY, contact.company)
@@ -123,7 +123,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
                 insertCollections(txDsl, contactId, contact.emails, contact.phones, contact.socialMedia)
             } else {
                 txDsl
-                    .update(CONTACTS)
+                    .update(PLT_CONTACTS)
                     .set(PLT_CONTACTS.NAME, contact.name)
                     .set(PLT_CONTACTS.COMPANY, contact.company)
                     .set(PLT_CONTACTS.COMPANY_ADDRESS, contact.companyAddress)
@@ -138,7 +138,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
                 val contactId =
                     txDsl
                         .select(PLT_CONTACTS.ID)
-                        .from(CONTACTS)
+                        .from(PLT_CONTACTS)
                         .where(PLT_CONTACTS.SYNC_ID.eq(contact.syncId))
                         .fetchOne(PLT_CONTACTS.ID)
                 if (contactId != null) {
@@ -152,24 +152,24 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
 
     override fun markClean(syncIds: Collection<String>) {
         if (syncIds.isEmpty()) return
-        dsl.update(CONTACTS).set(PLT_CONTACTS.DIRTY, false).where(PLT_CONTACTS.SYNC_ID.`in`(syncIds)).execute()
+        dsl.update(PLT_CONTACTS).set(PLT_CONTACTS.DIRTY, false).where(PLT_CONTACTS.SYNC_ID.`in`(syncIds)).execute()
     }
 
     override fun getLastSyncEpochMs(): Long =
         dsl.select(PLT_SYNC_STATE.STATE_VALUE)
-            .from(SYNC_STATE)
+            .from(PLT_SYNC_STATE)
             .where(PLT_SYNC_STATE.STATE_KEY.eq(lastSyncStateKey))
             .fetchOne(PLT_SYNC_STATE.STATE_VALUE) ?: 0L
 
     override fun setLastSyncEpochMs(value: Long) {
-        val hasState = dsl.fetchCount(SYNC_STATE, PLT_SYNC_STATE.STATE_KEY.eq(lastSyncStateKey)) > 0
+        val hasState = dsl.fetchCount(PLT_SYNC_STATE, PLT_SYNC_STATE.STATE_KEY.eq(lastSyncStateKey)) > 0
         if (hasState) {
-            dsl.update(SYNC_STATE)
+            dsl.update(PLT_SYNC_STATE)
                 .set(PLT_SYNC_STATE.STATE_VALUE, value)
                 .where(PLT_SYNC_STATE.STATE_KEY.eq(lastSyncStateKey))
                 .execute()
         } else {
-            dsl.insertInto(SYNC_STATE)
+            dsl.insertInto(PLT_SYNC_STATE)
                 .set(PLT_SYNC_STATE.STATE_KEY, lastSyncStateKey)
                 .set(PLT_SYNC_STATE.STATE_VALUE, value)
                 .execute()
@@ -177,7 +177,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
     }
 
     override fun seedContacts() {
-        if (dsl.fetchCount(CONTACTS, PLT_CONTACTS.DELETED.eq(false)) > 0) return
+        if (dsl.fetchCount(PLT_CONTACTS, PLT_CONTACTS.DELETED.eq(false)) > 0) return
 
         createServerContact(
             "Alice Smith",
@@ -209,7 +209,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
     }
 
     override fun softDelete(syncId: String) {
-        dsl.update(CONTACTS)
+        dsl.update(PLT_CONTACTS)
             .set(PLT_CONTACTS.DELETED, true)
             .set(PLT_CONTACTS.VERSION, PLT_CONTACTS.VERSION.plus(1))
             .where(PLT_CONTACTS.SYNC_ID.eq(syncId))
@@ -217,7 +217,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
     }
 
     override fun restore(syncId: String) {
-        dsl.update(CONTACTS)
+        dsl.update(PLT_CONTACTS)
             .set(PLT_CONTACTS.DELETED, false)
             .set(PLT_CONTACTS.VERSION, PLT_CONTACTS.VERSION.plus(1))
             .where(PLT_CONTACTS.SYNC_ID.eq(syncId))
@@ -229,7 +229,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
             val txDsl = using(config)
             val rows =
                 txDsl
-                    .update(CONTACTS)
+                    .update(PLT_CONTACTS)
                     .set(PLT_CONTACTS.NAME, contact.name)
                     .set(PLT_CONTACTS.COMPANY, contact.company)
                     .set(PLT_CONTACTS.COMPANY_ADDRESS, contact.companyAddress)
@@ -247,7 +247,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
             val contactId =
                 txDsl
                     .select(PLT_CONTACTS.ID)
-                    .from(CONTACTS)
+                    .from(PLT_CONTACTS)
                     .where(PLT_CONTACTS.SYNC_ID.eq(contact.syncId))
                     .fetchOne(PLT_CONTACTS.ID)
             if (contactId != null) {
@@ -260,14 +260,14 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
 
     override fun markConflict(syncId: String, serverVersion: SyncContact) {
         val json = Jackson.asFormatString(serverVersion)
-        dsl.update(CONTACTS).set(PLT_CONTACTS.SYNC_CONFLICT, json).where(PLT_CONTACTS.SYNC_ID.eq(syncId)).execute()
+        dsl.update(PLT_CONTACTS).set(PLT_CONTACTS.SYNC_CONFLICT, json).where(PLT_CONTACTS.SYNC_ID.eq(syncId)).execute()
     }
 
     override fun resolveConflict(syncId: String, resolvedContact: StoredContact) {
         dsl.transaction { config ->
             val txDsl = using(config)
             txDsl
-                .update(CONTACTS)
+                .update(PLT_CONTACTS)
                 .set(PLT_CONTACTS.NAME, resolvedContact.name)
                 .set(PLT_CONTACTS.COMPANY, resolvedContact.company)
                 .set(PLT_CONTACTS.COMPANY_ADDRESS, resolvedContact.companyAddress)
@@ -282,7 +282,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
             val contactId =
                 txDsl
                     .select(PLT_CONTACTS.ID)
-                    .from(CONTACTS)
+                    .from(PLT_CONTACTS)
                     .where(PLT_CONTACTS.SYNC_ID.eq(syncId))
                     .fetchOne(PLT_CONTACTS.ID)
             if (contactId != null) {
@@ -304,36 +304,36 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
         phones: List<String>,
         socialMedia: List<String>,
     ) {
-        txDsl.deleteFrom(CONTACT_EMAILS).where(PLT_CONTACT_EMAILS.CONTACT_ID.eq(contactId)).execute()
+        txDsl.deleteFrom(PLT_CONTACT_EMAILS).where(PLT_CONTACT_EMAILS.CONTACT_ID.eq(contactId)).execute()
         if (emails.isNotEmpty()) {
             val emailInserts =
                 emails.map { email ->
                     txDsl
-                        .insertInto(CONTACT_EMAILS)
+                        .insertInto(PLT_CONTACT_EMAILS)
                         .set(PLT_CONTACT_EMAILS.CONTACT_ID, contactId)
                         .set(PLT_CONTACT_EMAILS.EMAIL, email)
                 }
             txDsl.batch(emailInserts).execute()
         }
 
-        txDsl.deleteFrom(CONTACT_PHONES).where(PLT_CONTACT_PHONES.CONTACT_ID.eq(contactId)).execute()
+        txDsl.deleteFrom(PLT_CONTACT_PHONES).where(PLT_CONTACT_PHONES.CONTACT_ID.eq(contactId)).execute()
         if (phones.isNotEmpty()) {
             val phoneInserts =
                 phones.map { phone ->
                     txDsl
-                        .insertInto(CONTACT_PHONES)
+                        .insertInto(PLT_CONTACT_PHONES)
                         .set(PLT_CONTACT_PHONES.CONTACT_ID, contactId)
                         .set(PLT_CONTACT_PHONES.PHONE, phone)
                 }
             txDsl.batch(phoneInserts).execute()
         }
 
-        txDsl.deleteFrom(CONTACT_SOCIALS).where(PLT_CONTACT_SOCIALS.CONTACT_ID.eq(contactId)).execute()
+        txDsl.deleteFrom(PLT_CONTACT_SOCIALS).where(PLT_CONTACT_SOCIALS.CONTACT_ID.eq(contactId)).execute()
         if (socialMedia.isNotEmpty()) {
             val socialInserts =
                 socialMedia.map { social ->
                     txDsl
-                        .insertInto(CONTACT_SOCIALS)
+                        .insertInto(PLT_CONTACT_SOCIALS)
                         .set(PLT_CONTACT_SOCIALS.CONTACT_ID, contactId)
                         .set(PLT_CONTACT_SOCIALS.SOCIAL_MEDIA, social)
                 }
@@ -357,7 +357,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
             val txDsl = using(config)
             val contactId =
                 txDsl
-                    .insertInto(CONTACTS)
+                    .insertInto(PLT_CONTACTS)
                     .set(PLT_CONTACTS.SYNC_ID, syncId)
                     .set(PLT_CONTACTS.NAME, name)
                     .set(PLT_CONTACTS.COMPANY, company)
@@ -418,7 +418,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
         private val emailsField =
             DSL.multiset(
                     DSL.select(PLT_CONTACT_EMAILS.EMAIL)
-                        .from(CONTACT_EMAILS)
+                        .from(PLT_CONTACT_EMAILS)
                         .where(PLT_CONTACT_EMAILS.CONTACT_ID.eq(PLT_CONTACTS.ID))
                 )
                 .`as`("EMAILS")
@@ -427,7 +427,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
         private val phonesField =
             DSL.multiset(
                     DSL.select(PLT_CONTACT_PHONES.PHONE)
-                        .from(CONTACT_PHONES)
+                        .from(PLT_CONTACT_PHONES)
                         .where(PLT_CONTACT_PHONES.CONTACT_ID.eq(PLT_CONTACTS.ID))
                 )
                 .`as`("PHONES")
@@ -436,7 +436,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
         private val socialsField =
             DSL.multiset(
                     DSL.select(PLT_CONTACT_SOCIALS.SOCIAL_MEDIA)
-                        .from(CONTACT_SOCIALS)
+                        .from(PLT_CONTACT_SOCIALS)
                         .where(PLT_CONTACT_SOCIALS.CONTACT_ID.eq(PLT_CONTACTS.ID))
                 )
                 .`as`("SOCIAL_MEDIA")

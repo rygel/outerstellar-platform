@@ -2,7 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.infra.createRenderer
-import io.github.rygel.outerstellar.platform.jooq.tables.references.USERS
+import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_USERS
 import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
@@ -13,12 +13,6 @@ import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.mockk.mockk
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
@@ -27,6 +21,12 @@ import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Integration tests for session timeout enforcement.
@@ -91,8 +91,16 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
     private fun configureActivityTimestamps() {
         val twoHoursAgo = LocalDateTime.now(ZoneOffset.UTC).minusHours(2)
         val oneMinuteAgo = LocalDateTime.now(ZoneOffset.UTC).minusMinutes(1)
-        testDsl.update(USERS).set(USERS.LAST_ACTIVITY_AT, twoHoursAgo).where(USERS.ID.eq(expiredUser.id)).execute()
-        testDsl.update(USERS).set(USERS.LAST_ACTIVITY_AT, oneMinuteAgo).where(USERS.ID.eq(activeUser.id)).execute()
+        testDsl
+            .update(PLT_USERS)
+            .set(PLT_USERS.LAST_ACTIVITY_AT, twoHoursAgo)
+            .where(PLT_USERS.ID.eq(expiredUser.id))
+            .execute()
+        testDsl
+            .update(PLT_USERS)
+            .set(PLT_USERS.LAST_ACTIVITY_AT, oneMinuteAgo)
+            .where(PLT_USERS.ID.eq(activeUser.id))
+            .execute()
     }
 
     private fun buildTestApp(): HttpHandler {
@@ -104,16 +112,16 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
         val contactService = mockk<ContactService>(relaxed = true)
         val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
         return app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                testConfig,
-                securityService,
-                userRepository,
-            )
+            messageService,
+            contactService,
+            outbox,
+            cache,
+            createRenderer(),
+            pageFactory,
+            testConfig,
+            securityService,
+            userRepository,
+        )
             .http!!
     }
 

@@ -32,7 +32,7 @@ class JooqDeviceTokenRepository(private val dsl: DSLContext) : DeviceTokenReposi
     override fun upsert(deviceToken: DeviceToken) {
         val now = Timestamp.from(Instant.now())
         dsl.execute(
-            "MERGE INTO DEVICE_TOKENS (USER_ID, PLATFORM, TOKEN, APP_BUNDLE, CREATED_AT, LAST_SEEN)" +
+            "MERGE INTO PLT_DEVICE_TOKENS (USER_ID, PLATFORM, TOKEN, APP_BUNDLE, CREATED_AT, LAST_SEEN)" +
                 " KEY(TOKEN) VALUES (?, ?, ?, ?, ?, ?)",
             deviceToken.userId,
             deviceToken.platform,

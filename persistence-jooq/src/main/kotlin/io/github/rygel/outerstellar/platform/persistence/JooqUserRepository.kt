@@ -32,19 +32,19 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findById(id: UUID): User? {
-        return dsl.selectFrom(USERS).where(PLT_USERS.ID.eq(id)).fetchOne()?.let { mapUser(it) }
+        return dsl.selectFrom(PLT_USERS).where(PLT_USERS.ID.eq(id)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun findByUsername(username: String): User? {
-        return dsl.selectFrom(USERS).where(PLT_USERS.USERNAME.eq(username)).fetchOne()?.let { mapUser(it) }
+        return dsl.selectFrom(PLT_USERS).where(PLT_USERS.USERNAME.eq(username)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun findByEmail(email: String): User? {
-        return dsl.selectFrom(USERS).where(PLT_USERS.EMAIL.eq(email)).fetchOne()?.let { mapUser(it) }
+        return dsl.selectFrom(PLT_USERS).where(PLT_USERS.EMAIL.eq(email)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun save(user: User) {
-        dsl.insertInto(USERS)
+        dsl.insertInto(PLT_USERS)
             .set(PLT_USERS.ID, user.id)
             .set(PLT_USERS.USERNAME, user.username)
             .set(PLT_USERS.EMAIL, user.email)
@@ -75,43 +75,43 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findAll(): List<User> {
-        return dsl.selectFrom(USERS).orderBy(PLT_USERS.USERNAME).fetch().map { mapUser(it) }
+        return dsl.selectFrom(PLT_USERS).orderBy(PLT_USERS.USERNAME).fetch().map { mapUser(it) }
     }
 
     override fun findPage(limit: Int, offset: Int): List<User> =
-        dsl.selectFrom(USERS).orderBy(PLT_USERS.USERNAME).limit(limit).offset(offset).fetch().map { mapUser(it) }
+        dsl.selectFrom(PLT_USERS).orderBy(PLT_USERS.USERNAME).limit(limit).offset(offset).fetch().map { mapUser(it) }
 
-    override fun countAll(): Long = dsl.selectCount().from(USERS).fetchOne(0, Long::class.java) ?: 0L
+    override fun countAll(): Long = dsl.selectCount().from(PLT_USERS).fetchOne(0, Long::class.java) ?: 0L
 
     override fun updateRole(userId: UUID, role: UserRole) {
-        dsl.update(USERS).set(PLT_USERS.ROLE, role.name).where(PLT_USERS.ID.eq(userId)).execute()
+        dsl.update(PLT_USERS).set(PLT_USERS.ROLE, role.name).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateEnabled(userId: UUID, enabled: Boolean) {
-        dsl.update(USERS).set(PLT_USERS.ENABLED, enabled).where(PLT_USERS.ID.eq(userId)).execute()
+        dsl.update(PLT_USERS).set(PLT_USERS.ENABLED, enabled).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateLastActivity(userId: UUID) {
-        dsl.update(USERS)
+        dsl.update(PLT_USERS)
             .set(PLT_USERS.LAST_ACTIVITY_AT, LocalDateTime.now(ZoneOffset.UTC))
             .where(PLT_USERS.ID.eq(userId))
             .execute()
     }
 
     override fun deleteById(userId: UUID) {
-        dsl.deleteFrom(USERS).where(PLT_USERS.ID.eq(userId)).execute()
+        dsl.deleteFrom(PLT_USERS).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateUsername(userId: UUID, newUsername: String) {
-        dsl.update(USERS).set(PLT_USERS.USERNAME, newUsername).where(PLT_USERS.ID.eq(userId)).execute()
+        dsl.update(PLT_USERS).set(PLT_USERS.USERNAME, newUsername).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateAvatarUrl(userId: UUID, avatarUrl: String?) {
-        dsl.update(USERS).set(PLT_USERS.AVATAR_URL, avatarUrl).where(PLT_USERS.ID.eq(userId)).execute()
+        dsl.update(PLT_USERS).set(PLT_USERS.AVATAR_URL, avatarUrl).where(PLT_USERS.ID.eq(userId)).execute()
     }
 
     override fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) {
-        dsl.update(USERS)
+        dsl.update(PLT_USERS)
             .set(PLT_USERS.EMAIL_NOTIFICATIONS_ENABLED, emailEnabled)
             .set(PLT_USERS.PUSH_NOTIFICATIONS_ENABLED, pushEnabled)
             .where(PLT_USERS.ID.eq(userId))
@@ -119,7 +119,7 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?) {
-        dsl.update(USERS)
+        dsl.update(PLT_USERS)
             .set(PLT_USERS.LANGUAGE, language)
             .set(PLT_USERS.THEME, theme)
             .set(PLT_USERS.LAYOUT, layout)
