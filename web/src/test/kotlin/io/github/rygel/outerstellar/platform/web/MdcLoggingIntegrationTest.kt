@@ -10,6 +10,10 @@ import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.mockk.mockk
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -18,10 +22,6 @@ import org.http4k.core.Status
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.slf4j.LoggerFactory
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 /**
  * Integration tests for structured logging with MDC correlation IDs (Feature 1).
@@ -66,16 +66,16 @@ class MdcLoggingIntegrationTest : H2WebTest() {
 
         app =
             app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                testConfig,
-                securityService,
-                userRepository,
-            )
+                    messageService,
+                    contactService,
+                    outbox,
+                    cache,
+                    createRenderer(),
+                    pageFactory,
+                    testConfig,
+                    securityService,
+                    userRepository,
+                )
                 .http!!
     }
 

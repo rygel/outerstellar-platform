@@ -22,7 +22,6 @@ import io.github.rygel.outerstellar.platform.service.ResilientEmailService
 import io.github.rygel.outerstellar.platform.service.SmtpConfig
 import io.github.rygel.outerstellar.platform.service.SmtpEmailService
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
-import io.github.rygel.outerstellar.platform.web.SyncApi
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
 import org.http4k.core.PolyHandler
@@ -38,8 +37,15 @@ val webModule
         single(named("serverBaseUrl")) { "http://localhost:8080" }
         single(named("appBaseUrl")) { get<AppConfig>().appBaseUrl }
         single<TemplateRenderer> { createRenderer() }
-        single { WebPageFactory(get(), get(), get(), get(), get()) }
-        single { SyncApi(get(), get(), get()) }
+        single {
+            WebPageFactory(
+                getOrNull(),
+                getOrNull<MessageService>(),
+                getOrNull<ContactService>(),
+                getOrNull(),
+                getOrNull(),
+            )
+        }
         single<MessageCache> { io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache() }
         single<AnalyticsService> {
             val cfg = get<AppConfig>().segment
@@ -74,21 +80,21 @@ val webModule
         single<EventPublisher> { get<SyncWebSocket>() }
         single<PolyHandler>(named("webServer")) {
             app(
-                get<MessageService>(),
-                get<io.github.rygel.outerstellar.platform.service.ContactService>(),
-                get<OutboxRepository>(),
-                get<MessageCache>(),
-                get<TemplateRenderer>(),
-                get<WebPageFactory>(),
-                get<AppConfig>(),
-                get<SecurityService>(),
-                get<UserRepository>(),
+                messageService = getOrNull<MessageService>(),
+                contactService = getOrNull<ContactService>(),
+                outboxRepository = getOrNull<OutboxRepository>(),
+                cache = getOrNull<MessageCache>(),
+                jteRenderer = get<TemplateRenderer>(),
+                pageFactory = get<WebPageFactory>(),
+                config = get<AppConfig>(),
+                securityService = get<SecurityService>(),
+                userRepository = get<UserRepository>(),
                 analytics = get(),
-                notificationService = get(),
+                notificationService = getOrNull(),
                 jwtService = getOrNull<JwtService>(),
                 plugin = getOrNull<PlatformPlugin>(),
                 activityUpdater = getOrNull<AsyncActivityUpdater>(),
-                syncWebSocket = get<SyncWebSocket>(),
+                syncWebSocket = getOrNull<SyncWebSocket>(),
             )
         }
     }
