@@ -108,6 +108,24 @@ private fun isStaticAsset(path: String): Boolean =
         path.endsWith(".svg") ||
         path.endsWith(".ico")
 
+private fun persistUserPreferences(
+    user: User?,
+    langCookie: Cookie?,
+    themeCookie: Cookie?,
+    layoutCookie: Cookie?,
+    userRepository: UserRepository,
+) {
+    if (user == null) return
+    val hasChange = langCookie != null || themeCookie != null || layoutCookie != null
+    if (!hasChange) return
+    userRepository.updatePreferences(
+        user.id,
+        langCookie?.value ?: user.language,
+        themeCookie?.value ?: user.theme,
+        layoutCookie?.value ?: user.layout,
+    )
+}
+
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
 
@@ -267,24 +285,6 @@ object Filters {
 
             updatedResponse
         }
-    }
-
-    private fun persistUserPreferences(
-        user: User?,
-        langCookie: Cookie?,
-        themeCookie: Cookie?,
-        layoutCookie: Cookie?,
-        userRepository: UserRepository,
-    ) {
-        if (user == null) return
-        val hasChange = langCookie != null || themeCookie != null || layoutCookie != null
-        if (!hasChange) return
-        userRepository.updatePreferences(
-            user.id,
-            langCookie?.value ?: user.language,
-            themeCookie?.value ?: user.theme,
-            layoutCookie?.value ?: user.layout,
-        )
     }
 
     fun sessionTimeout(
