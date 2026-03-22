@@ -2,10 +2,10 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
-import javax.sql.DataSource
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
+import javax.sql.DataSource
 
 @Suppress("UtilityClassWithPublicConstructor")
 abstract class H2WebTest {
@@ -48,7 +48,6 @@ abstract class H2WebTest {
 
         fun cleanup() {
             if (postgresUrl != null) {
-                // PostgreSQL: delete in FK-safe order (children before parents)
                 testDsl.execute("DELETE FROM plt_sessions")
                 testDsl.execute("DELETE FROM plt_notifications")
                 testDsl.execute("DELETE FROM plt_device_tokens")
@@ -66,18 +65,18 @@ abstract class H2WebTest {
                 testDsl.execute("DELETE FROM plt_users")
             } else {
                 testDsl.execute("SET REFERENTIAL_INTEGRITY FALSE")
-                testDsl.execute("TRUNCATE TABLE SESSIONS")
-                testDsl.execute("TRUNCATE TABLE MESSAGES")
-                testDsl.execute("TRUNCATE TABLE OUTBOX")
-                testDsl.execute("TRUNCATE TABLE DEVICE_TOKENS")
-                testDsl.execute("TRUNCATE TABLE OAUTH_CONNECTIONS")
-                testDsl.execute("TRUNCATE TABLE API_KEYS")
-                testDsl.execute("TRUNCATE TABLE PASSWORD_RESET_TOKENS")
-                testDsl.execute("TRUNCATE TABLE AUDIT_LOG")
-                testDsl.execute("TRUNCATE TABLE CONTACTS")
-                testDsl.execute("TRUNCATE TABLE USERS")
-                testDsl.execute("TRUNCATE TABLE SYNC_STATE")
-                testDsl.execute("TRUNCATE TABLE NOTIFICATIONS")
+                testDsl.execute("TRUNCATE TABLE PLT_SESSIONS")
+                testDsl.execute("TRUNCATE TABLE PLT_MESSAGES")
+                testDsl.execute("TRUNCATE TABLE PLT_OUTBOX")
+                testDsl.execute("TRUNCATE TABLE PLT_DEVICE_TOKENS")
+                testDsl.execute("TRUNCATE TABLE PLT_OAUTH_CONNECTIONS")
+                testDsl.execute("TRUNCATE TABLE PLT_API_KEYS")
+                testDsl.execute("TRUNCATE TABLE PLT_PASSWORD_RESET_TOKENS")
+                testDsl.execute("TRUNCATE TABLE PLT_AUDIT_LOG")
+                testDsl.execute("TRUNCATE TABLE PLT_CONTACTS")
+                testDsl.execute("TRUNCATE TABLE PLT_USERS")
+                testDsl.execute("TRUNCATE TABLE PLT_SYNC_STATE")
+                testDsl.execute("TRUNCATE TABLE PLT_NOTIFICATIONS")
                 testDsl.execute("SET REFERENTIAL_INTEGRITY TRUE")
             }
         }
