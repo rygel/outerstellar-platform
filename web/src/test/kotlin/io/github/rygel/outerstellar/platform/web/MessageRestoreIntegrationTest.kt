@@ -6,10 +6,6 @@ import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.mockk.mockk
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
@@ -17,6 +13,10 @@ import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * Integration tests for the message restore flow.
@@ -46,16 +46,16 @@ class MessageRestoreIntegrationTest : H2WebTest() {
 
     private fun buildApp() =
         app(
-                messageService,
-                mockk<ContactService>(relaxed = true),
-                StubOutboxRepository(),
-                StubMessageCache(),
-                createRenderer(),
-                WebPageFactory(repository, messageService),
-                testConfig,
-                mockk(relaxed = true),
-                mockk(relaxed = true),
-            )
+            messageService,
+            mockk<ContactService>(relaxed = true),
+            StubOutboxRepository(),
+            StubMessageCache(),
+            createRenderer(),
+            WebPageFactory(repository, messageService),
+            testConfig,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+        )
             .http!!
 
     /** Creates a server message and returns its syncId. */
