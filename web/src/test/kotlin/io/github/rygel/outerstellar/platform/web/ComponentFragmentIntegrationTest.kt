@@ -150,9 +150,9 @@ class ComponentFragmentIntegrationTest : H2WebTest() {
     @Test
     fun `GET sidebar-theme-selector returns multiple theme options`() {
         val body = app(Request(GET, "/components/sidebar/theme-selector")).bodyString()
-        // The selector renders <option value="..."> elements, not ?theme= URLs
-        val optionCount = body.split("<option").size - 1
-        assertTrue(optionCount >= 2, "Theme selector should have at least 2 options, found $optionCount")
+        // Theme selector renders preview cards (buttons) with color swatches
+        val cardCount = body.split("theme-preview-card").size - 1
+        assertTrue(cardCount >= 2, "Theme selector should have at least 2 theme cards, found $cardCount")
     }
 
     // ---- /components/sidebar/language-selector ----

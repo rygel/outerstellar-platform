@@ -10,6 +10,7 @@
       data-toast-error="${shell.toastErrorLabel}" data-toast-success="${shell.toastSuccessLabel}">
 <style id="theme-style">${shell.themeCss}</style>
 <div id="toast-container"></div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileMenu()"></div>
 <div class="shell">
     <aside class="sidebar">
         <div class="sidebar-brand">
@@ -52,6 +53,9 @@
     </aside>
     <div class="main-shell">
         <header class="topbar">
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                <i class="ri-menu-line"></i>
+            </button>
             <div style="display: flex; flex-direction: column;">
                 <span class="topbar-label">${shell.pageTitle}</span>
                 <strong>${shell.appTagline}</strong>

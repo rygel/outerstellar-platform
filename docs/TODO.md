@@ -6,6 +6,7 @@
 - [ ] Export SPI (ExportService interface, escapeCsv utility, CSV/JSON export for any entity)
 - [ ] Configurable CSP policy via AppConfig (currently hardcoded in Filters.kt)
 - [ ] Layout engine performance (cache ThemeCatalog CSS, nav link caching)
+- [ ] Mobile responsive layout (responsive sidebar, touch-friendly controls, viewport meta)
 
 ## Security
 - [ ] Add Jazzer fuzz tests for high-risk surfaces (sync API payloads, OAuth callback parsing, i18n message resolution)
@@ -15,6 +16,14 @@
 - [ ] Review EI_EXPOSE_REP global SpotBugs exclusion
 - [ ] Add PostgreSQL integration test profile to CI (`-Ptest-postgres` with Podman)
 - [ ] Split SwingSyncApp.kt (1,895 lines) into smaller components
+
+## MAIA Backport (Utilities)
+- [x] DialogUtil — copyable info/warning/error/confirmation dialogs (desktop)
+- [x] UnicodeIcon — Unicode emoji/symbol rendering as Swing Icons (desktop)
+- [x] SpellChecker + SpellCheckingTextArea — dictionary-based spell checking (desktop)
+- [x] SpellCheckingTextField — inline spell-check for text fields (desktop)
+- [x] ChipCellRenderer — generic rounded-chip table cell renderer (desktop)
+- [x] Enhanced ThemeCatalog — brightness adjustments, luminance detection, typography scale (web)
 
 ## MAIA Rebase
 - [ ] Rebase MAIA onto outerstellar-platform (based on origin/master with 100+ commits)

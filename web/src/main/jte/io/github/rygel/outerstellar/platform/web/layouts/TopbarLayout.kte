@@ -12,6 +12,9 @@
 <div id="toast-container"></div>
 <div class="topbar-shell">
     <nav class="topbar-nav">
+        <button class="mobile-menu-toggle" onclick="document.querySelector('.nav-links-row').classList.toggle('open')" aria-label="Toggle menu">
+            <i class="ri-menu-line"></i>
+        </button>
         <a href="/" class="logo">
             <i class="ri-planet-fill"></i>
             ${shell.appTitle}
