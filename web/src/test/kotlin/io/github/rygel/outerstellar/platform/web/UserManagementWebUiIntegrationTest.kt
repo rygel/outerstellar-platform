@@ -15,12 +15,6 @@ import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -33,6 +27,12 @@ import org.http4k.core.with
 import org.http4k.format.Jackson.auto
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * Integration tests for web UI rendering, navigation, CORS, security headers, correlation IDs, health check, rate
@@ -77,16 +77,16 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
 
         app =
             app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                )
+                messageService,
+                contactService,
+                outbox,
+                cache,
+                createRenderer(),
+                pageFactory,
+                testConfig,
+                securityService,
+                userRepository,
+            )
                 .http!!
     }
 
@@ -173,7 +173,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     fun `session timeout redirects HTML requests to auth page`() {
         val admin = seedAdmin()
         testDsl.execute(
-            "UPDATE users SET last_activity_at = " + "TIMESTAMP '2020-01-01 00:00:00' " + "WHERE id = '${admin.id}'"
+            "UPDATE plt_users SET last_activity_at = " + "TIMESTAMP '2020-01-01 00:00:00' " + "WHERE id = '${admin.id}'"
         )
         val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
         assertEquals(Status.FOUND, response.status)
@@ -184,7 +184,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     fun `active session is not expired`() {
         val admin = seedAdmin()
         testDsl.execute(
-            "UPDATE users SET last_activity_at = " +
+            "UPDATE plt_users SET last_activity_at = " +
                 "TIMESTAMPADD(MINUTE, -5, CURRENT_TIMESTAMP) " +
                 "WHERE id = '${admin.id}'"
         )

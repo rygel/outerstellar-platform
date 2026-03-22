@@ -12,7 +12,7 @@ import org.jooq.impl.SQLDataType
 
 class JooqDeviceTokenRepository(private val dsl: DSLContext) : DeviceTokenRepository {
 
-    private val table = DSL.table("DEVICE_TOKENS")
+    private val table = DSL.table("plt_device_tokens")
     private val idField = DSL.field(DSL.name("ID"), SQLDataType.BIGINT)
     private val userIdField = DSL.field(DSL.name("USER_ID"), SQLDataType.UUID)
     private val platformField = DSL.field(DSL.name("PLATFORM"), SQLDataType.VARCHAR)
@@ -32,7 +32,7 @@ class JooqDeviceTokenRepository(private val dsl: DSLContext) : DeviceTokenReposi
     override fun upsert(deviceToken: DeviceToken) {
         val now = Timestamp.from(Instant.now())
         dsl.execute(
-            "MERGE INTO DEVICE_TOKENS (USER_ID, PLATFORM, TOKEN, APP_BUNDLE, CREATED_AT, LAST_SEEN)" +
+            "MERGE INTO PLT_DEVICE_TOKENS (USER_ID, PLATFORM, TOKEN, APP_BUNDLE, CREATED_AT, LAST_SEEN)" +
                 " KEY(TOKEN) VALUES (?, ?, ?, ?, ?, ?)",
             deviceToken.userId,
             deviceToken.platform,

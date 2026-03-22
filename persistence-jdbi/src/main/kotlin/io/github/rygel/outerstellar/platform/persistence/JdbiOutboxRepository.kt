@@ -12,7 +12,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
             handle
                 .createUpdate(
                     """
-                    INSERT INTO outbox (id, payload_type, payload, status)
+                    INSERT INTO plt_outbox (id, payload_type, payload, status)
                     VALUES (:id, :payloadType, :payload, 'PENDING')
                     """
                 )
@@ -28,7 +28,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
             handle
                 .createQuery(
                     """
-                    SELECT * FROM outbox
+                    SELECT * FROM plt_outbox
                     WHERE status = 'PENDING'
                     ORDER BY created_at ASC
                     LIMIT :limit
@@ -53,7 +53,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
             handle
                 .createUpdate(
                     """
-                    UPDATE outbox SET status = 'PROCESSED', processed_at = :processedAt
+                    UPDATE plt_outbox SET status = 'PROCESSED', processed_at = :processedAt
                     WHERE id = :id
                     """
                 )
@@ -66,7 +66,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
     override fun markFailed(id: UUID, error: String) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE outbox SET status = 'FAILED', last_error = :error WHERE id = :id")
+                .createUpdate("UPDATE plt_outbox SET status = 'FAILED', last_error = :error WHERE id = :id")
                 .bind("id", id)
                 .bind("error", error)
                 .execute()
@@ -76,7 +76,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
     override fun getStats(): Map<String, Int> {
         return jdbi.withHandle<Map<String, Int>, Exception> { handle ->
             handle
-                .createQuery("SELECT status, COUNT(*) AS cnt FROM outbox GROUP BY status")
+                .createQuery("SELECT status, COUNT(*) AS cnt FROM plt_outbox GROUP BY status")
                 .map { rs, _ -> rs.getString("status") to rs.getInt("cnt") }
                 .list()
                 .toMap()
@@ -88,7 +88,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
             handle
                 .createQuery(
                     """
-                    SELECT * FROM outbox
+                    SELECT * FROM plt_outbox
                     WHERE status = 'FAILED'
                     ORDER BY created_at DESC
                     """

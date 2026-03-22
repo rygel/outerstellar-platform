@@ -9,7 +9,7 @@ import org.jooq.impl.DSL
 
 class JooqAuditRepository(private val dsl: DSLContext) : AuditRepository {
 
-    private val table = DSL.table("audit_log")
+    private val table = DSL.table("plt_audit_log")
     private val idField = DSL.field("id", Long::class.java)
     private val actorIdField = DSL.field("actor_id", UUID::class.java)
     private val actorUsernameField = DSL.field("actor_username", String::class.java)

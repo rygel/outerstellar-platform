@@ -6,7 +6,6 @@ import io.github.rygel.outerstellar.platform.model.InsufficientPermissionExcepti
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.UserRole
-import java.util.UUID
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -17,6 +16,7 @@ import org.http4k.core.Status
 import org.http4k.lens.Path
 import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
+import java.util.UUID
 
 private const val DEFAULT_PAGE_LIMIT = 20
 private const val MAX_PAGE_LIMIT = 100
@@ -58,7 +58,8 @@ class UserAdminRoutes(
                 } bindContract
                 POST to
                 { userId, _ ->
-                    { request: org.http4k.core.Request ->
+                    {
+                            request: org.http4k.core.Request ->
                         val ctx = request.webContext
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         val users = securityService.listUsers()
@@ -97,7 +98,8 @@ class UserAdminRoutes(
                 } bindContract
                 POST to
                 { userId, _ ->
-                    { request: org.http4k.core.Request ->
+                    {
+                            request: org.http4k.core.Request ->
                         val ctx = request.webContext
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         val users = securityService.listUsers()
