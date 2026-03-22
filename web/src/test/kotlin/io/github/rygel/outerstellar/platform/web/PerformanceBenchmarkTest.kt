@@ -17,6 +17,10 @@ import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.mockk.mockk
+import java.nio.file.Path
+import java.time.LocalDateTime
+import kotlin.test.Test
+import kotlin.test.assertTrue
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -30,10 +34,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.slf4j.LoggerFactory
-import java.nio.file.Path
-import java.time.LocalDateTime
-import kotlin.test.Test
-import kotlin.test.assertTrue
 
 // ---------------------------------------------------------------------------
 // Baseline persistence model
@@ -161,18 +161,18 @@ class PerformanceBenchmarkTest : H2WebTest() {
                     recordedAt = LocalDateTime.now().toString(),
                     javaVersion = System.getProperty("java.version"),
                     benchmarks =
-                    collectedReports.values
-                        .sortedBy { it.name }
-                        .map { r ->
-                            BenchmarkEntry(
-                                name = r.name,
-                                iterations = r.count,
-                                p50Ms = r.p50Ms(),
-                                p95Ms = r.p95Ms(),
-                                p99Ms = r.p99Ms(),
-                                maxMs = r.maxMs(),
-                            )
-                        },
+                        collectedReports.values
+                            .sortedBy { it.name }
+                            .map { r ->
+                                BenchmarkEntry(
+                                    name = r.name,
+                                    iterations = r.count,
+                                    p50Ms = r.p50Ms(),
+                                    p95Ms = r.p95Ms(),
+                                    p99Ms = r.p99Ms(),
+                                    maxMs = r.maxMs(),
+                                )
+                            },
                 )
             mapper.writeValue(baselineFile, baseline)
             logger.info("Baseline written to {}", baselineFile.canonicalPath)
@@ -205,16 +205,16 @@ class PerformanceBenchmarkTest : H2WebTest() {
 
         app =
             app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                testConfig,
-                securityService,
-                userRepository,
-            )
+                    messageService,
+                    contactService,
+                    outbox,
+                    cache,
+                    createRenderer(),
+                    pageFactory,
+                    testConfig,
+                    securityService,
+                    userRepository,
+                )
                 .http!!
 
         val registerLens = Body.auto<RegisterRequest>().toLens()
@@ -365,16 +365,16 @@ class PerformanceBenchmarkTest : H2WebTest() {
 
         val prodApp =
             app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                testConfig,
-                prodSecurityService,
-                userRepository,
-            )
+                    messageService,
+                    contactService,
+                    outbox,
+                    cache,
+                    createRenderer(),
+                    pageFactory,
+                    testConfig,
+                    prodSecurityService,
+                    userRepository,
+                )
                 .http!!
 
         val req = Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))
