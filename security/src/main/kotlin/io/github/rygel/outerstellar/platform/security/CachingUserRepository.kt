@@ -58,4 +58,9 @@ class CachingUserRepository(private val delegate: UserRepository, maximumSize: L
         cache.invalidate(userId)
         delegate.updateNotificationPreferences(userId, emailEnabled, pushEnabled)
     }
+
+    override fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?) {
+        cache.invalidate(userId)
+        delegate.updatePreferences(userId, language, theme, layout)
+    }
 }

@@ -227,6 +227,10 @@ class SecurityService(
         audit("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
     }
 
+    fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?) {
+        userRepository.updatePreferences(userId, language, theme, layout)
+    }
+
     fun createSession(userId: UUID): String {
         val repo = sessionRepository ?: error("SessionRepository is not configured")
         val rawToken = "oss_" + generateRandomHex(SESSION_TOKEN_HEX_LENGTH)
