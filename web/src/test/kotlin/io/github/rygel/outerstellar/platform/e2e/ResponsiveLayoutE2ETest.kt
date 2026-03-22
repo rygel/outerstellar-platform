@@ -9,6 +9,8 @@ import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.di.webModule
 import io.github.rygel.outerstellar.platform.security.securityModule
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.PolyHandler
@@ -25,8 +27,6 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 @Tag("e2e")
 class ResponsiveLayoutE2ETest : KoinTest {
@@ -71,13 +71,17 @@ class ResponsiveLayoutE2ETest : KoinTest {
                 module {
                     single {
                         AppConfig(
-                            jdbcUrl = "jdbc:h2:mem:responsive_test_${System.currentTimeMillis()}" +
-                                ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+                            jdbcUrl =
+                                "jdbc:h2:mem:responsive_test_${System.currentTimeMillis()}" +
+                                    ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
                             devMode = true,
                         )
                     }
                 },
-                persistenceModule, coreModule, securityModule, webModule,
+                persistenceModule,
+                coreModule,
+                securityModule,
+                webModule,
             )
         }
         val ds = getKoin().get<javax.sql.DataSource>()
@@ -97,9 +101,7 @@ class ResponsiveLayoutE2ETest : KoinTest {
     }
 
     private fun openPage(width: Int, height: Int, path: String = "/"): Page {
-        browserContext = browser.newContext(
-            Browser.NewContextOptions().setViewportSize(width, height)
-        )
+        browserContext = browser.newContext(Browser.NewContextOptions().setViewportSize(width, height))
         page = browserContext.newPage()
         page.navigate("$baseUrl$path")
         page.waitForLoadState(LoadState.NETWORKIDLE)
@@ -129,8 +131,10 @@ class ResponsiveLayoutE2ETest : KoinTest {
             p.waitForLoadState(LoadState.NETWORKIDLE)
             val status = p.evaluate("document.readyState") as String
             assertTrue(status == "complete", "Page $href should load completely")
-            assertTrue(p.locator(".content, .topbar-content").first().isVisible,
-                "Content area should be visible on $href")
+            assertTrue(
+                p.locator(".content, .topbar-content").first().isVisible,
+                "Content area should be visible on $href",
+            )
         }
     }
 
@@ -188,8 +192,7 @@ class ResponsiveLayoutE2ETest : KoinTest {
         navLinks.first().click()
         p.waitForLoadState(LoadState.NETWORKIDLE)
 
-        assertTrue(p.url().contains(href) || href == "/",
-            "Should navigate to $href")
+        assertTrue(p.url().contains(href) || href == "/", "Should navigate to $href")
         val sidebar = p.locator(".sidebar.open")
         assertTrue(sidebar.count() == 0, "Sidebar should close after nav click")
     }
@@ -211,8 +214,10 @@ class ResponsiveLayoutE2ETest : KoinTest {
         val p = openPage(MOBILE_WIDTH, MOBILE_HEIGHT)
         val scrollWidth = p.evaluate("document.documentElement.scrollWidth") as Number
         val clientWidth = p.evaluate("document.documentElement.clientWidth") as Number
-        assertTrue(scrollWidth.toInt() <= clientWidth.toInt() + 5,
-            "Page should not have horizontal scroll (scrollWidth=$scrollWidth, clientWidth=$clientWidth)")
+        assertTrue(
+            scrollWidth.toInt() <= clientWidth.toInt() + 5,
+            "Page should not have horizontal scroll (scrollWidth=$scrollWidth, clientWidth=$clientWidth)",
+        )
     }
 
     @Test
@@ -220,16 +225,16 @@ class ResponsiveLayoutE2ETest : KoinTest {
         val p = openPage(MOBILE_WIDTH, MOBILE_HEIGHT, "/contacts")
         assertTrue(p.locator(".content").isVisible, "Content should be visible")
         val bodyText = p.locator("body").textContent()
-        assertTrue(bodyText.contains("Alice") || bodyText.contains("Contact"),
-            "Contacts page should show content on mobile")
+        assertTrue(
+            bodyText.contains("Alice") || bodyText.contains("Contact"),
+            "Contacts page should show content on mobile",
+        )
     }
 
     @Test
     fun `mobile - viewport meta prevents zoom on input focus`() {
         val p = openPage(MOBILE_WIDTH, MOBILE_HEIGHT)
-        val viewport = p.evaluate(
-            "document.querySelector('meta[name=viewport]')?.content"
-        ) as? String
+        val viewport = p.evaluate("document.querySelector('meta[name=viewport]')?.content") as? String
         assertTrue(viewport != null, "Viewport meta should exist")
         assertTrue(viewport.contains("width=device-width"), "Should set device width")
         assertTrue(viewport.contains("initial-scale=1"), "Should set initial scale")
@@ -242,8 +247,10 @@ class ResponsiveLayoutE2ETest : KoinTest {
         val count = inputs.count()
         for (i in 0 until minOf(count, 10)) {
             val box = inputs.nth(i).boundingBox() ?: continue
-            assertTrue(box.height >= 40,
-                "Input ${inputs.nth(i).getAttribute("name") ?: i} should be at least 40px tall (was ${box.height})")
+            assertTrue(
+                box.height >= 40,
+                "Input ${inputs.nth(i).getAttribute("name") ?: i} should be at least 40px tall (was ${box.height})",
+            )
         }
     }
 
@@ -256,8 +263,10 @@ class ResponsiveLayoutE2ETest : KoinTest {
         assertFalse(p.locator(".mobile-menu-toggle").isVisible, "Hamburger should be hidden on tablet")
 
         val sidebarBox = p.locator(".sidebar").boundingBox()
-        assertTrue(sidebarBox != null && sidebarBox.width < 100,
-            "Sidebar should be narrow on tablet (icon-only), was ${sidebarBox?.width}")
+        assertTrue(
+            sidebarBox != null && sidebarBox.width < 100,
+            "Sidebar should be narrow on tablet (icon-only), was ${sidebarBox?.width}",
+        )
     }
 
     @Test
@@ -280,10 +289,8 @@ class ResponsiveLayoutE2ETest : KoinTest {
         val p = openPage(MOBILE_HEIGHT, MOBILE_WIDTH) // 812x375 landscape
         val scrollWidth = p.evaluate("document.documentElement.scrollWidth") as Number
         val clientWidth = p.evaluate("document.documentElement.clientWidth") as Number
-        assertTrue(scrollWidth.toInt() <= clientWidth.toInt() + 5,
-            "Landscape should not have horizontal scroll")
-        assertTrue(p.locator(".content, .topbar-content").first().isVisible,
-            "Content should be visible in landscape")
+        assertTrue(scrollWidth.toInt() <= clientWidth.toInt() + 5, "Landscape should not have horizontal scroll")
+        assertTrue(p.locator(".content, .topbar-content").first().isVisible, "Content should be visible in landscape")
     }
 
     // === Cross-page Mobile Tests ===
@@ -293,19 +300,27 @@ class ResponsiveLayoutE2ETest : KoinTest {
         val p = openPage(MOBILE_WIDTH, MOBILE_HEIGHT, "/auth")
         p.waitForLoadState(LoadState.NETWORKIDLE)
         val bodyText = p.locator("body").textContent()
-        assertTrue(bodyText.contains("Sign") || bodyText.contains("Login") || bodyText.contains("Auth"),
-            "Auth page should render on mobile")
+        assertTrue(
+            bodyText.contains("Sign") || bodyText.contains("Login") || bodyText.contains("Auth"),
+            "Auth page should render on mobile",
+        )
         val scrollWidth = p.evaluate("document.documentElement.scrollWidth") as Number
         val clientWidth = p.evaluate("document.documentElement.clientWidth") as Number
-        assertTrue(scrollWidth.toInt() <= clientWidth.toInt() + 5,
-            "Auth page should not have horizontal scroll on mobile")
+        assertTrue(
+            scrollWidth.toInt() <= clientWidth.toInt() + 5,
+            "Auth page should not have horizontal scroll on mobile",
+        )
     }
 
     @Test
     fun `mobile - error page renders properly`() {
         val p = openPage(MOBILE_WIDTH, MOBILE_HEIGHT, "/nonexistent-page-12345")
         val bodyText = p.locator("body").textContent()
-        assertTrue(bodyText.contains("404") || bodyText.contains("not found", ignoreCase = true) || bodyText.contains("error", ignoreCase = true),
-            "Error page should render on mobile")
+        assertTrue(
+            bodyText.contains("404") ||
+                bodyText.contains("not found", ignoreCase = true) ||
+                bodyText.contains("error", ignoreCase = true),
+            "Error page should render on mobile",
+        )
     }
 }
