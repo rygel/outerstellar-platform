@@ -54,11 +54,11 @@ import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 import org.http4k.routing.static
-import org.http4k.routing.websocket.bind as wsBind
 import org.http4k.routing.websockets
 import org.http4k.server.PolyHandler
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
+import org.http4k.routing.websocket.bind as wsBind
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.App")
 
@@ -163,15 +163,15 @@ private fun assembleHttpHandler(
     val componentRoutes = buildComponentRoutes(appLabel, pageFactory, jteRenderer)
     val baseApp = buildBaseApp(excludedRoutes, adminRoutes, apiRoutes, uiRoutes, componentRoutes, userRepository)
     return buildFilterChain(
-            config,
-            userRepository,
-            analytics,
-            jwtService,
-            plugin,
-            activityUpdater,
-            pageFactory,
-            jteRenderer,
-        )
+        config,
+        userRepository,
+        analytics,
+        jwtService,
+        plugin,
+        activityUpdater,
+        pageFactory,
+        jteRenderer,
+    )
         .then(baseApp)
 }
 
@@ -179,7 +179,8 @@ private fun buildBearerSecurityPair(
     securityService: SecurityService
 ): Pair<org.http4k.security.Security, org.http4k.security.Security> {
     val bearerAuthFilter = Filter { next ->
-        { req ->
+        {
+                req ->
             val token = req.header("Authorization")?.removePrefix("Bearer ")
             if (token == null) {
                 Response(Status.UNAUTHORIZED).body("API token required")
@@ -284,10 +285,10 @@ private fun buildUiRoutes(
     routes += AuthRoutes(pageFactory, jteRenderer, securityService, config.sessionCookieSecure, analytics).routes
     routes +=
         OAuthRoutes(
-                providers = mapOf("apple" to AppleOAuthProvider()),
-                securityService = securityService,
-                sessionCookieSecure = config.sessionCookieSecure,
-            )
+            providers = mapOf("apple" to AppleOAuthProvider()),
+            securityService = securityService,
+            sessionCookieSecure = config.sessionCookieSecure,
+        )
             .routes
     routes += ErrorRoutes(pageFactory, jteRenderer).routes
     routes += SearchRoutes(pageFactory, jteRenderer, emptyList()).routes

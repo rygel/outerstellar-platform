@@ -20,7 +20,8 @@ class ErrorRoutes(private val pageFactory: WebPageFactory, private val renderer:
                 } bindContract
                 GET to
                 { kind ->
-                    { request: org.http4k.core.Request ->
+                    {
+                            request: org.http4k.core.Request ->
                         renderer.render(pageFactory.buildErrorPage(request.webContext, kind))
                     }
                 },
@@ -30,7 +31,8 @@ class ErrorRoutes(private val pageFactory: WebPageFactory, private val renderer:
                 } bindContract
                 GET to
                 { kind ->
-                    { request: org.http4k.core.Request ->
+                    {
+                            request: org.http4k.core.Request ->
                         val help = pageFactory.buildErrorHelp(request.webContext, kind)
                         renderer.render(help)
                     }
