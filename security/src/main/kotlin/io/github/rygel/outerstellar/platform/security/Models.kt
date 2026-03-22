@@ -19,6 +19,9 @@ data class User(
     val avatarUrl: String? = null,
     val emailNotificationsEnabled: Boolean = true,
     val pushNotificationsEnabled: Boolean = true,
+    val language: String? = null,
+    val theme: String? = null,
+    val layout: String? = null,
 )
 
 interface UserRepository {
@@ -51,6 +54,8 @@ interface UserRepository {
     fun updateAvatarUrl(userId: UUID, avatarUrl: String?)
 
     fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean)
+
+    fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?)
 }
 
 interface PasswordResetRepository {

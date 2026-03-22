@@ -144,6 +144,21 @@ open class Users(
      */
     val PUSH_NOTIFICATIONS_ENABLED: TableField<UsersRecord, Boolean?> = createField(DSL.name("PUSH_NOTIFICATIONS_ENABLED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("TRUE"), SQLDataType.BOOLEAN)), this, "")
 
+    /**
+     * The column <code>PUBLIC.USERS.LANGUAGE</code>.
+     */
+    val LANGUAGE: TableField<UsersRecord, String?> = createField(DSL.name("LANGUAGE"), SQLDataType.VARCHAR(10), this, "")
+
+    /**
+     * The column <code>PUBLIC.USERS.THEME</code>.
+     */
+    val THEME: TableField<UsersRecord, String?> = createField(DSL.name("THEME"), SQLDataType.VARCHAR(50), this, "")
+
+    /**
+     * The column <code>PUBLIC.USERS.LAYOUT</code>.
+     */
+    val LAYOUT: TableField<UsersRecord, String?> = createField(DSL.name("LAYOUT"), SQLDataType.VARCHAR(20), this, "")
+
     private constructor(alias: Name, aliased: Table<UsersRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<UsersRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<UsersRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)

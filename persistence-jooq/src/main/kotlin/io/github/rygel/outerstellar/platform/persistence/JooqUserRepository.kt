@@ -25,6 +25,9 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             avatarUrl = record.avatarUrl,
             emailNotificationsEnabled = record.emailNotificationsEnabled ?: true,
             pushNotificationsEnabled = record.pushNotificationsEnabled ?: true,
+            language = record.language,
+            theme = record.theme,
+            layout = record.layout,
         )
     }
 
@@ -111,6 +114,15 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
         dsl.update(USERS)
             .set(USERS.EMAIL_NOTIFICATIONS_ENABLED, emailEnabled)
             .set(USERS.PUSH_NOTIFICATIONS_ENABLED, pushEnabled)
+            .where(USERS.ID.eq(userId))
+            .execute()
+    }
+
+    override fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?) {
+        dsl.update(USERS)
+            .set(USERS.LANGUAGE, language)
+            .set(USERS.THEME, theme)
+            .set(USERS.LAYOUT, layout)
             .where(USERS.ID.eq(userId))
             .execute()
     }
