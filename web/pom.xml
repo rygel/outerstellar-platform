@@ -256,6 +256,14 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Web tests share an in-memory H2 database — parallel execution would cause races -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <parallel>none</parallel>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
