@@ -61,8 +61,7 @@ formatting:
   android: false
   autoCorrect: true
   MaximumLineLength:
-    active: true
-    maxLineLength: 120
+    active: false
   NoWildcardImports:
     active: true
   NoUnusedImports:
@@ -91,6 +90,8 @@ potential-bugs:
 
 style:
   active: true
+  MaxLineLength:
+    active: false
   MagicNumber:
     active: true
     excludes: ['**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**']

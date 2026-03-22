@@ -22,3 +22,7 @@ fun createDataSource(jdbcUrl: String, jdbcUser: String, jdbcPassword: String): H
 fun migrate(dataSource: DataSource) {
     Flyway.configure().dataSource(dataSource).locations("classpath:db/migration").load().migrate()
 }
+
+fun migratePlugin(dataSource: DataSource, location: String, historyTable: String) {
+    Flyway.configure().dataSource(dataSource).locations(location).table(historyTable).load().migrate()
+}

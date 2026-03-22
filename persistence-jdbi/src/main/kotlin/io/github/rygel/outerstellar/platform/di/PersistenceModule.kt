@@ -21,6 +21,7 @@ import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.security.ApiKeyRepository
+import io.github.rygel.outerstellar.platform.security.CachingUserRepository
 import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.security.OAuthRepository
 import io.github.rygel.outerstellar.platform.security.PasswordResetRepository
@@ -48,6 +49,10 @@ val persistenceModule
                 ds.close()
                 throw e
             }
+            if (config.devMode) {
+                JdbiUserRepository(Jdbi.create(ds).installPlugin(KotlinPlugin()))
+                    .seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
+            }
             ds
         }
 
@@ -63,7 +68,7 @@ val persistenceModule
 
         single<ContactRepository> { JdbiContactRepository(get()) }
 
-        single<UserRepository> { JdbiUserRepository(get()) }
+        single<UserRepository> { CachingUserRepository(JdbiUserRepository(get())) }
 
         single<OutboxRepository> { JdbiOutboxRepository(get()) }
 
@@ -81,3 +86,5 @@ val persistenceModule
 
         single<SessionRepository> { JdbiSessionRepository(get()) }
     }
+
+private const val DEV_ADMIN_PLACEHOLDER_HASH = "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"

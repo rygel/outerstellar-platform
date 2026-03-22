@@ -1,7 +1,9 @@
 package io.github.rygel.outerstellar.platform.di
 
+import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
+import io.github.rygel.outerstellar.platform.infra.migratePlugin
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqApiKeyRepository
@@ -39,6 +41,11 @@ val persistenceModule
             val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
             try {
                 migrate(ds)
+                getOrNull<PluginMigrationSource>()?.let { plugin ->
+                    plugin.migrationLocation?.let { location ->
+                        migratePlugin(ds, location, plugin.migrationHistoryTable)
+                    }
+                }
             } catch (e: Exception) {
                 ds.close()
                 throw e

@@ -29,8 +29,8 @@ import org.http4k.lens.Query
 import org.http4k.lens.long
 
 class SyncApi(
-    private val messageService: MessageService,
-    private val contactService: ContactService,
+    private val messageService: MessageService?,
+    private val contactService: ContactService?,
     private val analytics: AnalyticsService = NoOpAnalyticsService(),
 ) : ServerRoutes {
     private val pushRequestLens = Body.auto<SyncPushRequest>().toLens()
@@ -43,69 +43,82 @@ class SyncApi(
 
     private val sinceLens = Query.long().optional("since")
 
-    override val routes: List<ContractRoute> =
-        listOf(
-            "/api/v1/sync" meta
-                {
-                    summary = "Pull changes from server"
-                    queries += sinceLens
-                    returning(Status.OK, pullResponseLens to SyncPullResponse(emptyList<SyncMessage>(), 0L))
-                } bindContract
-                GET to
-                { request ->
-                    val since = sinceLens(request) ?: 0L
-                    val response = messageService.getChangesSince(since)
-                    Response(Status.OK).with(pullResponseLens of response)
-                },
-            "/api/v1/sync" meta
-                {
-                    summary = "Push changes to server"
-                    receiving(pushRequestLens)
-                    returning(Status.OK, pushResponseLens to SyncPushResponse(0, emptyList<SyncConflict>()))
-                } bindContract
-                POST to
-                { request ->
-                    val syncRequest = pushRequestLens(request)
-                    val syncResponse = messageService.processPushRequest(syncRequest)
-                    val userId = SecurityRules.USER_KEY(request)?.id?.toString()
-                    if (userId != null) {
-                        analytics.track(
-                            userId,
-                            "Messages Synced",
-                            mapOf("pushed" to syncRequest.messages.size, "conflicts" to syncResponse.conflicts.size),
-                        )
+    override val routes: List<ContractRoute> = buildList {
+        val msgSvc = messageService
+        if (msgSvc != null) {
+            add(
+                "/api/v1/sync" meta
+                    {
+                        summary = "Pull changes from server"
+                        queries += sinceLens
+                        returning(Status.OK, pullResponseLens to SyncPullResponse(emptyList<SyncMessage>(), 0L))
+                    } bindContract
+                    GET to
+                    { request ->
+                        val since = sinceLens(request) ?: 0L
+                        val response = msgSvc.getChangesSince(since)
+                        Response(Status.OK).with(pullResponseLens of response)
                     }
-                    Response(Status.OK).with(pushResponseLens of syncResponse)
-                },
-            "/api/v1/sync/contacts" meta
-                {
-                    summary = "Pull contact changes from server"
-                    queries += sinceLens
-                    returning(
-                        Status.OK,
-                        pullContactResponseLens to SyncPullContactResponse(emptyList<SyncContact>(), 0L),
-                    )
-                } bindContract
-                GET to
-                { request ->
-                    val since = sinceLens(request) ?: 0L
-                    val response = contactService.getChangesSince(since)
-                    Response(Status.OK).with(pullContactResponseLens of response)
-                },
-            "/api/v1/sync/contacts" meta
-                {
-                    summary = "Push contact changes to server"
-                    receiving(pushContactRequestLens)
-                    returning(
-                        Status.OK,
-                        pushContactResponseLens to SyncPushContactResponse(0, emptyList<SyncContactConflict>()),
-                    )
-                } bindContract
-                POST to
-                { request ->
-                    val syncRequest = pushContactRequestLens(request)
-                    val syncResponse = contactService.processPushRequest(syncRequest)
-                    Response(Status.OK).with(pushContactResponseLens of syncResponse)
-                },
-        )
+            )
+            add(
+                "/api/v1/sync" meta
+                    {
+                        summary = "Push changes to server"
+                        receiving(pushRequestLens)
+                        returning(Status.OK, pushResponseLens to SyncPushResponse(0, emptyList<SyncConflict>()))
+                    } bindContract
+                    POST to
+                    { request ->
+                        val syncRequest = pushRequestLens(request)
+                        val syncResponse = msgSvc.processPushRequest(syncRequest)
+                        val userId = SecurityRules.USER_KEY(request)?.id?.toString()
+                        if (userId != null) {
+                            analytics.track(
+                                userId,
+                                "Messages Synced",
+                                mapOf("pushed" to syncRequest.messages.size, "conflicts" to syncResponse.conflicts.size),
+                            )
+                        }
+                        Response(Status.OK).with(pushResponseLens of syncResponse)
+                    }
+            )
+        }
+        val ctcSvc = contactService
+        if (ctcSvc != null) {
+            add(
+                "/api/v1/sync/contacts" meta
+                    {
+                        summary = "Pull contact changes from server"
+                        queries += sinceLens
+                        returning(
+                            Status.OK,
+                            pullContactResponseLens to SyncPullContactResponse(emptyList<SyncContact>(), 0L),
+                        )
+                    } bindContract
+                    GET to
+                    { request ->
+                        val since = sinceLens(request) ?: 0L
+                        val response = ctcSvc.getChangesSince(since)
+                        Response(Status.OK).with(pullContactResponseLens of response)
+                    }
+            )
+            add(
+                "/api/v1/sync/contacts" meta
+                    {
+                        summary = "Push contact changes to server"
+                        receiving(pushContactRequestLens)
+                        returning(
+                            Status.OK,
+                            pushContactResponseLens to SyncPushContactResponse(0, emptyList<SyncContactConflict>()),
+                        )
+                    } bindContract
+                    POST to
+                    { request ->
+                        val syncRequest = pushContactRequestLens(request)
+                        val syncResponse = ctcSvc.processPushRequest(syncRequest)
+                        Response(Status.OK).with(pushContactResponseLens of syncResponse)
+                    }
+            )
+        }
+    }
 }
