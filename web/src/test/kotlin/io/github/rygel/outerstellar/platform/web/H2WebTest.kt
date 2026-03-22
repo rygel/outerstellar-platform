@@ -2,10 +2,10 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
-import javax.sql.DataSource
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
+import javax.sql.DataSource
 
 @Suppress("UtilityClassWithPublicConstructor")
 abstract class H2WebTest {
