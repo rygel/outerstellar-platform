@@ -538,6 +538,8 @@
                         <argLine>@{argLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
                         <forkedProcessTimeoutInSeconds>300</forkedProcessTimeoutInSeconds>
                         <reuseForks>true</reuseForks>
+                        <parallel>classes</parallel>
+                        <threadCount>4</threadCount>
                         <excludedGroups>${surefire.excluded.groups}</excludedGroups>
                         <groups>${surefire.groups}</groups>
                         <systemPropertyVariables>
