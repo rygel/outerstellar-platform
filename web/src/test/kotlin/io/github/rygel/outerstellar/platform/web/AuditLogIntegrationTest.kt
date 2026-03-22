@@ -46,7 +46,7 @@ class AuditLogIntegrationTest : H2WebTest() {
 
     // Use direct SQL for audit log queries — avoids JooqAuditRepository.findRecent()
     // which fails in H2 due to IDENTITY column field resolution
-    private val auditTable = DSL.table("audit_log")
+    private val auditTable = DSL.table("plt_audit_log")
     private val actionCol = DSL.field("action", String::class.java)
     private val targetUsernameCol = DSL.field("target_username", String::class.java)
 

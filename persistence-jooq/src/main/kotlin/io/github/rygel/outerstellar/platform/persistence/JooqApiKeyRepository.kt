@@ -10,7 +10,7 @@ import org.jooq.impl.SQLDataType
 
 class JooqApiKeyRepository(private val dsl: DSLContext) : ApiKeyRepository {
 
-    private val table = DSL.table("API_KEYS")
+    private val table = DSL.table("plt_api_keys")
     private val idField = DSL.field(DSL.name("ID"), SQLDataType.BIGINT)
     private val userIdField = DSL.field(DSL.name("USER_ID"), SQLDataType.UUID)
     private val keyHashField = DSL.field(DSL.name("KEY_HASH"), SQLDataType.VARCHAR)

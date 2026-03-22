@@ -14,7 +14,7 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
             handle
                 .createUpdate(
                     """
-                    INSERT INTO api_keys (user_id, key_hash, key_prefix, name, enabled, created_at)
+                    INSERT INTO plt_api_keys (user_id, key_hash, key_prefix, name, enabled, created_at)
                     VALUES (:userId, :keyHash, :keyPrefix, :name, :enabled, :createdAt)
                     """
                 )
@@ -31,7 +31,7 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
     override fun findByKeyHash(keyHash: String): ApiKey? {
         return jdbi.withHandle<ApiKey?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM api_keys WHERE key_hash = :keyHash")
+                .createQuery("SELECT * FROM plt_api_keys WHERE key_hash = :keyHash")
                 .bind("keyHash", keyHash)
                 .map { rs, _ -> mapApiKey(rs) }
                 .findOne()
@@ -42,7 +42,7 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
     override fun findByUserId(userId: UUID): List<ApiKey> {
         return jdbi.withHandle<List<ApiKey>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM api_keys WHERE user_id = :userId ORDER BY created_at DESC")
+                .createQuery("SELECT * FROM plt_api_keys WHERE user_id = :userId ORDER BY created_at DESC")
                 .bind("userId", userId)
                 .map { rs, _ -> mapApiKey(rs) }
                 .list()
@@ -52,7 +52,7 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
     override fun delete(id: Long, userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("DELETE FROM api_keys WHERE id = :id AND user_id = :userId")
+                .createUpdate("DELETE FROM plt_api_keys WHERE id = :id AND user_id = :userId")
                 .bind("id", id)
                 .bind("userId", userId)
                 .execute()
@@ -62,7 +62,7 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
     override fun updateLastUsed(id: Long) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE api_keys SET last_used_at = :lastUsedAt WHERE id = :id")
+                .createUpdate("UPDATE plt_api_keys SET last_used_at = :lastUsedAt WHERE id = :id")
                 .bind("lastUsedAt", LocalDateTime.now(ZoneOffset.UTC))
                 .bind("id", id)
                 .execute()

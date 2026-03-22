@@ -67,7 +67,7 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
 
         // Expire the session for expiredUser by setting expires_at to past
         testDsl.execute(
-            "UPDATE sessions SET expires_at = TIMESTAMPADD(HOUR, -2, CURRENT_TIMESTAMP)" +
+            "UPDATE plt_sessions SET expires_at = TIMESTAMPADD(HOUR, -2, CURRENT_TIMESTAMP)" +
                 " WHERE user_id = '${expiredUser.id}'"
         )
 

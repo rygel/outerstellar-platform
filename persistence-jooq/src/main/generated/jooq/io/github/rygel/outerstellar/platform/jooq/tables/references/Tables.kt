@@ -5,59 +5,24 @@
 package io.github.rygel.outerstellar.platform.jooq.tables.references
 
 
-import io.github.rygel.outerstellar.platform.jooq.tables.ApiKeys
-import io.github.rygel.outerstellar.platform.jooq.tables.AuditLog
-import io.github.rygel.outerstellar.platform.jooq.tables.ContactEmails
-import io.github.rygel.outerstellar.platform.jooq.tables.ContactPhones
-import io.github.rygel.outerstellar.platform.jooq.tables.ContactSocials
-import io.github.rygel.outerstellar.platform.jooq.tables.Contacts
-import io.github.rygel.outerstellar.platform.jooq.tables.DeviceTokens
 import io.github.rygel.outerstellar.platform.jooq.tables.FlywaySchemaHistory
-import io.github.rygel.outerstellar.platform.jooq.tables.Messages
-import io.github.rygel.outerstellar.platform.jooq.tables.Notifications
-import io.github.rygel.outerstellar.platform.jooq.tables.OauthConnections
-import io.github.rygel.outerstellar.platform.jooq.tables.Outbox
-import io.github.rygel.outerstellar.platform.jooq.tables.PasswordResetTokens
-import io.github.rygel.outerstellar.platform.jooq.tables.Sessions
-import io.github.rygel.outerstellar.platform.jooq.tables.SyncState
-import io.github.rygel.outerstellar.platform.jooq.tables.Users
+import io.github.rygel.outerstellar.platform.jooq.tables.PltApiKeys
+import io.github.rygel.outerstellar.platform.jooq.tables.PltAuditLog
+import io.github.rygel.outerstellar.platform.jooq.tables.PltContactEmails
+import io.github.rygel.outerstellar.platform.jooq.tables.PltContactPhones
+import io.github.rygel.outerstellar.platform.jooq.tables.PltContactSocials
+import io.github.rygel.outerstellar.platform.jooq.tables.PltContacts
+import io.github.rygel.outerstellar.platform.jooq.tables.PltDeviceTokens
+import io.github.rygel.outerstellar.platform.jooq.tables.PltMessages
+import io.github.rygel.outerstellar.platform.jooq.tables.PltNotifications
+import io.github.rygel.outerstellar.platform.jooq.tables.PltOauthConnections
+import io.github.rygel.outerstellar.platform.jooq.tables.PltOutbox
+import io.github.rygel.outerstellar.platform.jooq.tables.PltPasswordResetTokens
+import io.github.rygel.outerstellar.platform.jooq.tables.PltSessions
+import io.github.rygel.outerstellar.platform.jooq.tables.PltSyncState
+import io.github.rygel.outerstellar.platform.jooq.tables.PltUsers
 
 
-
-/**
- * The table <code>PUBLIC.API_KEYS</code>.
- */
-val API_KEYS: ApiKeys = ApiKeys.API_KEYS
-
-/**
- * The table <code>PUBLIC.AUDIT_LOG</code>.
- */
-val AUDIT_LOG: AuditLog = AuditLog.AUDIT_LOG
-
-/**
- * The table <code>PUBLIC.CONTACT_EMAILS</code>.
- */
-val CONTACT_EMAILS: ContactEmails = ContactEmails.CONTACT_EMAILS
-
-/**
- * The table <code>PUBLIC.CONTACT_PHONES</code>.
- */
-val CONTACT_PHONES: ContactPhones = ContactPhones.CONTACT_PHONES
-
-/**
- * The table <code>PUBLIC.CONTACT_SOCIALS</code>.
- */
-val CONTACT_SOCIALS: ContactSocials = ContactSocials.CONTACT_SOCIALS
-
-/**
- * The table <code>PUBLIC.CONTACTS</code>.
- */
-val CONTACTS: Contacts = Contacts.CONTACTS
-
-/**
- * The table <code>PUBLIC.DEVICE_TOKENS</code>.
- */
-val DEVICE_TOKENS: DeviceTokens = DeviceTokens.DEVICE_TOKENS
 
 /**
  * The table <code>PUBLIC.flyway_schema_history</code>.
@@ -65,41 +30,76 @@ val DEVICE_TOKENS: DeviceTokens = DeviceTokens.DEVICE_TOKENS
 val FLYWAY_SCHEMA_HISTORY: FlywaySchemaHistory = FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY
 
 /**
- * The table <code>PUBLIC.MESSAGES</code>.
+ * The table <code>PUBLIC.PLT_API_KEYS</code>.
  */
-val MESSAGES: Messages = Messages.MESSAGES
+val PLT_API_KEYS: PltApiKeys = PltApiKeys.PLT_API_KEYS
 
 /**
- * The table <code>PUBLIC.NOTIFICATIONS</code>.
+ * The table <code>PUBLIC.PLT_AUDIT_LOG</code>.
  */
-val NOTIFICATIONS: Notifications = Notifications.NOTIFICATIONS
+val PLT_AUDIT_LOG: PltAuditLog = PltAuditLog.PLT_AUDIT_LOG
 
 /**
- * The table <code>PUBLIC.OAUTH_CONNECTIONS</code>.
+ * The table <code>PUBLIC.PLT_CONTACT_EMAILS</code>.
  */
-val OAUTH_CONNECTIONS: OauthConnections = OauthConnections.OAUTH_CONNECTIONS
+val PLT_CONTACT_EMAILS: PltContactEmails = PltContactEmails.PLT_CONTACT_EMAILS
 
 /**
- * The table <code>PUBLIC.OUTBOX</code>.
+ * The table <code>PUBLIC.PLT_CONTACT_PHONES</code>.
  */
-val OUTBOX: Outbox = Outbox.OUTBOX
+val PLT_CONTACT_PHONES: PltContactPhones = PltContactPhones.PLT_CONTACT_PHONES
 
 /**
- * The table <code>PUBLIC.PASSWORD_RESET_TOKENS</code>.
+ * The table <code>PUBLIC.PLT_CONTACT_SOCIALS</code>.
  */
-val PASSWORD_RESET_TOKENS: PasswordResetTokens = PasswordResetTokens.PASSWORD_RESET_TOKENS
+val PLT_CONTACT_SOCIALS: PltContactSocials = PltContactSocials.PLT_CONTACT_SOCIALS
 
 /**
- * The table <code>PUBLIC.SESSIONS</code>.
+ * The table <code>PUBLIC.PLT_CONTACTS</code>.
  */
-val SESSIONS: Sessions = Sessions.SESSIONS
+val PLT_CONTACTS: PltContacts = PltContacts.PLT_CONTACTS
 
 /**
- * The table <code>PUBLIC.SYNC_STATE</code>.
+ * The table <code>PUBLIC.PLT_DEVICE_TOKENS</code>.
  */
-val SYNC_STATE: SyncState = SyncState.SYNC_STATE
+val PLT_DEVICE_TOKENS: PltDeviceTokens = PltDeviceTokens.PLT_DEVICE_TOKENS
 
 /**
- * The table <code>PUBLIC.USERS</code>.
+ * The table <code>PUBLIC.PLT_MESSAGES</code>.
  */
-val USERS: Users = Users.USERS
+val PLT_MESSAGES: PltMessages = PltMessages.PLT_MESSAGES
+
+/**
+ * The table <code>PUBLIC.PLT_NOTIFICATIONS</code>.
+ */
+val PLT_NOTIFICATIONS: PltNotifications = PltNotifications.PLT_NOTIFICATIONS
+
+/**
+ * The table <code>PUBLIC.PLT_OAUTH_CONNECTIONS</code>.
+ */
+val PLT_OAUTH_CONNECTIONS: PltOauthConnections = PltOauthConnections.PLT_OAUTH_CONNECTIONS
+
+/**
+ * The table <code>PUBLIC.PLT_OUTBOX</code>.
+ */
+val PLT_OUTBOX: PltOutbox = PltOutbox.PLT_OUTBOX
+
+/**
+ * The table <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS</code>.
+ */
+val PLT_PASSWORD_RESET_TOKENS: PltPasswordResetTokens = PltPasswordResetTokens.PLT_PASSWORD_RESET_TOKENS
+
+/**
+ * The table <code>PUBLIC.PLT_SESSIONS</code>.
+ */
+val PLT_SESSIONS: PltSessions = PltSessions.PLT_SESSIONS
+
+/**
+ * The table <code>PUBLIC.PLT_SYNC_STATE</code>.
+ */
+val PLT_SYNC_STATE: PltSyncState = PltSyncState.PLT_SYNC_STATE
+
+/**
+ * The table <code>PUBLIC.PLT_USERS</code>.
+ */
+val PLT_USERS: PltUsers = PltUsers.PLT_USERS

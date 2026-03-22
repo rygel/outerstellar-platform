@@ -12,7 +12,7 @@ class JdbiPasswordResetRepository(private val jdbi: Jdbi) : PasswordResetReposit
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate(
-                    """INSERT INTO password_reset_tokens (user_id, token, expires_at, used)
+                    """INSERT INTO plt_password_reset_tokens (user_id, token, expires_at, used)
                    VALUES (:userId, :token, :expiresAt, :used)"""
                 )
                 .bind("userId", resetToken.userId)
@@ -26,7 +26,7 @@ class JdbiPasswordResetRepository(private val jdbi: Jdbi) : PasswordResetReposit
     override fun findByToken(tokenValue: String): PasswordResetToken? {
         return jdbi.withHandle<PasswordResetToken?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM password_reset_tokens WHERE token = :token")
+                .createQuery("SELECT * FROM plt_password_reset_tokens WHERE token = :token")
                 .bind("token", tokenValue)
                 .map { rs, _ ->
                     PasswordResetToken(
@@ -45,7 +45,7 @@ class JdbiPasswordResetRepository(private val jdbi: Jdbi) : PasswordResetReposit
     override fun markUsed(tokenValue: String) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE password_reset_tokens SET used = true WHERE token = :token")
+                .createUpdate("UPDATE plt_password_reset_tokens SET used = true WHERE token = :token")
                 .bind("token", tokenValue)
                 .execute()
         }

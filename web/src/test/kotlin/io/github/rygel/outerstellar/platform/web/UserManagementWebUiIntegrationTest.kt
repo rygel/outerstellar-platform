@@ -173,7 +173,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     fun `session timeout redirects HTML requests to auth page`() {
         val admin = seedAdmin()
         testDsl.execute(
-            "UPDATE users SET last_activity_at = " + "TIMESTAMP '2020-01-01 00:00:00' " + "WHERE id = '${admin.id}'"
+            "UPDATE plt_users SET last_activity_at = " + "TIMESTAMP '2020-01-01 00:00:00' " + "WHERE id = '${admin.id}'"
         )
         val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
         assertEquals(Status.FOUND, response.status)
@@ -184,7 +184,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     fun `active session is not expired`() {
         val admin = seedAdmin()
         testDsl.execute(
-            "UPDATE users SET last_activity_at = " +
+            "UPDATE plt_users SET last_activity_at = " +
                 "TIMESTAMPADD(MINUTE, -5, CURRENT_TIMESTAMP) " +
                 "WHERE id = '${admin.id}'"
         )

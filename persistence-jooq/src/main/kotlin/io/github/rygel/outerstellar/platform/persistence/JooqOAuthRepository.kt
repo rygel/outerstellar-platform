@@ -12,7 +12,7 @@ import org.jooq.impl.SQLDataType
 
 class JooqOAuthRepository(private val dsl: DSLContext) : OAuthRepository {
 
-    private val table = DSL.table("OAUTH_CONNECTIONS")
+    private val table = DSL.table("plt_oauth_connections")
     private val idField = DSL.field(DSL.name("ID"), SQLDataType.BIGINT)
     private val userIdField = DSL.field(DSL.name("USER_ID"), SQLDataType.UUID)
     private val providerField = DSL.field(DSL.name("PROVIDER"), SQLDataType.VARCHAR)

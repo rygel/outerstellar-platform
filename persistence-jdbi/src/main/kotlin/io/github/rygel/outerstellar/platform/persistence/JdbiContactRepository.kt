@@ -19,7 +19,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
             val (whereClause, bindings) = buildFilterClause(query, includeDeleted)
             val sql =
                 """
-                SELECT * FROM contacts
+                SELECT * FROM plt_contacts
                 WHERE $whereClause
                 ORDER BY name ASC
                 LIMIT :limit OFFSET :offset
@@ -40,7 +40,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     override fun countContacts(query: String?, includeDeleted: Boolean): Long {
         return jdbi.withHandle<Long, Exception> { handle ->
             val (whereClause, bindings) = buildFilterClause(query, includeDeleted)
-            val q = handle.createQuery("SELECT COUNT(*) FROM contacts WHERE $whereClause")
+            val q = handle.createQuery("SELECT COUNT(*) FROM plt_contacts WHERE $whereClause")
             bindings(q)
             q.mapTo(Long::class.java).one()
         }
@@ -49,7 +49,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     override fun listDirtyContacts(): List<StoredContact> =
         jdbi.withHandle<List<StoredContact>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM contacts WHERE dirty = true")
+                .createQuery("SELECT * FROM plt_contacts WHERE dirty = true")
                 .map { rs, _ -> mapContact(rs, handle, rs.getLong("id")) }
                 .list()
         }
@@ -59,7 +59,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
 
     private fun findBySyncId(handle: Handle, syncId: String): StoredContact? =
         handle
-            .createQuery("SELECT * FROM contacts WHERE sync_id = :syncId")
+            .createQuery("SELECT * FROM plt_contacts WHERE sync_id = :syncId")
             .bind("syncId", syncId)
             .map { rs, _ -> mapContact(rs, handle, rs.getLong("id")) }
             .findOne()
@@ -68,7 +68,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     override fun findChangesSince(updatedAtEpochMs: Long): List<StoredContact> =
         jdbi.withHandle<List<StoredContact>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM contacts WHERE updated_at_epoch_ms > :since")
+                .createQuery("SELECT * FROM plt_contacts WHERE updated_at_epoch_ms > :since")
                 .bind("since", updatedAtEpochMs)
                 .map { rs, _ -> mapContact(rs, handle, rs.getLong("id")) }
                 .list()
@@ -102,7 +102,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
                     handle
                         .createUpdate(
                             """
-                            INSERT INTO contacts
+                            INSERT INTO plt_contacts
                                 (sync_id, name, company, company_address, department,
                                  updated_at_epoch_ms, dirty, deleted, version)
                             VALUES (:syncId, :name, :company, :companyAddress, :department,
@@ -125,7 +125,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
                 handle
                     .createUpdate(
                         """
-                        UPDATE contacts
+                        UPDATE plt_contacts
                         SET name = :name, company = :company, company_address = :companyAddress,
                             department = :department, updated_at_epoch_ms = :updatedAtEpochMs,
                             dirty = :dirty, deleted = :deleted, version = :version
@@ -155,7 +155,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     override fun markClean(syncIds: Collection<String>) {
         if (syncIds.isEmpty()) return
         jdbi.useHandle<Exception> { handle ->
-            val batch = handle.prepareBatch("UPDATE contacts SET dirty = false WHERE sync_id = :syncId")
+            val batch = handle.prepareBatch("UPDATE plt_contacts SET dirty = false WHERE sync_id = :syncId")
             syncIds.forEach { batch.bind("syncId", it).add() }
             batch.execute()
         }
@@ -164,7 +164,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     override fun getLastSyncEpochMs(): Long =
         jdbi.withHandle<Long, Exception> { handle ->
             handle
-                .createQuery("SELECT state_value FROM sync_state WHERE state_key = :key")
+                .createQuery("SELECT state_value FROM plt_sync_state WHERE state_key = :key")
                 .bind("key", LAST_SYNC_STATE_KEY)
                 .mapTo(Long::class.java)
                 .findOne()
@@ -175,13 +175,13 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         jdbi.useHandle<Exception> { handle ->
             val updated =
                 handle
-                    .createUpdate("UPDATE sync_state SET state_value = :value WHERE state_key = :key")
+                    .createUpdate("UPDATE plt_sync_state SET state_value = :value WHERE state_key = :key")
                     .bind("key", LAST_SYNC_STATE_KEY)
                     .bind("value", value)
                     .execute()
             if (updated == 0) {
                 handle
-                    .createUpdate("INSERT INTO sync_state (state_key, state_value) VALUES (:key, :value)")
+                    .createUpdate("INSERT INTO plt_sync_state (state_key, state_value) VALUES (:key, :value)")
                     .bind("key", LAST_SYNC_STATE_KEY)
                     .bind("value", value)
                     .execute()
@@ -192,7 +192,10 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     override fun seedContacts() {
         val count =
             jdbi.withHandle<Long, Exception> { handle ->
-                handle.createQuery("SELECT COUNT(*) FROM contacts WHERE deleted = false").mapTo(Long::class.java).one()
+                handle
+                    .createQuery("SELECT COUNT(*) FROM plt_contacts WHERE deleted = false")
+                    .mapTo(Long::class.java)
+                    .one()
             }
         if (count > 0) return
 
@@ -228,7 +231,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     override fun softDelete(syncId: String) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE contacts SET deleted = true, version = version + 1 WHERE sync_id = :syncId")
+                .createUpdate("UPDATE plt_contacts SET deleted = true, version = version + 1 WHERE sync_id = :syncId")
                 .bind("syncId", syncId)
                 .execute()
         }
@@ -237,7 +240,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     override fun restore(syncId: String) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE contacts SET deleted = false, version = version + 1 WHERE sync_id = :syncId")
+                .createUpdate("UPDATE plt_contacts SET deleted = false, version = version + 1 WHERE sync_id = :syncId")
                 .bind("syncId", syncId)
                 .execute()
         }
@@ -249,7 +252,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
                 handle
                     .createUpdate(
                         """
-                        UPDATE contacts
+                        UPDATE plt_contacts
                         SET name = :name, company = :company, company_address = :companyAddress,
                             department = :department, updated_at_epoch_ms = :updatedAtEpochMs,
                             dirty = :dirty, deleted = :deleted, version = :newVersion
@@ -282,7 +285,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         val json = Jackson.asFormatString(serverVersion)
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE contacts SET sync_conflict = :json WHERE sync_id = :syncId")
+                .createUpdate("UPDATE plt_contacts SET sync_conflict = :json WHERE sync_id = :syncId")
                 .bind("json", json)
                 .bind("syncId", syncId)
                 .execute()
@@ -294,7 +297,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
             handle
                 .createUpdate(
                     """
-                    UPDATE contacts
+                    UPDATE plt_contacts
                     SET name = :name, company = :company, company_address = :companyAddress,
                         department = :department, updated_at_epoch_ms = :updatedAtEpochMs,
                         dirty = :dirty, version = version + 1, sync_conflict = NULL
@@ -340,7 +343,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
                 handle
                     .createUpdate(
                         """
-                        INSERT INTO contacts
+                        INSERT INTO plt_contacts
                             (sync_id, name, company, company_address, department,
                              updated_at_epoch_ms, dirty, deleted, version)
                         VALUES (:syncId, :name, :company, :companyAddress, :department,
@@ -371,27 +374,27 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         phones: List<String>,
         socialMedia: List<String>,
     ) {
-        handle.createUpdate("DELETE FROM contact_emails WHERE contact_id = :id").bind("id", contactId).execute()
+        handle.createUpdate("DELETE FROM plt_contact_emails WHERE contact_id = :id").bind("id", contactId).execute()
         if (emails.isNotEmpty()) {
             val batch =
-                handle.prepareBatch("INSERT INTO contact_emails (contact_id, email) VALUES (:contactId, :email)")
+                handle.prepareBatch("INSERT INTO plt_contact_emails (contact_id, email) VALUES (:contactId, :email)")
             emails.forEach { batch.bind("contactId", contactId).bind("email", it).add() }
             batch.execute()
         }
 
-        handle.createUpdate("DELETE FROM contact_phones WHERE contact_id = :id").bind("id", contactId).execute()
+        handle.createUpdate("DELETE FROM plt_contact_phones WHERE contact_id = :id").bind("id", contactId).execute()
         if (phones.isNotEmpty()) {
             val batch =
-                handle.prepareBatch("INSERT INTO contact_phones (contact_id, phone) VALUES (:contactId, :phone)")
+                handle.prepareBatch("INSERT INTO plt_contact_phones (contact_id, phone) VALUES (:contactId, :phone)")
             phones.forEach { batch.bind("contactId", contactId).bind("phone", it).add() }
             batch.execute()
         }
 
-        handle.createUpdate("DELETE FROM contact_socials WHERE contact_id = :id").bind("id", contactId).execute()
+        handle.createUpdate("DELETE FROM plt_contact_socials WHERE contact_id = :id").bind("id", contactId).execute()
         if (socialMedia.isNotEmpty()) {
             val batch =
                 handle.prepareBatch(
-                    "INSERT INTO contact_socials (contact_id, social_media) VALUES (:contactId, :socialMedia)"
+                    "INSERT INTO plt_contact_socials (contact_id, social_media) VALUES (:contactId, :socialMedia)"
                 )
             socialMedia.forEach { batch.bind("contactId", contactId).bind("socialMedia", it).add() }
             batch.execute()
@@ -400,7 +403,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
 
     private fun getContactId(handle: Handle, syncId: String): Long? =
         handle
-            .createQuery("SELECT id FROM contacts WHERE sync_id = :syncId")
+            .createQuery("SELECT id FROM plt_contacts WHERE sync_id = :syncId")
             .bind("syncId", syncId)
             .mapTo(Long::class.java)
             .findOne()
@@ -426,19 +429,19 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     private fun mapContact(rs: java.sql.ResultSet, handle: Handle, contactId: Long): StoredContact {
         val emails =
             handle
-                .createQuery("SELECT email FROM contact_emails WHERE contact_id = :id")
+                .createQuery("SELECT email FROM plt_contact_emails WHERE contact_id = :id")
                 .bind("id", contactId)
                 .mapTo(String::class.java)
                 .list()
         val phones =
             handle
-                .createQuery("SELECT phone FROM contact_phones WHERE contact_id = :id")
+                .createQuery("SELECT phone FROM plt_contact_phones WHERE contact_id = :id")
                 .bind("id", contactId)
                 .mapTo(String::class.java)
                 .list()
         val socials =
             handle
-                .createQuery("SELECT social_media FROM contact_socials WHERE contact_id = :id")
+                .createQuery("SELECT social_media FROM plt_contact_socials WHERE contact_id = :id")
                 .bind("id", contactId)
                 .mapTo(String::class.java)
                 .list()

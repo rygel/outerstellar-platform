@@ -5,16 +5,16 @@
 package io.github.rygel.outerstellar.platform.jooq.indexes
 
 
-import io.github.rygel.outerstellar.platform.jooq.tables.ApiKeys
-import io.github.rygel.outerstellar.platform.jooq.tables.AuditLog
-import io.github.rygel.outerstellar.platform.jooq.tables.Contacts
-import io.github.rygel.outerstellar.platform.jooq.tables.DeviceTokens
 import io.github.rygel.outerstellar.platform.jooq.tables.FlywaySchemaHistory
-import io.github.rygel.outerstellar.platform.jooq.tables.Messages
-import io.github.rygel.outerstellar.platform.jooq.tables.Notifications
-import io.github.rygel.outerstellar.platform.jooq.tables.OauthConnections
-import io.github.rygel.outerstellar.platform.jooq.tables.Outbox
-import io.github.rygel.outerstellar.platform.jooq.tables.Sessions
+import io.github.rygel.outerstellar.platform.jooq.tables.PltApiKeys
+import io.github.rygel.outerstellar.platform.jooq.tables.PltAuditLog
+import io.github.rygel.outerstellar.platform.jooq.tables.PltContacts
+import io.github.rygel.outerstellar.platform.jooq.tables.PltDeviceTokens
+import io.github.rygel.outerstellar.platform.jooq.tables.PltMessages
+import io.github.rygel.outerstellar.platform.jooq.tables.PltNotifications
+import io.github.rygel.outerstellar.platform.jooq.tables.PltOauthConnections
+import io.github.rygel.outerstellar.platform.jooq.tables.PltOutbox
+import io.github.rygel.outerstellar.platform.jooq.tables.PltSessions
 
 import org.jooq.Index
 import org.jooq.impl.DSL
@@ -27,21 +27,21 @@ import org.jooq.impl.Internal
 // -------------------------------------------------------------------------
 
 val FLYWAY_SCHEMA_HISTORY_S_IDX: Index = Internal.createIndex(DSL.name("flyway_schema_history_s_idx"), FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY, arrayOf(FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY.SUCCESS), false)
-val IDX_API_KEYS_HASH: Index = Internal.createIndex(DSL.name("IDX_API_KEYS_HASH"), ApiKeys.API_KEYS, arrayOf(ApiKeys.API_KEYS.KEY_HASH), false)
-val IDX_API_KEYS_USER: Index = Internal.createIndex(DSL.name("IDX_API_KEYS_USER"), ApiKeys.API_KEYS, arrayOf(ApiKeys.API_KEYS.USER_ID), false)
-val IDX_AUDIT_LOG_ACTOR: Index = Internal.createIndex(DSL.name("IDX_AUDIT_LOG_ACTOR"), AuditLog.AUDIT_LOG, arrayOf(AuditLog.AUDIT_LOG.ACTOR_ID), false)
-val IDX_AUDIT_LOG_CREATED: Index = Internal.createIndex(DSL.name("IDX_AUDIT_LOG_CREATED"), AuditLog.AUDIT_LOG, arrayOf(AuditLog.AUDIT_LOG.CREATED_AT), false)
-val IDX_DEVICE_TOKENS_USER: Index = Internal.createIndex(DSL.name("IDX_DEVICE_TOKENS_USER"), DeviceTokens.DEVICE_TOKENS, arrayOf(DeviceTokens.DEVICE_TOKENS.USER_ID), false)
-val IDX_MESSAGES_AUTHOR: Index = Internal.createIndex(DSL.name("IDX_MESSAGES_AUTHOR"), Messages.MESSAGES, arrayOf(Messages.MESSAGES.AUTHOR), false)
-val IDX_MESSAGES_CREATED: Index = Internal.createIndex(DSL.name("IDX_MESSAGES_CREATED"), Messages.MESSAGES, arrayOf(Messages.MESSAGES.CREATED_AT), false)
-val IDX_MESSAGES_DELETED: Index = Internal.createIndex(DSL.name("IDX_MESSAGES_DELETED"), Messages.MESSAGES, arrayOf(Messages.MESSAGES.DELETED_AT), false)
-val IDX_NOTIFICATIONS_USER_ID: Index = Internal.createIndex(DSL.name("IDX_NOTIFICATIONS_USER_ID"), Notifications.NOTIFICATIONS, arrayOf(Notifications.NOTIFICATIONS.USER_ID), false)
-val IDX_NOTIFICATIONS_USER_UNREAD: Index = Internal.createIndex(DSL.name("IDX_NOTIFICATIONS_USER_UNREAD"), Notifications.NOTIFICATIONS, arrayOf(Notifications.NOTIFICATIONS.USER_ID, Notifications.NOTIFICATIONS.READ_AT), false)
-val IDX_OAUTH_CONNECTIONS_USER: Index = Internal.createIndex(DSL.name("IDX_OAUTH_CONNECTIONS_USER"), OauthConnections.OAUTH_CONNECTIONS, arrayOf(OauthConnections.OAUTH_CONNECTIONS.USER_ID), false)
-val IDX_OUTBOX_STATUS: Index = Internal.createIndex(DSL.name("IDX_OUTBOX_STATUS"), Outbox.OUTBOX, arrayOf(Outbox.OUTBOX.STATUS), false)
-val IDX_OUTBOX_UNPROCESSED: Index = Internal.createIndex(DSL.name("IDX_OUTBOX_UNPROCESSED"), Outbox.OUTBOX, arrayOf(Outbox.OUTBOX.CREATED_AT, Outbox.OUTBOX.PROCESSED_AT), false)
-val IDX_SESSIONS_EXPIRES: Index = Internal.createIndex(DSL.name("IDX_SESSIONS_EXPIRES"), Sessions.SESSIONS, arrayOf(Sessions.SESSIONS.EXPIRES_AT), false)
-val IDX_SESSIONS_USER_ID: Index = Internal.createIndex(DSL.name("IDX_SESSIONS_USER_ID"), Sessions.SESSIONS, arrayOf(Sessions.SESSIONS.USER_ID), false)
-val UX_CONTACTS_SYNC_ID: Index = Internal.createIndex(DSL.name("UX_CONTACTS_SYNC_ID"), Contacts.CONTACTS, arrayOf(Contacts.CONTACTS.SYNC_ID), true)
-val UX_MESSAGES_SYNC_ID: Index = Internal.createIndex(DSL.name("UX_MESSAGES_SYNC_ID"), Messages.MESSAGES, arrayOf(Messages.MESSAGES.SYNC_ID), true)
-val UX_SESSIONS_TOKEN_HASH: Index = Internal.createIndex(DSL.name("UX_SESSIONS_TOKEN_HASH"), Sessions.SESSIONS, arrayOf(Sessions.SESSIONS.TOKEN_HASH), true)
+val IDX_PLT_API_KEYS_HASH: Index = Internal.createIndex(DSL.name("IDX_PLT_API_KEYS_HASH"), PltApiKeys.PLT_API_KEYS, arrayOf(PltApiKeys.PLT_API_KEYS.KEY_HASH), false)
+val IDX_PLT_API_KEYS_USER: Index = Internal.createIndex(DSL.name("IDX_PLT_API_KEYS_USER"), PltApiKeys.PLT_API_KEYS, arrayOf(PltApiKeys.PLT_API_KEYS.USER_ID), false)
+val IDX_PLT_AUDIT_LOG_ACTOR: Index = Internal.createIndex(DSL.name("IDX_PLT_AUDIT_LOG_ACTOR"), PltAuditLog.PLT_AUDIT_LOG, arrayOf(PltAuditLog.PLT_AUDIT_LOG.ACTOR_ID), false)
+val IDX_PLT_AUDIT_LOG_CREATED: Index = Internal.createIndex(DSL.name("IDX_PLT_AUDIT_LOG_CREATED"), PltAuditLog.PLT_AUDIT_LOG, arrayOf(PltAuditLog.PLT_AUDIT_LOG.CREATED_AT), false)
+val IDX_PLT_DEVICE_TOKENS_USER: Index = Internal.createIndex(DSL.name("IDX_PLT_DEVICE_TOKENS_USER"), PltDeviceTokens.PLT_DEVICE_TOKENS, arrayOf(PltDeviceTokens.PLT_DEVICE_TOKENS.USER_ID), false)
+val IDX_PLT_MESSAGES_AUTHOR: Index = Internal.createIndex(DSL.name("IDX_PLT_MESSAGES_AUTHOR"), PltMessages.PLT_MESSAGES, arrayOf(PltMessages.PLT_MESSAGES.AUTHOR), false)
+val IDX_PLT_MESSAGES_CREATED: Index = Internal.createIndex(DSL.name("IDX_PLT_MESSAGES_CREATED"), PltMessages.PLT_MESSAGES, arrayOf(PltMessages.PLT_MESSAGES.CREATED_AT), false)
+val IDX_PLT_MESSAGES_DELETED: Index = Internal.createIndex(DSL.name("IDX_PLT_MESSAGES_DELETED"), PltMessages.PLT_MESSAGES, arrayOf(PltMessages.PLT_MESSAGES.DELETED_AT), false)
+val IDX_PLT_NOTIFICATIONS_USER_ID: Index = Internal.createIndex(DSL.name("IDX_PLT_NOTIFICATIONS_USER_ID"), PltNotifications.PLT_NOTIFICATIONS, arrayOf(PltNotifications.PLT_NOTIFICATIONS.USER_ID), false)
+val IDX_PLT_NOTIFICATIONS_USER_UNREAD: Index = Internal.createIndex(DSL.name("IDX_PLT_NOTIFICATIONS_USER_UNREAD"), PltNotifications.PLT_NOTIFICATIONS, arrayOf(PltNotifications.PLT_NOTIFICATIONS.USER_ID, PltNotifications.PLT_NOTIFICATIONS.READ_AT), false)
+val IDX_PLT_OAUTH_CONNECTIONS_USER: Index = Internal.createIndex(DSL.name("IDX_PLT_OAUTH_CONNECTIONS_USER"), PltOauthConnections.PLT_OAUTH_CONNECTIONS, arrayOf(PltOauthConnections.PLT_OAUTH_CONNECTIONS.USER_ID), false)
+val IDX_PLT_OUTBOX_STATUS: Index = Internal.createIndex(DSL.name("IDX_PLT_OUTBOX_STATUS"), PltOutbox.PLT_OUTBOX, arrayOf(PltOutbox.PLT_OUTBOX.STATUS), false)
+val IDX_PLT_OUTBOX_UNPROCESSED: Index = Internal.createIndex(DSL.name("IDX_PLT_OUTBOX_UNPROCESSED"), PltOutbox.PLT_OUTBOX, arrayOf(PltOutbox.PLT_OUTBOX.CREATED_AT, PltOutbox.PLT_OUTBOX.PROCESSED_AT), false)
+val IDX_PLT_SESSIONS_EXPIRES: Index = Internal.createIndex(DSL.name("IDX_PLT_SESSIONS_EXPIRES"), PltSessions.PLT_SESSIONS, arrayOf(PltSessions.PLT_SESSIONS.EXPIRES_AT), false)
+val IDX_PLT_SESSIONS_USER_ID: Index = Internal.createIndex(DSL.name("IDX_PLT_SESSIONS_USER_ID"), PltSessions.PLT_SESSIONS, arrayOf(PltSessions.PLT_SESSIONS.USER_ID), false)
+val UX_PLT_CONTACTS_SYNC_ID: Index = Internal.createIndex(DSL.name("UX_PLT_CONTACTS_SYNC_ID"), PltContacts.PLT_CONTACTS, arrayOf(PltContacts.PLT_CONTACTS.SYNC_ID), true)
+val UX_PLT_MESSAGES_SYNC_ID: Index = Internal.createIndex(DSL.name("UX_PLT_MESSAGES_SYNC_ID"), PltMessages.PLT_MESSAGES, arrayOf(PltMessages.PLT_MESSAGES.SYNC_ID), true)
+val UX_PLT_SESSIONS_TOKEN_HASH: Index = Internal.createIndex(DSL.name("UX_PLT_SESSIONS_TOKEN_HASH"), PltSessions.PLT_SESSIONS, arrayOf(PltSessions.PLT_SESSIONS.TOKEN_HASH), true)

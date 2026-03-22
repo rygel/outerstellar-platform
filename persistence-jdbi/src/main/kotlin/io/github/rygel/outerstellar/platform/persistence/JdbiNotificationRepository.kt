@@ -13,7 +13,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
             handle
                 .createUpdate(
                     """
-                    INSERT INTO notifications (id, user_id, title, body, type, created_at)
+                    INSERT INTO plt_notifications (id, user_id, title, body, type, created_at)
                     VALUES (:id, :userId, :title, :body, :type, :createdAt)
                     """
                 )
@@ -31,7 +31,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
         return jdbi.withHandle<List<Notification>, Exception> { handle ->
             handle
                 .createQuery(
-                    "SELECT * FROM notifications WHERE user_id = :userId ORDER BY created_at DESC LIMIT :limit"
+                    "SELECT * FROM plt_notifications WHERE user_id = :userId ORDER BY created_at DESC LIMIT :limit"
                 )
                 .bind("userId", userId)
                 .bind("limit", limit)
@@ -43,7 +43,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
     override fun countUnread(userId: UUID): Int {
         return jdbi.withHandle<Int, Exception> { handle ->
             handle
-                .createQuery("SELECT COUNT(*) FROM notifications WHERE user_id = :userId AND read_at IS NULL")
+                .createQuery("SELECT COUNT(*) FROM plt_notifications WHERE user_id = :userId AND read_at IS NULL")
                 .bind("userId", userId)
                 .mapTo(Int::class.java)
                 .one()
@@ -53,7 +53,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
     override fun markRead(id: UUID, userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE notifications SET read_at = :readAt WHERE id = :id AND user_id = :userId")
+                .createUpdate("UPDATE plt_notifications SET read_at = :readAt WHERE id = :id AND user_id = :userId")
                 .bind("readAt", LocalDateTime.now(ZoneOffset.UTC))
                 .bind("id", id)
                 .bind("userId", userId)
@@ -64,7 +64,9 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
     override fun markAllRead(userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("UPDATE notifications SET read_at = :readAt WHERE user_id = :userId AND read_at IS NULL")
+                .createUpdate(
+                    "UPDATE plt_notifications SET read_at = :readAt WHERE user_id = :userId AND read_at IS NULL"
+                )
                 .bind("readAt", LocalDateTime.now(ZoneOffset.UTC))
                 .bind("userId", userId)
                 .execute()
@@ -74,7 +76,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
     override fun delete(id: UUID, userId: UUID) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate("DELETE FROM notifications WHERE id = :id AND user_id = :userId")
+                .createUpdate("DELETE FROM plt_notifications WHERE id = :id AND user_id = :userId")
                 .bind("id", id)
                 .bind("userId", userId)
                 .execute()
