@@ -54,20 +54,20 @@ import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 import org.http4k.routing.static
+import org.http4k.routing.websocket.bind as wsBind
 import org.http4k.routing.websockets
 import org.http4k.server.PolyHandler
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
-import org.http4k.routing.websocket.bind as wsBind
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.App")
 
 @Suppress("LongParameterList", "TooGenericExceptionCaught", "SwallowedException", "DEPRECATION")
 fun app(
-    messageService: MessageService,
-    contactService: io.github.rygel.outerstellar.platform.service.ContactService,
-    outboxRepository: OutboxRepository,
-    cache: MessageCache,
+    messageService: MessageService? = null,
+    contactService: io.github.rygel.outerstellar.platform.service.ContactService? = null,
+    outboxRepository: OutboxRepository? = null,
+    cache: MessageCache? = null,
     jteRenderer: TemplateRenderer,
     pageFactory: WebPageFactory,
     config: AppConfig,
@@ -114,10 +114,10 @@ fun app(
 private fun assembleHttpHandler(
     appLabel: String,
     excludedRoutes: Set<String>,
-    messageService: MessageService,
-    contactService: io.github.rygel.outerstellar.platform.service.ContactService,
-    outboxRepository: OutboxRepository,
-    cache: MessageCache,
+    messageService: MessageService?,
+    contactService: io.github.rygel.outerstellar.platform.service.ContactService?,
+    outboxRepository: OutboxRepository?,
+    cache: MessageCache?,
     jteRenderer: TemplateRenderer,
     pageFactory: WebPageFactory,
     config: AppConfig,
@@ -163,15 +163,15 @@ private fun assembleHttpHandler(
     val componentRoutes = buildComponentRoutes(appLabel, pageFactory, jteRenderer)
     val baseApp = buildBaseApp(excludedRoutes, adminRoutes, apiRoutes, uiRoutes, componentRoutes, userRepository)
     return buildFilterChain(
-        config,
-        userRepository,
-        analytics,
-        jwtService,
-        plugin,
-        activityUpdater,
-        pageFactory,
-        jteRenderer,
-    )
+            config,
+            userRepository,
+            analytics,
+            jwtService,
+            plugin,
+            activityUpdater,
+            pageFactory,
+            jteRenderer,
+        )
         .then(baseApp)
 }
 
@@ -179,8 +179,7 @@ private fun buildBearerSecurityPair(
     securityService: SecurityService
 ): Pair<org.http4k.security.Security, org.http4k.security.Security> {
     val bearerAuthFilter = Filter { next ->
-        {
-                req ->
+        { req ->
             val token = req.header("Authorization")?.removePrefix("Bearer ")
             if (token == null) {
                 Response(Status.UNAUTHORIZED).body("API token required")
@@ -221,24 +220,25 @@ private fun buildApiRoutes(
     securityService: SecurityService,
     bearerSecurity: org.http4k.security.Security,
     bearerAdminSecurity: org.http4k.security.Security,
-    messageService: MessageService,
-    contactService: io.github.rygel.outerstellar.platform.service.ContactService,
+    messageService: MessageService?,
+    contactService: io.github.rygel.outerstellar.platform.service.ContactService?,
     analytics: io.github.rygel.outerstellar.platform.analytics.AnalyticsService,
     deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository?,
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
 ): List<org.http4k.routing.RoutingHttpHandler> {
     val apiRoutes = contract {
-        renderer = OpenApi3(ApiInfo("$appLabel Sync API", "v1.0"), Jackson)
+        renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), Jackson)
         descriptionPath = "/api/openapi.json"
         routes += AuthApi(securityService).routes
-        routes += emptyList<org.http4k.contract.ContractRoute>()
     }
 
     val syncContract = contract {
         renderer = OpenApi3(ApiInfo("Sync", "v1.0"), Jackson)
         descriptionPath = "/api/v1/sync/openapi.json"
         security = bearerSecurity
-        routes += SyncApi(messageService, contactService, analytics).routes
+        if (messageService != null || contactService != null) {
+            routes += SyncApi(messageService, contactService, analytics).routes
+        }
         routes += AuthApi(securityService).bearerRoutes
         if (deviceTokenRepository != null) {
             routes += DeviceRegistrationApi(deviceTokenRepository).routes
@@ -262,10 +262,10 @@ private fun buildApiRoutes(
 private fun buildUiRoutes(
     appLabel: String,
     excludedRoutes: Set<String>,
-    messageService: MessageService,
+    messageService: MessageService?,
     pageFactory: WebPageFactory,
     jteRenderer: org.http4k.template.TemplateRenderer,
-    contactService: io.github.rygel.outerstellar.platform.service.ContactService,
+    contactService: io.github.rygel.outerstellar.platform.service.ContactService?,
     securityService: SecurityService,
     config: AppConfig,
     analytics: io.github.rygel.outerstellar.platform.analytics.AnalyticsService,
@@ -275,17 +275,19 @@ private fun buildUiRoutes(
 ): org.http4k.routing.RoutingHttpHandler = contract {
     renderer = OpenApi3(ApiInfo("$appLabel UI", "v1.0"), Jackson)
     descriptionPath = "/ui/openapi.json"
-    routes += HomeRoutes(messageService, pageFactory, jteRenderer).routes
-    if ("/contacts" !in excludedRoutes) {
+    if (messageService != null && "/" !in excludedRoutes) {
+        routes += HomeRoutes(messageService, pageFactory, jteRenderer).routes
+    }
+    if (contactService != null && "/contacts" !in excludedRoutes) {
         routes += ContactsRoutes(pageFactory, jteRenderer, contactService).routes
     }
     routes += AuthRoutes(pageFactory, jteRenderer, securityService, config.sessionCookieSecure, analytics).routes
     routes +=
         OAuthRoutes(
-            providers = mapOf("apple" to AppleOAuthProvider()),
-            securityService = securityService,
-            sessionCookieSecure = config.sessionCookieSecure,
-        )
+                providers = mapOf("apple" to AppleOAuthProvider()),
+                securityService = securityService,
+                sessionCookieSecure = config.sessionCookieSecure,
+            )
             .routes
     routes += ErrorRoutes(pageFactory, jteRenderer).routes
     routes += SearchRoutes(pageFactory, jteRenderer, emptyList()).routes
@@ -330,8 +332,8 @@ private fun buildComponentRoutes(
 @Suppress("LongParameterList")
 private fun buildAdminRoutes(
     appLabel: String,
-    outboxRepository: io.github.rygel.outerstellar.platform.persistence.OutboxRepository,
-    cache: io.github.rygel.outerstellar.platform.persistence.MessageCache,
+    outboxRepository: io.github.rygel.outerstellar.platform.persistence.OutboxRepository?,
+    cache: io.github.rygel.outerstellar.platform.persistence.MessageCache?,
     pageFactory: WebPageFactory,
     jteRenderer: org.http4k.template.TemplateRenderer,
     config: AppConfig,
@@ -345,7 +347,10 @@ private fun buildAdminRoutes(
                 SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
             }
         }
-    routes += DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
+    if (outboxRepository != null && cache != null) {
+        routes +=
+            DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
+    }
     routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
 }
 
