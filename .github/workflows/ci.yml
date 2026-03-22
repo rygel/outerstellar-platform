@@ -133,6 +133,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright/java:v1.58.0-noble
+    environment: ci
     permissions:
       contents: read
     env:
@@ -145,7 +146,7 @@ jobs:
           persist-credentials: false
 
       - name: Configure Maven settings for GitHub Packages
-        uses: s4u/maven-settings-action@v3.1.0
+        uses: s4u/maven-settings-action@64e42c454dbd42ef6370ac8539685755aedd205b # v3.1.0
         with:
           servers: '[{"id": "github-rygel", "username": "${{ github.actor }}", "password": "${{ secrets.GH_PACKAGES_TOKEN }}"}]'
 
