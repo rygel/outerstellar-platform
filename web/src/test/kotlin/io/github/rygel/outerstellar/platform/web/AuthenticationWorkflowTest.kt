@@ -74,14 +74,15 @@ class AuthenticationWorkflowTest : H2WebTest() {
         )
 
         // 2. Register a new admin user
+        val password = testPassword()
         val regResponse =
             app(
                 Request(POST, "/auth/components/result")
                     .form("mode", "register")
                     .form("name", "superadmin")
                     .form("email", "admin@test.com")
-                    .form("password", "password123")
-                    .form("confirmPassword", "password123")
+                    .form("password", password)
+                    .form("confirmPassword", password)
             )
         // Registration redirects to /auth?registered=true
         assertEquals(Status.FOUND, regResponse.status)
@@ -98,7 +99,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
                     .query("returnTo", "/admin/dev")
                     .form("mode", "sign-in")
                     .form("email", "admin@test.com")
-                    .form("password", "password123")
+                    .form("password", password)
             )
 
         assertEquals(Status.FOUND, loginResponse.status)
@@ -119,13 +120,14 @@ class AuthenticationWorkflowTest : H2WebTest() {
     @Test
     fun `standard user cannot access admin dashboard`() {
         // Register standard user
+        val password = testPassword()
         app(
             Request(POST, "/auth/components/result")
                 .form("mode", "register")
                 .form("name", "regular")
                 .form("email", "user@test.com")
-                .form("password", "password123")
-                .form("confirmPassword", "password123")
+                .form("password", password)
+                .form("confirmPassword", password)
         )
 
         val loginResponse =
@@ -133,7 +135,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
                 Request(POST, "/auth/components/result")
                     .form("mode", "sign-in")
                     .form("email", "user@test.com")
-                    .form("password", "password123")
+                    .form("password", password)
             )
         val sessionCookie = loginResponse.cookies().find { it.name == "app_session" }!!
 
@@ -144,13 +146,14 @@ class AuthenticationWorkflowTest : H2WebTest() {
 
     @Test
     fun `sign-in blocks external returnTo redirects`() {
+        val password = testPassword()
         app(
             Request(POST, "/auth/components/result")
                 .form("mode", "register")
                 .form("name", "safeuser")
                 .form("email", "safe@test.com")
-                .form("password", "password123")
-                .form("confirmPassword", "password123")
+                .form("password", password)
+                .form("confirmPassword", password)
         )
 
         val loginResponse =
@@ -159,7 +162,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
                     .query("returnTo", "//evil.example/path")
                     .form("mode", "sign-in")
                     .form("email", "safe@test.com")
-                    .form("password", "password123")
+                    .form("password", password)
             )
 
         assertEquals(Status.FOUND, loginResponse.status)

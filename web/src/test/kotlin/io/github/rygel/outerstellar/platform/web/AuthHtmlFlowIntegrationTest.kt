@@ -206,7 +206,7 @@ class AuthHtmlFlowIntegrationTest : H2WebTest() {
             app(
                 Request(POST, "/auth/components/result")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(formBody("mode" to "register", "email" to "newuser@test.com", "password" to "strongpassword"))
+                    .body(formBody("mode" to "register", "email" to "newuser@test.com", "password" to testPassword()))
             )
 
         assertEquals(Status.FOUND, response.status)

@@ -63,7 +63,7 @@ class LogoutIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "logoutuser",
                 email = "logout@test.com",
-                passwordHash = encoder.encode("pass123"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(user)

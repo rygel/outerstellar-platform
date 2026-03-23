@@ -155,7 +155,7 @@ class AuthProfileApiKeysIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "taken_user",
                 email = "taken@test.com",
-                passwordHash = encoder.encode("password123"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(other)
@@ -359,17 +359,12 @@ class AuthProfileApiKeysIntegrationTest : H2WebTest() {
 
     @Test
     fun `POST reset-confirm with invalid token returns error`() {
+        val pwd = testPassword()
         val response =
             app(
                 Request(POST, "/auth/components/reset-confirm")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(
-                        formBody(
-                            "token" to "not-a-real-token",
-                            "newPassword" to "new-strong-pass",
-                            "confirmPassword" to "new-strong-pass",
-                        )
-                    )
+                    .body(formBody("token" to "not-a-real-token", "newPassword" to pwd, "confirmPassword" to pwd))
             )
         assertEquals(Status.OK, response.status)
     }

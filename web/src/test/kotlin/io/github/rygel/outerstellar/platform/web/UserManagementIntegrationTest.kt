@@ -205,8 +205,8 @@ class UserManagementIntegrationTest : H2WebTest() {
     @Test
     fun `admin can list all users`() {
         val admin = seedAdmin()
-        registerUser("user1", "password123")
-        registerUser("user2", "password456")
+        registerUser("user1", testPassword())
+        registerUser("user2", testPassword())
 
         val response = app(bearerRequest(GET, "/api/v1/admin/users", admin.token))
         assertEquals(Status.OK, response.status)
@@ -220,7 +220,7 @@ class UserManagementIntegrationTest : H2WebTest() {
 
     @Test
     fun `non-admin cannot list users`() {
-        val auth = registerUser("regularuser", "password123")
+        val auth = registerUser("regularuser", testPassword())
 
         val response = app(bearerRequest(GET, "/api/v1/admin/users", auth.token))
         assertEquals(Status.FORBIDDEN, response.status)
@@ -229,7 +229,8 @@ class UserManagementIntegrationTest : H2WebTest() {
     @Test
     fun `admin can disable a user`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("disableuser", "password123")
+        val password = testPassword()
+        val userAuth = registerUser("disableuser", password)
 
         val response =
             app(
@@ -240,14 +241,15 @@ class UserManagementIntegrationTest : H2WebTest() {
 
         // Verify the disabled user cannot log in
         val loginResponse =
-            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("disableuser", "password123")))
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("disableuser", password)))
         assertEquals(Status.UNAUTHORIZED, loginResponse.status)
     }
 
     @Test
     fun `admin can re-enable a user`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("reenableuser", "password123")
+        val password = testPassword()
+        val userAuth = registerUser("reenableuser", password)
 
         // Disable
         app(
@@ -264,7 +266,7 @@ class UserManagementIntegrationTest : H2WebTest() {
         assertEquals(Status.OK, response.status)
 
         // User can log in again
-        val loginResponse = loginUser("reenableuser", "password123")
+        val loginResponse = loginUser("reenableuser", password)
         assertTrue(loginResponse.token.isNotBlank())
     }
 
@@ -283,7 +285,7 @@ class UserManagementIntegrationTest : H2WebTest() {
     @Test
     fun `admin can promote a user to admin`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("promoteuser", "password123")
+        val userAuth = registerUser("promoteuser", testPassword())
 
         val response =
             app(
@@ -300,7 +302,7 @@ class UserManagementIntegrationTest : H2WebTest() {
     @Test
     fun `admin can demote an admin to user`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("demoteuser", "password123")
+        val userAuth = registerUser("demoteuser", testPassword())
 
         // Promote first
         app(
@@ -336,7 +338,7 @@ class UserManagementIntegrationTest : H2WebTest() {
     @Test
     fun `admin user list returns correct fields`() {
         val admin = seedAdmin()
-        registerUser("fieldcheck", "password123")
+        registerUser("fieldcheck", testPassword())
 
         val response = app(bearerRequest(GET, "/api/v1/admin/users", admin.token))
         val users = userSummaryListLens(response)

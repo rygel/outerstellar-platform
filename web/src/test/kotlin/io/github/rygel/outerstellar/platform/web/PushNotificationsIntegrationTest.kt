@@ -78,7 +78,7 @@ class PushNotificationsIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "pushtest",
                 email = "pushtest@test.com",
-                passwordHash = encoder.encode("password1234"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
