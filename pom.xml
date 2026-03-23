@@ -38,11 +38,13 @@
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.6</outerstellar.version>
         <outerstellar.version>1.0.6</outerstellar.version>
-        <http4k.version>6.36.0.0</http4k.version>
+        <http4k.version>6.37.0.0</http4k.version>
+        <outerstellar.version>1.0.4</outerstellar.version>
+        <http4k.version>6.37.0.0</http4k.version>
         <flyway.version>12.1.1</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
         <jooq.version>3.20.11</jooq.version>
-        <jdbi.version>3.51.0</jdbi.version>
+        <jdbi.version>3.52.0</jdbi.version>
         <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
@@ -61,7 +63,7 @@
         <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
         <maven.site.plugin.version>3.21.0</maven.site.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
-        <bytebuddy.version>1.18.5</bytebuddy.version>
+        <bytebuddy.version>1.18.7</bytebuddy.version>
         <koin.version>4.2.0</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
