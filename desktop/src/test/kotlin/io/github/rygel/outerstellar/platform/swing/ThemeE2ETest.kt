@@ -30,16 +30,8 @@ class ThemeE2ETest {
         val textField = GuiActionRunner.execute<JTextField> { JTextField() }!!
         val button = GuiActionRunner.execute<javax.swing.JButton> { javax.swing.JButton() }!!
 
-        assertEquals(
-            expectedDarkBg.rgb,
-            panel.background.rgb,
-            "Panel background should match dark theme",
-        )
-        assertEquals(
-            expectedDarkCompBg.rgb,
-            textField.background.rgb,
-            "TextField background should match dark theme",
-        )
+        assertEquals(expectedDarkBg.rgb, panel.background.rgb, "Panel background should match dark theme")
+        assertEquals(expectedDarkCompBg.rgb, textField.background.rgb, "TextField background should match dark theme")
         assertEquals(
             Color.decode(darkTheme.colors.getValue("foreground")).rgb,
             textField.foreground.rgb,
@@ -78,11 +70,7 @@ class ThemeE2ETest {
         val textField2 = GuiActionRunner.execute<JTextField> { JTextField() }!!
         val button2 = GuiActionRunner.execute<javax.swing.JButton> { javax.swing.JButton() }!!
 
-        assertEquals(
-            expectedLightBg.rgb,
-            panel2.background.rgb,
-            "Panel background should match light theme",
-        )
+        assertEquals(expectedLightBg.rgb, panel2.background.rgb, "Panel background should match light theme")
         assertEquals(
             expectedLightCompBg.rgb,
             textField2.background.rgb,
@@ -143,9 +131,7 @@ class ThemeE2ETest {
         val themeManager = ThemeManager()
         val i18nService = io.github.rygel.outerstellar.i18n.I18nService.create("messages")
         val viewModel =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel>(
-                relaxed = true
-            )
+            io.mockk.mockk<io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel>(relaxed = true)
 
         // Robot must be created BEFORE the frame so the robot's AWT hierarchy tracks it.
         val robot = org.assertj.swing.core.BasicRobot.robotWithNewAwtHierarchy()

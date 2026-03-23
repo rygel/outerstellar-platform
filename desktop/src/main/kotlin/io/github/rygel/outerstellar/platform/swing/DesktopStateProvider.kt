@@ -5,8 +5,7 @@ import java.util.prefs.BackingStoreException
 import java.util.prefs.Preferences
 import org.slf4j.LoggerFactory
 
-private val logger =
-    LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.DesktopStateProvider")
+private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.DesktopStateProvider")
 
 private const val DEFAULT_X = 100
 private const val DEFAULT_Y = 0
@@ -32,8 +31,7 @@ object DesktopStateProvider {
             prefs.putInt("window_width", state.windowBounds.width)
             prefs.putInt("window_height", state.windowBounds.height)
             prefs.putBoolean("is_maximized", state.isMaximized)
-            state.lastSearchQuery?.let { prefs.put("last_search", it) }
-                ?: prefs.remove("last_search")
+            state.lastSearchQuery?.let { prefs.put("last_search", it) } ?: prefs.remove("last_search")
             state.themeId?.let { prefs.put("theme_id", it) } ?: prefs.remove("theme_id")
             state.language?.let { prefs.put("language", it) } ?: prefs.remove("language")
             prefs.flush()
@@ -60,8 +58,7 @@ object DesktopStateProvider {
         val language = prefs.get("language", "en")
 
         return DesktopState(
-            windowBounds =
-                Rectangle(if (x == NOT_SAVED_SENTINEL) DEFAULT_X else x, y, width, height),
+            windowBounds = Rectangle(if (x == NOT_SAVED_SENTINEL) DEFAULT_X else x, y, width, height),
             isMaximized = isMaximized,
             lastSearchQuery = lastSearch,
             themeId = themeId,

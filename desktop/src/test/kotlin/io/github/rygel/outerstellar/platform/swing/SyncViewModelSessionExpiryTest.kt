@@ -40,8 +40,7 @@ class SyncViewModelSessionExpiryTest {
 
     /** Login the VM and wait for login to complete. Returns the VM. */
     private fun loginVm(): SyncViewModel {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("token", "alice", "ADMIN")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("token", "alice", "ADMIN")
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
@@ -119,8 +118,7 @@ class SyncViewModelSessionExpiryTest {
 
     @Test
     fun `toggleUserEnabled SessionExpiredException sets isLoggedIn to false`() {
-        every { syncService.setUserEnabled(any(), any()) } throws
-            SessionExpiredException("Session expired")
+        every { syncService.setUserEnabled(any(), any()) } throws SessionExpiredException("Session expired")
 
         val vm = loginVm()
         val latch = CountDownLatch(1)
@@ -128,17 +126,13 @@ class SyncViewModelSessionExpiryTest {
 
         vm.toggleUserEnabled("user-123", true)
 
-        assertTrue(
-            latch.await(3, TimeUnit.SECONDS),
-            "Observer not notified after toggleUserEnabled expiry",
-        )
+        assertTrue(latch.await(3, TimeUnit.SECONDS), "Observer not notified after toggleUserEnabled expiry")
         assertFalse(vm.isLoggedIn, "isLoggedIn should be false after session expiry")
     }
 
     @Test
     fun `toggleUserEnabled SessionExpiredException clears user state`() {
-        every { syncService.setUserEnabled(any(), any()) } throws
-            SessionExpiredException("Session expired")
+        every { syncService.setUserEnabled(any(), any()) } throws SessionExpiredException("Session expired")
 
         val vm = loginVm()
         val latch = CountDownLatch(1)
@@ -155,8 +149,7 @@ class SyncViewModelSessionExpiryTest {
 
     @Test
     fun `toggleUserRole SessionExpiredException sets isLoggedIn to false`() {
-        every { syncService.setUserRole(any(), any()) } throws
-            SessionExpiredException("Session expired")
+        every { syncService.setUserRole(any(), any()) } throws SessionExpiredException("Session expired")
 
         val vm = loginVm()
         val latch = CountDownLatch(1)
@@ -164,17 +157,13 @@ class SyncViewModelSessionExpiryTest {
 
         vm.toggleUserRole("user-456", "USER")
 
-        assertTrue(
-            latch.await(3, TimeUnit.SECONDS),
-            "Observer not notified after toggleUserRole expiry",
-        )
+        assertTrue(latch.await(3, TimeUnit.SECONDS), "Observer not notified after toggleUserRole expiry")
         assertFalse(vm.isLoggedIn, "isLoggedIn should be false after session expiry")
     }
 
     @Test
     fun `toggleUserRole SessionExpiredException clears user state`() {
-        every { syncService.setUserRole(any(), any()) } throws
-            SessionExpiredException("Session expired")
+        every { syncService.setUserRole(any(), any()) } throws SessionExpiredException("Session expired")
 
         val vm = loginVm()
         val latch = CountDownLatch(1)
@@ -191,8 +180,7 @@ class SyncViewModelSessionExpiryTest {
 
     @Test
     fun `changePassword SessionExpiredException sets isLoggedIn to false`() {
-        every { syncService.changePassword(any(), any()) } throws
-            SessionExpiredException("Session expired")
+        every { syncService.changePassword(any(), any()) } throws SessionExpiredException("Session expired")
 
         val vm = loginVm()
         val latch = CountDownLatch(1)
@@ -204,8 +192,7 @@ class SyncViewModelSessionExpiryTest {
 
     @Test
     fun `changePassword SessionExpiredException returns false with error message`() {
-        every { syncService.changePassword(any(), any()) } throws
-            SessionExpiredException("Session expired")
+        every { syncService.changePassword(any(), any()) } throws SessionExpiredException("Session expired")
 
         val vm = loginVm()
         val latch = CountDownLatch(1)
@@ -221,10 +208,7 @@ class SyncViewModelSessionExpiryTest {
         assertTrue(latch.await(3, TimeUnit.SECONDS))
         assertFalse(success, "Should return false on session expiry")
         val errorMsg = error
-        assertTrue(
-            errorMsg != null && errorMsg.isNotBlank(),
-            "Should have an error message on session expiry",
-        )
+        assertTrue(errorMsg != null && errorMsg.isNotBlank(), "Should have an error message on session expiry")
     }
 
     @Test

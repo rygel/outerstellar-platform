@@ -32,14 +32,8 @@ class ThemeManagerTest {
             assertEquals(expectedBackground.rgb, UIManager.getColor("ToolBar.background").rgb)
             assertEquals(expectedForeground.rgb, UIManager.getColor("ToolBar.foreground").rgb)
             assertEquals(expectedComponentBackground.rgb, UIManager.getColor("List.background").rgb)
-            assertEquals(
-                expectedComponentBackground.rgb,
-                UIManager.getColor("TextField.background").rgb,
-            )
-            assertEquals(
-                expectedComponentBackground.rgb,
-                UIManager.getColor("TextArea.background").rgb,
-            )
+            assertEquals(expectedComponentBackground.rgb, UIManager.getColor("TextField.background").rgb)
+            assertEquals(expectedComponentBackground.rgb, UIManager.getColor("TextArea.background").rgb)
         }
     }
 
@@ -68,8 +62,7 @@ class ThemeManagerTest {
     fun `all catalog themes can be applied and update critical ui keys`() {
         ThemeCatalog.allThemes().forEach { theme ->
             val expectedBackground = Color.decode(theme.colors.getValue("background"))
-            val expectedComponentBackground =
-                Color.decode(theme.colors.getValue("componentBackground"))
+            val expectedComponentBackground = Color.decode(theme.colors.getValue("componentBackground"))
 
             onEdt { themeManager.applyTheme(theme) }
 
@@ -80,10 +73,7 @@ class ThemeManagerTest {
                 assertNotNull(UIManager.getColor("TextField.background"))
                 assertEquals(expectedBackground.rgb, UIManager.getColor("Panel.background").rgb)
                 assertEquals(expectedBackground.rgb, UIManager.getColor("ToolBar.background").rgb)
-                assertEquals(
-                    expectedComponentBackground.rgb,
-                    UIManager.getColor("TextField.background").rgb,
-                )
+                assertEquals(expectedComponentBackground.rgb, UIManager.getColor("TextField.background").rgb)
             }
         }
     }

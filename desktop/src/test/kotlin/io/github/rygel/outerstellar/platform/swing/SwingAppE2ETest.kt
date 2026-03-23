@@ -86,8 +86,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `ui auth flow updates menu state on login and logout`() {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("tok", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
 
         val w = window!!
         assertEquals("Login", w.menuItem("loginItem").target().text)
@@ -105,8 +104,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `ui register flow updates menu state`() {
-        every { syncService.register("newuser", "secret123") } returns
-            AuthTokenResponse("tok2", "newuser", "USER")
+        every { syncService.register("newuser", "secret123") } returns AuthTokenResponse("tok2", "newuser", "USER")
 
         val w = window!!
         w.menuItem("registerItem").click()
@@ -130,8 +128,7 @@ class SwingAppE2ETest {
         w.dialog().button("applyButton").click()
 
         waitUntil(5_000) {
-            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } ==
-                "Dark"
+            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } == "Dark"
         }
 
         assertThemeColors(w, darkTheme)
@@ -142,8 +139,7 @@ class SwingAppE2ETest {
         w.dialog().button("applyButton").click()
 
         waitUntil(5_000) {
-            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } ==
-                "Default"
+            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } == "Default"
         }
 
         assertThemeColors(w, defaultTheme)
@@ -171,42 +167,20 @@ class SwingAppE2ETest {
         throw AssertionError("Component not found: $name")
     }
 
-    private fun assertThemeColors(
-        w: FrameFixture,
-        theme: io.github.rygel.outerstellar.platform.model.ThemeDefinition,
-    ) {
+    private fun assertThemeColors(w: FrameFixture, theme: io.github.rygel.outerstellar.platform.model.ThemeDefinition) {
         val expectedWindowBg = Color.decode(theme.colors.getValue("background"))
         val expectedComponentBg = Color.decode(theme.colors.getValue("componentBackground"))
 
-        val frameBg =
-            GuiActionRunner.execute<Color> {
-                requireNotNull((w.target() as JFrame).contentPane.background)
-            }
-        val menuBg =
-            GuiActionRunner.execute<Color> {
-                requireNotNull((w.target() as JFrame).jMenuBar.background)
-            }
-        val listBg =
-            GuiActionRunner.execute<Color> {
-                requireNotNull(w.list("messagesList").target().background)
-            }
-        val searchBg =
-            GuiActionRunner.execute<Color> {
-                requireNotNull(w.textBox("searchField").target().background)
-            }
-        val authorBg =
-            GuiActionRunner.execute<Color> {
-                requireNotNull(w.textBox("authorField").target().background)
-            }
-        val contentBg =
-            GuiActionRunner.execute<Color> {
-                requireNotNull(w.textBox("contentArea").target().background)
-            }
+        val frameBg = GuiActionRunner.execute<Color> { requireNotNull((w.target() as JFrame).contentPane.background) }
+        val menuBg = GuiActionRunner.execute<Color> { requireNotNull((w.target() as JFrame).jMenuBar.background) }
+        val listBg = GuiActionRunner.execute<Color> { requireNotNull(w.list("messagesList").target().background) }
+        val searchBg = GuiActionRunner.execute<Color> { requireNotNull(w.textBox("searchField").target().background) }
+        val authorBg = GuiActionRunner.execute<Color> { requireNotNull(w.textBox("authorField").target().background) }
+        val contentBg = GuiActionRunner.execute<Color> { requireNotNull(w.textBox("contentArea").target().background) }
         val statusBg =
             GuiActionRunner.execute<Color> {
                 requireNotNull(
-                    (findByName((w.target() as JFrame).contentPane, "statusBarPanel") as JComponent)
-                        .background
+                    (findByName((w.target() as JFrame).contentPane, "statusBarPanel") as JComponent).background
                 )
             }
 
@@ -226,10 +200,7 @@ class SwingAppE2ETest {
     ) {
         val prevWindowBg = Color.decode(previous.colors.getValue("background")).rgb
         val currentWindowBg = Color.decode(current.colors.getValue("background")).rgb
-        val frameBg =
-            GuiActionRunner.execute<Color> {
-                requireNotNull((w.target() as JFrame).contentPane.background)
-            }
+        val frameBg = GuiActionRunner.execute<Color> { requireNotNull((w.target() as JFrame).contentPane.background) }
 
         if (prevWindowBg != currentWindowBg) {
             assertEquals(currentWindowBg, rgbOf(frameBg))
@@ -240,8 +211,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `change password menu item is enabled after login`() {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("tok", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
 
         val w = window!!
 
@@ -266,8 +236,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `change password dialog has correct fields`() {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("tok", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
 
         val w = window!!
         w.menuItem("loginItem").click()
@@ -291,16 +260,13 @@ class SwingAppE2ETest {
 
     @Test
     fun `users nav button is enabled for admin role`() {
-        every { syncService.login("admin", "secret") } returns
-            AuthTokenResponse("tok", "admin", "ADMIN")
+        every { syncService.login("admin", "secret") } returns AuthTokenResponse("tok", "admin", "ADMIN")
 
         val w = window!!
 
         // Before login, users button should be hidden
         val usersVisibleBefore =
-            GuiActionRunner.execute<Boolean> {
-                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled
-            }
+            GuiActionRunner.execute<Boolean> { findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled }
         assertEquals(false, usersVisibleBefore)
 
         // Login as admin
@@ -316,16 +282,13 @@ class SwingAppE2ETest {
         }
 
         val usersVisibleAfter =
-            GuiActionRunner.execute<Boolean> {
-                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled
-            }
+            GuiActionRunner.execute<Boolean> { findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled }
         assertEquals(true, usersVisibleAfter)
     }
 
     @Test
     fun `users nav button stays disabled for regular user`() {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("tok", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
 
         val w = window!!
         w.menuItem("loginItem").click()
@@ -336,9 +299,7 @@ class SwingAppE2ETest {
         waitUntil(5_000) { w.menuItem("logoutItem").target().isEnabled }
 
         val usersVisible =
-            GuiActionRunner.execute<Boolean> {
-                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled
-            }
+            GuiActionRunner.execute<Boolean> { findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled }
         assertEquals(false, usersVisible)
     }
 }

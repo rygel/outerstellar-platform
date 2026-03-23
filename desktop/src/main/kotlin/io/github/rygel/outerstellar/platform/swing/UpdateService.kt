@@ -7,8 +7,7 @@ import java.net.URL
 import javax.swing.SwingWorker
 import org.slf4j.LoggerFactory
 
-private val logger =
-    LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.UpdateService")
+private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.UpdateService")
 
 class UpdateService(
     private val currentVersion: String,
@@ -46,18 +45,13 @@ class UpdateService(
                     try {
                         val latestVersion = get()
                         if (latestVersion != null) {
-                            logger.info(
-                                "Update available: $latestVersion (current: $currentVersion)"
-                            )
+                            logger.info("Update available: $latestVersion (current: $currentVersion)")
                             onUpdateAvailable(latestVersion)
                         } else {
                             logger.info("No update available or check failed")
                         }
                     } catch (e: java.util.concurrent.ExecutionException) {
-                        logger.error(
-                            "Execution error processing update check result: {}",
-                            e.message,
-                        )
+                        logger.error("Execution error processing update check result: {}", e.message)
                     } catch (e: Exception) {
                         logger.error("Error processing update check result: {}", e.message)
                     }
@@ -76,11 +70,7 @@ class UpdateService(
             logger.warn("Invalid update URL {}: {}", updateUrl, e.message)
             currentVersion
         } catch (e: IOException) {
-            logger.warn(
-                "Could not read from {}, returning current version. Error: {}",
-                updateUrl,
-                e.message,
-            )
+            logger.warn("Could not read from {}, returning current version. Error: {}", updateUrl, e.message)
             currentVersion
         }
     }

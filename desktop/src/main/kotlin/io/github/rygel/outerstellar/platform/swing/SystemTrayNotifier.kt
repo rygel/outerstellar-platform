@@ -8,8 +8,7 @@ import java.awt.image.BufferedImage
 import javax.swing.ImageIcon
 import org.slf4j.LoggerFactory
 
-private val logger =
-    LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.SystemTrayNotifier")
+private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.SystemTrayNotifier")
 private const val FALLBACK_IMAGE_SIZE = 16
 
 class SystemTrayNotifier(private val i18nService: I18nService) {
@@ -26,19 +25,11 @@ class SystemTrayNotifier(private val i18nService: I18nService) {
                     if (resource != null) {
                         ImageIcon(resource).image
                     } else {
-                        BufferedImage(
-                            FALLBACK_IMAGE_SIZE,
-                            FALLBACK_IMAGE_SIZE,
-                            BufferedImage.TYPE_INT_ARGB,
-                        )
+                        BufferedImage(FALLBACK_IMAGE_SIZE, FALLBACK_IMAGE_SIZE, BufferedImage.TYPE_INT_ARGB)
                     }
                 } catch (e: IllegalArgumentException) {
                     logger.debug("Icon resource not found: {}", e.message)
-                    BufferedImage(
-                        FALLBACK_IMAGE_SIZE,
-                        FALLBACK_IMAGE_SIZE,
-                        BufferedImage.TYPE_INT_ARGB,
-                    )
+                    BufferedImage(FALLBACK_IMAGE_SIZE, FALLBACK_IMAGE_SIZE, BufferedImage.TYPE_INT_ARGB)
                 }
 
             val icon = TrayIcon(image, i18nService.translate("swing.app.title"))

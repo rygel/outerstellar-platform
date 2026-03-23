@@ -82,10 +82,7 @@ class SyncViewModelPasswordResetTest {
         assertFalse(success)
         val errorMsg = error
         assertNotNull(errorMsg)
-        assertTrue(
-            errorMsg!!.contains("500") || errorMsg.contains("reset request failed"),
-            errorMsg,
-        )
+        assertTrue(errorMsg!!.contains("500") || errorMsg.contains("reset request failed"), errorMsg)
     }
 
     @Test
@@ -184,8 +181,7 @@ class SyncViewModelPasswordResetTest {
 
     @Test
     fun `resetPassword does not log out an authenticated user on failure`() {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("t", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("t", "alice", "USER")
         every { syncService.resetPassword("bad-token", any()) } throws
             SyncException("Password reset failed: Invalid token")
 
