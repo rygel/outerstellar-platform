@@ -42,8 +42,7 @@ class SyncViewModelProfileTest {
     private val i18nService = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
 
     private fun loginVm(): SyncViewModel {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("token", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("token", "alice", "USER")
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
         vm.login("alice", "secret") { _, _ -> latch.countDown() }
@@ -51,9 +50,7 @@ class SyncViewModelProfileTest {
         return vm
     }
 
-    private fun awaitCallback(
-        action: ((Boolean, String?) -> Unit) -> Unit
-    ): Pair<Boolean, String?> {
+    private fun awaitCallback(action: ((Boolean, String?) -> Unit) -> Unit): Pair<Boolean, String?> {
         val latch = CountDownLatch(1)
         var result: Pair<Boolean, String?> = false to null
         action { success, error ->
@@ -88,8 +85,7 @@ class SyncViewModelProfileTest {
 
     @Test
     fun `loadProfile sets avatarUrl from profile`() {
-        every { syncService.fetchProfile() } returns
-            stubProfile(avatarUrl = "https://example.com/avatar.png")
+        every { syncService.fetchProfile() } returns stubProfile(avatarUrl = "https://example.com/avatar.png")
         val vm = loginVm()
 
         awaitCallback { vm.loadProfile(it) }
@@ -99,8 +95,7 @@ class SyncViewModelProfileTest {
 
     @Test
     fun `loadProfile sets notification flags from profile`() {
-        every { syncService.fetchProfile() } returns
-            stubProfile(emailNotif = false, pushNotif = true)
+        every { syncService.fetchProfile() } returns stubProfile(emailNotif = false, pushNotif = true)
         val vm = loginVm()
 
         awaitCallback { vm.loadProfile(it) }
@@ -149,12 +144,10 @@ class SyncViewModelProfileTest {
     @Test
     fun `updateProfile calls syncService and reloads profile`() {
         every { syncService.updateProfile("new@test.com", "alice2", null) } returns Unit
-        every { syncService.fetchProfile() } returns
-            stubProfile(username = "alice2", email = "new@test.com")
+        every { syncService.fetchProfile() } returns stubProfile(username = "alice2", email = "new@test.com")
         val vm = loginVm()
 
-        val (success, error) =
-            awaitCallback { vm.updateProfile("new@test.com", "alice2", null, it) }
+        val (success, error) = awaitCallback { vm.updateProfile("new@test.com", "alice2", null, it) }
 
         assertTrue(success)
         assertNull(error)
@@ -190,8 +183,7 @@ class SyncViewModelProfileTest {
 
     @Test
     fun `updateProfile on SyncException propagates error message`() {
-        every { syncService.updateProfile(any(), any(), any()) } throws
-            SyncException("Username already taken")
+        every { syncService.updateProfile(any(), any(), any()) } throws SyncException("Username already taken")
         val vm = loginVm()
 
         val (success, error) = awaitCallback { vm.updateProfile("a@b.com", "taken", null, it) }
@@ -230,8 +222,7 @@ class SyncViewModelProfileTest {
 
     @Test
     fun `updateNotificationPreferences on session expiry logs out`() {
-        every { syncService.updateNotificationPreferences(any(), any()) } throws
-            SessionExpiredException()
+        every { syncService.updateNotificationPreferences(any(), any()) } throws SessionExpiredException()
         val vm = loginVm()
 
         val (success, _) = awaitCallback { vm.updateNotificationPreferences(true, true, it) }
@@ -242,8 +233,7 @@ class SyncViewModelProfileTest {
 
     @Test
     fun `updateNotificationPreferences on SyncException stays logged in`() {
-        every { syncService.updateNotificationPreferences(any(), any()) } throws
-            SyncException("Server error")
+        every { syncService.updateNotificationPreferences(any(), any()) } throws SyncException("Server error")
         val vm = loginVm()
 
         val (success, error) = awaitCallback { vm.updateNotificationPreferences(true, true, it) }

@@ -29,8 +29,7 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `login success updates auth state and author`() {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("t", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("t", "alice", "USER")
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
@@ -77,8 +76,7 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `logout clears auth state and calls sync service logout`() {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("t", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("t", "alice", "USER")
         every { syncService.logout() } just runs
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
@@ -97,8 +95,7 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `register success updates auth state and author`() {
-        every { syncService.register("newuser", "secret123") } returns
-            AuthTokenResponse("t", "newuser", "USER")
+        every { syncService.register("newuser", "secret123") } returns AuthTokenResponse("t", "newuser", "USER")
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
@@ -122,8 +119,7 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `register failure preserves logged out state and returns error`() {
-        every { syncService.register("newuser", "short") } throws
-            RuntimeException("Registration failed: 409 CONFLICT")
+        every { syncService.register("newuser", "short") } throws RuntimeException("Registration failed: 409 CONFLICT")
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
@@ -145,8 +141,7 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `changePassword success calls callback with true`() {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("t", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("t", "alice", "USER")
         every { syncService.changePassword("old", "newpass") } just runs
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
@@ -189,8 +184,7 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `session expiry on changePassword logs out user`() {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("t", "alice", "USER")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("t", "alice", "USER")
         every { syncService.changePassword(any(), any()) } throws SessionExpiredException()
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
@@ -210,8 +204,7 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `login sets userRole from server response`() {
-        every { syncService.login("admin", "secret") } returns
-            AuthTokenResponse("t", "admin", "ADMIN")
+        every { syncService.login("admin", "secret") } returns AuthTokenResponse("t", "admin", "ADMIN")
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
@@ -223,8 +216,7 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `logout clears userRole and adminUsers`() {
-        every { syncService.login("admin", "secret") } returns
-            AuthTokenResponse("t", "admin", "ADMIN")
+        every { syncService.login("admin", "secret") } returns AuthTokenResponse("t", "admin", "ADMIN")
         every { syncService.logout() } just runs
 
         val vm = SyncViewModel(messageService, null, syncService, i18nService)

@@ -11,15 +11,14 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Polls the server `/health` endpoint at a fixed interval and tracks whether the server is
- * reachable. Observers are notified whenever the online/offline state changes.
+ * Polls the server `/health` endpoint at a fixed interval and tracks whether the server is reachable. Observers are
+ * notified whenever the online/offline state changes.
  */
 class ConnectivityChecker(
     private val healthUrl: String,
     private val intervalSeconds: Long = 30L,
     private val timeoutSeconds: Long = 5L,
-    private val httpClient: HttpClient =
-        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build(),
+    private val httpClient: HttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build(),
 ) {
     private val _isOnline = AtomicBoolean(true)
     val isOnline: Boolean

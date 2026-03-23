@@ -38,8 +38,7 @@ class SyncViewModelAdminOperationsTest {
     private val i18nService = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
 
     private fun loginVm(): SyncViewModel {
-        every { syncService.login("alice", "secret") } returns
-            AuthTokenResponse("token", "alice", "ADMIN")
+        every { syncService.login("alice", "secret") } returns AuthTokenResponse("token", "alice", "ADMIN")
         val vm = SyncViewModel(messageService, null, syncService, i18nService)
         val latch = CountDownLatch(1)
         vm.login("alice", "secret") { _, _ -> latch.countDown() }
@@ -55,13 +54,7 @@ class SyncViewModelAdminOperationsTest {
     }
 
     private fun stubUser(id: String = "user-1", role: String = "USER", enabled: Boolean = true) =
-        UserSummary(
-            id = id,
-            username = "bob",
-            email = "bob@test.com",
-            role = role,
-            enabled = enabled,
-        )
+        UserSummary(id = id, username = "bob", email = "bob@test.com", role = role, enabled = enabled)
 
     // ── loadUsers ────────────────────────────────────────────────────────────
 
@@ -203,8 +196,7 @@ class SyncViewModelAdminOperationsTest {
 
     @Test
     fun `toggleUserRole non-session error does not log out`() {
-        every { syncService.setUserRole(any(), any()) } throws
-            RuntimeException("Role change failed")
+        every { syncService.setUserRole(any(), any()) } throws RuntimeException("Role change failed")
 
         val vm = loginVm()
         assertTrue(awaitObserver(vm) { vm.toggleUserRole("user-1", currentRole = "USER") })

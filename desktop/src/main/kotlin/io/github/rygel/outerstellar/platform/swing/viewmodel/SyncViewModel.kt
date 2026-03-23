@@ -73,8 +73,7 @@ class SyncViewModel(
         private set
 
     @Volatile
-    var notifications: List<io.github.rygel.outerstellar.platform.model.NotificationSummary> =
-        emptyList()
+    var notifications: List<io.github.rygel.outerstellar.platform.model.NotificationSummary> = emptyList()
         private set
 
     val unreadNotificationCount: Int
@@ -127,8 +126,7 @@ class SyncViewModel(
 
     fun loadMessages() {
         messages = messageService.listMessages(searchQuery.takeIf { it.isNotBlank() }).items
-        contacts =
-            contactService?.listContacts(searchQuery.takeIf { it.isNotBlank() }) ?: emptyList()
+        contacts = contactService?.listContacts(searchQuery.takeIf { it.isNotBlank() }) ?: emptyList()
         notifyObservers()
     }
 
@@ -139,9 +137,7 @@ class SyncViewModel(
             status = i18nService.translate("swing.status.created")
             loadMessages()
         } catch (e: ValidationException) {
-            onValidationError(
-                e.message ?: i18nService.translate("swing.validation.messageRequired")
-            )
+            onValidationError(e.message ?: i18nService.translate("swing.validation.messageRequired"))
         } catch (e: OuterstellarException) {
             onValidationError(e.message ?: "Action failed")
         }
@@ -158,15 +154,7 @@ class SyncViewModel(
         onValidationError: (String) -> Unit,
     ) {
         try {
-            contactService?.createContact(
-                name,
-                emails,
-                phones,
-                socialMedia,
-                company,
-                companyAddress,
-                department,
-            )
+            contactService?.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
             status = i18nService.translate("swing.status.created")
             loadMessages()
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
@@ -186,8 +174,7 @@ class SyncViewModel(
         onValidationError: (String) -> Unit,
     ) {
         try {
-            val stored =
-                contactService?.getContactBySyncId(syncId) ?: throw ContactNotFoundException(syncId)
+            val stored = contactService?.getContactBySyncId(syncId) ?: throw ContactNotFoundException(syncId)
             val updated =
                 stored.copy(
                     name = name,
@@ -215,10 +202,7 @@ class SyncViewModel(
                         userName = result.username
                         userRole = result.role
                         isLoggedIn = true
-                        analytics.identify(
-                            userName,
-                            mapOf("role" to (userRole ?: "user"), "platform" to "desktop"),
-                        )
+                        analytics.identify(userName, mapOf("role" to (userRole ?: "user"), "platform" to "desktop"))
                         analytics.track(userName, "User Logged In", mapOf("platform" to "desktop"))
                         true to null
                     } catch (e: SyncException) {
@@ -366,11 +350,7 @@ class SyncViewModel(
             .execute()
     }
 
-    fun changePassword(
-        currentPassword: String,
-        newPassword: String,
-        onResult: (Boolean, String?) -> Unit,
-    ) {
+    fun changePassword(currentPassword: String, newPassword: String, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Pair<Boolean, String?>, Unit>() {
                 override fun doInBackground(): Pair<Boolean, String?> {
                     return try {
@@ -541,12 +521,7 @@ class SyncViewModel(
             .execute()
     }
 
-    fun updateProfile(
-        email: String,
-        username: String?,
-        avatarUrl: String?,
-        onResult: (Boolean, String?) -> Unit,
-    ) {
+    fun updateProfile(email: String, username: String?, avatarUrl: String?, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Pair<Boolean, String?>, Unit>() {
                 override fun doInBackground(): Pair<Boolean, String?> {
                     return try {
