@@ -9,6 +9,8 @@
 - **OAuth 2.0** — social sign-in (Apple, extensible to other providers)
 - **Password reset** — token-based password reset flow with email delivery
 - **Role-based access** — USER and ADMIN roles with route-level enforcement
+- **Fine-grained permissions** — wildcard `domain:action:instance` permission model with pluggable `PermissionResolver`
+- **Multi-realm authentication** — composable `AuthRealm` chain (session, API key, custom) for bearer token resolution
 - **CSRF protection** — double-submit cookie pattern for HTML form routes
 - **Async activity tracking** — non-blocking last-activity updates via batching
 

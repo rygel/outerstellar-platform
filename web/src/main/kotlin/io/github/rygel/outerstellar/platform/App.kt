@@ -4,9 +4,13 @@ import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
 import io.github.rygel.outerstellar.platform.security.AppleOAuthProvider
+import io.github.rygel.outerstellar.platform.security.AuthRealm
+import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionRealm
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.MessageService
@@ -130,7 +134,8 @@ private fun assembleHttpHandler(
     plugin: PlatformPlugin?,
     activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater?,
 ): HttpHandler {
-    val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(securityService)
+    val realms: List<AuthRealm> = listOf(SessionRealm(securityService), ApiKeyRealm(securityService))
+    val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(realms)
     val apiRoutes =
         buildApiRoutes(
             appLabel,
@@ -178,7 +183,7 @@ private fun assembleHttpHandler(
 }
 
 private fun buildBearerSecurityPair(
-    securityService: SecurityService
+    realms: List<AuthRealm>
 ): Pair<org.http4k.security.Security, org.http4k.security.Security> {
     val bearerAuthFilter = Filter { next ->
         {
@@ -187,19 +192,19 @@ private fun buildBearerSecurityPair(
             if (token == null) {
                 Response(Status.UNAUTHORIZED).body("API token required")
             } else {
-                when (val result = securityService.lookupSession(token)) {
-                    is io.github.rygel.outerstellar.platform.security.SessionLookup.Active ->
-                        next(req.with(SecurityRules.USER_KEY of result.user))
-                    is io.github.rygel.outerstellar.platform.security.SessionLookup.Expired ->
-                        Response(Status.UNAUTHORIZED).header("X-Session-Expired", "true").body("Session expired")
-                    is io.github.rygel.outerstellar.platform.security.SessionLookup.NotFound -> {
-                        val apiKeyUser = securityService.authenticateApiKey(token)
-                        if (apiKeyUser != null) {
-                            next(req.with(SecurityRules.USER_KEY of apiKeyUser))
-                        } else {
-                            Response(Status.UNAUTHORIZED).body("API token required")
-                        }
+                var finalResult: AuthResult = AuthResult.Skipped
+                for (realm in realms) {
+                    val result = realm.authenticate(token)
+                    if (result !is AuthResult.Skipped) {
+                        finalResult = result
+                        break
                     }
+                }
+                when (finalResult) {
+                    is AuthResult.Authenticated -> next(req.with(SecurityRules.USER_KEY of finalResult.user))
+                    is AuthResult.Expired ->
+                        Response(Status.UNAUTHORIZED).header("X-Session-Expired", "true").body("Session expired")
+                    is AuthResult.Skipped -> Response(Status.UNAUTHORIZED).body("API token required")
                 }
             }
         }
