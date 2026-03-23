@@ -15,9 +15,8 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
 /**
- * A [JTextArea] with integrated spell-checking.
- * Highlights the border in red when unknown words are present and provides
- * a context menu to add words to the user dictionary or trigger a full check.
+ * A [JTextArea] with integrated spell-checking. Highlights the border in red when unknown words are present and
+ * provides a context menu to add words to the user dictionary or trigger a full check.
  */
 class SpellCheckingTextArea(rows: Int, columns: Int) : JTextArea(rows, columns) {
 
@@ -30,20 +29,21 @@ class SpellCheckingTextArea(rows: Int, columns: Int) : JTextArea(rows, columns) 
     private fun setupSpellChecking() {
         if (!spellChecker.isInitialized) return
 
-        componentPopupMenu = JPopupMenu().apply {
-            add(JMenuItem("Add to Dictionary").apply {
-                addActionListener { addSelectedWordToDictionary() }
-            })
-            add(JMenuItem("Check Spelling").apply {
-                addActionListener { checkSpelling() }
-            })
-        }
+        componentPopupMenu =
+            JPopupMenu().apply {
+                add(JMenuItem("Add to Dictionary").apply { addActionListener { addSelectedWordToDictionary() } })
+                add(JMenuItem("Check Spelling").apply { addActionListener { checkSpelling() } })
+            }
 
-        document.addDocumentListener(object : DocumentListener {
-            override fun insertUpdate(e: DocumentEvent) = checkSpelling()
-            override fun removeUpdate(e: DocumentEvent) = checkSpelling()
-            override fun changedUpdate(e: DocumentEvent) = checkSpelling()
-        })
+        document.addDocumentListener(
+            object : DocumentListener {
+                override fun insertUpdate(e: DocumentEvent) = checkSpelling()
+
+                override fun removeUpdate(e: DocumentEvent) = checkSpelling()
+
+                override fun changedUpdate(e: DocumentEvent) = checkSpelling()
+            }
+        )
     }
 
     private fun checkSpelling() {
@@ -62,11 +62,12 @@ class SpellCheckingTextArea(rows: Int, columns: Int) : JTextArea(rows, columns) 
         if (unknownWords.isNotEmpty()) {
             border = ERROR_BORDER
             val display = unknownWords.take(MAX_TOOLTIP_WORDS).joinToString("<br/>")
-            val extra = if (unknownWords.size > MAX_TOOLTIP_WORDS) {
-                "<br/>... and ${unknownWords.size - MAX_TOOLTIP_WORDS} more"
-            } else {
-                ""
-            }
+            val extra =
+                if (unknownWords.size > MAX_TOOLTIP_WORDS) {
+                    "<br/>... and ${unknownWords.size - MAX_TOOLTIP_WORDS} more"
+                } else {
+                    ""
+                }
             toolTipText = "<html>Unknown words:<br/>$display$extra<br/><br/>Right-click for options</html>"
         } else {
             border = NORMAL_BORDER
@@ -120,12 +121,8 @@ class SpellCheckingTextArea(rows: Int, columns: Int) : JTextArea(rows, columns) 
     companion object {
         private const val MAX_TOOLTIP_WORDS = 10
 
-        private val NORMAL_BORDER =
-            BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1, true)
+        private val NORMAL_BORDER = BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor"), 1, true)
 
-        private val ERROR_BORDER = CompoundBorder(
-            LineBorder(Color.RED, 2),
-            BorderFactory.createEmptyBorder(2, 2, 2, 2),
-        )
+        private val ERROR_BORDER = CompoundBorder(LineBorder(Color.RED, 2), BorderFactory.createEmptyBorder(2, 2, 2, 2))
     }
 }

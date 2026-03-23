@@ -28,11 +28,7 @@ object RemixIcon {
 
         return try {
             FlatSVGIcon(path, size, size).apply {
-                setColorFilter(
-                    FlatSVGIcon.ColorFilter {
-                        UIManager.getColor("Label.foreground") ?: Color.WHITE
-                    }
-                )
+                setColorFilter(FlatSVGIcon.ColorFilter { UIManager.getColor("Label.foreground") ?: Color.WHITE })
             }
         } catch (e: IllegalArgumentException) {
             logger.warn("Failed to load icon {}: {}", path, e.message)

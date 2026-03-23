@@ -28,8 +28,7 @@ class PersistentBatchingAnalyticsService(
     private val file = dataDir.resolve("analytics.ndjson")
     private val mapper = jacksonObjectMapper()
     private val client = httpClient
-    private val authHeader =
-        "Basic " + Base64.getEncoder().encodeToString("$writeKey:".toByteArray())
+    private val authHeader = "Basic " + Base64.getEncoder().encodeToString("$writeKey:".toByteArray())
 
     init {
         Files.createDirectories(dataDir)
@@ -37,12 +36,7 @@ class PersistentBatchingAnalyticsService(
 
     override fun identify(userId: String, traits: Map<String, Any>) {
         append(
-            mapOf(
-                "type" to "identify",
-                "userId" to userId,
-                "traits" to traits,
-                "timestamp" to Instant.now().toString(),
-            )
+            mapOf("type" to "identify", "userId" to userId, "traits" to traits, "timestamp" to Instant.now().toString())
         )
     }
 
@@ -80,12 +74,7 @@ class PersistentBatchingAnalyticsService(
             }
             val payload = event + mapOf("messageId" to UUID.randomUUID().toString())
             val line = mapper.writeValueAsString(payload) + "\n"
-            Files.write(
-                file,
-                line.toByteArray(),
-                StandardOpenOption.CREATE,
-                StandardOpenOption.APPEND,
-            )
+            Files.write(file, line.toByteArray(), StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         } catch (e: Exception) {
             logger.warn("Failed to persist analytics event: {}", e.message)
         }
@@ -151,27 +140,20 @@ class PersistentBatchingAnalyticsService(
                 pruneOldEvents(events)
             }
         } catch (e: Exception) {
-            logger.warn(
-                "Analytics flush failed (no network?), {} events retained: {}",
-                events.size,
-                e.message,
-            )
+            logger.warn("Analytics flush failed (no network?), {} events retained: {}", events.size, e.message)
             pruneOldEvents(events)
         }
     }
 
     /**
-     * After a failed flush, discard events older than [maxEventAgeDays] and rewrite the file. This
-     * bounds how much data accumulates during a long offline period.
+     * After a failed flush, discard events older than [maxEventAgeDays] and rewrite the file. This bounds how much data
+     * accumulates during a long offline period.
      */
     private fun pruneOldEvents(events: List<Map<String, Any>>) {
         val cutoff = Instant.now().minus(maxEventAgeDays, ChronoUnit.DAYS)
         val kept =
             events.filter { event ->
-                val ts =
-                    (event["timestamp"] as? String)?.let {
-                        runCatching { Instant.parse(it) }.getOrNull()
-                    }
+                val ts = (event["timestamp"] as? String)?.let { runCatching { Instant.parse(it) }.getOrNull() }
                 ts == null || ts.isAfter(cutoff)
             }
         val dropped = events.size - kept.size
@@ -187,8 +169,8 @@ class PersistentBatchingAnalyticsService(
     }
 
     /**
-     * When the file exceeds [maxFileSizeBytes], drop the oldest half of the lines to make room. The
-     * newest events are always preferred over the oldest.
+     * When the file exceeds [maxFileSizeBytes], drop the oldest half of the lines to make room. The newest events are
+     * always preferred over the oldest.
      */
     private fun trimToHalf() {
         if (!Files.exists(file)) return

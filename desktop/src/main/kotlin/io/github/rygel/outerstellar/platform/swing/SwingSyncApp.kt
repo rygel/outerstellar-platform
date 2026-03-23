@@ -109,16 +109,12 @@ fun main() {
 
     // Start connectivity checker early so analytics scheduler can skip flush when offline
     val connectivityChecker =
-        ConnectivityChecker(healthUrl = "${desktop.config.serverBaseUrl}/health").also {
-            it.start()
-        }
+        ConnectivityChecker(healthUrl = "${desktop.config.serverBaseUrl}/health").also { it.start() }
 
     // Flush any events left over from the previous session, then schedule daily flushes
     val analyticsScheduler =
         if (analytics != null) {
-            Executors.newSingleThreadScheduledExecutor { r ->
-                    Thread(r, "analytics-flush").also { it.isDaemon = true }
-                }
+            Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "analytics-flush").also { it.isDaemon = true } }
                 .also { scheduler ->
                     scheduler.execute { if (connectivityChecker.isOnline) analytics.flush() }
                     scheduler.scheduleAtFixedRate(
@@ -155,9 +151,8 @@ fun main() {
 
         val themeManager = ThemeManager()
         val startupTheme =
-            savedState?.themeId?.let { themeId ->
-                ThemeCatalog.allThemes().find { it.id == themeId }
-            } ?: ThemeCatalog.findTheme("default")
+            savedState?.themeId?.let { themeId -> ThemeCatalog.allThemes().find { it.id == themeId } }
+                ?: ThemeCatalog.findTheme("default")
         themeManager.applyTheme(startupTheme)
 
         val notifier = SystemTrayNotifier(i18nService)
@@ -171,14 +166,7 @@ fun main() {
                 analytics ?: NoOpAnalyticsService(),
                 connectivityChecker,
             )
-        val window =
-            SyncWindow(
-                viewModel,
-                themeManager,
-                i18nService,
-                desktop.config.version,
-                desktop.config.updateUrl,
-            )
+        val window = SyncWindow(viewModel, themeManager, i18nService, desktop.config.version, desktop.config.updateUrl)
 
         DeepLinkHandler.setup(
             onSearch = { query ->
@@ -195,12 +183,9 @@ fun main() {
 
         // Auto-login in development mode — credentials must be set via config/env, never hardcoded
         if (
-            desktop.config.devMode &&
-                desktop.config.devUsername.isNotBlank() &&
-                desktop.config.devPassword.isNotBlank()
+            desktop.config.devMode && desktop.config.devUsername.isNotBlank() && desktop.config.devPassword.isNotBlank()
         ) {
-            viewModel.login(desktop.config.devUsername, desktop.config.devPassword) { success, error
-                ->
+            viewModel.login(desktop.config.devUsername, desktop.config.devPassword) { success, error ->
                 if (!success) {
                     println("Dev auto-login failed: $error")
                 }
@@ -341,8 +326,7 @@ class SyncWindow(
         }
 
     private val appMenu = JMenu(i18nService.translate("swing.menu.file")).apply { name = "appMenu" }
-    private val helpMenu =
-        JMenu(i18nService.translate("swing.menu.help")).apply { name = "helpMenu" }
+    private val helpMenu = JMenu(i18nService.translate("swing.menu.help")).apply { name = "helpMenu" }
     private val settingsItem =
         JMenuItem(i18nService.translate("swing.menu.settings")).apply {
             name = "settingsItem"
@@ -363,34 +347,20 @@ class SyncWindow(
             name = "registerItem"
             icon = RemixIcon.get("system/user-add-line")
         }
-    private val newItem =
-        JMenuItem(i18nService.translate("swing.menu.file.new")).apply { name = "newItem" }
-    private val openItem =
-        JMenuItem(i18nService.translate("swing.menu.file.open")).apply { name = "openItem" }
-    private val saveItem =
-        JMenuItem(i18nService.translate("swing.menu.file.save")).apply { name = "saveItem" }
-    private val saveAsItem =
-        JMenuItem(i18nService.translate("swing.menu.file.saveAs")).apply { name = "saveAsItem" }
-    private val exitItem =
-        JMenuItem(i18nService.translate("swing.menu.file.exit")).apply { name = "exitItem" }
-    private val viewHelpItem =
-        JMenuItem(i18nService.translate("swing.menu.help.view")).apply { name = "viewHelpItem" }
+    private val newItem = JMenuItem(i18nService.translate("swing.menu.file.new")).apply { name = "newItem" }
+    private val openItem = JMenuItem(i18nService.translate("swing.menu.file.open")).apply { name = "openItem" }
+    private val saveItem = JMenuItem(i18nService.translate("swing.menu.file.save")).apply { name = "saveItem" }
+    private val saveAsItem = JMenuItem(i18nService.translate("swing.menu.file.saveAs")).apply { name = "saveAsItem" }
+    private val exitItem = JMenuItem(i18nService.translate("swing.menu.file.exit")).apply { name = "exitItem" }
+    private val viewHelpItem = JMenuItem(i18nService.translate("swing.menu.help.view")).apply { name = "viewHelpItem" }
     private val sendFeedbackItem =
-        JMenuItem(i18nService.translate("swing.menu.help.feedback")).apply {
-            name = "sendFeedbackItem"
-        }
+        JMenuItem(i18nService.translate("swing.menu.help.feedback")).apply { name = "sendFeedbackItem" }
     private val checkUpdatesItem =
-        JMenuItem(i18nService.translate("swing.menu.help.updates")).apply {
-            name = "checkUpdatesItem"
-        }
+        JMenuItem(i18nService.translate("swing.menu.help.updates")).apply { name = "checkUpdatesItem" }
     private val aboutItem =
-        JMenuItem(
-                i18nService.translate(
-                    "swing.menu.help.about",
-                    i18nService.translate("swing.app.name"),
-                )
-            )
-            .apply { name = "aboutItem" }
+        JMenuItem(i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))).apply {
+            name = "aboutItem"
+        }
 
     private lateinit var sidebarPanel: JPanel
 
@@ -627,9 +597,7 @@ class SyncWindow(
 
         usersModel.rowCount = 0
         viewModel.adminUsers.forEach { user ->
-            usersModel.addRow(
-                arrayOf(user.username, user.email, user.role, user.enabled.toString(), user.id)
-            )
+            usersModel.addRow(arrayOf(user.username, user.email, user.role, user.enabled.toString(), user.id))
         }
     }
 
@@ -654,9 +622,7 @@ class SyncWindow(
 
         // SIDEBAR
         sidebarPanel =
-            JPanel(MigLayout("fillx, ins 10, gap 10", "[grow]", "[]10[]10[grow]")).apply {
-                name = "sidebarPanel"
-            }
+            JPanel(MigLayout("fillx, ins 10, gap 10", "[grow]", "[]10[]10[grow]")).apply { name = "sidebarPanel" }
 
         navMessagesBtn.addActionListener { mainLayout.show(mainCardPanel, "MESSAGES") }
         navContactsBtn.addActionListener { mainLayout.show(mainCardPanel, "CONTACTS") }
@@ -701,28 +667,22 @@ class SyncWindow(
                     isSelected: Boolean,
                     cellHasFocus: Boolean,
                 ) =
-                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
-                        .also { c ->
-                            val msg = value as MessageSummary
-                            val dangerColor =
-                                (UIManager.getColor("Theme.danger") ?: Color.RED).toHtml()
-                            val accentColor =
-                                (UIManager.getColor("Theme.accent") ?: Color.BLUE).toHtml()
-                            val conflictMarker =
-                                if (msg.hasConflict) " <font color='$dangerColor'>[CONFLICT]</font>"
-                                else ""
-                            val localMarker =
-                                if (msg.dirty) " <font color='$accentColor'>(Local)</font>" else ""
-                            (c as JLabel).text =
-                                "<html><b>${msg.author}</b>$localMarker$conflictMarker &mdash; " +
-                                    "${msg.updatedAtLabel()}<br/>${msg.content}</html>"
-                            if (msg.hasConflict) {
-                                c.icon =
-                                    RemixIcon.get("system/error-warning-line", CONFLICT_ICON_SIZE)
-                            } else {
-                                c.icon = null
-                            }
+                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus).also { c ->
+                        val msg = value as MessageSummary
+                        val dangerColor = (UIManager.getColor("Theme.danger") ?: Color.RED).toHtml()
+                        val accentColor = (UIManager.getColor("Theme.accent") ?: Color.BLUE).toHtml()
+                        val conflictMarker =
+                            if (msg.hasConflict) " <font color='$dangerColor'>[CONFLICT]</font>" else ""
+                        val localMarker = if (msg.dirty) " <font color='$accentColor'>(Local)</font>" else ""
+                        (c as JLabel).text =
+                            "<html><b>${msg.author}</b>$localMarker$conflictMarker &mdash; " +
+                                "${msg.updatedAtLabel()}<br/>${msg.content}</html>"
+                        if (msg.hasConflict) {
+                            c.icon = RemixIcon.get("system/error-warning-line", CONFLICT_ICON_SIZE)
+                        } else {
+                            c.icon = null
                         }
+                    }
             }
         messagesScrollPane = JScrollPane(messagesList)
         messagesPanel.add(messagesScrollPane, "grow, wrap")
@@ -741,9 +701,7 @@ class SyncWindow(
         contactsPanel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow]"))
 
         val contactsHeaderPanel = JPanel(MigLayout("fillx, ins 0", "[grow][]", "[]"))
-        contactsHeaderPanel.add(
-            JLabel("Contacts Directory").apply { font = font.deriveFont(Font.BOLD, 18f) }
-        )
+        contactsHeaderPanel.add(JLabel("Contacts Directory").apply { font = font.deriveFont(Font.BOLD, 18f) })
 
         val createContactBtn =
             JButton("Create Contact").apply {
@@ -776,9 +734,7 @@ class SyncWindow(
 
         val usersHeaderPanel = JPanel(MigLayout("fillx, ins 0", "[grow]", "[]"))
         usersHeaderPanel.add(
-            JLabel(i18nService.translate("swing.admin.users.title")).apply {
-                font = font.deriveFont(Font.BOLD, 18f)
-            }
+            JLabel(i18nService.translate("swing.admin.users.title")).apply { font = font.deriveFont(Font.BOLD, 18f) }
         )
         usersPanel.add(usersHeaderPanel, "wrap, growx, gapbottom 10")
         usersPanel.add(JScrollPane(usersTable), "grow, wrap")
@@ -831,9 +787,7 @@ class SyncWindow(
         notificationsPanel.add(notifHeaderPanel, "wrap, growx, gapbottom 10")
 
         val notifListModel =
-            javax.swing.DefaultListModel<
-                io.github.rygel.outerstellar.platform.model.NotificationSummary
-            >()
+            javax.swing.DefaultListModel<io.github.rygel.outerstellar.platform.model.NotificationSummary>()
         val notifList =
             javax.swing.JList(notifListModel).apply {
                 name = "notificationsList"
@@ -846,18 +800,9 @@ class SyncWindow(
                             isSelected: Boolean,
                             cellHasFocus: Boolean,
                         ): java.awt.Component {
-                            super.getListCellRendererComponent(
-                                list,
-                                value,
-                                index,
-                                isSelected,
-                                cellHasFocus,
-                            )
+                            super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus)
                             val n =
-                                value
-                                    as?
-                                    io.github.rygel.outerstellar.platform.model.NotificationSummary
-                                    ?: return this
+                                value as? io.github.rygel.outerstellar.platform.model.NotificationSummary ?: return this
                             val unreadMark = if (!n.read) "● " else "  "
                             text =
                                 "<html><b>$unreadMark${n.title}</b><br/><span style='font-size:10px'>${n.body}</span></html>"
@@ -889,8 +834,7 @@ class SyncWindow(
             javax.swing.SwingUtilities.invokeLater {
                 val unread = viewModel.unreadNotificationCount
                 navNotificationsBtn.text =
-                    if (unread > 0)
-                        i18nService.translate("swing.notifications.nav.unread", unread.toString())
+                    if (unread > 0) i18nService.translate("swing.notifications.nav.unread", unread.toString())
                     else i18nService.translate("swing.notifications.nav")
                 navNotificationsBtn.isEnabled = viewModel.isLoggedIn
 
@@ -906,19 +850,14 @@ class SyncWindow(
         profilePanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][][][grow]"))
 
         profilePanel.add(
-            JLabel(i18nService.translate("swing.profile.title")).apply {
-                font = font.deriveFont(Font.BOLD, 18f)
-            },
+            JLabel(i18nService.translate("swing.profile.title")).apply { font = font.deriveFont(Font.BOLD, 18f) },
             "wrap, gapbottom 10",
         )
 
         // Section 1: Profile info
-        val profileInfoPanel =
-            JPanel(MigLayout("fillx, ins 10, gap 8", "[120!][grow]", "[][][][] "))
+        val profileInfoPanel = JPanel(MigLayout("fillx, ins 10, gap 8", "[120!][grow]", "[][][][] "))
         profileInfoPanel.border =
-            javax.swing.BorderFactory.createTitledBorder(
-                i18nService.translate("swing.profile.section.info")
-            )
+            javax.swing.BorderFactory.createTitledBorder(i18nService.translate("swing.profile.section.info"))
 
         val profileEmailField = JTextField().apply { name = "profileEmailField" }
         val profileUsernameField = JTextField().apply { name = "profileUsernameField" }
@@ -954,8 +893,7 @@ class SyncWindow(
                     profileStatusLabel.text = i18nService.translate("swing.profile.saved")
                 } else {
                     profileStatusLabel.foreground = Color(0xCC, 0x44, 0x44)
-                    profileStatusLabel.text =
-                        error ?: i18nService.translate("swing.profile.save.failed")
+                    profileStatusLabel.text = error ?: i18nService.translate("swing.profile.save.failed")
                 }
             }
         }
@@ -965,18 +903,12 @@ class SyncWindow(
         // Section 2: Notification preferences
         val notifPrefsPanel = JPanel(MigLayout("fillx, ins 10, gap 8", "[grow]", "[][]"))
         notifPrefsPanel.border =
-            javax.swing.BorderFactory.createTitledBorder(
-                i18nService.translate("swing.profile.section.notifications")
-            )
+            javax.swing.BorderFactory.createTitledBorder(i18nService.translate("swing.profile.section.notifications"))
 
         val emailNotifCheckbox =
-            JCheckBox(i18nService.translate("swing.profile.notif.email")).apply {
-                name = "emailNotifCheckbox"
-            }
+            JCheckBox(i18nService.translate("swing.profile.notif.email")).apply { name = "emailNotifCheckbox" }
         val pushNotifCheckbox =
-            JCheckBox(i18nService.translate("swing.profile.notif.push")).apply {
-                name = "pushNotifCheckbox"
-            }
+            JCheckBox(i18nService.translate("swing.profile.notif.push")).apply { name = "pushNotifCheckbox" }
         val notifStatusLabel =
             JLabel().apply {
                 name = "notifStatusLabel"
@@ -987,24 +919,19 @@ class SyncWindow(
         notifPrefsPanel.add(pushNotifCheckbox, "wrap")
         notifPrefsPanel.add(notifStatusLabel, "wrap")
 
-        val saveNotifBtn =
-            JButton(i18nService.translate("swing.profile.notif.save")).apply {
-                name = "saveNotifBtn"
-            }
+        val saveNotifBtn = JButton(i18nService.translate("swing.profile.notif.save")).apply { name = "saveNotifBtn" }
         saveNotifBtn.addActionListener {
             saveNotifBtn.isEnabled = false
-            viewModel.updateNotificationPreferences(
-                emailNotifCheckbox.isSelected,
-                pushNotifCheckbox.isSelected,
-            ) { success, error ->
+            viewModel.updateNotificationPreferences(emailNotifCheckbox.isSelected, pushNotifCheckbox.isSelected) {
+                success,
+                error ->
                 saveNotifBtn.isEnabled = true
                 if (success) {
                     notifStatusLabel.foreground = Color(0x22, 0x77, 0x22)
                     notifStatusLabel.text = i18nService.translate("swing.profile.notif.saved")
                 } else {
                     notifStatusLabel.foreground = Color(0xCC, 0x44, 0x44)
-                    notifStatusLabel.text =
-                        error ?: i18nService.translate("swing.profile.save.failed")
+                    notifStatusLabel.text = error ?: i18nService.translate("swing.profile.save.failed")
                 }
             }
         }
@@ -1108,9 +1035,7 @@ class SyncWindow(
         openItem.addActionListener { showMenuPlaceholder("swing.menu.file.open") }
         saveItem.addActionListener { showMenuPlaceholder("swing.menu.file.save") }
         saveAsItem.addActionListener { showMenuPlaceholder("swing.menu.file.saveAs") }
-        exitItem.addActionListener {
-            frame.dispatchEvent(WindowEvent(frame, WindowEvent.WINDOW_CLOSING))
-        }
+        exitItem.addActionListener { frame.dispatchEvent(WindowEvent(frame, WindowEvent.WINDOW_CLOSING)) }
         viewHelpItem.addActionListener { showHelpDialog() }
         sendFeedbackItem.addActionListener { showFeedbackDialog() }
         checkUpdatesItem.addActionListener { showUpdateCheckDialog() }
@@ -1120,8 +1045,7 @@ class SyncWindow(
         newItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_N, menuMask)
         openItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_O, menuMask)
         saveItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask)
-        saveAsItem.accelerator =
-            KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask or InputEvent.SHIFT_DOWN_MASK)
+        saveAsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask or InputEvent.SHIFT_DOWN_MASK)
         exitItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_F4, InputEvent.ALT_DOWN_MASK)
 
         appMenu.add(newItem)
@@ -1150,12 +1074,7 @@ class SyncWindow(
     }
 
     private fun showLoginDialog() {
-        val dialog =
-            createThemedDialog(
-                i18nService.translate("swing.auth.dialog.title"),
-                "[][grow]",
-                "[][][]",
-            )
+        val dialog = createThemedDialog(i18nService.translate("swing.auth.dialog.title"), "[][grow]", "[][][]")
 
         dialog.add(JLabel(i18nService.translate("swing.auth.username")))
         val userField = JTextField().apply { name = "username" }
@@ -1165,8 +1084,7 @@ class SyncWindow(
         val passField = JPasswordField().apply { name = "password" }
         dialog.add(passField, "growx, wrap")
 
-        val loginBtn =
-            JButton(i18nService.translate("swing.auth.signin")).apply { name = "loginBtn" }
+        val loginBtn = JButton(i18nService.translate("swing.auth.signin")).apply { name = "loginBtn" }
         loginBtn.addActionListener {
             viewModel.login(userField.text, String(passField.password)) { success, error ->
                 if (success) {
@@ -1191,8 +1109,7 @@ class SyncWindow(
         dialog.layout = MigLayout("fill, ins 20, gap 10", "[grow][grow]", "[][grow][]")
 
         val introText =
-            "<html>A sync conflict was detected for this message.<br/>" +
-                "Please choose which version to keep:</html>"
+            "<html>A sync conflict was detected for this message.<br/>" + "Please choose which version to keep:</html>"
         dialog.add(JLabel(introText), "span, wrap, gapbottom 15")
 
         val localPanel = JPanel(MigLayout("fillx, ins 10", "[grow]", "[][]"))
@@ -1435,8 +1352,7 @@ class SyncWindow(
     }
 
     private fun showSettingsDialog() {
-        val dialog =
-            createThemedDialog(i18nService.translate("swing.settings.title"), "[][grow]", "[][][]")
+        val dialog = createThemedDialog(i18nService.translate("swing.settings.title"), "[][grow]", "[][][]")
         dialog.name = "settingsDialog"
 
         dialog.add(JLabel(i18nService.translate("swing.settings.language")))
@@ -1445,29 +1361,19 @@ class SyncWindow(
                 "en" to i18nService.translate("swing.language.en"),
                 "fr" to i18nService.translate("swing.language.fr"),
             )
-        val langCombo =
-            JComboBox<String>(languages.map { it.second }.toTypedArray()).apply {
-                name = "langCombo"
-            }
-        langCombo.selectedIndex =
-            languages.indexOfFirst { it.first == Locale.getDefault().language }.coerceAtLeast(0)
+        val langCombo = JComboBox<String>(languages.map { it.second }.toTypedArray()).apply { name = "langCombo" }
+        langCombo.selectedIndex = languages.indexOfFirst { it.first == Locale.getDefault().language }.coerceAtLeast(0)
         dialog.add(langCombo, "growx, wrap")
 
         dialog.add(JLabel(i18nService.translate("swing.settings.theme")))
         val allThemes = ThemeCatalog.allThemes().sortedBy { it.name }
-        val themeCombo =
-            JComboBox<String>(allThemes.map { it.name }.toTypedArray()).apply {
-                name = "themeCombo"
-            }
+        val themeCombo = JComboBox<String>(allThemes.map { it.name }.toTypedArray()).apply { name = "themeCombo" }
         val currentThemeName = UIManager.get("current_theme_name") as? String
-        themeCombo.selectedIndex =
-            allThemes.indexOfFirst { it.name == currentThemeName }.coerceAtLeast(0)
+        themeCombo.selectedIndex = allThemes.indexOfFirst { it.name == currentThemeName }.coerceAtLeast(0)
         dialog.add(themeCombo, "growx, wrap")
 
         val previewPanel =
-            JPanel(MigLayout("fillx, ins 15, gap 10", "[grow]", "[][][]")).apply {
-                name = "previewPanel"
-            }
+            JPanel(MigLayout("fillx, ins 15, gap 10", "[grow]", "[][][]")).apply { name = "previewPanel" }
         val sampleLabel = JLabel("Sample Label Text")
         val sampleField = JTextField("Sample Input Text")
         val sampleButton = JButton("Sample Button")
@@ -1504,14 +1410,9 @@ class SyncWindow(
         themeCombo.addActionListener { updatePreview(allThemes[themeCombo.selectedIndex]) }
         updatePreview(allThemes[themeCombo.selectedIndex])
 
-        val applyButton =
-            JButton(i18nService.translate("swing.settings.button.apply")).apply {
-                name = "applyButton"
-            }
+        val applyButton = JButton(i18nService.translate("swing.settings.button.apply")).apply { name = "applyButton" }
         val cancelButton =
-            JButton(i18nService.translate("swing.settings.button.cancel")).apply {
-                name = "cancelButton"
-            }
+            JButton(i18nService.translate("swing.settings.button.cancel")).apply { name = "cancelButton" }
 
         applyButton.addActionListener {
             val selectedTheme = allThemes[themeCombo.selectedIndex]
@@ -1534,11 +1435,7 @@ class SyncWindow(
 
     private fun showRegisterDialog() {
         val dialog =
-            createThemedDialog(
-                i18nService.translate("swing.auth.register.dialog.title"),
-                "[][grow]",
-                "[][][][]",
-            )
+            createThemedDialog(i18nService.translate("swing.auth.register.dialog.title"), "[][grow]", "[][][][]")
 
         dialog.add(JLabel(i18nService.translate("swing.auth.username")))
         val userField = JTextField().apply { name = "registerUsername" }
@@ -1552,10 +1449,7 @@ class SyncWindow(
         val confirmField = JPasswordField().apply { name = "registerPasswordConfirm" }
         dialog.add(confirmField, "growx, wrap")
 
-        val registerBtn =
-            JButton(i18nService.translate("swing.auth.register.submit")).apply {
-                name = "registerBtn"
-            }
+        val registerBtn = JButton(i18nService.translate("swing.auth.register.submit")).apply { name = "registerBtn" }
         registerBtn.addActionListener {
             val password = String(passField.password)
             val confirmPassword = String(confirmField.password)
@@ -1587,12 +1481,7 @@ class SyncWindow(
     }
 
     private fun showChangePasswordDialog() {
-        val dialog =
-            createThemedDialog(
-                i18nService.translate("swing.password.dialog.title"),
-                "[][grow]",
-                "[][][][]",
-            )
+        val dialog = createThemedDialog(i18nService.translate("swing.password.dialog.title"), "[][grow]", "[][][][]")
 
         dialog.add(JLabel(i18nService.translate("swing.password.current")))
         val currentField = JPasswordField().apply { name = "currentPassword" }
@@ -1606,10 +1495,7 @@ class SyncWindow(
         val confirmField = JPasswordField().apply { name = "confirmPassword" }
         dialog.add(confirmField, "growx, wrap")
 
-        val changeBtn =
-            JButton(i18nService.translate("swing.password.submit")).apply {
-                name = "changePasswordBtn"
-            }
+        val changeBtn = JButton(i18nService.translate("swing.password.submit")).apply { name = "changePasswordBtn" }
         changeBtn.addActionListener {
             val newPassword = String(newField.password)
             val confirmPassword = String(confirmField.password)
@@ -1670,17 +1556,8 @@ class SyncWindow(
 
     private fun showAboutDialog() {
         showInfoDialog(
-            title =
-                i18nService.translate(
-                    "swing.menu.help.about",
-                    i18nService.translate("swing.app.name"),
-                ),
-            message =
-                i18nService.translate(
-                    "swing.about.message",
-                    i18nService.translate("swing.app.name"),
-                    appVersion,
-                ),
+            title = i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name")),
+            message = i18nService.translate("swing.about.message", i18nService.translate("swing.app.name"), appVersion),
             icon = RemixIcon.get("system/information-line", 24),
         )
     }
@@ -1711,11 +1588,7 @@ class SyncWindow(
                         showInfoDialog(
                             title = i18nService.translate("swing.updates.available.title"),
                             message =
-                                i18nService.translate(
-                                    "swing.updates.available.message",
-                                    latestVersion,
-                                    appVersion,
-                                ),
+                                i18nService.translate("swing.updates.available.message", latestVersion, appVersion),
                             icon = RemixIcon.get("system/refresh-line", 24),
                         )
                     }
@@ -1764,10 +1637,7 @@ class SyncWindow(
         contentPanel.add(messageArea, "grow, push")
         dialog.add(contentPanel, "grow, push, wrap")
 
-        val closeButton =
-            JButton(i18nService.translate("swing.button.close")).apply {
-                name = "infoDialogCloseButton"
-            }
+        val closeButton = JButton(i18nService.translate("swing.button.close")).apply { name = "infoDialogCloseButton" }
         closeButton.addActionListener { dialog.dispose() }
 
         dialog.add(createActionRow(closeButton), "growx")
@@ -1828,8 +1698,7 @@ class SyncWindow(
         viewHelpItem.text = i18nService.translate("swing.menu.help.view")
         sendFeedbackItem.text = i18nService.translate("swing.menu.help.feedback")
         checkUpdatesItem.text = i18nService.translate("swing.menu.help.updates")
-        aboutItem.text =
-            i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))
+        aboutItem.text = i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))
         searchLabel.text = i18nService.translate("swing.label.search")
         authorLabel.text = i18nService.translate("swing.label.author")
         changePasswordItem.text = i18nService.translate("swing.password.change")
@@ -1874,19 +1743,11 @@ internal fun swingRuntimeModules(): List<Module> =
         module {
             single {
                 val cfg = get<SwingAppConfig>()
-                AppConfig(
-                    jdbcUrl = cfg.jdbcUrl,
-                    jdbcUser = cfg.jdbcUser,
-                    jdbcPassword = cfg.jdbcPassword,
-                )
+                AppConfig(jdbcUrl = cfg.jdbcUrl, jdbcUser = cfg.jdbcUser, jdbcPassword = cfg.jdbcPassword)
             }
             single<MessageCache> { NoOpMessageCache }
             single<SyncService> {
-                SyncService(
-                    baseUrl = get(named("serverBaseUrl")),
-                    repository = get(),
-                    transactionManager = get(),
-                )
+                SyncService(baseUrl = get(named("serverBaseUrl")), repository = get(), transactionManager = get())
             }
             single<SyncProvider> { get<SyncService>() }
         },

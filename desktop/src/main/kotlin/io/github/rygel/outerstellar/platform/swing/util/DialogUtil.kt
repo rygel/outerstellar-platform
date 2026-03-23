@@ -19,8 +19,8 @@ import javax.swing.UIManager
 import javax.swing.border.EmptyBorder
 
 /**
- * Utility for showing dialogs with copyable text.
- * All messages are displayed in [JTextArea]s that allow text selection and copying.
+ * Utility for showing dialogs with copyable text. All messages are displayed in [JTextArea]s that allow text selection
+ * and copying.
  */
 object DialogUtil {
 
@@ -46,25 +46,25 @@ object DialogUtil {
     @JvmStatic
     @Suppress("UnusedParameter")
     fun showMessage(parent: Component?, message: String, title: String, messageType: Int) {
-        val dialog = JDialog(getParentFrame(parent), title, true).apply {
-            layout = BorderLayout(10, 10)
-            size = Dimension(700, 400)
-            setLocationRelativeTo(parent)
-            isResizable = true
-            minimumSize = Dimension(500, 200)
-        }
+        val dialog =
+            JDialog(getParentFrame(parent), title, true).apply {
+                layout = BorderLayout(10, 10)
+                size = Dimension(700, 400)
+                setLocationRelativeTo(parent)
+                isResizable = true
+                minimumSize = Dimension(500, 200)
+            }
 
         addEscapeKeyHandling(dialog)
 
-        val panel = JPanel(BorderLayout(10, 10)).apply {
-            border = EmptyBorder(15, 15, 15, 15)
-            add(createCopyableMessagePane(message), BorderLayout.CENTER)
-        }
+        val panel =
+            JPanel(BorderLayout(10, 10)).apply {
+                border = EmptyBorder(15, 15, 15, 15)
+                add(createCopyableMessagePane(message), BorderLayout.CENTER)
+            }
 
         val buttonPanel = JPanel(FlowLayout(FlowLayout.RIGHT))
-        val okButton = JButton("OK").apply {
-            addActionListener { dialog.dispose() }
-        }
+        val okButton = JButton("OK").apply { addActionListener { dialog.dispose() } }
         buttonPanel.add(okButton)
 
         dialog.add(panel, BorderLayout.CENTER)
@@ -98,64 +98,70 @@ object DialogUtil {
         optionType: Int,
         messageType: Int = JOptionPane.QUESTION_MESSAGE,
     ): Int {
-        val dialog = JDialog(getParentFrame(parent), title, true).apply {
-            layout = BorderLayout(10, 10)
-            size = Dimension(700, 400)
-            setLocationRelativeTo(parent)
-            isResizable = true
-            minimumSize = Dimension(500, 200)
-        }
+        val dialog =
+            JDialog(getParentFrame(parent), title, true).apply {
+                layout = BorderLayout(10, 10)
+                size = Dimension(700, 400)
+                setLocationRelativeTo(parent)
+                isResizable = true
+                minimumSize = Dimension(500, 200)
+            }
 
         addEscapeKeyHandling(dialog)
 
-        val panel = JPanel(BorderLayout(10, 10)).apply {
-            border = EmptyBorder(15, 15, 15, 15)
-            add(createCopyableMessagePane(message), BorderLayout.CENTER)
-        }
+        val panel =
+            JPanel(BorderLayout(10, 10)).apply {
+                border = EmptyBorder(15, 15, 15, 15)
+                add(createCopyableMessagePane(message), BorderLayout.CENTER)
+            }
 
         val buttonPanel = JPanel(FlowLayout(FlowLayout.RIGHT))
         val result = intArrayOf(JOptionPane.NO_OPTION)
 
         if (optionType == JOptionPane.YES_NO_OPTION || optionType == JOptionPane.YES_NO_CANCEL_OPTION) {
-            val yesButton = JButton("Yes").apply {
-                name = "Yes"
-                addActionListener {
-                    result[0] = JOptionPane.YES_OPTION
-                    dialog.dispose()
+            val yesButton =
+                JButton("Yes").apply {
+                    name = "Yes"
+                    addActionListener {
+                        result[0] = JOptionPane.YES_OPTION
+                        dialog.dispose()
+                    }
                 }
-            }
             buttonPanel.add(yesButton)
             dialog.rootPane.defaultButton = yesButton
         }
 
         if (optionType == JOptionPane.OK_CANCEL_OPTION || optionType == JOptionPane.YES_NO_CANCEL_OPTION) {
-            val okButton = JButton("OK").apply {
-                name = "OK"
-                addActionListener {
-                    result[0] = JOptionPane.OK_OPTION
-                    dialog.dispose()
+            val okButton =
+                JButton("OK").apply {
+                    name = "OK"
+                    addActionListener {
+                        result[0] = JOptionPane.OK_OPTION
+                        dialog.dispose()
+                    }
                 }
-            }
             buttonPanel.add(okButton)
             if (optionType == JOptionPane.OK_CANCEL_OPTION) {
                 dialog.rootPane.defaultButton = okButton
             }
         }
 
-        val cancelButton = JButton("Cancel").apply {
-            name = "Cancel"
-            addActionListener { dialog.dispose() }
-        }
+        val cancelButton =
+            JButton("Cancel").apply {
+                name = "Cancel"
+                addActionListener { dialog.dispose() }
+            }
         buttonPanel.add(cancelButton)
 
         if (optionType == JOptionPane.YES_NO_OPTION) {
-            val noButton = JButton("No").apply {
-                name = "No"
-                addActionListener {
-                    result[0] = JOptionPane.NO_OPTION
-                    dialog.dispose()
+            val noButton =
+                JButton("No").apply {
+                    name = "No"
+                    addActionListener {
+                        result[0] = JOptionPane.NO_OPTION
+                        dialog.dispose()
+                    }
                 }
-            }
             buttonPanel.add(noButton)
         }
 
@@ -177,19 +183,18 @@ object DialogUtil {
         messageType: Int,
         customComponent: JComponent?,
     ): Int {
-        val dialog = JDialog(getParentFrame(parent), title, true).apply {
-            layout = BorderLayout(10, 10)
-            size = Dimension(700, 500)
-            setLocationRelativeTo(parent)
-            isResizable = true
-            minimumSize = Dimension(600, 300)
-        }
+        val dialog =
+            JDialog(getParentFrame(parent), title, true).apply {
+                layout = BorderLayout(10, 10)
+                size = Dimension(700, 500)
+                setLocationRelativeTo(parent)
+                isResizable = true
+                minimumSize = Dimension(600, 300)
+            }
 
         addEscapeKeyHandling(dialog)
 
-        val panel = JPanel(BorderLayout(0, 10)).apply {
-            border = EmptyBorder(15, 15, 15, 15)
-        }
+        val panel = JPanel(BorderLayout(0, 10)).apply { border = EmptyBorder(15, 15, 15, 15) }
 
         if (!message.isNullOrEmpty()) {
             panel.add(createCopyableMessagePane(message), BorderLayout.NORTH)
@@ -202,41 +207,42 @@ object DialogUtil {
         val result = intArrayOf(JOptionPane.CANCEL_OPTION)
 
         if (optionType == JOptionPane.YES_NO_OPTION || optionType == JOptionPane.YES_NO_CANCEL_OPTION) {
-            val yesButton = JButton("Yes").apply {
-                addActionListener {
-                    result[0] = JOptionPane.YES_OPTION
-                    dialog.dispose()
+            val yesButton =
+                JButton("Yes").apply {
+                    addActionListener {
+                        result[0] = JOptionPane.YES_OPTION
+                        dialog.dispose()
+                    }
                 }
-            }
             buttonPanel.add(yesButton)
             dialog.rootPane.defaultButton = yesButton
         }
 
         if (optionType == JOptionPane.OK_CANCEL_OPTION || optionType == JOptionPane.YES_NO_CANCEL_OPTION) {
-            val okButton = JButton("OK").apply {
-                addActionListener {
-                    result[0] = JOptionPane.OK_OPTION
-                    dialog.dispose()
+            val okButton =
+                JButton("OK").apply {
+                    addActionListener {
+                        result[0] = JOptionPane.OK_OPTION
+                        dialog.dispose()
+                    }
                 }
-            }
             buttonPanel.add(okButton)
             if (optionType == JOptionPane.OK_CANCEL_OPTION) {
                 dialog.rootPane.defaultButton = okButton
             }
         }
 
-        val cancelButton = JButton("Cancel").apply {
-            addActionListener { dialog.dispose() }
-        }
+        val cancelButton = JButton("Cancel").apply { addActionListener { dialog.dispose() } }
         buttonPanel.add(cancelButton)
 
         if (optionType == JOptionPane.YES_NO_OPTION) {
-            val noButton = JButton("No").apply {
-                addActionListener {
-                    result[0] = JOptionPane.NO_OPTION
-                    dialog.dispose()
+            val noButton =
+                JButton("No").apply {
+                    addActionListener {
+                        result[0] = JOptionPane.NO_OPTION
+                        dialog.dispose()
+                    }
                 }
-            }
             buttonPanel.add(noButton)
         }
 
@@ -248,7 +254,8 @@ object DialogUtil {
     }
 
     private fun addEscapeKeyHandling(dialog: JDialog) {
-        dialog.rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        dialog.rootPane
+            .getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
             .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "ESCAPE")
         dialog.rootPane.actionMap.put(
             "ESCAPE",
@@ -261,21 +268,22 @@ object DialogUtil {
     }
 
     private fun createCopyableMessagePane(message: String): JScrollPane {
-        val textArea = JTextArea(message).apply {
-            isEditable = false
-            wrapStyleWord = true
-            lineWrap = true
-            isOpaque = true
-            border = EmptyBorder(5, 5, 5, 5)
-            font = UIManager.getFont("Label.font")
-            foreground = UIManager.getColor("Label.foreground")
-            background = UIManager.getColor("Panel.background")
-            caretColor = foreground
-            isFocusable = true
-            isEnabled = true
-            selectionColor = UIManager.getColor("textHighlight")
-            selectedTextColor = UIManager.getColor("textHighlightText")
-        }
+        val textArea =
+            JTextArea(message).apply {
+                isEditable = false
+                wrapStyleWord = true
+                lineWrap = true
+                isOpaque = true
+                border = EmptyBorder(5, 5, 5, 5)
+                font = UIManager.getFont("Label.font")
+                foreground = UIManager.getColor("Label.foreground")
+                background = UIManager.getColor("Panel.background")
+                caretColor = foreground
+                isFocusable = true
+                isEnabled = true
+                selectionColor = UIManager.getColor("textHighlight")
+                selectedTextColor = UIManager.getColor("textHighlightText")
+            }
         textArea.requestFocusInWindow()
 
         return JScrollPane(textArea).apply {

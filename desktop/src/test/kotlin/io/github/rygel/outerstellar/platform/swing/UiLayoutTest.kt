@@ -27,9 +27,9 @@ private const val MIN_TABLE_WIDTH = 200
 /**
  * Layout tests that verify Swing components have usable minimum sizes.
  *
- * These tests work headless by checking preferred sizes (computed by the layout manager without a
- * display) rather than actual rendered widths. Preferred size is what pack() uses to determine
- * dialog dimensions, so if preferred size is too small, the actual dialog will be too small.
+ * These tests work headless by checking preferred sizes (computed by the layout manager without a display) rather than
+ * actual rendered widths. Preferred size is what pack() uses to determine dialog dimensions, so if preferred size is
+ * too small, the actual dialog will be too small.
  */
 class UiLayoutTest {
     private val messageService = mockk<MessageService>(relaxed = true)
@@ -128,22 +128,14 @@ class UiLayoutTest {
             runOnEdt {
                 val dialog =
                     JDialog(frame, "Test", false).apply {
-                        layout =
-                            net.miginfocom.swing.MigLayout(
-                                "fill, ins 24, gap 10",
-                                "[][grow]",
-                                "[][][]",
-                            )
+                        layout = net.miginfocom.swing.MigLayout("fill, ins 24, gap 10", "[][grow]", "[][][]")
                         minimumSize = java.awt.Dimension(420, 250)
                         add(javax.swing.JLabel("Field:"))
                         add(JTextField(), "growx, wrap")
                         pack()
                     }
 
-                assertTrue(
-                    dialog.width >= 420,
-                    "Dialog width ${dialog.width}px should be at least 420 (minimumSize)",
-                )
+                assertTrue(dialog.width >= 420, "Dialog width ${dialog.width}px should be at least 420 (minimumSize)")
                 assertTrue(
                     dialog.height >= 250,
                     "Dialog height ${dialog.height}px should be at least 250 (minimumSize)",

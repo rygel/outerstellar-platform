@@ -53,8 +53,7 @@ class PersistentBatchingAnalyticsServiceTest {
     }
 
     private fun respondWithException() {
-        every { httpClient.send(any(), any<HttpResponse.BodyHandler<Void>>()) } throws
-            IOException("Connection refused")
+        every { httpClient.send(any(), any<HttpResponse.BodyHandler<Void>>()) } throws IOException("Connection refused")
     }
 
     // ── append ───────────────────────────────────────────────────────────────

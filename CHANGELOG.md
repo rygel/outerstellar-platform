@@ -5,6 +5,69 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.7] – 2026-03-23
+
+### Added
+- Fine-grained permissions — wildcard `domain:action:instance` permission model with `Permission`, `PermissionResolver` interface, and `RoleBasedPermissionResolver`
+- `SecurityRules.hasPermission()` — route-level permission enforcement using pluggable resolvers
+- Multi-realm authentication — `AuthRealm` interface with `AuthResult` sealed class for composable bearer token resolution
+- `SessionRealm` and `ApiKeyRealm` — built-in realm implementations wrapping existing auth mechanisms
+- Dynamic test passwords — `testPassword()` replaces all hardcoded credentials across 26 test files
+
+### Changed
+- Bearer auth filter refactored to iterate a configurable `List<AuthRealm>` chain instead of hardcoded session→API key logic
+- `X-Session-Expired` header preserved via `AuthResult.Expired` in the realm chain
+
+### Fixed
+- `testPassword()` stored in variables to ensure register/login use the same password (was generating different passwords per call)
+- `testPassword()` inside raw string literals fixed to use string interpolation
+- Duplicate `outerstellar.version` and `http4k.version` entries removed from `pom.xml`
+
+---
+
+## [1.2.6] – 2026-03-22
+
+### Fixed
+- `baselineOnMigrate(true)` added to `migratePlugin()` for Flyway baseline support
+
+### Changed
+- Dependencies bumped: http4k 6.37.0.0, JDBI 3.52.0, ByteBuddy 1.18.7
+
+---
+
+## [1.2.5] – 2026-03-22
+
+### Fixed
+- CodeQL Maven auth using `s4u/maven-settings-action`
+
+---
+
+## [1.2.4] – 2026-03-22
+
+### Added
+- Plugin filter hook — `PlatformPlugin.filters` for custom request/response filters
+- Parallel test execution enabled for faster CI builds
+
+### Fixed
+- detekt `MaximumLineLength` and `MaxLineLength` rules disabled (ktfmt handles line wrapping)
+- SpotBugs null-pointer warnings resolved in `SyncApi`
+- JDBI and jOOQ persistence modules aligned
+
+### Changed
+- Platform made domain-agnostic with optional services (message, contact, notification services all nullable)
+
+---
+
+## [1.2.3] – 2026-03-22
+
+### Changed
+- All platform database tables prefixed with `plt_` to avoid naming collisions with consumer apps
+
+### Fixed
+- Remaining unprefixed table references resolved
+
+---
+
 ## [1.2.2] – 2026-03-22
 
 ### Added

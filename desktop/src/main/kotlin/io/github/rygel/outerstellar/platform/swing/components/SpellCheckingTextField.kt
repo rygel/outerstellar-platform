@@ -15,9 +15,8 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
 /**
- * A [JTextField] with integrated spell-checking.
- * Highlights the border in red when unknown words are present, provides a context
- * menu to add words to the user dictionary, and shows spelling suggestions on double-click.
+ * A [JTextField] with integrated spell-checking. Highlights the border in red when unknown words are present, provides
+ * a context menu to add words to the user dictionary, and shows spelling suggestions on double-click.
  */
 class SpellCheckingTextField(columns: Int) : JTextField(columns) {
 
@@ -30,23 +29,28 @@ class SpellCheckingTextField(columns: Int) : JTextField(columns) {
     private fun setupSpellChecking() {
         if (!spellChecker.isInitialized) return
 
-        componentPopupMenu = JPopupMenu().apply {
-            add(JMenuItem("Add to Dictionary").apply {
-                addActionListener { addSelectedWordToDictionary() }
-            })
-        }
-
-        document.addDocumentListener(object : DocumentListener {
-            override fun insertUpdate(e: DocumentEvent) = checkSpelling()
-            override fun removeUpdate(e: DocumentEvent) = checkSpelling()
-            override fun changedUpdate(e: DocumentEvent) = checkSpelling()
-        })
-
-        addMouseListener(object : MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent) {
-                if (e.clickCount == 2) checkWordAtCaret()
+        componentPopupMenu =
+            JPopupMenu().apply {
+                add(JMenuItem("Add to Dictionary").apply { addActionListener { addSelectedWordToDictionary() } })
             }
-        })
+
+        document.addDocumentListener(
+            object : DocumentListener {
+                override fun insertUpdate(e: DocumentEvent) = checkSpelling()
+
+                override fun removeUpdate(e: DocumentEvent) = checkSpelling()
+
+                override fun changedUpdate(e: DocumentEvent) = checkSpelling()
+            }
+        )
+
+        addMouseListener(
+            object : MouseAdapter() {
+                override fun mouseClicked(e: MouseEvent) {
+                    if (e.clickCount == 2) checkWordAtCaret()
+                }
+            }
+        )
     }
 
     private fun checkSpelling() {
@@ -97,26 +101,28 @@ class SpellCheckingTextField(columns: Int) : JTextField(columns) {
 
         if (suggestions.isNotEmpty()) {
             suggestions.take(MAX_SUGGESTIONS).forEach { suggestion ->
-                popup.add(JMenuItem(suggestion).apply {
-                    addActionListener {
-                        val txt = text
-                        text = txt.substring(0, start) + suggestion + txt.substring(end)
+                popup.add(
+                    JMenuItem(suggestion).apply {
+                        addActionListener {
+                            val txt = text
+                            text = txt.substring(0, start) + suggestion + txt.substring(end)
+                        }
                     }
-                })
+                )
             }
             popup.addSeparator()
         }
 
-        popup.add(JMenuItem("Add \"$word\" to dictionary").apply {
-            addActionListener {
-                spellChecker.addWordToUserDictionary(word)
-                checkSpelling()
+        popup.add(
+            JMenuItem("Add \"$word\" to dictionary").apply {
+                addActionListener {
+                    spellChecker.addWordToUserDictionary(word)
+                    checkSpelling()
+                }
             }
-        })
+        )
 
-        caret.magicCaretPosition?.let { pos ->
-            popup.show(this, pos.x, pos.y)
-        }
+        caret.magicCaretPosition?.let { pos -> popup.show(this, pos.x, pos.y) }
     }
 
     private fun addSelectedWordToDictionary() {
@@ -139,9 +145,6 @@ class SpellCheckingTextField(columns: Int) : JTextField(columns) {
 
         private val NORMAL_BORDER = UIManager.getBorder("TextField.border")
 
-        private val ERROR_BORDER = CompoundBorder(
-            LineBorder(Color.RED, 1),
-            BorderFactory.createEmptyBorder(1, 1, 1, 1),
-        )
+        private val ERROR_BORDER = CompoundBorder(LineBorder(Color.RED, 1), BorderFactory.createEmptyBorder(1, 1, 1, 1))
     }
 }

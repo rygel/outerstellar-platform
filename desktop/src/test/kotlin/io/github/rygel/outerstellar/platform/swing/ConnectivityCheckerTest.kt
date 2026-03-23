@@ -30,8 +30,7 @@ class ConnectivityCheckerTest {
         val client = mockk<HttpClient>()
         val response = mockk<HttpResponse<Void>>()
         every { response.statusCode() } returns statusCode
-        every { client.send(any<HttpRequest>(), any<HttpResponse.BodyHandler<Void>>()) } returns
-            response
+        every { client.send(any<HttpRequest>(), any<HttpResponse.BodyHandler<Void>>()) } returns response
         return client
     }
 
@@ -91,20 +90,17 @@ class ConnectivityCheckerTest {
 
         // Now go offline
         val offlineChecker =
-            ConnectivityChecker("http://localhost/health", httpClient = mockHttpThrows()).also { c
-                ->
+            ConnectivityChecker("http://localhost/health", httpClient = mockHttpThrows()).also { c ->
                 // Share the same internal state by simulating: set online first, then check offline
             }
         // Use the same checker instance but swap state via check()
         val offlineClient = mockHttpThrows()
-        val checkerWithOffline =
-            ConnectivityChecker("http://localhost/health", httpClient = offlineClient)
+        val checkerWithOffline = ConnectivityChecker("http://localhost/health", httpClient = offlineClient)
         checkerWithOffline.check() // starts as offline (default true → becomes false → notifies)
 
         // For the original checker: it starts online; now simulate going offline
         // by making a new checker that goes online→offline
-        val transitioning =
-            ConnectivityChecker("http://localhost/health", httpClient = mockHttp(200))
+        val transitioning = ConnectivityChecker("http://localhost/health", httpClient = mockHttp(200))
         val latch2 = CountDownLatch(1)
         val captured = mutableListOf<Boolean>()
         transitioning.addObserver { online ->
@@ -114,8 +110,7 @@ class ConnectivityCheckerTest {
         transitioning.check() // goes online (default was true → stays true, no notify)
 
         // Now simulate going offline (state was true after check, now false)
-        val offlineTransitioning =
-            ConnectivityChecker("http://localhost/health", httpClient = mockHttpThrows())
+        val offlineTransitioning = ConnectivityChecker("http://localhost/health", httpClient = mockHttpThrows())
         val latch3 = CountDownLatch(1)
         val results = mutableListOf<Boolean>()
         offlineTransitioning.addObserver { state ->
@@ -148,8 +143,7 @@ class ConnectivityCheckerTest {
             object {
                 var callCount = 0
                 val client = mockk<HttpClient>()
-                val response200 =
-                    mockk<HttpResponse<Void>>().also { every { it.statusCode() } returns 200 }
+                val response200 = mockk<HttpResponse<Void>>().also { every { it.statusCode() } returns 200 }
 
                 init {
                     every { client.send(any<HttpRequest>(), any<HttpResponse.BodyHandler<Void>>()) }
@@ -161,8 +155,7 @@ class ConnectivityCheckerTest {
                 }
             }
 
-        val c2 =
-            ConnectivityChecker("http://localhost/health", httpClient = offlineThenOnline.client)
+        val c2 = ConnectivityChecker("http://localhost/health", httpClient = offlineThenOnline.client)
         val latch2 = CountDownLatch(2)
         val states2 = mutableListOf<Boolean>()
         c2.addObserver { online ->
@@ -190,12 +183,7 @@ class ConnectivityCheckerTest {
 
     @Test
     fun `start and stop do not throw`() {
-        val checker =
-            ConnectivityChecker(
-                "http://localhost/health",
-                intervalSeconds = 60,
-                httpClient = mockHttp(200),
-            )
+        val checker = ConnectivityChecker("http://localhost/health", intervalSeconds = 60, httpClient = mockHttp(200))
         checker.start()
         checker.start() // idempotent
         checker.stop()
