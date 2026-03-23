@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
-        <version>1.2.0</version>
+        <version>1.2.8</version>
     </parent>
 
     <artifactId>api-client</artifactId>

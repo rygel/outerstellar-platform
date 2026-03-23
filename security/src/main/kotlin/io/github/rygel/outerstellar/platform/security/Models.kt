@@ -41,6 +41,8 @@ interface UserRepository {
 
     fun countAll(): Long
 
+    fun countByRole(role: UserRole): Long
+
     fun updateRole(userId: UUID, role: UserRole)
 
     fun updateEnabled(userId: UUID, enabled: Boolean)
