@@ -121,4 +121,52 @@ class SecurityRulesTest {
 
         assertEquals(Status.FORBIDDEN, response.status)
     }
+
+    // ---- hasPermission ----
+
+    private val resolver = RoleBasedPermissionResolver()
+
+    @Test
+    fun `hasPermission allows when user holds matching permission`() {
+        val request = requestWithUser(testUser)
+        val handler =
+            SecurityRules.hasPermission(Permission("message", "read"), resolver) { Response(Status.OK).body("ok") }
+
+        val response = handler(request)
+
+        assertEquals(Status.OK, response.status)
+        assertEquals("ok", response.bodyString())
+    }
+
+    @Test
+    fun `hasPermission returns 403 when user lacks permission`() {
+        val request = requestWithUser(testUser)
+        val handler = SecurityRules.hasPermission(Permission("admin", "read"), resolver) { Response(Status.OK) }
+
+        val response = handler(request)
+
+        assertEquals(Status.FORBIDDEN, response.status)
+    }
+
+    @Test
+    fun `hasPermission allows admin for any permission`() {
+        val request = requestWithUser(adminUser)
+        val handler =
+            SecurityRules.hasPermission(Permission("admin", "delete"), resolver) { Response(Status.OK).body("admin") }
+
+        val response = handler(request)
+
+        assertEquals(Status.OK, response.status)
+    }
+
+    @Test
+    fun `hasPermission redirects to auth when no user`() {
+        val request = plainRequest(path = "/protected")
+        val handler = SecurityRules.hasPermission(Permission("message", "read"), resolver) { Response(Status.OK) }
+
+        val response = handler(request)
+
+        assertEquals(Status.FOUND, response.status)
+        assertTrue(response.header("location")!!.startsWith("/auth?returnTo="))
+    }
 }

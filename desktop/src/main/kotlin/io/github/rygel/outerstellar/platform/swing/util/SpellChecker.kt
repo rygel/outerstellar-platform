@@ -1,12 +1,11 @@
 package io.github.rygel.outerstellar.platform.swing.util
 
-import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
+import org.slf4j.LoggerFactory
 
 /**
- * Simple dictionary-based spell checker.
- * Loads a main dictionary (`dictionary_en.txt`) and a user dictionary (`user_dictionary.txt`)
- * from the classpath, then provides word-level validation and user-dictionary management.
+ * Simple dictionary-based spell checker. Loads a main dictionary (`dictionary_en.txt`) and a user dictionary
+ * (`user_dictionary.txt`) from the classpath, then provides word-level validation and user-dictionary management.
  */
 class SpellChecker private constructor() {
 
@@ -23,7 +22,8 @@ class SpellChecker private constructor() {
         }
     }
 
-    val isInitialized: Boolean get() = dictionary.isNotEmpty()
+    val isInitialized: Boolean
+        get() = dictionary.isNotEmpty()
 
     fun isCorrect(word: String): Boolean {
         if (!isInitialized) return true
@@ -76,9 +76,7 @@ class SpellChecker private constructor() {
         val stream = javaClass.classLoader.getResourceAsStream(fileName)
         if (stream != null) {
             stream.bufferedReader(StandardCharsets.UTF_8).useLines { lines ->
-                lines.map { it.trim().lowercase() }
-                    .filter { it.isNotEmpty() }
-                    .forEach { target.add(it) }
+                lines.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.forEach { target.add(it) }
             }
         } else {
             logger.warn("Dictionary file not found: {}", fileName)
@@ -90,14 +88,11 @@ class SpellChecker private constructor() {
         private const val MAX_SUGGESTIONS = 5
         private const val MAX_DISPLAY_WORDS = 5
 
-        @Volatile
-        private var instance: SpellChecker? = null
+        @Volatile private var instance: SpellChecker? = null
 
         @JvmStatic
         fun getInstance(): SpellChecker =
-            instance ?: synchronized(this) {
-                instance ?: SpellChecker().also { instance = it }
-            }
+            instance ?: synchronized(this) { instance ?: SpellChecker().also { instance = it } }
 
         /** Simple Levenshtein edit distance. */
         private fun editDistance(a: String, b: String): Int {

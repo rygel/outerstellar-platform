@@ -108,7 +108,9 @@ class SecurityServiceTest {
     fun `register throws on duplicate username`() {
         every { userRepository.findByUsername("existing") } returns testUser
 
-        assertThrows<UsernameAlreadyExistsException> { service.register("existing", "password123") }
+        assertThrows<UsernameAlreadyExistsException> {
+            service.register("existing", java.util.UUID.randomUUID().toString())
+        }
     }
 
     @Test

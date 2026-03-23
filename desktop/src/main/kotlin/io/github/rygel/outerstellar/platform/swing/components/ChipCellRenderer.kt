@@ -17,22 +17,16 @@ import javax.swing.table.TableCellRenderer
 /**
  * Generic table-cell renderer that displays a list of items as rounded "chip" labels.
  *
- * This is a reusable replacement for domain-specific renderers such as
- * `GroupsCellRenderer` and `TagsCellRenderer` from MAIA. The caller supplies
- * functions to extract the label text and background color for each item.
+ * This is a reusable replacement for domain-specific renderers such as `GroupsCellRenderer` and `TagsCellRenderer` from
+ * MAIA. The caller supplies functions to extract the label text and background color for each item.
  *
- * @param T         The element type contained in each cell's list.
- * @param labelFn   Extracts the display text from an element.
- * @param colorFn   Determines the chip background color for an element.
+ * @param T The element type contained in each cell's list.
+ * @param labelFn Extracts the display text from an element.
+ * @param colorFn Determines the chip background color for an element.
  */
-class ChipCellRenderer<T>(
-    private val labelFn: (T) -> String,
-    private val colorFn: (T) -> Color,
-) : TableCellRenderer {
+class ChipCellRenderer<T>(private val labelFn: (T) -> String, private val colorFn: (T) -> Color) : TableCellRenderer {
 
-    private val panel = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply {
-        isOpaque = false
-    }
+    private val panel = JPanel(FlowLayout(FlowLayout.LEFT, 4, 2)).apply { isOpaque = false }
 
     override fun getTableCellRendererComponent(
         table: JTable,
@@ -47,11 +41,8 @@ class ChipCellRenderer<T>(
         when (value) {
             null -> panel.add(JLabel(""))
             is List<*> -> {
-                @Suppress("UNCHECKED_CAST")
-                val items = value as List<T>
-                items.forEach { item ->
-                    panel.add(Chip(labelFn(item), colorFn(item)))
-                }
+                @Suppress("UNCHECKED_CAST") val items = value as List<T>
+                items.forEach { item -> panel.add(Chip(labelFn(item), colorFn(item))) }
             }
             else -> panel.add(JLabel(value.toString()))
         }
@@ -67,9 +58,7 @@ class ChipCellRenderer<T>(
         return panel
     }
 
-    /**
-     * A single rounded-rectangle chip label.
-     */
+    /** A single rounded-rectangle chip label. */
     private class Chip(text: String, chipColor: Color) : JLabel(text) {
         init {
             isOpaque = true
@@ -83,11 +72,15 @@ class ChipCellRenderer<T>(
             val g2d = g.create() as Graphics2D
             try {
                 g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                val rr = RoundRectangle2D.Double(
-                    0.0, 0.0,
-                    (width - 1).toDouble(), (height - 1).toDouble(),
-                    ARC_SIZE, ARC_SIZE,
-                )
+                val rr =
+                    RoundRectangle2D.Double(
+                        0.0,
+                        0.0,
+                        (width - 1).toDouble(),
+                        (height - 1).toDouble(),
+                        ARC_SIZE,
+                        ARC_SIZE,
+                    )
                 g2d.color = background
                 g2d.fill(rr)
             } finally {
@@ -123,8 +116,8 @@ class ChipCellRenderer<T>(
         private const val ARC_SIZE = 8.0
 
         /**
-         * Generates a deterministic color from a string hash.
-         * Useful as a default [colorFn] when there is no domain-specific mapping.
+         * Generates a deterministic color from a string hash. Useful as a default [colorFn] when there is no
+         * domain-specific mapping.
          */
         @JvmStatic
         fun hashColor(label: String): Color {
@@ -136,9 +129,6 @@ class ChipCellRenderer<T>(
         /** Convenience factory that uses [Any.toString] as label and hash-based coloring. */
         @JvmStatic
         fun <T> withDefaults(): ChipCellRenderer<T> =
-            ChipCellRenderer(
-                labelFn = { it.toString() },
-                colorFn = { hashColor(it.toString()) },
-            )
+            ChipCellRenderer(labelFn = { it.toString() }, colorFn = { hashColor(it.toString()) })
     }
 }

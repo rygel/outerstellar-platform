@@ -66,7 +66,7 @@ class AdminHtmlRoutesIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "adminhtml",
                 email = "adminhtml@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -74,7 +74,7 @@ class AdminHtmlRoutesIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "regularhtml",
                 email = "regularhtml@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)

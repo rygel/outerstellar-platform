@@ -84,7 +84,7 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
             id = UUID.randomUUID(),
             username = name,
             email = email,
-            passwordHash = encoder.encode("pass"),
+            passwordHash = encoder.encode(testPassword()),
             role = UserRole.USER,
         )
 

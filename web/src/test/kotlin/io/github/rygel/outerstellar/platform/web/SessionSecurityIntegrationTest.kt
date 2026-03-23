@@ -74,7 +74,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "regularuser",
                 email = "regular@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         adminUser =
@@ -82,7 +82,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "adminuser",
                 email = "admin@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.ADMIN,
             )
         disabledUser =
@@ -90,7 +90,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "disableduser",
                 email = "disabled@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
                 enabled = false,
             )

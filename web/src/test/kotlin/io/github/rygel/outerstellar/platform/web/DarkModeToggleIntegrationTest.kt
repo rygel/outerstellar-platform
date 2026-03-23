@@ -74,7 +74,7 @@ class DarkModeToggleIntegrationTest : H2WebTest() {
 
     private fun seedAdmin(): UUID {
         val id = UUID.randomUUID()
-        userRepository.save(User(id, "admin", "admin@test.com", encoder.encode("pass1234"), UserRole.ADMIN))
+        userRepository.save(User(id, "admin", "admin@test.com", encoder.encode(testPassword()), UserRole.ADMIN))
         return id
     }
 

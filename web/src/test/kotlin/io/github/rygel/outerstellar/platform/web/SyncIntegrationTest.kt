@@ -47,7 +47,7 @@ class SyncIntegrationTest : H2WebTest() {
                 id = adminId,
                 username = "admin",
                 email = "admin@test.com",
-                passwordHash = encoder.encode("password"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.ADMIN,
             )
         )

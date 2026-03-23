@@ -9,16 +9,13 @@ import java.awt.RenderingHints
 import javax.swing.Icon
 
 /**
- * [Icon] implementation that renders a Unicode character (emoji/symbol).
- * Ensures proper rendering of Unicode icons in FlatLaf menus via font fallback.
+ * [Icon] implementation that renders a Unicode character (emoji/symbol). Ensures proper rendering of Unicode icons in
+ * FlatLaf menus via font fallback.
  *
  * @param unicode The Unicode string to render (e.g. "\u2B1C" or an emoji literal).
- * @param size    The icon size in pixels (default 16).
+ * @param size The icon size in pixels (default 16).
  */
-class UnicodeIcon(
-    private val unicode: String,
-    private val size: Int = DEFAULT_SIZE,
-) : Icon {
+class UnicodeIcon(private val unicode: String, private val size: Int = DEFAULT_SIZE) : Icon {
 
     private val font: Font = resolveFont()
 
@@ -55,9 +52,7 @@ class UnicodeIcon(
     companion object {
         private const val DEFAULT_SIZE = 16
 
-        /**
-         * Creates an icon by parsing a Unicode escape string such as `"\\u2B1C"`.
-         */
+        /** Creates an icon by parsing a Unicode escape string such as `"\\u2B1C"`. */
         @JvmStatic
         fun fromEscape(unicodeEscape: String): UnicodeIcon {
             val sb = StringBuilder()

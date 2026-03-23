@@ -68,7 +68,7 @@ class ComponentFragmentIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "fragmentuser",
                 email = "fragment@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(testUser)

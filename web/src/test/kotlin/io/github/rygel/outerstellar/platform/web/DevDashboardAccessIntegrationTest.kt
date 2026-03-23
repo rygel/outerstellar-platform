@@ -61,7 +61,7 @@ class DevDashboardAccessIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "devdash_admin",
                 email = "devdash_admin@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -69,7 +69,7 @@ class DevDashboardAccessIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "devdash_user",
                 email = "devdash_user@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)

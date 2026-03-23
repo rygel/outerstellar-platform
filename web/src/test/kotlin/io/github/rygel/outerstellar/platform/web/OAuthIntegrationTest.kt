@@ -335,7 +335,7 @@ class OAuthIntegrationTest : H2WebTest() {
     @Test
     fun `findOrCreateOAuthUser generates unique username when base is already taken`() {
         // Create a user whose username will collide with the derived OAuth username
-        securityService.register("alice", "password1234")
+        securityService.register("alice", testPassword())
 
         // Now sign in with Apple as alice@example.com → username 'alice' is taken → should be
         // alice2

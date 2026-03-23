@@ -67,7 +67,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "concurrent_user_a",
                 email = "concurrent_a@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userB =
@@ -75,7 +75,7 @@ class ConcurrentSyncIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "concurrent_user_b",
                 email = "concurrent_b@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(userA)

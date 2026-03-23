@@ -7,8 +7,7 @@ import com.sksamuel.hoplite.addResourceSource
 
 data class SwingAppConfig(
     val serverBaseUrl: String = "http://localhost:8080",
-    val jdbcUrl: String =
-        "jdbc:h2:file:./data/outerstellar-swing-client;MODE=PostgreSQL;AUTO_SERVER=TRUE",
+    val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-swing-client;MODE=PostgreSQL;AUTO_SERVER=TRUE",
     val jdbcUser: String = "sa",
     val jdbcPassword: String = "",
     val version: String = "1.0.0",
@@ -27,8 +26,7 @@ data class SwingAppConfig(
         @OptIn(ExperimentalHoplite::class)
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): SwingAppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
-            val builder =
-                ConfigLoaderBuilder.default().withExplicitSealedTypes().addEnvironmentSource()
+            val builder = ConfigLoaderBuilder.default().withExplicitSealedTypes().addEnvironmentSource()
 
             if (profile != "default") {
                 builder.addResourceSource("/application-$profile.yaml", optional = true)

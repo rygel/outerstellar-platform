@@ -34,37 +34,21 @@ class SyncWindowI18nTest {
         runOnEdt { window.refreshTranslations(fr) }
 
         runOnEdt {
-            assertTrue(window.frame.title.startsWith(fr.translate("swing.app.title")),
-                "Title should start with '${fr.translate("swing.app.title")}', got: ${window.frame.title}")
-            assertEquals(
-                fr.translate("swing.label.search"),
-                label(window.frame, "searchLabel").text,
+            assertTrue(
+                window.frame.title.startsWith(fr.translate("swing.app.title")),
+                "Title should start with '${fr.translate("swing.app.title")}', got: ${window.frame.title}",
             )
-            assertEquals(
-                fr.translate("swing.label.author"),
-                label(window.frame, "authorLabel").text,
-            )
+            assertEquals(fr.translate("swing.label.search"), label(window.frame, "searchLabel").text)
+            assertEquals(fr.translate("swing.label.author"), label(window.frame, "authorLabel").text)
             assertEquals(fr.translate("swing.button.sync"), button(window.frame, "syncButton"))
             assertEquals(fr.translate("swing.button.create"), button(window.frame, "createButton"))
             assertEquals(fr.translate("swing.menu.file"), menu(window.frame, "appMenu").text)
             assertEquals(fr.translate("swing.menu.help"), menu(window.frame, "helpMenu").text)
-            assertEquals(
-                fr.translate("swing.menu.settings"),
-                menuItem(window.frame, "settingsItem"),
-            )
+            assertEquals(fr.translate("swing.menu.settings"), menuItem(window.frame, "settingsItem"))
             assertEquals(fr.translate("swing.auth.login"), menuItem(window.frame, "loginItem"))
-            assertEquals(
-                fr.translate("swing.auth.logout.simple"),
-                menuItem(window.frame, "logoutItem"),
-            )
-            assertEquals(
-                fr.translate("swing.auth.register"),
-                menuItem(window.frame, "registerItem"),
-            )
-            assertEquals(
-                fr.translate("swing.statusbar.version", "dev"),
-                label(window.frame, "statusMetaLabel").text,
-            )
+            assertEquals(fr.translate("swing.auth.logout.simple"), menuItem(window.frame, "logoutItem"))
+            assertEquals(fr.translate("swing.auth.register"), menuItem(window.frame, "registerItem"))
+            assertEquals(fr.translate("swing.statusbar.version", "dev"), label(window.frame, "statusMetaLabel").text)
         }
     }
 
@@ -72,11 +56,9 @@ class SyncWindowI18nTest {
 
     private fun menu(root: Container, name: String): JMenu = find(root, name) as JMenu
 
-    private fun button(root: Container, name: String): String =
-        (find(root, name) as AbstractButton).text
+    private fun button(root: Container, name: String): String = (find(root, name) as AbstractButton).text
 
-    private fun menuItem(root: Container, name: String): String =
-        (find(root, name) as JMenuItem).text
+    private fun menuItem(root: Container, name: String): String = (find(root, name) as JMenuItem).text
 
     private fun find(root: Container, name: String): Component {
         val queue = ArrayDeque<Component>()
