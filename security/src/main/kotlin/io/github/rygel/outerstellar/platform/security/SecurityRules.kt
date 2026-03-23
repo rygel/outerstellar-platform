@@ -27,4 +27,22 @@ object SecurityRules {
             Response(Status.FORBIDDEN)
         }
     }
+
+    /**
+     * Requires the authenticated user to hold a [Permission] that implies [required].
+     *
+     * Uses the supplied [resolver] to look up the user's permission set. Returns 403 if the user lacks the permission,
+     * or redirects to login if not authenticated.
+     */
+    fun hasPermission(required: Permission, resolver: PermissionResolver, next: HttpHandler): HttpHandler = { request ->
+        val user = USER_KEY(request)
+        if (user != null && resolver.permissionsFor(user).any { it.implies(required) }) {
+            next(request)
+        } else if (user == null) {
+            val returnTo = URLEncoder.encode(request.uri.toString(), "UTF-8")
+            Response(Status.FOUND).header("location", "/auth?returnTo=$returnTo")
+        } else {
+            Response(Status.FORBIDDEN)
+        }
+    }
 }

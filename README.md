@@ -24,7 +24,7 @@ A modern, full-stack Kotlin application designed as a platform template for buil
 - `persistence-jooq`: Database implementation using jOOQ, Flyway migrations, and Caffeine caching.
 - `persistence-jdbi`: Alternative database implementation using JDBI (drop-in replacement for `persistence-jooq`).
 - `api-client`: Shared DTOs and client logic for synchronization between components.
-- `security`: Authentication models, role-based access control, and security filters.
+- `security`: Authentication models, role-based access control, fine-grained permissions, multi-realm auth, and security filters.
 - `web`: The main http4k server, JTE templates, and web-specific infrastructure.
 - `desktop`: A Swing-based desktop application implementing the MVVM pattern.
 
@@ -139,6 +139,34 @@ The web application uses **http4k** with **JTE** templates and **HTMX** for inte
 3. **Update the Factory**: Add a `buildMyPage` method to `WebPageFactory.kt` that returns `Page<MyPage>`.
 4. **Register the Route**: Add the route to the appropriate route class (e.g., `HomeRoutes.kt`) and bind it in `App.kt`.
 5. **Access State**: Use `WebContext.KEY(request)` or the helper property `request.webContext` to access the current theme, language, and layout state without manual extraction.
+
+#### Fine-Grained Permissions
+
+Beyond role-based access (`USER`/`ADMIN`), routes can require specific permissions using the wildcard `domain:action:instance` model:
+
+```kotlin
+// Require "report:export" permission to access this route
+SecurityRules.hasPermission(Permission("report", "export"), permissionResolver, next)
+```
+
+The default `RoleBasedPermissionResolver` maps roles to permission sets (admins get `*:*`). For per-user permissions, implement a custom `PermissionResolver` backed by a database table — the interface is a single method.
+
+#### Multi-Realm Authentication
+
+Bearer token authentication is resolved through a chain of `AuthRealm` instances. The default chain tries session tokens first, then API keys. To add a custom auth source (e.g. LDAP, external OAuth tokens):
+
+```kotlin
+class LdapRealm(private val ldapClient: LdapClient) : AuthRealm {
+    override val name = "ldap"
+    override fun authenticate(token: String): AuthResult {
+        val user = ldapClient.validateToken(token) ?: return AuthResult.Skipped
+        return AuthResult.Authenticated(user)
+    }
+}
+
+// Register in your Koin module:
+single<List<AuthRealm>> { listOf(SessionRealm(get()), ApiKeyRealm(get()), LdapRealm(get())) }
+```
 
 #### Native Image Support (GraalVM)
 
