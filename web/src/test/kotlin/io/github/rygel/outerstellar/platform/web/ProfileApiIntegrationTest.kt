@@ -84,8 +84,8 @@ class ProfileApiIntegrationTest : H2WebTest() {
     // ---- Helpers ----
 
     private fun registerAndLogin(username: String = "profuser${UUID.randomUUID().toString().take(6)}"): String {
-        app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, "pass123!")))
-        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest(username, "pass123!")))
+        app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, testPassword())))
+        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest(username, testPassword())))
         return tokenLens(loginResp).token
     }
 

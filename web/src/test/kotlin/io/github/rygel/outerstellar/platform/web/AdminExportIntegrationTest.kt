@@ -69,7 +69,7 @@ class AdminExportIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "exportadmin",
                 email = "exportadmin@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -77,7 +77,7 @@ class AdminExportIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "exportuser",
                 email = "exportuser@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)

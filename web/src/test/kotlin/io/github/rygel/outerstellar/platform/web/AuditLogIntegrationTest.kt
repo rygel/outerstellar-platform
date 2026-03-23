@@ -96,7 +96,7 @@ class AuditLogIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "auditadmin",
                 email = "auditadmin@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.ADMIN,
             )
         targetUser =
@@ -104,7 +104,7 @@ class AuditLogIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "audittarget",
                 email = "audittarget@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)

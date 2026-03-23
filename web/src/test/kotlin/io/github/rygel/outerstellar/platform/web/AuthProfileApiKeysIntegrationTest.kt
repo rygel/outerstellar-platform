@@ -155,7 +155,7 @@ class AuthProfileApiKeysIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "taken_user",
                 email = "taken@test.com",
-                passwordHash = encoder.encode("password123"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(other)
@@ -366,8 +366,8 @@ class AuthProfileApiKeysIntegrationTest : H2WebTest() {
                     .body(
                         formBody(
                             "token" to "not-a-real-token",
-                            "newPassword" to "new-strong-pass",
-                            "confirmPassword" to "new-strong-pass",
+                            "newPassword" to testPassword(),
+                            "confirmPassword" to testPassword(),
                         )
                     )
             )

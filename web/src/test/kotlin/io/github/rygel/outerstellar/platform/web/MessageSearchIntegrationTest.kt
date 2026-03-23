@@ -64,7 +64,7 @@ class MessageSearchIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "searchuser",
                 email = "search@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(testUser)

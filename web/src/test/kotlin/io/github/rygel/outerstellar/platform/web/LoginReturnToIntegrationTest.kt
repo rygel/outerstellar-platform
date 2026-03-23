@@ -56,7 +56,7 @@ class LoginReturnToIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "returntouser@test.com",
                 email = "returntouser@test.com",
-                passwordHash = encoder.encode("secret123"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(testUser)

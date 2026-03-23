@@ -80,8 +80,8 @@ class AuthenticationWorkflowTest : H2WebTest() {
                     .form("mode", "register")
                     .form("name", "superadmin")
                     .form("email", "admin@test.com")
-                    .form("password", "password123")
-                    .form("confirmPassword", "password123")
+                    .form("password", testPassword())
+                    .form("confirmPassword", testPassword())
             )
         // Registration redirects to /auth?registered=true
         assertEquals(Status.FOUND, regResponse.status)
@@ -98,7 +98,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
                     .query("returnTo", "/admin/dev")
                     .form("mode", "sign-in")
                     .form("email", "admin@test.com")
-                    .form("password", "password123")
+                    .form("password", testPassword())
             )
 
         assertEquals(Status.FOUND, loginResponse.status)
@@ -124,8 +124,8 @@ class AuthenticationWorkflowTest : H2WebTest() {
                 .form("mode", "register")
                 .form("name", "regular")
                 .form("email", "user@test.com")
-                .form("password", "password123")
-                .form("confirmPassword", "password123")
+                .form("password", testPassword())
+                .form("confirmPassword", testPassword())
         )
 
         val loginResponse =
@@ -133,7 +133,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
                 Request(POST, "/auth/components/result")
                     .form("mode", "sign-in")
                     .form("email", "user@test.com")
-                    .form("password", "password123")
+                    .form("password", testPassword())
             )
         val sessionCookie = loginResponse.cookies().find { it.name == "app_session" }!!
 
@@ -149,8 +149,8 @@ class AuthenticationWorkflowTest : H2WebTest() {
                 .form("mode", "register")
                 .form("name", "safeuser")
                 .form("email", "safe@test.com")
-                .form("password", "password123")
-                .form("confirmPassword", "password123")
+                .form("password", testPassword())
+                .form("confirmPassword", testPassword())
         )
 
         val loginResponse =
@@ -159,7 +159,7 @@ class AuthenticationWorkflowTest : H2WebTest() {
                     .query("returnTo", "//evil.example/path")
                     .form("mode", "sign-in")
                     .form("email", "safe@test.com")
-                    .form("password", "password123")
+                    .form("password", testPassword())
             )
 
         assertEquals(Status.FOUND, loginResponse.status)

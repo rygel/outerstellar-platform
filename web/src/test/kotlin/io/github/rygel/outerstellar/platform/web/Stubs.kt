@@ -131,3 +131,7 @@ class InMemoryDeviceTokenRepository : DeviceTokenRepository {
 
     fun all(): Collection<DeviceToken> = tokens.values
 }
+
+/** Generates a dynamic test password to avoid hardcoded credentials in source. */
+fun testPassword(): String = "test-" + java.util.UUID.randomUUID().toString().take(12)
+

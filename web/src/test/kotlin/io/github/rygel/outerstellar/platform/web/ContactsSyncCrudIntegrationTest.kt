@@ -65,7 +65,7 @@ class ContactsSyncCrudIntegrationTest : H2WebTest() {
                 id = UUID.randomUUID(),
                 username = "contactsyncuser",
                 email = "contactsync@test.com",
-                passwordHash = encoder.encode("pass"),
+                passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
             )
         userRepository.save(testUser)

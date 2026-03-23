@@ -95,9 +95,9 @@ class NotificationsIntegrationTest : H2WebTest() {
     private fun registerAndLogin(
         username: String = "notifuser${UUID.randomUUID().toString().take(6)}"
     ): Pair<UUID, String> {
-        val regReq = Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, "pass123!"))
+        val regReq = Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, testPassword()))
         app(regReq)
-        val loginReq = Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest(username, "pass123!"))
+        val loginReq = Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest(username, testPassword()))
         val token = tokenLens(app(loginReq)).token
         val user = userRepository.findByUsername(username)!!
         return user.id to token

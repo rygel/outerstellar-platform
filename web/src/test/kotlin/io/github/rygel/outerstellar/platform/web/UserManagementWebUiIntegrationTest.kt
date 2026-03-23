@@ -134,7 +134,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
 
     @Test
     fun `non-admin cannot access user admin page`() {
-        val userAuth = registerUser("nonadminuser", "password123")
+        val userAuth = registerUser("nonadminuser", testPassword())
         val response =
             app(
                 Request(GET, "/admin/users")
@@ -146,7 +146,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     @Test
     fun `admin can toggle user enabled via HTML form`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("toggleuser", "password123")
+        val userAuth = registerUser("toggleuser", testPassword())
         app(
             Request(POST, "/admin/users/${userAuth.id}/toggle-enabled")
                 .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
@@ -158,7 +158,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
     @Test
     fun `admin can toggle user role via HTML form`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("roleuser", "password123")
+        val userAuth = registerUser("roleuser", testPassword())
         app(
             Request(POST, "/admin/users/${userAuth.id}/toggle-role")
                 .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
@@ -204,7 +204,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
 
     @Test
     fun `regular user does not see Users nav link`() {
-        val userAuth = registerUser("navuser", "password123")
+        val userAuth = registerUser("navuser", testPassword())
         val response =
             app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.id.toString())))
         assertFalse(response.bodyString().contains("/admin/users"))

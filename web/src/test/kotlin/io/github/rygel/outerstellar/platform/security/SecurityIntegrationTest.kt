@@ -31,7 +31,7 @@ class SecurityIntegrationTest : H2WebTest() {
     @Test
     fun `should register and then authenticate user correctly`() {
         val username = "testuser"
-        val password = "secretpassword"
+        val password = testPassword()
 
         // 1. Register
         val newUser =

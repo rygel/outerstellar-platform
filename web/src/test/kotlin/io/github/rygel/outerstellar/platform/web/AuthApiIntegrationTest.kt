@@ -72,7 +72,7 @@ class AuthApiIntegrationTest : H2WebTest() {
                 Request(POST, "/api/v1/auth/register")
                     .with(
                         registerLens of
-                            io.github.rygel.outerstellar.platform.model.RegisterRequest("api-user", "secret123")
+                            io.github.rygel.outerstellar.platform.model.RegisterRequest("api-user", testPassword())
                     )
             )
         assertEquals(Status.OK, registerResponse.status)
@@ -82,7 +82,7 @@ class AuthApiIntegrationTest : H2WebTest() {
             app(
                 Request(POST, "/api/v1/auth/login")
                     .with(
-                        loginLens of io.github.rygel.outerstellar.platform.model.LoginRequest("api-user", "secret123")
+                        loginLens of io.github.rygel.outerstellar.platform.model.LoginRequest("api-user", testPassword())
                     )
             )
         assertEquals(Status.OK, loginResponse.status)
