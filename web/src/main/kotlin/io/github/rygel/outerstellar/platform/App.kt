@@ -393,7 +393,7 @@ private fun buildBaseApp(
 private fun buildHealthResponse(userRepository: UserRepository): Response {
     val checks = mutableMapOf<String, Any>("status" to "UP")
     try {
-        val userCount = userRepository.findAll().size
+        val userCount = userRepository.countAll()
         checks["database"] = mapOf("status" to "UP", "users" to userCount)
     } catch (e: Exception) {
         checks["status"] = "DOWN"

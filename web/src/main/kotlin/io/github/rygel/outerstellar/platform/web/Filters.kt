@@ -364,7 +364,11 @@ object Filters {
                 val headerToken = request.header("X-CSRF-Token")
                 val submitted = formToken ?: headerToken
 
-                if (cookieToken == null || submitted == null || cookieToken != submitted) {
+                if (
+                    cookieToken == null ||
+                    submitted == null ||
+                    !java.security.MessageDigest.isEqual(cookieToken.toByteArray(), submitted.toByteArray())
+                ) {
                     logger.warn("CSRF check failed for {} {}", request.method, path)
                     Response(Status.FORBIDDEN).body("Invalid or missing CSRF token")
                 } else {

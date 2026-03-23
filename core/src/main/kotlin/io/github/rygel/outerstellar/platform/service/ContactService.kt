@@ -16,7 +16,12 @@ class ContactService(
 ) {
     private val logger = LoggerFactory.getLogger(ContactService::class.java)
 
+    companion object {
+        private const val MAX_PAGE_LIMIT = 1000
+    }
+
     fun listContacts(query: String? = null, limit: Int = 100, offset: Int = 0): List<ContactSummary> {
+        val limit = limit.coerceIn(1, MAX_PAGE_LIMIT)
         logger.debug("Listing contacts query='{}' limit={} offset={}", query, limit, offset)
         return repository.listContacts(query, limit, offset)
     }

@@ -37,12 +37,17 @@ class MessageService(
 ) {
     private val logger = LoggerFactory.getLogger(MessageService::class.java)
 
+    companion object {
+        private const val MAX_PAGE_LIMIT = 1000
+    }
+
     fun listMessages(
         query: String? = null,
         year: Int? = null,
         limit: Int = 100,
         offset: Int = 0,
     ): PagedResult<MessageSummary> {
+        val limit = limit.coerceIn(1, MAX_PAGE_LIMIT)
         val cacheKey = "list:$query:$year:$limit:$offset"
 
         @Suppress("UNCHECKED_CAST")
