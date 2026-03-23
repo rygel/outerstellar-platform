@@ -61,4 +61,9 @@ class JwtService(private val config: JwtConfig) {
             null
         }
     }
+
+    /** Evict a token from the claims cache (e.g. on logout). */
+    fun invalidate(token: String) {
+        claimsCache.invalidate(token)
+    }
 }

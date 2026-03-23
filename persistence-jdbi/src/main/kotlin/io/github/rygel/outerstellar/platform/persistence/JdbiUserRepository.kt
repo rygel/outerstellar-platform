@@ -101,6 +101,15 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             handle.createQuery("SELECT COUNT(*) FROM plt_users").mapTo(Long::class.java).one()
         }
 
+    override fun countByRole(role: UserRole): Long =
+        jdbi.withHandle<Long, Exception> { handle ->
+            handle
+                .createQuery("SELECT COUNT(*) FROM plt_users WHERE role = :role")
+                .bind("role", role.name)
+                .mapTo(Long::class.java)
+                .one()
+        }
+
     override fun updateRole(userId: UUID, role: UserRole) {
         jdbi.useHandle<Exception> { handle ->
             handle

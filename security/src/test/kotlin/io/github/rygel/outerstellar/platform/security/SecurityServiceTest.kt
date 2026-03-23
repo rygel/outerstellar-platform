@@ -360,7 +360,6 @@ class SecurityServiceTest {
     @Test
     fun `deleteAccount removes the user`() {
         every { userRepository.findById(testUser.id) } returns testUser
-        every { userRepository.findAll() } returns listOf(testUser, adminUser)
 
         service.deleteAccount(testUser.id)
 
@@ -370,7 +369,7 @@ class SecurityServiceTest {
     @Test
     fun `deleteAccount blocks deleting the only admin`() {
         every { userRepository.findById(adminUser.id) } returns adminUser
-        every { userRepository.findAll() } returns listOf(adminUser)
+        every { userRepository.countByRole(UserRole.ADMIN) } returns 1L
 
         assertThrows<io.github.rygel.outerstellar.platform.model.InsufficientPermissionException> {
             service.deleteAccount(adminUser.id)
@@ -380,9 +379,8 @@ class SecurityServiceTest {
 
     @Test
     fun `deleteAccount allows admin deletion when another admin exists`() {
-        val secondAdmin = adminUser.copy(id = UUID.randomUUID(), username = "admin2")
         every { userRepository.findById(adminUser.id) } returns adminUser
-        every { userRepository.findAll() } returns listOf(adminUser, secondAdmin)
+        every { userRepository.countByRole(UserRole.ADMIN) } returns 2L
 
         service.deleteAccount(adminUser.id)
 

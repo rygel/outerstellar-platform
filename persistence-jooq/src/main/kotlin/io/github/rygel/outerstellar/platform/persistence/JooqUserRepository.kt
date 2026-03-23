@@ -83,6 +83,9 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
 
     override fun countAll(): Long = dsl.selectCount().from(PLT_USERS).fetchOne(0, Long::class.java) ?: 0L
 
+    override fun countByRole(role: UserRole): Long =
+        dsl.selectCount().from(PLT_USERS).where(PLT_USERS.ROLE.eq(role.name)).fetchOne(0, Long::class.java) ?: 0L
+
     override fun updateRole(userId: UUID, role: UserRole) {
         dsl.update(PLT_USERS).set(PLT_USERS.ROLE, role.name).where(PLT_USERS.ID.eq(userId)).execute()
     }

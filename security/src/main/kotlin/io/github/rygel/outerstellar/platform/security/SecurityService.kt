@@ -117,7 +117,7 @@ class SecurityService(
     }
 
     fun listUsers(limit: Int, offset: Int): List<UserSummary> =
-        userRepository.findPage(limit, offset).map { it.toSummary() }
+        userRepository.findPage(limit.coerceIn(1, MAX_PAGE_LIMIT), offset).map { it.toSummary() }
 
     fun countUsers(): Long = userRepository.countAll()
 
@@ -198,8 +198,22 @@ class SecurityService(
         }
         if (newAvatarUrl != user.avatarUrl) {
             val sanitizedUrl = newAvatarUrl?.takeIf { it.isNotBlank() }
-            if (sanitizedUrl != null && !sanitizedUrl.startsWith("https://") && !sanitizedUrl.startsWith("http://")) {
-                throw IllegalArgumentException("Avatar URL must use http or https scheme")
+            if (sanitizedUrl != null) {
+                if (!sanitizedUrl.startsWith("https://") && !sanitizedUrl.startsWith("http://")) {
+                    throw IllegalArgumentException("Avatar URL must use http or https scheme")
+                }
+                if (sanitizedUrl.length > MAX_URL_LENGTH) {
+                    throw IllegalArgumentException("Avatar URL exceeds maximum length of $MAX_URL_LENGTH characters")
+                }
+                val host =
+                    try {
+                        java.net.URI(sanitizedUrl).host?.lowercase()
+                    } catch (_: Exception) {
+                        null
+                    }
+                if (host != null && PRIVATE_HOST_PATTERNS.any { it.matches(host) }) {
+                    throw IllegalArgumentException("Avatar URL must not point to private or internal addresses")
+                }
             }
             userRepository.updateAvatarUrl(userId, sanitizedUrl)
         }
@@ -210,7 +224,7 @@ class SecurityService(
     fun deleteAccount(userId: UUID) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         if (user.role == UserRole.ADMIN) {
-            val adminCount = userRepository.findAll().count { it.role == UserRole.ADMIN }
+            val adminCount = userRepository.countByRole(UserRole.ADMIN)
             if (adminCount <= 1) {
                 throw InsufficientPermissionException("Cannot delete the only remaining admin account")
             }
@@ -300,7 +314,20 @@ class SecurityService(
         private const val MIN_PASSWORD_LENGTH = 8
         private const val MAX_USERNAME_LENGTH = 50
         private const val SESSION_TOKEN_HEX_LENGTH = 48
+        private const val MAX_PAGE_LIMIT = 1000
+        private const val MAX_URL_LENGTH = 2048
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+        private val PRIVATE_HOST_PATTERNS =
+            listOf(
+                Regex("^localhost$"),
+                Regex("^127\\..*"),
+                Regex("^10\\..*"),
+                Regex("^172\\.(1[6-9]|2\\d|3[01])\\..*"),
+                Regex("^192\\.168\\..*"),
+                Regex("^0\\..*"),
+                Regex(".*\\.local$"),
+                Regex(".*\\.internal$"),
+            )
     }
 }
 

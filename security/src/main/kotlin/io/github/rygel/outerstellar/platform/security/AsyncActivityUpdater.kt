@@ -21,6 +21,10 @@ class AsyncActivityUpdater(private val userRepository: UserRepository) {
     private val logger = LoggerFactory.getLogger(AsyncActivityUpdater::class.java)
     private val pending = ConcurrentHashMap<UUID, Unit>()
 
+    init {
+        Runtime.getRuntime().addShutdownHook(Thread({ flush() }, "activity-flush-shutdown"))
+    }
+
     /** Record that [userId] was active. Safe to call from any thread; never blocks. */
     fun record(userId: UUID) {
         pending[userId] = Unit
