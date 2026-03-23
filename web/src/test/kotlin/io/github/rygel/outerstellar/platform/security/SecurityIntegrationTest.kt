@@ -1,9 +1,8 @@
 package io.github.rygel.outerstellar.platform.security
 
-import io.github.rygel.outerstellar.platform.web.testPassword
-
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.web.H2WebTest
+import io.github.rygel.outerstellar.platform.web.testPassword
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

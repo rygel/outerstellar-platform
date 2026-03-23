@@ -220,8 +220,9 @@ class PerformanceBenchmarkTest : H2WebTest() {
         val registerLens = Body.auto<RegisterRequest>().toLens()
         val loginLens = Body.auto<LoginRequest>().toLens()
         val tokenLens = Body.auto<AuthTokenResponse>().toLens()
-        app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest("perfuser", testPassword())))
-        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("perfuser", testPassword())))
+        val password = testPassword()
+        app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest("perfuser", password)))
+        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("perfuser", password)))
         bearerToken = tokenLens(loginResp).token
     }
 

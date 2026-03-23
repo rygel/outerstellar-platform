@@ -67,12 +67,13 @@ class AuthApiIntegrationTest : H2WebTest() {
         val tokenLens =
             org.http4k.core.Body.auto<io.github.rygel.outerstellar.platform.model.AuthTokenResponse>().toLens()
 
+        val password = testPassword()
         val registerResponse =
             app(
                 Request(POST, "/api/v1/auth/register")
                     .with(
                         registerLens of
-                            io.github.rygel.outerstellar.platform.model.RegisterRequest("api-user", testPassword())
+                            io.github.rygel.outerstellar.platform.model.RegisterRequest("api-user", password)
                     )
             )
         assertEquals(Status.OK, registerResponse.status)
@@ -81,9 +82,7 @@ class AuthApiIntegrationTest : H2WebTest() {
         val loginResponse =
             app(
                 Request(POST, "/api/v1/auth/login")
-                    .with(
-                        loginLens of io.github.rygel.outerstellar.platform.model.LoginRequest("api-user", testPassword())
-                    )
+                    .with(loginLens of io.github.rygel.outerstellar.platform.model.LoginRequest("api-user", password))
             )
         assertEquals(Status.OK, loginResponse.status)
         assertTrue(tokenLens(loginResponse).token.isNotBlank())

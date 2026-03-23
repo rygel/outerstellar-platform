@@ -53,6 +53,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
     private lateinit var apiKeyRepository: JooqApiKeyRepository
     private lateinit var securityService: SecurityService
     private lateinit var testUser: User
+    private lateinit var testUserPassword: String
     private lateinit var otherUser: User
     private lateinit var testToken: String
     private lateinit var otherToken: String
@@ -77,12 +78,13 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
             )
         val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
+        testUserPassword = testPassword()
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "apikeytestuser",
                 email = "apikey@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = encoder.encode(testUserPassword),
                 role = UserRole.USER,
             )
         otherUser =
@@ -326,7 +328,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
                 Request(PUT, "/api/v1/auth/password")
                     .header("Authorization", bearerFor(testUser))
                     .header("content-type", "application/json")
-                    .body("""{"currentPassword":"pass","newPassword":testPassword()}""")
+                    .body("""{"currentPassword":"$testUserPassword","newPassword":"${testPassword()}"}""")
             )
         assertEquals(Status.OK, response.status)
     }
@@ -338,7 +340,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
                 Request(PUT, "/api/v1/auth/password")
                     .header("Authorization", bearerFor(testUser))
                     .header("content-type", "application/json")
-                    .body("""{"currentPassword":"wrongpass","newPassword":testPassword()}""")
+                    .body("""{"currentPassword":"wrongpass","newPassword":"${testPassword()}"}""")
             )
         assertEquals(Status.BAD_REQUEST, response.status)
     }
@@ -349,7 +351,7 @@ class ApiKeyLifecycleIntegrationTest : H2WebTest() {
             app(
                 Request(PUT, "/api/v1/auth/password")
                     .header("content-type", "application/json")
-                    .body("""{"currentPassword":"pass","newPassword":testPassword()}""")
+                    .body("""{"currentPassword":"$testUserPassword","newPassword":"${testPassword()}"}""")
             )
         assertEquals(Status.UNAUTHORIZED, response.status)
     }

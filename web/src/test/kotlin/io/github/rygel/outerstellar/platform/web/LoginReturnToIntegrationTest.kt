@@ -37,6 +37,7 @@ class LoginReturnToIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
+    private lateinit var testUserPassword: String
 
     @BeforeEach
     fun setupTest() {
@@ -51,12 +52,13 @@ class LoginReturnToIntegrationTest : H2WebTest() {
         val securityService = SecurityService(userRepository, encoder)
         val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
+        testUserPassword = testPassword()
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "returntouser@test.com",
                 email = "returntouser@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = encoder.encode(testUserPassword),
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
@@ -88,7 +90,7 @@ class LoginReturnToIntegrationTest : H2WebTest() {
         return app(
             Request(POST, url)
                 .header("content-type", "application/x-www-form-urlencoded")
-                .body("mode=sign-in&email=${testUser.email}&password=secret123")
+                .body("mode=sign-in&email=${testUser.email}&password=$testUserPassword")
         )
     }
 
