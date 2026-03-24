@@ -15,27 +15,27 @@ class JooqPasswordResetRepository(private val dsl: DSLContext) : PasswordResetRe
     private val expiresAt = DSL.field("expires_at", SQLDataType.LOCALDATETIME)
     private val used = DSL.field("used", SQLDataType.BOOLEAN)
 
-    override fun save(resetToken: PasswordResetToken) {
+    override fun save(token: PasswordResetToken) {
         dsl.insertInto(table)
-            .set(userId, resetToken.userId)
-            .set(token, resetToken.token)
-            .set(expiresAt, LocalDateTime.ofInstant(resetToken.expiresAt, ZoneOffset.UTC))
-            .set(used, resetToken.used)
+            .set(userId, token.userId)
+            .set(this.token, token.token)
+            .set(expiresAt, LocalDateTime.ofInstant(token.expiresAt, ZoneOffset.UTC))
+            .set(used, token.used)
             .execute()
     }
 
-    override fun findByToken(tokenValue: String): PasswordResetToken? {
-        return dsl.select(userId, token, expiresAt, used).from(table).where(token.eq(tokenValue)).fetchOne()?.let {
+    override fun findByToken(token: String): PasswordResetToken? {
+        return dsl.select(userId, this.token, expiresAt, used).from(table).where(this.token.eq(token)).fetchOne()?.let {
             PasswordResetToken(
                 userId = it.get(userId)!!,
-                token = it.get(token)!!,
+                token = it.get(this.token)!!,
                 expiresAt = it.get(expiresAt)!!.toInstant(ZoneOffset.UTC),
                 used = it.get(used)!!,
             )
         }
     }
 
-    override fun markUsed(tokenValue: String) {
-        dsl.update(table).set(used, true).where(token.eq(tokenValue)).execute()
+    override fun markUsed(token: String) {
+        dsl.update(table).set(used, true).where(this.token.eq(token)).execute()
     }
 }

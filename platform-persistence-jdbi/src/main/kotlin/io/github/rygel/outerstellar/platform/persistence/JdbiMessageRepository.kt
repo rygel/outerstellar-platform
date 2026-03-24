@@ -76,7 +76,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             .findOne()
             .orElse(null)
 
-    override fun findChangesSince(updatedAtEpochMs: Long): List<StoredMessage> =
+    override fun findChangesSince(since: Long): List<StoredMessage> =
         jdbi.withHandle<List<StoredMessage>, Exception> { handle ->
             handle
                 .createQuery(
@@ -85,7 +85,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
                     WHERE updated_at_epoch_ms > :since AND deleted_at IS NULL
                     """
                 )
-                .bind("since", updatedAtEpochMs)
+                .bind("since", since)
                 .map { rs, _ -> mapMessage(rs) }
                 .list()
         }

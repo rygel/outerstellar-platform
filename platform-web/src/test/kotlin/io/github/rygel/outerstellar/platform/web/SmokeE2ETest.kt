@@ -10,8 +10,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.http4k.core.Method.GET
+import org.http4k.core.PolyHandler
 import org.http4k.core.Request
-import org.http4k.server.PolyHandler
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.core.qualifier.named

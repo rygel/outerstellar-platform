@@ -2,23 +2,15 @@ package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.platform.AppConfig
 import org.junit.jupiter.api.Test
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
+import org.koin.core.annotation.KoinExperimentalAPI
 import org.koin.test.KoinTest
-import org.koin.test.check.checkModules
+import org.koin.test.verify.verify
 
+@OptIn(KoinExperimentalAPI::class)
 class KoinModuleTest : KoinTest {
 
     @Test
     fun `persistence modules should be valid`() {
-        checkModules {
-            modules(
-                persistenceModule,
-                module {
-                    single { AppConfig(jdbcUrl = "jdbc:h2:mem:test;MODE=PostgreSQL") }
-                    single(named("jdbcUrl")) { "jdbc:h2:mem:test;MODE=PostgreSQL" }
-                },
-            )
-        }
+        persistenceModule.verify(extraTypes = listOf(AppConfig::class, String::class))
     }
 }
