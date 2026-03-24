@@ -21,19 +21,17 @@ COPY platform-seed/pom.xml platform-seed/
 COPY package.json package-lock.json* ./
 
 # Download dependencies (cached layer)
-RUN mvn dependency:go-offline -pl platform-web -am -DskipTests -Denforcer.skip=true || true
-RUN npm ci --no-audit --no-fund
+RUN (mvn dependency:go-offline -pl platform-web -am -DskipTests -Denforcer.skip=true || true) && \
+    npm ci --no-audit --no-fund
 
 # Copy source code
 COPY . .
 
-# Build the project, skip tests and quality checks
+# Build the project and copy runtime dependencies
 RUN mvn package -pl platform-web -am -DskipTests -Denforcer.skip=true \
     -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
-    -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true
-
-# Copy runtime dependencies into a lib directory
-RUN mvn dependency:copy-dependencies -pl platform-web -DincludeScope=runtime \
+    -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true && \
+    mvn dependency:copy-dependencies -pl platform-web -DincludeScope=runtime \
     -DoutputDirectory=platform-web/target/lib -DskipTests -Denforcer.skip=true
 
 # Runtime stage
