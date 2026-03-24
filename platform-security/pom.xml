@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>platform-security</artifactId>
+    <name>Platform Security</name>
 
     <properties>
         <detekt.skip>true</detekt.skip>

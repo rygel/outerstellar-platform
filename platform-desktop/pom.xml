@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>platform-desktop</artifactId>
+    <name>Platform Desktop</name>
 
     <properties>
         <detekt.skip>true</detekt.skip>

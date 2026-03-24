@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>platform-seed</artifactId>
+    <name>Platform Seed</name>
     
     <properties>
         <detekt.skip>true</detekt.skip>
