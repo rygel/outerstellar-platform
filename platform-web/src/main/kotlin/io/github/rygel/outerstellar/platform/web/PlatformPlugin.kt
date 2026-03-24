@@ -60,27 +60,27 @@ data class PluginContext(
 
     companion object {
         /**
-         * Creates a [PluginContext] with sensible defaults for testing. Pass only the services your plugin actually
-         * uses; the rest default to no-ops or minimal stubs.
+         * Creates a [PluginContext] with sensible defaults for testing. Only the three services that cannot be
+         * stubbed without a mocking library are required — use `mockk(relaxed = true)` for them.
          *
-         * [securityService] and [userRepository] are required because they cannot be stubbed without a mocking library.
-         * Use `mockk(relaxed = true)` for both in your test setup.
+         * To override other defaults, use `.copy()` on the returned instance:
+         * ```kotlin
+         * val ctx = PluginContext.forTesting(renderer, mockk(relaxed = true), mockk(relaxed = true))
+         *     .copy(config = AppConfig(devMode = true))
+         * ```
          */
         fun forTesting(
             renderer: TemplateRenderer,
             securityService: SecurityService,
             userRepository: UserRepository,
-            config: AppConfig = AppConfig(),
-            analytics: AnalyticsService = NoOpAnalyticsService(),
-            notificationService: NotificationService? = null,
         ): PluginContext =
             PluginContext(
                 renderer = renderer,
-                config = config,
+                config = AppConfig(),
                 securityService = securityService,
                 userRepository = userRepository,
-                analytics = analytics,
-                notificationService = notificationService,
+                analytics = NoOpAnalyticsService(),
+                notificationService = null,
                 pageFactory = WebPageFactory(),
             )
     }
