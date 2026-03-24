@@ -60,11 +60,16 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-          server-id: github-rygel
-          server-username: GITHUB_ACTOR
-          server-password: GH_PACKAGES_TOKEN
+          server-id: central
+          server-username: CENTRAL_USERNAME
+          server-password: CENTRAL_TOKEN
+
+      - name: Import GPG key
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
         env:
-          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Set up Node.js 20
         if: steps.check.outputs.exists == 'false'
@@ -81,8 +86,11 @@ jobs:
         if: steps.check.outputs.exists == 'false'
         run: mvn clean verify -Pfast
 
-      - name: Publish to GitHub Packages
+      - name: Publish to Maven Central
         if: steps.check.outputs.exists == 'false'
-        run: mvn deploy -DskipTests -Denforcer.skip=true
+        run: mvn deploy -Prelease -DskipTests -Denforcer.skip=true
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
