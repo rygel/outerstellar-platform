@@ -110,7 +110,7 @@ class JooqUserRepositoryTest : H2JooqTest() {
         repo.updateLastActivity(u.id)
         val updated = repo.findById(u.id)!!.lastActivityAt
         assertNotNull(updated)
-        assertTrue(updated!! > Instant.parse("2000-01-02T00:00:00Z"))
+        assertTrue(updated > Instant.parse("2000-01-02T00:00:00Z"))
     }
 
     @Test

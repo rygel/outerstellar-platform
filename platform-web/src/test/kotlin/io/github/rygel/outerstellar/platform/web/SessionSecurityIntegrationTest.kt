@@ -290,7 +290,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
     // ---- Theme / lang state cookies ----
 
     @Test
-    fun `?theme=dark sets app_theme cookie`() {
+    fun `theme=dark query param sets app_theme cookie`() {
         val response = app(Request(GET, "/auth?theme=dark"))
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
@@ -300,7 +300,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
     }
 
     @Test
-    fun `?lang=fr sets lang cookie`() {
+    fun `lang=fr query param sets lang cookie`() {
         val response = app(Request(GET, "/auth?lang=fr"))
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(setCookie.contains(WebContext.LANG_COOKIE), "?lang=fr should set a lang cookie, got: $setCookie")
