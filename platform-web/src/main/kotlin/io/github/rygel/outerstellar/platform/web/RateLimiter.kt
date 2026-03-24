@@ -1,14 +1,14 @@
 package io.github.rygel.outerstellar.platform.web
 
 import com.github.benmanes.caffeine.cache.Caffeine
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.slf4j.LoggerFactory
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.web.RateLimiter")
 
@@ -64,7 +64,8 @@ fun rateLimitFilter(
             .build<String, TokenBucket>()
 
     return Filter { next: HttpHandler ->
-        { request ->
+        {
+                request ->
             val path = request.uri.path
             if (pathPrefixes.any { path.startsWith(it) }) {
                 val clientIp =
