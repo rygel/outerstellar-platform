@@ -105,8 +105,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 } bindContract
                 DELETE to
                 { id ->
-                    {
-                            request ->
+                    { request ->
                         val user = SecurityRules.USER_KEY(request)!!
                         securityService.deleteApiKey(user.id, id)
                         Response(Status.OK).body("API key deleted")

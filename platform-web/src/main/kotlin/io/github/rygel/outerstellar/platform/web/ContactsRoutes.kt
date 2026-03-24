@@ -74,10 +74,7 @@ class ContactsRoutes(
                 } bindContract
                 GET to
                 { syncId: String, _ ->
-                    {
-                            request: Request ->
-                        renderer.render(pageFactory.buildContactForm(request.webContext, syncId))
-                    }
+                    { request: Request -> renderer.render(pageFactory.buildContactForm(request.webContext, syncId)) }
                 },
             "/contacts" / syncIdPath / "update" meta
                 {
@@ -85,8 +82,7 @@ class ContactsRoutes(
                 } bindContract
                 POST to
                 { syncId: String, _ ->
-                    {
-                            request: Request ->
+                    { request: Request ->
                         val ctx = request.webContext
                         val params = request.bodyAsForm()
                         val existing =
@@ -114,8 +110,7 @@ class ContactsRoutes(
                 } bindContract
                 POST to
                 { syncId: String, _ ->
-                    {
-                            _: Request ->
+                    { _: Request ->
                         contactService?.deleteContact(syncId)
                         Response(Status.OK).body("")
                     }

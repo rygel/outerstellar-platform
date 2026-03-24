@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.1] – 2026-03-24
+
+### Added
+- Maven Central publishing support via `central-publishing-maven-plugin` (`mvn deploy -Prelease`)
+- `<developers>` and `<scm>` metadata required by Central
+- `maven-source-plugin` for source JARs, GPG signing and javadoc JARs in release profile
+
+### Fixed
+- Applied ktfmt formatting across core and web modules (78 files)
+
+---
+
 ## [1.3.0] – 2026-03-24
 
 ### Changed
