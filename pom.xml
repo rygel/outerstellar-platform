@@ -20,6 +20,20 @@
         </license>
     </licenses>
 
+    <developers>
+        <developer>
+            <name>Alexander Brandt</name>
+            <email>github@a13x.de</email>
+            <url>https://github.com/rygel</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/rygel/outerstellar-platform.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/rygel/outerstellar-platform.git</developerConnection>
+        <url>https://github.com/rygel/outerstellar-platform</url>
+    </scm>
+
     <modules>
         <module>core</module>
         <module>persistence-jooq</module>
@@ -1098,6 +1112,63 @@
                 <spotbugs.skip>true</spotbugs.skip>
                 <spotless.check.skip>true</spotless.check.skip>
             </properties>
+        </profile>
+        <!-- mvn -Prelease deploy — sign and publish to Maven Central -->
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.4.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.8</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.7.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>3.12.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
