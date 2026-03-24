@@ -12,7 +12,7 @@ permissions: {}
 jobs:
   release:
     runs-on: ubuntu-latest
-    environment: ci
+    environment: maven-central
     permissions:
       contents: write
       packages: write
@@ -62,7 +62,7 @@ jobs:
           cache: 'maven'
           server-id: central
           server-username: CENTRAL_USERNAME
-          server-password: CENTRAL_TOKEN
+          server-password: CENTRAL_PASSWORD
 
       - name: Import GPG key
         if: steps.check.outputs.exists == 'false'
@@ -91,6 +91,6 @@ jobs:
         run: mvn deploy -Prelease -DskipTests -Denforcer.skip=true
         env:
           CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
-          CENTRAL_TOKEN: ${{ secrets.CENTRAL_TOKEN }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
