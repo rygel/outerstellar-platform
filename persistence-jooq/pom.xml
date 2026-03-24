@@ -5,11 +5,11 @@
 
     <parent>
         <groupId>io.github.rygel</groupId>
-        <artifactId>outerstellar-platform-parent</artifactId>
+        <artifactId>platform-parent</artifactId>
         <version>1.2.8</version>
     </parent>
 
-    <artifactId>persistence-jooq</artifactId>
+    <artifactId>platform-persistence-jooq</artifactId>
 
     <properties>
         <codegen.jdbc.url>jdbc:h2:file:${project.build.directory}/jooq-codegen/db/platform;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE</codegen.jdbc.url>
@@ -19,11 +19,11 @@
     <dependencies>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>platform-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>security</artifactId>
+            <artifactId>platform-security</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -75,7 +75,7 @@
         
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>platform-core</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>

@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.rygel</groupId>
-    <artifactId>outerstellar-platform-parent</artifactId>
+    <artifactId>platform-parent</artifactId>
     <version>1.2.8</version>
     <packaging>pom</packaging>
 
@@ -148,27 +148,27 @@
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>core</artifactId>
+                <artifactId>platform-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>persistence-jooq</artifactId>
+                <artifactId>platform-persistence-jooq</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>persistence-jdbi</artifactId>
+                <artifactId>platform-persistence-jdbi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>api-client</artifactId>
+                <artifactId>platform-api-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>web</artifactId>
+                <artifactId>platform-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

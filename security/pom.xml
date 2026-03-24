@@ -5,11 +5,11 @@
 
     <parent>
         <groupId>io.github.rygel</groupId>
-        <artifactId>outerstellar-platform-parent</artifactId>
+        <artifactId>platform-parent</artifactId>
         <version>1.2.8</version>
     </parent>
 
-    <artifactId>security</artifactId>
+    <artifactId>platform-security</artifactId>
 
     <properties>
         <detekt.skip>true</detekt.skip>
@@ -18,7 +18,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>platform-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

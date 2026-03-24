@@ -5,16 +5,16 @@
 
     <parent>
         <groupId>io.github.rygel</groupId>
-        <artifactId>outerstellar-platform-parent</artifactId>
+        <artifactId>platform-parent</artifactId>
         <version>1.2.8</version>
     </parent>
 
-    <artifactId>api-client</artifactId>
+    <artifactId>platform-api-client</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>platform-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
