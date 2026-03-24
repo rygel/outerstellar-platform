@@ -40,7 +40,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Starting watcher..." -ForegroundColor Cyan
 $watcherProcess = Start-Process `
     -FilePath $mavenCommand.Source `
-    -ArgumentList "-Pruntime-dev", "-pl", "web", "fizzed-watcher:run" `
+    -ArgumentList "-Pruntime-dev", "-pl", "platform-web", "fizzed-watcher:run" `
     -WorkingDirectory $projectRoot `
     -RedirectStandardOutput $watcherLog `
     -RedirectStandardError $watcherErrorLog `
@@ -60,7 +60,7 @@ $tailwindProcess = Start-Process `
 Write-Host "Starting web application..." -ForegroundColor Green
 $appProcess = Start-Process `
     -FilePath $mavenCommand.Source `
-    -ArgumentList "-Pruntime-dev", "-pl", "web", "compile", "exec:java" `
+    -ArgumentList "-Pruntime-dev", "-pl", "platform-web", "compile", "exec:java" `
     -WorkingDirectory $projectRoot `
     -RedirectStandardOutput $appLog `
     -RedirectStandardError $appErrorLog `

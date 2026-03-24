@@ -48,17 +48,17 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build and run all checks
-        run: mvn verify -T 1C -pl core,persistence-jooq,persistence-jdbi,api-client,security,web
+        run: mvn verify -T 1C -pl platform-core,platform-persistence-jooq,platform-persistence-jdbi,platform-api-client,platform-security,platform-web
 
       - name: Cache build output for downstream jobs
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
-            core/target/
-            persistence-jooq/target/
-            api-client/target/
-            security/target/
-            web/target/
+            platform-core/target/
+            platform-persistence-jooq/target/
+            platform-api-client/target/
+            platform-security/target/
+            platform-web/target/
           key: build-${{ github.sha }}
 
       - name: Upload JaCoCo coverage reports
@@ -99,11 +99,11 @@ jobs:
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
-            core/target/
-            persistence-jooq/target/
-            api-client/target/
-            security/target/
-            web/target/
+            platform-core/target/
+            platform-persistence-jooq/target/
+            platform-api-client/target/
+            platform-security/target/
+            platform-web/target/
           key: build-${{ github.sha }}
 
       - name: Install Xvfb
@@ -113,11 +113,11 @@ jobs:
         run: mvn install -N -q
 
       - name: Install cached modules
-        run: mvn install -pl core,persistence-jooq,api-client,security -DskipTests -q
+        run: mvn install -pl platform-core,platform-persistence-jooq,platform-api-client,platform-security -DskipTests -q
 
       - name: Run desktop tests with virtual display
         run: >
-          xvfb-run --auto-servernum mvn test -pl desktop
+          xvfb-run --auto-servernum mvn test -pl platform-desktop
           -Ddesktop.headless=false
           -Ddetekt.skip=true
           -Dcheckstyle.skip=true
@@ -154,22 +154,22 @@ jobs:
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
-            core/target/
-            persistence-jooq/target/
-            api-client/target/
-            security/target/
-            web/target/
+            platform-core/target/
+            platform-persistence-jooq/target/
+            platform-api-client/target/
+            platform-security/target/
+            platform-web/target/
           key: build-${{ github.sha }}
 
       - name: Install parent POM locally
         run: mvn install -N -q -s /github/home/.m2/settings.xml
 
       - name: Install cached modules
-        run: mvn install -pl core,persistence-jooq,api-client,security,web -DskipTests -Dexec.skip=true -q -s /github/home/.m2/settings.xml
+        run: mvn install -pl platform-core,platform-persistence-jooq,platform-api-client,platform-security,platform-web -DskipTests -Dexec.skip=true -q -s /github/home/.m2/settings.xml
 
       - name: Run E2E tests
         run: >
-          mvn test -pl web
+          mvn test -pl platform-web
           -s /github/home/.m2/settings.xml
           -Dgroups=e2e
           -DexcludedGroups=

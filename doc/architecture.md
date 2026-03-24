@@ -20,17 +20,17 @@ The goal is to start from a runnable platform, not just a dependency list.
 
 The project is organized as a **multi-module Maven project**:
 
-- `core` - shared domain models, services, and configuration
-- `persistence-jooq` - jOOQ-backed repository implementation and Flyway migrations
-- `persistence-jdbi` - JDBI-backed repository implementation (alternative to jOOQ)
-- `api-client` - shared sync DTOs and client sync service
-- `web` - http4k web server, JTE templates, and HTMX interactions
-- `desktop` - Swing desktop client, theme manager, and UI tests
-- `security` - security-related utilities and configuration
+- `platform-core` - shared domain models, services, and configuration
+- `platform-persistence-jooq` - jOOQ-backed repository implementation and Flyway migrations
+- `platform-persistence-jdbi` - JDBI-backed repository implementation (alternative to jOOQ)
+- `platform-api-client` - shared sync DTOs and client sync service
+- `platform-web` - http4k web server, JTE templates, and HTMX interactions
+- `platform-desktop` - Swing desktop client, theme manager, and UI tests
+- `platform-security` - security-related utilities and configuration
 
 ### Why multiple modules?
 
-This structure provides better separation of concerns, allows for independent testing, and keeps dependencies scoped to where they are actually needed (e.g., Swing-specific libraries are only in `desktop`).
+This structure provides better separation of concerns, allows for independent testing, and keeps dependencies scoped to where they are actually needed (e.g., Swing-specific libraries are only in `platform-desktop`).
 
 ## Runtime architecture
 
@@ -93,9 +93,9 @@ The repository layer wraps jOOQ so the app uses a small domain-oriented API rath
 
 The project uses **manual jOOQ code generation** with generated sources checked into version control.
 
-- generated sources location: `persistence-jooq/src/main/generated/jooq`
+- generated sources location: `platform-persistence-jooq/src/main/generated/jooq`
 - generation profile: `jooq-codegen`
-- generation command: `mvn -pl persistence-jooq -Pjooq-codegen generate-sources`
+- generation command: `mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources`
 - PowerShell shortcut: `./generate-jooq.ps1`
 
 This keeps builds deterministic and removes implicit schema/codegen drift between environments.
@@ -333,8 +333,8 @@ The project uses three tiers of tests:
 | Tier | Location | Runs in CI | Purpose |
 |------|----------|-----------|---------|
 | **Unit tests** | `*/src/test/` | Always | ViewModel logic, SecurityService, repository behavior |
-| **Integration tests** | `web/src/test/` | Always | http4k function tests — full app stack without a running server |
-| **UI layout tests** | `desktop/src/test/` | Headful only | Verify Swing dialogs and components are visually usable |
+| **Integration tests** | `platform-web/src/test/` | Always | http4k function tests — full app stack without a running server |
+| **UI layout tests** | `platform-desktop/src/test/` | Headful only | Verify Swing dialogs and components are visually usable |
 
 ### http4k function-level integration tests
 
@@ -384,7 +384,7 @@ Specifically, when adding or modifying Swing UI:
 
 These tests use `assumeFalse(GraphicsEnvironment.isHeadless())` so they skip cleanly in CI. Run them locally with:
 ```
-mvn test -pl desktop -Ptests-headful
+mvn test -pl platform-desktop -Ptests-headful
 ```
 
 The existing `UiLayoutTest.kt` demonstrates the pattern. **When you add a new dialog or panel, add corresponding size assertions to this class.**
@@ -436,11 +436,11 @@ The default `java.awt.headless=true` prevents `JFrame` creation, so GUI tests sk
 
 | Command | What runs |
 |---------|-----------|
-| `mvn test -pl desktop` | Headless tests only (ViewModel, ThemeManager, etc.) — no windows created |
+| `mvn test -pl platform-desktop` | Headless tests only (ViewModel, ThemeManager, etc.) — no windows created |
 | `mvn -Ptest-desktop verify` | **All tests** including GUI — runs inside Docker with Xvfb |
-| `mvn test -pl desktop -Ptests-headful` | All tests against the local display (use only if you want windows) |
+| `mvn test -pl platform-desktop -Ptests-headful` | All tests against the local display (use only if you want windows) |
 
-The Docker test image (`docker/Dockerfile.test-desktop`) packages the project with Xvfb and runs `xvfb-run mvn test -pl desktop -Ddesktop.headless=false`. This gives real pixel-level rendering without a physical screen.
+The Docker test image (`docker/Dockerfile.test-desktop`) packages the project with Xvfb and runs `xvfb-run mvn test -pl platform-desktop -Ddesktop.headless=false`. This gives real pixel-level rendering without a physical screen.
 
 ViewModel-level tests (e.g., `SyncViewModelAuthTest`) always run in every mode since they don't create AWT/Swing components.
 
@@ -520,8 +520,8 @@ All common operations use Maven profiles — no shell scripts needed:
 | `mvn -Pdocker package` | Build Docker image |
 | `mvn -Ptest-desktop verify` | Run Swing GUI tests inside Docker with Xvfb |
 | `mvn -Pseed compile exec:java` | Seed database with sample data |
-| `mvn -pl persistence-jooq -Pjooq-codegen generate-sources` | Regenerate jOOQ code |
-| `mvn -Pruntime-dev compile exec:java -pl web` | Run web app in dev mode |
+| `mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources` | Regenerate jOOQ code |
+| `mvn -Pruntime-dev compile exec:java -pl platform-web` | Run web app in dev mode |
 
 ## What is necessary right now
 

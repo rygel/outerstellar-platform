@@ -131,7 +131,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - i18n keys for contact form labels (EN + FR)
 
 ### Fixed
-- `jackson-module-kotlin` promoted from `test` to `compile` scope in `web/pom.xml`; the previous `test`-scope declaration silently overrode the transitive `compile` dependency from `http4k-format-jackson`, breaking `ThemeCatalog` at compile time
+- `jackson-module-kotlin` promoted from `test` to `compile` scope in `platform-web/pom.xml`; the previous `test`-scope declaration silently overrode the transitive `compile` dependency from `http4k-format-jackson`, breaking `ThemeCatalog` at compile time
 
 ---
 
@@ -147,7 +147,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - `SwingAppConfig` now supports profile-based config loading (`APP_PROFILE` env var) matching the web application pattern
-- Added `desktop/src/main/resources/application.yaml`, `application-dev.yaml`, and `application-prod.yaml` resource files for the desktop module
+- Added `platform-desktop/src/main/resources/application.yaml`, `application-dev.yaml`, and `application-prod.yaml` resource files for the desktop module
 
 ---
 

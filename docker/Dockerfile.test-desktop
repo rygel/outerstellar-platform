@@ -8,21 +8,21 @@ WORKDIR /app
 
 # Copy POMs first for dependency layer caching
 COPY pom.xml .
-COPY core/pom.xml core/
-COPY security/pom.xml security/
-COPY persistence-jooq/pom.xml persistence-jooq/
-COPY persistence-jdbi/pom.xml persistence-jdbi/
-COPY api-client/pom.xml api-client/
-COPY web/pom.xml web/
-COPY desktop/pom.xml desktop/
-COPY seed/pom.xml seed/
+COPY platform-core/pom.xml platform-core/
+COPY platform-security/pom.xml platform-security/
+COPY platform-persistence-jooq/pom.xml platform-persistence-jooq/
+COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
+COPY platform-api-client/pom.xml platform-api-client/
+COPY platform-web/pom.xml platform-web/
+COPY platform-desktop/pom.xml platform-desktop/
+COPY platform-seed/pom.xml platform-seed/
 
 # Pre-download public dependencies (Maven Central) at image build time so the
 # test run container starts fast. Private GitHub Packages deps that require auth
 # will download at runtime via the mounted settings.xml — there are few of them.
 # "|| true" is intentional: auth failures for private packages are expected here.
 RUN mvn dependency:resolve \
-        -pl desktop -am \
+        -pl platform-desktop -am \
         -Denforcer.skip=true -Ddetekt.skip=true -Dspotbugs.skip=true \
         -Dcheckstyle.skip=true -Dpmd.skip=true -Dcpd.skip=true \
         -DskipTests --fail-at-end \

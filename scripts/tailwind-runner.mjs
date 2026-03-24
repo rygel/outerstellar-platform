@@ -191,9 +191,9 @@ function runTailwind() {
   const commandArgs = [
     tailwindCliPath,
     "-i",
-    "web/src/main/resources/static/input.css",
+    "platform-web/src/main/resources/static/input.css",
     "-o",
-    "web/src/main/resources/static/site.css",
+    "platform-web/src/main/resources/static/site.css",
   ];
 
   if (watchMode) {
