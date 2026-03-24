@@ -5,6 +5,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.2.8] – 2026-03-23
+
+### Changed
+- Maven version now matches release tag (was stuck at 1.2.0 for all releases)
+- Framework dependency bumped to 1.0.7 (PluginManager SLF4J, ThemeService performance, ParameterInjector regex, I18n hot-reload fix)
+
+### Performance
+- Health endpoint uses `countAll()` instead of `findAll().size` — no longer loads all users into memory
+- `deleteAccount()` uses `countByRole()` instead of loading all users to count admins
+- Rate limiter replaced unbounded `ConcurrentHashMap` with Caffeine (TTL + max 10K entries)
+- HikariCP: added `maxLifetime` (30min), `leakDetectionThreshold` (60s), pool size increased to 20
+- Pagination enforced `MAX_PAGE_LIMIT = 1000` on all list endpoints
+
+### Security
+- CSRF token comparison uses `MessageDigest.isEqual` (constant-time, prevents timing attacks)
+- Avatar URL validation blocks private/internal IPs (SSRF protection) and enforces 2048 char limit
+- Password reset rate limit tightened to 5 requests per 15 minutes (was 10 per 60s)
+- JWT cache exposes `invalidate()` method for token revocation on logout
+
+### Reliability
+- `AsyncActivityUpdater` registers JVM shutdown hook to flush pending writes
+
+### CI
+- Publish workflow auto-creates GitHub release on version bump merge to main
+- Sync workflow creates PR instead of direct push (respects branch protection)
+
+---
+
+
 ## [1.2.7] – 2026-03-23
 
 ### Added
@@ -102,7 +131,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - i18n keys for contact form labels (EN + FR)
 
 ### Fixed
-- `jackson-module-kotlin` promoted from `test` to `compile` scope in `web/pom.xml`; the previous `test`-scope declaration silently overrode the transitive `compile` dependency from `http4k-format-jackson`, breaking `ThemeCatalog` at compile time
+- `jackson-module-kotlin` promoted from `test` to `compile` scope in `platform-web/pom.xml`; the previous `test`-scope declaration silently overrode the transitive `compile` dependency from `http4k-format-jackson`, breaking `ThemeCatalog` at compile time
 
 ---
 
@@ -118,7 +147,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - `SwingAppConfig` now supports profile-based config loading (`APP_PROFILE` env var) matching the web application pattern
-- Added `desktop/src/main/resources/application.yaml`, `application-dev.yaml`, and `application-prod.yaml` resource files for the desktop module
+- Added `platform-desktop/src/main/resources/application.yaml`, `application-dev.yaml`, and `application-prod.yaml` resource files for the desktop module
 
 ---
 

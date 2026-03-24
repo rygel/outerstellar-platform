@@ -4,8 +4,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.rygel</groupId>
-    <artifactId>outerstellar-platform-parent</artifactId>
-    <version>1.2.0</version>
+    <artifactId>platform-parent</artifactId>
+    <version>1.2.8</version>
     <packaging>pom</packaging>
 
     <name>Outerstellar Platform</name>
@@ -21,14 +21,14 @@
     </licenses>
 
     <modules>
-        <module>core</module>
-        <module>persistence-jooq</module>
-        <module>persistence-jdbi</module>
-        <module>api-client</module>
-        <module>web</module>
-        <module>desktop</module>
-        <module>security</module>
-        <module>seed</module>
+        <module>platform-core</module>
+        <module>platform-persistence-jooq</module>
+        <module>platform-persistence-jdbi</module>
+        <module>platform-sync-client</module>
+        <module>platform-web</module>
+        <module>platform-desktop</module>
+        <module>platform-security</module>
+        <module>platform-seed</module>
     </modules>
 
     <properties>
@@ -36,7 +36,7 @@
         <java.version>21</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
-        <outerstellar.version>1.0.7</outerstellar.version>
+        <outerstellar.version>1.0.11</outerstellar.version>
         <http4k.version>6.37.0.0</http4k.version>
         <flyway.version>12.1.1</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
@@ -148,27 +148,27 @@
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>core</artifactId>
+                <artifactId>platform-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>persistence-jooq</artifactId>
+                <artifactId>platform-persistence-jooq</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>persistence-jdbi</artifactId>
+                <artifactId>platform-persistence-jdbi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>api-client</artifactId>
+                <artifactId>platform-sync-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>web</artifactId>
+                <artifactId>platform-web</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -814,16 +814,16 @@
                 <configuration>
                     <watches>
                         <watch>
-                            <directory>core/src/main/kotlin</directory>
+                            <directory>platform-core/src/main/kotlin</directory>
                         </watch>
                         <watch>
-                            <directory>persistence-jooq/src/main/kotlin</directory>
+                            <directory>platform-persistence-jooq/src/main/kotlin</directory>
                         </watch>
                         <watch>
-                            <directory>web/src/main/kotlin</directory>
+                            <directory>platform-web/src/main/kotlin</directory>
                         </watch>
                         <watch>
-                            <directory>web/src/main/jte</directory>
+                            <directory>platform-web/src/main/jte</directory>
                         </watch>
                     </watches>
                     <goals>
@@ -979,7 +979,7 @@
         </profile>
 
         <!-- mvn -Ptest-desktop verify — runs Swing tests inside Docker with Xvfb -->
-        <!-- Reports are copied to desktop/target/surefire-reports-docker/ -->
+        <!-- Reports are copied to platform-desktop/target/surefire-reports-docker/ -->
         <profile>
             <id>test-desktop</id>
             <properties>
@@ -1026,7 +1026,7 @@
                 <spotbugs.skip>true</spotbugs.skip>
             </properties>
         </profile>
-        <!-- mvn -Ptest-postgres verify -pl persistence-jooq,web -am -->
+        <!-- mvn -Ptest-postgres verify -pl platform-persistence-jooq,platform-web -am -->
         <!-- Starts a PostgreSQL 18 container via Podman, runs all tests against it, then stops it -->
         <!-- Requires: podman and the compose sub-command (podman compose) to be installed -->
         <profile>

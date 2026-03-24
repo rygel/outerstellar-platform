@@ -19,7 +19,7 @@ done
 export DISPLAY=:99
 
 echo "=== Running desktop tests ==="
-exec mvn test -pl desktop -am \
+exec mvn test -pl platform-desktop -am \
     -Ddesktop.headless=false \
     -Denforcer.skip=true -Ddetekt.skip=true -Dspotbugs.skip=true \
     -Dcheckstyle.skip=true -Dpmd.skip=true -Dcpd.skip=true

@@ -8,7 +8,7 @@ Set-Location $projectRoot
 
 # Build both core and desktop in one reactor so resource changes (e.g. i18n keys)
 # are always picked up before launching Swing.
-mvn -f pom.xml -Pruntime-dev -pl core,desktop -am compile
+mvn -f pom.xml -Pruntime-dev -pl platform-core,platform-desktop -am compile
 
 $runtimeDirectory = Join-Path $projectRoot "target\dev-runtime"
 if (-not (Test-Path $runtimeDirectory)) {
@@ -25,4 +25,4 @@ Write-Host "Launching Swing application..." -ForegroundColor Green
 # because mvn exec:java will block.
 # However, the stop-swing.ps1 fallback handles this by looking for the main class.
 
-mvn -f pom.xml -Pruntime-dev -pl desktop exec:java
+mvn -f pom.xml -Pruntime-dev -pl platform-desktop exec:java

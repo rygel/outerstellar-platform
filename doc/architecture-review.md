@@ -6,11 +6,11 @@ Last reviewed: 2026-03-14
 
 ### Clean module boundaries
 
-The project enforces proper dependency inversion across its multi-module structure. Domain interfaces live in `core/`, implementation details live in `persistence-jooq/`, and this separation is enforced at build time by ArchUnit tests. The `core` module has no dependency on `web`, `desktop`, or jOOQ implementation classes.
+The project enforces proper dependency inversion across its multi-module structure. Domain interfaces live in `platform-core/`, implementation details live in `platform-persistence-jooq/`, and this separation is enforced at build time by ArchUnit tests. The `platform-core` module has no dependency on `platform-web`, `platform-desktop`, or jOOQ implementation classes.
 
 ### Repository interface pattern
 
-All persistence contracts are defined as interfaces in `core/persistence/` (`MessageRepository`, `ContactRepository`, `OutboxRepository`). The jOOQ implementations in `persistence-jooq/` are the only classes that touch SQL or jOOQ directly. This means any module depending on `core` can work against the interface without pulling in database dependencies.
+All persistence contracts are defined as interfaces in `platform-core/persistence/` (`MessageRepository`, `ContactRepository`, `OutboxRepository`). The jOOQ implementations in `platform-persistence-jooq/` are the only classes that touch SQL or jOOQ directly. This means any module depending on `platform-core` can work against the interface without pulling in database dependencies.
 
 ### Optional dependency wiring
 
@@ -241,7 +241,7 @@ toast.innerHTML = '...<p ...>' + message + '</p>...'
 
 `AppConfig.sessionCookieSecure` defaults to `false`, which is appropriate for local HTTP development but dangerous in production (the session cookie would be transmitted over unencrypted connections). Previously there was no mechanism to enforce the secure flag in production without setting an environment variable manually.
 
-**What changed:** Created `web/src/main/resources/application-prod.yaml` that sets `sessionCookieSecure: true`. Running with `APP_PROFILE=prod` activates this profile. Added a comment on the field in `AppConfig` explaining the intentional default and how to override it.
+**What changed:** Created `platform-web/src/main/resources/application-prod.yaml` that sets `sessionCookieSecure: true`. Running with `APP_PROFILE=prod` activates this profile. Added a comment on the field in `AppConfig` explaining the intentional default and how to override it.
 
 ### Scheduled OutboxProcessor polling loop
 
