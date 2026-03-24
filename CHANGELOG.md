@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.0] – 2026-03-24
+
+### Changed
+- Renamed all module artifactIds to `platform-*` prefix (`core` → `platform-core`, `web` → `platform-web`, etc.)
+- Renamed all module directories to match their artifactIds
+- Renamed `platform-api-client` to `platform-sync-client` for clarity
+- Renamed parent artifactId from `outerstellar-platform-parent` to `platform-parent`
+- Bumped `outerstellar-framework` from 1.0.7 to 1.0.11
+
+### Fixed
+- CodeQL workflow skips enforcer during `mvn compile` (test-jars unavailable at compile phase)
+- Consolidated consecutive `RUN` instructions in Dockerfile (CodeQL warning)
+
+---
+
 ## [1.2.8] – 2026-03-23
 
 ### Changed
@@ -32,6 +47,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Sync workflow creates PR instead of direct push (respects branch protection)
 
 ---
+
 
 ## [1.2.7] – 2026-03-23
 
@@ -130,7 +146,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - i18n keys for contact form labels (EN + FR)
 
 ### Fixed
-- `jackson-module-kotlin` promoted from `test` to `compile` scope in `web/pom.xml`; the previous `test`-scope declaration silently overrode the transitive `compile` dependency from `http4k-format-jackson`, breaking `ThemeCatalog` at compile time
+- `jackson-module-kotlin` promoted from `test` to `compile` scope in `platform-web/pom.xml`; the previous `test`-scope declaration silently overrode the transitive `compile` dependency from `http4k-format-jackson`, breaking `ThemeCatalog` at compile time
 
 ---
 
@@ -146,7 +162,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - `SwingAppConfig` now supports profile-based config loading (`APP_PROFILE` env var) matching the web application pattern
-- Added `desktop/src/main/resources/application.yaml`, `application-dev.yaml`, and `application-prod.yaml` resource files for the desktop module
+- Added `platform-desktop/src/main/resources/application.yaml`, `application-dev.yaml`, and `application-prod.yaml` resource files for the desktop module
 
 ---
 

@@ -3,7 +3,7 @@ set -e
 
 CONTAINER_NAME="outerstellar-test-desktop-run"
 IMAGE_NAME="outerstellar-test-desktop"
-REPORT_DIR="desktop/target/surefire-reports-docker"
+REPORT_DIR="platform-desktop/target/surefire-reports-docker"
 BUILD_TIMEOUT=1200  # 20 minutes for first build (downloads Maven deps into image)
 RUN_TIMEOUT=600     # 10 minutes for test execution (deps already in image layer)
 
@@ -64,7 +64,7 @@ fi
 
 echo "=== Copying test reports to $REPORT_DIR ==="
 mkdir -p "$REPORT_DIR"
-$RUNTIME cp "$CONTAINER_NAME:/app/desktop/target/surefire-reports/." "$REPORT_DIR/" 2>/dev/null || true
+$RUNTIME cp "$CONTAINER_NAME:/app/platform-desktop/target/surefire-reports/." "$REPORT_DIR/" 2>/dev/null || true
 
 echo "=== Cleaning up ==="
 $RUNTIME rm -f "$CONTAINER_NAME" 2>/dev/null || true

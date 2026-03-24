@@ -48,7 +48,7 @@ jobs:
           build-mode: manual
 
       - name: Build
-        run: mvn compile -q
+        run: mvn compile -q -Denforcer.skip
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@256d634097be96e792d6764f9edaefc4320557b1 # v4

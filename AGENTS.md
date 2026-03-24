@@ -31,10 +31,10 @@ This file defines repository-specific guardrails for coding agents and contribut
 
 - Flyway migrations are the schema source of truth.
 - jOOQ generated sources are version controlled under:
-  - `persistence-jooq/src/main/generated/jooq`
+  - `platform-persistence-jooq/src/main/generated/jooq`
 - Do not rely on implicit jOOQ generation during normal `compile`/`test`.
 - When schema-relevant changes are made (migration changes, jOOQ config changes), regenerate and commit generated files:
-  - `mvn -pl persistence-jooq -Pjooq-codegen generate-sources`
+  - `mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources`
   - or `./generate-jooq.ps1`
 - Migration and generated source changes should be committed together.
 
@@ -51,9 +51,9 @@ This file defines repository-specific guardrails for coding agents and contribut
 
 - Prefer module-focused validation first, then broader reactor validation when changes cross modules.
 - Minimum for persistence/schema changes:
-  - `mvn -pl persistence-jooq test`
+  - `mvn -pl platform-persistence-jooq test`
 - Minimum for Swing UI/theming changes:
-  - `mvn -pl desktop test`
+  - `mvn -pl platform-desktop test`
 
 ## Safety and repository hygiene
 

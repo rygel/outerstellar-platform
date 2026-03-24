@@ -6,7 +6,7 @@ A modern, full-stack Kotlin application designed as a platform template for buil
 
 ### Key Architectural Features
 
-- **Multi-Module Architecture**: Split into `core`, `persistence-jooq`, `persistence-jdbi`, `api-client`, `security`, `web`, and `desktop` modules for clear separation of concerns.
+- **Multi-Module Architecture**: Split into `platform-core`, `platform-persistence-jooq`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, and `platform-desktop` modules for clear separation of concerns.
 - **Transactional Outbox Pattern**: Ensures atomicity and reliability for background tasks and data synchronization.
 - **Dependency Injection**: Powered by **Koin** for flexible and testable component wiring.
 - **Observability**: Fully integrated with **OpenTelemetry** for distributed tracing and **Micrometer** for real-time metrics.
@@ -20,13 +20,13 @@ A modern, full-stack Kotlin application designed as a platform template for buil
 
 ### Project Structure
 
-- `core`: Domain models, service interfaces, and shared business logic.
-- `persistence-jooq`: Database implementation using jOOQ, Flyway migrations, and Caffeine caching.
-- `persistence-jdbi`: Alternative database implementation using JDBI (drop-in replacement for `persistence-jooq`).
-- `api-client`: Shared DTOs and client logic for synchronization between components.
-- `security`: Authentication models, role-based access control, fine-grained permissions, multi-realm auth, and security filters.
-- `web`: The main http4k server, JTE templates, and web-specific infrastructure.
-- `desktop`: A Swing-based desktop application implementing the MVVM pattern.
+- `platform-core`: Domain models, service interfaces, and shared business logic.
+- `platform-persistence-jooq`: Database implementation using jOOQ, Flyway migrations, and Caffeine caching.
+- `platform-persistence-jdbi`: Alternative database implementation using JDBI (drop-in replacement for `platform-persistence-jooq`).
+- `platform-sync-client`: Shared DTOs and client logic for synchronization between components.
+- `platform-security`: Authentication models, role-based access control, fine-grained permissions, multi-realm auth, and security filters.
+- `platform-web`: The main http4k server, JTE templates, and web-specific infrastructure.
+- `platform-desktop`: A Swing-based desktop application implementing the MVVM pattern.
 
 ---
 
@@ -59,25 +59,25 @@ Examples:
 mvn -Pcoverage verify
 
 # Desktop tests in headless mode (CI friendly)
-mvn -pl desktop -Ptests-headless test
+mvn -pl platform-desktop -Ptests-headless test
 
 # Desktop tests with actual UI
-mvn -pl desktop -Ptests-headful test
+mvn -pl platform-desktop -Ptests-headful test
 
 # Run web in dev runtime mode
-mvn -pl web -Pruntime-dev compile exec:java
+mvn -pl platform-web -Pruntime-dev compile exec:java
 ```
 
 #### Regenerate jOOQ Sources (Manual + Version Controlled)
 
 Generated jOOQ sources are checked in under:
 
-- `persistence-jooq/src/main/generated/jooq`
+- `platform-persistence-jooq/src/main/generated/jooq`
 
 Regenerate them manually when migrations change:
 
 ```bash
-mvn -pl persistence-jooq -Pjooq-codegen generate-sources
+mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources
 ```
 
 PowerShell shortcut:
@@ -126,7 +126,7 @@ The web application uses **http4k** with **JTE** templates and **HTMX** for inte
 #### How to Add a New Page:
 
 1. **Create a ViewModel**: Define a Kotlin `data class` implementing `ViewModel` in `WebPageFactory.kt`.
-2. **Create a Template**: Add a corresponding `.kte` file in `web/src/main/jte`. Wrap your content using the `Page<T>` wrapper to inherit the global shell:
+2. **Create a Template**: Add a corresponding `.kte` file in `platform-web/src/main/jte`. Wrap your content using the `Page<T>` wrapper to inherit the global shell:
    ```html
    @import io.github.rygel.outerstellar.platform.web.MyPage
    @import io.github.rygel.outerstellar.platform.web.Page
@@ -175,10 +175,10 @@ The web application is ready for Ahead-of-Time (AOT) compilation using GraalVM. 
 To build the native image (requires GraalVM installed and `JAVA_HOME` set correctly):
 
 ```bash
-mvn package -Pnative -pl web -DskipTests
+mvn package -Pnative -pl platform-web -DskipTests
 ```
 
-The resulting binary will be located in `web/target/outerstellar-web`.
+The resulting binary will be located in `platform-web/target/outerstellar-web`.
 
 #### Development Best Practices & Safety Rules
 
