@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform.analytics
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.URI
 import java.net.http.HttpClient
@@ -11,6 +10,7 @@ import java.net.http.HttpResponse
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
+import org.slf4j.LoggerFactory
 
 class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
     private val logger = LoggerFactory.getLogger(SegmentAnalyticsService::class.java)

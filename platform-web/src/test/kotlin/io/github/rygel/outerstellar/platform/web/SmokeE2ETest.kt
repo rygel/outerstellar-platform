@@ -4,6 +4,11 @@ import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.di.webModule
 import io.github.rygel.outerstellar.platform.security.securityModule
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.server.PolyHandler
@@ -12,11 +17,6 @@ import org.koin.core.context.stopKoin
 import org.koin.core.qualifier.named
 import org.koin.test.KoinTest
 import org.koin.test.inject
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class SmokeE2ETest : KoinTest {
 
