@@ -48,7 +48,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Build and run all checks
-        run: mvn verify -T 1C -pl platform-core,platform-persistence-jooq,platform-persistence-jdbi,platform-api-client,platform-security,platform-web
+        run: mvn verify -T 1C -pl platform-core,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
 
       - name: Cache build output for downstream jobs
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
@@ -56,7 +56,7 @@ jobs:
           path: |
             platform-core/target/
             platform-persistence-jooq/target/
-            platform-api-client/target/
+            platform-sync-client/target/
             platform-security/target/
             platform-web/target/
           key: build-${{ github.sha }}
@@ -101,7 +101,7 @@ jobs:
           path: |
             platform-core/target/
             platform-persistence-jooq/target/
-            platform-api-client/target/
+            platform-sync-client/target/
             platform-security/target/
             platform-web/target/
           key: build-${{ github.sha }}
@@ -113,7 +113,7 @@ jobs:
         run: mvn install -N -q
 
       - name: Install cached modules
-        run: mvn install -pl platform-core,platform-persistence-jooq,platform-api-client,platform-security -DskipTests -q
+        run: mvn install -pl platform-core,platform-persistence-jooq,platform-sync-client,platform-security -DskipTests -q
 
       - name: Run desktop tests with virtual display
         run: >
@@ -156,7 +156,7 @@ jobs:
           path: |
             platform-core/target/
             platform-persistence-jooq/target/
-            platform-api-client/target/
+            platform-sync-client/target/
             platform-security/target/
             platform-web/target/
           key: build-${{ github.sha }}
@@ -165,7 +165,7 @@ jobs:
         run: mvn install -N -q -s /github/home/.m2/settings.xml
 
       - name: Install cached modules
-        run: mvn install -pl platform-core,platform-persistence-jooq,platform-api-client,platform-security,platform-web -DskipTests -Dexec.skip=true -q -s /github/home/.m2/settings.xml
+        run: mvn install -pl platform-core,platform-persistence-jooq,platform-sync-client,platform-security,platform-web -DskipTests -Dexec.skip=true -q -s /github/home/.m2/settings.xml
 
       - name: Run E2E tests
         run: >

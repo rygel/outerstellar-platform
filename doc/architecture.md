@@ -23,7 +23,7 @@ The project is organized as a **multi-module Maven project**:
 - `platform-core` - shared domain models, services, and configuration
 - `platform-persistence-jooq` - jOOQ-backed repository implementation and Flyway migrations
 - `platform-persistence-jdbi` - JDBI-backed repository implementation (alternative to jOOQ)
-- `platform-api-client` - shared sync DTOs and client sync service
+- `platform-sync-client` - shared sync DTOs and client sync service
 - `platform-web` - http4k web server, JTE templates, and HTMX interactions
 - `platform-desktop` - Swing desktop client, theme manager, and UI tests
 - `platform-security` - security-related utilities and configuration

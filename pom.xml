@@ -24,7 +24,7 @@
         <module>platform-core</module>
         <module>platform-persistence-jooq</module>
         <module>platform-persistence-jdbi</module>
-        <module>platform-api-client</module>
+        <module>platform-sync-client</module>
         <module>platform-web</module>
         <module>platform-desktop</module>
         <module>platform-security</module>
@@ -163,7 +163,7 @@
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>platform-api-client</artifactId>
+                <artifactId>platform-sync-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

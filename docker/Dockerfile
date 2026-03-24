@@ -12,7 +12,7 @@ COPY platform-core/pom.xml platform-core/
 COPY platform-security/pom.xml platform-security/
 COPY platform-persistence-jooq/pom.xml platform-persistence-jooq/
 COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
-COPY platform-api-client/pom.xml platform-api-client/
+COPY platform-sync-client/pom.xml platform-sync-client/
 COPY platform-web/pom.xml platform-web/
 COPY platform-desktop/pom.xml platform-desktop/
 COPY platform-seed/pom.xml platform-seed/

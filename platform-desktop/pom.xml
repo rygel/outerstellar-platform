@@ -22,7 +22,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>platform-api-client</artifactId>
+            <artifactId>platform-sync-client</artifactId>
         </dependency>
         <dependency>
             <groupId>com.formdev</groupId>

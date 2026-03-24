@@ -77,12 +77,12 @@ C4Component
 ### 4. Code / Module Structure
 The project is organized into several highly decoupled Maven modules:
 
-- **`core`**: Domain models (`StoredMessage`), Service interfaces, and shared business logic.
-- **`persistence`**: Implementation of repositories using jOOQ, Flyway migrations, and Caffeine caching.
-- **`security`**: Authentication logic, Role-Based Access Control (RBAC), and user models.
-- **`api-client`**: Client-side synchronization logic using Resilience4j (Retry/Circuit Breaker).
-- **`web`**: The http4k server, JTE templates, and Web Component-based UI.
-- **`desktop`**: The Swing application following the MVVM architecture.
+- **`platform-core`**: Domain models (`StoredMessage`), Service interfaces, and shared business logic.
+- **`platform-persistence-jooq`**: Implementation of repositories using jOOQ, Flyway migrations, and Caffeine caching.
+- **`platform-security`**: Authentication logic, Role-Based Access Control (RBAC), and user models.
+- **`platform-sync-client`**: Client-side synchronization logic using Resilience4j (Retry/Circuit Breaker).
+- **`platform-web`**: The http4k server, JTE templates, and Web Component-based UI.
+- **`platform-desktop`**: The Swing application following the MVVM architecture.
 
 ---
 
