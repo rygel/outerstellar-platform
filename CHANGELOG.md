@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.0] – 2026-03-24
+
+### Changed
+- Renamed all module artifactIds to `platform-*` prefix (`core` → `platform-core`, `web` → `platform-web`, etc.)
+- Renamed all module directories to match their artifactIds
+- Renamed `platform-api-client` to `platform-sync-client` for clarity
+- Renamed parent artifactId from `outerstellar-platform-parent` to `platform-parent`
+- Bumped `outerstellar-framework` from 1.0.7 to 1.0.11
+
+### Fixed
+- CodeQL workflow skips enforcer during `mvn compile` (test-jars unavailable at compile phase)
+- Consolidated consecutive `RUN` instructions in Dockerfile (CodeQL warning)
+
+---
+
 ## [1.2.8] – 2026-03-23
 
 ### Changed
