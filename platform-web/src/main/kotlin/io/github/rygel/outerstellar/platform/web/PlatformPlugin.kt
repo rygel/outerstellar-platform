@@ -73,7 +73,6 @@ data class PluginContext(
             config: AppConfig = AppConfig(),
             analytics: AnalyticsService = NoOpAnalyticsService(),
             notificationService: NotificationService? = null,
-            pageFactory: WebPageFactory = WebPageFactory(),
         ): PluginContext =
             PluginContext(
                 renderer = renderer,
@@ -82,7 +81,7 @@ data class PluginContext(
                 userRepository = userRepository,
                 analytics = analytics,
                 notificationService = notificationService,
-                pageFactory = pageFactory,
+                pageFactory = WebPageFactory(),
             )
     }
 }
