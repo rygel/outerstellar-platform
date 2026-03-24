@@ -33,6 +33,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+
 ## [1.2.7] – 2026-03-23
 
 ### Added
