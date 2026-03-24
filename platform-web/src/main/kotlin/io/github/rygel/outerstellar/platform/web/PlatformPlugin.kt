@@ -3,12 +3,17 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import org.http4k.contract.ContractRoute
 import org.http4k.core.Filter
+import org.http4k.core.Request
+import org.http4k.lens.LensFailure
 import org.http4k.template.TemplateRenderer
+import org.http4k.template.ViewModel
 import org.koin.core.module.Module
 
 /**
@@ -29,7 +34,57 @@ data class PluginContext(
     val analytics: AnalyticsService,
     val notificationService: NotificationService?,
     val pageFactory: WebPageFactory,
-)
+) {
+    /**
+     * Returns the authenticated user for this request, or null if no user is logged in. This is a convenience wrapper
+     * around [SecurityRules.USER_KEY] that handles the lens failure gracefully.
+     */
+    fun currentUser(request: Request): User? =
+        try {
+            request.webContext.user
+        } catch (_: LensFailure) {
+            null
+        }
+
+    /**
+     * Wraps a plugin [ViewModel] in a [Page] with the platform's shell (nav, theme, CSRF token, etc.). This is the
+     * recommended way for plugins to render full pages that integrate with the platform layout.
+     *
+     * The resulting [Page] includes the CSRF token in the shell, so plugin templates can use `${model.shell.csrfToken}`
+     * in form hidden fields without manual extraction.
+     */
+    fun <T : ViewModel> buildPage(request: Request, pageTitle: String, activeSection: String, data: T): Page<T> {
+        val ctx = request.webContext
+        return Page(shell = ctx.shell(pageTitle, activeSection), data = data)
+    }
+
+    companion object {
+        /**
+         * Creates a [PluginContext] with sensible defaults for testing. Only the three services that cannot be
+         * stubbed without a mocking library are required — use `mockk(relaxed = true)` for them.
+         *
+         * To override other defaults, use `.copy()` on the returned instance:
+         * ```kotlin
+         * val ctx = PluginContext.forTesting(renderer, mockk(relaxed = true), mockk(relaxed = true))
+         *     .copy(config = AppConfig(devMode = true))
+         * ```
+         */
+        fun forTesting(
+            renderer: TemplateRenderer,
+            securityService: SecurityService,
+            userRepository: UserRepository,
+        ): PluginContext =
+            PluginContext(
+                renderer = renderer,
+                config = AppConfig(),
+                securityService = securityService,
+                userRepository = userRepository,
+                analytics = NoOpAnalyticsService(),
+                notificationService = null,
+                pageFactory = WebPageFactory(),
+            )
+    }
+}
 
 /**
  * Single-plugin contract. One outerstellar-platform host accepts exactly one plugin.
