@@ -6,34 +6,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.http4k.core.Method
 import org.http4k.core.Request
-import org.http4k.core.RequestContexts
 import org.http4k.core.Response
 import org.http4k.core.Status
-import org.http4k.core.then
 import org.http4k.core.with
-import org.http4k.filter.ServerFilters
 
 class SecurityRulesTest {
 
-    private val contexts = RequestContexts()
+    private fun requestWithUser(user: User, method: Method = Method.GET, path: String = "/test"): Request =
+        Request(method, path).with(SecurityRules.USER_KEY of user)
 
-    private fun requestWithUser(user: User, method: Method = Method.GET, path: String = "/test"): Request {
-        var contextualRequest: Request? = null
-        ServerFilters.InitialiseRequestContext(contexts).then { req ->
-            contextualRequest = req
-            Response(Status.OK)
-        }(Request(method, path))
-        return contextualRequest!!.with(SecurityRules.USER_KEY of user)
-    }
-
-    private fun plainRequest(method: Method = Method.GET, path: String = "/test"): Request {
-        var contextualRequest: Request? = null
-        ServerFilters.InitialiseRequestContext(contexts).then { req ->
-            contextualRequest = req
-            Response(Status.OK)
-        }(Request(method, path))
-        return contextualRequest!!
-    }
+    private fun plainRequest(method: Method = Method.GET, path: String = "/test"): Request = Request(method, path)
 
     private val testUser =
         User(

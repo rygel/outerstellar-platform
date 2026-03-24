@@ -96,10 +96,10 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
             .where(PLT_MESSAGES.SYNC_ID.eq(syncId))
             .fetchOne(::toStoredMessage)
 
-    override fun findChangesSince(updatedAtEpochMs: Long): List<StoredMessage> =
+    override fun findChangesSince(since: Long): List<StoredMessage> =
         dsl.select(PLT_MESSAGES.fields().toList())
             .from(PLT_MESSAGES)
-            .where(PLT_MESSAGES.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs).and(PLT_MESSAGES.DELETED_AT.isNull))
+            .where(PLT_MESSAGES.UPDATED_AT_EPOCH_MS.gt(since).and(PLT_MESSAGES.DELETED_AT.isNull))
             .fetch(::toStoredMessage)
 
     override fun createServerMessage(author: String, content: String): StoredMessage =

@@ -11,9 +11,9 @@ import io.github.rygel.outerstellar.platform.persistence.ContactRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.security.securityModule
 import kotlin.test.assertTrue
+import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
-import org.http4k.server.PolyHandler
 import org.http4k.server.asServer
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach

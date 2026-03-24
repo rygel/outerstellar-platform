@@ -12,9 +12,9 @@ import io.github.rygel.outerstellar.platform.service.OutboxProcessor
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
-import org.http4k.server.PolyHandler
 import org.http4k.server.asServer
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject

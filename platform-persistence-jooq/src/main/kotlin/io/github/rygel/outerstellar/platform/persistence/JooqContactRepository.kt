@@ -398,9 +398,9 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
         return StoredContact(
             syncId = record.get(PLT_CONTACTS.SYNC_ID) ?: "unknown",
             name = record.get(PLT_CONTACTS.NAME) ?: "unknown",
-            emails = record.get(emailsField) ?: emptyList(),
-            phones = record.get(phonesField) ?: emptyList(),
-            socialMedia = record.get(socialsField) ?: emptyList(),
+            emails = record.get(emailsField),
+            phones = record.get(phonesField),
+            socialMedia = record.get(socialsField),
             company = record.get(PLT_CONTACTS.COMPANY) ?: "",
             companyAddress = record.get(PLT_CONTACTS.COMPANY_ADDRESS) ?: "",
             department = record.get(PLT_CONTACTS.DEPARTMENT) ?: "",

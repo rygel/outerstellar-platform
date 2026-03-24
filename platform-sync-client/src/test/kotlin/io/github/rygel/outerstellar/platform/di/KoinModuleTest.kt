@@ -4,28 +4,25 @@ import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
-import io.mockk.mockk
 import org.junit.jupiter.api.Test
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
+import org.koin.core.annotation.KoinExperimentalAPI
 import org.koin.test.KoinTest
-import org.koin.test.check.checkModules
+import org.koin.test.verify.verify
 
+@OptIn(KoinExperimentalAPI::class)
 class KoinModuleTest : KoinTest {
 
     @Test
-    fun `api-client modules should be valid`() {
-        checkModules {
-            modules(
-                apiClientModule,
-                module {
-                    single(named("serverBaseUrl")) { "http://localhost:8080" }
-                    single { mockk<MessageRepository>(relaxed = true) }
-                    single { mockk<OutboxRepository>(relaxed = true) }
-                    single { mockk<MessageCache>(relaxed = true) }
-                    single { mockk<TransactionManager>(relaxed = true) }
-                },
-            )
-        }
+    fun `sync-client modules should be valid`() {
+        apiClientModule.verify(
+            extraTypes =
+                listOf(
+                    String::class,
+                    MessageRepository::class,
+                    OutboxRepository::class,
+                    MessageCache::class,
+                    TransactionManager::class,
+                )
+        )
     }
 }

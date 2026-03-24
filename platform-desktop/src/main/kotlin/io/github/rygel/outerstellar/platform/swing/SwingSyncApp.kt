@@ -1234,7 +1234,7 @@ class SyncWindow(
                 )
             }
 
-            if (isEditing && syncId != null) {
+            if (syncId != null) {
                 viewModel.updateContact(
                     syncId = syncId,
                     name = nameField.text,
