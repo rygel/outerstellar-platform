@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.2] – 2026-03-24
+
+### Fixed
+- Add `<name>` to all child poms (required by Maven Central validation)
+- Add explicit versions to OpenTelemetry deps in `dependencyManagement`
+- Attach source JARs for all modules via `maven-source-plugin`
+- Bump `central-publishing-maven-plugin` from 0.7.0 to 0.10.0
+
+---
+
 ## [1.3.1] – 2026-03-24
 
 ### Added
