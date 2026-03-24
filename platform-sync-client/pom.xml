@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>platform-sync-client</artifactId>
+    <name>Platform Sync Client</name>
 
     <dependencies>
         <dependency>

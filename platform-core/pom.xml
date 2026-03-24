@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>platform-core</artifactId>
+    <name>Platform Core</name>
 
     <dependencies>
         <dependency>
