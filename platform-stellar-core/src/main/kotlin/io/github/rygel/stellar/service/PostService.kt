@@ -12,7 +12,11 @@ import io.github.rygel.stellar.persistence.PostRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory
 
-class PostService(private val postRepo: PostRepository, private val memberRepo: CommunityMemberRepository) {
+class PostService(
+    private val postRepo: PostRepository,
+    private val memberRepo: CommunityMemberRepository,
+    private val cache: StellarCache? = null,
+) {
     private val logger = LoggerFactory.getLogger(PostService::class.java)
 
     fun getPost(id: UUID): Post = postRepo.findById(id) ?: throw PostNotFoundException(id)
@@ -40,6 +44,7 @@ class PostService(private val postRepo: PostRepository, private val memberRepo: 
                     postType = postType,
                 )
             )
+        cache?.invalidateByPrefix("feed:popular:")
         logger.info("Post '{}' created in community {}", post.title, communityId)
         return post
     }

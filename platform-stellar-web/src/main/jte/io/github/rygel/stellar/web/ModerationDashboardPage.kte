@@ -44,6 +44,7 @@
     <div class="p-6 bg-[var(--surface)] rounded-lg border border-[var(--border)] mb-6">
         <h2 class="text-lg font-semibold text-[var(--text)] mb-4">Ban User</h2>
         <form method="post" action="/r/${model.data.communityName}/mod/ban" class="flex flex-col gap-3">
+            <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
             <div>
                 <label class="block text-sm font-medium text-[var(--text)] mb-1">User ID</label>
                 <input type="text" name="userId" required

@@ -67,6 +67,7 @@
     @if(!model.data.post.isLocked)
         <div class="p-4 mb-4 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
             <form method="post" action="/posts/${model.data.post.id.toString()}/comments">
+                <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
                 <textarea name="body" rows="4" placeholder="What are your thoughts?"
                     class="w-full p-3 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] resize-y text-sm"
                     required></textarea>

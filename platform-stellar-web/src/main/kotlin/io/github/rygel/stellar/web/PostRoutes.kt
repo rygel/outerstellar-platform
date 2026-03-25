@@ -7,6 +7,7 @@ import io.github.rygel.stellar.model.PostType
 import io.github.rygel.stellar.service.CommentService
 import io.github.rygel.stellar.service.CommunityService
 import io.github.rygel.stellar.service.PostService
+import io.github.rygel.stellar.service.StellarRateLimiter
 import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.div
@@ -28,6 +29,7 @@ class PostRoutes(private val context: PluginContext) : KoinComponent {
     private val postService: PostService by inject()
     private val commentService: CommentService by inject()
     private val communityService: CommunityService by inject()
+    private val rateLimiter: StellarRateLimiter by inject()
     private val renderer = context.renderer
 
     private val communityNamePath = Path.string().of("community")
@@ -72,6 +74,10 @@ class PostRoutes(private val context: PluginContext) : KoinComponent {
                 { communityName: String, _ ->
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                        if (!rateLimiter.checkLimit("create:$userId")) {
+                            return@to Response(Status.TOO_MANY_REQUESTS)
+                                .body("Rate limit exceeded. Please wait before creating another post.")
+                        }
                         val community = communityService.getCommunity(communityName)
 
                         val title = request.form("title") ?: return@to Response(Status.BAD_REQUEST)
@@ -134,6 +140,10 @@ class PostRoutes(private val context: PluginContext) : KoinComponent {
                 { postIdStr: String, _ ->
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                        if (!rateLimiter.checkLimit("create:$userId")) {
+                            return@to Response(Status.TOO_MANY_REQUESTS)
+                                .body("Rate limit exceeded. Please wait before commenting again.")
+                        }
                         val postId = UUID.fromString(postIdStr)
                         val body = request.form("body") ?: return@to Response(Status.BAD_REQUEST)
                         val parentId =

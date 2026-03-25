@@ -12,12 +12,15 @@ import io.github.rygel.stellar.persistence.SubscriptionRepository
 import io.github.rygel.stellar.persistence.VoteRepository
 import java.util.UUID
 
+private const val POPULAR_FEED_TTL_SECONDS = 120L
+
 class FeedService(
     private val postRepo: PostRepository,
     private val voteRepo: VoteRepository,
     private val savedRepo: SavedItemRepository,
     private val subscriptionRepo: SubscriptionRepository,
     private val userRepo: UserRepository,
+    private val cache: StellarCache? = null,
 ) {
     fun homeFeed(userId: UUID?, sort: PostSort, timeRange: TimeRange, limit: Int, offset: Int): List<PostSummary> {
         val posts =
@@ -41,8 +44,22 @@ class FeedService(
         offset: Int,
         userId: UUID? = null,
     ): List<PostSummary> {
+        val cacheKey = "feed:popular:$sort:$timeRange:$limit:$offset"
+        if (userId == null) {
+            cache?.get<List<PostSummary>>(cacheKey)?.let {
+                return it
+            }
+        }
         val posts = postRepo.listAll(sort, timeRange, limit, offset)
-        return enrichPosts(posts, userId)
+        val enriched = enrichPosts(posts, userId)
+        if (userId == null) {
+            cache?.put(cacheKey, enriched, POPULAR_FEED_TTL_SECONDS)
+        }
+        return enriched
+    }
+
+    fun invalidatePopularFeedCache() {
+        cache?.invalidateByPrefix("feed:popular:")
     }
 
     fun communityFeed(
@@ -71,7 +88,6 @@ class FeedService(
         if (posts.isEmpty()) return posts
 
         val postIds = posts.map { it.id }
-        val authorIds = posts.map { it.id } // We need to resolve from the raw post; see below
         val userVotes =
             if (userId != null) {
                 voteRepo.findUserVotes(userId, postIds, VoteTarget.POST)

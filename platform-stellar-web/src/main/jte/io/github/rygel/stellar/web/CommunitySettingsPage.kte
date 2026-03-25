@@ -16,6 +16,7 @@
     <div class="p-6 mb-6 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
         <h2 class="text-lg font-semibold text-[var(--text)] mb-4">Community Details</h2>
         <form method="post" action="/r/${model.data.community.name}/settings">
+            <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
             <div class="mb-4">
                 <label class="block text-sm font-medium text-[var(--text)] mb-1">Display Name</label>
                 <input type="text" name="displayName" value="${model.data.community.displayName}" disabled
@@ -73,6 +74,7 @@
                         </div>
                         <form method="post" action="/r/${model.data.community.name}/rules/${rule.id.toString()}/delete"
                               class="ml-2 flex-shrink-0">
+                            <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
                             <button type="submit"
                                     class="px-3 py-1 text-xs text-red-500 hover:bg-red-500/10 rounded">
                                 Delete
@@ -86,6 +88,7 @@
         <%-- Add Rule Form --%>
         <form method="post" action="/r/${model.data.community.name}/rules"
               class="p-4 rounded border border-dashed border-[var(--border)]">
+            <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
             <h3 class="text-sm font-medium text-[var(--text)] mb-3">Add New Rule</h3>
             <div class="mb-3">
                 <input type="text" name="title" required placeholder="Rule title" maxlength="200"

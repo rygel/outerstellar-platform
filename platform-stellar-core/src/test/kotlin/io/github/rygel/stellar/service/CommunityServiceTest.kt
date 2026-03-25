@@ -3,6 +3,7 @@ package io.github.rygel.stellar.service
 import io.github.rygel.stellar.model.Community
 import io.github.rygel.stellar.model.CommunityNotFoundException
 import io.github.rygel.stellar.model.CommunityRole
+import io.github.rygel.stellar.model.CommunitySummary
 import io.github.rygel.stellar.model.DuplicateCommunityException
 import io.github.rygel.stellar.persistence.CommunityMemberRepository
 import io.github.rygel.stellar.persistence.CommunityRepository
@@ -15,6 +16,7 @@ import io.mockk.verify
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -135,6 +137,95 @@ class CommunityServiceTest {
 
         verify(exactly = 0) { subscriptionRepo.unsubscribe(any(), any()) }
         verify(exactly = 0) { communityRepo.incrementSubscriberCount(any(), any()) }
+    }
+
+    // --- Cache invalidation tests ---
+
+    @Test
+    fun `listPopular returns cached result on second call`() {
+        val cache = CaffeineStellarCache()
+        val cachedService = CommunityService(communityRepo, subscriptionRepo, memberRepo, cache)
+        val summaries = listOf(CommunitySummary(UUID.randomUUID(), "kotlin", "Kotlin", "desc", subscriberCount = 100))
+
+        every { communityRepo.listPopular(25, 0) } returns summaries
+
+        val first = cachedService.listPopular(25, 0)
+        val second = cachedService.listPopular(25, 0)
+
+        assertEquals(first, second)
+        verify(exactly = 1) { communityRepo.listPopular(25, 0) }
+    }
+
+    @Test
+    fun `createCommunity invalidates popular cache`() {
+        val cache = CaffeineStellarCache()
+        val cachedService = CommunityService(communityRepo, subscriptionRepo, memberRepo, cache)
+        val summaries = listOf(CommunitySummary(UUID.randomUUID(), "kotlin", "Kotlin", "desc", subscriberCount = 100))
+        val creatorId = UUID.randomUUID()
+        val created = community(name = "newcommunity", creatorId = creatorId)
+
+        every { communityRepo.listPopular(25, 0) } returns summaries
+        every { communityRepo.findByName("newcommunity") } returns null
+        every { communityRepo.create(any()) } returns created
+        every { memberRepo.addMember(creatorId, created.id, CommunityRole.ADMIN) } just runs
+        every { subscriptionRepo.subscribe(creatorId, created.id) } just runs
+        every { communityRepo.incrementSubscriberCount(created.id, 1) } just runs
+
+        cachedService.listPopular(25, 0)
+        assertNotNull(cache.get<List<CommunitySummary>>("communities:popular:25:0"))
+
+        cachedService.createCommunity("NewCommunity", "New Community", "A description", creatorId)
+        assertNull(cache.get<List<CommunitySummary>>("communities:popular:25:0"))
+    }
+
+    @Test
+    fun `subscribe invalidates popular cache`() {
+        val cache = CaffeineStellarCache()
+        val cachedService = CommunityService(communityRepo, subscriptionRepo, memberRepo, cache)
+        val userId = UUID.randomUUID()
+        val communityId = UUID.randomUUID()
+        val summaries = listOf(CommunitySummary(UUID.randomUUID(), "kotlin", "Kotlin", "desc", subscriberCount = 100))
+
+        every { communityRepo.listPopular(25, 0) } returns summaries
+        every { subscriptionRepo.isSubscribed(userId, communityId) } returns false
+        every { subscriptionRepo.subscribe(userId, communityId) } just runs
+        every { communityRepo.incrementSubscriberCount(communityId, 1) } just runs
+
+        cachedService.listPopular(25, 0)
+        assertNotNull(cache.get<List<CommunitySummary>>("communities:popular:25:0"))
+
+        cachedService.subscribe(userId, communityId)
+        assertNull(cache.get<List<CommunitySummary>>("communities:popular:25:0"))
+    }
+
+    @Test
+    fun `unsubscribe invalidates popular cache`() {
+        val cache = CaffeineStellarCache()
+        val cachedService = CommunityService(communityRepo, subscriptionRepo, memberRepo, cache)
+        val userId = UUID.randomUUID()
+        val communityId = UUID.randomUUID()
+        val summaries = listOf(CommunitySummary(UUID.randomUUID(), "kotlin", "Kotlin", "desc", subscriberCount = 100))
+
+        every { communityRepo.listPopular(25, 0) } returns summaries
+        every { subscriptionRepo.isSubscribed(userId, communityId) } returns true
+        every { subscriptionRepo.unsubscribe(userId, communityId) } just runs
+        every { communityRepo.incrementSubscriberCount(communityId, -1) } just runs
+
+        cachedService.listPopular(25, 0)
+        assertNotNull(cache.get<List<CommunitySummary>>("communities:popular:25:0"))
+
+        cachedService.unsubscribe(userId, communityId)
+        assertNull(cache.get<List<CommunitySummary>>("communities:popular:25:0"))
+    }
+
+    @Test
+    fun `service works without cache`() {
+        val noCacheService = CommunityService(communityRepo, subscriptionRepo, memberRepo, null)
+        val summaries = listOf(CommunitySummary(UUID.randomUUID(), "kotlin", "Kotlin", "desc", subscriberCount = 100))
+        every { communityRepo.listPopular(25, 0) } returns summaries
+
+        val result = noCacheService.listPopular(25, 0)
+        assertEquals(summaries, result)
     }
 
     private fun community(

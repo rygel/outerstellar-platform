@@ -9,6 +9,7 @@ import io.github.rygel.stellar.persistence.CommunityRuleRepository
 import io.github.rygel.stellar.service.CommunityService
 import io.github.rygel.stellar.service.ModerationService
 import io.github.rygel.stellar.service.PostService
+import io.github.rygel.stellar.service.StellarRateLimiter
 import io.github.rygel.stellar.web.TimeFormatting.toCardViewModel
 import java.util.UUID
 import org.http4k.contract.ContractRoute
@@ -32,6 +33,7 @@ class CommunityRoutes(private val context: PluginContext) : KoinComponent {
     private val postService: PostService by inject()
     private val moderationService: ModerationService by inject()
     private val ruleRepo: CommunityRuleRepository by inject()
+    private val rateLimiter: StellarRateLimiter by inject()
     private val renderer = context.renderer
 
     private val communityNamePath = Path.string().of("name")
@@ -142,6 +144,10 @@ class CommunityRoutes(private val context: PluginContext) : KoinComponent {
                 POST to
                 { request ->
                     val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                    if (!rateLimiter.checkLimit("create:$userId")) {
+                        return@to Response(Status.TOO_MANY_REQUESTS)
+                            .body("Rate limit exceeded. Please wait before creating another community.")
+                    }
 
                     val name = request.form("name") ?: return@to Response(Status.BAD_REQUEST)
                     val displayName = request.form("displayName") ?: name

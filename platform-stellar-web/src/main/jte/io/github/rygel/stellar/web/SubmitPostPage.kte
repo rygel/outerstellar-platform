@@ -10,6 +10,7 @@
 
     <form method="post" action="/r/${model.data.communityName}/posts"
           class="p-6 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+        <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
 
         <div class="mb-4">
             <label class="block text-sm font-medium text-[var(--text)] mb-1">Title</label>
