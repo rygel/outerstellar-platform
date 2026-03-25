@@ -33,8 +33,9 @@ class SmokeE2ETest : KoinTest {
                 apiClientModule,
                 desktopModule,
                 module {
-                    single { AppConfig() }
-                    single(named("jdbcUrl")) { "jdbc:h2:mem:smoketest_${System.nanoTime()};MODE=PostgreSQL" }
+                    single {
+                        AppConfig(jdbcUrl = "jdbc:h2:mem:smoketest_${System.nanoTime()};MODE=PostgreSQL")
+                    }
                     single<MessageCache> { NoOpMessageCache }
                     single { SyncService(get(named("serverBaseUrl")), get(), get()) }
                     single<SyncProvider> { get<SyncService>() }
