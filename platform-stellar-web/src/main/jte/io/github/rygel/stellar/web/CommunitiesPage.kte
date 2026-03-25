@@ -1,0 +1,52 @@
+@import io.github.rygel.stellar.web.CommunitiesPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<CommunitiesPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-xl font-semibold text-[var(--text)]">Communities</h1>
+        <a href="/communities/create"
+           class="px-4 py-2 bg-[var(--accent)] text-white rounded-full text-sm font-medium hover:opacity-90">
+            Create Community
+        </a>
+    </div>
+
+    <%-- Search --%>
+    <form method="get" action="/communities" class="mb-6">
+        <input type="text" name="q" value="${if (model.data.query != null) model.data.query else ""}"
+               placeholder="Search communities..."
+               class="w-full p-3 rounded-lg border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] text-sm">
+    </form>
+
+    <%-- Community list --%>
+    <div class="space-y-2">
+        @for(community in model.data.communities)
+            <a href="/r/${community.name}"
+               class="flex items-center gap-4 p-4 bg-[var(--surface)] rounded-lg border border-[var(--border)] hover:border-[var(--border-hover)] transition-colors">
+                <div class="w-12 h-12 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
+                    ${community.name.substring(0, 1).uppercase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-medium text-[var(--text)]">r/${community.name}</div>
+                    <div class="text-sm text-[var(--text-muted)]">${community.displayName}</div>
+                    <div class="text-xs text-[var(--text-muted)] mt-1">${community.subscriberCount} members</div>
+                </div>
+                <div class="text-sm text-[var(--text-muted)] max-w-xs truncate hidden md:block">
+                    ${community.description}
+                </div>
+            </a>
+        @endfor
+    </div>
+
+    @if(model.data.communities.isEmpty())
+        <div class="p-8 text-center text-[var(--text-muted)]">
+            @if(model.data.query != null)
+                <p>No communities found for "${model.data.query}"</p>
+            @else
+                <p>No communities yet. Create the first one!</p>
+            @endif
+        </div>
+    @endif
+</div>
+`)

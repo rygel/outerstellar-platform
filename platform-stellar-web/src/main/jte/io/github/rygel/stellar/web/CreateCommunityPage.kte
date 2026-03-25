@@ -1,0 +1,58 @@
+@import io.github.rygel.stellar.web.CreateCommunityPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<CreateCommunityPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-xl font-semibold text-[var(--text)] mb-4">
+        Create a Community
+    </h1>
+
+    @if(model.data.error != null)
+        <div class="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
+            ${model.data.error}
+        </div>
+    @endif
+
+    <form method="post" action="/communities"
+          class="p-6 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-[var(--text)] mb-1">Community Name</label>
+            <div class="flex items-center">
+                <span class="text-sm text-[var(--text-muted)] mr-1">r/</span>
+                <input type="text" name="name" required maxlength="21"
+                       pattern="[a-z0-9_]+"
+                       placeholder="community_name"
+                       class="flex-1 p-3 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] text-sm">
+            </div>
+            <p class="mt-1 text-xs text-[var(--text-muted)]">Lowercase letters, numbers, and underscores only. Max 21 characters.</p>
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-[var(--text)] mb-1">Display Name</label>
+            <input type="text" name="displayName" required maxlength="100"
+                   placeholder="My Awesome Community"
+                   class="w-full p-3 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] text-sm">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-[var(--text)] mb-1">Description</label>
+            <textarea name="description" rows="4"
+                      placeholder="What is this community about?"
+                      class="w-full p-3 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] resize-y text-sm"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3">
+            <a href="/communities"
+               class="px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-hover)] rounded-full">
+                Cancel
+            </a>
+            <button type="submit"
+                    class="px-6 py-2 bg-[var(--accent)] text-white rounded-full text-sm font-medium hover:opacity-90">
+                Create Community
+            </button>
+        </div>
+    </form>
+</div>
+`)

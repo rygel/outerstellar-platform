@@ -1,0 +1,110 @@
+@import io.github.rygel.stellar.web.PostDetailPage
+@import io.github.rygel.stellar.model.CommentTree
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<PostDetailPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-4xl">
+    <%-- Post --%>
+    <article class="p-6 mb-4 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+        <div class="flex gap-4">
+            <%-- Vote --%>
+            <div class="flex flex-col items-center gap-1" id="vote-${model.data.post.id.toString()}">
+                <button hx-post="/vote"
+                        hx-vals='{"targetId": "${model.data.post.id.toString()}", "targetType": "POST", "value": "1"}'
+                        hx-target="#vote-${model.data.post.id.toString()}"
+                        hx-swap="outerHTML"
+                        class="w-8 h-8 flex items-center justify-center rounded hover:bg-[var(--surface-hover)] text-[var(--text-muted)]">
+                    <i class="ri-arrow-up-s-line text-xl"></i>
+                </button>
+                <span class="text-sm font-bold text-[var(--text)]">${model.data.post.score}</span>
+                <button hx-post="/vote"
+                        hx-vals='{"targetId": "${model.data.post.id.toString()}", "targetType": "POST", "value": "-1"}'
+                        hx-target="#vote-${model.data.post.id.toString()}"
+                        hx-swap="outerHTML"
+                        class="w-8 h-8 flex items-center justify-center rounded hover:bg-[var(--surface-hover)] text-[var(--text-muted)]">
+                    <i class="ri-arrow-down-s-line text-xl"></i>
+                </button>
+            </div>
+
+            <div class="flex-1">
+                <div class="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-2">
+                    <a href="/r/${model.data.communityName}" class="font-bold text-[var(--text)] hover:underline">r/${model.data.communityName}</a>
+                    <span>&bull;</span>
+                    <span>Posted by u/${model.data.post.authorUsername}</span>
+                    <span>&bull;</span>
+                    <span>${model.data.post.timeAgo}</span>
+                </div>
+
+                <h1 class="text-xl font-semibold text-[var(--text)] mb-3">${model.data.post.title}</h1>
+
+                @if(model.data.post.body != null)
+                    <div class="prose prose-sm text-[var(--text)] mb-4">${model.data.post.body}</div>
+                @endif
+
+                @if(model.data.post.url != null)
+                    <a href="${model.data.post.url}" class="text-[var(--accent)] hover:underline" target="_blank" rel="noopener">
+                        <i class="ri-external-link-line"></i> ${model.data.post.url}
+                    </a>
+                @endif
+
+                <div class="flex items-center gap-4 mt-4 text-xs text-[var(--text-muted)]">
+                    <span class="flex items-center gap-1">
+                        <i class="ri-chat-1-line"></i> ${model.data.post.commentCount} comments
+                    </span>
+                    <button class="flex items-center gap-1 hover:bg-[var(--surface-hover)] rounded px-2 py-1">
+                        <i class="ri-share-line"></i> Share
+                    </button>
+                    <button class="flex items-center gap-1 hover:bg-[var(--surface-hover)] rounded px-2 py-1">
+                        <i class="ri-bookmark-line"></i> Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <%-- Comment form --%>
+    @if(!model.data.post.isLocked)
+        <div class="p-4 mb-4 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+            <form method="post" action="/posts/${model.data.post.id.toString()}/comments">
+                <textarea name="body" rows="4" placeholder="What are your thoughts?"
+                    class="w-full p-3 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] resize-y text-sm"
+                    required></textarea>
+                <div class="flex justify-end mt-2">
+                    <button type="submit" class="px-4 py-2 bg-[var(--accent)] text-white rounded-full text-sm font-medium hover:opacity-90">
+                        Comment
+                    </button>
+                </div>
+            </form>
+        </div>
+    @else
+        <div class="p-4 mb-4 bg-[var(--surface)] rounded-lg border border-[var(--border)] text-center text-[var(--text-muted)]">
+            <i class="ri-lock-line"></i> This post is locked. New comments cannot be posted.
+        </div>
+    @endif
+
+    <%-- Comment sort --%>
+    <div class="flex items-center gap-2 mb-4">
+        <span class="text-sm text-[var(--text-muted)]">Sort by:</span>
+        @for(sort in listOf("best", "new", "top", "controversial"))
+            <a href="?sort=${sort}"
+               class="px-2 py-1 rounded text-xs ${if (sort.equals(model.data.commentSort)) "bg-[var(--accent)] text-white" else "text-[var(--text-muted)] hover:bg-[var(--surface-hover)]"}">
+                ${sort.substring(0, 1).uppercase() + sort.substring(1)}
+            </a>
+        @endfor
+    </div>
+
+    <%-- Comments --%>
+    <div id="comments">
+        @for(tree in model.data.comments)
+            @template.io.github.rygel.stellar.web.components.CommentNode(tree = tree, postId = model.data.post.id)
+        @endfor
+
+        @if(model.data.comments.isEmpty())
+            <div class="p-8 text-center text-[var(--text-muted)]">
+                No comments yet. Be the first to share your thoughts!
+            </div>
+        @endif
+    </div>
+</div>
+`)

@@ -1,0 +1,48 @@
+@import io.github.rygel.stellar.web.UserProfilePage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<UserProfilePage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-4xl">
+    <%-- Profile header --%>
+    <div class="p-6 mb-6 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+        <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-2xl font-bold">
+                ${model.data.username.substring(0, 1).uppercase()}
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-[var(--text)]">u/${model.data.username}</h1>
+                <div class="flex gap-4 mt-1 text-sm text-[var(--text-muted)]">
+                    <span><strong>${model.data.karma.postKarma}</strong> post karma</span>
+                    <span><strong>${model.data.karma.commentKarma}</strong> comment karma</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%-- Tabs --%>
+    <div class="flex gap-2 mb-4">
+        <a href="/u/${model.data.username}"
+           class="px-4 py-2 rounded-full text-sm ${if ("posts" == model.data.tab) "bg-[var(--accent)] text-white" else "text-[var(--text-muted)] hover:bg-[var(--surface-hover)]"}">
+            Posts
+        </a>
+        <a href="/u/${model.data.username}?tab=comments"
+           class="px-4 py-2 rounded-full text-sm ${if ("comments" == model.data.tab) "bg-[var(--accent)] text-white" else "text-[var(--text-muted)] hover:bg-[var(--surface-hover)]"}">
+            Comments
+        </a>
+    </div>
+
+    <%-- Posts --%>
+    <div>
+        @for(post in model.data.posts)
+            @template.io.github.rygel.stellar.web.components.PostCard(post = post)
+        @endfor
+
+        @if(model.data.posts.isEmpty())
+            <div class="p-8 text-center text-[var(--text-muted)]">
+                u/${model.data.username} hasn't posted anything yet.
+            </div>
+        @endif
+    </div>
+</div>
+`)

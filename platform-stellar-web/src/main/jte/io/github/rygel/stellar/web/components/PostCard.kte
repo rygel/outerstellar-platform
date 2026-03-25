@@ -1,0 +1,69 @@
+@import io.github.rygel.stellar.web.PostCardViewModel
+@param post: PostCardViewModel
+
+<article class="flex gap-3 p-4 mb-2 bg-[var(--surface)] rounded-lg border border-[var(--border)] hover:border-[var(--border-hover)] transition-colors">
+    <%-- Vote buttons --%>
+    <div class="flex flex-col items-center gap-1 min-w-[40px]" id="vote-${post.id.toString()}">
+        <button hx-post="/vote"
+                hx-vals='{"targetId": "${post.id.toString()}", "targetType": "POST", "value": "1"}'
+                hx-target="#vote-${post.id.toString()}"
+                hx-swap="outerHTML"
+                class="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--surface-hover)] ${if (post.userVote != null && post.userVote == 1) "text-orange-500" else "text-[var(--text-muted)]"}">
+            <i class="ri-arrow-up-s-line text-lg"></i>
+        </button>
+        <span class="text-xs font-bold ${if (post.score > 0) "text-orange-500" else if (post.score < 0) "text-blue-500" else "text-[var(--text-muted)]"}">${post.score}</span>
+        <button hx-post="/vote"
+                hx-vals='{"targetId": "${post.id.toString()}", "targetType": "POST", "value": "-1"}'
+                hx-target="#vote-${post.id.toString()}"
+                hx-swap="outerHTML"
+                class="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--surface-hover)] ${if (post.userVote != null && post.userVote == -1) "text-blue-500" else "text-[var(--text-muted)]"}">
+            <i class="ri-arrow-down-s-line text-lg"></i>
+        </button>
+    </div>
+
+    <%-- Post content --%>
+    <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-1">
+            <a href="/r/${post.communityName}" class="font-bold text-[var(--text)] hover:underline">r/${post.communityName}</a>
+            <span>&bull;</span>
+            <span>Posted by u/${post.authorUsername}</span>
+            <span>&bull;</span>
+            <span>${post.timeAgo}</span>
+            @if(post.isPinned)
+                <span class="px-1.5 py-0.5 bg-green-100 text-green-800 rounded text-xs">Pinned</span>
+            @endif
+        </div>
+
+        @if(post.flairName != null)
+            <span class="inline-block px-2 py-0.5 rounded-full text-xs text-white mb-1" style="background-color: ${if (post.flairColor != null) post.flairColor else "#666"}">
+                ${post.flairName}
+            </span>
+        @endif
+
+        <a href="/r/${post.communityName}/posts/${post.id.toString()}" class="block">
+            <h3 class="text-lg font-medium text-[var(--text)] hover:underline mb-1">${post.title}</h3>
+        </a>
+
+        @if(post.previewText != null)
+            <p class="text-sm text-[var(--text-muted)] line-clamp-3 mb-2">${post.previewText}</p>
+        @endif
+
+        @if(post.url != null)
+            <a href="${post.url}" class="text-sm text-[var(--accent)] hover:underline" target="_blank" rel="noopener">
+                <i class="ri-external-link-line"></i> ${post.url}
+            </a>
+        @endif
+
+        <div class="flex items-center gap-4 mt-2 text-xs text-[var(--text-muted)]">
+            <a href="/r/${post.communityName}/posts/${post.id.toString()}" class="flex items-center gap-1 hover:bg-[var(--surface-hover)] rounded px-2 py-1">
+                <i class="ri-chat-1-line"></i> ${post.commentCount} comments
+            </a>
+            <button class="flex items-center gap-1 hover:bg-[var(--surface-hover)] rounded px-2 py-1">
+                <i class="ri-share-line"></i> Share
+            </button>
+            <button class="flex items-center gap-1 hover:bg-[var(--surface-hover)] rounded px-2 py-1">
+                <i class="ri-bookmark-line"></i> Save
+            </button>
+        </div>
+    </div>
+</article>

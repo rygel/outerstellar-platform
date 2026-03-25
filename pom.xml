@@ -43,6 +43,10 @@
         <module>platform-desktop</module>
         <module>platform-security</module>
         <module>platform-seed</module>
+        <module>platform-stellar-core</module>
+        <module>platform-stellar-persistence</module>
+        <module>platform-stellar-web</module>
+        <module>platform-stellar-seed</module>
     </modules>
 
     <properties>

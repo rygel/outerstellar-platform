@@ -1,0 +1,34 @@
+@import io.github.rygel.stellar.web.SavedPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<SavedPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-4xl">
+    <h1 class="text-xl font-semibold text-[var(--text)] mb-6">Saved</h1>
+
+    @if(model.data.savedItems.isEmpty())
+        <div class="p-8 text-center text-[var(--text-muted)] bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+            <i class="ri-bookmark-line text-3xl mb-2"></i>
+            <p>You haven't saved anything yet.</p>
+            <p class="text-sm mt-1">Click the save button on posts and comments to bookmark them here.</p>
+        </div>
+    @else
+        <div class="space-y-2">
+            @for(item in model.data.savedItems)
+                <div class="p-4 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-[var(--text)]">
+                            ${item.targetType.name} - ${item.targetId.toString()}
+                        </span>
+                        <button hx-post="/save"
+                                hx-vals='{"targetId": "${item.targetId.toString()}", "targetType": "${item.targetType.name}"}'
+                                class="text-xs text-red-500 hover:underline">
+                            Unsave
+                        </button>
+                    </div>
+                </div>
+            @endfor
+        </div>
+    @endif
+</div>
+`)

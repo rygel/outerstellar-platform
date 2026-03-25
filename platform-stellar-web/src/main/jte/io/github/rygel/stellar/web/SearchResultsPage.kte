@@ -1,0 +1,58 @@
+@import io.github.rygel.stellar.web.SearchResultsPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<SearchResultsPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-4xl">
+    <%-- Search bar --%>
+    <form method="get" action="/search" class="mb-6">
+        <div class="flex gap-2">
+            <input type="text" name="q" value="${model.data.query}"
+                   placeholder="Search Stellar..."
+                   class="flex-1 p-3 rounded-lg border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] text-sm"
+                   autofocus>
+            <button type="submit"
+                    class="px-6 py-3 bg-[var(--accent)] text-white rounded-lg text-sm font-medium hover:opacity-90">
+                Search
+            </button>
+        </div>
+    </form>
+
+    @if(model.data.query.length > 0)
+        <%-- Communities --%>
+        @if(!model.data.communities.isEmpty())
+            <h2 class="text-lg font-semibold text-[var(--text)] mb-3">Communities</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mb-6">
+                @for(community in model.data.communities)
+                    <a href="/r/${community.name}"
+                       class="flex items-center gap-3 p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)] hover:border-[var(--border-hover)]">
+                        <div class="w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center text-white font-bold">
+                            ${community.name.substring(0, 1).uppercase()}
+                        </div>
+                        <div>
+                            <div class="font-medium text-[var(--text)]">r/${community.name}</div>
+                            <div class="text-xs text-[var(--text-muted)]">${community.subscriberCount} members</div>
+                        </div>
+                    </a>
+                @endfor
+            </div>
+        @endif
+
+        <%-- Posts --%>
+        <h2 class="text-lg font-semibold text-[var(--text)] mb-3">Posts</h2>
+        @for(post in model.data.posts)
+            @template.io.github.rygel.stellar.web.components.PostCard(post = post)
+        @endfor
+
+        @if(model.data.posts.isEmpty() && model.data.communities.isEmpty())
+            <div class="p-8 text-center text-[var(--text-muted)]">
+                No results found for "${model.data.query}"
+            </div>
+        @endif
+    @else
+        <div class="p-8 text-center text-[var(--text-muted)]">
+            Enter a search term to find posts and communities.
+        </div>
+    @endif
+</div>
+`)

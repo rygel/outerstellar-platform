@@ -1,0 +1,15 @@
+@import io.github.rygel.stellar.web.FeedListFragment
+@param model: FeedListFragment
+
+@for(post in model.posts)
+    @template.io.github.rygel.stellar.web.components.PostCard(post = post)
+@endfor
+
+@if(model.hasMore)
+    <div hx-get="/components/feed?sort=${model.sort}&offset=${model.nextOffset}${if (model.communityName != null) "&community=" + model.communityName else ""}"
+         hx-trigger="revealed"
+         hx-swap="afterend"
+         class="p-4 text-center text-[var(--text-muted)]">
+        Loading more...
+    </div>
+@endif

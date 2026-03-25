@@ -1,0 +1,30 @@
+@param currentSort: String
+@param currentTimeRange: String?
+@param basePath: String
+
+<div class="flex flex-col gap-2 mb-4">
+    <%-- Sort buttons --%>
+    <div class="flex items-center gap-2 p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+        <span class="text-sm text-[var(--text-muted)] mr-2">Sort by:</span>
+        @for(sort in listOf("hot", "new", "top", "rising", "controversial"))
+            !{val sortParam = if (sort == "top" && currentTimeRange != null) "${basePath}?sort=${sort}&t=${currentTimeRange}" else "${basePath}?sort=${sort}"}
+            <a href="${sortParam}"
+               class="px-3 py-1 rounded-full text-sm ${if (sort == currentSort) "bg-[var(--accent)] text-white" else "text-[var(--text-muted)] hover:bg-[var(--surface-hover)]"}">
+                ${sort.substring(0, 1).uppercase() + sort.substring(1)}
+            </a>
+        @endfor
+    </div>
+
+    <%-- Time range buttons (only shown when sort is "top") --%>
+    @if(currentSort == "top")
+        <div class="flex items-center gap-2 p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+            <span class="text-sm text-[var(--text-muted)] mr-2">Time:</span>
+            @for(time in listOf("hour", "day", "week", "month", "year", "all"))
+                <a href="${basePath}?sort=top&t=${time}"
+                   class="px-3 py-1 rounded-full text-sm ${if (time == currentTimeRange || (currentTimeRange == null && time == "all")) "bg-[var(--accent-secondary,var(--accent))] text-white" else "text-[var(--text-muted)] hover:bg-[var(--surface-hover)]"}">
+                    ${time.substring(0, 1).uppercase() + time.substring(1)}
+                </a>
+            @endfor
+        </div>
+    @endif
+</div>

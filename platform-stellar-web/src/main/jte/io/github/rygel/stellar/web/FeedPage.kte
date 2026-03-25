@@ -1,0 +1,57 @@
+@import io.github.rygel.stellar.web.FeedPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<FeedPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="flex gap-6">
+    <div class="flex-1 min-w-0">
+        <%-- Sort bar --%>
+        @template.io.github.rygel.stellar.web.components.SortBar(
+            currentSort = model.data.sort,
+            currentTimeRange = model.data.timeRange,
+            basePath = if (model.data.feedType == "popular") "/popular" else "/"
+        )
+
+        <%-- Post list --%>
+        <div id="feed-list">
+            @for(post in model.data.posts)
+                @template.io.github.rygel.stellar.web.components.PostCard(post = post)
+            @endfor
+
+            @if(model.data.hasMore)
+                <div hx-get="/components/feed?sort=${model.data.sort}&offset=${model.data.nextOffset}${if (model.data.timeRange != null) "&t=" + model.data.timeRange else ""}"
+                     hx-trigger="revealed"
+                     hx-swap="afterend"
+                     class="p-4 text-center text-[var(--text-muted)]">
+                    Loading more...
+                </div>
+            @endif
+        </div>
+
+        @if(model.data.posts.isEmpty())
+            <div class="p-8 text-center text-[var(--text-muted)]">
+                <p class="text-lg mb-2">No posts yet</p>
+                <p>Be the first to post something!</p>
+            </div>
+        @endif
+    </div>
+
+    <%-- Sidebar --%>
+    <aside class="w-80 hidden lg:block">
+        <div class="p-4 bg-[var(--surface)] rounded-lg border border-[var(--border)] mb-4">
+            <h3 class="font-semibold mb-3 text-[var(--text)]">Popular Communities</h3>
+            @for(community in model.data.communities)
+                <a href="/r/${community.name}" class="flex items-center gap-2 py-2 text-sm hover:bg-[var(--surface-hover)] rounded px-2">
+                    <div class="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center text-white text-xs font-bold">
+                        ${community.name.substring(0, 1).uppercase()}
+                    </div>
+                    <div>
+                        <div class="font-medium text-[var(--text)]">r/${community.name}</div>
+                        <div class="text-[var(--text-muted)]">${community.subscriberCount} members</div>
+                    </div>
+                </a>
+            @endfor
+        </div>
+    </aside>
+</div>
+`)

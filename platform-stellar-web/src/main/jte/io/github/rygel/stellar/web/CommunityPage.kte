@@ -1,0 +1,75 @@
+@import io.github.rygel.stellar.web.CommunityPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<CommunityPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="flex gap-6">
+    <div class="flex-1 min-w-0">
+        <%-- Community header --%>
+        <div class="p-6 mb-4 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-[var(--text)]">${model.data.community.displayName}</h1>
+                    <p class="text-sm text-[var(--text-muted)]">r/${model.data.community.name}</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="/r/${model.data.community.name}/submit"
+                       class="px-4 py-2 bg-[var(--accent)] text-white rounded-full text-sm font-medium hover:opacity-90">
+                        Create Post
+                    </a>
+                    <div id="subscribe-btn">
+                        @template.io.github.rygel.stellar.web.components.SubscribeButton(
+                            communityId = model.data.community.id,
+                            communityName = model.data.community.name,
+                            isSubscribed = model.data.isSubscribed
+                        )
+                    </div>
+                </div>
+            </div>
+            <p class="mt-2 text-sm text-[var(--text)]">${model.data.community.description}</p>
+            <div class="flex gap-4 mt-3 text-sm text-[var(--text-muted)]">
+                <span><strong>${model.data.community.subscriberCount}</strong> members</span>
+                <span><strong>${model.data.community.postCount}</strong> posts</span>
+            </div>
+        </div>
+
+        <%-- Sort bar --%>
+        @template.io.github.rygel.stellar.web.components.SortBar(
+            currentSort = model.data.sort,
+            currentTimeRange = model.data.timeRange,
+            basePath = "/r/" + model.data.community.name
+        )
+
+        <%-- Posts --%>
+        <div id="feed-list">
+            @for(post in model.data.posts)
+                @template.io.github.rygel.stellar.web.components.PostCard(post = post)
+            @endfor
+        </div>
+
+        @if(model.data.posts.isEmpty())
+            <div class="p-8 text-center text-[var(--text-muted)]">
+                <p class="text-lg mb-2">No posts in this community yet</p>
+                <a href="/r/${model.data.community.name}/submit" class="text-[var(--accent)] hover:underline">
+                    Be the first to post!
+                </a>
+            </div>
+        @endif
+    </div>
+
+    <%-- Sidebar --%>
+    <aside class="w-80 hidden lg:block">
+        <div class="p-4 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+            <h3 class="font-semibold mb-2 text-[var(--text)]">About Community</h3>
+            @if(model.data.community.sidebar.length > 0)
+                <p class="text-sm text-[var(--text-muted)] mb-3">${model.data.community.sidebar}</p>
+            @endif
+            <div class="text-sm text-[var(--text-muted)]">
+                <div class="py-2 border-t border-[var(--border)]">
+                    <strong>${model.data.community.subscriberCount}</strong> Members
+                </div>
+            </div>
+        </div>
+    </aside>
+</div>
+`)

@@ -1,0 +1,20 @@
+@import io.github.rygel.stellar.web.VoteButtonsFragment
+@param model: VoteButtonsFragment
+
+<div class="flex flex-col items-center gap-1" id="vote-${model.targetId.toString()}">
+    <button hx-post="/vote"
+            hx-vals='{"targetId": "${model.targetId.toString()}", "targetType": "${model.targetType}", "value": "1"}'
+            hx-target="#vote-${model.targetId.toString()}"
+            hx-swap="outerHTML"
+            class="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--surface-hover)] ${if (model.userVote != null && model.userVote == 1) "text-orange-500" else "text-[var(--text-muted)]"}">
+        <i class="ri-arrow-up-s-line text-lg"></i>
+    </button>
+    <span class="text-xs font-bold text-[var(--text)]">${model.score}</span>
+    <button hx-post="/vote"
+            hx-vals='{"targetId": "${model.targetId.toString()}", "targetType": "${model.targetType}", "value": "-1"}'
+            hx-target="#vote-${model.targetId.toString()}"
+            hx-swap="outerHTML"
+            class="w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--surface-hover)] ${if (model.userVote != null && model.userVote == -1) "text-blue-500" else "text-[var(--text-muted)]"}">
+        <i class="ri-arrow-down-s-line text-lg"></i>
+    </button>
+</div>

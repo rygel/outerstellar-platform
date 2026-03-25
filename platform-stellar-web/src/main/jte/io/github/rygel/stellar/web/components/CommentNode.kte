@@ -1,0 +1,53 @@
+@import io.github.rygel.stellar.model.CommentTree
+@import java.util.UUID
+@param tree: CommentTree
+@param postId: UUID
+
+<div class="ml-${tree.comment.depth * 4} mb-2">
+    <div class="p-3 rounded border-l-2 border-[var(--border)] bg-[var(--surface)]">
+        <div class="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-1">
+            <span class="font-medium text-[var(--text)]">u/${tree.comment.authorUsername}</span>
+            <span>&bull;</span>
+            <span>${tree.comment.score} points</span>
+            <span>&bull;</span>
+            <span>${tree.comment.createdAt.toString()}</span>
+        </div>
+
+        @if(tree.comment.isRemoved)
+            <p class="text-sm text-[var(--text-muted)] italic">[removed]</p>
+        @else
+            <p class="text-sm text-[var(--text)] whitespace-pre-wrap">${tree.comment.body}</p>
+        @endif
+
+        <div class="flex items-center gap-3 mt-2 text-xs text-[var(--text-muted)]">
+            <div class="flex items-center gap-1" id="vote-comment-${tree.comment.id.toString()}">
+                <button hx-post="/vote"
+                        hx-vals='{"targetId": "${tree.comment.id.toString()}", "targetType": "COMMENT", "value": "1"}'
+                        hx-target="#vote-comment-${tree.comment.id.toString()}"
+                        hx-swap="outerHTML"
+                        class="hover:text-orange-500">
+                    <i class="ri-arrow-up-s-line"></i>
+                </button>
+                <span>${tree.comment.score}</span>
+                <button hx-post="/vote"
+                        hx-vals='{"targetId": "${tree.comment.id.toString()}", "targetType": "COMMENT", "value": "-1"}'
+                        hx-target="#vote-comment-${tree.comment.id.toString()}"
+                        hx-swap="outerHTML"
+                        class="hover:text-blue-500">
+                    <i class="ri-arrow-down-s-line"></i>
+                </button>
+            </div>
+            <button class="hover:bg-[var(--surface-hover)] rounded px-2 py-1"
+                    hx-get="/components/comment-form/${tree.comment.id.toString()}?postId=${postId.toString()}"
+                    hx-target="#reply-form-${tree.comment.id.toString()}"
+                    hx-swap="innerHTML">
+                <i class="ri-chat-1-line"></i> Reply
+            </button>
+        </div>
+        <div id="reply-form-${tree.comment.id.toString()}"></div>
+    </div>
+
+    @for(child in tree.children)
+        @template.io.github.rygel.stellar.web.components.CommentNode(tree = child, postId = postId)
+    @endfor
+</div>
