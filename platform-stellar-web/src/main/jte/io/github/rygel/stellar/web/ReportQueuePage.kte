@@ -1,0 +1,66 @@
+@import io.github.rygel.stellar.web.ReportQueuePage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<ReportQueuePage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-[var(--text)]">Reports - r/${model.data.communityName}</h1>
+        <a href="/r/${model.data.communityName}/mod"
+           class="text-sm text-[var(--accent)] hover:underline">Back to Mod Tools</a>
+    </div>
+
+    @if(model.data.reports.isEmpty())
+        <div class="p-8 text-center bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+            <p class="text-lg text-[var(--text-muted)] mb-2">No pending reports</p>
+            <p class="text-sm text-[var(--text-muted)]">All reports have been handled. Great job!</p>
+        </div>
+    @else
+        <div class="space-y-4" id="report-list">
+            @for(report in model.data.reports)
+                <div class="p-4 bg-[var(--surface)] rounded-lg border border-[var(--border)]"
+                     id="report-${report.id.toString()}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300">
+                                    ${report.targetType}
+                                </span>
+                                <span class="text-xs text-[var(--text-muted)]">${report.createdAt}</span>
+                            </div>
+                            <p class="text-sm text-[var(--text)] mb-1">
+                                <strong>Reason:</strong> ${report.reason}
+                            </p>
+                            <p class="text-xs text-[var(--text-muted)]">
+                                Reported by: ${report.reporterUsername} | Target: ${report.targetId.toString()}
+                            </p>
+                        </div>
+                        <div class="flex gap-2 ml-4">
+                            <form method="post"
+                                  action="/r/${model.data.communityName}/mod/reports/${report.id.toString()}/resolve"
+                                  hx-post="/r/${model.data.communityName}/mod/reports/${report.id.toString()}/resolve"
+                                  hx-target="#report-${report.id.toString()}"
+                                  hx-swap="outerHTML">
+                                <button type="submit"
+                                        class="px-3 py-1.5 bg-green-600 text-white rounded text-xs font-medium hover:opacity-90">
+                                    Resolve
+                                </button>
+                            </form>
+                            <form method="post"
+                                  action="/r/${model.data.communityName}/mod/reports/${report.id.toString()}/dismiss"
+                                  hx-post="/r/${model.data.communityName}/mod/reports/${report.id.toString()}/dismiss"
+                                  hx-target="#report-${report.id.toString()}"
+                                  hx-swap="outerHTML">
+                                <button type="submit"
+                                        class="px-3 py-1.5 bg-[var(--surface-hover)] text-[var(--text-muted)] rounded text-xs font-medium hover:opacity-90">
+                                    Dismiss
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            @endfor
+        </div>
+    @endif
+</div>
+`)

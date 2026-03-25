@@ -1,0 +1,14 @@
+@import io.github.rygel.outerstellar.platform.web.TrashPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<TrashPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+    <section class="hero-grid">
+        <div class="panel">
+            <h1>${model.data.title}</h1>
+            <p class="text-muted">${model.data.description}</p>
+        </div>
+    </section>
+
+    @template.io.github.rygel.outerstellar.platform.web.components.MessageList(model = model.data.messageList)
+`)

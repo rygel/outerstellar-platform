@@ -1,0 +1,21 @@
+@import io.github.rygel.stellar.web.ErrorPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<ErrorPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-lg mx-auto text-center py-16">
+    <div class="text-6xl font-bold text-[var(--text-muted)] mb-4">${model.data.code}</div>
+    <h1 class="text-2xl font-semibold text-[var(--text)] mb-2">${model.data.title}</h1>
+    <p class="text-[var(--text-muted)] mb-8">${model.data.message}</p>
+    <div class="flex justify-center gap-4">
+        <a href="/"
+           class="px-6 py-2 bg-[var(--accent)] text-white rounded-full text-sm font-medium hover:opacity-90">
+            Go Home
+        </a>
+        <a href="javascript:history.back()"
+           class="px-6 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-hover)] rounded-full border border-[var(--border)]">
+            Go Back
+        </a>
+    </div>
+</div>
+`)

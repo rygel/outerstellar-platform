@@ -3,10 +3,12 @@ package io.github.rygel.stellar.di
 import io.github.rygel.stellar.persistence.CommentRepository
 import io.github.rygel.stellar.persistence.CommunityMemberRepository
 import io.github.rygel.stellar.persistence.CommunityRepository
+import io.github.rygel.stellar.persistence.CommunityRuleRepository
 import io.github.rygel.stellar.persistence.FlairRepository
 import io.github.rygel.stellar.persistence.JdbiCommentRepository
 import io.github.rygel.stellar.persistence.JdbiCommunityMemberRepository
 import io.github.rygel.stellar.persistence.JdbiCommunityRepository
+import io.github.rygel.stellar.persistence.JdbiCommunityRuleRepository
 import io.github.rygel.stellar.persistence.JdbiFlairRepository
 import io.github.rygel.stellar.persistence.JdbiKarmaRepository
 import io.github.rygel.stellar.persistence.JdbiPostRepository
@@ -33,4 +35,5 @@ val stellarPersistenceModule = module {
     single<SavedItemRepository> { JdbiSavedItemRepository(get()) }
     single<KarmaRepository> { JdbiKarmaRepository(get()) }
     single<FlairRepository> { JdbiFlairRepository(get()) }
+    single<CommunityRuleRepository> { JdbiCommunityRuleRepository(get()) }
 }

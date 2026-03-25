@@ -32,7 +32,8 @@ class StellarPlugin : PlatformPlugin {
             VoteRoutes(context).routes +
             UserProfileRoutes(context).routes +
             SearchRoutes(context).routes +
-            FlairRoutes(context).routes
+            FlairRoutes(context).routes +
+            ModerationRoutes(context).routes
 
     override fun filters(context: PluginContext): List<Filter> = emptyList()
 

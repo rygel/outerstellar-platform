@@ -1,0 +1,51 @@
+@import io.github.rygel.outerstellar.platform.web.ConflictResolveViewModel
+@param model: ConflictResolveViewModel
+
+<div id="modal-container" class="modal-overlay" hx-target="this" hx-swap="outerHTML">
+    <div class="modal-content panel">
+        <header class="modal-header">
+            <h2>${model.modalTitle}</h2>
+            <button class="button-icon" onclick="document.getElementById('modal-container').remove()">
+                <i class="ri-close-line"></i>
+            </button>
+        </header>
+
+        <div class="modal-body">
+            <p class="mb-4">${model.description}</p>
+
+            <div class="card-grid">
+                <div class="panel panel-muted">
+                    <h3>${model.myVersionLabel}</h3>
+                    <div class="message-meta mb-2">
+                        <span>${model.authorLabel}:</span>
+                        <strong>${model.myAuthor}</strong>
+                    </div>
+                    <div class="panel panel-cozy bg-opacity-10 bg-white">
+                        ${model.myContent}
+                    </div>
+                    <form hx-post="${model.resolveUrl}" hx-vals='{"strategy": "mine"}' hx-target="closest .modal-overlay" hx-swap="delete" class="mt-4">
+                        <button type="submit" class="button-link w-full">${model.keepMineLabel}</button>
+                    </form>
+                </div>
+
+                <div class="panel panel-muted border-accent">
+                    <h3>${model.serverVersionLabel}</h3>
+                    <div class="message-meta mb-2">
+                        <span>${model.authorLabel}:</span>
+                        <strong>${model.serverAuthor}</strong>
+                    </div>
+                    <div class="panel panel-cozy bg-opacity-10 bg-white">
+                        ${model.serverContent}
+                    </div>
+                    <form hx-post="${model.resolveUrl}" hx-vals='{"strategy": "server"}' hx-target="closest .modal-overlay" hx-swap="delete" class="mt-4">
+                        <button type="submit" class="button-link button-secondary w-full">${model.acceptServerLabel}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <footer class="modal-footer button-row">
+            <button class="button-link button-muted" onclick="document.getElementById('modal-container').remove()">${model.decideLaterLabel}</button>
+        </footer>
+    </div>
+</div>

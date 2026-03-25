@@ -1,0 +1,40 @@
+@import io.github.rygel.outerstellar.platform.web.SettingsPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<SettingsPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+    <div style="max-width: 700px; margin: 2rem auto;">
+        <h1 style="margin-bottom: 1.5rem;">${model.data.title}</h1>
+
+        <%-- Tab bar --%>
+        <nav style="display: flex; gap: 0; border-bottom: 2px solid var(--color-border, #333); margin-bottom: 1.5rem;">
+            @for(tab in model.data.tabs)
+                <a href="${tab.url}"
+                   hx-get="${tab.url}"
+                   hx-target="body"
+                   hx-push-url="true"
+                   style="padding: 0.6rem 1.2rem; text-decoration: none;
+                          color: ${if (tab.active) "var(--color-primary, #3b82f6)" else "var(--color-text-muted, #888)"};
+                          border-bottom: 2px solid ${if (tab.active) "var(--color-primary, #3b82f6)" else "transparent"};
+                          margin-bottom: -2px; font-weight: ${if (tab.active) "600" else "400"};">
+                    ${tab.label}
+                </a>
+            @endfor
+        </nav>
+
+        <%-- Tab content panel --%>
+        <section class="panel" id="settings-content">
+            @if(model.data.activeTab == "profile")
+                <p>Visit <a href="/auth/profile">your profile page</a> to update your personal information.</p>
+            @elseif(model.data.activeTab == "password")
+                <p>Visit <a href="/auth/change-password">change password</a> to update your credentials.</p>
+            @elseif(model.data.activeTab == "api-keys")
+                <p>Visit <a href="/auth/api-keys">API keys</a> to manage your programmatic access tokens.</p>
+            @elseif(model.data.activeTab == "notifications")
+                <p>Visit <a href="/notifications">notifications</a> to view and manage your alerts.</p>
+            @elseif(model.data.activeTab == "appearance")
+                <p>Use the sidebar selectors to change your theme, language, and layout preferences.</p>
+            @endif
+        </section>
+    </div>
+`)

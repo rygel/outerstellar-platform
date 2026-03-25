@@ -1,0 +1,128 @@
+@import io.github.rygel.stellar.web.CommunitySettingsPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<CommunitySettingsPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-[var(--text)]">Settings for r/${model.data.community.name}</h1>
+        <a href="/r/${model.data.community.name}"
+           class="px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-hover)] rounded-full">
+            Back to community
+        </a>
+    </div>
+
+    <%-- Community Settings Form --%>
+    <div class="p-6 mb-6 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+        <h2 class="text-lg font-semibold text-[var(--text)] mb-4">Community Details</h2>
+        <form method="post" action="/r/${model.data.community.name}/settings">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-[var(--text)] mb-1">Display Name</label>
+                <input type="text" name="displayName" value="${model.data.community.displayName}" disabled
+                       class="w-full p-3 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text-muted)] text-sm cursor-not-allowed">
+                <p class="text-xs text-[var(--text-muted)] mt-1">Display name cannot be changed after creation.</p>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-[var(--text)] mb-1">Description</label>
+                <input type="text" name="description" value="${model.data.community.description}" maxlength="500"
+                       class="w-full p-3 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] text-sm">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-[var(--text)] mb-1">Sidebar</label>
+                <textarea name="sidebar" rows="6"
+                          class="w-full p-3 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] resize-y text-sm">${model.data.community.sidebar}</textarea>
+            </div>
+
+            <div class="mb-4 flex items-center gap-2">
+                @if(model.data.community.isNsfw)
+                    <input type="checkbox" name="isNsfw" id="isNsfw" checked
+                           class="w-4 h-4 rounded border-[var(--border)]">
+                @else
+                    <input type="checkbox" name="isNsfw" id="isNsfw"
+                           class="w-4 h-4 rounded border-[var(--border)]">
+                @endif
+                <label for="isNsfw" class="text-sm font-medium text-[var(--text)]">NSFW (18+ content)</label>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="px-6 py-2 bg-[var(--accent)] text-white rounded-full text-sm font-medium hover:opacity-90">
+                    Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <%-- Rules Section --%>
+    <div class="p-6 mb-6 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+        <h2 class="text-lg font-semibold text-[var(--text)] mb-4">Community Rules</h2>
+
+        @if(model.data.rules.isEmpty())
+            <p class="text-sm text-[var(--text-muted)] mb-4">No rules defined yet.</p>
+        @else
+            <div class="space-y-3 mb-4">
+                @for(rule in model.data.rules)
+                    <div class="flex items-start justify-between p-3 rounded border border-[var(--border)] bg-[var(--surface-hover)]">
+                        <div>
+                            <p class="text-sm font-medium text-[var(--text)]">${rule.position + 1}. ${rule.title}</p>
+                            @if(rule.description.isNotEmpty())
+                                <p class="text-xs text-[var(--text-muted)] mt-1">${rule.description}</p>
+                            @endif
+                        </div>
+                        <form method="post" action="/r/${model.data.community.name}/rules/${rule.id.toString()}/delete"
+                              class="ml-2 flex-shrink-0">
+                            <button type="submit"
+                                    class="px-3 py-1 text-xs text-red-500 hover:bg-red-500/10 rounded">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                @endfor
+            </div>
+        @endif
+
+        <%-- Add Rule Form --%>
+        <form method="post" action="/r/${model.data.community.name}/rules"
+              class="p-4 rounded border border-dashed border-[var(--border)]">
+            <h3 class="text-sm font-medium text-[var(--text)] mb-3">Add New Rule</h3>
+            <div class="mb-3">
+                <input type="text" name="title" required placeholder="Rule title" maxlength="200"
+                       class="w-full p-2 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] text-sm">
+            </div>
+            <div class="mb-3">
+                <textarea name="description" rows="2" placeholder="Rule description (optional)"
+                          class="w-full p-2 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] resize-y text-sm"></textarea>
+            </div>
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="px-4 py-2 bg-[var(--accent)] text-white rounded-full text-xs font-medium hover:opacity-90">
+                    Add Rule
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <%-- Moderators Section --%>
+    <div class="p-6 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+        <h2 class="text-lg font-semibold text-[var(--text)] mb-4">Moderators</h2>
+        @if(model.data.moderators.isEmpty())
+            <p class="text-sm text-[var(--text-muted)]">No moderators found.</p>
+        @else
+            <div class="space-y-2">
+                @for(mod in model.data.moderators)
+                    <div class="flex items-center justify-between p-3 rounded border border-[var(--border)]">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-medium text-[var(--text)]">${mod.username}</span>
+                            <span class="px-2 py-0.5 text-xs rounded-full bg-[var(--accent)]/10 text-[var(--accent)]">
+                                ${mod.role}
+                            </span>
+                        </div>
+                    </div>
+                @endfor
+            </div>
+        @endif
+    </div>
+</div>
+`)

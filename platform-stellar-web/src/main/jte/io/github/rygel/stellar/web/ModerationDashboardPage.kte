@@ -1,0 +1,85 @@
+@import io.github.rygel.stellar.web.ModerationDashboardPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<ModerationDashboardPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-[var(--text)]">Mod Tools - r/${model.data.communityName}</h1>
+        <a href="/r/${model.data.communityName}"
+           class="text-sm text-[var(--accent)] hover:underline">Back to community</a>
+    </div>
+
+    <%-- Quick stats --%>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <a href="/r/${model.data.communityName}/mod/reports"
+           class="p-6 bg-[var(--surface)] rounded-lg border border-[var(--border)] hover:border-[var(--accent)] transition-colors">
+            <div class="text-sm text-[var(--text-muted)] mb-1">Pending Reports</div>
+            <div class="text-3xl font-bold text-[var(--text)]">${model.data.pendingReportCount}</div>
+            @if(model.data.pendingReportCount > 0)
+                <div class="text-sm text-orange-500 mt-1">Needs attention</div>
+            @else
+                <div class="text-sm text-green-500 mt-1">All clear</div>
+            @endif
+        </a>
+
+        <div class="p-6 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+            <div class="text-sm text-[var(--text-muted)] mb-1">Moderators</div>
+            <div class="text-3xl font-bold text-[var(--text)]">${model.data.moderators.size}</div>
+        </div>
+    </div>
+
+    <%-- Quick actions --%>
+    <div class="p-6 bg-[var(--surface)] rounded-lg border border-[var(--border)] mb-6">
+        <h2 class="text-lg font-semibold text-[var(--text)] mb-4">Quick Actions</h2>
+        <div class="flex flex-wrap gap-3">
+            <a href="/r/${model.data.communityName}/mod/reports"
+               class="px-4 py-2 bg-[var(--accent)] text-white rounded-full text-sm font-medium hover:opacity-90">
+                Review Reports
+            </a>
+        </div>
+    </div>
+
+    <%-- Ban user form --%>
+    <div class="p-6 bg-[var(--surface)] rounded-lg border border-[var(--border)] mb-6">
+        <h2 class="text-lg font-semibold text-[var(--text)] mb-4">Ban User</h2>
+        <form method="post" action="/r/${model.data.communityName}/mod/ban" class="flex flex-col gap-3">
+            <div>
+                <label class="block text-sm font-medium text-[var(--text)] mb-1">User ID</label>
+                <input type="text" name="userId" required
+                       placeholder="User UUID"
+                       class="w-full p-2 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[var(--text)] mb-1">Reason (optional)</label>
+                <input type="text" name="reason"
+                       placeholder="Reason for ban"
+                       class="w-full p-2 rounded border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] text-sm">
+            </div>
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="px-4 py-2 bg-red-600 text-white rounded-full text-sm font-medium hover:opacity-90">
+                    Ban User
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <%-- Moderator list --%>
+    <div class="p-6 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+        <h2 class="text-lg font-semibold text-[var(--text)] mb-4">Moderators</h2>
+        @if(model.data.moderators.isEmpty())
+            <p class="text-sm text-[var(--text-muted)]">No moderators found.</p>
+        @else
+            <ul class="divide-y divide-[var(--border)]">
+                @for(mod in model.data.moderators)
+                    <li class="py-3 flex items-center justify-between">
+                        <span class="text-sm text-[var(--text)]">${mod.username}</span>
+                        <span class="text-xs px-2 py-1 rounded-full bg-[var(--surface-hover)] text-[var(--text-muted)]">${mod.role}</span>
+                    </li>
+                @endfor
+            </ul>
+        @endif
+    </div>
+</div>
+`)

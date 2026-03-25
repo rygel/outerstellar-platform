@@ -129,6 +129,7 @@ data class CommunityDetailViewModel(
     val sidebar: String,
     val subscriberCount: Long,
     val postCount: Long,
+    val isNsfw: Boolean = false,
 )
 
 data class VoteButtonsFragment(val targetId: UUID, val targetType: String, val score: Int, val userVote: Int?) :
@@ -195,3 +196,44 @@ object TimeFormatting {
             isSubscribed = isSubscribed,
         )
 }
+
+// Community Settings & Error ViewModels
+
+data class CommunitySettingsPage(
+    val community: CommunityDetailViewModel,
+    val rules: List<CommunityRuleViewModel>,
+    val moderators: List<ModeratorViewModel>,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/stellar/web/CommunitySettingsPage"
+}
+
+data class CommunityRuleViewModel(val id: UUID, val title: String, val description: String, val position: Int)
+
+data class ModeratorViewModel(val userId: UUID, val username: String, val role: String)
+
+data class ErrorPage(val code: Int, val title: String, val message: String) : ViewModel {
+    override fun template(): String = "io/github/rygel/stellar/web/ErrorPage"
+}
+
+// Moderation ViewModels
+
+data class ModerationDashboardPage(
+    val communityName: String,
+    val pendingReportCount: Int,
+    val moderators: List<ModeratorViewModel>,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/stellar/web/ModerationDashboardPage"
+}
+
+data class ReportQueuePage(val communityName: String, val reports: List<ReportViewModel>) : ViewModel {
+    override fun template(): String = "io/github/rygel/stellar/web/ReportQueuePage"
+}
+
+data class ReportViewModel(
+    val id: UUID,
+    val reporterUsername: String,
+    val targetId: UUID,
+    val targetType: String,
+    val reason: String,
+    val createdAt: String,
+)

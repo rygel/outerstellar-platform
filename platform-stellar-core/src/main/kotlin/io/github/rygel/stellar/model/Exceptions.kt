@@ -15,3 +15,5 @@ class DuplicateCommunityException(name: String) : StellarException("Community '$
 class NotModeratorException(community: String) : StellarException("Not a moderator of '$community'")
 
 class BannedFromCommunityException(community: String) : StellarException("Banned from '$community'")
+
+class ReportNotFoundException(id: UUID) : StellarException("Report $id not found")

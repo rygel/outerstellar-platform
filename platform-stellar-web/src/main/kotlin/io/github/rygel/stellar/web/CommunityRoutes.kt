@@ -2,11 +2,15 @@ package io.github.rygel.stellar.web
 
 import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.webContext
+import io.github.rygel.stellar.model.CommunityRule
 import io.github.rygel.stellar.model.PostSort
 import io.github.rygel.stellar.model.TimeRange
+import io.github.rygel.stellar.persistence.CommunityRuleRepository
 import io.github.rygel.stellar.service.CommunityService
+import io.github.rygel.stellar.service.ModerationService
 import io.github.rygel.stellar.service.PostService
 import io.github.rygel.stellar.web.TimeFormatting.toCardViewModel
+import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -26,9 +30,12 @@ import org.koin.core.component.inject
 class CommunityRoutes(private val context: PluginContext) : KoinComponent {
     private val communityService: CommunityService by inject()
     private val postService: PostService by inject()
+    private val moderationService: ModerationService by inject()
+    private val ruleRepo: CommunityRuleRepository by inject()
     private val renderer = context.renderer
 
     private val communityNamePath = Path.string().of("name")
+    private val ruleIdPath = Path.string().of("ruleId")
     private val sortLens = Query.string().defaulted("sort", "hot")
     private val timeLens = Query.string().optional("t")
     private val limitLens = Query.int().defaulted("limit", 25)
@@ -142,6 +149,148 @@ class CommunityRoutes(private val context: PluginContext) : KoinComponent {
 
                     communityService.createCommunity(name, displayName, description, userId)
                     Response(Status.SEE_OTHER).header("Location", "/r/$name")
+                },
+            // GET /r/{name}/settings — community settings form (mod only)
+            "/r" / communityNamePath / "settings" meta
+                {
+                    summary = "Community settings"
+                } bindContract
+                GET to
+                { name: String, _ ->
+                    { request: Request ->
+                        val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                        val community = communityService.getCommunity(name)
+
+                        if (!moderationService.isModerator(userId, community.id)) {
+                            return@to renderPage(
+                                request,
+                                "Forbidden",
+                                "/r/$name",
+                                ErrorPage(
+                                    code = 403,
+                                    title = "Forbidden",
+                                    message = "You must be a moderator to access community settings.",
+                                ),
+                            )
+                        }
+
+                        val rules = ruleRepo.listByCommunity(community.id)
+                        val moderators = moderationService.listModerators(community.id)
+                        val userRepo = context.userRepository
+
+                        val page =
+                            CommunitySettingsPage(
+                                community =
+                                    CommunityDetailViewModel(
+                                        id = community.id,
+                                        name = community.name,
+                                        displayName = community.displayName,
+                                        description = community.description,
+                                        sidebar = community.sidebar,
+                                        subscriberCount = community.subscriberCount,
+                                        postCount = 0,
+                                        isNsfw = community.isNsfw,
+                                    ),
+                                rules =
+                                    rules.map {
+                                        CommunityRuleViewModel(
+                                            id = it.id,
+                                            title = it.title,
+                                            description = it.description,
+                                            position = it.position,
+                                        )
+                                    },
+                                moderators =
+                                    moderators.map { member ->
+                                        val user = userRepo.findById(member.userId)
+                                        ModeratorViewModel(
+                                            userId = member.userId,
+                                            username = user?.username ?: member.userId.toString(),
+                                            role = member.role.name,
+                                        )
+                                    },
+                            )
+                        renderPage(request, "Settings - r/$name", "/r/$name", page)
+                    }
+                },
+            // POST /r/{name}/settings — update community settings
+            "/r" / communityNamePath / "settings" meta
+                {
+                    summary = "Update community settings"
+                } bindContract
+                POST to
+                { name: String, _ ->
+                    { request: Request ->
+                        val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                        val community = communityService.getCommunity(name)
+
+                        if (!moderationService.isModerator(userId, community.id)) {
+                            return@to Response(Status.FORBIDDEN)
+                        }
+
+                        val description = request.form("description") ?: community.description
+                        val sidebar = request.form("sidebar") ?: community.sidebar
+                        val isNsfw = request.form("isNsfw") != null
+
+                        val updated =
+                            community.copy(description = description.trim(), sidebar = sidebar.trim(), isNsfw = isNsfw)
+                        communityService.updateCommunity(updated)
+
+                        Response(Status.SEE_OTHER).header("Location", "/r/$name/settings")
+                    }
+                },
+            // POST /r/{name}/rules — add rule
+            "/r" / communityNamePath / "rules" meta
+                {
+                    summary = "Add community rule"
+                } bindContract
+                POST to
+                { name: String, _ ->
+                    { request: Request ->
+                        val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                        val community = communityService.getCommunity(name)
+
+                        if (!moderationService.isModerator(userId, community.id)) {
+                            return@to Response(Status.FORBIDDEN)
+                        }
+
+                        val title = request.form("title") ?: return@to Response(Status.BAD_REQUEST)
+                        val ruleDescription = request.form("description") ?: ""
+                        val existingRules = ruleRepo.listByCommunity(community.id)
+                        val nextPosition = if (existingRules.isEmpty()) 0 else existingRules.maxOf { it.position } + 1
+
+                        val rule =
+                            CommunityRule(
+                                id = UUID.randomUUID(),
+                                communityId = community.id,
+                                title = title.trim(),
+                                description = ruleDescription.trim(),
+                                position = nextPosition,
+                            )
+                        ruleRepo.create(rule)
+
+                        Response(Status.SEE_OTHER).header("Location", "/r/$name/settings")
+                    }
+                },
+            // POST /r/{name}/rules/{ruleId}/delete — delete rule
+            "/r" / communityNamePath / "rules" / ruleIdPath / "delete" meta
+                {
+                    summary = "Delete community rule"
+                } bindContract
+                POST to
+                { name: String, _, ruleId: String, _ ->
+                    { request: Request ->
+                        val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                        val community = communityService.getCommunity(name)
+
+                        if (!moderationService.isModerator(userId, community.id)) {
+                            return@to Response(Status.FORBIDDEN)
+                        }
+
+                        ruleRepo.delete(UUID.fromString(ruleId))
+
+                        Response(Status.SEE_OTHER).header("Location", "/r/$name/settings")
+                    }
                 },
         )
 

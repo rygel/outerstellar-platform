@@ -1,0 +1,78 @@
+@import io.github.rygel.outerstellar.platform.web.MessageListViewModel
+@param model: MessageListViewModel
+
+<div id="message-list-container" class="message-list" hx-get="${model.refreshUrl}" hx-trigger="refresh from:body" hx-swap="outerHTML">
+    @if(model.messages.isEmpty())
+        <p class="panel panel-muted text-center py-8 opacity-60">${model.emptyMessage}</p>
+    @else
+        @for(msg in model.messages)
+            <article class="panel message-item @if(msg.dirty) border-accent @endif">
+                <header class="message-header">
+                    <div class="flex items-center gap-4">
+                        <span class="message-author">${msg.author}</span>
+                        @if(msg.dirty)
+                            <span class="status-badge" style="color: var(--color-accent);">
+                                <i class="ri-refresh-line"></i> ${model.localBadge}
+                            </span>
+                        @endif
+                        @if(msg.hasConflict)
+                            <button class="status-badge panel-danger"
+                                    hx-get="/messages/resolve/${msg.syncId}"
+                                    hx-target="body"
+                                    hx-swap="beforeend"
+                                    style="border: none; cursor: pointer;">
+                                <i class="ri-error-warning-line"></i> ${model.conflictBadge}
+                            </button>
+                        @endif
+                    </div>
+                    <time class="message-time">${msg.updatedAtLabel()}</time>
+                </header>
+                <div class="message-content">
+                    ${msg.content}
+                </div>
+                <footer class="message-footer">
+                    <div class="message-meta">
+                        <span>ID: ${msg.syncId.take(8)}</span>
+                        <span>Version ${msg.version}</span>
+                    </div>
+                    <div class="button-row">
+                        @if(model.isTrash)
+                            <form hx-post="/messages/restore/${msg.syncId}" hx-target="#message-list-container" hx-swap="outerHTML">
+                                <button type="submit" class="button-icon" title="${model.restoreTitle}">
+                                    <i class="ri-restart-line"></i>
+                                </button>
+                            </form>
+                        @else
+                            <button class="button-icon" title="${model.editTitle}">
+                                <i class="ri-edit-line"></i>
+                            </button>
+                            <button class="button-icon text-danger" title="${model.deleteTitle}"
+                                    hx-delete="/messages/${msg.syncId}"
+                                    hx-confirm="${model.deleteConfirm}"
+                                    hx-target="closest article"
+                                    hx-swap="outerHTML">
+                                <i class="ri-delete-bin-line"></i>
+                            </button>
+                        @endif
+                    </div>
+                </footer>
+            </article>
+        @endfor
+
+        !{ val pagination = model.pagination }
+        @if(pagination != null && pagination.totalPages > 1)
+            @template.io.github.rygel.outerstellar.platform.web.components.Pagination(
+                hasPrevious = pagination.hasPrevious,
+                hasNext = pagination.hasNext,
+                previousUrl = pagination.previousUrl ?: "",
+                nextUrl = pagination.nextUrl ?: "",
+                currentPage = pagination.currentPage,
+                hxTarget = "#message-list-container",
+                pages = pagination.pages,
+                totalPages = pagination.totalPages,
+                showingPageLabel = model.showingPageLabel,
+                ofLabel = model.ofLabel,
+            )
+        @endif
+    @endif
+</div>

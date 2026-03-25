@@ -44,6 +44,12 @@ class CommunityService(
         return community
     }
 
+    fun updateCommunity(community: Community): Community {
+        val updated = communityRepo.update(community)
+        logger.info("Community '{}' updated", community.name)
+        return updated
+    }
+
     fun listPopular(limit: Int = 25, offset: Int = 0): List<CommunitySummary> = communityRepo.listPopular(limit, offset)
 
     fun search(query: String, limit: Int = 25, offset: Int = 0): List<CommunitySummary> =

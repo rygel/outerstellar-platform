@@ -1,0 +1,10 @@
+@import io.github.rygel.outerstellar.platform.web.ShellView
+@import gg.jte.Content
+@param shell: ShellView
+@param content: Content
+
+@if(shell.layoutStyle == "topbar")
+    @template.io.github.rygel.outerstellar.platform.web.layouts.TopbarLayout(shell = shell, content = content)
+@else
+    @template.io.github.rygel.outerstellar.platform.web.layouts.SidebarLayout(shell = shell, content = content)
+@endif

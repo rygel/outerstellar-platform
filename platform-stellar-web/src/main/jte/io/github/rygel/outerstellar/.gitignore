@@ -1,4 +1,0 @@
-# Copied from platform-web during build (antrun plugin)
-# Do not commit these — they belong to the platform module
-*
-!.gitignore
