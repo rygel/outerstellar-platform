@@ -1,0 +1,3 @@
+# Copied from platform-web during build (antrun plugin)
+*
+!.gitignore
