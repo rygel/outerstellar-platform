@@ -1,16 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
-import io.github.rygel.outerstellar.platform.service.ContactService
-import io.github.rygel.outerstellar.platform.service.MessageService
-import io.mockk.mockk
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,6 +10,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
+import org.http4k.core.Method.OPTIONS
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
@@ -50,25 +42,12 @@ import org.junit.jupiter.api.BeforeEach
 class SessionSecurityIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var userRepository: JooqUserRepository
     private lateinit var regularUser: User
     private lateinit var adminUser: User
     private lateinit var disabledUser: User
-    private lateinit var encoder: BCryptPasswordEncoder
 
     @BeforeEach
     fun setupTest() {
-        encoder = BCryptPasswordEncoder(logRounds = 4)
-        userRepository = JooqUserRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService = mockk<ContactService>(relaxed = true)
-        val securityService = SecurityService(userRepository, encoder)
-        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
-
         regularUser =
             User(
                 id = UUID.randomUUID(),
@@ -98,19 +77,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
         userRepository.save(adminUser)
         userRepository.save(disabledUser)
 
-        app =
-            app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                )
-                .http!!
+        app = buildApp()
     }
 
     @AfterEach fun teardown() = cleanup()
@@ -257,7 +224,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
         // The important thing is /api/ paths skip it
         val apiResponse =
             app(
-                Request(org.http4k.core.Method.POST, "/api/v1/auth/login")
+                Request(POST, "/api/v1/auth/login")
                     .header("content-type", "application/json")
                     .body("""{"username":"x","password":"y"}""")
             )
@@ -272,7 +239,7 @@ class SessionSecurityIntegrationTest : H2WebTest() {
     fun `OPTIONS preflight returns CORS headers and 204`() {
         val response =
             app(
-                Request(org.http4k.core.Method.OPTIONS, "/api/v1/auth/login")
+                Request(OPTIONS, "/api/v1/auth/login")
                     .header("Origin", "https://example.com")
                     .header("Access-Control-Request-Method", "POST")
             )

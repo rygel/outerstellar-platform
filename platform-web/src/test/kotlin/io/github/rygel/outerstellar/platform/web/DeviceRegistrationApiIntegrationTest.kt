@@ -1,17 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
-import io.github.rygel.outerstellar.platform.service.ContactService
-import io.github.rygel.outerstellar.platform.service.MessageService
-import io.mockk.mockk
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,17 +39,7 @@ class DeviceRegistrationApiIntegrationTest : H2WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
-        val userRepository = JooqUserRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService = mockk<ContactService>(relaxed = true)
-        val securityService =
-            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
-        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
+        val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
         deviceTokenRepository = InMemoryDeviceTokenRepository()
 
         testUser =
@@ -72,20 +53,7 @@ class DeviceRegistrationApiIntegrationTest : H2WebTest() {
         userRepository.save(testUser)
         sessionToken = securityService.createSession(testUser.id)
 
-        app =
-            app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                    deviceTokenRepository,
-                )
-                .http!!
+        app = buildApp(securityService = securityService, deviceTokenRepository = deviceTokenRepository)
     }
 
     @AfterEach

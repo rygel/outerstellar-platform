@@ -1,17 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
-import io.github.rygel.outerstellar.platform.persistence.JooqApiKeyRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqPasswordResetRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
@@ -41,8 +32,6 @@ import org.junit.jupiter.api.BeforeEach
 class UserManagementWebUiIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var userRepository: JooqUserRepository
-    private lateinit var encoder: BCryptPasswordEncoder
     private lateinit var securityService: SecurityService
 
     private val loginLens = Body.auto<LoginRequest>().toLens()
@@ -51,43 +40,17 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        userRepository = JooqUserRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val transactionManager = StubTransactionManager()
-        val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, transactionManager, cache)
-        encoder = BCryptPasswordEncoder(logRounds = 4)
-        val auditRepository = JooqAuditRepository(testDsl)
-        val resetRepository = JooqPasswordResetRepository(testDsl)
-        val apiKeyRepository = JooqApiKeyRepository(testDsl)
         securityService =
             SecurityService(
                 userRepository,
                 encoder,
-                auditRepository,
-                resetRepository,
-                apiKeyRepository,
-                sessionRepository = JooqSessionRepository(testDsl),
+                auditRepository = auditRepository,
+                resetRepository = passwordResetRepository,
+                apiKeyRepository = apiKeyRepository,
+                sessionRepository = sessionRepository,
             )
-        val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
-        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
-        app =
-            app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                )
-                .http!!
+        app = buildApp(securityService = securityService)
     }
 
     @AfterEach fun teardown() = cleanup()
