@@ -1,8 +1,26 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.AppConfig
+import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.infra.createDataSource
+import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.infra.migrate
+import io.github.rygel.outerstellar.platform.persistence.JooqApiKeyRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqContactRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqNotificationRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqOAuthRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqPasswordResetRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
+import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
+import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.service.ContactService
+import io.github.rygel.outerstellar.platform.service.MessageService
+import io.github.rygel.outerstellar.platform.service.NotificationService
 import javax.sql.DataSource
+import org.http4k.core.HttpHandler
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
@@ -29,7 +47,7 @@ abstract class H2WebTest {
         }
 
         val testConfig =
-            io.github.rygel.outerstellar.platform.AppConfig(
+            AppConfig(
                 port = 0,
                 jdbcUrl = jdbcUrl,
                 jdbcUser = jdbcUser,
@@ -79,6 +97,63 @@ abstract class H2WebTest {
                 testDsl.execute("TRUNCATE TABLE PLT_NOTIFICATIONS")
                 testDsl.execute("SET REFERENTIAL_INTEGRITY TRUE")
             }
+        }
+
+        // --- Shared repositories (lazy, created once per JVM) ---
+
+        val encoder by lazy { BCryptPasswordEncoder(logRounds = 4) }
+        val userRepository by lazy { JooqUserRepository(testDsl) }
+        val messageRepository by lazy { JooqMessageRepository(testDsl) }
+        val contactRepository by lazy { JooqContactRepository(testDsl) }
+        val sessionRepository by lazy { JooqSessionRepository(testDsl) }
+        val apiKeyRepository by lazy { JooqApiKeyRepository(testDsl) }
+        val auditRepository by lazy { JooqAuditRepository(testDsl) }
+        val notificationRepository by lazy { JooqNotificationRepository(testDsl) }
+        val passwordResetRepository by lazy { JooqPasswordResetRepository(testDsl) }
+        val oauthRepository by lazy { JooqOAuthRepository(testDsl) }
+
+        /**
+         * Builds the standard test app. Most tests should call this with no arguments. Override [config] for tests that
+         * need custom AppConfig (e.g. CSRF enabled). Override [securityService] for tests that need a custom
+         * SecurityService setup. Override [notificationService] for tests that need notification support.
+         */
+        fun buildApp(
+            config: AppConfig = testConfig,
+            securityService: SecurityService =
+                SecurityService(
+                    userRepository,
+                    encoder,
+                    sessionRepository = sessionRepository,
+                    apiKeyRepository = apiKeyRepository,
+                    resetRepository = passwordResetRepository,
+                    auditRepository = auditRepository,
+                ),
+            notificationService: NotificationService? = null,
+            deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository? = null,
+        ): HttpHandler {
+            val outbox = StubOutboxRepository()
+            val cache = StubMessageCache()
+            val txManager = StubTransactionManager()
+            val messageService = MessageService(messageRepository, outbox, txManager, cache)
+            val contactService =
+                ContactService(contactRepository, transactionManager = txManager, auditRepository = auditRepository)
+            val pageFactory =
+                WebPageFactory(messageRepository, messageService, contactService, securityService, notificationService)
+
+            return app(
+                    messageService,
+                    contactService,
+                    outbox,
+                    cache,
+                    createRenderer(),
+                    pageFactory,
+                    config,
+                    securityService,
+                    userRepository,
+                    deviceTokenRepository = deviceTokenRepository,
+                    notificationService = notificationService,
+                )
+                .http!!
         }
     }
 }

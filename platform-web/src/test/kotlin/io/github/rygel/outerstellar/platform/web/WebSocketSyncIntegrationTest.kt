@@ -1,7 +1,5 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import io.mockk.mockk
@@ -18,14 +16,11 @@ import org.junit.jupiter.api.BeforeEach
 
 class WebSocketSyncIntegrationTest : H2WebTest() {
 
-    private lateinit var userRepository: JooqUserRepository
     private lateinit var testUser: User
     private lateinit var syncWebSocket: SyncWebSocket
 
     @BeforeEach
     fun setupTest() {
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
-        userRepository = JooqUserRepository(testDsl)
         testUser =
             User(
                 id = UUID.randomUUID(),

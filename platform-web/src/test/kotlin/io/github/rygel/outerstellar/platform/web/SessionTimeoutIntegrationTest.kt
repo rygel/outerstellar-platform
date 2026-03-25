@@ -1,18 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_USERS
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
-import io.github.rygel.outerstellar.platform.service.ContactService
-import io.github.rygel.outerstellar.platform.service.MessageService
-import io.mockk.mockk
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
@@ -40,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach
 class SessionTimeoutIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var userRepository: JooqUserRepository
     private lateinit var activeUser: User
     private lateinit var expiredUser: User
     private lateinit var activeToken: String
@@ -49,14 +39,20 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
-        userRepository = JooqUserRepository(testDsl)
-        securityService = createSecurityService(encoder)
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
 
         // User with recent activity (1 minute ago)
-        activeUser = createTestUser(encoder, "activeuser", "active@test.com")
+        activeUser = createTestUser("activeuser", "active@test.com")
         // User with expired session (activity > 30 minutes ago)
-        expiredUser = createTestUser(encoder, "expireduser", "expired@test.com")
+        expiredUser = createTestUser("expireduser", "expired@test.com")
 
         userRepository.save(activeUser)
         userRepository.save(expiredUser)
@@ -73,13 +69,10 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
 
         configureActivityTimestamps()
 
-        app = buildTestApp()
+        app = buildApp(securityService = securityService)
     }
 
-    private fun createSecurityService(encoder: BCryptPasswordEncoder): SecurityService =
-        SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
-
-    private fun createTestUser(encoder: BCryptPasswordEncoder, name: String, email: String): User =
+    private fun createTestUser(name: String, email: String): User =
         User(
             id = UUID.randomUUID(),
             username = name,
@@ -101,28 +94,6 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
             .set(PLT_USERS.LAST_ACTIVITY_AT, oneMinuteAgo)
             .where(PLT_USERS.ID.eq(activeUser.id))
             .execute()
-    }
-
-    private fun buildTestApp(): HttpHandler {
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService = mockk<ContactService>(relaxed = true)
-        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
-        return app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                testConfig,
-                securityService,
-                userRepository,
-            )
-            .http!!
     }
 
     @AfterEach fun teardown() = cleanup()

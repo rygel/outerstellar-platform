@@ -2,20 +2,16 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.infra.createRenderer
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.DeviceToken
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.ApnsPushNotificationService
 import io.github.rygel.outerstellar.platform.service.ConsolePushNotificationService
+import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.FcmPushNotificationService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.PushNotification
-import io.mockk.mockk
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,25 +48,29 @@ import org.junit.jupiter.api.BeforeEach
 class PushNotificationsIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var userRepository: JooqUserRepository
     private lateinit var deviceTokenRepository: InMemoryDeviceTokenRepository
     private lateinit var testUser: User
     private lateinit var sessionToken: String
 
     @BeforeEach
     fun setupTest() {
-        userRepository = JooqUserRepository(testDsl)
         deviceTokenRepository = InMemoryDeviceTokenRepository()
-        val repository = JooqMessageRepository(testDsl)
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
-        val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService = mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
+        val messageService = MessageService(messageRepository, outbox, txManager, cache)
+        val contactService =
+            ContactService(contactRepository, transactionManager = txManager, auditRepository = auditRepository)
         val securityService =
-            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
-        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        val pageFactory = WebPageFactory(messageRepository, messageService, contactService, securityService)
 
         // Create a real user to use as the authenticated caller
         testUser =

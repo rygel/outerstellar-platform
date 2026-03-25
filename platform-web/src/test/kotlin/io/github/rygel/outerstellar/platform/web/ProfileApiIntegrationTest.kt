@@ -1,21 +1,14 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.model.UpdateNotificationPrefsRequest
 import io.github.rygel.outerstellar.platform.model.UpdateProfileRequest
 import io.github.rygel.outerstellar.platform.model.UserProfileResponse
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
-import io.mockk.mockk
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach
 class ProfileApiIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var userRepository: JooqUserRepository
 
     private val registerLens = Body.auto<RegisterRequest>().toLens()
     private val loginLens = Body.auto<LoginRequest>().toLens()
@@ -51,32 +43,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
     @BeforeEach
     fun setupTest() {
         cleanup()
-        userRepository = JooqUserRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, txManager, cache)
-        val pageFactory = WebPageFactory(repository, messageService, null, null)
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
-        val securityService =
-            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
-        val contactService = mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
-
-        app =
-            app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                )
-                .http!!
+        app = buildApp()
     }
 
     @AfterEach fun teardown() = cleanup()
@@ -284,7 +251,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
 
     @Test
     fun `DELETE account allows admin deletion when another admin exists`() {
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
+        val enc = BCryptPasswordEncoder(logRounds = 4)
         val id1 = UUID.randomUUID()
         val id2 = UUID.randomUUID()
         userRepository.save(
@@ -292,7 +259,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
                 id = id1,
                 username = "admin1",
                 email = "admin1@test.com",
-                passwordHash = encoder.encode("adminpass1"),
+                passwordHash = enc.encode("adminpass1"),
                 role = UserRole.ADMIN,
             )
         )
@@ -301,7 +268,7 @@ class ProfileApiIntegrationTest : H2WebTest() {
                 id = id2,
                 username = "admin2",
                 email = "admin2@test.com",
-                passwordHash = encoder.encode("adminpass2"),
+                passwordHash = enc.encode("adminpass2"),
                 role = UserRole.ADMIN,
             )
         )
