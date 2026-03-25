@@ -1,6 +1,5 @@
 package io.github.rygel.stellar.service
 
-import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.stellar.model.Comment
 import io.github.rygel.stellar.model.CommentNotFoundException
 import io.github.rygel.stellar.model.CommentSort
@@ -8,20 +7,28 @@ import io.github.rygel.stellar.model.CommentSummary
 import io.github.rygel.stellar.model.CommentTree
 import io.github.rygel.stellar.persistence.CommentRepository
 import io.github.rygel.stellar.persistence.PostRepository
+import io.github.rygel.stellar.persistence.StellarTransactionManager
 import java.util.UUID
 import org.slf4j.LoggerFactory
 
 class CommentService(
     private val commentRepo: CommentRepository,
     private val postRepo: PostRepository,
-    private val userRepo: UserRepository? = null,
+    private val txManager: StellarTransactionManager? = null,
 ) {
     private val logger = LoggerFactory.getLogger(CommentService::class.java)
-    private val usernameCache = mutableMapOf<UUID, String>()
 
     fun getComment(id: UUID): Comment = commentRepo.findById(id) ?: throw CommentNotFoundException(id)
 
     fun createComment(postId: UUID, authorId: UUID, body: String, parentCommentId: UUID? = null): Comment {
+        val comment =
+            txManager?.inTransaction { doCreateComment(postId, authorId, body, parentCommentId) }
+                ?: doCreateComment(postId, authorId, body, parentCommentId)
+        logger.info("Comment created on post {} by user {}", postId, authorId)
+        return comment
+    }
+
+    private fun doCreateComment(postId: UUID, authorId: UUID, body: String, parentCommentId: UUID?): Comment {
         val depth =
             if (parentCommentId != null) {
                 val parent = commentRepo.findById(parentCommentId)
@@ -41,12 +48,16 @@ class CommentService(
                 )
             )
         postRepo.incrementCommentCount(postId, 1)
-        logger.info("Comment created on post {} by user {}", postId, authorId)
         return comment
     }
 
-    fun getCommentTree(postId: UUID, sort: CommentSort = CommentSort.BEST): List<CommentTree> {
-        val comments = commentRepo.listByPost(postId, sort)
+    fun getCommentTree(
+        postId: UUID,
+        sort: CommentSort = CommentSort.BEST,
+        limit: Int = 200,
+        maxDepth: Int = 10,
+    ): List<CommentTree> {
+        val comments = commentRepo.listByPost(postId, sort, limit, maxDepth)
         return buildTree(comments)
     }
 
@@ -60,7 +71,7 @@ class CommentService(
                         CommentSummary(
                             id = comment.id,
                             postId = comment.postId,
-                            authorUsername = resolveUsername(comment.authorId),
+                            authorUsername = comment.authorUsername.ifEmpty { "[deleted]" },
                             body = comment.body,
                             score = comment.score,
                             depth = comment.depth,
@@ -73,7 +84,4 @@ class CommentService(
             }
         return buildChildren(null)
     }
-
-    private fun resolveUsername(userId: UUID): String =
-        usernameCache.getOrPut(userId) { userRepo?.findById(userId)?.username ?: "[deleted]" }
 }

@@ -155,12 +155,15 @@ class ModerationServiceTest {
     @Test
     fun `removeComment sets isRemoved to true`() {
         stubModerator()
+        val postId = UUID.randomUUID()
         val commentId = UUID.randomUUID()
-        val comment = comment(id = commentId)
+        val comment = comment(id = commentId, postId = postId)
+        val post = post(id = postId, communityId = communityId)
         every { commentRepo.findById(commentId) } returns comment
+        every { postRepo.findById(postId) } returns post
         every { commentRepo.update(any()) } answers { firstArg() }
 
-        val result = service.removeComment(commentId, moderatorId, communityId)
+        val result = service.removeComment(commentId, moderatorId)
 
         assertTrue(result.isRemoved)
         verify { commentRepo.update(match { it.isRemoved }) }
@@ -168,9 +171,32 @@ class ModerationServiceTest {
 
     @Test
     fun `removeComment throws NotModeratorException when not moderator`() {
+        val postId = UUID.randomUUID()
+        val commentId = UUID.randomUUID()
+        val comment = comment(id = commentId, postId = postId)
+        val post = post(id = postId, communityId = communityId)
+        every { commentRepo.findById(commentId) } returns comment
+        every { postRepo.findById(postId) } returns post
         stubNotModerator()
 
-        assertThrows<NotModeratorException> { service.removeComment(UUID.randomUUID(), moderatorId, communityId) }
+        assertThrows<NotModeratorException> { service.removeComment(commentId, moderatorId) }
+    }
+
+    @Test
+    fun `removeComment derives communityId from post and rejects cross-community mod`() {
+        val otherCommunityId = UUID.randomUUID()
+        val postId = UUID.randomUUID()
+        val commentId = UUID.randomUUID()
+        val comment = comment(id = commentId, postId = postId)
+        val post = post(id = postId, communityId = otherCommunityId)
+        every { commentRepo.findById(commentId) } returns comment
+        every { postRepo.findById(postId) } returns post
+        // moderator is a mod of communityId but NOT of otherCommunityId
+        stubModerator(uid = moderatorId, cid = communityId)
+        stubNotModerator(uid = moderatorId, cid = otherCommunityId)
+
+        assertThrows<NotModeratorException> { service.removeComment(commentId, moderatorId) }
+        verify(exactly = 0) { commentRepo.update(any()) }
     }
 
     // --- banUser ---

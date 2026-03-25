@@ -41,11 +41,13 @@ class FlairRoutes(private val context: PluginContext) : KoinComponent {
                 GET to
                 { name: String, _ ->
                     { request: Request ->
-                        val community = communityService.getCommunity(name)
-                        val flairs =
-                            flairService.listPostFlairs(community.id) + flairService.listUserFlairs(community.id)
-                        val json = flairsToJson(flairs)
-                        Response(Status.OK).header("content-type", "application/json; charset=utf-8").body(json)
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
+                            val flairs =
+                                flairService.listPostFlairs(community.id) + flairService.listUserFlairs(community.id)
+                            val json = flairsToJson(flairs)
+                            Response(Status.OK).header("content-type", "application/json; charset=utf-8").body(json)
+                        }
                     }
                 },
             // POST /r/{name}/flairs — create a flair (mod only)
@@ -57,25 +59,29 @@ class FlairRoutes(private val context: PluginContext) : KoinComponent {
                 { name: String, _ ->
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
-                        val community = communityService.getCommunity(name)
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        if (!isModerator(userId, community.id)) {
-                            return@to Response(Status.FORBIDDEN)
-                        }
-
-                        val flairName = request.form("name") ?: return@to Response(Status.BAD_REQUEST)
-                        val color = request.form("color") ?: "#666666"
-                        val typeStr = request.form("type") ?: "POST"
-                        val type =
-                            try {
-                                FlairType.valueOf(typeStr.uppercase())
-                            } catch (_: IllegalArgumentException) {
-                                return@to Response(Status.BAD_REQUEST)
+                            if (!isModerator(userId, community.id)) {
+                                return@to Response(Status.FORBIDDEN)
                             }
 
-                        val flair = flairService.createFlair(community.id, flairName, color, type)
-                        val json = flairToJson(flair)
-                        Response(Status.CREATED).header("content-type", "application/json; charset=utf-8").body(json)
+                            val flairName = request.form("name") ?: return@to Response(Status.BAD_REQUEST)
+                            val color = request.form("color") ?: "#666666"
+                            val typeStr = request.form("type") ?: "POST"
+                            val type =
+                                try {
+                                    FlairType.valueOf(typeStr.uppercase())
+                                } catch (_: IllegalArgumentException) {
+                                    return@to Response(Status.BAD_REQUEST)
+                                }
+
+                            val flair = flairService.createFlair(community.id, flairName, color, type)
+                            val json = flairToJson(flair)
+                            Response(Status.CREATED)
+                                .header("content-type", "application/json; charset=utf-8")
+                                .body(json)
+                        }
                     }
                 },
             // POST /flairs/{id}/delete — delete a flair (mod only)
@@ -88,11 +94,7 @@ class FlairRoutes(private val context: PluginContext) : KoinComponent {
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
                         val flairId =
-                            try {
-                                UUID.fromString(id)
-                            } catch (_: IllegalArgumentException) {
-                                return@to Response(Status.BAD_REQUEST)
-                            }
+                            id.toUUIDOrNull() ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
 
                         // Look up the flair to verify ownership and mod status
                         val existingFlair = findFlairById(flairId) ?: return@to Response(Status.NOT_FOUND)
@@ -114,18 +116,15 @@ class FlairRoutes(private val context: PluginContext) : KoinComponent {
                 { name: String, _ ->
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
-                        val community = communityService.getCommunity(name)
-
                         val flairIdStr = request.form("flairId") ?: return@to Response(Status.BAD_REQUEST)
                         val flairId =
-                            try {
-                                UUID.fromString(flairIdStr)
-                            } catch (_: IllegalArgumentException) {
-                                return@to Response(Status.BAD_REQUEST)
-                            }
-
-                        flairService.setUserFlair(userId, community.id, flairId)
-                        Response(Status.OK)
+                            flairIdStr.toUUIDOrNull()
+                                ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
+                            flairService.setUserFlair(userId, community.id, flairId)
+                            Response(Status.OK)
+                        }
                     }
                 },
         )

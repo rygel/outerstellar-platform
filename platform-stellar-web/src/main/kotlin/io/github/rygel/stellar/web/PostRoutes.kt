@@ -8,7 +8,6 @@ import io.github.rygel.stellar.service.CommentService
 import io.github.rygel.stellar.service.CommunityService
 import io.github.rygel.stellar.service.PostService
 import io.github.rygel.stellar.service.StellarRateLimiter
-import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -45,25 +44,27 @@ class PostRoutes(private val context: PluginContext) : KoinComponent {
                 GET to
                 { communityName: String, _ ->
                     { request: Request ->
-                        val community = communityService.getCommunity(communityName)
-                        val page =
-                            SubmitPostPage(
-                                communityName = community.name,
-                                communityDisplayName = community.displayName,
-                                communityId = community.id,
-                            )
-                        Response(Status.OK)
-                            .header("content-type", "text/html; charset=utf-8")
-                            .body(
-                                renderer(
-                                    context.buildPage(
-                                        request,
-                                        "Submit to r/${community.name}",
-                                        "/r/${community.name}",
-                                        page,
+                        handleNotFound {
+                            val community = communityService.getCommunity(communityName)
+                            val page =
+                                SubmitPostPage(
+                                    communityName = community.name,
+                                    communityDisplayName = community.displayName,
+                                    communityId = community.id,
+                                )
+                            Response(Status.OK)
+                                .header("content-type", "text/html; charset=utf-8")
+                                .body(
+                                    renderer(
+                                        context.buildPage(
+                                            request,
+                                            "Submit to r/${community.name}",
+                                            "/r/${community.name}",
+                                            page,
+                                        )
                                     )
                                 )
-                            )
+                        }
                     }
                 },
             "/r" / communityNamePath / "posts" meta
@@ -78,8 +79,6 @@ class PostRoutes(private val context: PluginContext) : KoinComponent {
                             return@to Response(Status.TOO_MANY_REQUESTS)
                                 .body("Rate limit exceeded. Please wait before creating another post.")
                         }
-                        val community = communityService.getCommunity(communityName)
-
                         val title = request.form("title") ?: return@to Response(Status.BAD_REQUEST)
                         val body = request.form("body")
                         val url = request.form("url")
@@ -88,9 +87,11 @@ class PostRoutes(private val context: PluginContext) : KoinComponent {
                                 !url.isNullOrBlank() -> PostType.LINK
                                 else -> PostType.TEXT
                             }
-
-                        val post = postService.createPost(community.id, userId, title, body, url, postType)
-                        Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/posts/${post.id}")
+                        handleNotFound {
+                            val community = communityService.getCommunity(communityName)
+                            val post = postService.createPost(community.id, userId, title, body, url, postType)
+                            Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/posts/${post.id}")
+                        }
                     }
                 },
             "/r/{community}/posts" / postIdPath meta
@@ -101,35 +102,38 @@ class PostRoutes(private val context: PluginContext) : KoinComponent {
                 { postIdStr: String ->
                     { request: Request ->
                         val communityName = request.path("community") ?: ""
-                        val postId = UUID.fromString(postIdStr)
-                        val post = postService.getPost(postId)
-                        val sort = parseCommentSort(commentSortLens(request))
-                        val commentTree = commentService.getCommentTree(postId, sort)
+                        val postId =
+                            postIdStr.toUUIDOrNull() ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val post = postService.getPost(postId)
+                            val sort = parseCommentSort(commentSortLens(request))
+                            val commentTree = commentService.getCommentTree(postId, sort)
 
-                        val page =
-                            PostDetailPage(
-                                post =
-                                    PostDetailViewModel(
-                                        id = post.id,
-                                        communityName = communityName,
-                                        authorUsername = "",
-                                        title = post.title,
-                                        body = post.body,
-                                        url = post.url,
-                                        postType = post.postType,
-                                        score = post.score,
-                                        commentCount = post.commentCount,
-                                        userVote = null,
-                                        isLocked = post.isLocked,
-                                        timeAgo = TimeFormatting.formatTimeAgo(post.createdAt),
-                                    ),
-                                comments = commentTree,
-                                commentSort = commentSortLens(request),
-                                communityName = communityName,
-                            )
-                        Response(Status.OK)
-                            .header("content-type", "text/html; charset=utf-8")
-                            .body(renderer(context.buildPage(request, post.title, "/r/$communityName", page)))
+                            val page =
+                                PostDetailPage(
+                                    post =
+                                        PostDetailViewModel(
+                                            id = post.id,
+                                            communityName = communityName,
+                                            authorUsername = "",
+                                            title = post.title,
+                                            body = post.body,
+                                            url = post.url,
+                                            postType = post.postType,
+                                            score = post.score,
+                                            commentCount = post.commentCount,
+                                            userVote = null,
+                                            isLocked = post.isLocked,
+                                            timeAgo = TimeFormatting.formatTimeAgo(post.createdAt),
+                                        ),
+                                    comments = commentTree,
+                                    commentSort = commentSortLens(request),
+                                    communityName = communityName,
+                                )
+                            Response(Status.OK)
+                                .header("content-type", "text/html; charset=utf-8")
+                                .body(renderer(context.buildPage(request, post.title, "/r/$communityName", page)))
+                        }
                     }
                 },
             "/posts" / postIdPath / "comments" meta
@@ -144,16 +148,25 @@ class PostRoutes(private val context: PluginContext) : KoinComponent {
                             return@to Response(Status.TOO_MANY_REQUESTS)
                                 .body("Rate limit exceeded. Please wait before commenting again.")
                         }
-                        val postId = UUID.fromString(postIdStr)
+                        val postId =
+                            postIdStr.toUUIDOrNull() ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
                         val body = request.form("body") ?: return@to Response(Status.BAD_REQUEST)
                         val parentId =
-                            request.form("parentCommentId")?.takeIf { it.isNotBlank() }?.let { UUID.fromString(it) }
+                            request
+                                .form("parentCommentId")
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let {
+                                    it.toUUIDOrNull()
+                                        ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                                }
 
-                        commentService.createComment(postId, userId, body, parentId)
+                        handleNotFound {
+                            commentService.createComment(postId, userId, body, parentId)
 
-                        val post = postService.getPost(postId)
-                        val community = communityService.getCommunityById(post.communityId)
-                        Response(Status.SEE_OTHER).header("Location", "/r/${community?.name}/posts/$postId")
+                            val post = postService.getPost(postId)
+                            val community = communityService.getCommunityById(post.communityId)
+                            Response(Status.SEE_OTHER).header("Location", "/r/${community?.name}/posts/$postId")
+                        }
                     }
                 },
         )

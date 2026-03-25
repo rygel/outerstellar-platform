@@ -102,8 +102,17 @@ class JdbiCommunityRepository(private val jdbi: Jdbi) : CommunityRepository {
                 .list()
         }
 
+    /**
+     * Searches communities by name and display name. Uses prefix match for short queries (< 3 chars) which can leverage
+     * functional indexes, and contains match for longer queries.
+     *
+     * Note: For production PostgreSQL deployments, consider replacing this with full-text search (tsvector/tsquery) or
+     * pg_trgm GIN indexes for significantly better performance.
+     */
     override fun search(query: String, limit: Int, offset: Int): List<CommunitySummary> =
         jdbi.withHandle<List<CommunitySummary>, Exception> { handle ->
+            val lowerQuery = query.lowercase()
+            val likePattern = if (lowerQuery.length < 3) "$lowerQuery%" else "%$lowerQuery%"
             handle
                 .createQuery(
                     """
@@ -113,7 +122,7 @@ class JdbiCommunityRepository(private val jdbi: Jdbi) : CommunityRepository {
                 LIMIT :limit OFFSET :offset
                 """
                 )
-                .bind("q", "%${query.lowercase()}%")
+                .bind("q", likePattern)
                 .bind("limit", limit)
                 .bind("offset", offset)
                 .map { rs, _ -> mapCommunitySummary(rs) }

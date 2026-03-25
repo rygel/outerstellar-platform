@@ -7,6 +7,7 @@ import io.github.rygel.stellar.model.CommunitySummary
 import io.github.rygel.stellar.model.DuplicateCommunityException
 import io.github.rygel.stellar.persistence.CommunityMemberRepository
 import io.github.rygel.stellar.persistence.CommunityRepository
+import io.github.rygel.stellar.persistence.StellarTransactionManager
 import io.github.rygel.stellar.persistence.SubscriptionRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory
@@ -16,6 +17,7 @@ class CommunityService(
     private val subscriptionRepo: SubscriptionRepository,
     private val memberRepo: CommunityMemberRepository,
     private val cache: StellarCache? = null,
+    private val txManager: StellarTransactionManager? = null,
 ) {
     private val logger = LoggerFactory.getLogger(CommunityService::class.java)
 
@@ -29,10 +31,19 @@ class CommunityService(
             throw DuplicateCommunityException(normalized)
         }
         val community =
+            txManager?.inTransaction { doCreateCommunity(normalized, displayName, description, creatorId) }
+                ?: doCreateCommunity(normalized, displayName, description, creatorId)
+        cache?.invalidateByPrefix("communities:popular:")
+        logger.info("Community '{}' created by user {}", normalized, creatorId)
+        return community
+    }
+
+    private fun doCreateCommunity(name: String, displayName: String, description: String, creatorId: UUID): Community {
+        val community =
             communityRepo.create(
                 Community(
                     id = UUID.randomUUID(),
-                    name = normalized,
+                    name = name,
                     displayName = displayName.trim(),
                     description = description.trim(),
                     creatorId = creatorId,
@@ -41,8 +52,6 @@ class CommunityService(
         memberRepo.addMember(creatorId, community.id, CommunityRole.ADMIN)
         subscriptionRepo.subscribe(creatorId, community.id)
         communityRepo.incrementSubscriberCount(community.id, 1)
-        cache?.invalidateByPrefix("communities:popular:")
-        logger.info("Community '{}' created by user {}", normalized, creatorId)
         return community
     }
 
@@ -67,19 +76,37 @@ class CommunityService(
         communityRepo.search(query, limit, offset)
 
     fun subscribe(userId: UUID, communityId: UUID) {
-        if (!subscriptionRepo.isSubscribed(userId, communityId)) {
-            subscriptionRepo.subscribe(userId, communityId)
-            communityRepo.incrementSubscriberCount(communityId, 1)
+        val subscribed =
+            txManager?.inTransaction { doSubscribe(userId, communityId) } ?: doSubscribe(userId, communityId)
+        if (subscribed) {
             cache?.invalidateByPrefix("communities:popular:")
         }
     }
 
+    private fun doSubscribe(userId: UUID, communityId: UUID): Boolean {
+        if (!subscriptionRepo.isSubscribed(userId, communityId)) {
+            subscriptionRepo.subscribe(userId, communityId)
+            communityRepo.incrementSubscriberCount(communityId, 1)
+            return true
+        }
+        return false
+    }
+
     fun unsubscribe(userId: UUID, communityId: UUID) {
+        val unsubscribed =
+            txManager?.inTransaction { doUnsubscribe(userId, communityId) } ?: doUnsubscribe(userId, communityId)
+        if (unsubscribed) {
+            cache?.invalidateByPrefix("communities:popular:")
+        }
+    }
+
+    private fun doUnsubscribe(userId: UUID, communityId: UUID): Boolean {
         if (subscriptionRepo.isSubscribed(userId, communityId)) {
             subscriptionRepo.unsubscribe(userId, communityId)
             communityRepo.incrementSubscriberCount(communityId, -1)
-            cache?.invalidateByPrefix("communities:popular:")
+            return true
         }
+        return false
     }
 
     fun isSubscribed(userId: UUID, communityId: UUID): Boolean = subscriptionRepo.isSubscribed(userId, communityId)

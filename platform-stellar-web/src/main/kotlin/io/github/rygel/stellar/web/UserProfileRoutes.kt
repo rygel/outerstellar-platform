@@ -9,7 +9,6 @@ import io.github.rygel.stellar.persistence.KarmaRepository
 import io.github.rygel.stellar.persistence.SavedItemRepository
 import io.github.rygel.stellar.service.FeedService
 import io.github.rygel.stellar.web.TimeFormatting.toCardViewModel
-import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -92,7 +91,9 @@ class UserProfileRoutes(private val context: PluginContext) : KoinComponent {
                 { request ->
                     val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
 
-                    val targetId = UUID.fromString(request.form("targetId") ?: return@to Response(Status.BAD_REQUEST))
+                    val targetId =
+                        (request.form("targetId") ?: return@to Response(Status.BAD_REQUEST)).toUUIDOrNull()
+                            ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
                     val targetType =
                         SavedItemType.valueOf(request.form("targetType") ?: return@to Response(Status.BAD_REQUEST))
 

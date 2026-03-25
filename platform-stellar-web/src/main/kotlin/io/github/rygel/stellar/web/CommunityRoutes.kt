@@ -69,38 +69,40 @@ class CommunityRoutes(private val context: PluginContext) : KoinComponent {
                 GET to
                 { name: String ->
                     { request: Request ->
-                        val community = communityService.getCommunity(name)
-                        val sort = parseSort(sortLens(request))
-                        val timeRange = parseTimeRange(timeLens(request))
-                        val limit = limitLens(request)
-                        val offset = offsetLens(request)
-                        val ctx = request.webContext
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
+                            val sort = parseSort(sortLens(request))
+                            val timeRange = parseTimeRange(timeLens(request))
+                            val limit = limitLens(request)
+                            val offset = offsetLens(request)
+                            val ctx = request.webContext
 
-                        val posts = postService.listByCommunity(community.id, sort, timeRange, limit, offset)
-                        val isSubscribed =
-                            ctx.user?.id?.let { communityService.isSubscribed(it, community.id) } ?: false
-                        val postCount = postService.countByCommunity(community.id)
+                            val posts = postService.listByCommunity(community.id, sort, timeRange, limit, offset)
+                            val isSubscribed =
+                                ctx.user?.id?.let { communityService.isSubscribed(it, community.id) } ?: false
+                            val postCount = postService.countByCommunity(community.id)
 
-                        val page =
-                            CommunityPage(
-                                community =
-                                    CommunityDetailViewModel(
-                                        id = community.id,
-                                        name = community.name,
-                                        displayName = community.displayName,
-                                        description = community.description,
-                                        sidebar = community.sidebar,
-                                        subscriberCount = community.subscriberCount,
-                                        postCount = postCount,
-                                    ),
-                                posts = posts.map { it.toCardViewModel() },
-                                sort = sortLens(request),
-                                timeRange = timeLens(request),
-                                isSubscribed = isSubscribed,
-                                hasMore = posts.size == limit,
-                                nextOffset = offset + limit,
-                            )
-                        renderPage(request, "r/${community.name}", "/r/${community.name}", page)
+                            val page =
+                                CommunityPage(
+                                    community =
+                                        CommunityDetailViewModel(
+                                            id = community.id,
+                                            name = community.name,
+                                            displayName = community.displayName,
+                                            description = community.description,
+                                            sidebar = community.sidebar,
+                                            subscriberCount = community.subscriberCount,
+                                            postCount = postCount,
+                                        ),
+                                    posts = posts.map { it.toCardViewModel() },
+                                    sort = sortLens(request),
+                                    timeRange = timeLens(request),
+                                    isSubscribed = isSubscribed,
+                                    hasMore = posts.size == limit,
+                                    nextOffset = offset + limit,
+                                )
+                            renderPage(request, "r/${community.name}", "/r/${community.name}", page)
+                        }
                     }
                 },
             "/r" / communityNamePath / "subscribe" meta
@@ -110,23 +112,27 @@ class CommunityRoutes(private val context: PluginContext) : KoinComponent {
                 POST to
                 { name: String, _ ->
                     { request: Request ->
-                        val community = communityService.getCommunity(name)
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        val isSubscribed = communityService.isSubscribed(userId, community.id)
-                        if (isSubscribed) {
-                            communityService.unsubscribe(userId, community.id)
-                        } else {
-                            communityService.subscribe(userId, community.id)
+                            val isSubscribed = communityService.isSubscribed(userId, community.id)
+                            if (isSubscribed) {
+                                communityService.unsubscribe(userId, community.id)
+                            } else {
+                                communityService.subscribe(userId, community.id)
+                            }
+
+                            val fragment =
+                                SubscribeButtonFragment(
+                                    communityId = community.id,
+                                    communityName = community.name,
+                                    isSubscribed = !isSubscribed,
+                                )
+                            Response(Status.OK)
+                                .header("content-type", "text/html; charset=utf-8")
+                                .body(renderer(fragment))
                         }
-
-                        val fragment =
-                            SubscribeButtonFragment(
-                                communityId = community.id,
-                                communityName = community.name,
-                                isSubscribed = !isSubscribed,
-                            )
-                        Response(Status.OK).header("content-type", "text/html; charset=utf-8").body(renderer(fragment))
                     }
                 },
             "/communities/create" meta
@@ -165,58 +171,60 @@ class CommunityRoutes(private val context: PluginContext) : KoinComponent {
                 { name: String, _ ->
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
-                        val community = communityService.getCommunity(name)
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        if (!moderationService.isModerator(userId, community.id)) {
-                            return@to renderPage(
-                                request,
-                                "Forbidden",
-                                "/r/$name",
-                                ErrorPage(
-                                    code = 403,
-                                    title = "Forbidden",
-                                    message = "You must be a moderator to access community settings.",
-                                ),
-                            )
-                        }
-
-                        val rules = ruleRepo.listByCommunity(community.id)
-                        val moderators = moderationService.listModerators(community.id)
-                        val userRepo = context.userRepository
-
-                        val page =
-                            CommunitySettingsPage(
-                                community =
-                                    CommunityDetailViewModel(
-                                        id = community.id,
-                                        name = community.name,
-                                        displayName = community.displayName,
-                                        description = community.description,
-                                        sidebar = community.sidebar,
-                                        subscriberCount = community.subscriberCount,
-                                        postCount = 0,
-                                        isNsfw = community.isNsfw,
+                            if (!moderationService.isModerator(userId, community.id)) {
+                                return@to renderPage(
+                                    request,
+                                    "Forbidden",
+                                    "/r/$name",
+                                    ErrorPage(
+                                        code = 403,
+                                        title = "Forbidden",
+                                        message = "You must be a moderator to access community settings.",
                                     ),
-                                rules =
-                                    rules.map {
-                                        CommunityRuleViewModel(
-                                            id = it.id,
-                                            title = it.title,
-                                            description = it.description,
-                                            position = it.position,
-                                        )
-                                    },
-                                moderators =
-                                    moderators.map { member ->
-                                        val user = userRepo.findById(member.userId)
-                                        ModeratorViewModel(
-                                            userId = member.userId,
-                                            username = user?.username ?: member.userId.toString(),
-                                            role = member.role.name,
-                                        )
-                                    },
-                            )
-                        renderPage(request, "Settings - r/$name", "/r/$name", page)
+                                )
+                            }
+
+                            val rules = ruleRepo.listByCommunity(community.id)
+                            val moderators = moderationService.listModerators(community.id)
+                            val userRepo = context.userRepository
+
+                            val page =
+                                CommunitySettingsPage(
+                                    community =
+                                        CommunityDetailViewModel(
+                                            id = community.id,
+                                            name = community.name,
+                                            displayName = community.displayName,
+                                            description = community.description,
+                                            sidebar = community.sidebar,
+                                            subscriberCount = community.subscriberCount,
+                                            postCount = 0,
+                                            isNsfw = community.isNsfw,
+                                        ),
+                                    rules =
+                                        rules.map {
+                                            CommunityRuleViewModel(
+                                                id = it.id,
+                                                title = it.title,
+                                                description = it.description,
+                                                position = it.position,
+                                            )
+                                        },
+                                    moderators =
+                                        moderators.map { member ->
+                                            val user = userRepo.findById(member.userId)
+                                            ModeratorViewModel(
+                                                userId = member.userId,
+                                                username = user?.username ?: member.userId.toString(),
+                                                role = member.role.name,
+                                            )
+                                        },
+                                )
+                            renderPage(request, "Settings - r/$name", "/r/$name", page)
+                        }
                     }
                 },
             // POST /r/{name}/settings — update community settings
@@ -228,21 +236,27 @@ class CommunityRoutes(private val context: PluginContext) : KoinComponent {
                 { name: String, _ ->
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
-                        val community = communityService.getCommunity(name)
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        if (!moderationService.isModerator(userId, community.id)) {
-                            return@to Response(Status.FORBIDDEN)
+                            if (!moderationService.isModerator(userId, community.id)) {
+                                return@to Response(Status.FORBIDDEN)
+                            }
+
+                            val description = request.form("description") ?: community.description
+                            val sidebar = request.form("sidebar") ?: community.sidebar
+                            val isNsfw = request.form("isNsfw") != null
+
+                            val updated =
+                                community.copy(
+                                    description = description.trim(),
+                                    sidebar = sidebar.trim(),
+                                    isNsfw = isNsfw,
+                                )
+                            communityService.updateCommunity(updated)
+
+                            Response(Status.SEE_OTHER).header("Location", "/r/$name/settings")
                         }
-
-                        val description = request.form("description") ?: community.description
-                        val sidebar = request.form("sidebar") ?: community.sidebar
-                        val isNsfw = request.form("isNsfw") != null
-
-                        val updated =
-                            community.copy(description = description.trim(), sidebar = sidebar.trim(), isNsfw = isNsfw)
-                        communityService.updateCommunity(updated)
-
-                        Response(Status.SEE_OTHER).header("Location", "/r/$name/settings")
                     }
                 },
             // POST /r/{name}/rules — add rule
@@ -254,28 +268,31 @@ class CommunityRoutes(private val context: PluginContext) : KoinComponent {
                 { name: String, _ ->
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
-                        val community = communityService.getCommunity(name)
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        if (!moderationService.isModerator(userId, community.id)) {
-                            return@to Response(Status.FORBIDDEN)
+                            if (!moderationService.isModerator(userId, community.id)) {
+                                return@to Response(Status.FORBIDDEN)
+                            }
+
+                            val title = request.form("title") ?: return@to Response(Status.BAD_REQUEST)
+                            val ruleDescription = request.form("description") ?: ""
+                            val existingRules = ruleRepo.listByCommunity(community.id)
+                            val nextPosition =
+                                if (existingRules.isEmpty()) 0 else existingRules.maxOf { it.position } + 1
+
+                            val rule =
+                                CommunityRule(
+                                    id = UUID.randomUUID(),
+                                    communityId = community.id,
+                                    title = title.trim(),
+                                    description = ruleDescription.trim(),
+                                    position = nextPosition,
+                                )
+                            ruleRepo.create(rule)
+
+                            Response(Status.SEE_OTHER).header("Location", "/r/$name/settings")
                         }
-
-                        val title = request.form("title") ?: return@to Response(Status.BAD_REQUEST)
-                        val ruleDescription = request.form("description") ?: ""
-                        val existingRules = ruleRepo.listByCommunity(community.id)
-                        val nextPosition = if (existingRules.isEmpty()) 0 else existingRules.maxOf { it.position } + 1
-
-                        val rule =
-                            CommunityRule(
-                                id = UUID.randomUUID(),
-                                communityId = community.id,
-                                title = title.trim(),
-                                description = ruleDescription.trim(),
-                                position = nextPosition,
-                            )
-                        ruleRepo.create(rule)
-
-                        Response(Status.SEE_OTHER).header("Location", "/r/$name/settings")
                     }
                 },
             // POST /r/{name}/rules/{ruleId}/delete — delete rule
@@ -287,15 +304,19 @@ class CommunityRoutes(private val context: PluginContext) : KoinComponent {
                 { name: String, _, ruleId: String, _ ->
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
-                        val community = communityService.getCommunity(name)
+                        val ruleUUID =
+                            ruleId.toUUIDOrNull() ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        if (!moderationService.isModerator(userId, community.id)) {
-                            return@to Response(Status.FORBIDDEN)
+                            if (!moderationService.isModerator(userId, community.id)) {
+                                return@to Response(Status.FORBIDDEN)
+                            }
+
+                            ruleRepo.delete(ruleUUID)
+
+                            Response(Status.SEE_OTHER).header("Location", "/r/$name/settings")
                         }
-
-                        ruleRepo.delete(UUID.fromString(ruleId))
-
-                        Response(Status.SEE_OTHER).header("Location", "/r/$name/settings")
                     }
                 },
         )

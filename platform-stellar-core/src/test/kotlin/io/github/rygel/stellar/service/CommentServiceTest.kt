@@ -5,6 +5,7 @@ import io.github.rygel.stellar.model.CommentNotFoundException
 import io.github.rygel.stellar.model.CommentSort
 import io.github.rygel.stellar.persistence.CommentRepository
 import io.github.rygel.stellar.persistence.PostRepository
+import io.github.rygel.stellar.persistence.StellarTransactionManager
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -21,13 +22,16 @@ class CommentServiceTest {
 
     private lateinit var commentRepo: CommentRepository
     private lateinit var postRepo: PostRepository
+    private lateinit var txManager: StellarTransactionManager
     private lateinit var service: CommentService
 
     @BeforeEach
     fun setUp() {
         commentRepo = mockk()
         postRepo = mockk()
-        service = CommentService(commentRepo, postRepo, userRepo = null)
+        txManager = mockk()
+        every { txManager.inTransaction(any<() -> Any>()) } answers { firstArg<() -> Any>().invoke() }
+        service = CommentService(commentRepo, postRepo, txManager = txManager)
     }
 
     @Test
@@ -113,7 +117,8 @@ class CommentServiceTest {
                 parentCommentId = rootId,
             )
 
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns listOf(rootComment, childComment)
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns
+            listOf(rootComment, childComment)
 
         val tree = service.getCommentTree(postId)
 
@@ -126,7 +131,7 @@ class CommentServiceTest {
     @Test
     fun `getCommentTree returns empty list when no comments`() {
         val postId = UUID.randomUUID()
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns emptyList()
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns emptyList()
 
         val tree = service.getCommentTree(postId)
 
@@ -141,7 +146,7 @@ class CommentServiceTest {
         val root1 = comment(postId = postId, authorId = authorId, body = "first", depth = 0)
         val root2 = comment(postId = postId, authorId = authorId, body = "second", depth = 0)
 
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns listOf(root1, root2)
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns listOf(root1, root2)
 
         val tree = service.getCommentTree(postId)
 

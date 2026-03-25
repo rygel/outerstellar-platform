@@ -14,12 +14,14 @@ import io.github.rygel.stellar.persistence.JdbiKarmaRepository
 import io.github.rygel.stellar.persistence.JdbiPostRepository
 import io.github.rygel.stellar.persistence.JdbiReportRepository
 import io.github.rygel.stellar.persistence.JdbiSavedItemRepository
+import io.github.rygel.stellar.persistence.JdbiStellarTransactionManager
 import io.github.rygel.stellar.persistence.JdbiSubscriptionRepository
 import io.github.rygel.stellar.persistence.JdbiVoteRepository
 import io.github.rygel.stellar.persistence.KarmaRepository
 import io.github.rygel.stellar.persistence.PostRepository
 import io.github.rygel.stellar.persistence.ReportRepository
 import io.github.rygel.stellar.persistence.SavedItemRepository
+import io.github.rygel.stellar.persistence.StellarTransactionManager
 import io.github.rygel.stellar.persistence.SubscriptionRepository
 import io.github.rygel.stellar.persistence.VoteRepository
 import org.koin.dsl.module
@@ -36,4 +38,5 @@ val stellarPersistenceModule = module {
     single<KarmaRepository> { JdbiKarmaRepository(get()) }
     single<FlairRepository> { JdbiFlairRepository(get()) }
     single<CommunityRuleRepository> { JdbiCommunityRuleRepository(get()) }
+    single<StellarTransactionManager> { JdbiStellarTransactionManager(get()) }
 }

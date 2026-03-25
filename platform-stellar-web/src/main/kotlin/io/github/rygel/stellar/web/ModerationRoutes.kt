@@ -1,10 +1,10 @@
 package io.github.rygel.stellar.web
 
+import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.webContext
 import io.github.rygel.stellar.service.CommunityService
 import io.github.rygel.stellar.service.ModerationService
-import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -23,6 +23,7 @@ import org.koin.core.component.inject
 class ModerationRoutes(private val context: PluginContext) : KoinComponent {
     private val moderationService: ModerationService by inject()
     private val communityService: CommunityService by inject()
+    private val userRepo: UserRepository by inject()
     private val renderer = context.renderer
 
     private val communityNamePath = Path.string().of("name")
@@ -41,40 +42,43 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                 { name: String, _ ->
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
-                        val community = communityService.getCommunity(name)
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        if (!moderationService.isModerator(userId, community.id)) {
-                            return@to Response(Status.FORBIDDEN)
+                            if (!moderationService.isModerator(userId, community.id)) {
+                                return@to Response(Status.FORBIDDEN)
+                            }
+
+                            val pendingReports = moderationService.getPendingReports(community.id)
+                            val moderators = moderationService.listModerators(community.id)
+
+                            val page =
+                                ModerationDashboardPage(
+                                    communityName = community.name,
+                                    pendingReportCount = pendingReports.size,
+                                    moderators =
+                                        moderators.map {
+                                            val user = userRepo.findById(it.userId)
+                                            ModeratorViewModel(
+                                                userId = it.userId,
+                                                username = user?.username ?: "[deleted]",
+                                                role = it.role.name,
+                                            )
+                                        },
+                                )
+                            renderPage(request, "Mod Tools - r/${community.name}", "/r/${community.name}", page)
                         }
-
-                        val pendingReports = moderationService.getPendingReports(community.id)
-                        val moderators = moderationService.listModerators(community.id)
-
-                        val page =
-                            ModerationDashboardPage(
-                                communityName = community.name,
-                                pendingReportCount = pendingReports.size,
-                                moderators =
-                                    moderators.map {
-                                        ModeratorViewModel(
-                                            userId = it.userId,
-                                            username = it.userId.toString(),
-                                            role = it.role.name,
-                                        )
-                                    },
-                            )
-                        renderPage(request, "Mod Tools - r/${community.name}", "/r/${community.name}", page)
                     }
                 },
-            "/r/{name}/mod" / reportIdPath / "reports" meta
+            "/r/{name}/mod/reports" meta
                 {
                     summary = "Report queue"
                 } bindContract
                 GET to
-                { _: String, _ ->
-                    { request: Request ->
-                        val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
-                        val name = request.path("name") ?: return@to Response(Status.BAD_REQUEST)
+                { request: Request ->
+                    val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                    val name = request.path("name") ?: return@to Response(Status.BAD_REQUEST)
+                    handleNotFound {
                         val community = communityService.getCommunity(name)
 
                         if (!moderationService.isModerator(userId, community.id)) {
@@ -87,9 +91,10 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                                 communityName = community.name,
                                 reports =
                                     reports.map { report ->
+                                        val reporter = userRepo.findById(report.reporterId)
                                         ReportViewModel(
                                             id = report.id,
-                                            reporterUsername = report.reporterId.toString(),
+                                            reporterUsername = reporter?.username ?: "[deleted]",
                                             targetId = report.targetId,
                                             targetType = report.targetType.name,
                                             reason = report.reason,
@@ -109,15 +114,19 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
                         val name = request.path("name") ?: return@to Response(Status.BAD_REQUEST)
-                        val community = communityService.getCommunity(name)
+                        val reportId =
+                            reportIdStr.toUUIDOrNull()
+                                ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        if (!moderationService.isModerator(userId, community.id)) {
-                            return@to Response(Status.FORBIDDEN)
+                            if (!moderationService.isModerator(userId, community.id)) {
+                                return@to Response(Status.FORBIDDEN)
+                            }
+
+                            moderationService.resolveReport(reportId, userId)
+                            Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/mod/reports")
                         }
-
-                        val reportId = UUID.fromString(reportIdStr)
-                        moderationService.resolveReport(reportId, userId)
-                        Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/mod/reports")
                     }
                 },
             "/r/{name}/mod/reports" / reportIdPath / "dismiss" meta
@@ -129,15 +138,19 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                     { request: Request ->
                         val userId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
                         val name = request.path("name") ?: return@to Response(Status.BAD_REQUEST)
-                        val community = communityService.getCommunity(name)
+                        val reportId =
+                            reportIdStr.toUUIDOrNull()
+                                ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        if (!moderationService.isModerator(userId, community.id)) {
-                            return@to Response(Status.FORBIDDEN)
+                            if (!moderationService.isModerator(userId, community.id)) {
+                                return@to Response(Status.FORBIDDEN)
+                            }
+
+                            moderationService.dismissReport(reportId, userId)
+                            Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/mod/reports")
                         }
-
-                        val reportId = UUID.fromString(reportIdStr)
-                        moderationService.dismissReport(reportId, userId)
-                        Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/mod/reports")
                     }
                 },
             "/r/{name}/mod" / userIdPath / "ban" meta
@@ -149,14 +162,16 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                     { request: Request ->
                         val moderatorId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
                         val name = request.path("name") ?: return@to Response(Status.BAD_REQUEST)
-                        val community = communityService.getCommunity(name)
-
                         val userIdStr = request.form("userId") ?: return@to Response(Status.BAD_REQUEST)
-                        val targetUserId = UUID.fromString(userIdStr)
-                        val reason = request.form("reason")
+                        val targetUserId =
+                            userIdStr.toUUIDOrNull() ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
+                            val reason = request.form("reason")
 
-                        moderationService.banUser(targetUserId, community.id, reason, moderatorId)
-                        Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/mod")
+                            moderationService.banUser(targetUserId, community.id, reason, moderatorId)
+                            Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/mod")
+                        }
                     }
                 },
             "/r/{name}/mod/unban" / userIdPath meta
@@ -168,11 +183,15 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                     { request: Request ->
                         val moderatorId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
                         val name = request.path("name") ?: return@to Response(Status.BAD_REQUEST)
-                        val community = communityService.getCommunity(name)
+                        val targetUserId =
+                            targetUserIdStr.toUUIDOrNull()
+                                ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        val targetUserId = UUID.fromString(targetUserIdStr)
-                        moderationService.unbanUser(targetUserId, community.id, moderatorId)
-                        Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/mod")
+                            moderationService.unbanUser(targetUserId, community.id, moderatorId)
+                            Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/mod")
+                        }
                     }
                 },
             "/r/{name}/posts" / postIdPath / "remove" meta
@@ -184,11 +203,14 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                     { request: Request ->
                         val moderatorId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
                         val name = request.path("name") ?: return@to Response(Status.BAD_REQUEST)
-                        val community = communityService.getCommunity(name)
+                        val postId =
+                            postIdStr.toUUIDOrNull() ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        val postId = UUID.fromString(postIdStr)
-                        moderationService.removePost(postId, moderatorId, community.id)
-                        Response(Status.SEE_OTHER).header("Location", "/r/${community.name}")
+                            moderationService.removePost(postId, moderatorId, community.id)
+                            Response(Status.SEE_OTHER).header("Location", "/r/${community.name}")
+                        }
                     }
                 },
             "/r/{name}/posts" / postIdPath / "lock" meta
@@ -200,11 +222,14 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                     { request: Request ->
                         val moderatorId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
                         val name = request.path("name") ?: return@to Response(Status.BAD_REQUEST)
-                        val community = communityService.getCommunity(name)
+                        val postId =
+                            postIdStr.toUUIDOrNull() ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        val postId = UUID.fromString(postIdStr)
-                        moderationService.lockPost(postId, moderatorId, community.id)
-                        Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/posts/$postId")
+                            moderationService.lockPost(postId, moderatorId, community.id)
+                            Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/posts/$postId")
+                        }
                     }
                 },
             "/r/{name}/posts" / postIdPath / "pin" meta
@@ -216,11 +241,14 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                     { request: Request ->
                         val moderatorId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
                         val name = request.path("name") ?: return@to Response(Status.BAD_REQUEST)
-                        val community = communityService.getCommunity(name)
+                        val postId =
+                            postIdStr.toUUIDOrNull() ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
+                        handleNotFound {
+                            val community = communityService.getCommunity(name)
 
-                        val postId = UUID.fromString(postIdStr)
-                        moderationService.pinPost(postId, moderatorId, community.id)
-                        Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/posts/$postId")
+                            moderationService.pinPost(postId, moderatorId, community.id)
+                            Response(Status.SEE_OTHER).header("Location", "/r/${community.name}/posts/$postId")
+                        }
                     }
                 },
             "/comments" / commentIdPath / "remove" meta
@@ -231,13 +259,14 @@ class ModerationRoutes(private val context: PluginContext) : KoinComponent {
                 { commentIdStr: String, _ ->
                     { request: Request ->
                         val moderatorId = request.webContext.user?.id ?: return@to Response(Status.UNAUTHORIZED)
+                        val commentId =
+                            commentIdStr.toUUIDOrNull()
+                                ?: return@to Response(Status.BAD_REQUEST).body("Invalid ID format")
 
-                        val communityIdStr = request.form("communityId") ?: return@to Response(Status.BAD_REQUEST)
-                        val communityId = UUID.fromString(communityIdStr)
-                        val commentId = UUID.fromString(commentIdStr)
-
-                        moderationService.removeComment(commentId, moderatorId, communityId)
-                        Response(Status.OK)
+                        handleNotFound {
+                            moderationService.removeComment(commentId, moderatorId)
+                            Response(Status.OK)
+                        }
                     }
                 },
         )

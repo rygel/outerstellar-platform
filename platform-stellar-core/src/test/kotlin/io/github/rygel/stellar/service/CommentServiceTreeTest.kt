@@ -1,6 +1,5 @@
 package io.github.rygel.stellar.service
 
-import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.stellar.model.Comment
 import io.github.rygel.stellar.model.CommentSort
 import io.github.rygel.stellar.persistence.CommentRepository
@@ -18,7 +17,6 @@ class CommentServiceTreeTest {
 
     private lateinit var commentRepo: CommentRepository
     private lateinit var postRepo: PostRepository
-    private lateinit var userRepo: UserRepository
     private lateinit var service: CommentService
 
     private val postId = UUID.randomUUID()
@@ -27,16 +25,12 @@ class CommentServiceTreeTest {
     fun setUp() {
         commentRepo = mockk()
         postRepo = mockk()
-        userRepo = mockk()
-        service = CommentService(commentRepo, postRepo, userRepo)
-
-        // Default: user lookups return null (will resolve to "[deleted]")
-        every { userRepo.findById(any()) } returns null
+        service = CommentService(commentRepo, postRepo)
     }
 
     @Test
     fun `empty comment list produces empty tree`() {
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns emptyList()
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns emptyList()
 
         val tree = service.getCommentTree(postId)
 
@@ -46,7 +40,7 @@ class CommentServiceTreeTest {
     @Test
     fun `single top-level comment`() {
         val comment = makeComment(parentCommentId = null, depth = 0, body = "Hello")
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns listOf(comment)
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns listOf(comment)
 
         val tree = service.getCommentTree(postId)
 
@@ -62,7 +56,7 @@ class CommentServiceTreeTest {
         val c1 = makeComment(parentCommentId = null, depth = 0, body = "First")
         val c2 = makeComment(parentCommentId = null, depth = 0, body = "Second")
         val c3 = makeComment(parentCommentId = null, depth = 0, body = "Third")
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns listOf(c1, c2, c3)
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns listOf(c1, c2, c3)
 
         val tree = service.getCommentTree(postId)
 
@@ -78,7 +72,7 @@ class CommentServiceTreeTest {
         val child = makeComment(parentCommentId = root.id, depth = 1, body = "Child")
         val grandchild = makeComment(parentCommentId = child.id, depth = 2, body = "Grandchild")
 
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns listOf(root, child, grandchild)
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns listOf(root, child, grandchild)
 
         val tree = service.getCommentTree(postId)
 
@@ -97,7 +91,7 @@ class CommentServiceTreeTest {
         val orphan = makeComment(parentCommentId = orphanParentId, depth = 1, body = "Orphan")
         val normal = makeComment(parentCommentId = null, depth = 0, body = "Normal")
 
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns listOf(normal, orphan)
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns listOf(normal, orphan)
 
         val tree = service.getCommentTree(postId)
 
@@ -115,7 +109,8 @@ class CommentServiceTreeTest {
         val reply2 = makeComment(parentCommentId = root.id, depth = 1, body = "Reply 2")
         val nested = makeComment(parentCommentId = reply1.id, depth = 2, body = "Nested")
 
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns listOf(root, reply1, reply2, nested)
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns
+            listOf(root, reply1, reply2, nested)
 
         val tree = service.getCommentTree(postId)
 
@@ -130,7 +125,7 @@ class CommentServiceTreeTest {
         val removed = makeComment(parentCommentId = null, depth = 0, body = "[deleted]", isRemoved = true)
         val reply = makeComment(parentCommentId = removed.id, depth = 1, body = "Reply to deleted")
 
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns listOf(removed, reply)
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns listOf(removed, reply)
 
         val tree = service.getCommentTree(postId)
 
@@ -141,13 +136,23 @@ class CommentServiceTreeTest {
     }
 
     @Test
-    fun `username resolves to deleted when userRepo returns null`() {
+    fun `username resolves to deleted when authorUsername is empty`() {
         val comment = makeComment(parentCommentId = null, depth = 0, body = "Test")
-        every { commentRepo.listByPost(postId, CommentSort.BEST) } returns listOf(comment)
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns listOf(comment)
 
         val tree = service.getCommentTree(postId)
 
         assertEquals("[deleted]", tree[0].comment.authorUsername)
+    }
+
+    @Test
+    fun `username is taken from comment authorUsername field`() {
+        val comment = makeComment(parentCommentId = null, depth = 0, body = "Test", authorUsername = "testuser")
+        every { commentRepo.listByPost(postId, CommentSort.BEST, any(), any()) } returns listOf(comment)
+
+        val tree = service.getCommentTree(postId)
+
+        assertEquals("testuser", tree[0].comment.authorUsername)
     }
 
     private fun makeComment(
@@ -155,6 +160,7 @@ class CommentServiceTreeTest {
         depth: Int = 0,
         body: String = "comment",
         isRemoved: Boolean = false,
+        authorUsername: String = "",
     ): Comment =
         Comment(
             id = UUID.randomUUID(),
@@ -167,5 +173,6 @@ class CommentServiceTreeTest {
             isRemoved = isRemoved,
             createdAt = Instant.now(),
             updatedAt = Instant.now(),
+            authorUsername = authorUsername,
         )
 }

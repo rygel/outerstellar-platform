@@ -11,7 +11,12 @@ interface CommentRepository {
 
     fun update(comment: Comment): Comment
 
-    fun listByPost(postId: UUID, sort: CommentSort = CommentSort.BEST): List<Comment>
+    fun listByPost(
+        postId: UUID,
+        sort: CommentSort = CommentSort.BEST,
+        limit: Int = 200,
+        maxDepth: Int = 10,
+    ): List<Comment>
 
     fun listByUser(userId: UUID, limit: Int = 25, offset: Int = 0): List<Comment>
 

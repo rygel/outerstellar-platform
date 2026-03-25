@@ -5,6 +5,7 @@ import io.github.rygel.stellar.model.VoteTarget
 import io.github.rygel.stellar.persistence.CommentRepository
 import io.github.rygel.stellar.persistence.KarmaRepository
 import io.github.rygel.stellar.persistence.PostRepository
+import io.github.rygel.stellar.persistence.StellarTransactionManager
 import io.github.rygel.stellar.persistence.VoteRepository
 import io.mockk.every
 import io.mockk.just
@@ -23,6 +24,7 @@ class VoteServiceTest {
     private lateinit var postRepo: PostRepository
     private lateinit var commentRepo: CommentRepository
     private lateinit var karmaRepo: KarmaRepository
+    private lateinit var txManager: StellarTransactionManager
     private lateinit var service: VoteService
 
     @BeforeEach
@@ -31,7 +33,9 @@ class VoteServiceTest {
         postRepo = mockk()
         commentRepo = mockk()
         karmaRepo = mockk()
-        service = VoteService(voteRepo, postRepo, commentRepo, karmaRepo)
+        txManager = mockk()
+        every { txManager.inTransaction(any<() -> Any>()) } answers { firstArg<() -> Any>().invoke() }
+        service = VoteService(voteRepo, postRepo, commentRepo, karmaRepo, txManager)
     }
 
     @Test

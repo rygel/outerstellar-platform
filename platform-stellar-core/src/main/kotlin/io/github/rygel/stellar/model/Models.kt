@@ -53,6 +53,7 @@ data class Comment(
     val isRemoved: Boolean = false,
     val createdAt: Instant = Instant.now(),
     val updatedAt: Instant = Instant.now(),
+    val authorUsername: String = "",
 )
 
 data class Vote(

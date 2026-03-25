@@ -7,6 +7,7 @@ import io.github.rygel.stellar.model.CommunitySummary
 import io.github.rygel.stellar.model.DuplicateCommunityException
 import io.github.rygel.stellar.persistence.CommunityMemberRepository
 import io.github.rygel.stellar.persistence.CommunityRepository
+import io.github.rygel.stellar.persistence.StellarTransactionManager
 import io.github.rygel.stellar.persistence.SubscriptionRepository
 import io.mockk.every
 import io.mockk.just
@@ -26,6 +27,7 @@ class CommunityServiceTest {
     private lateinit var communityRepo: CommunityRepository
     private lateinit var subscriptionRepo: SubscriptionRepository
     private lateinit var memberRepo: CommunityMemberRepository
+    private lateinit var txManager: StellarTransactionManager
     private lateinit var service: CommunityService
 
     @BeforeEach
@@ -33,7 +35,9 @@ class CommunityServiceTest {
         communityRepo = mockk()
         subscriptionRepo = mockk()
         memberRepo = mockk()
-        service = CommunityService(communityRepo, subscriptionRepo, memberRepo)
+        txManager = mockk()
+        every { txManager.inTransaction(any<() -> Any>()) } answers { firstArg<() -> Any>().invoke() }
+        service = CommunityService(communityRepo, subscriptionRepo, memberRepo, txManager = txManager)
     }
 
     @Test

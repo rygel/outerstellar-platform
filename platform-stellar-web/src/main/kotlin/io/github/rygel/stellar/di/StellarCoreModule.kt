@@ -16,10 +16,10 @@ import org.koin.dsl.module
 val stellarCoreModule = module {
     single<StellarCache> { CaffeineStellarCache() }
     single { StellarRateLimiter(maxRequests = 10, windowSeconds = 60) }
-    single { CommunityService(get(), get(), get(), getOrNull()) }
+    single { CommunityService(get(), get(), get(), getOrNull(), getOrNull()) }
     single { PostService(get(), get(), getOrNull()) }
     single { CommentService(get(), get(), getOrNull()) }
-    single { VoteService(get(), get(), get(), get()) }
+    single { VoteService(get(), get(), get(), get(), getOrNull()) }
     single { FeedService(get(), get(), get(), get(), get(), getOrNull()) }
     single { FlairService(get()) }
     single { ModerationService(get(), get(), get(), get()) }

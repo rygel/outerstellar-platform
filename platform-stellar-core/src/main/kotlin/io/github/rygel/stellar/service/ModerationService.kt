@@ -60,12 +60,13 @@ class ModerationService(
         return result
     }
 
-    fun removeComment(commentId: UUID, moderatorId: UUID, communityId: UUID): Comment {
-        requireModerator(moderatorId, communityId)
+    fun removeComment(commentId: UUID, moderatorId: UUID): Comment {
         val comment = commentRepo.findById(commentId) ?: throw CommentNotFoundException(commentId)
+        val post = postRepo.findById(comment.postId) ?: throw PostNotFoundException(comment.postId)
+        requireModerator(moderatorId, post.communityId)
         val updated = comment.copy(isRemoved = true)
         val result = commentRepo.update(updated)
-        logger.info("Comment {} removed by moderator {} in community {}", commentId, moderatorId, communityId)
+        logger.info("Comment {} removed by moderator {} in community {}", commentId, moderatorId, post.communityId)
         return result
     }
 

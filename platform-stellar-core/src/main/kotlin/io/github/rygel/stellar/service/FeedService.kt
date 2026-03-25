@@ -11,6 +11,7 @@ import io.github.rygel.stellar.persistence.SavedItemRepository
 import io.github.rygel.stellar.persistence.SubscriptionRepository
 import io.github.rygel.stellar.persistence.VoteRepository
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 private const val POPULAR_FEED_TTL_SECONDS = 120L
 
@@ -45,17 +46,12 @@ class FeedService(
         userId: UUID? = null,
     ): List<PostSummary> {
         val cacheKey = "feed:popular:$sort:$timeRange:$limit:$offset"
-        if (userId == null) {
-            cache?.get<List<PostSummary>>(cacheKey)?.let {
-                return it
-            }
-        }
-        val posts = postRepo.listAll(sort, timeRange, limit, offset)
-        val enriched = enrichPosts(posts, userId)
-        if (userId == null) {
-            cache?.put(cacheKey, enriched, POPULAR_FEED_TTL_SECONDS)
-        }
-        return enriched
+        val basePosts =
+            cache?.get<List<PostSummary>>(cacheKey)
+                ?: postRepo.listAll(sort, timeRange, limit, offset).also {
+                    cache?.put(cacheKey, it, POPULAR_FEED_TTL_SECONDS)
+                }
+        return enrichPosts(basePosts, userId)
     }
 
     fun invalidatePopularFeedCache() {
@@ -107,7 +103,7 @@ class FeedService(
         }
     }
 
-    private val usernameCache = mutableMapOf<UUID, String>()
+    private val usernameCache = ConcurrentHashMap<UUID, String>()
 
     private fun resolveUsername(post: PostSummary): String {
         // PostSummary doesn't carry authorId directly, so username should be resolved

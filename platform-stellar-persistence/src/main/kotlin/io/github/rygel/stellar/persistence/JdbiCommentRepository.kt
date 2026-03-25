@@ -65,19 +65,30 @@ class JdbiCommentRepository(private val jdbi: Jdbi) : CommentRepository {
         return comment
     }
 
-    override fun listByPost(postId: UUID, sort: CommentSort): List<Comment> {
+    override fun listByPost(postId: UUID, sort: CommentSort, limit: Int, maxDepth: Int): List<Comment> {
         val orderBy =
             when (sort) {
-                CommentSort.BEST -> "score DESC, created_at ASC"
-                CommentSort.NEW -> "created_at DESC"
-                CommentSort.TOP -> "score DESC"
-                CommentSort.CONTROVERSIAL -> "score ASC, created_at DESC"
+                CommentSort.BEST -> "c.score DESC, c.created_at ASC"
+                CommentSort.NEW -> "c.created_at DESC"
+                CommentSort.TOP -> "c.score DESC"
+                CommentSort.CONTROVERSIAL -> "c.score ASC, c.created_at DESC"
             }
         return jdbi.withHandle<List<Comment>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM stl_comments WHERE post_id = :postId ORDER BY $orderBy")
+                .createQuery(
+                    """
+                    SELECT c.*, u.username AS author_username
+                    FROM stl_comments c
+                    JOIN plt_users u ON u.id = c.author_id
+                    WHERE c.post_id = :postId AND c.depth <= :maxDepth
+                    ORDER BY $orderBy
+                    LIMIT :limit
+                    """
+                )
                 .bind("postId", postId)
-                .map { rs, _ -> mapComment(rs) }
+                .bind("maxDepth", maxDepth)
+                .bind("limit", limit)
+                .map { rs, _ -> mapCommentWithUsername(rs) }
                 .list()
         }
     }
@@ -131,5 +142,20 @@ class JdbiCommentRepository(private val jdbi: Jdbi) : CommentRepository {
             isRemoved = rs.getBoolean("is_removed"),
             createdAt = rs.getTimestamp("created_at")?.toInstant() ?: Instant.now(),
             updatedAt = rs.getTimestamp("updated_at")?.toInstant() ?: Instant.now(),
+        )
+
+    private fun mapCommentWithUsername(rs: ResultSet): Comment =
+        Comment(
+            id = rs.getObject("id", UUID::class.java),
+            postId = rs.getObject("post_id", UUID::class.java),
+            authorId = rs.getObject("author_id", UUID::class.java),
+            parentCommentId = rs.getObject("parent_comment_id", UUID::class.java),
+            body = rs.getString("body"),
+            score = rs.getInt("score"),
+            depth = rs.getInt("depth"),
+            isRemoved = rs.getBoolean("is_removed"),
+            createdAt = rs.getTimestamp("created_at")?.toInstant() ?: Instant.now(),
+            updatedAt = rs.getTimestamp("updated_at")?.toInstant() ?: Instant.now(),
+            authorUsername = rs.getString("author_username") ?: "[deleted]",
         )
 }

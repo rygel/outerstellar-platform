@@ -96,24 +96,25 @@ class JdbiPostRepository(private val jdbi: Jdbi) : PostRepository {
         val timeFilter = buildTimeFilter(timeRange)
         val orderBy = buildOrderBy(sort)
         return jdbi.withHandle<List<PostSummary>, Exception> { handle ->
-            handle
-                .createQuery(
-                    """
+            val query =
+                handle
+                    .createQuery(
+                        """
                 SELECT p.*, c.name AS community_name, c.display_name AS community_display_name,
                     u.username AS author_username
                 FROM stl_posts p
                 JOIN stl_communities c ON c.id = p.community_id
                 JOIN plt_users u ON u.id = p.author_id
-                WHERE p.community_id = :communityId AND p.is_removed = false $timeFilter
+                WHERE p.community_id = :communityId AND p.is_removed = false ${timeFilter.sql}
                 ORDER BY $orderBy
                 LIMIT :limit OFFSET :offset
                 """
-                )
-                .bind("communityId", communityId)
-                .bind("limit", limit)
-                .bind("offset", offset)
-                .map { rs, _ -> mapPostSummary(rs) }
-                .list()
+                    )
+                    .bind("communityId", communityId)
+                    .bind("limit", limit)
+                    .bind("offset", offset)
+            timeFilter.bind?.invoke(query)
+            query.map { rs, _ -> mapPostSummary(rs) }.list()
         }
     }
 
@@ -150,24 +151,25 @@ class JdbiPostRepository(private val jdbi: Jdbi) : PostRepository {
         val timeFilter = buildTimeFilter(timeRange)
         val orderBy = buildOrderBy(sort)
         return jdbi.withHandle<List<PostSummary>, Exception> { handle ->
-            handle
-                .createQuery(
-                    """
+            val query =
+                handle
+                    .createQuery(
+                        """
                 SELECT p.*, c.name AS community_name, c.display_name AS community_display_name,
                     u.username AS author_username
                 FROM stl_posts p
                 JOIN stl_communities c ON c.id = p.community_id
                 JOIN plt_users u ON u.id = p.author_id
-                WHERE p.community_id IN (<communityIds>) AND p.is_removed = false $timeFilter
+                WHERE p.community_id IN (<communityIds>) AND p.is_removed = false ${timeFilter.sql}
                 ORDER BY $orderBy
                 LIMIT :limit OFFSET :offset
                 """
-                )
-                .bindList("communityIds", communityIds)
-                .bind("limit", limit)
-                .bind("offset", offset)
-                .map { rs, _ -> mapPostSummary(rs) }
-                .list()
+                    )
+                    .bindList("communityIds", communityIds)
+                    .bind("limit", limit)
+                    .bind("offset", offset)
+            timeFilter.bind?.invoke(query)
+            query.map { rs, _ -> mapPostSummary(rs) }.list()
         }
     }
 
@@ -175,28 +177,38 @@ class JdbiPostRepository(private val jdbi: Jdbi) : PostRepository {
         val timeFilter = buildTimeFilter(timeRange)
         val orderBy = buildOrderBy(sort)
         return jdbi.withHandle<List<PostSummary>, Exception> { handle ->
-            handle
-                .createQuery(
-                    """
+            val query =
+                handle
+                    .createQuery(
+                        """
                 SELECT p.*, c.name AS community_name, c.display_name AS community_display_name,
                     u.username AS author_username
                 FROM stl_posts p
                 JOIN stl_communities c ON c.id = p.community_id
                 JOIN plt_users u ON u.id = p.author_id
-                WHERE p.is_removed = false $timeFilter
+                WHERE p.is_removed = false ${timeFilter.sql}
                 ORDER BY $orderBy
                 LIMIT :limit OFFSET :offset
                 """
-                )
-                .bind("limit", limit)
-                .bind("offset", offset)
-                .map { rs, _ -> mapPostSummary(rs) }
-                .list()
+                    )
+                    .bind("limit", limit)
+                    .bind("offset", offset)
+            timeFilter.bind?.invoke(query)
+            query.map { rs, _ -> mapPostSummary(rs) }.list()
         }
     }
 
+    /**
+     * Searches posts by title. Uses prefix match for short queries (< 3 chars) which can leverage the functional index
+     * on `LOWER(title)`, and contains match for longer queries.
+     *
+     * Note: For production PostgreSQL deployments, consider replacing this with full-text search (tsvector/tsquery) or
+     * pg_trgm GIN indexes for significantly better performance.
+     */
     override fun search(query: String, limit: Int, offset: Int): List<PostSummary> =
         jdbi.withHandle<List<PostSummary>, Exception> { handle ->
+            val lowerQuery = query.lowercase()
+            val likePattern = if (lowerQuery.length < 3) "$lowerQuery%" else "%$lowerQuery%"
             handle
                 .createQuery(
                     """
@@ -210,7 +222,7 @@ class JdbiPostRepository(private val jdbi: Jdbi) : PostRepository {
                 LIMIT :limit OFFSET :offset
                 """
                 )
-                .bind("q", "%${query.lowercase()}%")
+                .bind("q", likePattern)
                 .bind("limit", limit)
                 .bind("offset", offset)
                 .map { rs, _ -> mapPostSummary(rs) }
@@ -260,7 +272,9 @@ class JdbiPostRepository(private val jdbi: Jdbi) : PostRepository {
                     .trimIndent()
         }
 
-    private fun buildTimeFilter(timeRange: TimeRange): String {
+    private data class TimeFilter(val sql: String, val bind: ((org.jdbi.v3.core.statement.Query) -> Unit)?)
+
+    private fun buildTimeFilter(timeRange: TimeRange): TimeFilter {
         val cutoff =
             when (timeRange) {
                 TimeRange.HOUR -> Instant.now().minus(1, ChronoUnit.HOURS)
@@ -268,9 +282,12 @@ class JdbiPostRepository(private val jdbi: Jdbi) : PostRepository {
                 TimeRange.WEEK -> Instant.now().minus(7, ChronoUnit.DAYS)
                 TimeRange.MONTH -> Instant.now().minus(30, ChronoUnit.DAYS)
                 TimeRange.YEAR -> Instant.now().minus(365, ChronoUnit.DAYS)
-                TimeRange.ALL -> return ""
+                TimeRange.ALL -> return TimeFilter("", null)
             }
-        return "AND p.created_at >= TIMESTAMP '${OffsetDateTime.ofInstant(cutoff, ZoneOffset.UTC)}'"
+        return TimeFilter(
+            "AND p.created_at >= :timeCutoff",
+            { q -> q.bind("timeCutoff", OffsetDateTime.ofInstant(cutoff, ZoneOffset.UTC)) },
+        )
     }
 
     private fun mapPost(rs: ResultSet): Post =
