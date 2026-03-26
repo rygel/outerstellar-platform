@@ -2,8 +2,8 @@ package io.github.rygel.outerstellar.platform.service
 
 import io.github.resilience4j.circuitbreaker.CircuitBreaker
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
-import java.time.Duration
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 private const val FAILURE_RATE_THRESHOLD = 50f
 private const val WAIT_DURATION_SECONDS = 60L
