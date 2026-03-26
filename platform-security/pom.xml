@@ -6,7 +6,9 @@
     <parent>
         <groupId>io.github.rygel</groupId>
         <artifactId>platform-parent</artifactId>
+
         <version>1.3.4</version>
+
     </parent>
 
     <artifactId>platform-security</artifactId>
