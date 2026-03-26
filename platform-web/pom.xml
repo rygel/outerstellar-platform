@@ -253,6 +253,7 @@
                         <configuration>
                             <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
                             <contentType>Html</contentType>
+                            <packageName>gg.jte.generated.precompiled.outerstellar</packageName>
                         </configuration>
                     </execution>
                 </executions>
