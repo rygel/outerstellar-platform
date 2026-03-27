@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [1.3.5] – 2026-03-27
+## [1.3.5] – 2026-03-28
 
 ### Added
 - `PluginContext.currentUser(request)` — one-liner to get the authenticated user without manual `LensFailure` handling
@@ -14,7 +14,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Security
 - `globalErrorHandler`: HTMX error responses now only expose `e.message` for `OuterstellarException` subclasses. Generic JVM exceptions (JDBI SQL errors, NPEs, etc.) return `"Action failed"`, preventing internal details from leaking to any client sending `HX-Request: true`
-- `devAutoLogin`: Added loopback guard — filter refuses to fire unless `Host` is `localhost`/`127.0.0.1` and `X-Forwarded-For` is absent, closing the misconfiguration window where `devMode=true` in production would auto-authenticate remote clients as admin
+- `devAutoLogin`: Added loopback guard — rejects auto-login when `X-Forwarded-For` is present (proxy) or `Host` is a non-loopback address, closing the misconfiguration window where `devMode=true` in production would auto-authenticate remote clients as admin
 
 ### Fixed
 - Isolate platform JTE classes in `gg.jte.generated.precompiled.outerstellar` to prevent fat JAR conflicts when `platform-web` is used as a library alongside apps with their own JTE templates
@@ -33,6 +33,42 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### CI
 - Bumped `actions/checkout`, `github/codeql-action`, `ossf/scorecard-action`, `hadolint/hadolint-action`, `s4u/maven-settings-action` to latest pinned versions
+
+---
+
+## [1.3.4] – 2026-03-26
+
+### Fixed
+- Isolate platform JTE classes in `gg.jte.generated.precompiled.outerstellar` to prevent fat JAR conflicts when platform-web is used as a library alongside apps with their own JTE templates
+
+---
+
+## [1.3.3] – 2026-03-24
+
+### Added
+- `PluginContext.currentUser(request)` — one-liner to get the authenticated user without manual LensFailure handling
+- `PluginContext.buildPage(request, title, section, data)` — wraps plugin ViewModels in the platform shell with CSRF token, theme, and nav
+- `PluginContext.forTesting(renderer, securityService, userRepository)` — factory with sensible defaults for plugin testing
+
+### Fixed
+- Migrated deprecated Koin `checkModules()` to `verify()` API (core, persistence, sync-client modules)
+- Migrated deprecated http4k `RequestContexts` to `RequestKey` in SecurityRulesTest
+- Fixed `PolyHandler` import from deprecated `org.http4k.server` to `org.http4k.core`
+- Fixed parameter name mismatches in repository implementations (`since`, `token`)
+- Removed unnecessary `!!` on non-null receivers and redundant elvis operators
+- Simplified always-true condition in SwingSyncApp
+- Renamed test methods with Windows-unsafe `?` character
+- Bumped `outerstellar-framework` from 1.0.11 to 1.0.13
+
+---
+
+## [1.3.2] – 2026-03-24
+
+### Fixed
+- Add `<name>` to all child poms (required by Maven Central validation)
+- Add explicit versions to OpenTelemetry deps in `dependencyManagement`
+- Attach source JARs for all modules via `maven-source-plugin`
+- Bump `central-publishing-maven-plugin` from 0.7.0 to 0.10.0
 
 ---
 
