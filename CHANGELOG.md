@@ -7,12 +7,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [1.3.2] – 2026-03-28
+
 ### Security
 - `globalErrorHandler`: HTMX error responses now only expose `e.message` for `OuterstellarException` subclasses (user-facing, intentional messages). Generic JVM exceptions (JDBI SQL errors, NPEs, etc.) return a safe `"Action failed"` fallback, preventing internal details from leaking to any client that sends `HX-Request: true`.
 - `devAutoLogin`: Added loopback guard — rejects auto-login when `X-Forwarded-For` is present (proxy) or `Host` is a non-loopback address. Eliminates the misconfiguration risk where a production deployment with `devMode=true` would auto-authenticate remote clients as admin.
 
+### Performance
+- `platform-web` tests now use `TemplateEngine.createPrecompiled()` via `jte.production=true` Surefire property — eliminates runtime JTE compilation, saving ~60 s per CI run
+- Shared `TemplateRenderer` cached as `by lazy` in `H2WebTest.Companion` — one engine instance reused across all tests in the JVM process
+
 ### Changed
 - Bumped `outerstellar-framework` from 1.0.13 to 1.0.14
+- Bumped `http4k` from 6.37.0.0 to 6.38.0.0
+- Bumped `jOOQ` from 3.20.11 to 3.21.1
+- Bumped `junit` from 5.12.2 to 5.14.3
+- Bumped `flyway` from 12.1.1 to 12.2.0
+
+### CI
+- Fixed `codeql-action` SHA comment from generic `# v4` to precise `# v4.34.1` (resolves zizmor/Scorecard mismatch warning)
 
 ---
 
