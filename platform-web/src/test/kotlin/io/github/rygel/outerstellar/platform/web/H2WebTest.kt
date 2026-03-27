@@ -101,6 +101,7 @@ abstract class H2WebTest {
 
         // --- Shared repositories (lazy, created once per JVM) ---
 
+        val renderer by lazy { createRenderer() }
         val encoder by lazy { BCryptPasswordEncoder(logRounds = 4) }
         val userRepository by lazy { JooqUserRepository(testDsl) }
         val messageRepository by lazy { JooqMessageRepository(testDsl) }
@@ -145,7 +146,7 @@ abstract class H2WebTest {
                     contactService,
                     outbox,
                     cache,
-                    createRenderer(),
+                    renderer,
                     pageFactory,
                     config,
                     securityService,
