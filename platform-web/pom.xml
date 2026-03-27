@@ -264,6 +264,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <parallel>none</parallel>
+                    <systemPropertyVariables>
+                        <!-- Use precompiled JTE templates in tests — avoids 60+ s of source compilation per fork -->
+                        <jte.production>true</jte.production>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
