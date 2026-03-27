@@ -5,6 +5,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.3.5] – 2026-03-27
+
+### Added
+- `PluginContext.currentUser(request)` — one-liner to get the authenticated user without manual `LensFailure` handling
+- `PluginContext.buildPage(request, title, section, data)` — wraps plugin `ViewModel`s in the platform shell with CSRF token, theme, and nav
+- `PluginContext.forTesting(renderer, securityService, userRepository)` — factory with sensible defaults for plugin testing
+
+### Security
+- `globalErrorHandler`: HTMX error responses now only expose `e.message` for `OuterstellarException` subclasses. Generic JVM exceptions (JDBI SQL errors, NPEs, etc.) return `"Action failed"`, preventing internal details from leaking to any client sending `HX-Request: true`
+- `devAutoLogin`: Added loopback guard — filter refuses to fire unless `Host` is `localhost`/`127.0.0.1` and `X-Forwarded-For` is absent, closing the misconfiguration window where `devMode=true` in production would auto-authenticate remote clients as admin
+
+### Fixed
+- Isolate platform JTE classes in `gg.jte.generated.precompiled.outerstellar` to prevent fat JAR conflicts when `platform-web` is used as a library alongside apps with their own JTE templates
+- Migrated deprecated Koin `checkModules()` to `verify()` API (core, persistence, sync-client modules)
+- Migrated deprecated http4k `RequestContexts` to `RequestKey` in `SecurityRulesTest`
+- Fixed `PolyHandler` import from deprecated `org.http4k.server` to `org.http4k.core`
+- Fixed parameter name mismatches in repository implementations (`since`, `token`)
+- Removed unnecessary `!!` on non-null receivers and redundant elvis operators
+
+### Changed
+- Bumped `outerstellar-framework` from 1.0.11 to 1.0.13
+- Bumped http4k from 6.37.0.0 to 6.38.0.0
+- Bumped jOOQ from 3.20.11 to 3.21.1
+- Bumped Flyway from 12.1.1 to 12.2.0
+- Bumped JUnit Jupiter / junit-bom from 5.12.2 to 5.14.3
+
+### CI
+- Bumped `actions/checkout`, `github/codeql-action`, `ossf/scorecard-action`, `hadolint/hadolint-action`, `s4u/maven-settings-action` to latest pinned versions
+
+---
+
 ## [1.3.1] – 2026-03-24
 
 ### Added
