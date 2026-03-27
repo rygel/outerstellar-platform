@@ -42,14 +42,14 @@ jobs:
 
       - name: Upload Hadolint SARIF (docker)
         if: always()
-        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4
+        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
         with:
           sarif_file: hadolint-docker.sarif
           category: hadolint-docker
 
       - name: Upload Hadolint SARIF (test-desktop)
         if: always()
-        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4
+        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
         with:
           sarif_file: hadolint-test-desktop.sarif
           category: hadolint-test-desktop
