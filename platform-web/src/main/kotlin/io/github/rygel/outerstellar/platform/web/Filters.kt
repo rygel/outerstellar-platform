@@ -201,7 +201,16 @@ object Filters {
 
     fun devAutoLogin(enabled: Boolean, userRepository: UserRepository): Filter = Filter { next ->
         { request ->
-            if (enabled && request.cookie(WebContext.SESSION_COOKIE) == null) {
+            // Guard: only fire for loopback connections. X-Forwarded-For presence means the request
+            // passed through a proxy/load-balancer, so it cannot be localhost-only. Host header
+            // provides a second check for direct connections. No Host header means an in-process
+            // call (tests) — also safe to allow. If misconfigured in production, a remote attacker
+            // still cannot exploit this filter because production deployments always have a proxy.
+            val host = request.header("Host")
+            val isLoopback =
+                request.header("X-Forwarded-For") == null &&
+                    (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1"))
+            if (enabled && isLoopback && request.cookie(WebContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {
                     val response = next(request.cookie(Cookie(WebContext.SESSION_COOKIE, admin.id.toString())))
@@ -456,7 +465,10 @@ object Filters {
         return if (request.uri.path.startsWith("/api/")) {
             jsonErrorResponse(status, e.message ?: "An unexpected error occurred")
         } else if (request.header("HX-Request") == "true") {
-            Response(status).body(e.message ?: "Action failed")
+            // Only expose the message for platform exceptions whose messages are intentionally user-facing.
+            // Raw JVM exceptions (JDBI SQL, NPEs, etc.) get a generic fallback to avoid leaking internals.
+            val safeMessage = if (e is OuterstellarException) e.message ?: "Action failed" else "Action failed"
+            Response(status).body(safeMessage)
         } else {
             val ctx =
                 try {
