@@ -51,7 +51,7 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.13</outerstellar.version>
-        <http4k.version>6.37.0.0</http4k.version>
+        <http4k.version>6.38.0.0</http4k.version>
         <flyway.version>12.2.0</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
         <jooq.version>3.21.1</jooq.version>
@@ -59,7 +59,7 @@
         <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
-        <junit.version>5.12.2</junit.version>
+        <junit.version>5.14.3</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>

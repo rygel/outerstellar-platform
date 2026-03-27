@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Changed
+- Bumped http4k from 6.37.0.0 to 6.38.0.0
+
+---
+
 ## [1.3.1] – 2026-03-24
 
 ### Added
