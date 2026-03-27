@@ -25,7 +25,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Removed unnecessary `!!` on non-null receivers and redundant elvis operators
 
 ### Changed
-- Bumped `outerstellar-framework` from 1.0.11 to 1.0.13
+- Bumped `outerstellar-framework` from 1.0.11 to 1.0.14
 - Bumped http4k from 6.37.0.0 to 6.38.0.0
 - Bumped jOOQ from 3.20.11 to 3.21.1
 - Bumped Flyway from 12.1.1 to 12.2.0
