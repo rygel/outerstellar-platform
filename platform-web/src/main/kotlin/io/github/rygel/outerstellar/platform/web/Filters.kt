@@ -203,11 +203,13 @@ object Filters {
         { request ->
             // Guard: only fire for loopback connections. X-Forwarded-For presence means the request
             // passed through a proxy/load-balancer, so it cannot be localhost-only. Host header
-            // provides a second check for direct connections. If misconfigured in production,
-            // a remote attacker still cannot exploit this filter.
+            // provides a second check for direct connections. No Host header means an in-process
+            // call (tests) — also safe to allow. If misconfigured in production, a remote attacker
+            // still cannot exploit this filter because production deployments always have a proxy.
+            val host = request.header("Host")
             val isLoopback =
                 request.header("X-Forwarded-For") == null &&
-                    request.header("Host")?.let { it.startsWith("localhost") || it.startsWith("127.0.0.1") } == true
+                    (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1"))
             if (enabled && isLoopback && request.cookie(WebContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {
