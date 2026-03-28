@@ -1,20 +1,14 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
-import io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqNotificationRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.NotificationService
-import io.mockk.mockk
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -26,19 +20,11 @@ import org.http4k.core.with
 import org.http4k.format.Jackson.auto
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class NotificationsIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var userRepository: JooqUserRepository
-    private lateinit var notificationRepository: JooqNotificationRepository
     private lateinit var notificationService: NotificationService
-    private lateinit var securityService: SecurityService
 
     private val loginLens = Body.auto<LoginRequest>().toLens()
     private val registerLens = Body.auto<RegisterRequest>().toLens()
@@ -47,47 +33,8 @@ class NotificationsIntegrationTest : H2WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
-        userRepository = JooqUserRepository(testDsl)
-        val auditRepository = JooqAuditRepository(testDsl)
-        notificationRepository = JooqNotificationRepository(testDsl)
         notificationService = NotificationService(notificationRepository)
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, txManager, cache)
-        val contactService = mockk<ContactService>(relaxed = true)
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                auditRepository,
-                sessionRepository = JooqSessionRepository(testDsl),
-            )
-        val pageFactory =
-            WebPageFactory(
-                repository,
-                messageService,
-                contactService,
-                securityService,
-                notificationService = notificationService,
-            )
-        app =
-            app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                testConfig,
-                securityService,
-                userRepository,
-                notificationService = notificationService,
-            )
-                .http!!
+        app = buildApp(notificationService = notificationService)
     }
 
     @AfterEach fun teardown() = cleanup()

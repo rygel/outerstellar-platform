@@ -13,4 +13,7 @@ ENV OTEL_METRICS_EXPORTER=none
 
 EXPOSE 8080
 
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,14 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.service.ContactService
-import io.github.rygel.outerstellar.platform.service.MessageService
-import io.mockk.mockk
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -19,9 +13,6 @@ import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 /**
  * Integration tests for CSRF protection.
@@ -41,34 +32,7 @@ class CsrfProtectionIntegrationTest : H2WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
-        val userRepository = JooqUserRepository(testDsl)
-        val auditRepository = io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService = mockk<ContactService>(relaxed = true)
-        val securityService = SecurityService(userRepository, encoder, auditRepository)
-        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
-
-        // Use csrfEnabled = true specifically for these tests
-        val csrfConfig = testConfig.copy(csrfEnabled = true)
-
-        app =
-            app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                csrfConfig,
-                securityService,
-                userRepository,
-            )
-                .http!!
+        app = buildApp(config = testConfig.copy(csrfEnabled = true))
     }
 
     @AfterEach fun teardown() = cleanup()

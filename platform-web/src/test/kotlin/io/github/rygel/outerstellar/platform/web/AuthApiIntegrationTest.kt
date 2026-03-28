@@ -1,12 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
@@ -15,9 +11,6 @@ import org.http4k.core.with
 import org.http4k.format.Jackson.auto
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class AuthApiIntegrationTest : H2WebTest() {
 
@@ -25,39 +18,10 @@ class AuthApiIntegrationTest : H2WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val userRepository = JooqUserRepository(testDsl)
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val transactionManager = StubTransactionManager()
-        val messageService =
-            io.github.rygel.outerstellar.platform.service.MessageService(repository, outbox, transactionManager, cache)
-        val pageFactory = WebPageFactory(repository, messageService, null, null)
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
-        val securityService =
-            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
-        val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
-
-        app =
-            app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                testConfig,
-                securityService,
-                userRepository,
-            )
-                .http!!
+        app = buildApp()
     }
 
-    @AfterEach
-    fun teardown() {
-        cleanup()
-    }
+    @AfterEach fun teardown() = cleanup()
 
     @Test
     fun `register api creates user and allows login`() {

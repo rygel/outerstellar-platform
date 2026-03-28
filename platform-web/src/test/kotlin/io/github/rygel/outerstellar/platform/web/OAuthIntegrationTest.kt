@@ -1,14 +1,12 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.service.ContactService
-import io.github.rygel.outerstellar.platform.service.MessageService
-import io.mockk.mockk
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -18,11 +16,6 @@ import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 /**
  * Integration tests for OAuth sign-in routes (Feature 4).
@@ -45,42 +38,24 @@ import kotlin.test.assertTrue
 class OAuthIntegrationTest : H2WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var userRepository: JooqUserRepository
     private lateinit var oauthRepository: InMemoryOAuthRepository
     private lateinit var securityService: SecurityService
 
     @BeforeEach
     fun setupTest() {
-        userRepository = JooqUserRepository(testDsl)
         oauthRepository = InMemoryOAuthRepository()
-        val repository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = StubMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService = MessageService(repository, outbox, txManager, cache)
-        val contactService = mockk<ContactService>(relaxed = true)
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
         securityService =
             SecurityService(
                 userRepository = userRepository,
                 passwordEncoder = encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
                 oauthRepository = oauthRepository,
             )
-        val pageFactory = WebPageFactory(repository, messageService, contactService, securityService)
 
-        app =
-            app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                testConfig,
-                securityService,
-                userRepository,
-            )
-                .http!!
+        app = buildApp(securityService = securityService)
     }
 
     @AfterEach

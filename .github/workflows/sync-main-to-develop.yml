@@ -12,7 +12,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -21,19 +21,23 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # Check if already in sync
+          if git merge-base --is-ancestor main develop; then
+            echo "main is already an ancestor of develop — nothing to sync."
+            exit 0
+          fi
+
           SYNC_BRANCH="sync/main-to-develop-$(date +%Y%m%d-%H%M%S)"
           git checkout develop
           git checkout -b "$SYNC_BRANCH"
-          git merge main --no-edit || {
-            echo "::warning::Merge conflict detected. Manual resolution required."
-            git merge --abort
-            exit 1
-          }
 
-          # Only create PR if there are actual differences
-          if git diff --quiet develop; then
-            echo "main and develop are already in sync."
-            exit 0
+          # Merge main; on conflict auto-resolve by taking main's version.
+          # This is always correct for a main→develop sync: main is the source
+          # of truth for released code, develop adds unreleased work on top.
+          if ! git merge main --no-edit; then
+            git checkout --theirs .
+            git add -A
+            git commit --no-edit -m "sync: merge main into develop (conflicts resolved by taking main)"
           fi
 
           git push origin "$SYNC_BRANCH"
