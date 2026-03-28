@@ -15,6 +15,8 @@ import org.http4k.template.ViewNotFound
 
 private const val PLATFORM_JTE_PACKAGE = "gg.jte.generated.precompiled.outerstellar"
 
+private const val PLATFORM_JTE_PACKAGE = "gg.jte.generated.precompiled.outerstellar"
+
 fun TemplateRenderer.render(viewModel: ViewModel, status: Status = Status.OK): Response =
     Response(status)
         .header("content-type", ContentType.TEXT_HTML.toHeaderValue() + "; charset=utf-8")
