@@ -217,7 +217,7 @@ jobs:
           restore-keys: nvd-
 
       - name: OWASP dependency check
-        run: mvn dependency-check:aggregate -DskipTests
+        run: mvn org.owasp:dependency-check-maven:aggregate -DskipTests
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
 
