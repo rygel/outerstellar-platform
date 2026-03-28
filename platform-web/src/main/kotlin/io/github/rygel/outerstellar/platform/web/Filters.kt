@@ -209,7 +209,11 @@ object Filters {
     fun devAutoLogin(enabled: Boolean, userRepository: UserRepository): Filter = Filter { next ->
         {
                 request ->
-            if (enabled && request.cookie(WebContext.SESSION_COOKIE) == null) {
+            val host = request.header("Host")
+            val isLoopback =
+                request.header("X-Forwarded-For") == null &&
+                    (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1"))
+            if (enabled && isLoopback && request.cookie(WebContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {
                     val response = next(request.cookie(Cookie(WebContext.SESSION_COOKIE, admin.id.toString())))
@@ -469,7 +473,8 @@ object Filters {
         return if (request.uri.path.startsWith("/api/")) {
             jsonErrorResponse(status, e.message ?: "An unexpected error occurred")
         } else if (request.header("HX-Request") == "true") {
-            Response(status).body(e.message ?: "Action failed")
+            val safeMessage = if (e is OuterstellarException) e.message ?: "Action failed" else "Action failed"
+            Response(status).body(safeMessage)
         } else {
             val ctx =
                 try {

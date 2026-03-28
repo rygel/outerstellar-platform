@@ -1,0 +1,47 @@
+name: Semgrep
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions: {}
+
+concurrency:
+  group: semgrep-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Semgrep Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    container:
+      image: semgrep/semgrep@sha256:3dab091ee3247fce7e4ed3df9f92b3bd72692c083295f53cec3f135b86404db1 # latest as of 2026-03-28
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Run Semgrep
+        run: >
+          semgrep scan
+          --config=p/kotlin
+          --config=p/java
+          --config=p/owasp-top-ten
+          --config=p/secrets
+          --sarif
+          --output=semgrep.sarif
+          --error
+
+      - name: Upload SARIF results
+        if: always()
+        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep

@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Run Hadolint on docker/Dockerfile
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           dockerfile: docker/Dockerfile
           format: sarif
@@ -33,7 +33,7 @@ jobs:
           no-fail: true
 
       - name: Run Hadolint on docker/Dockerfile.test-desktop
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           dockerfile: docker/Dockerfile.test-desktop
           format: sarif
@@ -42,14 +42,14 @@ jobs:
 
       - name: Upload Hadolint SARIF (docker)
         if: always()
-        uses: github/codeql-action/upload-sarif@256d634097be96e792d6764f9edaefc4320557b1 # v4
+        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
         with:
           sarif_file: hadolint-docker.sarif
           category: hadolint-docker
 
       - name: Upload Hadolint SARIF (test-desktop)
         if: always()
-        uses: github/codeql-action/upload-sarif@256d634097be96e792d6764f9edaefc4320557b1 # v4
+        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
         with:
           sarif_file: hadolint-test-desktop.sarif
           category: hadolint-test-desktop

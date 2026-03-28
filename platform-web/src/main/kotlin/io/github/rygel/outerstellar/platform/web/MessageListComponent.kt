@@ -87,9 +87,9 @@ class MessageListComponent(private val messageService: MessageService) : WebComp
                     previousUrl = metadata.previousPage?.let { createUrl(it) },
                     nextUrl = metadata.nextPage?.let { createUrl(it) },
                     pages =
-                    (1..metadata.totalPages).map { p ->
-                        PageNumberViewModel(p, createUrl(p), p == metadata.currentPage)
-                    },
+                        (1..metadata.totalPages).map { p ->
+                            PageNumberViewModel(p, createUrl(p), p == metadata.currentPage)
+                        },
                 )
             } else {
                 null
@@ -100,11 +100,11 @@ class MessageListComponent(private val messageService: MessageService) : WebComp
         return MessageListViewModel(
             messages = items,
             emptyMessage =
-            if (isTrash) {
-                i18n.translate("web.trash.empty")
-            } else {
-                i18n.translate("web.home.list.empty")
-            },
+                if (isTrash) {
+                    i18n.translate("web.trash.empty")
+                } else {
+                    i18n.translate("web.home.list.empty")
+                },
             deleteUrl = ctx.url("/messages"),
             restoreUrl = ctx.url("/messages/restore"),
             refreshUrl = currentUrl,

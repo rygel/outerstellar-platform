@@ -1,11 +1,11 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import io.mockk.mockk
 import io.mockk.verify
+import java.util.UUID
+import kotlin.test.Test
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.websocket.Websocket
@@ -13,19 +13,14 @@ import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import java.util.UUID
-import kotlin.test.Test
 
 class WebSocketSyncIntegrationTest : H2WebTest() {
 
-    private lateinit var userRepository: JooqUserRepository
     private lateinit var testUser: User
     private lateinit var syncWebSocket: SyncWebSocket
 
     @BeforeEach
     fun setupTest() {
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
-        userRepository = JooqUserRepository(testDsl)
         testUser =
             User(
                 id = UUID.randomUUID(),
