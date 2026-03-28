@@ -5,13 +5,13 @@
 
     <parent>
         <groupId>io.github.rygel</groupId>
-        <artifactId>platform-parent</artifactId>
+        <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.3.5</version>
+        <version>1.4.0</version>
 
     </parent>
 
-    <artifactId>platform-persistence-jooq</artifactId>
+    <artifactId>outerstellar-platform-persistence-jooq</artifactId>
     <name>Platform Persistence Jooq</name>
 
     <properties>
@@ -22,11 +22,11 @@
     <dependencies>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>platform-core</artifactId>
+            <artifactId>outerstellar-platform-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>platform-security</artifactId>
+            <artifactId>outerstellar-platform-security</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -78,7 +78,7 @@
         
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>platform-core</artifactId>
+            <artifactId>outerstellar-platform-core</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
