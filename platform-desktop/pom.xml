@@ -5,13 +5,13 @@
 
     <parent>
         <groupId>io.github.rygel</groupId>
-        <artifactId>platform-parent</artifactId>
+        <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.3.5</version>
+        <version>1.4.0</version>
 
     </parent>
 
-    <artifactId>platform-desktop</artifactId>
+    <artifactId>outerstellar-platform-desktop</artifactId>
     <name>Platform Desktop</name>
 
     <properties>
@@ -21,11 +21,11 @@
     <dependencies>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>platform-persistence-jooq</artifactId>
+            <artifactId>outerstellar-platform-persistence-jooq</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>platform-sync-client</artifactId>
+            <artifactId>outerstellar-platform-sync-client</artifactId>
         </dependency>
         <dependency>
             <groupId>com.formdev</groupId>
