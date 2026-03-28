@@ -12,7 +12,7 @@ jobs:
     name: CodeQL Analysis
     # Requires GitHub Team/Enterprise for the 4-core runner.
     # Fall back to ubuntu-latest if not available on your plan.
-    runs-on: ubuntu-latest-4-core
+    runs-on: ubuntu-latest-4-cores
     environment: ci
     permissions:
       contents: read

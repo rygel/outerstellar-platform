@@ -46,4 +46,7 @@ EXPOSE 8080
 ENV APP_PROFILE=prod
 ENV SESSIONCOOKIESECURE=true
 
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+USER appuser
+
 ENTRYPOINT ["java", "-cp", "app.jar:lib/*", "dev.outerstellar.platform.MainKt"]
