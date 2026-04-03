@@ -15,7 +15,17 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(scriptDir, "..");
 const nodeModulesDir = join(projectRoot, "node_modules");
-const packageLockPath = join(projectRoot, "package-lock.json");
+
+const pm = existsSync(join(projectRoot, "pnpm-lock.yaml"))
+  ? "pnpm"
+  : existsSync(join(projectRoot, "yarn.lock"))
+    ? "yarn"
+    : "npm";
+
+const packageLockPath = join(
+  projectRoot,
+  pm === "pnpm" ? "pnpm-lock.yaml" : pm === "yarn" ? "yarn.lock" : "package-lock.json",
+);
 const tailwindCliPath = join(
   nodeModulesDir,
   "@tailwindcss",
@@ -175,10 +185,15 @@ function ensureDependencies() {
       return;
     }
 
+    const installArgs =
+      pm === "npm"
+        ? ["ci", "--no-audit", "--no-fund"]
+        : ["install", "--frozen-lockfile"];
+
     if (process.platform === "win32") {
-      run("cmd.exe", ["/d", "/s", "/c", "npm ci --no-audit --no-fund"]);
+      run("cmd.exe", ["/d", "/s", "/c", `${pm} ${installArgs.join(" ")}`]);
     } else {
-      run("npm", ["ci", "--no-audit", "--no-fund"]);
+      run(pm, installArgs);
     }
 
     writeState(hashAfterLock);
