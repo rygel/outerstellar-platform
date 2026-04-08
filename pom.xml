@@ -54,7 +54,7 @@
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.13</outerstellar.version>
         <http4k.version>6.37.0.0</http4k.version>
-        <flyway.version>12.1.1</flyway.version>
+        <flyway.version>12.3.0</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
         <jooq.version>3.21.1</jooq.version>
         <jdbi.version>3.52.0</jdbi.version>
