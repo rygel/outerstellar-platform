@@ -5,6 +5,9 @@ WORKDIR /app
 
 # Install Node.js 20 via the NodeSource apt repository.
 # Using apt-key + signed repo avoids piping curl output directly to bash.
+# The repo is already pinned to node_20.x — exact apt patch pinning is
+# intentionally omitted because NodeSource drops old packages on each release.
+# hadolint ignore=DL3008
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
         -o /tmp/nodesource.gpg.key && \
     gpg --dearmor < /tmp/nodesource.gpg.key > /etc/apt/keyrings/nodesource.gpg && \
