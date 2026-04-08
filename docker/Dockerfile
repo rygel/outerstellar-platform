@@ -27,7 +27,7 @@ RUN (mvn dependency:go-offline -pl platform-web -am -DskipTests -Denforcer.skip=
 # Copy source code
 COPY . .
 
-# Build the project (assembly plugin produces the fat jar)
+# Build the project (shade plugin produces target/app.jar)
 RUN mvn package -pl platform-web -am -DskipTests -Denforcer.skip=true \
     -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
     -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true
@@ -37,7 +37,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # Copy self-contained fat jar produced by maven-shade-plugin
-COPY --from=builder /app/platform-web/target/*-jar-with-dependencies.jar app.jar
+COPY --from=builder /app/platform-web/target/app.jar app.jar
 
 EXPOSE 8080
 ENV APP_PROFILE=prod

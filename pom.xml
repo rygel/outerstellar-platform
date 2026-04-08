@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>1.4.0</version>
+    <version>1.4.1</version>
 
     <packaging>pom</packaging>
 
@@ -53,6 +53,7 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.14</outerstellar.version>
+        <outerstellar.platform.version>1.4.1</outerstellar.platform.version>
         <http4k.version>6.40.1.0</http4k.version>
         <flyway.version>12.3.0</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
@@ -165,27 +166,27 @@
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-core</artifactId>
-                <version>${project.version}</version>
+                <version>${outerstellar.platform.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-persistence-jooq</artifactId>
-                <version>${project.version}</version>
+                <version>${outerstellar.platform.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
-                <version>${project.version}</version>
+                <version>${outerstellar.platform.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-sync-client</artifactId>
-                <version>${project.version}</version>
+                <version>${outerstellar.platform.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-web</artifactId>
-                <version>${project.version}</version>
+                <version>${outerstellar.platform.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
