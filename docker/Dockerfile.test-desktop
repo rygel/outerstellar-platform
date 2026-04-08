@@ -1,4 +1,4 @@
-FROM maven:3.9-eclipse-temurin-21
+FROM maven:3.9-eclipse-temurin-21@sha256:481aad0b7042ad7a924ebd49ea5b307a049bd33d758f8613d68dcbd2904f3c8e # maven:3.9-eclipse-temurin-21
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends xvfb x11-utils libxrender1 libxtst6 libxi6 fontconfig && \
