@@ -27,26 +27,24 @@ RUN (mvn dependency:go-offline -pl platform-web -am -DskipTests -Denforcer.skip=
 # Copy source code
 COPY . .
 
-# Build the project and copy runtime dependencies
+# Build the project (assembly plugin produces the fat jar)
 RUN mvn package -pl platform-web -am -DskipTests -Denforcer.skip=true \
     -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
-    -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true && \
-    mvn dependency:copy-dependencies -pl platform-web -DincludeScope=runtime \
-    -DoutputDirectory=platform-web/target/lib -DskipTests -Denforcer.skip=true
+    -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true
 
 # Runtime stage
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Copy application jar and dependencies
-COPY --from=builder /app/platform-web/target/platform-web-*.jar app.jar
-COPY --from=builder /app/platform-web/target/lib/ lib/
+# Copy self-contained fat jar produced by maven-assembly-plugin
+COPY --from=builder /app/platform-web/target/*-jar-with-dependencies.jar app.jar
 
 EXPOSE 8080
 ENV APP_PROFILE=prod
 ENV SESSIONCOOKIESECURE=true
 
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser && \
+    mkdir -p /app/data && chown -R appuser:appgroup /app/data
 USER appuser
 
-ENTRYPOINT ["java", "-cp", "app.jar:lib/*", "dev.outerstellar.platform.MainKt"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
