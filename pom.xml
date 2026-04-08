@@ -109,7 +109,7 @@
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
         <!-- Surefire tag filters — overridden by the performance profile -->
-        <surefire.excluded.groups>performance,e2e</surefire.excluded.groups>
+        <surefire.excluded.groups>performance,e2e,docker-e2e</surefire.excluded.groups>
         <surefire.groups/>
         <!-- false: Swing tests always run; Docker/Xvfb provides virtual display in CI. -->
         <desktop.headless>false</desktop.headless>
