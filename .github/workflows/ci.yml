@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
 
 permissions: {}
 
@@ -217,7 +218,7 @@ jobs:
           restore-keys: nvd-
 
       - name: OWASP dependency check
-        run: mvn dependency-check:aggregate -DskipTests
+        run: mvn org.owasp:dependency-check-maven:aggregate -DskipTests
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
 

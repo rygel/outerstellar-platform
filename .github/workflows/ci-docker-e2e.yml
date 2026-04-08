@@ -1,0 +1,122 @@
+name: Docker E2E
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'docker/**'
+      - 'platform-web/**'
+      - 'pom.xml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'docker/**'
+      - 'platform-web/**'
+      - 'pom.xml'
+
+permissions: {}
+
+concurrency:
+  group: docker-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-e2e:
+    name: Docker E2E Smoke Tests
+    runs-on: ubuntu-latest
+    environment: ci
+    permissions:
+      contents: read
+    env:
+      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      # Password seeded into the container and read by tests via E2E_ADMIN_PASSWORD
+      E2E_ADMIN_PASSWORD: e2eTestPassword123
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: github-rygel
+          server-username: GITHUB_ACTOR
+          server-password: GH_PACKAGES_TOKEN
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build Docker image
+        run: docker build -f docker/Dockerfile -t outerstellar-platform:e2e .
+
+      - name: Start application container
+        run: |
+          docker run -d \
+            --name outerstellar-e2e \
+            -p 8080:8080 \
+            -e ADMIN_PASSWORD="${E2E_ADMIN_PASSWORD}" \
+            -e DEVMODE=true \
+            -e SESSIONCOOKIESECURE=false \
+            outerstellar-platform:e2e
+
+      - name: Wait for application to be ready
+        run: |
+          echo "Waiting for application to start..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health | grep -q '"status":"UP"'; then
+              echo "Application is ready after $((i * 5))s"
+              exit 0
+            fi
+            echo "Attempt $i/30 — not ready yet, retrying in 5s..."
+            sleep 5
+          done
+          echo "Application did not become ready within 150s"
+          docker logs outerstellar-e2e
+          exit 1
+
+      - name: Install parent POM and dependencies locally
+        run: |
+          mvn install -N -q
+          mvn install \
+            -pl platform-core,platform-persistence-jooq,platform-sync-client,platform-security,platform-web \
+            -DskipTests -Dexec.skip=true -q \
+            -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
+            -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true -Djacoco.skip=true
+
+      - name: Run Docker smoke tests
+        env:
+          # Keep Playwright browsers inside target/ so they are cleaned up by mvn clean
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/platform-web/target/playwright-browsers
+        run: >
+          mvn test -pl platform-web
+          -Dgroups=docker-e2e
+          -DexcludedGroups=
+          -DE2E_BASE_URL=http://localhost:8080
+          -Denforcer.skip=true
+          -Ddetekt.skip=true
+          -Dcheckstyle.skip=true
+          -Dpmd.skip=true
+          -Dcpd.skip=true
+          -Dspotbugs.skip=true
+          -Dspotless.apply.skip=true
+          -Djacoco.skip=true
+          -Dexec.skip=true
+
+      - name: Collect container logs on failure
+        if: failure()
+        run: docker logs outerstellar-e2e
+
+      - name: Stop and remove container
+        if: always()
+        run: docker rm -f outerstellar-e2e || true

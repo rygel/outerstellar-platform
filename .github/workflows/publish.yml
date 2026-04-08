@@ -85,4 +85,4 @@ jobs:
         if: steps.check.outputs.exists == 'false'
         run: mvn deploy -DskipTests -Denforcer.skip=true
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
