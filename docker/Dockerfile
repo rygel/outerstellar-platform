@@ -36,7 +36,7 @@ RUN mvn package -pl platform-web -am -DskipTests -Denforcer.skip=true \
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Copy self-contained fat jar produced by maven-assembly-plugin
+# Copy self-contained fat jar produced by maven-shade-plugin
 COPY --from=builder /app/platform-web/target/*-jar-with-dependencies.jar app.jar
 
 EXPOSE 8080
