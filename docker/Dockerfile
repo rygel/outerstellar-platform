@@ -1,5 +1,6 @@
 # Multi-stage build for outerstellar-platform
-FROM maven:3.9-eclipse-temurin-21@sha256:481aad0b7042ad7a924ebd49ea5b307a049bd33d758f8613d68dcbd2904f3c8e AS builder # maven:3.9-eclipse-temurin-21
+# maven:3.9-eclipse-temurin-21
+FROM maven:3.9-eclipse-temurin-21@sha256:481aad0b7042ad7a924ebd49ea5b307a049bd33d758f8613d68dcbd2904f3c8e AS builder
 WORKDIR /app
 
 # Install Node.js 20 via the NodeSource apt repository.
@@ -40,8 +41,8 @@ RUN mvn package -pl platform-web -am -DskipTests -Denforcer.skip=true \
     -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
     -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true
 
-# Runtime stage
-FROM eclipse-temurin:21-jre@sha256:a27f3be269a0a12b99ee58af1c4ebe45233d119d3926f643e3da5d298d4726dc # eclipse-temurin:21-jre
+# Runtime stage — eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre@sha256:a27f3be269a0a12b99ee58af1c4ebe45233d119d3926f643e3da5d298d4726dc
 WORKDIR /app
 
 # Copy self-contained fat jar produced by maven-shade-plugin
