@@ -9,6 +9,35 @@ updates:
     ignore:
       - dependency-name: "org.jetbrains.kotlin:*"
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+    groups:
+      http4k:
+        patterns: ["org.http4k:*"]
+      opentelemetry:
+        patterns: ["io.opentelemetry:*"]
+      koin:
+        patterns: ["io.insert-koin:*"]
+      jackson:
+        patterns: ["com.fasterxml.jackson*:*"]
+      logging:
+        patterns: ["org.slf4j:*", "ch.qos.logback:*"]
+      persistence:
+        patterns: ["org.jooq:*", "org.jdbi:*", "com.h2database:*", "org.postgresql:*", "org.flywaydb:*"]
+      micrometer:
+        patterns: ["io.micrometer:*"]
+      outerstellar:
+        patterns: ["io.github.rygel:*"]
+      test-frameworks:
+        patterns: ["org.junit*:*", "io.mockk:*", "com.microsoft.playwright:*", "com.tngtech.archunit:*"]
+        dependency-type: "development"
+      build-plugins:
+        patterns:
+          - "com.github.spotbugs:*"
+          - "io.gitlab.arturbosch.detekt:*"
+          - "org.jacoco:*"
+          - "com.diffplug.spotless:*"
+          - "org.apache.maven.plugins:*"
+          - "org.codehaus.mojo:*"
+        dependency-type: "development"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -16,6 +45,9 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
 
   - package-ecosystem: "npm"
     directory: "/"
@@ -23,3 +55,6 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 5
+    groups:
+      npm-all:
+        patterns: ["*"]

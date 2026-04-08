@@ -27,7 +27,7 @@ RUN (mvn dependency:go-offline -pl platform-web -am -DskipTests -Denforcer.skip=
 # Copy source code
 COPY . .
 
-# Build the project — maven-shade-plugin produces a self-contained app.jar
+# Build the project (shade plugin produces target/app.jar)
 RUN mvn package -pl platform-web -am -DskipTests -Denforcer.skip=true \
     -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
     -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true

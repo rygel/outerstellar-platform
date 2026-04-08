@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>1.4.0</version>
+    <version>1.4.1</version>
 
     <packaging>pom</packaging>
 
@@ -52,12 +52,12 @@
         <java.version>21</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
-        <outerstellar.version>1.0.13</outerstellar.version>
-        <outerstellar.platform.version>1.4.0</outerstellar.platform.version>
-        <http4k.version>6.37.0.0</http4k.version>
-        <flyway.version>12.1.1</flyway.version>
+        <outerstellar.version>1.0.14</outerstellar.version>
+        <outerstellar.platform.version>1.4.1</outerstellar.platform.version>
+        <http4k.version>6.40.1.0</http4k.version>
+        <flyway.version>12.3.0</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
-        <jooq.version>3.20.11</jooq.version>
+        <jooq.version>3.21.1</jooq.version>
         <jdbi.version>3.52.0</jdbi.version>
         <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
@@ -66,7 +66,7 @@
         <enforcer.version>3.6.2</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
-        <spotbugs.version>4.9.8.2</spotbugs.version>
+        <spotbugs.version>4.9.8.3</spotbugs.version>
         <spotless.version>3.4.0</spotless.version>
         <ktfmt.version>0.61</ktfmt.version>
         <jacoco.version>0.8.14</jacoco.version>
@@ -77,7 +77,7 @@
         <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
         <maven.site.plugin.version>3.21.0</maven.site.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
-        <bytebuddy.version>1.18.7</bytebuddy.version>
+        <bytebuddy.version>1.18.8</bytebuddy.version>
         <koin.version>4.2.0</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
@@ -105,12 +105,12 @@
         <detekt.version>1.23.8</detekt.version>
         <miglayout.version>11.4.3</miglayout.version>
         <assertj.swing.version>4.0.0-beta-3</assertj.swing.version>
-        <i18n.tools.version>${outerstellar.version}</i18n.tools.version>
+        <i18n.tools.version>1.0.14</i18n.tools.version>
         <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
         <!-- Surefire tag filters — overridden by the performance profile -->
-        <surefire.excluded.groups>performance,e2e</surefire.excluded.groups>
+        <surefire.excluded.groups>performance,e2e,docker-e2e</surefire.excluded.groups>
         <surefire.groups/>
         <!-- false: Swing tests always run; Docker/Xvfb provides virtual display in CI. -->
         <desktop.headless>false</desktop.headless>

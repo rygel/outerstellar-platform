@@ -2,9 +2,8 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# The web module's shaded jar (uber-jar) should be copied here.
-# Assuming you run `mvn install` before building the docker image.
-# Fat jar produced by maven-shade-plugin (mvn package -pl platform-web -am -DskipTests)
+# The web module's shaded jar (uber-jar) is produced at target/app.jar by maven-shade-plugin.
+# Assuming you run `mvn package -pl platform-web -am` before building this image.
 COPY platform-web/target/app.jar app.jar
 
 # Add any default environment variables
