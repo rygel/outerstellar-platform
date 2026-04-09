@@ -186,9 +186,60 @@ class WebContext(
             layoutClass = layoutClass,
             layoutStyle = shellStyle,
             navLinks = navLinks,
-            themeSelectorUrl = componentUrl("/components/sidebar/theme-selector", currentPath),
-            languageSelectorUrl = componentUrl("/components/sidebar/language-selector", currentPath),
-            layoutSelectorUrl = componentUrl("/components/sidebar/layout-selector", currentPath),
+            themeSelector = SidebarSelector(
+                heading = i18n.translate("web.sidebar.themes"),
+                label = i18n.translate("web.sidebar.theme.label"),
+                selectId = "theme-selector",
+                selectName = "theme",
+                options = ThemeCatalog.allThemes().map { t ->
+                    ShellOption(
+                        id = t.id,
+                        label = t.name,
+                        url = t.id,
+                        active = t.id == theme,
+                        previewColors = ThemePreviewColors(
+                            background = t.colors["background"] ?: "#1e1e1e",
+                            foreground = t.colors["foreground"] ?: "#d4d4d4",
+                            accent = t.colors["accent"] ?: "#007acc",
+                            componentBackground = t.colors["componentBackground"] ?: "#252526",
+                        ),
+                    )
+                },
+                hiddenFields = listOf(
+                    HiddenField("pagePath", currentPath),
+                    HiddenField("lang", lang),
+                    HiddenField("layout", layout),
+                ),
+                refreshUrl = "/components/navigation/page",
+            ),
+            languageSelector = SidebarSelector(
+                heading = i18n.translate("web.sidebar.language"),
+                label = i18n.translate("web.sidebar.language.label"),
+                selectId = "language-selector",
+                selectName = "lang",
+                options = listOf("en" to "web.language.english", "fr" to "web.language.french")
+                    .map { (id, key) -> ShellOption(id, i18n.translate(key), id, id == lang) },
+                hiddenFields = listOf(
+                    HiddenField("pagePath", currentPath),
+                    HiddenField("theme", theme),
+                    HiddenField("layout", layout),
+                ),
+                refreshUrl = "/components/navigation/page",
+            ),
+            layoutSelector = SidebarSelector(
+                heading = i18n.translate("web.sidebar.layout"),
+                label = i18n.translate("web.sidebar.layout.label"),
+                selectId = "layout-selector",
+                selectName = "layout",
+                options = listOf("nice" to "web.layout.nice", "cozy" to "web.layout.cozy", "compact" to "web.layout.compact")
+                    .map { (id, key) -> ShellOption(id, i18n.translate(key), id, id == layout) },
+                hiddenFields = listOf(
+                    HiddenField("pagePath", currentPath),
+                    HiddenField("theme", theme),
+                    HiddenField("lang", lang),
+                ),
+                refreshUrl = "/components/navigation/page",
+            ),
             footerCopy = i18n.translate("web.footer.copy"),
             footerVersion = i18n.translate("web.footer.version", appVersion),
             footerStatusUrl = url("/components/footer-status"),
