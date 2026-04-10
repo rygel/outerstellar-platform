@@ -78,7 +78,7 @@
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <bytebuddy.version>1.18.8</bytebuddy.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
-        <koin.version>4.2.0</koin.version>
+        <koin.version>4.2.1</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
