@@ -57,7 +57,7 @@
         <flyway.version>12.3.0</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
         <jooq.version>3.21.1</jooq.version>
-        <jdbi.version>3.52.0</jdbi.version>
+        <jdbi.version>3.52.1</jdbi.version>
         <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
