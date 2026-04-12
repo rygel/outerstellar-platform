@@ -5,13 +5,13 @@ import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
-import java.util.Locale
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestKey
 import org.slf4j.LoggerFactory
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 class WebContext(
     val request: Request,
@@ -66,6 +66,9 @@ class WebContext(
         if (listOf("sidebar", "topbar").any { it == value }) value else "sidebar"
     }
 
+    // Performance note: this lookup is cheap because CachingUserRepository (wired in DI)
+    // absorbs the DB hit. If that cache is removed or its TTL is significantly reduced,
+    // every request will incur a database round-trip — profile before changing.
     val user: User? by lazy {
         // 1. Session cookie — standard browser auth
         request.cookie(SESSION_COOKIE)?.value?.let { sessionUserId ->
@@ -99,7 +102,9 @@ class WebContext(
             if (pluginNavItems.isNotEmpty()) {
                 // Plugin replaces the default nav; admin links are still appended below.
                 pluginNavItems
-                    .map { item -> ShellLink(item.label, url(item.url), item.icon, activeSection == item.activeSection) }
+                    .map { item ->
+                        ShellLink(item.label, url(item.url), item.icon, activeSection == item.activeSection)
+                    }
                     .toMutableList()
             } else {
                 mutableListOf(
@@ -131,16 +136,38 @@ class WebContext(
                 )
             }
 
-        if (user?.role == UserRole.ADMIN) {
-            links.add(ShellLink(i18n.translate("web.nav.users"), url("/admin/users"), "ri-group-line", activeSection == "/admin/users"))
-            links.add(ShellLink(i18n.translate("web.nav.audit"), url("/admin/audit"), "ri-file-list-3-line", activeSection == "/admin/audit"))
-        }
-
-        if (devDashboardEnabled && user?.role == UserRole.ADMIN) {
-            links.add(ShellLink(i18n.translate("web.nav.dev"), url("/admin/dev"), "ri-dashboard-line", activeSection == "/admin/dev"))
-        }
-
+        appendAdminLinks(links, activeSection)
         return links
+    }
+
+    private fun appendAdminLinks(links: MutableList<ShellLink>, activeSection: String) {
+        if (user?.role != UserRole.ADMIN) return
+        links.add(
+            ShellLink(
+                i18n.translate("web.nav.users"),
+                url("/admin/users"),
+                "ri-group-line",
+                activeSection == "/admin/users",
+            )
+        )
+        links.add(
+            ShellLink(
+                i18n.translate("web.nav.audit"),
+                url("/admin/audit"),
+                "ri-file-list-3-line",
+                activeSection == "/admin/audit",
+            )
+        )
+        if (devDashboardEnabled) {
+            links.add(
+                ShellLink(
+                    i18n.translate("web.nav.dev"),
+                    url("/admin/dev"),
+                    "ri-dashboard-line",
+                    activeSection == "/admin/dev",
+                )
+            )
+        }
     }
 
     @Suppress("LongMethod")
@@ -164,18 +191,21 @@ class WebContext(
             layoutClass = layoutClass,
             layoutStyle = shellStyle,
             navLinks = navLinks,
-            themeSelector = SidebarSelector(
+            themeSelector =
+            SidebarSelector(
                 heading = i18n.translate("web.sidebar.themes"),
                 label = i18n.translate("web.sidebar.theme.label"),
                 selectId = "theme-selector",
                 selectName = "theme",
-                options = ThemeCatalog.allThemes().map { t ->
+                options =
+                ThemeCatalog.allThemes().map { t ->
                     ShellOption(
                         id = t.id,
                         label = t.name,
                         url = t.id,
                         active = t.id == theme,
-                        previewColors = ThemePreviewColors(
+                        previewColors =
+                        ThemePreviewColors(
                             background = t.colors["background"] ?: "#1e1e1e",
                             foreground = t.colors["foreground"] ?: "#d4d4d4",
                             accent = t.colors["accent"] ?: "#007acc",
@@ -183,35 +213,47 @@ class WebContext(
                         ),
                     )
                 },
-                hiddenFields = listOf(
+                hiddenFields =
+                listOf(
                     HiddenField("pagePath", currentPath),
                     HiddenField("lang", lang),
                     HiddenField("layout", layout),
                 ),
                 refreshUrl = "/components/navigation/page",
             ),
-            languageSelector = SidebarSelector(
+            languageSelector =
+            SidebarSelector(
                 heading = i18n.translate("web.sidebar.language"),
                 label = i18n.translate("web.sidebar.language.label"),
                 selectId = "language-selector",
                 selectName = "lang",
-                options = listOf("en" to "web.language.english", "fr" to "web.language.french")
-                    .map { (id, key) -> ShellOption(id, i18n.translate(key), id, id == lang) },
-                hiddenFields = listOf(
+                options =
+                listOf("en" to "web.language.english", "fr" to "web.language.french").map { (id, key) ->
+                    ShellOption(id, i18n.translate(key), id, id == lang)
+                },
+                hiddenFields =
+                listOf(
                     HiddenField("pagePath", currentPath),
                     HiddenField("theme", theme),
                     HiddenField("layout", layout),
                 ),
                 refreshUrl = "/components/navigation/page",
             ),
-            layoutSelector = SidebarSelector(
+            layoutSelector =
+            SidebarSelector(
                 heading = i18n.translate("web.sidebar.layout"),
                 label = i18n.translate("web.sidebar.layout.label"),
                 selectId = "layout-selector",
                 selectName = "layout",
-                options = listOf("nice" to "web.layout.nice", "cozy" to "web.layout.cozy", "compact" to "web.layout.compact")
+                options =
+                listOf(
+                    "nice" to "web.layout.nice",
+                    "cozy" to "web.layout.cozy",
+                    "compact" to "web.layout.compact",
+                )
                     .map { (id, key) -> ShellOption(id, i18n.translate(key), id, id == layout) },
-                hiddenFields = listOf(
+                hiddenFields =
+                listOf(
                     HiddenField("pagePath", currentPath),
                     HiddenField("theme", theme),
                     HiddenField("lang", lang),

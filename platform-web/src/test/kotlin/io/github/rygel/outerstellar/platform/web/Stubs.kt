@@ -47,6 +47,10 @@ class StubMessageCache : MessageCache {
         // Stub implementation
     }
 
+    override fun invalidateByPrefix(prefix: String) {
+        // test stub — no-op
+    }
+
     override fun getStats(): Map<String, Any> = emptyMap()
 }
 

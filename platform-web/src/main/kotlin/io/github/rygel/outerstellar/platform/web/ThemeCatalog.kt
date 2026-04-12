@@ -36,8 +36,7 @@ object ThemeCatalog {
      */
     fun isDarkTheme(theme: ThemeDefinition): Boolean {
         val bg = theme.colors["background"] ?: return theme.type == "dark"
-        val lum = ColorUtils.relativeLuminance(bg) ?: return theme.type == "dark"
-        return lum < DARK_LUMINANCE_THRESHOLD
+        return ColorUtils.relativeLuminance(bg)?.let { lum -> lum < DARK_LUMINANCE_THRESHOLD } ?: (theme.type == "dark")
     }
 
     /**
@@ -287,16 +286,19 @@ internal object ColorUtils {
             when (h.length) {
                 SHORT_HEX_LEN -> "${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}"
                 FULL_HEX_LEN -> h
-                else -> return intArrayOf()
+                else -> null
             }
-        return try {
-            intArrayOf(
-                expanded.substring(0, HEX_PAIR_1_END).toInt(HEX_RADIX),
-                expanded.substring(HEX_PAIR_2_START, HEX_PAIR_2_END).toInt(HEX_RADIX),
-                expanded.substring(HEX_PAIR_3_START, HEX_PAIR_3_END).toInt(HEX_RADIX),
-            )
-        } catch (_: NumberFormatException) {
+        return if (expanded == null) {
             intArrayOf()
+        } else {
+            runCatching {
+                intArrayOf(
+                    expanded.substring(0, HEX_PAIR_1_END).toInt(HEX_RADIX),
+                    expanded.substring(HEX_PAIR_2_START, HEX_PAIR_2_END).toInt(HEX_RADIX),
+                    expanded.substring(HEX_PAIR_3_START, HEX_PAIR_3_END).toInt(HEX_RADIX),
+                )
+            }
+                .getOrDefault(intArrayOf())
         }
     }
 

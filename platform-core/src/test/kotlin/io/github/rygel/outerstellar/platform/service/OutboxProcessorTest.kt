@@ -87,4 +87,16 @@ class OutboxProcessorTest {
 
         entries.forEach { e -> verify { outboxRepository.markProcessed(e.id) } }
     }
+
+    @Test
+    fun `processPending re-polls immediately when batch is full`() {
+        val fullBatch = (1..10).map { entry() }
+        every { outboxRepository.listPending(10) } returnsMany listOf(fullBatch, emptyList())
+
+        val processor = OutboxProcessor(outboxRepository)
+        processor.processPending()
+
+        verify(exactly = 2) { outboxRepository.listPending(10) }
+        fullBatch.forEach { e -> verify { outboxRepository.markProcessed(e.id) } }
+    }
 }
