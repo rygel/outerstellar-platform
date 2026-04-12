@@ -6,11 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-<<<<<<< HEAD
     <version>1.4.2</version>
-=======
-    <version>1.4.1</version>
->>>>>>> origin/main
 
     <packaging>pom</packaging>
 
@@ -57,19 +53,11 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.14</outerstellar.version>
-<<<<<<< HEAD
-=======
-        <outerstellar.platform.version>1.4.1</outerstellar.platform.version>
->>>>>>> origin/main
         <http4k.version>6.40.1.0</http4k.version>
         <flyway.version>12.3.0</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
         <jooq.version>3.21.1</jooq.version>
-<<<<<<< HEAD
         <jdbi.version>3.52.1</jdbi.version>
-=======
-        <jdbi.version>3.52.0</jdbi.version>
->>>>>>> origin/main
         <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
@@ -89,12 +77,8 @@
         <maven.site.plugin.version>3.21.0</maven.site.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <bytebuddy.version>1.18.8</bytebuddy.version>
-<<<<<<< HEAD
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <koin.version>4.2.1</koin.version>
-=======
-        <koin.version>4.2.0</koin.version>
->>>>>>> origin/main
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
@@ -182,47 +166,27 @@
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-core</artifactId>
-<<<<<<< HEAD
                 <version>${project.version}</version>
-=======
-                <version>${outerstellar.platform.version}</version>
->>>>>>> origin/main
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-persistence-jooq</artifactId>
-<<<<<<< HEAD
                 <version>${project.version}</version>
-=======
-                <version>${outerstellar.platform.version}</version>
->>>>>>> origin/main
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
-<<<<<<< HEAD
                 <version>${project.version}</version>
-=======
-                <version>${outerstellar.platform.version}</version>
->>>>>>> origin/main
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-sync-client</artifactId>
-<<<<<<< HEAD
                 <version>${project.version}</version>
-=======
-                <version>${outerstellar.platform.version}</version>
->>>>>>> origin/main
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-web</artifactId>
-<<<<<<< HEAD
                 <version>${project.version}</version>
-=======
-                <version>${outerstellar.platform.version}</version>
->>>>>>> origin/main
             </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
