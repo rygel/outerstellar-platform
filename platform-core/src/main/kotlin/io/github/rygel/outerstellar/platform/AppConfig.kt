@@ -53,9 +53,12 @@ data class AppConfig(
     /** Public-facing base URL used in emails, e.g. https://app.example.com */
     val appBaseUrl: String = "http://localhost:8080",
     val jwt: JwtConfig = JwtConfig(),
+    // 'unsafe-inline' is intentionally absent from script-src: all scripts are loaded from
+    // external files so inline scripts are never needed. style-src retains 'unsafe-inline'
+    // because inline style= attributes are used extensively in templates.
     val cspPolicy: String =
         "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline'; " +
+            "script-src 'self'; " +
             "style-src 'self' 'unsafe-inline'; " +
             "font-src 'self'; " +
             "connect-src 'self' ws: wss:; " +
