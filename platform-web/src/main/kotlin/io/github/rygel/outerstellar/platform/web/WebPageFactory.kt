@@ -17,11 +17,8 @@ fun gravatarUrl(email: String, customUrl: String?): String {
     if (!customUrl.isNullOrBlank()) return customUrl
     val normalized = email.trim().lowercase()
     return gravatarCache.get(normalized) {
-        val hash =
-            java.security.MessageDigest.getInstance("MD5").digest(it.toByteArray()).joinToString("") { byte
-                -> // nosemgrep: kotlin.lang.security.use-of-md5.use-of-md5 -- Gravatar API requires MD5
-                "%02x".format(byte)
-            }
+        val md5 = java.security.MessageDigest.getInstance("MD5") // nosemgrep
+        val hash = md5.digest(it.toByteArray()).joinToString("") { b -> "%02x".format(b) }
         "https://www.gravatar.com/avatar/$hash?d=identicon&s=80"
     }!!
 }
