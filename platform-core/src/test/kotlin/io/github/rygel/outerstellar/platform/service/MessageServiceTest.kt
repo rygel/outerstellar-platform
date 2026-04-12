@@ -1,14 +1,10 @@
 package io.github.rygel.outerstellar.platform.service
 
-<<<<<<< HEAD
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
-=======
->>>>>>> origin/main
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.PagedResult
 import io.github.rygel.outerstellar.platform.model.PaginationMetadata
 import io.github.rygel.outerstellar.platform.model.StoredMessage
-<<<<<<< HEAD
 import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.mockk.Runs
@@ -19,13 +15,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import java.util.UUID
-=======
-import io.github.rygel.outerstellar.platform.persistence.MessageRepository
-import io.mockk.every
-import io.mockk.mockk
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
->>>>>>> origin/main
 
 class MessageServiceTest {
     private val repository = mockk<MessageRepository>(relaxed = true)
@@ -53,7 +42,6 @@ class MessageServiceTest {
         val result = service.listDirtyMessages()
         assertEquals(items, result)
     }
-<<<<<<< HEAD
 
     @Test
     fun `createServerMessage preserves entity cache entry after mutation`() {
@@ -101,6 +89,4 @@ class MessageServiceTest {
 
         assertNull(cache.get("list:null:null:10:0"))
     }
-=======
->>>>>>> origin/main
 }
