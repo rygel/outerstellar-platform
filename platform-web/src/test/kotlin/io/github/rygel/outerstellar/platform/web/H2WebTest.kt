@@ -19,11 +19,11 @@ import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.NotificationService
-import javax.sql.DataSource
 import org.http4k.core.HttpHandler
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.impl.DSL
+import javax.sql.DataSource
 
 @Suppress("UtilityClassWithPublicConstructor")
 abstract class H2WebTest {
@@ -142,18 +142,18 @@ abstract class H2WebTest {
                 WebPageFactory(messageRepository, messageService, contactService, securityService, notificationService)
 
             return app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    renderer,
-                    pageFactory,
-                    config,
-                    securityService,
-                    userRepository,
-                    deviceTokenRepository = deviceTokenRepository,
-                    notificationService = notificationService,
-                )
+                messageService,
+                contactService,
+                outbox,
+                cache,
+                renderer,
+                pageFactory,
+                config,
+                securityService,
+                userRepository,
+                deviceTokenRepository = deviceTokenRepository,
+                notificationService = notificationService,
+            )
                 .http!!
         }
     }

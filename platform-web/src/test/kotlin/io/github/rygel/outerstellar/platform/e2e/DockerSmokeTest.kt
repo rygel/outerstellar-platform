@@ -16,8 +16,8 @@ import kotlin.test.assertTrue
 /**
  * Smoke tests that run against a live Docker container.
  *
- * Expects the application to be running at [baseUrl] (default: http://localhost:8080) with
- * DEVMODE=true so the devAutoLogin filter auto-authenticates localhost requests.
+ * Expects the application to be running at [baseUrl] (default: http://localhost:8080) with DEVMODE=true so the
+ * devAutoLogin filter auto-authenticates localhost requests.
  *
  * Run locally: E2E_BASE_URL=http://localhost:8080 mvn test -pl platform-web -Dgroups=docker-e2e -DexcludedGroups=
  */
@@ -120,7 +120,8 @@ class DockerSmokeTest {
         page.navigate("$baseUrl/nonexistent-page-xyz-12345")
         val content = page.content()
         assertTrue(
-            content.contains("404") || content.contains("not found", ignoreCase = true) ||
+            content.contains("404") ||
+                content.contains("not found", ignoreCase = true) ||
                 content.contains("error", ignoreCase = true),
             "Unknown route should return a 404 error page",
         )
@@ -129,9 +130,6 @@ class DockerSmokeTest {
     @Test
     fun `static assets are served`() {
         val response = page.navigate("$baseUrl/static/site.css")
-        assertTrue(
-            response != null && response.ok(),
-            "Static CSS asset should be served with a 200 response",
-        )
+        assertTrue(response != null && response.ok(), "Static CSS asset should be served with a 200 response")
     }
 }
