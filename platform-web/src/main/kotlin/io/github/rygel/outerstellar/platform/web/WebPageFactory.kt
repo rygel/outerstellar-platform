@@ -6,17 +6,23 @@ import io.github.rygel.outerstellar.platform.sync.SyncMessage
 
 private const val MIN_PASSWORD_LENGTH = 8
 
-private val gravatarCache = java.util.concurrent.ConcurrentHashMap<String, String>()
+private val gravatarCache: com.github.benmanes.caffeine.cache.Cache<String, String> =
+    com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
+        .maximumSize(10_000)
+        .expireAfterAccess(1, java.util.concurrent.TimeUnit.HOURS)
+        .build()
 
 fun gravatarUrl(email: String, customUrl: String?): String {
     if (!customUrl.isNullOrBlank()) return customUrl
-    return gravatarCache.computeIfAbsent(email.trim().lowercase()) { normalized ->
+    val normalized = email.trim().lowercase()
+    return gravatarCache.get(normalized) {
         val hash =
-            java.security.MessageDigest.getInstance("MD5").digest(normalized.toByteArray()).joinToString("") { // nosemgrep: kotlin.lang.security.use-of-md5.use-of-md5 -- Gravatar API requires MD5
-                "%02x".format(it)
+            java.security.MessageDigest.getInstance("MD5").digest(it.toByteArray()).joinToString("") { byte
+                -> // nosemgrep: kotlin.lang.security.use-of-md5.use-of-md5 -- Gravatar API requires MD5
+                "%02x".format(byte)
             }
         "https://www.gravatar.com/avatar/$hash?d=identicon&s=80"
-    }
+    }!!
 }
 
 private const val DEFAULT_LIMIT = 10
