@@ -1,16 +1,16 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.sync.SyncMessage
+import java.util.concurrent.TimeUnit
 
 private const val MIN_PASSWORD_LENGTH = 8
 
-private val gravatarCache: com.github.benmanes.caffeine.cache.Cache<String, String> =
-    com.github.benmanes.caffeine.cache.Caffeine.newBuilder()
-        .maximumSize(10_000)
-        .expireAfterAccess(1, java.util.concurrent.TimeUnit.HOURS)
-        .build()
+private val gravatarCache: Cache<String, String> =
+    Caffeine.newBuilder().maximumSize(10_000).expireAfterAccess(1, TimeUnit.HOURS).build()
 
 fun gravatarUrl(email: String, customUrl: String?): String {
     if (!customUrl.isNullOrBlank()) return customUrl
