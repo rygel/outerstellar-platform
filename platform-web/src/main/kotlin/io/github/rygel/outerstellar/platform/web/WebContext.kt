@@ -94,24 +94,14 @@ class WebContext(
     fun componentUrl(path: String, pagePath: String): String =
         "${url(path)}?pagePath=${if (pagePath.isBlank()) "/" else pagePath}"
 
-    @Suppress("LongMethod")
-    fun shell(pageTitle: String, activeSection: String): ShellView {
-        val currentPath = if (request.uri.path.isBlank()) "/" else request.uri.path
-        val themeCss = ThemeCatalog.toCssVariables(theme)
-        val layoutClass = if (layout == "nice") "" else "layout-$layout"
-
-        val navLinks: MutableList<ShellLink>
-
-        if (pluginNavItems.isNotEmpty()) {
-            // Plugin replaces the default nav; admin links are still appended below.
-            navLinks =
+    private fun buildNavLinks(activeSection: String): List<ShellLink> {
+        val links: MutableList<ShellLink> =
+            if (pluginNavItems.isNotEmpty()) {
+                // Plugin replaces the default nav; admin links are still appended below.
                 pluginNavItems
-                    .map { item ->
-                        ShellLink(item.label, url(item.url), item.icon, activeSection == item.activeSection)
-                    }
+                    .map { item -> ShellLink(item.label, url(item.url), item.icon, activeSection == item.activeSection) }
                     .toMutableList()
-        } else {
-            navLinks =
+            } else {
                 mutableListOf(
                     ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
                     ShellLink(
@@ -139,38 +129,26 @@ class WebContext(
                         activeSection == "/errors",
                     ),
                 )
-        }
+            }
 
         if (user?.role == UserRole.ADMIN) {
-            navLinks.add(
-                ShellLink(
-                    i18n.translate("web.nav.users"),
-                    url("/admin/users"),
-                    "ri-group-line",
-                    activeSection == "/admin/users",
-                )
-            )
-            navLinks.add(
-                ShellLink(
-                    i18n.translate("web.nav.audit"),
-                    url("/admin/audit"),
-                    "ri-file-list-3-line",
-                    activeSection == "/admin/audit",
-                )
-            )
+            links.add(ShellLink(i18n.translate("web.nav.users"), url("/admin/users"), "ri-group-line", activeSection == "/admin/users"))
+            links.add(ShellLink(i18n.translate("web.nav.audit"), url("/admin/audit"), "ri-file-list-3-line", activeSection == "/admin/audit"))
         }
 
         if (devDashboardEnabled && user?.role == UserRole.ADMIN) {
-            navLinks.add(
-                ShellLink(
-                    i18n.translate("web.nav.dev"),
-                    url("/admin/dev"),
-                    "ri-dashboard-line",
-                    activeSection == "/admin/dev",
-                )
-            )
+            links.add(ShellLink(i18n.translate("web.nav.dev"), url("/admin/dev"), "ri-dashboard-line", activeSection == "/admin/dev"))
         }
 
+        return links
+    }
+
+    @Suppress("LongMethod")
+    fun shell(pageTitle: String, activeSection: String): ShellView {
+        val currentPath = if (request.uri.path.isBlank()) "/" else request.uri.path
+        val themeCss = ThemeCatalog.toCssVariables(theme)
+        val layoutClass = if (layout == "nice") "" else "layout-$layout"
+        val navLinks = buildNavLinks(activeSection)
         val isDark = theme == "dark"
         val toggleTheme = if (isDark) "default" else "dark"
         val darkModeToggleUrl = "$currentPath?theme=$toggleTheme"
@@ -186,9 +164,60 @@ class WebContext(
             layoutClass = layoutClass,
             layoutStyle = shellStyle,
             navLinks = navLinks,
-            themeSelectorUrl = componentUrl("/components/sidebar/theme-selector", currentPath),
-            languageSelectorUrl = componentUrl("/components/sidebar/language-selector", currentPath),
-            layoutSelectorUrl = componentUrl("/components/sidebar/layout-selector", currentPath),
+            themeSelector = SidebarSelector(
+                heading = i18n.translate("web.sidebar.themes"),
+                label = i18n.translate("web.sidebar.theme.label"),
+                selectId = "theme-selector",
+                selectName = "theme",
+                options = ThemeCatalog.allThemes().map { t ->
+                    ShellOption(
+                        id = t.id,
+                        label = t.name,
+                        url = t.id,
+                        active = t.id == theme,
+                        previewColors = ThemePreviewColors(
+                            background = t.colors["background"] ?: "#1e1e1e",
+                            foreground = t.colors["foreground"] ?: "#d4d4d4",
+                            accent = t.colors["accent"] ?: "#007acc",
+                            componentBackground = t.colors["componentBackground"] ?: "#252526",
+                        ),
+                    )
+                },
+                hiddenFields = listOf(
+                    HiddenField("pagePath", currentPath),
+                    HiddenField("lang", lang),
+                    HiddenField("layout", layout),
+                ),
+                refreshUrl = "/components/navigation/page",
+            ),
+            languageSelector = SidebarSelector(
+                heading = i18n.translate("web.sidebar.language"),
+                label = i18n.translate("web.sidebar.language.label"),
+                selectId = "language-selector",
+                selectName = "lang",
+                options = listOf("en" to "web.language.english", "fr" to "web.language.french")
+                    .map { (id, key) -> ShellOption(id, i18n.translate(key), id, id == lang) },
+                hiddenFields = listOf(
+                    HiddenField("pagePath", currentPath),
+                    HiddenField("theme", theme),
+                    HiddenField("layout", layout),
+                ),
+                refreshUrl = "/components/navigation/page",
+            ),
+            layoutSelector = SidebarSelector(
+                heading = i18n.translate("web.sidebar.layout"),
+                label = i18n.translate("web.sidebar.layout.label"),
+                selectId = "layout-selector",
+                selectName = "layout",
+                options = listOf("nice" to "web.layout.nice", "cozy" to "web.layout.cozy", "compact" to "web.layout.compact")
+                    .map { (id, key) -> ShellOption(id, i18n.translate(key), id, id == layout) },
+                hiddenFields = listOf(
+                    HiddenField("pagePath", currentPath),
+                    HiddenField("theme", theme),
+                    HiddenField("lang", lang),
+                ),
+                refreshUrl = "/components/navigation/page",
+            ),
             footerCopy = i18n.translate("web.footer.copy"),
             footerVersion = i18n.translate("web.footer.version", appVersion),
             footerStatusUrl = url("/components/footer-status"),

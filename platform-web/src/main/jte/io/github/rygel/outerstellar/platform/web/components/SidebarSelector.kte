@@ -14,7 +14,8 @@
                     @endfor
                     <button type="submit" class="theme-preview-card@if(option.active) active@endif"
                             title="${option.label}"
-                            aria-label="Switch to ${option.label} theme">
+                            aria-label="Switch to ${option.label} theme"
+                            onclick="this.closest('.theme-preview-grid').querySelectorAll('.theme-preview-card').forEach(function(el){el.classList.remove('active')});this.classList.add('active');">
                         @if(option.previewColors != null)
                             !{val colors = option.previewColors!!}
                             <div class="theme-preview-swatch"
