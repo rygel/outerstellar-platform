@@ -7,7 +7,11 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
+<<<<<<< HEAD
         <version>1.4.2</version>
+=======
+        <version>1.4.1</version>
+>>>>>>> origin/main
 
     </parent>
 

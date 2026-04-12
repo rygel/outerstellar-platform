@@ -22,6 +22,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.1] – 2026-04-08
+
+### Fixed
+- BOM `dependencyManagement` entries now use `${outerstellar.platform.version}` (a literal property) instead of `${project.version}`, preventing downstream projects from resolving platform modules at their own version rather than `1.4.1`
+- `devAutoLogin` loopback guard now validates `request.source?.address` in addition to the `Host` header, preventing spoofing via a `Host: localhost` header from a remote client
+- Docker multi-stage build: corrected stale JAR glob, wrong main class (`dev.outerstellar` → `io.github.rygel`), and missing `/app/data` write permissions for H2
+- Switched from `maven-assembly-plugin` to `maven-shade-plugin` with `ServicesResourceTransformer` so SPI registrations (e.g. hoplite-yaml parser) survive fat-jar packaging
+- CI: `docker-e2e` test tag now excluded from the standard build so `DockerSmokeTest` only runs in the dedicated Docker E2E workflow
+
+### CI
+- Added Docker E2E smoke-test workflow (`ci-docker-e2e.yml`): builds image, starts container with `DEVMODE=true`, polls `/health`, then runs Playwright smoke tests with browser cache inside `target/`
+- Updated `codeql-action`, `hadolint-action`, `scorecard-action`, `semgrep` and `zizmor` to SHA-pinned v4.35.1 / latest
+
+### Changed
+- Bumped `outerstellar-framework` from 1.0.13 to 1.0.14
+- Bumped `http4k` from 6.37.0.0 to 6.39.1.0
+- Bumped `jOOQ` from 3.20.11 to 3.21.1
+- Bumped `flyway` from 12.1.1 to 12.3.0
+- Bumped `SpotBugs Maven Plugin`, `byte-buddy`, `outerstellar-i18n-validator-maven-plugin`
+
+---
+
 ## [1.3.5] – 2026-03-28
 
 ### Security
