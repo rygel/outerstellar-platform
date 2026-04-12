@@ -14,11 +14,14 @@ class OutboxProcessor(
     private val logger = LoggerFactory.getLogger(OutboxProcessor::class.java)
 
     fun processPending() {
-        val entries = outboxRepository.listPending(MAX_BATCH_SIZE)
-        if (entries.isEmpty()) return
-
-        logger.info("Processing {} outbox entries", entries.size)
-        processEntries(entries)
+        var batchSize: Int
+        do {
+            val entries = outboxRepository.listPending(MAX_BATCH_SIZE)
+            if (entries.isEmpty()) return
+            batchSize = entries.size
+            logger.info("Processing {} outbox entries", batchSize)
+            processEntries(entries)
+        } while (batchSize == MAX_BATCH_SIZE)
     }
 
     @Suppress("TooGenericExceptionCaught")
