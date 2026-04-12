@@ -45,6 +45,9 @@
         <module>platform-desktop</module>
         <module>platform-security</module>
         <module>platform-seed</module>
+        <module>platform-facegallery-api</module>
+        <module>platform-facegallery</module>
+        <module>platform-facegallery-cli</module>
     </modules>
 
     <properties>
@@ -187,6 +190,21 @@
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-web</artifactId>
                 <version>${outerstellar.platform.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.rygel</groupId>
+                <artifactId>platform-facegallery-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.rygel</groupId>
+                <artifactId>platform-facegallery</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.rygel</groupId>
+                <artifactId>platform-facegallery-cli</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>

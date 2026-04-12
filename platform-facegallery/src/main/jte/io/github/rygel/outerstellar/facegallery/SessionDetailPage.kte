@@ -1,0 +1,74 @@
+@import io.github.rygel.outerstellar.facegallery.routes.SessionDetailViewModel
+@import io.github.rygel.outerstellar.facegallery.api.dto.Photo
+@import io.github.rygel.outerstellar.facegallery.api.dto.JobProgress
+@import io.github.rygel.outerstellar.platform.web.Page
+@import io.github.rygel.outerstellar.platform.web.LayoutRouter
+
+@param model: Page<SessionDetailViewModel>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+    <div class="page-header">
+        <div class="page-header-text">
+            <p class="topbar-label">
+                <a href="/sessions" class="link-muted">&larr; Sessions</a>
+            </p>
+            <h1>${model.data.session.name}</h1>
+            <p class="text-muted">${model.data.session.createdAt}</p>
+        </div>
+        <div class="flex gap-2">
+            @if (model.data.session.status.name == "PENDING" || model.data.session.status.name == "FAILED")
+                <form hx-post="/sessions/${model.data.session.id}/process" hx-target="body" hx-swap="beforeend">
+                    <button type="submit" class="button-accent">
+                        <i class="ri-play-line"></i>
+                        Start Processing
+                    </button>
+                </form>
+            @endif
+            <form hx-delete="/sessions/${model.data.session.id}" hx-target="body" hx-swap="beforeend">
+                <button type="submit" class="button-icon text-danger" title="Delete session"
+                        hx-confirm="Delete this session and all its data?">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @if (model.data.progress != null)
+        <div class="panel mt-6">
+            <div class="flex justify-between items-center mb-2">
+                <span>Processing Progress</span>
+                <span>${model.data.progress.current}/${model.data.progress.total}</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-bar-fill" style="width: ${(model.data.progress.current * 100 / model.data.progress.total.coerceAtLeast(1))}%"></div>
+            </div>
+            @if (model.data.progress.message.isNotEmpty())
+                <p class="text-sm text-muted mt-2">${model.data.progress.message}</p>
+            @endif
+        </div>
+    @endif
+
+    <div class="panel mt-6">
+        <h2 class="mb-4">Photos (${model.data.photos.size})</h2>
+        
+        @if (model.data.photos.isEmpty())
+            <div class="text-center panel-muted p-6">
+                <i class="ri-image-add-line" style="font-size: 3rem; opacity: 0.3;"></i>
+                <p class="text-muted mt-4">No photos in this session yet.</p>
+            </div>
+        @else
+            <div class="photo-grid">
+                @for (photo in model.data.photos)
+                    <div class="photo-card panel panel-muted">
+                        <div class="photo-thumbnail">
+                            <img src="${photo.thumbnailPath}" alt="Photo" loading="lazy">
+                        </div>
+                        <div class="photo-info mt-2">
+                            <span class="text-sm text-muted">${photo.fileName}</span>
+                        </div>
+                    </div>
+                @endfor
+            </div>
+        @endif
+    </div>
+`)

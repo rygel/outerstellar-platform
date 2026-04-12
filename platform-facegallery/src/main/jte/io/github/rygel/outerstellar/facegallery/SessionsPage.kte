@@ -1,0 +1,59 @@
+@import io.github.rygel.outerstellar.facegallery.routes.SessionsViewModel
+@import io.github.rygel.outerstellar.facegallery.routes.SessionViewModel
+@import io.github.rygel.outerstellar.platform.web.Page
+@import io.github.rygel.outerstellar.platform.web.LayoutRouter
+
+@param model: Page<SessionsViewModel>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+    <div class="page-header">
+        <div class="page-header-text">
+            <h1>Sessions</h1>
+            <p class="text-muted">Manage face detection sessions</p>
+        </div>
+        <div>
+            <form hx-post="/sessions" hx-target="#sessions-list" hx-swap="innerHTML">
+                <input type="text" name="name" placeholder="New session name" required>
+                <button type="submit" class="button-accent">
+                    <i class="ri-add-line"></i>
+                    New Session
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="sessions-list" class="card-grid mt-6">
+        @for (session in model.data.sessions)
+            <div id="session-${session.id}" class="panel">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3>${session.name}</h3>
+                        <p class="text-muted text-sm">${session.createdAt}</p>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <span class="chip @if (session.status.name == "COMPLETED") chip-success @elseif (session.status.name == "PROCESSING") chip-warning @elseif (session.status.name == "FAILED") chip-danger @endif">
+                            ${session.status.name}
+                        </span>
+                        <a href="/sessions/${session.id}" class="button-icon" title="View session">
+                            <i class="ri-eye-line"></i>
+                        </a>
+                        <button class="button-icon text-danger" title="Delete session"
+                                hx-delete="/sessions/${session.id}"
+                                hx-target="#session-${session.id}"
+                                hx-swap="outerHTML"
+                                hx-confirm="Delete this session?">
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endfor
+
+        @if (model.data.sessions.isEmpty())
+            <div class="panel panel-muted text-center">
+                <i class="ri-image-line" style="font-size: 3rem; opacity: 0.3;"></i>
+                <p class="text-muted mt-4">No sessions yet. Create one to get started.</p>
+            </div>
+        @endif
+    </div>
+`)

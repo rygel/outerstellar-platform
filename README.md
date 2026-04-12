@@ -27,6 +27,8 @@ A modern, full-stack Kotlin application designed as a platform template for buil
 - `platform-security`: Authentication models, role-based access control, fine-grained permissions, multi-realm auth, and security filters.
 - `platform-web`: The main http4k server, JTE templates, and web-specific infrastructure.
 - `platform-desktop`: A Swing-based desktop application implementing the MVVM pattern.
+- `platform-facegallery-api`: Shared API module for the FaceGallery plugin (DTOs, repository interfaces, service interfaces).
+- `platform-facegallery`: Face detection and clustering plugin implementing `PlatformPlugin` interface.
 
 ---
 
@@ -224,3 +226,91 @@ The desktop application is built with **Swing** following the **MVVM** pattern a
 
 *   **No WebSockets for Desktop**: The desktop application explicitly **does not use WebSockets** for synchronization.
     *   **Reasons**: To keep the desktop client's architecture lean and focused on its primary role as a standalone synchronization tool. Standard HTTP-based sync provides a reliable, firewall-friendly connection model that is easier to debug and maintain for a desktop environment. Real-time updates are prioritized for the Web UI, while the desktop app maintains a robust manual or background polling-based sync model.
+
+---
+
+### Plugin Architecture
+
+The platform supports optional plugins that implement the `PlatformPlugin` interface. Plugins are standalone modules that provide additional functionality without coupling to the core platform.
+
+#### Existing Plugins
+
+- **platform-facegallery**: Face detection and clustering plugin
+  - `platform-facegallery-api`: Shared API (DTOs, repository interfaces, service interfaces)
+  - `platform-facegallery`: Plugin implementation with routes, services, and JTE templates
+
+#### Integrating a Plugin
+
+Plugins are NOT baked into the platform. To use a plugin, create your own application that combines them:
+
+```kotlin
+// In your application's Koin module:
+val myAppModule = module {
+    includes(faceGalleryModules(FaceGalleryConfig()))
+    single<PlatformPlugin> { FaceGalleryPlugin(FaceGalleryConfig()) }
+}
+
+// Pass the plugin to the app function:
+val handler = app(
+    plugin = get<PlatformPlugin>(),
+    // ... other dependencies
+)
+```
+
+#### Plugin Structure
+
+A plugin typically consists of:
+
+1. **API Module**: Shared interfaces and DTOs (e.g., `platform-facegallery-api`)
+2. **Plugin Module**: Implementation containing:
+   - Plugin class implementing `PlatformPlugin`
+   - Routes class implementing `ServerRoutes`
+   - JDBI repository implementations
+   - Business logic services
+   - JTE templates for UI pages
+   - Flyway migrations (prefixed with plugin name, e.g., `facegallery_`)
+
+#### Database Tables
+
+Plugins should use prefixed table names to avoid conflicts:
+- FaceGallery uses `facegallery_sessions`, `facegallery_photos`, `facegallery_faces`, etc.
+
+---
+
+### Quality Checks & Detekt Configuration
+
+The project uses **detekt** for static analysis with the **detekt-formatting** plugin for style checks. 
+
+**Note**: There is a known mismatch between ktlint (used by spotless) and detekt's `ImportOrdering` rule regarding import group ordering. The platform's existing code has baseline-tracked issues for this rule.
+
+For new modules, if you encounter persistent `ImportOrdering` warnings despite correct formatting:
+
+1. Create a local `detekt.yml` in the module:
+```yaml
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+  warningsAsErrors: false
+  checkExhaustiveness: false
+
+formatting:
+  active: true
+  ImportOrdering:
+    active: false
+```
+
+2. Configure the detekt plugin in the module's `pom.xml` to use the local config:
+```xml
+<plugin>
+    <groupId>com.github.ozsie</groupId>
+    <artifactId>detekt-maven-plugin</artifactId>
+    <configuration>
+        <config>${project.basedir}/detekt.yml</config>
+        <buildUponDefaultConfig>false</buildUponDefaultConfig>
+    </configuration>
+</plugin>
+```
+
+This allows the module to disable problematic rules locally without affecting the parent configuration.

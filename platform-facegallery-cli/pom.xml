@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.github.rygel</groupId>
+        <artifactId>outerstellar-platform-parent</artifactId>
+        <version>1.4.1</version>
+    </parent>
+
+    <artifactId>platform-facegallery-cli</artifactId>
+    <name>Platform FaceGallery CLI</name>
+    <description>Command-line interface for FaceGallery plugin</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.rygel</groupId>
+            <artifactId>platform-facegallery-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.rygel</groupId>
+            <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-client-apache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <sourceDirectory>src/main/kotlin</sourceDirectory>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>io.github.rygel.outerstellar.facegallery.cli.MainKt</mainClass>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.github.ozsie</groupId>
+                <artifactId>detekt-maven-plugin</artifactId>
+                <configuration>
+                    <config>${project.basedir}/detekt.yml</config>
+                    <buildUponDefaultConfig>false</buildUponDefaultConfig>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

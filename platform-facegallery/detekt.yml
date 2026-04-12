@@ -1,0 +1,12 @@
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+  warningsAsErrors: false
+  checkExhaustiveness: false
+
+formatting:
+  active: true
+  ImportOrdering:
+    active: false
