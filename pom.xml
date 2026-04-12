@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>1.4.1</version>
+    <version>1.4.2</version>
 
     <packaging>pom</packaging>
 
@@ -53,16 +53,15 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.14</outerstellar.version>
-        <outerstellar.platform.version>1.4.1</outerstellar.platform.version>
         <http4k.version>6.40.1.0</http4k.version>
         <flyway.version>12.3.0</flyway.version>
         <postgresql.version>42.7.10</postgresql.version>
         <jooq.version>3.21.1</jooq.version>
-        <jdbi.version>3.52.0</jdbi.version>
+        <jdbi.version>3.52.1</jdbi.version>
         <h2.version>2.4.240</h2.version>
         <jte.version>3.2.3</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
-        <junit.version>5.12.2</junit.version>
+        <junit.version>6.0.3</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
@@ -78,7 +77,8 @@
         <maven.site.plugin.version>3.21.0</maven.site.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <bytebuddy.version>1.18.8</bytebuddy.version>
-        <koin.version>4.2.0</koin.version>
+        <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
+        <koin.version>4.2.1</koin.version>
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
@@ -96,7 +96,7 @@
         <hikaricp.version>7.0.2</hikaricp.version>
         <simplejavamail.version>8.12.6</simplejavamail.version>
         <konform.version>0.11.1</konform.version>
-        <playwright.version>1.58.0</playwright.version>
+        <playwright.version>1.59.0</playwright.version>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.resources.plugin.version>3.5.0</maven.resources.plugin.version>
         <exec.maven.plugin.version>3.6.3</exec.maven.plugin.version>
@@ -166,27 +166,27 @@
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-core</artifactId>
-                <version>${outerstellar.platform.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-persistence-jooq</artifactId>
-                <version>${outerstellar.platform.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
-                <version>${outerstellar.platform.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-sync-client</artifactId>
-                <version>${outerstellar.platform.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-web</artifactId>
-                <version>${outerstellar.platform.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -723,6 +723,24 @@
         </pluginManagement>
 
         <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>${versions-maven-plugin.version}</version>
+                <configuration>
+                    <!-- Never write .pom.bak files -->
+                    <generateBackupPoms>false</generateBackupPoms>
+                    <!-- Exclude pre-release versions from update reports -->
+                    <ruleSet>
+                        <ignoreVersions>
+                            <ignoreVersion>
+                                <type>regex</type>
+                                <version>(?i).*(alpha|beta|[-.]rc\b|[-.]m\d+|snapshot|preview|cr\d*|jdk\d+).*</version>
+                            </ignoreVersion>
+                        </ignoreVersions>
+                    </ruleSet>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>

@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.4.1</version>
+        <version>1.4.2</version>
 
     </parent>
 
@@ -19,6 +19,10 @@
             <groupId>io.github.rygel</groupId>
             <artifactId>outerstellar-platform-core</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
@@ -260,13 +264,10 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Produces a self-contained fat jar at target/app.jar for Docker packaging.
-                 ServicesResourceTransformer merges META-INF/services/ files so Jackson,
-                 SLF4J and other ServiceLoader-based libraries work correctly in the fat jar. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.0</version>
+                <version>3.6.2</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -274,24 +275,15 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <outputFile>${project.build.directory}/app.jar</outputFile>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-jar-with-dependencies.jar</outputFile>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>io.github.rygel.outerstellar.platform.MainKt</mainClass>
                                 </transformer>
+                                <!-- Merge META-INF/services/* so SPI registrations (e.g. hoplite-yaml parser) survive fat-jar packaging -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
                         </configuration>
                     </execution>
                 </executions>

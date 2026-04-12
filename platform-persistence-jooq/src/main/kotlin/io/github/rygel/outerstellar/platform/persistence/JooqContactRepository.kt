@@ -122,24 +122,19 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
                         ?.get(PLT_CONTACTS.ID) ?: throw IllegalStateException("Failed to insert contact")
                 insertCollections(txDsl, contactId, contact.emails, contact.phones, contact.socialMedia)
             } else {
-                txDsl
-                    .update(PLT_CONTACTS)
-                    .set(PLT_CONTACTS.NAME, contact.name)
-                    .set(PLT_CONTACTS.COMPANY, contact.company)
-                    .set(PLT_CONTACTS.COMPANY_ADDRESS, contact.companyAddress)
-                    .set(PLT_CONTACTS.DEPARTMENT, contact.department)
-                    .set(PLT_CONTACTS.UPDATED_AT_EPOCH_MS, contact.updatedAtEpochMs)
-                    .set(PLT_CONTACTS.DIRTY, dirty)
-                    .set(PLT_CONTACTS.DELETED, contact.deleted)
-                    .set(PLT_CONTACTS.VERSION, existing.version + 1)
-                    .where(PLT_CONTACTS.SYNC_ID.eq(contact.syncId))
-                    .execute()
-
                 val contactId =
                     txDsl
-                        .select(PLT_CONTACTS.ID)
-                        .from(PLT_CONTACTS)
+                        .update(PLT_CONTACTS)
+                        .set(PLT_CONTACTS.NAME, contact.name)
+                        .set(PLT_CONTACTS.COMPANY, contact.company)
+                        .set(PLT_CONTACTS.COMPANY_ADDRESS, contact.companyAddress)
+                        .set(PLT_CONTACTS.DEPARTMENT, contact.department)
+                        .set(PLT_CONTACTS.UPDATED_AT_EPOCH_MS, contact.updatedAtEpochMs)
+                        .set(PLT_CONTACTS.DIRTY, dirty)
+                        .set(PLT_CONTACTS.DELETED, contact.deleted)
+                        .set(PLT_CONTACTS.VERSION, existing.version + 1)
                         .where(PLT_CONTACTS.SYNC_ID.eq(contact.syncId))
+                        .returning(PLT_CONTACTS.ID)
                         .fetchOne(PLT_CONTACTS.ID)
                 if (contactId != null) {
                     insertCollections(txDsl, contactId, contact.emails, contact.phones, contact.socialMedia)
@@ -227,7 +222,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
     override fun updateContact(contact: StoredContact): StoredContact {
         dsl.transaction { config ->
             val txDsl = using(config)
-            val rows =
+            val contactId =
                 txDsl
                     .update(PLT_CONTACTS)
                     .set(PLT_CONTACTS.NAME, contact.name)
@@ -240,19 +235,9 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
                     .set(PLT_CONTACTS.VERSION, contact.version + 1)
                     .where(PLT_CONTACTS.SYNC_ID.eq(contact.syncId))
                     .and(PLT_CONTACTS.VERSION.eq(contact.version))
-                    .execute()
-
-            if (rows == 0) throw OptimisticLockException("Contact", contact.syncId)
-
-            val contactId =
-                txDsl
-                    .select(PLT_CONTACTS.ID)
-                    .from(PLT_CONTACTS)
-                    .where(PLT_CONTACTS.SYNC_ID.eq(contact.syncId))
-                    .fetchOne(PLT_CONTACTS.ID)
-            if (contactId != null) {
-                insertCollections(txDsl, contactId, contact.emails, contact.phones, contact.socialMedia)
-            }
+                    .returning(PLT_CONTACTS.ID)
+                    .fetchOne(PLT_CONTACTS.ID) ?: throw OptimisticLockException("Contact", contact.syncId)
+            insertCollections(txDsl, contactId, contact.emails, contact.phones, contact.socialMedia)
         }
 
         return requireNotNull(findBySyncId(contact.syncId))
@@ -266,24 +251,19 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
     override fun resolveConflict(syncId: String, resolvedContact: StoredContact) {
         dsl.transaction { config ->
             val txDsl = using(config)
-            txDsl
-                .update(PLT_CONTACTS)
-                .set(PLT_CONTACTS.NAME, resolvedContact.name)
-                .set(PLT_CONTACTS.COMPANY, resolvedContact.company)
-                .set(PLT_CONTACTS.COMPANY_ADDRESS, resolvedContact.companyAddress)
-                .set(PLT_CONTACTS.DEPARTMENT, resolvedContact.department)
-                .set(PLT_CONTACTS.UPDATED_AT_EPOCH_MS, resolvedContact.updatedAtEpochMs)
-                .set(PLT_CONTACTS.DIRTY, resolvedContact.dirty)
-                .set(PLT_CONTACTS.VERSION, PLT_CONTACTS.VERSION.plus(1))
-                .setNull(PLT_CONTACTS.SYNC_CONFLICT)
-                .where(PLT_CONTACTS.SYNC_ID.eq(syncId))
-                .execute()
-
             val contactId =
                 txDsl
-                    .select(PLT_CONTACTS.ID)
-                    .from(PLT_CONTACTS)
+                    .update(PLT_CONTACTS)
+                    .set(PLT_CONTACTS.NAME, resolvedContact.name)
+                    .set(PLT_CONTACTS.COMPANY, resolvedContact.company)
+                    .set(PLT_CONTACTS.COMPANY_ADDRESS, resolvedContact.companyAddress)
+                    .set(PLT_CONTACTS.DEPARTMENT, resolvedContact.department)
+                    .set(PLT_CONTACTS.UPDATED_AT_EPOCH_MS, resolvedContact.updatedAtEpochMs)
+                    .set(PLT_CONTACTS.DIRTY, resolvedContact.dirty)
+                    .set(PLT_CONTACTS.VERSION, PLT_CONTACTS.VERSION.plus(1))
+                    .setNull(PLT_CONTACTS.SYNC_CONFLICT)
                     .where(PLT_CONTACTS.SYNC_ID.eq(syncId))
+                    .returning(PLT_CONTACTS.ID)
                     .fetchOne(PLT_CONTACTS.ID)
             if (contactId != null) {
                 insertCollections(

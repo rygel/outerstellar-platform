@@ -29,24 +29,18 @@
         </nav>
         <div class="sidebar-footer" ws-subscribe>
             <section class="sidebar-select-wrapper">
-                <div id="theme-selector"
-                     hx-get="${shell.themeSelectorUrl}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
+                <div id="theme-selector">
+                    @template.io.github.rygel.outerstellar.platform.web.components.SidebarSelector(model = shell.themeSelector)
                 </div>
             </section>
             <section class="sidebar-select-wrapper">
-                <div id="language-selector"
-                     hx-get="${shell.languageSelectorUrl}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
+                <div id="language-selector">
+                    @template.io.github.rygel.outerstellar.platform.web.components.SidebarSelector(model = shell.languageSelector)
                 </div>
             </section>
             <section class="sidebar-select-wrapper" style="padding-bottom: 0; margin-bottom: 0;">
-                <div id="layout-selector"
-                     hx-get="${shell.layoutSelectorUrl}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
+                <div id="layout-selector">
+                    @template.io.github.rygel.outerstellar.platform.web.components.SidebarSelector(model = shell.layoutSelector)
                 </div>
             </section>
         </div>

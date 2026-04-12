@@ -1,10 +1,22 @@
 # Multi-stage build for outerstellar-platform
-FROM maven:3.9-eclipse-temurin-21 AS builder
+# maven:3.9-eclipse-temurin-21
+FROM maven:3.9-eclipse-temurin-21@sha256:481aad0b7042ad7a924ebd49ea5b307a049bd33d758f8613d68dcbd2904f3c8e AS builder
 WORKDIR /app
 
-# Install Node.js for Tailwind CSS build
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs
+# Install Node.js 20 via the NodeSource apt repository.
+# Using apt-key + signed repo avoids piping curl output directly to bash.
+# The repo is already pinned to node_20.x — exact apt patch pinning is
+# intentionally omitted because NodeSource drops old packages on each release.
+# hadolint ignore=DL3008
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+        -o /tmp/nodesource.gpg.key && \
+    gpg --dearmor < /tmp/nodesource.gpg.key > /etc/apt/keyrings/nodesource.gpg && \
+    rm /tmp/nodesource.gpg.key && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" \
+        > /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy POM files first for dependency caching
 COPY pom.xml .
@@ -27,17 +39,17 @@ RUN (mvn dependency:go-offline -pl platform-web -am -DskipTests -Denforcer.skip=
 # Copy source code
 COPY . .
 
-# Build the project (shade plugin produces target/app.jar)
+# Build the project (assembly plugin produces the fat jar)
 RUN mvn package -pl platform-web -am -DskipTests -Denforcer.skip=true \
     -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
     -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true
 
-# Runtime stage
-FROM eclipse-temurin:21-jre
+# Runtime stage — eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre@sha256:a27f3be269a0a12b99ee58af1c4ebe45233d119d3926f643e3da5d298d4726dc
 WORKDIR /app
 
 # Copy self-contained fat jar produced by maven-shade-plugin
-COPY --from=builder /app/platform-web/target/app.jar app.jar
+COPY --from=builder /app/platform-web/target/*-jar-with-dependencies.jar app.jar
 
 EXPOSE 8080
 ENV APP_PROFILE=prod

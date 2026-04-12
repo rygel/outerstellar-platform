@@ -9,6 +9,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.4.2] – 2026-04-13
+
+### Fixed
+- Eliminated sidebar selector reload delay: inlined `SidebarSelector` into `ShellView` so theme/language/layout changes no longer trigger a separate HTMX component fetch before applying (#139)
+- Resolved all Detekt weighted violations in `platform-web`: import ordering across 70+ files, lambda wrapping/indentation in `App.kt`, `ReturnCount` in `ThemeCatalog.kt`, `MagicNumber` in `WebPageFactory.kt` (#144)
+- Resolved open code scanning alerts from Scorecard, Semgrep, and zizmor (#138)
+
+### Changed
+- Bumped `jdbi3-core` and `jdbi3-kotlin` from 3.52.0 to 3.52.1 (#141)
+- Bumped `koin-core-jvm`, `koin-test-jvm`, and `koin-test-junit5` from 4.2.0 to 4.2.1 (#140)
+
+---
+
 ## [1.4.1] – 2026-04-08
 
 ### Fixed

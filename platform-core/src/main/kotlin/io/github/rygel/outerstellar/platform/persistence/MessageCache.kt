@@ -11,6 +11,8 @@ interface MessageCache {
 
     fun invalidateAll()
 
+    fun invalidateByPrefix(prefix: String) = invalidateAll()
+
     fun getStats(): Map<String, Any>
 }
 

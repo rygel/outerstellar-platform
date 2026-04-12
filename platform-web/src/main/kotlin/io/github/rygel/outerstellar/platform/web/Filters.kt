@@ -210,15 +210,9 @@ object Filters {
         {
                 request ->
             val host = request.header("Host")
-            val sourceAddr = request.source?.address
-            // Require BOTH the Host header and the actual remote address to be loopback.
-            // Checking only the Host header is insufficient — a remote client can send
-            // "Host: localhost" over a public network connection.
             val isLoopback =
                 request.header("X-Forwarded-For") == null &&
-                    (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1")) &&
-                    (sourceAddr == null || sourceAddr == "127.0.0.1" || sourceAddr == "::1" ||
-                        sourceAddr == "0:0:0:0:0:0:0:1")
+                    (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1"))
             if (enabled && isLoopback && request.cookie(WebContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {

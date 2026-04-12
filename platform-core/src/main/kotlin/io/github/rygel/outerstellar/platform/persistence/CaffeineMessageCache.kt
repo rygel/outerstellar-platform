@@ -38,6 +38,10 @@ class CaffeineMessageCache(meterRegistry: MeterRegistry? = null) : MessageCache 
         cache.invalidateAll()
     }
 
+    override fun invalidateByPrefix(prefix: String) {
+        cache.invalidateAll(cache.asMap().keys.filter { it.startsWith(prefix) })
+    }
+
     override fun getStats(): Map<String, Any> {
         val stats = cache.stats()
         return mapOf(
