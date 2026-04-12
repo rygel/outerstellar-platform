@@ -1,12 +1,15 @@
 package io.github.rygel.outerstellar.platform.service
 
+import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.PagedResult
 import io.github.rygel.outerstellar.platform.model.PaginationMetadata
 import io.github.rygel.outerstellar.platform.model.StoredMessage
 import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -53,6 +56,23 @@ class MessageServiceTest {
 
         // Entity key must still be present — not nuked by invalidateAll
         assertEquals(msg, cache.get("entity:$syncId"))
+    }
+
+    @Test
+    fun `resolveConflict invalidates entity cache entry`() {
+        val syncId = UUID.randomUUID().toString()
+        val conflict = """{"syncId":"$syncId","author":"Bob","content":"conflict","updatedAtEpochMs":2000}"""
+        val existing = StoredMessage(syncId, "Alice", "original", 1000L, false, false, 1L, syncConflict = conflict)
+        every { repository.findBySyncId(syncId) } returns existing
+        every { repository.resolveConflict(syncId, any()) } just Runs
+
+        val cache = CaffeineMessageCache()
+        cache.put("entity:$syncId", existing)
+        val serviceWithCache = MessageService(repository, cache = cache)
+
+        serviceWithCache.resolveConflict(syncId, ConflictStrategy.SERVER)
+
+        assertNull(cache.get("entity:$syncId"))
     }
 
     @Test
