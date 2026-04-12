@@ -2,7 +2,9 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -204,5 +206,69 @@ class JooqContactRepositoryTest : H2JooqTest() {
         repo.seedContacts()
         repo.seedContacts()
         assertEquals(3, repo.countContacts(null, false))
+    }
+
+    @Test
+    fun `updateContact persists changed fields`() {
+        val original = createLocal("Alice Smith")
+        val updated = original.copy(name = "Alice Jones", emails = listOf("new@example.com"))
+        val result = repo.updateContact(updated)
+        assertEquals("Alice Jones", result.name)
+        assertEquals(listOf("new@example.com"), result.emails)
+    }
+
+    @Test
+    fun `updateContact throws OptimisticLockException on version mismatch`() {
+        val original = createLocal()
+        val stale = original.copy(version = original.version - 1)
+        assertFailsWith<io.github.rygel.outerstellar.platform.model.OptimisticLockException> {
+            repo.updateContact(stale)
+        }
+    }
+
+    @Test
+    fun `upsertSyncedContact updates existing contact when syncId matches`() {
+        val existing = repo.createServerContact("Original", emptyList(), emptyList(), emptyList(), "", "", "")
+        val sync =
+            io.github.rygel.outerstellar.platform.sync.SyncContact(
+                syncId = existing.syncId,
+                name = "Updated",
+                emails = listOf("updated@example.com"),
+                phones = emptyList(),
+                socialMedia = emptyList(),
+                company = "",
+                companyAddress = "",
+                department = "",
+                updatedAtEpochMs = System.currentTimeMillis(),
+                deleted = false,
+            )
+        val result = repo.upsertSyncedContact(sync, dirty = false)
+        assertEquals("Updated", result.name)
+        assertEquals(listOf("updated@example.com"), result.emails)
+    }
+
+    @Test
+    fun `resolveConflict clears syncConflict field`() {
+        val contact = createLocal()
+        val serverVersion =
+            io.github.rygel.outerstellar.platform.sync.SyncContact(
+                syncId = contact.syncId,
+                name = "Server Name",
+                emails = emptyList(),
+                phones = emptyList(),
+                socialMedia = emptyList(),
+                company = "",
+                companyAddress = "",
+                department = "",
+                updatedAtEpochMs = System.currentTimeMillis(),
+                deleted = false,
+            )
+        repo.markConflict(contact.syncId, serverVersion)
+        val withConflict = repo.findBySyncId(contact.syncId)!!
+        assertNotNull(withConflict.syncConflict)
+
+        repo.resolveConflict(contact.syncId, withConflict.copy(syncConflict = null))
+        val resolved = repo.findBySyncId(contact.syncId)!!
+        assertNull(resolved.syncConflict)
     }
 }
