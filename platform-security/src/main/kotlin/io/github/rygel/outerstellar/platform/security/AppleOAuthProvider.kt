@@ -15,13 +15,13 @@ import org.slf4j.LoggerFactory
  */
 class AppleOAuthProvider(
     /** Your Apple Developer Team ID (10-character string). */
-    private val teamId: String = "TODO_TEAM_ID",
+    private val teamId: String = System.getenv("APPLE_TEAM_ID") ?: "",
     /** Services ID registered in Apple Developer portal (the OAuth client_id). */
-    private val clientId: String = "TODO_CLIENT_ID",
+    private val clientId: String = System.getenv("APPLE_CLIENT_ID") ?: "",
     /** Key ID of the Sign in with Apple private key (.p8 file). */
-    private val keyId: String = "TODO_KEY_ID",
+    private val keyId: String = System.getenv("APPLE_KEY_ID") ?: "",
     /** Contents of the .p8 private key file (PEM-encoded ES256 key). */
-    private val privateKeyPem: String = "TODO_PRIVATE_KEY_PEM",
+    private val privateKeyPem: String = System.getenv("APPLE_PRIVATE_KEY_PEM") ?: "",
 ) : OAuthProvider {
 
     private val logger = LoggerFactory.getLogger(AppleOAuthProvider::class.java)
@@ -34,7 +34,7 @@ class AppleOAuthProvider(
     override val name: String = "apple"
 
     override fun authorizationUrl(state: String, redirectUri: String): String {
-        if (clientId.startsWith("TODO")) {
+        if (!isConfigured()) {
             logger.warn(
                 "AppleOAuthProvider is not configured — using stub authorization URL. " +
                     "Set teamId, clientId, keyId, and privateKeyPem to enable real Sign in with Apple."
@@ -53,7 +53,7 @@ class AppleOAuthProvider(
     }
 
     override fun exchangeCode(code: String, state: String, redirectUri: String): OAuthUserInfo {
-        if (clientId.startsWith("TODO")) {
+        if (!isConfigured()) {
             throw OAuthException(
                 "Sign in with Apple is not yet configured. " +
                     "Provide Apple Developer credentials in AppleOAuthProvider."
@@ -67,4 +67,7 @@ class AppleOAuthProvider(
         // https://developer.apple.com/documentation/sign_in_with_apple/generate_and_validate_tokens
         throw OAuthException("AppleOAuthProvider.exchangeCode not yet implemented")
     }
+
+    private fun isConfigured(): Boolean =
+        teamId.isNotBlank() && clientId.isNotBlank() && keyId.isNotBlank() && privateKeyPem.isNotBlank()
 }

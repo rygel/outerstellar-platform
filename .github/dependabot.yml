@@ -38,6 +38,8 @@ updates:
           - "org.apache.maven.plugins:*"
           - "org.codehaus.mojo:*"
         dependency-type: "development"
+      maven-all:
+        patterns: ["*"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
