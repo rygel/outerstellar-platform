@@ -21,11 +21,11 @@ class JwtService(private val config: JwtConfig) {
 
     private val algorithm by lazy { Algorithm.HMAC256(config.secret) }
 
-    /** Verified claims cached for 60 s to avoid re-parsing identical tokens on rapid requests. */
+    /** Verified claims cached briefly to avoid re-parsing identical tokens on rapid requests. */
     private val claimsCache =
         Caffeine.newBuilder()
             .maximumSize(2_000)
-            .expireAfterWrite(60, TimeUnit.SECONDS)
+            .expireAfterWrite(10, TimeUnit.SECONDS)
             .build<String, Pair<UUID, Boolean>>()
 
     /** Issue a signed JWT for [user]. Returns null if JWT is not enabled. */
