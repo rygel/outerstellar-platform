@@ -59,7 +59,7 @@
         <jooq.version>3.21.2</jooq.version>
         <jdbi.version>3.53.0</jdbi.version>
         <h2.version>2.4.240</h2.version>
-        <jte.version>3.2.3</jte.version>
+        <jte.version>3.2.4</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
         <junit.version>6.0.3</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
@@ -82,7 +82,7 @@
         <hoplite.version>2.9.0</hoplite.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
-        <archunit.version>1.4.1</archunit.version>
+        <archunit.version>1.4.2</archunit.version>
         <micrometer.version>1.16.5</micrometer.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <caffeine.version>3.2.3</caffeine.version>
@@ -92,7 +92,7 @@
         <slf4j.version>2.0.17</slf4j.version>
         <logback.version>1.5.32</logback.version>
         <jbcrypt.version>0.4</jbcrypt.version>
-        <java-jwt.version>4.5.1</java-jwt.version>
+        <java-jwt.version>4.5.2</java-jwt.version>
         <hikaricp.version>7.0.2</hikaricp.version>
         <simplejavamail.version>8.12.6</simplejavamail.version>
         <konform.version>0.11.1</konform.version>
