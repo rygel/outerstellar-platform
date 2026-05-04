@@ -24,9 +24,9 @@ The build enforces Detekt, SpotBugs, Checkstyle, PMD, Spotless/Ktlint, JaCoCo, E
 
 The bidirectional sync between desktop and web demonstrates dirty tracking, timestamp-based conflict detection, optimistic locking, and an outbox pattern. This is a non-trivial working example, not a toy.
 
-### H2 as the persistence engine
+### PostgreSQL as the persistence engine
 
-H2 is the intentional and permanent choice for this platform. It provides zero-setup local persistence, works identically for both web server and Swing desktop, integrates cleanly with Flyway and jOOQ, and keeps the platform runnable without any external infrastructure. This is a deliberate design decision, not a limitation.
+PostgreSQL is the sole database engine for this platform. It provides robust production-grade persistence, works identically for both web server and Swing desktop (via Testcontainers for tests), integrates cleanly with Flyway and jOOQ, and keeps the platform runnable with a simple `podman-compose up` for local development.
 
 ## Package root convention
 

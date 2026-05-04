@@ -392,11 +392,11 @@ private fun buildBaseApp(
 private fun buildHealthResponse(userRepository: UserRepository): Response {
     val checks = mutableMapOf<String, Any>("status" to "UP")
     try {
-        val userCount = userRepository.countAll()
-        checks["database"] = mapOf("status" to "UP", "users" to userCount)
+        userRepository.countAll()
+        checks["database"] = mapOf("status" to "UP")
     } catch (e: Exception) {
         checks["status"] = "DOWN"
-        checks["database"] = mapOf("status" to "DOWN", "error" to (e.message ?: "unknown"))
+        checks["database"] = mapOf("status" to "DOWN", "error" to "Database connection failed")
     }
     checks["timestamp"] = java.time.Instant.now().toString()
     val status = if (checks["status"] == "UP") Status.OK else Status.SERVICE_UNAVAILABLE

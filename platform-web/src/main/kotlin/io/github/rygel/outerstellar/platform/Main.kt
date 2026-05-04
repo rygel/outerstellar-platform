@@ -45,11 +45,8 @@ fun main() {
 
     val adminPassword =
         System.getenv("ADMIN_PASSWORD")
-            ?: java.util.UUID.randomUUID().toString().also { generated ->
-                logger.warn(
-                    "ADMIN_PASSWORD env var not set. Using generated password for first-boot admin: {}",
-                    generated,
-                )
+            ?: java.util.UUID.randomUUID().toString().also {
+                logger.warn("ADMIN_PASSWORD env var not set. A random password was generated for first-boot admin.")
                 logger.warn("Set ADMIN_PASSWORD to a secure value before deploying to production.")
             }
     if (main.userRepository.findByUsername("admin") == null) {
