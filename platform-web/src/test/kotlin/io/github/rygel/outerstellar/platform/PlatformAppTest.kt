@@ -8,8 +8,15 @@ import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.web.StubMessageCache
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
+import io.mockk.every
 import io.mockk.mockk
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import org.http4k.core.Method
+import org.http4k.core.Request
+import org.http4k.core.Status
 
 class PlatformAppTest {
     @Test
@@ -23,10 +30,11 @@ class PlatformAppTest {
 
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
+        every { userRepository.countAll() } returns 0L
         val contactService =
             io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
 
-        val app =
+        val polyHandler =
             app(
                 messageService,
                 contactService,
@@ -38,8 +46,11 @@ class PlatformAppTest {
                 securityService,
                 userRepository,
             )
-        // Simple verification - app is a PolyHandler, we just need to ensure it's not null
-        // Full E2E logic is tested in H2WebTest (when docker is available)
-        assert(app.http != null)
+        val handler = polyHandler.http
+        assertNotNull(handler)
+
+        val healthResponse = handler(Request(Method.GET, "/health"))
+        assertEquals(Status.OK, healthResponse.status)
+        assertTrue(healthResponse.bodyString().contains("UP"))
     }
 }

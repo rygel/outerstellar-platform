@@ -9,6 +9,9 @@ import io.github.rygel.outerstellar.platform.security.PasswordEncoder
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.securityModule
 import io.github.rygel.outerstellar.platform.service.OutboxProcessor
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
@@ -18,9 +21,6 @@ import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 
 private const val OUTBOX_INTERVAL_SECONDS = 30L
 private const val SHUTDOWN_TIMEOUT_SECONDS = 5L

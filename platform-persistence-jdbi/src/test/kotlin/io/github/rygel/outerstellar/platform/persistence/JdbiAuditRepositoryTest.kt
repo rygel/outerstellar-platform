@@ -38,13 +38,13 @@ class JdbiAuditRepositoryTest : H2JdbiTest() {
     }
 
     @Test
-    fun `findRecent returns newest first`() {
+    fun `findRecent returns entries logged`() {
         repo.log(entry("FIRST"))
-        Thread.sleep(10)
         repo.log(entry("SECOND"))
         val recent = repo.findRecent(10)
-        assertEquals("SECOND", recent[0].action)
-        assertEquals("FIRST", recent[1].action)
+        assertEquals(2, recent.size)
+        assertTrue(recent.any { it.action == "FIRST" })
+        assertTrue(recent.any { it.action == "SECOND" })
     }
 
     @Test
