@@ -22,11 +22,12 @@ import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.NotificationService
+import javax.sql.DataSource
 import org.http4k.core.HttpHandler
 import org.jooq.DSLContext
-import org.jooq.SQLDialect
+import org.jooq.SQLDialect.POSTGRES
 import org.jooq.impl.DSL
-import javax.sql.DataSource
+import org.testcontainers.containers.PostgreSQLContainer
 
 data class TestOverrides(
     val userRepository: UserRepository? = null,
@@ -36,80 +37,53 @@ data class TestOverrides(
     val deviceTokenRepository: DeviceTokenRepository? = null,
 )
 
-abstract class H2WebTest protected constructor() {
+abstract class WebTest protected constructor() {
     companion object {
-        private val postgresUrl: String? =
-            System.getProperty("test.jdbc.url")?.takeIf { it.startsWith("jdbc:postgresql:") }
-
-        private val jdbcUrl = postgresUrl ?: "jdbc:h2:mem:webtestdb_unique;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
-
-        private val jdbcUser = if (postgresUrl != null) System.getProperty("test.jdbc.user", "outerstellar") else "sa"
-
-        private val jdbcPassword =
-            if (postgresUrl != null) {
-                System.getProperty("test.jdbc.password", "outerstellar")
-            } else {
-                ""
+        private val container =
+            PostgreSQLContainer<Nothing>("postgres:18").apply {
+                withDatabaseName("outerstellar")
+                withUsername("outerstellar")
+                withPassword("outerstellar")
+                start()
             }
 
         private val dataSource: DataSource by lazy {
-            createDataSource(jdbcUrl, jdbcUser, jdbcPassword).also { migrate(it) }
+            createDataSource(container.jdbcUrl, container.username, container.password).also { migrate(it) }
         }
 
         val testConfig =
             AppConfig(
                 port = 0,
-                jdbcUrl = jdbcUrl,
-                jdbcUser = jdbcUser,
-                jdbcPassword = jdbcPassword,
+                jdbcUrl = container.jdbcUrl,
+                jdbcUser = container.username,
+                jdbcPassword = container.password,
                 devDashboardEnabled = true,
-                csrfEnabled = false, // disabled in tests — covered by CsrfProtectionIntegrationTest
+                csrfEnabled = false,
             )
 
-        val testDsl: DSLContext by lazy {
-            DSL.using(dataSource, if (postgresUrl != null) SQLDialect.POSTGRES else SQLDialect.H2)
-        }
+        val testDsl: DSLContext by lazy { DSL.using(dataSource, POSTGRES) }
 
         fun setup() {
             // Initialization is handled by lazy properties
         }
 
         fun cleanup() {
-            if (postgresUrl != null) {
-                testDsl.execute("DELETE FROM plt_sessions")
-                testDsl.execute("DELETE FROM plt_notifications")
-                testDsl.execute("DELETE FROM plt_device_tokens")
-                testDsl.execute("DELETE FROM plt_oauth_connections")
-                testDsl.execute("DELETE FROM plt_api_keys")
-                testDsl.execute("DELETE FROM plt_password_reset_tokens")
-                testDsl.execute("DELETE FROM plt_audit_log")
-                testDsl.execute("DELETE FROM plt_outbox")
-                testDsl.execute("DELETE FROM plt_contact_emails")
-                testDsl.execute("DELETE FROM plt_contact_phones")
-                testDsl.execute("DELETE FROM plt_contact_socials")
-                testDsl.execute("DELETE FROM plt_contacts")
-                testDsl.execute("DELETE FROM plt_messages")
-                testDsl.execute("DELETE FROM plt_sync_state")
-                testDsl.execute("DELETE FROM plt_users")
-            } else {
-                testDsl.execute("SET REFERENTIAL_INTEGRITY FALSE")
-                testDsl.execute("TRUNCATE TABLE PLT_SESSIONS")
-                testDsl.execute("TRUNCATE TABLE PLT_MESSAGES")
-                testDsl.execute("TRUNCATE TABLE PLT_OUTBOX")
-                testDsl.execute("TRUNCATE TABLE PLT_DEVICE_TOKENS")
-                testDsl.execute("TRUNCATE TABLE PLT_OAUTH_CONNECTIONS")
-                testDsl.execute("TRUNCATE TABLE PLT_API_KEYS")
-                testDsl.execute("TRUNCATE TABLE PLT_PASSWORD_RESET_TOKENS")
-                testDsl.execute("TRUNCATE TABLE PLT_AUDIT_LOG")
-                testDsl.execute("TRUNCATE TABLE PLT_CONTACTS")
-                testDsl.execute("TRUNCATE TABLE PLT_USERS")
-                testDsl.execute("TRUNCATE TABLE PLT_SYNC_STATE")
-                testDsl.execute("TRUNCATE TABLE PLT_NOTIFICATIONS")
-                testDsl.execute("SET REFERENTIAL_INTEGRITY TRUE")
-            }
+            testDsl.execute("DELETE FROM plt_sessions")
+            testDsl.execute("DELETE FROM plt_notifications")
+            testDsl.execute("DELETE FROM plt_device_tokens")
+            testDsl.execute("DELETE FROM plt_oauth_connections")
+            testDsl.execute("DELETE FROM plt_api_keys")
+            testDsl.execute("DELETE FROM plt_password_reset_tokens")
+            testDsl.execute("DELETE FROM plt_audit_log")
+            testDsl.execute("DELETE FROM plt_outbox")
+            testDsl.execute("DELETE FROM plt_contact_emails")
+            testDsl.execute("DELETE FROM plt_contact_phones")
+            testDsl.execute("DELETE FROM plt_contact_socials")
+            testDsl.execute("DELETE FROM plt_contacts")
+            testDsl.execute("DELETE FROM plt_messages")
+            testDsl.execute("DELETE FROM plt_sync_state")
+            testDsl.execute("DELETE FROM plt_users")
         }
-
-        // --- Shared repositories (lazy, created once per JVM) ---
 
         val renderer by lazy { createRenderer() }
         val encoder by lazy { BCryptPasswordEncoder(logRounds = 4) }
@@ -123,11 +97,6 @@ abstract class H2WebTest protected constructor() {
         val passwordResetRepository by lazy { JooqPasswordResetRepository(testDsl) }
         val oauthRepository by lazy { JooqOAuthRepository(testDsl) }
 
-        /**
-         * Builds the standard test app. Most tests should call this with no arguments. Override [config] for tests that
-         * need custom AppConfig (e.g. CSRF enabled). Override [securityService] for tests that need a custom
-         * SecurityService setup. Use [overrides] for rarely-needed custom dependencies.
-         */
         fun buildApp(
             config: AppConfig = testConfig,
             securityService: SecurityService =
@@ -156,18 +125,18 @@ abstract class H2WebTest protected constructor() {
             val pageFactory = WebPageFactory(messageRepository, messageService, resolvedContactService, securityService)
 
             return app(
-                messageService,
-                resolvedContactService,
-                outbox,
-                resolvedMessageCache,
-                renderer,
-                pageFactory,
-                config,
-                securityService,
-                resolvedUserRepo,
-                deviceTokenRepository = overrides.deviceTokenRepository,
-                notificationService = overrides.notificationService,
-            )
+                    messageService,
+                    resolvedContactService,
+                    outbox,
+                    resolvedMessageCache,
+                    renderer,
+                    pageFactory,
+                    config,
+                    securityService,
+                    resolvedUserRepo,
+                    deviceTokenRepository = overrides.deviceTokenRepository,
+                    notificationService = overrides.notificationService,
+                )
                 .http!!
         }
     }

@@ -10,7 +10,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JooqDeviceTokenRepositoryTest : H2JooqTest() {
+class JooqDeviceTokenRepositoryTest : JooqTest() {
 
     private val repo by lazy { JooqDeviceTokenRepository(dsl) }
     private val userRepo by lazy { JooqUserRepository(dsl) }

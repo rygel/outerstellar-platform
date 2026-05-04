@@ -2,6 +2,10 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
@@ -10,10 +14,6 @@ import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Integration tests for the developer dashboard at GET /admin/dev.
@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
  * - Dashboard response contains expected metrics sections
  * - Dashboard is unavailable when devDashboardEnabled=false
  */
-class DevDashboardAccessIntegrationTest : H2WebTest() {
+class DevDashboardAccessIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var appWithDashboardDisabled: HttpHandler

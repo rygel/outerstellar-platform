@@ -10,13 +10,13 @@ import io.github.rygel.outerstellar.platform.web.StubMessageCache
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
 import io.mockk.every
 import io.mockk.mockk
-import org.http4k.core.Method
-import org.http4k.core.Request
-import org.http4k.core.Status
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import org.http4k.core.Method
+import org.http4k.core.Request
+import org.http4k.core.Status
 
 class PlatformAppTest {
     @Test
@@ -26,7 +26,7 @@ class PlatformAppTest {
         val outbox = mockk<OutboxRepository>(relaxed = true)
         val cache = StubMessageCache()
         val pageFactory = WebPageFactory(repository, messageService, null, null)
-        val config = AppConfig(port = 8080, jdbcUrl = "jdbc:h2:mem:test", devDashboardEnabled = true)
+        val config = AppConfig(port = 8080, jdbcUrl = "jdbc:postgresql://localhost/test", devDashboardEnabled = true)
 
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)

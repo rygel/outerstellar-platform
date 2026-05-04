@@ -11,7 +11,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JooqUserRepositoryTest : H2JooqTest() {
+class JooqUserRepositoryTest : JooqTest() {
 
     private val repo by lazy { JooqUserRepository(dsl) }
 

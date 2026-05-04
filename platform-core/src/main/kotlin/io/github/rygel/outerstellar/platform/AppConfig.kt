@@ -5,6 +5,10 @@ import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addEnvironmentSource
 import com.sksamuel.hoplite.addResourceSource
 import com.sksamuel.hoplite.sources.SystemPropertiesPropertySource
+import org.koin.dsl.module
+
+val configModule
+    get() = module { single { AppConfig.fromEnvironment() } }
 
 data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
 
@@ -36,9 +40,9 @@ data class EmailConfig(
 data class AppConfig(
     val version: String = "dev",
     val port: Int = 8080,
-    val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-platform;MODE=PostgreSQL;AUTO_SERVER=TRUE",
-    val jdbcUser: String = "sa",
-    val jdbcPassword: String = "",
+    val jdbcUrl: String = "jdbc:postgresql://localhost:5432/outerstellar",
+    val jdbcUser: String = "outerstellar",
+    val jdbcPassword: String = "outerstellar",
     val devDashboardEnabled: Boolean = false,
     val devMode: Boolean = false,
     // Defaults to false for local development (HTTP). Set to true in production via

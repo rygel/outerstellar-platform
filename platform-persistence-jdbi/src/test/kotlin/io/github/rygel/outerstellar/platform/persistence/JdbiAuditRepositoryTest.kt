@@ -8,7 +8,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JdbiAuditRepositoryTest : H2JdbiTest() {
+class JdbiAuditRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiAuditRepository(jdbi) }
 

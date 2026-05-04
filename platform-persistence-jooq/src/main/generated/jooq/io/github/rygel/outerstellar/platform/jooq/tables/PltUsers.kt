@@ -5,15 +5,15 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 
 
 import io.github.rygel.outerstellar.platform.jooq.Public
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_15D
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_2
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_2E
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_2EB
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_32
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_4B
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_7F
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_980
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_EA6
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_API_KEYS__PLT_API_KEYS_USER_ID_FKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_DEVICE_TOKENS__PLT_DEVICE_TOKENS_USER_ID_FKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_NOTIFICATIONS__PLT_NOTIFICATIONS_USER_ID_FKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_OAUTH_CONNECTIONS__PLT_OAUTH_CONNECTIONS_USER_ID_FKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_PASSWORD_RESET_TOKENS__PLT_PASSWORD_RESET_TOKENS_USER_ID_FKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_SESSIONS__PLT_SESSIONS_USER_ID_FKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_USERS_EMAIL_KEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_USERS_PKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_USERS_USERNAME_KEY
 import io.github.rygel.outerstellar.platform.jooq.tables.PltApiKeys.PltApiKeysPath
 import io.github.rygel.outerstellar.platform.jooq.tables.PltDeviceTokens.PltDeviceTokensPath
 import io.github.rygel.outerstellar.platform.jooq.tables.PltNotifications.PltNotificationsPath
@@ -40,10 +40,10 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
@@ -79,7 +79,7 @@ open class PltUsers(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_USERS</code>
+         * The reference instance of <code>public.plt_users</code>
          */
         val PLT_USERS: PltUsers = PltUsers()
     }
@@ -90,93 +90,93 @@ open class PltUsers(
     override fun getRecordType(): Class<PltUsersRecord> = PltUsersRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.ID</code>.
+     * The column <code>public.plt_users.id</code>.
      */
-    val ID: TableField<PltUsersRecord, UUID?> = createField(DSL.name("ID"), SQLDataType.UUID.nullable(false), this, "")
+    val ID: TableField<PltUsersRecord, UUID?> = createField(DSL.name("id"), SQLDataType.UUID.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.USERNAME</code>.
+     * The column <code>public.plt_users.username</code>.
      */
-    val USERNAME: TableField<PltUsersRecord, String?> = createField(DSL.name("USERNAME"), SQLDataType.VARCHAR(255).nullable(false), this, "")
+    val USERNAME: TableField<PltUsersRecord, String?> = createField(DSL.name("username"), SQLDataType.VARCHAR(255).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.EMAIL</code>.
+     * The column <code>public.plt_users.email</code>.
      */
-    val EMAIL: TableField<PltUsersRecord, String?> = createField(DSL.name("EMAIL"), SQLDataType.VARCHAR(255).nullable(false), this, "")
+    val EMAIL: TableField<PltUsersRecord, String?> = createField(DSL.name("email"), SQLDataType.VARCHAR(255).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.PASSWORD_HASH</code>.
+     * The column <code>public.plt_users.password_hash</code>.
      */
-    val PASSWORD_HASH: TableField<PltUsersRecord, String?> = createField(DSL.name("PASSWORD_HASH"), SQLDataType.VARCHAR(255).nullable(false), this, "")
+    val PASSWORD_HASH: TableField<PltUsersRecord, String?> = createField(DSL.name("password_hash"), SQLDataType.VARCHAR(255).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.ROLE</code>.
+     * The column <code>public.plt_users.role</code>.
      */
-    val ROLE: TableField<PltUsersRecord, String?> = createField(DSL.name("ROLE"), SQLDataType.VARCHAR(50).nullable(false).defaultValue(DSL.field(DSL.raw("'USER'"), SQLDataType.VARCHAR)), this, "")
+    val ROLE: TableField<PltUsersRecord, String?> = createField(DSL.name("role"), SQLDataType.VARCHAR(50).nullable(false).defaultValue(DSL.field(DSL.raw("'USER'::character varying"), SQLDataType.VARCHAR)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.ENABLED</code>.
+     * The column <code>public.plt_users.enabled</code>.
      */
-    val ENABLED: TableField<PltUsersRecord, Boolean?> = createField(DSL.name("ENABLED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("TRUE"), SQLDataType.BOOLEAN)), this, "")
+    val ENABLED: TableField<PltUsersRecord, Boolean?> = createField(DSL.name("enabled"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.CREATED_AT</code>.
+     * The column <code>public.plt_users.created_at</code>.
      */
-    val CREATED_AT: TableField<PltUsersRecord, OffsetDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "")
+    val CREATED_AT: TableField<PltUsersRecord, OffsetDateTime?> = createField(DSL.name("created_at"), SQLDataType.TIMESTAMPWITHTIMEZONE(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.TIMESTAMPWITHTIMEZONE)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.LAST_ACTIVITY_AT</code>.
+     * The column <code>public.plt_users.last_activity_at</code>.
      */
-    val LAST_ACTIVITY_AT: TableField<PltUsersRecord, LocalDateTime?> = createField(DSL.name("LAST_ACTIVITY_AT"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val LAST_ACTIVITY_AT: TableField<PltUsersRecord, LocalDateTime?> = createField(DSL.name("last_activity_at"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.AVATAR_URL</code>.
+     * The column <code>public.plt_users.avatar_url</code>.
      */
-    val AVATAR_URL: TableField<PltUsersRecord, String?> = createField(DSL.name("AVATAR_URL"), SQLDataType.VARCHAR(512), this, "")
+    val AVATAR_URL: TableField<PltUsersRecord, String?> = createField(DSL.name("avatar_url"), SQLDataType.VARCHAR(512), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.EMAIL_NOTIFICATIONS_ENABLED</code>.
+     * The column <code>public.plt_users.email_notifications_enabled</code>.
      */
-    val EMAIL_NOTIFICATIONS_ENABLED: TableField<PltUsersRecord, Boolean?> = createField(DSL.name("EMAIL_NOTIFICATIONS_ENABLED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("TRUE"), SQLDataType.BOOLEAN)), this, "")
+    val EMAIL_NOTIFICATIONS_ENABLED: TableField<PltUsersRecord, Boolean?> = createField(DSL.name("email_notifications_enabled"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.PUSH_NOTIFICATIONS_ENABLED</code>.
+     * The column <code>public.plt_users.push_notifications_enabled</code>.
      */
-    val PUSH_NOTIFICATIONS_ENABLED: TableField<PltUsersRecord, Boolean?> = createField(DSL.name("PUSH_NOTIFICATIONS_ENABLED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("TRUE"), SQLDataType.BOOLEAN)), this, "")
+    val PUSH_NOTIFICATIONS_ENABLED: TableField<PltUsersRecord, Boolean?> = createField(DSL.name("push_notifications_enabled"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.LANGUAGE</code>.
+     * The column <code>public.plt_users.language</code>.
      */
-    val LANGUAGE: TableField<PltUsersRecord, String?> = createField(DSL.name("LANGUAGE"), SQLDataType.VARCHAR(10), this, "")
+    val LANGUAGE: TableField<PltUsersRecord, String?> = createField(DSL.name("language"), SQLDataType.VARCHAR(10), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.THEME</code>.
+     * The column <code>public.plt_users.theme</code>.
      */
-    val THEME: TableField<PltUsersRecord, String?> = createField(DSL.name("THEME"), SQLDataType.VARCHAR(50), this, "")
+    val THEME: TableField<PltUsersRecord, String?> = createField(DSL.name("theme"), SQLDataType.VARCHAR(50), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_USERS.LAYOUT</code>.
+     * The column <code>public.plt_users.layout</code>.
      */
-    val LAYOUT: TableField<PltUsersRecord, String?> = createField(DSL.name("LAYOUT"), SQLDataType.VARCHAR(20), this, "")
+    val LAYOUT: TableField<PltUsersRecord, String?> = createField(DSL.name("layout"), SQLDataType.VARCHAR(20), this, "")
 
     private constructor(alias: Name, aliased: Table<PltUsersRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltUsersRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltUsersRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_USERS</code> table reference
+     * Create an aliased <code>public.plt_users</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_USERS</code> table reference
+     * Create an aliased <code>public.plt_users</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_USERS</code> table reference
+     * Create a <code>public.plt_users</code> table reference
      */
-    constructor(): this(DSL.name("PLT_USERS"), null)
+    constructor(): this(DSL.name("plt_users"), null)
 
     constructor(path: Table<out Record>, childPath: ForeignKey<out Record, PltUsersRecord>?, parentPath: InverseForeignKey<out Record, PltUsersRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, PLT_USERS, null, null)
 
@@ -191,34 +191,18 @@ open class PltUsers(
         override fun `as`(alias: Table<*>): PltUsersPath = PltUsersPath(alias.qualifiedName, this)
     }
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
-    override fun getPrimaryKey(): UniqueKey<PltUsersRecord> = CONSTRAINT_2
-    override fun getUniqueKeys(): List<UniqueKey<PltUsersRecord>> = listOf(CONSTRAINT_2E, CONSTRAINT_2EB)
-
-    private lateinit var _pltOauthConnections: PltOauthConnectionsPath
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>PUBLIC.PLT_OAUTH_CONNECTIONS</code> table
-     */
-    fun pltOauthConnections(): PltOauthConnectionsPath {
-        if (!this::_pltOauthConnections.isInitialized)
-            _pltOauthConnections = PltOauthConnectionsPath(this, null, CONSTRAINT_15D.inverseKey)
-
-        return _pltOauthConnections;
-    }
-
-    val pltOauthConnections: PltOauthConnectionsPath
-        get(): PltOauthConnectionsPath = pltOauthConnections()
+    override fun getPrimaryKey(): UniqueKey<PltUsersRecord> = PLT_USERS_PKEY
+    override fun getUniqueKeys(): List<UniqueKey<PltUsersRecord>> = listOf(PLT_USERS_EMAIL_KEY, PLT_USERS_USERNAME_KEY)
 
     private lateinit var _pltApiKeys: PltApiKeysPath
 
     /**
      * Get the implicit to-many join path to the
-     * <code>PUBLIC.PLT_API_KEYS</code> table
+     * <code>public.plt_api_keys</code> table
      */
     fun pltApiKeys(): PltApiKeysPath {
         if (!this::_pltApiKeys.isInitialized)
-            _pltApiKeys = PltApiKeysPath(this, null, CONSTRAINT_32.inverseKey)
+            _pltApiKeys = PltApiKeysPath(this, null, PLT_API_KEYS__PLT_API_KEYS_USER_ID_FKEY.inverseKey)
 
         return _pltApiKeys;
     }
@@ -226,47 +210,15 @@ open class PltUsers(
     val pltApiKeys: PltApiKeysPath
         get(): PltApiKeysPath = pltApiKeys()
 
-    private lateinit var _pltSessions: PltSessionsPath
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>PUBLIC.PLT_SESSIONS</code> table
-     */
-    fun pltSessions(): PltSessionsPath {
-        if (!this::_pltSessions.isInitialized)
-            _pltSessions = PltSessionsPath(this, null, CONSTRAINT_4B.inverseKey)
-
-        return _pltSessions;
-    }
-
-    val pltSessions: PltSessionsPath
-        get(): PltSessionsPath = pltSessions()
-
-    private lateinit var _pltNotifications: PltNotificationsPath
-
-    /**
-     * Get the implicit to-many join path to the
-     * <code>PUBLIC.PLT_NOTIFICATIONS</code> table
-     */
-    fun pltNotifications(): PltNotificationsPath {
-        if (!this::_pltNotifications.isInitialized)
-            _pltNotifications = PltNotificationsPath(this, null, CONSTRAINT_7F.inverseKey)
-
-        return _pltNotifications;
-    }
-
-    val pltNotifications: PltNotificationsPath
-        get(): PltNotificationsPath = pltNotifications()
-
     private lateinit var _pltDeviceTokens: PltDeviceTokensPath
 
     /**
      * Get the implicit to-many join path to the
-     * <code>PUBLIC.PLT_DEVICE_TOKENS</code> table
+     * <code>public.plt_device_tokens</code> table
      */
     fun pltDeviceTokens(): PltDeviceTokensPath {
         if (!this::_pltDeviceTokens.isInitialized)
-            _pltDeviceTokens = PltDeviceTokensPath(this, null, CONSTRAINT_980.inverseKey)
+            _pltDeviceTokens = PltDeviceTokensPath(this, null, PLT_DEVICE_TOKENS__PLT_DEVICE_TOKENS_USER_ID_FKEY.inverseKey)
 
         return _pltDeviceTokens;
     }
@@ -274,21 +226,69 @@ open class PltUsers(
     val pltDeviceTokens: PltDeviceTokensPath
         get(): PltDeviceTokensPath = pltDeviceTokens()
 
+    private lateinit var _pltNotifications: PltNotificationsPath
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.plt_notifications</code> table
+     */
+    fun pltNotifications(): PltNotificationsPath {
+        if (!this::_pltNotifications.isInitialized)
+            _pltNotifications = PltNotificationsPath(this, null, PLT_NOTIFICATIONS__PLT_NOTIFICATIONS_USER_ID_FKEY.inverseKey)
+
+        return _pltNotifications;
+    }
+
+    val pltNotifications: PltNotificationsPath
+        get(): PltNotificationsPath = pltNotifications()
+
+    private lateinit var _pltOauthConnections: PltOauthConnectionsPath
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.plt_oauth_connections</code> table
+     */
+    fun pltOauthConnections(): PltOauthConnectionsPath {
+        if (!this::_pltOauthConnections.isInitialized)
+            _pltOauthConnections = PltOauthConnectionsPath(this, null, PLT_OAUTH_CONNECTIONS__PLT_OAUTH_CONNECTIONS_USER_ID_FKEY.inverseKey)
+
+        return _pltOauthConnections;
+    }
+
+    val pltOauthConnections: PltOauthConnectionsPath
+        get(): PltOauthConnectionsPath = pltOauthConnections()
+
     private lateinit var _pltPasswordResetTokens: PltPasswordResetTokensPath
 
     /**
      * Get the implicit to-many join path to the
-     * <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS</code> table
+     * <code>public.plt_password_reset_tokens</code> table
      */
     fun pltPasswordResetTokens(): PltPasswordResetTokensPath {
         if (!this::_pltPasswordResetTokens.isInitialized)
-            _pltPasswordResetTokens = PltPasswordResetTokensPath(this, null, CONSTRAINT_EA6.inverseKey)
+            _pltPasswordResetTokens = PltPasswordResetTokensPath(this, null, PLT_PASSWORD_RESET_TOKENS__PLT_PASSWORD_RESET_TOKENS_USER_ID_FKEY.inverseKey)
 
         return _pltPasswordResetTokens;
     }
 
     val pltPasswordResetTokens: PltPasswordResetTokensPath
         get(): PltPasswordResetTokensPath = pltPasswordResetTokens()
+
+    private lateinit var _pltSessions: PltSessionsPath
+
+    /**
+     * Get the implicit to-many join path to the
+     * <code>public.plt_sessions</code> table
+     */
+    fun pltSessions(): PltSessionsPath {
+        if (!this::_pltSessions.isInitialized)
+            _pltSessions = PltSessionsPath(this, null, PLT_SESSIONS__PLT_SESSIONS_USER_ID_FKEY.inverseKey)
+
+        return _pltSessions;
+    }
+
+    val pltSessions: PltSessionsPath
+        get(): PltSessionsPath = pltSessions()
     override fun `as`(alias: String): PltUsers = PltUsers(DSL.name(alias), this)
     override fun `as`(alias: Name): PltUsers = PltUsers(alias, this)
     override fun `as`(alias: Table<*>): PltUsers = PltUsers(alias.qualifiedName, this)
@@ -311,7 +311,7 @@ open class PltUsers(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltUsers = PltUsers(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltUsers = PltUsers(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -351,10 +351,10 @@ open class PltUsers(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltUsers = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltUsers = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltUsers = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltUsers = where(DSL.notExists(select))
 }

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-class AuthPageE2ETest : H2WebTest() {
+class AuthPageE2ETest : WebTest() {
     @AfterEach
     fun teardown() {
         cleanup()
@@ -24,10 +24,10 @@ class AuthPageE2ETest : H2WebTest() {
             buildApp(
                 securityService = mockk<SecurityService>(relaxed = true),
                 overrides =
-                TestOverrides(
-                    userRepository = mockk<UserRepository>(relaxed = true),
-                    contactService = mockk<ContactService>(relaxed = true),
-                ),
+                    TestOverrides(
+                        userRepository = mockk<UserRepository>(relaxed = true),
+                        contactService = mockk<ContactService>(relaxed = true),
+                    ),
             )
         val response = app(Request(GET, "/auth"))
 

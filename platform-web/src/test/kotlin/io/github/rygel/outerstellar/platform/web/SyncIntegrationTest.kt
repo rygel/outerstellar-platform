@@ -6,16 +6,16 @@ import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.mockk.mockk
+import java.util.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.Jackson.asA
 import org.junit.jupiter.api.AfterEach
-import java.util.*
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
-class SyncIntegrationTest : H2WebTest() {
+class SyncIntegrationTest : WebTest() {
 
     @AfterEach
     fun teardown() {

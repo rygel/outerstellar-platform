@@ -13,12 +13,12 @@ import org.jooq.impl.SQLDataType
 class JooqDeviceTokenRepository(private val dsl: DSLContext) : DeviceTokenRepository {
 
     private val table = DSL.table("plt_device_tokens")
-    private val idField = DSL.field(DSL.name("ID"), SQLDataType.BIGINT)
-    private val userIdField = DSL.field(DSL.name("USER_ID"), SQLDataType.UUID)
-    private val platformField = DSL.field(DSL.name("PLATFORM"), SQLDataType.VARCHAR)
-    private val tokenField = DSL.field(DSL.name("TOKEN"), SQLDataType.VARCHAR)
-    private val appBundleField = DSL.field(DSL.name("APP_BUNDLE"), SQLDataType.VARCHAR)
-    private val lastSeenField = DSL.field(DSL.name("LAST_SEEN"), SQLDataType.TIMESTAMP)
+    private val idField = DSL.field(DSL.name("id"), SQLDataType.BIGINT)
+    private val userIdField = DSL.field(DSL.name("user_id"), SQLDataType.UUID)
+    private val platformField = DSL.field(DSL.name("platform"), SQLDataType.VARCHAR)
+    private val tokenField = DSL.field(DSL.name("token"), SQLDataType.VARCHAR)
+    private val appBundleField = DSL.field(DSL.name("app_bundle"), SQLDataType.VARCHAR)
+    private val lastSeenField = DSL.field(DSL.name("last_seen"), SQLDataType.TIMESTAMP)
 
     private fun mapRecord(record: Record): DeviceToken =
         DeviceToken(
@@ -31,16 +31,23 @@ class JooqDeviceTokenRepository(private val dsl: DSLContext) : DeviceTokenReposi
 
     override fun upsert(deviceToken: DeviceToken) {
         val now = Timestamp.from(Instant.now())
-        dsl.execute(
-            "MERGE INTO PLT_DEVICE_TOKENS (USER_ID, PLATFORM, TOKEN, APP_BUNDLE, CREATED_AT, LAST_SEEN)" +
-                " KEY(TOKEN) VALUES (?, ?, ?, ?, ?, ?)",
-            deviceToken.userId,
-            deviceToken.platform,
-            deviceToken.token,
-            deviceToken.appBundle,
-            now,
-            now,
-        )
+        dsl.insertInto(
+                table,
+                userIdField,
+                platformField,
+                tokenField,
+                appBundleField,
+                DSL.field("created_at"),
+                lastSeenField,
+            )
+            .values(deviceToken.userId, deviceToken.platform, deviceToken.token, deviceToken.appBundle, now, now)
+            .onConflict(tokenField)
+            .doUpdate()
+            .set(userIdField, deviceToken.userId)
+            .set(platformField, deviceToken.platform)
+            .set(appBundleField, deviceToken.appBundle)
+            .set(lastSeenField, now)
+            .execute()
     }
 
     override fun delete(token: String) {

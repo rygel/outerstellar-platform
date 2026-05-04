@@ -5,7 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class JdbiOutboxRepositoryTest : H2JdbiTest() {
+class JdbiOutboxRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiOutboxRepository(jdbi) }
 

@@ -12,7 +12,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JooqPasswordResetRepositoryTest : H2JooqTest() {
+class JooqPasswordResetRepositoryTest : JooqTest() {
 
     private val repo by lazy { JooqPasswordResetRepository(dsl) }
     private val userRepo by lazy { JooqUserRepository(dsl) }

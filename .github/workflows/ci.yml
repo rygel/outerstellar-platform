@@ -132,8 +132,6 @@ jobs:
     name: Playwright E2E Tests
     needs: build-and-test
     runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright/java:v1.58.0-noble
     environment: ci
     permissions:
       contents: read
@@ -146,10 +144,15 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Configure Maven settings for GitHub Packages
-        uses: s4u/maven-settings-action@894661b3ddae382f1ae8edbeab60987e08cf0788 # v4.0.0
+      - name: Set up JDK 21
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5
         with:
-          servers: '[{"id": "github-rygel", "username": "${{ github.actor }}", "password": "${{ secrets.GH_PACKAGES_TOKEN }}"}]'
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          server-id: github-rygel
+          server-username: GITHUB_ACTOR
+          server-password: GH_PACKAGES_TOKEN
 
       - name: Restore build output
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
@@ -163,15 +166,14 @@ jobs:
           key: build-${{ github.sha }}
 
       - name: Install parent POM locally
-        run: mvn install -N -q -s /github/home/.m2/settings.xml
+        run: mvn install -N -q
 
       - name: Install cached modules
-        run: mvn install -pl platform-core,platform-persistence-jooq,platform-sync-client,platform-security,platform-web -DskipTests -Dexec.skip=true -q -s /github/home/.m2/settings.xml
+        run: mvn install -pl platform-core,platform-persistence-jooq,platform-sync-client,platform-security,platform-web -DskipTests -Dexec.skip=true -q
 
       - name: Run E2E tests
         run: >
           mvn test -pl platform-web
-          -s /github/home/.m2/settings.xml
           -Dgroups=e2e
           -DexcludedGroups=
           -Denforcer.skip=true

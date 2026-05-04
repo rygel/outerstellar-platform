@@ -76,7 +76,7 @@ Swing is effectively unmaintained by Oracle and receives no new features. For a 
 
 ### Test base class inheritance
 
-`H2WebTest` uses an abstract base class for test infrastructure (database setup, cleanup, stubs). This consumes the single-inheritance slot and creates coupling between test classes. A JUnit 5 extension or test fixture factory would be more composable and allow tests to mix different infrastructure concerns without inheritance chains.
+`WebTest` uses an abstract base class for test infrastructure (database setup, cleanup, stubs). This consumes the single-inheritance slot and creates coupling between test classes. A JUnit 5 extension or test fixture factory would be more composable and allow tests to mix different infrastructure concerns without inheritance chains.
 
 ## Design decisions applied during this review
 

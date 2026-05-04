@@ -13,11 +13,11 @@ import org.jooq.impl.SQLDataType
 class JooqSessionRepository(private val dsl: DSLContext) : SessionRepository {
 
     private val table = DSL.table("plt_sessions")
-    private val idField = DSL.field(DSL.name("ID"), SQLDataType.BIGINT)
-    private val tokenHashField = DSL.field(DSL.name("TOKEN_HASH"), SQLDataType.VARCHAR)
-    private val userIdField = DSL.field(DSL.name("USER_ID"), SQLDataType.UUID)
-    private val createdAtField = DSL.field(DSL.name("CREATED_AT"), SQLDataType.TIMESTAMP)
-    private val expiresAtField = DSL.field(DSL.name("EXPIRES_AT"), SQLDataType.TIMESTAMP)
+    private val idField = DSL.field(DSL.name("id"), SQLDataType.BIGINT)
+    private val tokenHashField = DSL.field(DSL.name("token_hash"), SQLDataType.VARCHAR)
+    private val userIdField = DSL.field(DSL.name("user_id"), SQLDataType.UUID)
+    private val createdAtField = DSL.field(DSL.name("created_at"), SQLDataType.TIMESTAMP)
+    private val expiresAtField = DSL.field(DSL.name("expires_at"), SQLDataType.TIMESTAMP)
 
     private fun mapRecord(record: Record): Session {
         val createdAt = record.get(createdAtField)

@@ -12,6 +12,7 @@ import io.mockk.verify
 import java.awt.Color
 import java.awt.Component
 import java.awt.Container
+import java.awt.GraphicsEnvironment
 import java.util.Locale
 import java.util.function.BooleanSupplier
 import javax.swing.JComponent
@@ -37,6 +38,15 @@ class SwingAppE2ETest {
     private var robot: Robot? = null
 
     companion object {
+        @JvmStatic
+        @BeforeAll
+        fun assumeNotHeadless() {
+            org.junit.jupiter.api.Assumptions.assumeFalse(
+                GraphicsEnvironment.isHeadless(),
+                "Test requires a display (AssertJ Swing BasicRobot)",
+            )
+        }
+
         @JvmStatic
         @BeforeAll
         fun setUpOnce() {

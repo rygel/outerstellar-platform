@@ -6,7 +6,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JdbiContactRepositoryTest : H2JdbiTest() {
+class JdbiContactRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiContactRepository(jdbi) }
 

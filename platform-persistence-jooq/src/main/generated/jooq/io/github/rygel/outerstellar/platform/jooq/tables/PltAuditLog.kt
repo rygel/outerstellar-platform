@@ -7,7 +7,7 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 import io.github.rygel.outerstellar.platform.jooq.Public
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_AUDIT_LOG_ACTOR
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_AUDIT_LOG_CREATED
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_5
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_AUDIT_LOG_PKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltAuditLogRecord
 
 import java.time.LocalDateTime
@@ -28,13 +28,14 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
+import org.jooq.impl.Internal
 import org.jooq.impl.SQLDataType
 import org.jooq.impl.TableImpl
 
@@ -66,7 +67,7 @@ open class PltAuditLog(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_AUDIT_LOG</code>
+         * The reference instance of <code>public.plt_audit_log</code>
          */
         val PLT_AUDIT_LOG: PltAuditLog = PltAuditLog()
     }
@@ -77,67 +78,67 @@ open class PltAuditLog(
     override fun getRecordType(): Class<PltAuditLogRecord> = PltAuditLogRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_AUDIT_LOG.ID</code>.
+     * The column <code>public.plt_audit_log.id</code>.
      */
-    val ID: TableField<PltAuditLogRecord, Long?> = createField(DSL.name("ID"), SQLDataType.BIGINT.nullable(false).identity(true), this, "")
+    val ID: TableField<PltAuditLogRecord, Long?> = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).generatedByDefaultAsIdentity(), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_AUDIT_LOG.ACTOR_ID</code>.
+     * The column <code>public.plt_audit_log.actor_id</code>.
      */
-    val ACTOR_ID: TableField<PltAuditLogRecord, UUID?> = createField(DSL.name("ACTOR_ID"), SQLDataType.UUID, this, "")
+    val ACTOR_ID: TableField<PltAuditLogRecord, UUID?> = createField(DSL.name("actor_id"), SQLDataType.UUID, this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_AUDIT_LOG.ACTOR_USERNAME</code>.
+     * The column <code>public.plt_audit_log.actor_username</code>.
      */
-    val ACTOR_USERNAME: TableField<PltAuditLogRecord, String?> = createField(DSL.name("ACTOR_USERNAME"), SQLDataType.VARCHAR(255), this, "")
+    val ACTOR_USERNAME: TableField<PltAuditLogRecord, String?> = createField(DSL.name("actor_username"), SQLDataType.VARCHAR(255), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_AUDIT_LOG.TARGET_ID</code>.
+     * The column <code>public.plt_audit_log.target_id</code>.
      */
-    val TARGET_ID: TableField<PltAuditLogRecord, UUID?> = createField(DSL.name("TARGET_ID"), SQLDataType.UUID, this, "")
+    val TARGET_ID: TableField<PltAuditLogRecord, UUID?> = createField(DSL.name("target_id"), SQLDataType.UUID, this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_AUDIT_LOG.TARGET_USERNAME</code>.
+     * The column <code>public.plt_audit_log.target_username</code>.
      */
-    val TARGET_USERNAME: TableField<PltAuditLogRecord, String?> = createField(DSL.name("TARGET_USERNAME"), SQLDataType.VARCHAR(255), this, "")
+    val TARGET_USERNAME: TableField<PltAuditLogRecord, String?> = createField(DSL.name("target_username"), SQLDataType.VARCHAR(255), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_AUDIT_LOG.ACTION</code>.
+     * The column <code>public.plt_audit_log.action</code>.
      */
-    val ACTION: TableField<PltAuditLogRecord, String?> = createField(DSL.name("ACTION"), SQLDataType.VARCHAR(100).nullable(false), this, "")
+    val ACTION: TableField<PltAuditLogRecord, String?> = createField(DSL.name("action"), SQLDataType.VARCHAR(100).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_AUDIT_LOG.DETAIL</code>.
+     * The column <code>public.plt_audit_log.detail</code>.
      */
-    val DETAIL: TableField<PltAuditLogRecord, String?> = createField(DSL.name("DETAIL"), SQLDataType.VARCHAR, this, "")
+    val DETAIL: TableField<PltAuditLogRecord, String?> = createField(DSL.name("detail"), SQLDataType.CLOB, this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_AUDIT_LOG.CREATED_AT</code>.
+     * The column <code>public.plt_audit_log.created_at</code>.
      */
-    val CREATED_AT: TableField<PltAuditLogRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltAuditLogRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     private constructor(alias: Name, aliased: Table<PltAuditLogRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltAuditLogRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltAuditLogRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_AUDIT_LOG</code> table reference
+     * Create an aliased <code>public.plt_audit_log</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_AUDIT_LOG</code> table reference
+     * Create an aliased <code>public.plt_audit_log</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_AUDIT_LOG</code> table reference
+     * Create a <code>public.plt_audit_log</code> table reference
      */
-    constructor(): this(DSL.name("PLT_AUDIT_LOG"), null)
+    constructor(): this(DSL.name("plt_audit_log"), null)
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIndexes(): List<Index> = listOf(IDX_PLT_AUDIT_LOG_ACTOR, IDX_PLT_AUDIT_LOG_CREATED)
     override fun getIdentity(): Identity<PltAuditLogRecord, Long?> = super.getIdentity() as Identity<PltAuditLogRecord, Long?>
-    override fun getPrimaryKey(): UniqueKey<PltAuditLogRecord> = CONSTRAINT_5
+    override fun getPrimaryKey(): UniqueKey<PltAuditLogRecord> = PLT_AUDIT_LOG_PKEY
     override fun `as`(alias: String): PltAuditLog = PltAuditLog(DSL.name(alias), this)
     override fun `as`(alias: Name): PltAuditLog = PltAuditLog(alias, this)
     override fun `as`(alias: Table<*>): PltAuditLog = PltAuditLog(alias.qualifiedName, this)
@@ -160,7 +161,7 @@ open class PltAuditLog(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltAuditLog = PltAuditLog(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltAuditLog = PltAuditLog(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -200,10 +201,10 @@ open class PltAuditLog(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltAuditLog = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltAuditLog = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltAuditLog = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltAuditLog = where(DSL.notExists(select))
 }

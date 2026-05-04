@@ -25,7 +25,7 @@ open class DefaultCatalog : CatalogImpl("") {
     }
 
     /**
-     * The schema <code>PUBLIC</code>.
+     * standard public schema
      */
     val PUBLIC: Public get(): Public = Public.PUBLIC
 
@@ -34,10 +34,10 @@ open class DefaultCatalog : CatalogImpl("") {
     )
 
     /**
-     * A reference to the 3.20 minor release of the code generator. If this
+     * A reference to the 3.21 minor release of the code generator. If this
      * doesn't compile, it's because the runtime library uses an older minor
-     * release, namely: 3.20. You can turn off the generation of this reference
+     * release, namely: 3.21. You can turn off the generation of this reference
      * by specifying /configuration/generator/generate/jooqVersionReference
      */
-    private val REQUIRE_RUNTIME_JOOQ_VERSION = Constants.VERSION_3_20
+    private val REQUIRE_RUNTIME_JOOQ_VERSION = Constants.VERSION_3_21
 }

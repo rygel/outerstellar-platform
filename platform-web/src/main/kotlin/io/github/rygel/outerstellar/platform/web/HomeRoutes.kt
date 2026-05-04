@@ -74,8 +74,7 @@ class HomeRoutes(
                 } bindContract
                 POST to
                 { syncId ->
-                    {
-                            request: org.http4k.core.Request ->
+                    { request: org.http4k.core.Request ->
                         messageService.restore(syncId)
                         Response(Status.FOUND).header("location", request.webContext.url("/messages/trash"))
                     }
@@ -86,8 +85,7 @@ class HomeRoutes(
                 } bindContract
                 GET to
                 { syncId ->
-                    {
-                            request: org.http4k.core.Request ->
+                    { request: org.http4k.core.Request ->
                         val viewModel = pageFactory.buildConflictResolveModal(request.webContext, syncId)
                         renderer.render(viewModel)
                     }
@@ -98,8 +96,7 @@ class HomeRoutes(
                 } bindContract
                 POST to
                 { syncId ->
-                    {
-                            request: org.http4k.core.Request ->
+                    { request: org.http4k.core.Request ->
                         val strategy = ConflictStrategy.fromString(request.form("strategy") ?: "server")
                         messageService.resolveConflict(syncId, strategy)
                         Response(Status.OK).header("HX-Trigger", "refresh")

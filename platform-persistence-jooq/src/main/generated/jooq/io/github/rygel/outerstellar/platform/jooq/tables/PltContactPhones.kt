@@ -5,7 +5,7 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 
 
 import io.github.rygel.outerstellar.platform.jooq.Public
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_B
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_CONTACT_PHONES__PLT_CONTACT_PHONES_CONTACT_ID_FKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.PltContacts.PltContactsPath
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltContactPhonesRecord
 
@@ -23,10 +23,10 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.impl.DSL
 import org.jooq.impl.Internal
@@ -61,7 +61,7 @@ open class PltContactPhones(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_CONTACT_PHONES</code>
+         * The reference instance of <code>public.plt_contact_phones</code>
          */
         val PLT_CONTACT_PHONES: PltContactPhones = PltContactPhones()
     }
@@ -72,33 +72,33 @@ open class PltContactPhones(
     override fun getRecordType(): Class<PltContactPhonesRecord> = PltContactPhonesRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACT_PHONES.CONTACT_ID</code>.
+     * The column <code>public.plt_contact_phones.contact_id</code>.
      */
-    val CONTACT_ID: TableField<PltContactPhonesRecord, Long?> = createField(DSL.name("CONTACT_ID"), SQLDataType.BIGINT.nullable(false), this, "")
+    val CONTACT_ID: TableField<PltContactPhonesRecord, Long?> = createField(DSL.name("contact_id"), SQLDataType.BIGINT.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACT_PHONES.PHONE</code>.
+     * The column <code>public.plt_contact_phones.phone</code>.
      */
-    val PHONE: TableField<PltContactPhonesRecord, String?> = createField(DSL.name("PHONE"), SQLDataType.VARCHAR(50).nullable(false), this, "")
+    val PHONE: TableField<PltContactPhonesRecord, String?> = createField(DSL.name("phone"), SQLDataType.VARCHAR(50).nullable(false), this, "")
 
     private constructor(alias: Name, aliased: Table<PltContactPhonesRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltContactPhonesRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltContactPhonesRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_CONTACT_PHONES</code> table reference
+     * Create an aliased <code>public.plt_contact_phones</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_CONTACT_PHONES</code> table reference
+     * Create an aliased <code>public.plt_contact_phones</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_CONTACT_PHONES</code> table reference
+     * Create a <code>public.plt_contact_phones</code> table reference
      */
-    constructor(): this(DSL.name("PLT_CONTACT_PHONES"), null)
+    constructor(): this(DSL.name("plt_contact_phones"), null)
 
     constructor(path: Table<out Record>, childPath: ForeignKey<out Record, PltContactPhonesRecord>?, parentPath: InverseForeignKey<out Record, PltContactPhonesRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, PLT_CONTACT_PHONES, null, null)
 
@@ -113,13 +113,13 @@ open class PltContactPhones(
         override fun `as`(alias: Table<*>): PltContactPhonesPath = PltContactPhonesPath(alias.qualifiedName, this)
     }
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
-    override fun getReferences(): List<ForeignKey<PltContactPhonesRecord, *>> = listOf(CONSTRAINT_B)
+    override fun getReferences(): List<ForeignKey<PltContactPhonesRecord, *>> = listOf(PLT_CONTACT_PHONES__PLT_CONTACT_PHONES_CONTACT_ID_FKEY)
 
     /**
-     * Get the implicit join path to the <code>PUBLIC.PLT_CONTACTS</code> table.
+     * Get the implicit join path to the <code>public.plt_contacts</code> table.
      */
     fun pltContacts(): PltContactsPath = pltContacts
-    val pltContacts: PltContactsPath by lazy { PltContactsPath(this, CONSTRAINT_B, null) }
+    val pltContacts: PltContactsPath by lazy { PltContactsPath(this, PLT_CONTACT_PHONES__PLT_CONTACT_PHONES_CONTACT_ID_FKEY, null) }
     override fun `as`(alias: String): PltContactPhones = PltContactPhones(DSL.name(alias), this)
     override fun `as`(alias: Name): PltContactPhones = PltContactPhones(alias, this)
     override fun `as`(alias: Table<*>): PltContactPhones = PltContactPhones(alias.qualifiedName, this)
@@ -142,7 +142,7 @@ open class PltContactPhones(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltContactPhones = PltContactPhones(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltContactPhones = PltContactPhones(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -182,10 +182,10 @@ open class PltContactPhones(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltContactPhones = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltContactPhones = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltContactPhones = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltContactPhones = where(DSL.notExists(select))
 }

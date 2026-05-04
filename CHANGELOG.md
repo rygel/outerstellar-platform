@@ -9,6 +9,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.0.0] – 2026-05-04
+
+### Breaking
+- **Removed H2 database support.** PostgreSQL is now the sole database engine. H2 file-based and in-memory databases are no longer supported. All tests and production defaults use PostgreSQL exclusively.
+- Production default `jdbcUrl` changed from `jdbc:h2:file:...` to `jdbc:postgresql://localhost:5432/outerstellar` with credentials `outerstellar`/`outerstellar`. Existing deployments must set `JDBCURL`, `JDBCUSER`, and `JDBCPASSWORD` environment variables or use `APP_PROFILE=postgres`.
+- jOOQ code generation (`-Pjooq-codegen`) now requires a running PostgreSQL instance instead of a file-based H2 database. Use `docker/podman-compose.yml` to start PostgreSQL locally.
+- Test base classes renamed: `H2JooqTest` → `JooqTest`, `H2JdbiTest` → `JdbiTest`, `H2WebTest` → `WebTest`. Downstream code extending these must update imports.
+
+### Changed
+- `SQLDialect.H2` removed from `PersistenceModule` — always uses `SQLDialect.POSTGRES`
+- Maven `test-db` profile auto-starts Podman PostgreSQL for local test runs
+- CI uses GitHub Actions PostgreSQL service containers
+- `flyway-database-postgresql` added to persistence modules (required by Flyway 12+)
+
+---
+
 ## [1.4.2] – 2026-04-13
 
 ### Fixed

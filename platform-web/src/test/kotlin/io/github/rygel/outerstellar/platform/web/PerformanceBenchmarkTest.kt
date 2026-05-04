@@ -11,6 +11,10 @@ import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.mockk.mockk
+import java.nio.file.Path
+import java.time.LocalDateTime
+import kotlin.test.Test
+import kotlin.test.assertTrue
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -24,10 +28,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.slf4j.LoggerFactory
-import java.nio.file.Path
-import java.time.LocalDateTime
-import kotlin.test.Test
-import kotlin.test.assertTrue
 
 // ---------------------------------------------------------------------------
 // Baseline persistence model
@@ -59,7 +59,7 @@ data class BenchmarkBaseline(
 /**
  * In-process latency benchmarks for critical HTTP paths.
  *
- * These tests use the full application stack (H2 in-memory + Jooq + HTTP4K) but bypass the network, so they measure
+ * These tests use the full application stack (PostgreSQL + Jooq + HTTP4K) but bypass the network, so they measure
  * routing, serialisation, auth, and DB overhead without TCP noise.
  *
  * **Run with:** `mvn test -pl web -am -Pperformance`
@@ -73,7 +73,7 @@ data class BenchmarkBaseline(
  * baseline. The baseline file is the historical record.
  */
 @Tag("performance")
-class PerformanceBenchmarkTest : H2WebTest() {
+class PerformanceBenchmarkTest : WebTest() {
 
     companion object {
         private const val WARMUP = 10
@@ -155,18 +155,18 @@ class PerformanceBenchmarkTest : H2WebTest() {
                     recordedAt = LocalDateTime.now().toString(),
                     javaVersion = System.getProperty("java.version"),
                     benchmarks =
-                    collectedReports.values
-                        .sortedBy { it.name }
-                        .map { r ->
-                            BenchmarkEntry(
-                                name = r.name,
-                                iterations = r.count,
-                                p50Ms = r.p50Ms(),
-                                p95Ms = r.p95Ms(),
-                                p99Ms = r.p99Ms(),
-                                maxMs = r.maxMs(),
-                            )
-                        },
+                        collectedReports.values
+                            .sortedBy { it.name }
+                            .map { r ->
+                                BenchmarkEntry(
+                                    name = r.name,
+                                    iterations = r.count,
+                                    p50Ms = r.p50Ms(),
+                                    p95Ms = r.p95Ms(),
+                                    p99Ms = r.p99Ms(),
+                                    maxMs = r.maxMs(),
+                                )
+                            },
                 )
             mapper.writeValue(baselineFile, baseline)
             logger.info("Baseline written to {}", baselineFile.canonicalPath)
@@ -190,10 +190,10 @@ class PerformanceBenchmarkTest : H2WebTest() {
             buildApp(
                 securityService = securityService,
                 overrides =
-                TestOverrides(
-                    messageCache = CaffeineMessageCache(),
-                    contactService = mockk<ContactService>(relaxed = true),
-                ),
+                    TestOverrides(
+                        messageCache = CaffeineMessageCache(),
+                        contactService = mockk<ContactService>(relaxed = true),
+                    ),
             )
 
         val registerLens = Body.auto<RegisterRequest>().toLens()
@@ -291,7 +291,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
         val coldRec = LatencyRecorder("GET /api/v1/sync?since=0 (cold)")
         repeat(WARMUP) { app(req) }
         repeat(ITERATIONS) {
-            testDsl.execute("TRUNCATE TABLE SYNC_STATE")
+            testDsl.execute("DELETE FROM plt_sync_state")
             coldRec.record { app(req) }
         }
 
@@ -337,10 +337,10 @@ class PerformanceBenchmarkTest : H2WebTest() {
             buildApp(
                 securityService = prodSecurityService,
                 overrides =
-                TestOverrides(
-                    messageCache = CaffeineMessageCache(),
-                    contactService = mockk<ContactService>(relaxed = true),
-                ),
+                    TestOverrides(
+                        messageCache = CaffeineMessageCache(),
+                        contactService = mockk<ContactService>(relaxed = true),
+                    ),
             )
 
         val req = Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))

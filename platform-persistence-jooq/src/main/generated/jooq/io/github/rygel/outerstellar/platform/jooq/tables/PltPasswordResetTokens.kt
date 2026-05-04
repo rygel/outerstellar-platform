@@ -5,9 +5,9 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 
 
 import io.github.rygel.outerstellar.platform.jooq.Public
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_E
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_EA
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_EA6
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_PASSWORD_RESET_TOKENS_PKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_PASSWORD_RESET_TOKENS_TOKEN_KEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_PASSWORD_RESET_TOKENS__PLT_PASSWORD_RESET_TOKENS_USER_ID_FKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.PltUsers.PltUsersPath
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltPasswordResetTokensRecord
 
@@ -29,10 +29,10 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
@@ -69,7 +69,7 @@ open class PltPasswordResetTokens(
 
         /**
          * The reference instance of
-         * <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS</code>
+         * <code>public.plt_password_reset_tokens</code>
          */
         val PLT_PASSWORD_RESET_TOKENS: PltPasswordResetTokens = PltPasswordResetTokens()
     }
@@ -80,55 +80,55 @@ open class PltPasswordResetTokens(
     override fun getRecordType(): Class<PltPasswordResetTokensRecord> = PltPasswordResetTokensRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS.ID</code>.
+     * The column <code>public.plt_password_reset_tokens.id</code>.
      */
-    val ID: TableField<PltPasswordResetTokensRecord, Long?> = createField(DSL.name("ID"), SQLDataType.BIGINT.nullable(false).identity(true), this, "")
+    val ID: TableField<PltPasswordResetTokensRecord, Long?> = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).generatedByDefaultAsIdentity(), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS.USER_ID</code>.
+     * The column <code>public.plt_password_reset_tokens.user_id</code>.
      */
-    val USER_ID: TableField<PltPasswordResetTokensRecord, UUID?> = createField(DSL.name("USER_ID"), SQLDataType.UUID.nullable(false), this, "")
+    val USER_ID: TableField<PltPasswordResetTokensRecord, UUID?> = createField(DSL.name("user_id"), SQLDataType.UUID.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS.TOKEN</code>.
+     * The column <code>public.plt_password_reset_tokens.token</code>.
      */
-    val TOKEN: TableField<PltPasswordResetTokensRecord, String?> = createField(DSL.name("TOKEN"), SQLDataType.VARCHAR(255).nullable(false), this, "")
+    val TOKEN: TableField<PltPasswordResetTokensRecord, String?> = createField(DSL.name("token"), SQLDataType.VARCHAR(255).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS.EXPIRES_AT</code>.
+     * The column <code>public.plt_password_reset_tokens.expires_at</code>.
      */
-    val EXPIRES_AT: TableField<PltPasswordResetTokensRecord, LocalDateTime?> = createField(DSL.name("EXPIRES_AT"), SQLDataType.LOCALDATETIME(6).nullable(false), this, "")
+    val EXPIRES_AT: TableField<PltPasswordResetTokensRecord, LocalDateTime?> = createField(DSL.name("expires_at"), SQLDataType.LOCALDATETIME(6).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS.USED</code>.
+     * The column <code>public.plt_password_reset_tokens.used</code>.
      */
-    val USED: TableField<PltPasswordResetTokensRecord, Boolean?> = createField(DSL.name("USED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("FALSE"), SQLDataType.BOOLEAN)), this, "")
+    val USED: TableField<PltPasswordResetTokensRecord, Boolean?> = createField(DSL.name("used"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS.CREATED_AT</code>.
+     * The column <code>public.plt_password_reset_tokens.created_at</code>.
      */
-    val CREATED_AT: TableField<PltPasswordResetTokensRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltPasswordResetTokensRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     private constructor(alias: Name, aliased: Table<PltPasswordResetTokensRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltPasswordResetTokensRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltPasswordResetTokensRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS</code> table
+     * Create an aliased <code>public.plt_password_reset_tokens</code> table
      * reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS</code> table
+     * Create an aliased <code>public.plt_password_reset_tokens</code> table
      * reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS</code> table reference
+     * Create a <code>public.plt_password_reset_tokens</code> table reference
      */
-    constructor(): this(DSL.name("PLT_PASSWORD_RESET_TOKENS"), null)
+    constructor(): this(DSL.name("plt_password_reset_tokens"), null)
 
     constructor(path: Table<out Record>, childPath: ForeignKey<out Record, PltPasswordResetTokensRecord>?, parentPath: InverseForeignKey<out Record, PltPasswordResetTokensRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, PLT_PASSWORD_RESET_TOKENS, null, null)
 
@@ -144,15 +144,15 @@ open class PltPasswordResetTokens(
     }
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIdentity(): Identity<PltPasswordResetTokensRecord, Long?> = super.getIdentity() as Identity<PltPasswordResetTokensRecord, Long?>
-    override fun getPrimaryKey(): UniqueKey<PltPasswordResetTokensRecord> = CONSTRAINT_E
-    override fun getUniqueKeys(): List<UniqueKey<PltPasswordResetTokensRecord>> = listOf(CONSTRAINT_EA)
-    override fun getReferences(): List<ForeignKey<PltPasswordResetTokensRecord, *>> = listOf(CONSTRAINT_EA6)
+    override fun getPrimaryKey(): UniqueKey<PltPasswordResetTokensRecord> = PLT_PASSWORD_RESET_TOKENS_PKEY
+    override fun getUniqueKeys(): List<UniqueKey<PltPasswordResetTokensRecord>> = listOf(PLT_PASSWORD_RESET_TOKENS_TOKEN_KEY)
+    override fun getReferences(): List<ForeignKey<PltPasswordResetTokensRecord, *>> = listOf(PLT_PASSWORD_RESET_TOKENS__PLT_PASSWORD_RESET_TOKENS_USER_ID_FKEY)
 
     /**
-     * Get the implicit join path to the <code>PUBLIC.PLT_USERS</code> table.
+     * Get the implicit join path to the <code>public.plt_users</code> table.
      */
     fun pltUsers(): PltUsersPath = pltUsers
-    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, CONSTRAINT_EA6, null) }
+    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, PLT_PASSWORD_RESET_TOKENS__PLT_PASSWORD_RESET_TOKENS_USER_ID_FKEY, null) }
     override fun `as`(alias: String): PltPasswordResetTokens = PltPasswordResetTokens(DSL.name(alias), this)
     override fun `as`(alias: Name): PltPasswordResetTokens = PltPasswordResetTokens(alias, this)
     override fun `as`(alias: Table<*>): PltPasswordResetTokens = PltPasswordResetTokens(alias.qualifiedName, this)
@@ -175,7 +175,7 @@ open class PltPasswordResetTokens(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltPasswordResetTokens = PltPasswordResetTokens(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltPasswordResetTokens = PltPasswordResetTokens(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -215,10 +215,10 @@ open class PltPasswordResetTokens(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltPasswordResetTokens = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltPasswordResetTokens = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltPasswordResetTokens = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltPasswordResetTokens = where(DSL.notExists(select))
 }

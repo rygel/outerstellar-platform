@@ -6,6 +6,12 @@ import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -18,18 +24,12 @@ import org.http4k.core.with
 import org.http4k.format.Jackson.auto
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 /**
  * Integration tests for web UI rendering, navigation, CORS, security headers, correlation IDs, health check, rate
  * limiting, and session timeout.
  */
-class UserManagementWebUiIntegrationTest : H2WebTest() {
+class UserManagementWebUiIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var securityService: SecurityService
@@ -148,7 +148,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
         val admin = seedAdmin()
         testDsl.execute(
             "UPDATE plt_users SET last_activity_at = " +
-                "TIMESTAMPADD(MINUTE, -5, CURRENT_TIMESTAMP) " +
+                "CURRENT_TIMESTAMP - INTERVAL '5 minutes' " +
                 "WHERE id = '${admin.id}'"
         )
         val response =
