@@ -9,7 +9,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [2.0.0] – 2026-05-04
+## [1.5.0] – 2026-05-04
 
 ### Breaking
 - **Removed H2 database support.** PostgreSQL is now the sole database engine. H2 file-based and in-memory databases are no longer supported. All tests and production defaults use PostgreSQL exclusively.
@@ -21,6 +21,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `SQLDialect.H2` removed from `PersistenceModule` — always uses `SQLDialect.POSTGRES`
 - All test base classes use Testcontainers `PostgreSQLContainer` for ephemeral test databases
 - `flyway-database-postgresql` added to persistence modules (required by Flyway 12+)
+- `AppConfig` extracted from `webModule` into dedicated `configModule` — tests provide their own config
+- Desktop GUI tests skip gracefully in headless mode via `Assumptions.assumeFalse`
+- Desktop test container entrypoint builds upstream separately (skip tests) and disables Ryuk for Docker-in-Docker
+
+### Security
+- Generated admin password no longer logged in plaintext at startup
+- `SESSIONCOOKIESECURE=false` override removed from `docker-compose.yml` (Dockerfile defaults to `true`)
+- `/health` endpoint no longer exposes user count or raw database error messages
+
+### Fixed
+- `podman-compose.yml` PostgreSQL volume mount corrected to `/var/lib/postgresql/data`
+- `serverBaseUrl` derived from `AppConfig.port` instead of hardcoded `localhost:8080`
+- Docker E2E CI workflow now provisions PostgreSQL service container for the app
 
 ---
 
