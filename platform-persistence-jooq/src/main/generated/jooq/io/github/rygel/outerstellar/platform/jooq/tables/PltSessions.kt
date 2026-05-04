@@ -8,8 +8,8 @@ import io.github.rygel.outerstellar.platform.jooq.Public
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_SESSIONS_EXPIRES
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_SESSIONS_USER_ID
 import io.github.rygel.outerstellar.platform.jooq.indexes.UX_PLT_SESSIONS_TOKEN_HASH
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_4
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_4B
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_SESSIONS_PKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_SESSIONS__PLT_SESSIONS_USER_ID_FKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.PltUsers.PltUsersPath
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltSessionsRecord
 
@@ -32,10 +32,10 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
@@ -71,7 +71,7 @@ open class PltSessions(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_SESSIONS</code>
+         * The reference instance of <code>public.plt_sessions</code>
          */
         val PLT_SESSIONS: PltSessions = PltSessions()
     }
@@ -82,48 +82,48 @@ open class PltSessions(
     override fun getRecordType(): Class<PltSessionsRecord> = PltSessionsRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_SESSIONS.ID</code>.
+     * The column <code>public.plt_sessions.id</code>.
      */
-    val ID: TableField<PltSessionsRecord, Long?> = createField(DSL.name("ID"), SQLDataType.BIGINT.nullable(false).identity(true), this, "")
+    val ID: TableField<PltSessionsRecord, Long?> = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).generatedByDefaultAsIdentity(), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_SESSIONS.TOKEN_HASH</code>.
+     * The column <code>public.plt_sessions.token_hash</code>.
      */
-    val TOKEN_HASH: TableField<PltSessionsRecord, String?> = createField(DSL.name("TOKEN_HASH"), SQLDataType.VARCHAR(64).nullable(false), this, "")
+    val TOKEN_HASH: TableField<PltSessionsRecord, String?> = createField(DSL.name("token_hash"), SQLDataType.VARCHAR(64).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_SESSIONS.USER_ID</code>.
+     * The column <code>public.plt_sessions.user_id</code>.
      */
-    val USER_ID: TableField<PltSessionsRecord, UUID?> = createField(DSL.name("USER_ID"), SQLDataType.UUID.nullable(false), this, "")
+    val USER_ID: TableField<PltSessionsRecord, UUID?> = createField(DSL.name("user_id"), SQLDataType.UUID.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_SESSIONS.CREATED_AT</code>.
+     * The column <code>public.plt_sessions.created_at</code>.
      */
-    val CREATED_AT: TableField<PltSessionsRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltSessionsRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_SESSIONS.EXPIRES_AT</code>.
+     * The column <code>public.plt_sessions.expires_at</code>.
      */
-    val EXPIRES_AT: TableField<PltSessionsRecord, LocalDateTime?> = createField(DSL.name("EXPIRES_AT"), SQLDataType.LOCALDATETIME(6).nullable(false), this, "")
+    val EXPIRES_AT: TableField<PltSessionsRecord, LocalDateTime?> = createField(DSL.name("expires_at"), SQLDataType.LOCALDATETIME(6).nullable(false), this, "")
 
     private constructor(alias: Name, aliased: Table<PltSessionsRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltSessionsRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltSessionsRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_SESSIONS</code> table reference
+     * Create an aliased <code>public.plt_sessions</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_SESSIONS</code> table reference
+     * Create an aliased <code>public.plt_sessions</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_SESSIONS</code> table reference
+     * Create a <code>public.plt_sessions</code> table reference
      */
-    constructor(): this(DSL.name("PLT_SESSIONS"), null)
+    constructor(): this(DSL.name("plt_sessions"), null)
 
     constructor(path: Table<out Record>, childPath: ForeignKey<out Record, PltSessionsRecord>?, parentPath: InverseForeignKey<out Record, PltSessionsRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, PLT_SESSIONS, null, null)
 
@@ -140,14 +140,14 @@ open class PltSessions(
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIndexes(): List<Index> = listOf(IDX_PLT_SESSIONS_EXPIRES, IDX_PLT_SESSIONS_USER_ID, UX_PLT_SESSIONS_TOKEN_HASH)
     override fun getIdentity(): Identity<PltSessionsRecord, Long?> = super.getIdentity() as Identity<PltSessionsRecord, Long?>
-    override fun getPrimaryKey(): UniqueKey<PltSessionsRecord> = CONSTRAINT_4
-    override fun getReferences(): List<ForeignKey<PltSessionsRecord, *>> = listOf(CONSTRAINT_4B)
+    override fun getPrimaryKey(): UniqueKey<PltSessionsRecord> = PLT_SESSIONS_PKEY
+    override fun getReferences(): List<ForeignKey<PltSessionsRecord, *>> = listOf(PLT_SESSIONS__PLT_SESSIONS_USER_ID_FKEY)
 
     /**
-     * Get the implicit join path to the <code>PUBLIC.PLT_USERS</code> table.
+     * Get the implicit join path to the <code>public.plt_users</code> table.
      */
     fun pltUsers(): PltUsersPath = pltUsers
-    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, CONSTRAINT_4B, null) }
+    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, PLT_SESSIONS__PLT_SESSIONS_USER_ID_FKEY, null) }
     override fun `as`(alias: String): PltSessions = PltSessions(DSL.name(alias), this)
     override fun `as`(alias: Name): PltSessions = PltSessions(alias, this)
     override fun `as`(alias: Table<*>): PltSessions = PltSessions(alias.qualifiedName, this)
@@ -170,7 +170,7 @@ open class PltSessions(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltSessions = PltSessions(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltSessions = PltSessions(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -210,10 +210,10 @@ open class PltSessions(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltSessions = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltSessions = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltSessions = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltSessions = where(DSL.notExists(select))
 }

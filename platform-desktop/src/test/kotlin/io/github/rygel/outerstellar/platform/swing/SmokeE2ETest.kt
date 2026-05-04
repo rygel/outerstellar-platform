@@ -20,25 +20,42 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
+import org.testcontainers.containers.PostgreSQLContainer
 
 class SmokeE2ETest : KoinTest {
+
+    companion object {
+        private val container =
+            PostgreSQLContainer<Nothing>("postgres:18").apply {
+                withDatabaseName("outerstellar")
+                withUsername("outerstellar")
+                withPassword("outerstellar")
+                start()
+            }
+    }
 
     @BeforeEach
     fun setup() {
         stopKoin()
         startKoin {
             modules(
-                coreModule,
-                persistenceModule,
-                apiClientModule,
-                desktopModule,
                 module {
-                    single { AppConfig() }
-                    single(named("jdbcUrl")) { "jdbc:h2:mem:test;MODE=PostgreSQL" }
+                    single {
+                        AppConfig(
+                            jdbcUrl = container.jdbcUrl,
+                            jdbcUser = container.username,
+                            jdbcPassword = container.password,
+                            devMode = true,
+                        )
+                    }
                     single<MessageCache> { NoOpMessageCache }
                     single { SyncService(get(named("serverBaseUrl")), get(), get()) }
                     single<SyncProvider> { get<SyncService>() }
                 },
+                coreModule,
+                persistenceModule,
+                apiClientModule,
+                desktopModule,
             )
         }
     }

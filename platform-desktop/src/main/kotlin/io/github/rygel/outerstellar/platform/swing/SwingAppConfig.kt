@@ -8,9 +8,9 @@ import com.sksamuel.hoplite.sources.SystemPropertiesPropertySource
 
 data class SwingAppConfig(
     val serverBaseUrl: String = "http://localhost:8080",
-    val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-swing-client;MODE=PostgreSQL;AUTO_SERVER=TRUE",
-    val jdbcUser: String = "sa",
-    val jdbcPassword: String = "",
+    val jdbcUrl: String = "jdbc:postgresql://localhost:5432/outerstellar",
+    val jdbcUser: String = "outerstellar",
+    val jdbcPassword: String = "outerstellar",
     val version: String = "1.0.0",
     val updateUrl: String = "",
     val devMode: Boolean = false,

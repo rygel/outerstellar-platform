@@ -53,7 +53,9 @@ This file defines repository-specific guardrails for coding agents and contribut
 - Minimum for persistence/schema changes:
   - `mvn -pl platform-persistence-jooq test`
 - Minimum for Swing UI/theming changes:
-  - `mvn -pl platform-desktop test`
+  - `mvn -pl platform-desktop -Ptests-headless test`
+- **Desktop/Swing tests must NEVER run directly on the host machine.** They capture mouse and keyboard, which is disruptive and non-negotiable. Always use `-Ptests-headless` which runs them inside a Podman/Docker container with Xvfb. Running `mvn -pl platform-desktop test` without a headless profile is forbidden.
+- After any `mvn clean install -DskipTests` that changes compiled production code in a dependency module, the dependent module's test classpath may hold stale classes. Always do a full `mvn clean install -DskipTests` before running tests in downstream modules.
 
 ## Safety and repository hygiene
 

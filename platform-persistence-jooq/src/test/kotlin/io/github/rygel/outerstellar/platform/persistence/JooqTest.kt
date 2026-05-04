@@ -4,27 +4,20 @@ import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
 import javax.sql.DataSource
 import org.jooq.DSLContext
-import org.jooq.SQLDialect
+import org.jooq.SQLDialect.POSTGRES
 import org.jooq.impl.DSL
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.testcontainers.containers.PostgreSQLContainer
 
-abstract class H2JooqTest {
+abstract class JooqTest {
     protected lateinit var dsl: DSLContext
     private lateinit var dataSource: DataSource
 
     @BeforeEach
     fun setupDatabase() {
-        val shared = postgresDataSource
-        if (shared != null) {
-            dataSource = shared
-            dsl = postgresDsl!!
-        } else {
-            val url = "jdbc:h2:mem:${javaClass.simpleName.lowercase()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
-            dataSource = createDataSource(url, "sa", "")
-            migrate(dataSource)
-            dsl = DSL.using(dataSource, SQLDialect.H2)
-        }
+        dataSource = sharedDataSource
+        dsl = sharedDsl
     }
 
     @AfterEach
@@ -47,18 +40,18 @@ abstract class H2JooqTest {
     }
 
     companion object {
-        private val postgresDataSource: DataSource? =
-            System.getProperty("test.jdbc.url")
-                ?.takeIf { it.startsWith("jdbc:postgresql:") }
-                ?.let { url ->
-                    createDataSource(
-                            url,
-                            System.getProperty("test.jdbc.user", "outerstellar"),
-                            System.getProperty("test.jdbc.password", "outerstellar"),
-                        )
-                        .also { migrate(it) }
-                }
+        private val container =
+            PostgreSQLContainer<Nothing>("postgres:18").apply {
+                withDatabaseName("outerstellar")
+                withUsername("outerstellar")
+                withPassword("outerstellar")
+                start()
+            }
 
-        private val postgresDsl: DSLContext? = postgresDataSource?.let { DSL.using(it, SQLDialect.POSTGRES) }
+        private val sharedDataSource: DataSource by lazy {
+            createDataSource(container.jdbcUrl, container.username, container.password).also { migrate(it) }
+        }
+
+        private val sharedDsl: DSLContext by lazy { DSL.using(sharedDataSource, POSTGRES) }
     }
 }

@@ -6,8 +6,8 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 
 import io.github.rygel.outerstellar.platform.jooq.Public
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_OAUTH_CONNECTIONS_USER
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_15
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_15D
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_OAUTH_CONNECTIONS_PKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_OAUTH_CONNECTIONS__PLT_OAUTH_CONNECTIONS_USER_ID_FKEY
 import io.github.rygel.outerstellar.platform.jooq.keys.UQ_PLT_OAUTH_PROVIDER_SUBJECT
 import io.github.rygel.outerstellar.platform.jooq.tables.PltUsers.PltUsersPath
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltOauthConnectionsRecord
@@ -31,10 +31,10 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
@@ -70,7 +70,7 @@ open class PltOauthConnections(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_OAUTH_CONNECTIONS</code>
+         * The reference instance of <code>public.plt_oauth_connections</code>
          */
         val PLT_OAUTH_CONNECTIONS: PltOauthConnections = PltOauthConnections()
     }
@@ -81,55 +81,55 @@ open class PltOauthConnections(
     override fun getRecordType(): Class<PltOauthConnectionsRecord> = PltOauthConnectionsRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_OAUTH_CONNECTIONS.ID</code>.
+     * The column <code>public.plt_oauth_connections.id</code>.
      */
-    val ID: TableField<PltOauthConnectionsRecord, Long?> = createField(DSL.name("ID"), SQLDataType.BIGINT.nullable(false).identity(true), this, "")
+    val ID: TableField<PltOauthConnectionsRecord, Long?> = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).generatedByDefaultAsIdentity(), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OAUTH_CONNECTIONS.USER_ID</code>.
+     * The column <code>public.plt_oauth_connections.user_id</code>.
      */
-    val USER_ID: TableField<PltOauthConnectionsRecord, UUID?> = createField(DSL.name("USER_ID"), SQLDataType.UUID.nullable(false), this, "")
+    val USER_ID: TableField<PltOauthConnectionsRecord, UUID?> = createField(DSL.name("user_id"), SQLDataType.UUID.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OAUTH_CONNECTIONS.PROVIDER</code>.
+     * The column <code>public.plt_oauth_connections.provider</code>.
      */
-    val PROVIDER: TableField<PltOauthConnectionsRecord, String?> = createField(DSL.name("PROVIDER"), SQLDataType.VARCHAR(50).nullable(false), this, "")
+    val PROVIDER: TableField<PltOauthConnectionsRecord, String?> = createField(DSL.name("provider"), SQLDataType.VARCHAR(50).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OAUTH_CONNECTIONS.SUBJECT</code>.
+     * The column <code>public.plt_oauth_connections.subject</code>.
      */
-    val SUBJECT: TableField<PltOauthConnectionsRecord, String?> = createField(DSL.name("SUBJECT"), SQLDataType.VARCHAR(255).nullable(false), this, "")
+    val SUBJECT: TableField<PltOauthConnectionsRecord, String?> = createField(DSL.name("subject"), SQLDataType.VARCHAR(255).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OAUTH_CONNECTIONS.EMAIL</code>.
+     * The column <code>public.plt_oauth_connections.email</code>.
      */
-    val EMAIL: TableField<PltOauthConnectionsRecord, String?> = createField(DSL.name("EMAIL"), SQLDataType.VARCHAR(255), this, "")
+    val EMAIL: TableField<PltOauthConnectionsRecord, String?> = createField(DSL.name("email"), SQLDataType.VARCHAR(255), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OAUTH_CONNECTIONS.CREATED_AT</code>.
+     * The column <code>public.plt_oauth_connections.created_at</code>.
      */
-    val CREATED_AT: TableField<PltOauthConnectionsRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltOauthConnectionsRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     private constructor(alias: Name, aliased: Table<PltOauthConnectionsRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltOauthConnectionsRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltOauthConnectionsRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_OAUTH_CONNECTIONS</code> table
+     * Create an aliased <code>public.plt_oauth_connections</code> table
      * reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_OAUTH_CONNECTIONS</code> table
+     * Create an aliased <code>public.plt_oauth_connections</code> table
      * reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_OAUTH_CONNECTIONS</code> table reference
+     * Create a <code>public.plt_oauth_connections</code> table reference
      */
-    constructor(): this(DSL.name("PLT_OAUTH_CONNECTIONS"), null)
+    constructor(): this(DSL.name("plt_oauth_connections"), null)
 
     constructor(path: Table<out Record>, childPath: ForeignKey<out Record, PltOauthConnectionsRecord>?, parentPath: InverseForeignKey<out Record, PltOauthConnectionsRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, PLT_OAUTH_CONNECTIONS, null, null)
 
@@ -146,15 +146,15 @@ open class PltOauthConnections(
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIndexes(): List<Index> = listOf(IDX_PLT_OAUTH_CONNECTIONS_USER)
     override fun getIdentity(): Identity<PltOauthConnectionsRecord, Long?> = super.getIdentity() as Identity<PltOauthConnectionsRecord, Long?>
-    override fun getPrimaryKey(): UniqueKey<PltOauthConnectionsRecord> = CONSTRAINT_15
+    override fun getPrimaryKey(): UniqueKey<PltOauthConnectionsRecord> = PLT_OAUTH_CONNECTIONS_PKEY
     override fun getUniqueKeys(): List<UniqueKey<PltOauthConnectionsRecord>> = listOf(UQ_PLT_OAUTH_PROVIDER_SUBJECT)
-    override fun getReferences(): List<ForeignKey<PltOauthConnectionsRecord, *>> = listOf(CONSTRAINT_15D)
+    override fun getReferences(): List<ForeignKey<PltOauthConnectionsRecord, *>> = listOf(PLT_OAUTH_CONNECTIONS__PLT_OAUTH_CONNECTIONS_USER_ID_FKEY)
 
     /**
-     * Get the implicit join path to the <code>PUBLIC.PLT_USERS</code> table.
+     * Get the implicit join path to the <code>public.plt_users</code> table.
      */
     fun pltUsers(): PltUsersPath = pltUsers
-    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, CONSTRAINT_15D, null) }
+    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, PLT_OAUTH_CONNECTIONS__PLT_OAUTH_CONNECTIONS_USER_ID_FKEY, null) }
     override fun `as`(alias: String): PltOauthConnections = PltOauthConnections(DSL.name(alias), this)
     override fun `as`(alias: Name): PltOauthConnections = PltOauthConnections(alias, this)
     override fun `as`(alias: Table<*>): PltOauthConnections = PltOauthConnections(alias.qualifiedName, this)
@@ -177,7 +177,7 @@ open class PltOauthConnections(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltOauthConnections = PltOauthConnections(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltOauthConnections = PltOauthConnections(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -217,10 +217,10 @@ open class PltOauthConnections(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltOauthConnections = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltOauthConnections = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltOauthConnections = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltOauthConnections = where(DSL.notExists(select))
 }

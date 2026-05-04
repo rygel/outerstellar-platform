@@ -14,8 +14,19 @@ import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.get
+import org.testcontainers.containers.PostgreSQLContainer
 
 class SwingStartupE2ETest : KoinTest {
+
+    companion object {
+        private val container =
+            PostgreSQLContainer<Nothing>("postgres:18").apply {
+                withDatabaseName("outerstellar")
+                withUsername("outerstellar")
+                withPassword("outerstellar")
+                start()
+            }
+    }
 
     @BeforeEach
     fun setup() {
@@ -28,9 +39,9 @@ class SwingStartupE2ETest : KoinTest {
                         single {
                             SwingAppConfig(
                                 serverBaseUrl = "http://localhost:8080",
-                                jdbcUrl = "jdbc:h2:mem:swing_startup_e2e;MODE=PostgreSQL",
-                                jdbcUser = "sa",
-                                jdbcPassword = "",
+                                jdbcUrl = container.jdbcUrl,
+                                jdbcUser = container.username,
+                                jdbcPassword = container.password,
                             )
                         }
                     }

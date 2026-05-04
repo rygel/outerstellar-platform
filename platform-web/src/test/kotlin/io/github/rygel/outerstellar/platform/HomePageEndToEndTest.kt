@@ -1,14 +1,14 @@
 package io.github.rygel.outerstellar.platform
 
-import io.github.rygel.outerstellar.platform.web.H2WebTest
+import io.github.rygel.outerstellar.platform.web.WebTest
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
-class HomePageEndToEndTest : H2WebTest() {
+class HomePageEndToEndTest : WebTest() {
 
     @Test
     fun `home page is available on running server`() {

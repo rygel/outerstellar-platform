@@ -3,6 +3,7 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.persistence.Notification
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.service.NotificationService
+import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -16,7 +17,6 @@ import org.http4k.core.with
 import org.http4k.format.Jackson.auto
 import org.http4k.lens.Path
 import org.http4k.lens.string
-import java.util.UUID
 
 data class NotificationDto(
     val id: String,
@@ -70,8 +70,7 @@ class NotificationApi(private val notificationService: NotificationService) : Se
                 } bindContract
                 PUT to
                 { notificationId, _ ->
-                    {
-                            request ->
+                    { request ->
                         val user = SecurityRules.USER_KEY(request)!!
                         try {
                             notificationService.markRead(UUID.fromString(notificationId), user.id)

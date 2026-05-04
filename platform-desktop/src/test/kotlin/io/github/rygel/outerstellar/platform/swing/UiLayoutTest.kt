@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
 import io.mockk.mockk
+import java.awt.GraphicsEnvironment
 import java.util.Locale
 import javax.swing.JButton
 import javax.swing.JCheckBox
@@ -14,6 +15,7 @@ import javax.swing.JPasswordField
 import javax.swing.JTable
 import javax.swing.JTextField
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 private const val MIN_FIELD_WIDTH = 150
@@ -32,6 +34,17 @@ class UiLayoutTest {
     private val messageService = mockk<MessageService>(relaxed = true)
     private val syncService = mockk<SyncService>(relaxed = true)
     private val i18n = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
+
+    companion object {
+        @JvmStatic
+        @BeforeAll
+        fun assumeNotHeadless() {
+            org.junit.jupiter.api.Assumptions.assumeFalse(
+                GraphicsEnvironment.isHeadless(),
+                "Test requires a display (SyncWindow creates JFrame)",
+            )
+        }
+    }
 
     @Test
     fun `sidebar nav buttons have sufficient preferred size`() {

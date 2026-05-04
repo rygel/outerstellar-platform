@@ -8,7 +8,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JooqContactRepositoryTest : H2JooqTest() {
+class JooqContactRepositoryTest : JooqTest() {
 
     private val repo by lazy { JooqContactRepository(dsl) }
 

@@ -11,14 +11,14 @@ import org.jooq.impl.SQLDataType
 class JooqApiKeyRepository(private val dsl: DSLContext) : ApiKeyRepository {
 
     private val table = DSL.table("plt_api_keys")
-    private val idField = DSL.field(DSL.name("ID"), SQLDataType.BIGINT)
-    private val userIdField = DSL.field(DSL.name("USER_ID"), SQLDataType.UUID)
-    private val keyHashField = DSL.field(DSL.name("KEY_HASH"), SQLDataType.VARCHAR)
-    private val keyPrefixField = DSL.field(DSL.name("KEY_PREFIX"), SQLDataType.VARCHAR)
-    private val nameField = DSL.field(DSL.name("NAME"), SQLDataType.VARCHAR)
-    private val enabledField = DSL.field(DSL.name("ENABLED"), SQLDataType.BOOLEAN)
-    private val createdAtField = DSL.field(DSL.name("CREATED_AT"), SQLDataType.TIMESTAMP)
-    private val lastUsedAtField = DSL.field(DSL.name("LAST_USED_AT"), SQLDataType.TIMESTAMP)
+    private val idField = DSL.field(DSL.name("id"), SQLDataType.BIGINT)
+    private val userIdField = DSL.field(DSL.name("user_id"), SQLDataType.UUID)
+    private val keyHashField = DSL.field(DSL.name("key_hash"), SQLDataType.VARCHAR)
+    private val keyPrefixField = DSL.field(DSL.name("key_prefix"), SQLDataType.VARCHAR)
+    private val nameField = DSL.field(DSL.name("name"), SQLDataType.VARCHAR)
+    private val enabledField = DSL.field(DSL.name("enabled"), SQLDataType.BOOLEAN)
+    private val createdAtField = DSL.field(DSL.name("created_at"), SQLDataType.TIMESTAMP)
+    private val lastUsedAtField = DSL.field(DSL.name("last_used_at"), SQLDataType.TIMESTAMP)
 
     private fun mapRecord(record: Record): ApiKey {
         val createdAt = record.get(createdAtField)

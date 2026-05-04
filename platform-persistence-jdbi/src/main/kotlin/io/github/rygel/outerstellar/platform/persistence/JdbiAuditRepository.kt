@@ -12,7 +12,7 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
                 .createUpdate(
                     """
                     INSERT INTO plt_audit_log (actor_id, actor_username, target_id, target_username, action, detail)
-                    VALUES (:actorId, :actorUsername, :targetId, :targetUsername, :action, :detail)
+                    VALUES (CAST(:actorId AS uuid), :actorUsername, CAST(:targetId AS uuid), :targetUsername, :action, :detail)
                     """
                 )
                 .bind("actorId", entry.actorId?.let { UUID.fromString(it) })

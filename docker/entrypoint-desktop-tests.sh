@@ -17,9 +17,15 @@ for i in $(seq 1 30); do
 done
 
 export DISPLAY=:99
+export TESTCONTAINERS_RYUK_DISABLED=true
+
+echo "=== Building upstream modules (skip tests) ==="
+mvn install -pl platform-desktop -am -DskipTests -q \
+    -Denforcer.skip=true -Ddetekt.skip=true -Dspotbugs.skip=true \
+    -Dcheckstyle.skip=true -Dpmd.skip=true -Dcpd.skip=true
 
 echo "=== Running desktop tests ==="
-exec mvn test -pl platform-desktop -am \
+exec mvn test -pl platform-desktop \
     -Ddesktop.headless=false \
     -Denforcer.skip=true -Ddetekt.skip=true -Dspotbugs.skip=true \
     -Dcheckstyle.skip=true -Dpmd.skip=true -Dcpd.skip=true

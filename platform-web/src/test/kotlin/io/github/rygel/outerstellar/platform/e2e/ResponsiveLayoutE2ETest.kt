@@ -9,6 +9,8 @@ import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.di.webModule
 import io.github.rygel.outerstellar.platform.security.securityModule
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
@@ -25,8 +27,7 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.testcontainers.containers.PostgreSQLContainer
 
 @Tag("e2e")
 class ResponsiveLayoutE2ETest : KoinTest {
@@ -39,6 +40,15 @@ class ResponsiveLayoutE2ETest : KoinTest {
     companion object {
         private lateinit var playwright: Playwright
         private lateinit var browser: Browser
+
+        private val container =
+            PostgreSQLContainer<Nothing>("postgres:18").apply {
+                withDatabaseName("outerstellar")
+                withUsername("outerstellar")
+                withPassword("outerstellar")
+                start()
+            }
+
         private const val MOBILE_WIDTH = 375
         private const val MOBILE_HEIGHT = 812
         private const val TABLET_WIDTH = 1000
@@ -71,9 +81,9 @@ class ResponsiveLayoutE2ETest : KoinTest {
                 module {
                     single {
                         AppConfig(
-                            jdbcUrl =
-                            "jdbc:h2:mem:responsive_test_${System.currentTimeMillis()}" +
-                                ";MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+                            jdbcUrl = container.jdbcUrl,
+                            jdbcUser = container.username,
+                            jdbcPassword = container.password,
                             devMode = true,
                         )
                     }

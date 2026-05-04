@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>1.4.2</version>
+    <version>2.0.0</version>
 
     <packaging>pom</packaging>
 
@@ -58,7 +58,7 @@
         <postgresql.version>42.7.11</postgresql.version>
         <jooq.version>3.21.2</jooq.version>
         <jdbi.version>3.53.0</jdbi.version>
-        <h2.version>2.4.240</h2.version>
+        <testcontainers.version>1.21.0</testcontainers.version>
         <jte.version>3.2.4</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
         <junit.version>6.0.3</junit.version>
@@ -281,6 +281,11 @@
                 <version>${flyway.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-database-postgresql</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-theme</artifactId>
                 <version>${outerstellar.version}</version>
@@ -304,11 +309,6 @@
                 <groupId>org.jdbi</groupId>
                 <artifactId>jdbi3-kotlin</artifactId>
                 <version>${jdbi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>${h2.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.postgresql</groupId>
@@ -374,6 +374,13 @@
                 <artifactId>mockk-jvm</artifactId>
                 <version>${mockk.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.tngtech.archunit</groupId>
@@ -590,9 +597,6 @@
                             <junit.jupiter.tempdir.cleanup.mode.default>ALWAYS</junit.jupiter.tempdir.cleanup.mode.default>
                             <junit.jupiter.execution.timeout.default>120 s</junit.jupiter.execution.timeout.default>
                             <PLAYWRIGHT_BROWSERS_PATH>${project.build.directory}/playwright-browsers</PLAYWRIGHT_BROWSERS_PATH>
-                            <test.jdbc.url>${test.jdbc.url}</test.jdbc.url>
-                            <test.jdbc.user>${test.jdbc.user}</test.jdbc.user>
-                            <test.jdbc.password>${test.jdbc.password}</test.jdbc.password>
                         </systemPropertyVariables>
                         <environmentVariables>
                             <PLAYWRIGHT_BROWSERS_PATH>${project.build.directory}/playwright-browsers</PLAYWRIGHT_BROWSERS_PATH>
@@ -1087,63 +1091,6 @@
                 <cpd.skip>true</cpd.skip>
                 <spotbugs.skip>true</spotbugs.skip>
             </properties>
-        </profile>
-        <!-- mvn -Ptest-postgres verify -pl platform-persistence-jooq,platform-web -am -->
-        <!-- Starts a PostgreSQL 18 container via Podman, runs all tests against it, then stops it -->
-        <!-- Requires: podman and the compose sub-command (podman compose) to be installed -->
-        <profile>
-            <id>test-postgres</id>
-            <properties>
-                <test.jdbc.url>jdbc:postgresql://localhost:5432/outerstellar</test.jdbc.url>
-                <test.jdbc.user>outerstellar</test.jdbc.user>
-                <test.jdbc.password>outerstellar</test.jdbc.password>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>postgres-start</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>podman</executable>
-                                    <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
-                                    <arguments>
-                                        <argument>compose</argument>
-                                        <argument>-f</argument>
-                                        <argument>podman-compose.yml</argument>
-                                        <argument>up</argument>
-                                        <argument>-d</argument>
-                                        <argument>--wait</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>postgres-stop</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>podman</executable>
-                                    <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
-                                    <arguments>
-                                        <argument>compose</argument>
-                                        <argument>-f</argument>
-                                        <argument>podman-compose.yml</argument>
-                                        <argument>down</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>

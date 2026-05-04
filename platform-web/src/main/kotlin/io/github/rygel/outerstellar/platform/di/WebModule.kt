@@ -32,7 +32,6 @@ import org.koin.dsl.module
 val webModule
     get() = module {
         includes(adminWebModule)
-        single { AppConfig.fromEnvironment() }
         single(named("jdbcUrl")) { get<AppConfig>().jdbcUrl }
         single(named("serverBaseUrl")) { "http://localhost:8080" }
         single(named("appBaseUrl")) { get<AppConfig>().appBaseUrl }
