@@ -7,9 +7,11 @@ import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
+import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import org.http4k.core.Body
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method
@@ -50,14 +52,14 @@ val etagCachingFilter: Filter = Filter { next: HttpHandler ->
     { request ->
         val response = next(request)
         if (response.status == Status.OK && response.header("ETag") == null) {
-            val body = response.bodyString()
-            val hash = body.hashCode().toUInt().toString(radix = 16)
+            val bytes = response.body.stream.readBytes()
+            val hash = String(bytes).hashCode().toUInt().toString(radix = 16)
             val etag = "\"$hash\""
             val ifNoneMatch = request.header("If-None-Match")
             if (ifNoneMatch == etag) {
                 Response(Status.NOT_MODIFIED)
             } else {
-                response.header("ETag", etag)
+                response.body(Body(ByteBuffer.wrap(bytes))).header("ETag", etag)
             }
         } else {
             response
