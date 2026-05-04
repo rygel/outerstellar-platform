@@ -32,6 +32,21 @@ jobs:
       # Password seeded into the container and read by tests via E2E_ADMIN_PASSWORD
       E2E_ADMIN_PASSWORD: e2eTestPassword123
 
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: outerstellar
+          POSTGRES_USER: outerstellar
+          POSTGRES_PASSWORD: outerstellar
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U outerstellar -d outerstellar"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -64,10 +79,14 @@ jobs:
         run: |
           docker run -d \
             --name outerstellar-e2e \
+            --add-host=host.docker.internal:host-gateway \
             -p 8080:8080 \
             -e ADMIN_PASSWORD="${E2E_ADMIN_PASSWORD}" \
             -e DEVMODE=true \
             -e SESSIONCOOKIESECURE=false \
+            -e "JDBCURL=jdbc:postgresql://host.docker.internal:5432/outerstellar" \
+            -e JDBCUSER=outerstellar \
+            -e JDBCPASSWORD=outerstellar \
             outerstellar-platform:e2e
 
       - name: Wait for application to be ready
