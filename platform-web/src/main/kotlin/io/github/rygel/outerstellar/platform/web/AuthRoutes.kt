@@ -47,7 +47,8 @@ class AuthRoutes(
                 } bindContract
                 GET to
                 { mode ->
-                    { request: org.http4k.core.Request ->
+                    {
+                            request: org.http4k.core.Request ->
                         renderer.render(pageFactory.buildAuthForm(request.webContext, mode))
                     }
                 },
@@ -403,7 +404,8 @@ class AuthRoutes(
                 } bindContract
                 POST to
                 { id, _ ->
-                    { request: org.http4k.core.Request ->
+                    {
+                            request: org.http4k.core.Request ->
                         val ctx = request.webContext
                         val user = ctx.user
                         if (user == null) {

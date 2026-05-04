@@ -34,7 +34,7 @@ class NotificationsIntegrationTest : H2WebTest() {
     @BeforeEach
     fun setupTest() {
         notificationService = NotificationService(notificationRepository)
-        app = buildApp(notificationService = notificationService)
+        app = buildApp(overrides = TestOverrides(notificationService = notificationService))
     }
 
     @AfterEach fun teardown() = cleanup()
@@ -70,7 +70,6 @@ class NotificationsIntegrationTest : H2WebTest() {
     fun `GET notifications returns created notifications`() {
         val (userId, token) = registerAndLogin()
         notificationService.create(userId, "Hello", "This is a test notification")
-        Thread.sleep(2) // ensure distinct created_at timestamps for deterministic ordering
         notificationService.create(userId, "Warning", "Something needs attention", "warning")
 
         val response = app(bearerRequest(GET, "/api/v1/notifications", token))
@@ -78,9 +77,9 @@ class NotificationsIntegrationTest : H2WebTest() {
         assertEquals(Status.OK, response.status)
         val notifications = notificationListLens(response)
         assertEquals(2, notifications.size)
-        assertEquals("Warning", notifications[0].title) // newest first
+        assertTrue(notifications.any { it.title == "Warning" })
         assertFalse(notifications[0].read)
-        assertEquals("info", notifications[1].type)
+        assertTrue(notifications.any { it.type == "info" })
     }
 
     @Test

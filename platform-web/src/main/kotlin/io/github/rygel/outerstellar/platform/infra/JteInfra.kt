@@ -4,14 +4,14 @@ import gg.jte.TemplateEngine
 import gg.jte.output.StringOutput
 import gg.jte.resolve.DirectoryCodeResolver
 import gg.jte.resolve.ResourceCodeResolver
-import java.nio.file.Files
-import java.nio.file.Path
 import org.http4k.core.ContentType
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.template.TemplateRenderer
 import org.http4k.template.ViewModel
 import org.http4k.template.ViewNotFound
+import java.nio.file.Files
+import java.nio.file.Path
 
 private const val PLATFORM_JTE_PACKAGE = "gg.jte.generated.precompiled.outerstellar"
 

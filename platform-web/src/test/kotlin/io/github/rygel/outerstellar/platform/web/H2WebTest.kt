@@ -14,8 +14,11 @@ import io.github.rygel.outerstellar.platform.persistence.JooqOAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqPasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
+import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
+import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.NotificationService
@@ -25,8 +28,15 @@ import org.jooq.SQLDialect
 import org.jooq.impl.DSL
 import javax.sql.DataSource
 
-@Suppress("UtilityClassWithPublicConstructor")
-abstract class H2WebTest {
+data class TestOverrides(
+    val userRepository: UserRepository? = null,
+    val messageCache: MessageCache? = null,
+    val contactService: ContactService? = null,
+    val notificationService: NotificationService? = null,
+    val deviceTokenRepository: DeviceTokenRepository? = null,
+)
+
+abstract class H2WebTest protected constructor() {
     companion object {
         private val postgresUrl: String? =
             System.getProperty("test.jdbc.url")?.takeIf { it.startsWith("jdbc:postgresql:") }
@@ -116,7 +126,7 @@ abstract class H2WebTest {
         /**
          * Builds the standard test app. Most tests should call this with no arguments. Override [config] for tests that
          * need custom AppConfig (e.g. CSRF enabled). Override [securityService] for tests that need a custom
-         * SecurityService setup. Override [notificationService] for tests that need notification support.
+         * SecurityService setup. Use [overrides] for rarely-needed custom dependencies.
          */
         fun buildApp(
             config: AppConfig = testConfig,
@@ -129,30 +139,34 @@ abstract class H2WebTest {
                     resetRepository = passwordResetRepository,
                     auditRepository = auditRepository,
                 ),
-            notificationService: NotificationService? = null,
-            deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository? = null,
+            overrides: TestOverrides = TestOverrides(),
         ): HttpHandler {
+            val resolvedUserRepo = overrides.userRepository ?: this.userRepository
+            val resolvedMessageCache = overrides.messageCache ?: StubMessageCache()
             val outbox = StubOutboxRepository()
-            val cache = StubMessageCache()
             val txManager = StubTransactionManager()
-            val messageService = MessageService(messageRepository, outbox, txManager, cache)
-            val contactService =
-                ContactService(contactRepository, transactionManager = txManager, auditRepository = auditRepository)
-            val pageFactory =
-                WebPageFactory(messageRepository, messageService, contactService, securityService, notificationService)
+            val messageService = MessageService(messageRepository, outbox, txManager, resolvedMessageCache)
+            val resolvedContactService =
+                overrides.contactService
+                    ?: ContactService(
+                        contactRepository,
+                        transactionManager = txManager,
+                        auditRepository = auditRepository,
+                    )
+            val pageFactory = WebPageFactory(messageRepository, messageService, resolvedContactService, securityService)
 
             return app(
                 messageService,
-                contactService,
+                resolvedContactService,
                 outbox,
-                cache,
+                resolvedMessageCache,
                 renderer,
                 pageFactory,
                 config,
                 securityService,
-                userRepository,
-                deviceTokenRepository = deviceTokenRepository,
-                notificationService = notificationService,
+                resolvedUserRepo,
+                deviceTokenRepository = overrides.deviceTokenRepository,
+                notificationService = overrides.notificationService,
             )
                 .http!!
         }

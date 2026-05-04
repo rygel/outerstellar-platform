@@ -53,7 +53,11 @@ class DeviceRegistrationApiIntegrationTest : H2WebTest() {
         userRepository.save(testUser)
         sessionToken = securityService.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService, deviceTokenRepository = deviceTokenRepository)
+        app =
+            buildApp(
+                securityService = securityService,
+                overrides = TestOverrides(deviceTokenRepository = deviceTokenRepository),
+            )
     }
 
     @AfterEach
