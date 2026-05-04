@@ -49,7 +49,7 @@ jobs:
           servers: '[{"id": "github-rygel", "username": "${{ github.actor }}", "password": "${{ secrets.GH_PACKAGES_TOKEN }}"}]'
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        uses: github/codeql-action/init@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
         with:
           languages: java-kotlin
           build-mode: manual
@@ -58,6 +58,6 @@ jobs:
         run: mvn compile -q -Denforcer.skip -T 4
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        uses: github/codeql-action/analyze@e46ed2cbd01164d986452f91f178727624ae40d7 # v4.35.3
         with:
           category: '/language:java-kotlin'
