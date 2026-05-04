@@ -7,7 +7,6 @@ import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import java.time.Instant
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
 
 class PasswordResetService(
@@ -16,10 +15,9 @@ class PasswordResetService(
     private val resetRepository: PasswordResetRepository? = null,
     private val auditRepository: AuditRepository? = null,
     private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
-    private val appBaseUrl: String? = null,
+    private val appBaseUrl: String = "http://localhost:8080",
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
-    private val resetFailures = ConcurrentHashMap<String, ResetAttemptWindow>()
 
     fun requestPasswordReset(email: String): String? {
         val user = userRepository.findByEmail(email)
@@ -37,14 +35,7 @@ class PasswordResetService(
             )
         resetRepository?.save(resetToken)
         logger.info("Password reset token generated for user {}", user.username)
-        val baseUrl = appBaseUrl?.trimEnd('/').orEmpty()
-        val resetLink =
-            if (baseUrl.isBlank()) {
-                logger.warn("Password reset link generated without appBaseUrl; using relative URL")
-                "/auth/reset?token=$tokenValue"
-            } else {
-                "$baseUrl/auth/reset?token=$tokenValue"
-            }
+        val resetLink = "$appBaseUrl/auth/reset?token=$tokenValue"
         emailService?.send(
             to = user.email,
             subject = "Password Reset Request",
@@ -55,16 +46,13 @@ class PasswordResetService(
     }
 
     fun resetPassword(token: String, newPassword: String) {
-        enforceResetThrottle(token)
-        val resetToken =
-            resetRepository?.findByToken(token)
-                ?: throw IllegalArgumentException("Invalid reset token").also { recordResetFailure(token) }
+        val resetToken = resetRepository?.findByToken(token) ?: throw IllegalArgumentException("Invalid reset token")
 
         if (resetToken.used) {
-            throw IllegalArgumentException("Invalid reset token").also { recordResetFailure(token) }
+            throw IllegalArgumentException("Reset token has already been used")
         }
         if (resetToken.expiresAt.isBefore(Instant.now())) {
-            throw IllegalArgumentException("Invalid reset token").also { recordResetFailure(token) }
+            throw IllegalArgumentException("Reset token has expired")
         }
         if (newPassword.length < MIN_PASSWORD_LENGTH) {
             throw WeakPasswordException("New password must be at least $MIN_PASSWORD_LENGTH characters")
@@ -76,36 +64,8 @@ class PasswordResetService(
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
         resetRepository.markUsed(token)
-        clearResetFailures(token)
         logger.info("Password reset completed for user {}", user.username)
         audit("PASSWORD_RESET_COMPLETED", actor = user)
-    }
-
-    private fun enforceResetThrottle(token: String) {
-        val now = Instant.now()
-        val attempts = resetFailures[token] ?: return
-        if (attempts.windowStart.plusSeconds(RESET_ATTEMPT_WINDOW_SECONDS).isBefore(now)) {
-            resetFailures.remove(token)
-            return
-        }
-        if (attempts.count >= MAX_RESET_ATTEMPTS_PER_TOKEN) {
-            throw IllegalArgumentException("Too many password reset attempts. Please request a new reset token.")
-        }
-    }
-
-    private fun recordResetFailure(token: String) {
-        val now = Instant.now()
-        resetFailures.compute(token) { _, existing ->
-            if (existing == null || existing.windowStart.plusSeconds(RESET_ATTEMPT_WINDOW_SECONDS).isBefore(now)) {
-                ResetAttemptWindow(windowStart = now, count = 1)
-            } else {
-                existing.copy(count = existing.count + 1)
-            }
-        }
-    }
-
-    private fun clearResetFailures(token: String) {
-        resetFailures.remove(token)
     }
 
     private fun audit(action: String, actor: User? = null, target: User? = null, detail: String? = null) {
@@ -124,9 +84,5 @@ class PasswordResetService(
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
         private const val RESET_TOKEN_TTL_SECONDS = 3600L
-        private const val MAX_RESET_ATTEMPTS_PER_TOKEN = 5
-        private const val RESET_ATTEMPT_WINDOW_SECONDS = 900L
     }
 }
-
-private data class ResetAttemptWindow(val windowStart: Instant, val count: Int)

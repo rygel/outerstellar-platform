@@ -5,7 +5,7 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 
 
 import io.github.rygel.outerstellar.platform.jooq.Public
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_1
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_SYNC_STATE_PKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltSyncStateRecord
 
 import kotlin.collections.Collection
@@ -20,13 +20,14 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
+import org.jooq.impl.Internal
 import org.jooq.impl.SQLDataType
 import org.jooq.impl.TableImpl
 
@@ -58,7 +59,7 @@ open class PltSyncState(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_SYNC_STATE</code>
+         * The reference instance of <code>public.plt_sync_state</code>
          */
         val PLT_SYNC_STATE: PltSyncState = PltSyncState()
     }
@@ -69,35 +70,35 @@ open class PltSyncState(
     override fun getRecordType(): Class<PltSyncStateRecord> = PltSyncStateRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_SYNC_STATE.STATE_KEY</code>.
+     * The column <code>public.plt_sync_state.state_key</code>.
      */
-    val STATE_KEY: TableField<PltSyncStateRecord, String?> = createField(DSL.name("STATE_KEY"), SQLDataType.VARCHAR(64).nullable(false), this, "")
+    val STATE_KEY: TableField<PltSyncStateRecord, String?> = createField(DSL.name("state_key"), SQLDataType.VARCHAR(64).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_SYNC_STATE.STATE_VALUE</code>.
+     * The column <code>public.plt_sync_state.state_value</code>.
      */
-    val STATE_VALUE: TableField<PltSyncStateRecord, Long?> = createField(DSL.name("STATE_VALUE"), SQLDataType.BIGINT.nullable(false), this, "")
+    val STATE_VALUE: TableField<PltSyncStateRecord, Long?> = createField(DSL.name("state_value"), SQLDataType.BIGINT.nullable(false), this, "")
 
     private constructor(alias: Name, aliased: Table<PltSyncStateRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltSyncStateRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltSyncStateRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_SYNC_STATE</code> table reference
+     * Create an aliased <code>public.plt_sync_state</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_SYNC_STATE</code> table reference
+     * Create an aliased <code>public.plt_sync_state</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_SYNC_STATE</code> table reference
+     * Create a <code>public.plt_sync_state</code> table reference
      */
-    constructor(): this(DSL.name("PLT_SYNC_STATE"), null)
+    constructor(): this(DSL.name("plt_sync_state"), null)
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
-    override fun getPrimaryKey(): UniqueKey<PltSyncStateRecord> = CONSTRAINT_1
+    override fun getPrimaryKey(): UniqueKey<PltSyncStateRecord> = PLT_SYNC_STATE_PKEY
     override fun `as`(alias: String): PltSyncState = PltSyncState(DSL.name(alias), this)
     override fun `as`(alias: Name): PltSyncState = PltSyncState(alias, this)
     override fun `as`(alias: Table<*>): PltSyncState = PltSyncState(alias.qualifiedName, this)
@@ -120,7 +121,7 @@ open class PltSyncState(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltSyncState = PltSyncState(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltSyncState = PltSyncState(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -160,10 +161,10 @@ open class PltSyncState(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltSyncState = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltSyncState = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltSyncState = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltSyncState = where(DSL.notExists(select))
 }

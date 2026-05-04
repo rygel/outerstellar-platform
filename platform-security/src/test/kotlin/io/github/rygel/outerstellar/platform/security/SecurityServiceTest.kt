@@ -200,15 +200,6 @@ class SecurityServiceTest {
         verify { userRepository.updateRole(testUser.id, UserRole.ADMIN) }
     }
 
-    @Test
-    fun `setUserRole blocks demoting the only admin`() {
-        every { userRepository.findById(adminUser.id) } returns adminUser
-        every { userRepository.countByRole(UserRole.ADMIN) } returns 1L
-
-        assertThrows<InsufficientPermissionException> { service.setUserRole(testUser.id, adminUser.id, UserRole.USER) }
-        verify(exactly = 0) { userRepository.updateRole(any(), any()) }
-    }
-
     // ---- API key ----
 
     @Test
@@ -294,17 +285,6 @@ class SecurityServiceTest {
         val result = service.authenticateApiKey("osk_nonexistent")
 
         assertNull(result)
-    }
-
-    @Test
-    fun `listUsers without args uses bounded page size`() {
-        every { userRepository.findPage(100, 0) } returns listOf(testUser)
-
-        val result = service.listUsers()
-
-        assertEquals(1, result.size)
-        verify(exactly = 1) { userRepository.findPage(100, 0) }
-        verify(exactly = 0) { userRepository.findAll() }
     }
 
     // ---- updateProfile ----

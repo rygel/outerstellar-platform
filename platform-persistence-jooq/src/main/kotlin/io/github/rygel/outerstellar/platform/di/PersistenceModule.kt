@@ -30,14 +30,13 @@ import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.micrometer.core.instrument.Metrics
 import javax.sql.DataSource
 import org.jooq.DSLContext
-import org.jooq.SQLDialect
+import org.jooq.SQLDialect.POSTGRES
 import org.jooq.impl.DSL
 import org.koin.dsl.module
 
 /**
- * Persistence module backed by jOOQ with generated type-safe SQL. Preferred for PostgreSQL and H2 deployments where
- * compile-time query safety is valuable. Wire this into your Koin app in place of the JDBI module — never include both
- * `platform-persistence-jooq` and `platform-persistence-jdbi` at runtime.
+ * Persistence module backed by jOOQ with generated type-safe SQL for PostgreSQL. Wire this into your Koin app in place
+ * of the JDBI module — never include both `platform-persistence-jooq` and `platform-persistence-jdbi` at runtime.
  */
 val persistenceModule
     get() = module {
@@ -56,16 +55,13 @@ val persistenceModule
                 throw e
             }
             if (config.devMode) {
-                val dialect = if (config.jdbcUrl.startsWith("jdbc:postgresql:")) SQLDialect.POSTGRES else SQLDialect.H2
-                JooqUserRepository(DSL.using(ds, dialect)).seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
+                JooqUserRepository(DSL.using(ds, POSTGRES)).seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
             }
             ds
         }
 
         single<DSLContext> {
-            val config = get<io.github.rygel.outerstellar.platform.AppConfig>()
-            val dialect = if (config.jdbcUrl.startsWith("jdbc:postgresql:")) SQLDialect.POSTGRES else SQLDialect.H2
-            DSL.using(get<DataSource>(), dialect).also {
+            DSL.using(get<DataSource>(), POSTGRES).also {
                 if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
                     Metrics.globalRegistry.gauge("database.connections.active", 1)
                 }

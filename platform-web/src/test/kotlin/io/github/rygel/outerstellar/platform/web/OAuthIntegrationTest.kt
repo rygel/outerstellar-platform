@@ -2,6 +2,11 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -11,11 +16,6 @@ import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 /**
  * Integration tests for OAuth sign-in routes (Feature 4).
@@ -35,7 +35,7 @@ import kotlin.test.assertTrue
  * - SecurityService.findOrCreateOAuthUser returns same user on repeated call with same identity
  * - ensureUniqueUsername generates numeric suffix when base username is taken
  */
-class OAuthIntegrationTest : H2WebTest() {
+class OAuthIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var oauthRepository: InMemoryOAuthRepository

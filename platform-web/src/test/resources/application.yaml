@@ -1,2 +1,4 @@
-jdbcUrl: "jdbc:h2:mem:web_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
+jdbcUrl: "jdbc:postgresql://localhost:5432/outerstellar"
+jdbcUser: "outerstellar"
+jdbcPassword: "outerstellar"
 devMode: true

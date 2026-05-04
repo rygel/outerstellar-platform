@@ -21,9 +21,9 @@ class SecurityService(
     private val apiKeyRepository: ApiKeyRepository? = null,
     private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
     private val oauthRepository: OAuthRepository? = null,
-    private val appBaseUrl: String? = null,
+    private val appBaseUrl: String = "http://localhost:8080",
     private val sessionRepository: SessionRepository? = null,
-    private val sessionTimeoutSeconds: Long = 900L,
+    private val sessionTimeoutSeconds: Long = 1800L,
     private val activityUpdater: AsyncActivityUpdater? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
@@ -57,9 +57,12 @@ class SecurityService(
         val user = userRepository.findByUsername(username)
 
         return when {
-            user == null -> null
+            user == null -> {
+                logger.warn("Authentication failed: User $username not found")
+                null
+            }
             !user.enabled -> {
-                logger.warn("Authentication failed for username {}", username)
+                logger.warn("Authentication failed: User $username is disabled")
                 null
             }
             passwordEncoder.matches(password, user.passwordHash) -> {
@@ -67,7 +70,7 @@ class SecurityService(
                 user
             }
             else -> {
-                logger.warn("Authentication failed for username {}", username)
+                logger.warn("Authentication failed: Invalid password for user $username")
                 null
             }
         }
@@ -110,11 +113,11 @@ class SecurityService(
     }
 
     fun listUsers(): List<UserSummary> {
-        return userRepository.findPage(DEFAULT_USER_LIST_LIMIT, 0).map { it.toSummary() }
+        return userRepository.findAll().map { it.toSummary() }
     }
 
     fun listUsers(limit: Int, offset: Int): List<UserSummary> =
-        userRepository.findPage(limit.coerceIn(1, MAX_PAGE_LIMIT), offset.coerceAtLeast(0)).map { it.toSummary() }
+        userRepository.findPage(limit.coerceIn(1, MAX_PAGE_LIMIT), offset).map { it.toSummary() }
 
     fun countUsers(): Long = userRepository.countAll()
 
@@ -135,12 +138,6 @@ class SecurityService(
             throw InsufficientPermissionException("Cannot change your own role")
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
-        if (target.role == UserRole.ADMIN && role != UserRole.ADMIN) {
-            val adminCount = userRepository.countByRole(UserRole.ADMIN)
-            if (adminCount <= 1) {
-                throw InsufficientPermissionException("Cannot demote the only remaining admin account")
-            }
-        }
         userRepository.updateRole(targetId, role)
         logger.info("User {} role set to {} by admin {}", target.username, role, adminId)
         val admin = userRepository.findById(adminId)
@@ -180,14 +177,13 @@ class SecurityService(
 
     fun updateProfile(userId: UUID, newEmail: String, newUsername: String? = null, newAvatarUrl: String? = null) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
-        val normalizedEmail = newEmail.trim()
-        if (normalizedEmail != user.email) {
-            if (!isValidEmail(normalizedEmail)) {
+        if (newEmail != user.email) {
+            if (!EMAIL_REGEX.matches(newEmail)) {
                 throw IllegalArgumentException("Invalid email address: $newEmail")
             }
-            val existing = userRepository.findByEmail(normalizedEmail)
+            val existing = userRepository.findByEmail(newEmail)
             if (existing != null && existing.id != userId) {
-                throw UsernameAlreadyExistsException(normalizedEmail)
+                throw UsernameAlreadyExistsException(newEmail)
             }
         }
         if (newUsername != null && newUsername != user.username) {
@@ -215,13 +211,13 @@ class SecurityService(
                     } catch (_: Exception) {
                         null
                     }
-                if (host != null && isForbiddenAvatarHost(host)) {
+                if (host != null && PRIVATE_HOST_PATTERNS.any { it.matches(host) }) {
                     throw IllegalArgumentException("Avatar URL must not point to private or internal addresses")
                 }
             }
             userRepository.updateAvatarUrl(userId, sanitizedUrl)
         }
-        userRepository.save(user.copy(email = normalizedEmail))
+        userRepository.save(user.copy(email = newEmail))
         logger.info("Profile updated for user {}", user.username)
     }
 
@@ -251,9 +247,7 @@ class SecurityService(
 
     fun createSession(userId: UUID): String {
         val repo = sessionRepository ?: error("SessionRepository is not configured")
-        val salt = generateRandomHex(TOKEN_SALT_HEX_LENGTH)
-        val secret = generateRandomHex(SESSION_TOKEN_SECRET_HEX_LENGTH)
-        val rawToken = "oss_${salt}_$secret"
+        val rawToken = "oss_" + generateRandomHex(SESSION_TOKEN_HEX_LENGTH)
         val tokenHash = hashToken(rawToken)
         val session =
             Session(
@@ -299,83 +293,8 @@ class SecurityService(
     }
 
     private fun hashToken(key: String): String {
-        parseSaltedToken("oss_", key)?.let { (salt, secret) ->
-            return sha256("$salt:$secret")
-        }
-        // Backward-compatible path for previously issued tokens.
-        return sha256(key)
-    }
-
-    private fun sha256(value: String): String {
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        return digest.digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
-    }
-
-    private fun parseSaltedToken(prefix: String, token: String): Pair<String, String>? {
-        if (!token.startsWith(prefix)) return null
-        val payload = token.removePrefix(prefix)
-        val separator = payload.indexOf('_')
-        if (separator <= 0 || separator == payload.lastIndex) return null
-        val salt = payload.substring(0, separator)
-        val secret = payload.substring(separator + 1)
-        if (!HEX_REGEX.matches(salt) || !HEX_REGEX.matches(secret)) return null
-        if (salt.length != TOKEN_SALT_HEX_LENGTH || secret.isBlank()) return null
-        return salt to secret
-    }
-
-    private fun isValidEmail(email: String): Boolean {
-        if (email.length > MAX_EMAIL_LENGTH || email.contains('\r') || email.contains('\n')) {
-            return false
-        }
-        if (!EMAIL_REGEX.matches(email)) {
-            return false
-        }
-        val parts = email.split('@')
-        if (parts.size != 2) return false
-        val local = parts[0]
-        val domain = parts[1]
-        if (local.length > MAX_EMAIL_LOCAL_LENGTH) return false
-        if (domain.length > MAX_EMAIL_DOMAIN_LENGTH) return false
-        if (domain.startsWith('.') || domain.endsWith('.')) return false
-        val labels = domain.split('.')
-        if (labels.size < 2) return false
-        return labels.all { label ->
-            label.isNotBlank() && label.length <= 63 && !label.startsWith('-') && !label.endsWith('-')
-        }
-    }
-
-    private fun isForbiddenAvatarHost(host: String): Boolean {
-        if (PRIVATE_HOST_PATTERNS.any { it.matches(host) }) return true
-        return isPrivateIpv4(host) || isPrivateIpv6(host)
-    }
-
-    private fun isPrivateIpv4(host: String): Boolean {
-        val match = IPV4_REGEX.matchEntire(host) ?: return false
-        val octets = match.groupValues.drop(1).map { it.toInt() }
-        val first = octets[0]
-        val second = octets[1]
-        return when {
-            first == 0 -> true
-            first == 10 -> true
-            first == 127 -> true
-            first == 169 && second == 254 -> true
-            first == 172 && second in 16..31 -> true
-            first == 192 && second == 168 -> true
-            first == 100 && second in 64..127 -> true
-            first == 198 && (second == 18 || second == 19) -> true
-            first >= 224 -> true
-            else -> false
-        }
-    }
-
-    private fun isPrivateIpv6(host: String): Boolean {
-        val normalized = host.trim('[', ']').lowercase()
-        return normalized == "::1" ||
-            normalized == "::" ||
-            normalized.startsWith("fe80:") ||
-            normalized.startsWith("fc") ||
-            normalized.startsWith("fd") ||
-            normalized.startsWith("2001:db8:")
+        return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 
     private fun audit(action: String, actor: User? = null, target: User? = null, detail: String? = null) {
@@ -394,17 +313,10 @@ class SecurityService(
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
         private const val MAX_USERNAME_LENGTH = 50
-        private const val TOKEN_SALT_HEX_LENGTH = 16
-        private const val SESSION_TOKEN_SECRET_HEX_LENGTH = 48
-        private const val DEFAULT_USER_LIST_LIMIT = 100
-        private const val MAX_PAGE_LIMIT = 200
+        private const val SESSION_TOKEN_HEX_LENGTH = 48
+        private const val MAX_PAGE_LIMIT = 1000
         private const val MAX_URL_LENGTH = 2048
-        private const val MAX_EMAIL_LENGTH = 254
-        private const val MAX_EMAIL_LOCAL_LENGTH = 64
-        private const val MAX_EMAIL_DOMAIN_LENGTH = 253
-        private val HEX_REGEX = Regex("^[0-9a-f]+$")
-        private val EMAIL_REGEX = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,63}$")
-        private val IPV4_REGEX = Regex("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$")
+        private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
         private val PRIVATE_HOST_PATTERNS =
             listOf(
                 Regex("^localhost$"),
@@ -412,14 +324,7 @@ class SecurityService(
                 Regex("^10\\..*"),
                 Regex("^172\\.(1[6-9]|2\\d|3[01])\\..*"),
                 Regex("^192\\.168\\..*"),
-                Regex("^169\\.254\\..*"),
-                Regex("^100\\.(6[4-9]|[7-9]\\d|1[01]\\d|12[0-7])\\..*"),
-                Regex("^198\\.(18|19)\\..*"),
                 Regex("^0\\..*"),
-                Regex("^::1$"),
-                Regex("^::$"),
-                Regex("^fe80:.*"),
-                Regex("^(fc|fd).*"),
                 Regex(".*\\.local$"),
                 Regex(".*\\.internal$"),
             )

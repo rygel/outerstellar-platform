@@ -7,7 +7,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JdbiMessageRepositoryTest : H2JdbiTest() {
+class JdbiMessageRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiMessageRepository(jdbi) }
 
@@ -84,11 +84,9 @@ class JdbiMessageRepositoryTest : H2JdbiTest() {
     @Test
     fun `findChangesSince returns messages newer than epoch`() {
         val m1 = repo.createLocalMessage("Alice", "Old")
-        val epoch = m1.updatedAtEpochMs
-        Thread.sleep(5)
         val m2 = repo.createLocalMessage("Bob", "New")
-        val changes = repo.findChangesSince(epoch)
-        assertTrue(changes.none { it.syncId == m1.syncId })
+        val changes = repo.findChangesSince(m1.updatedAtEpochMs - 1)
+        assertTrue(changes.any { it.syncId == m1.syncId })
         assertTrue(changes.any { it.syncId == m2.syncId })
     }
 

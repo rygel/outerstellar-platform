@@ -7,7 +7,7 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 import io.github.rygel.outerstellar.platform.jooq.Public
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_OUTBOX_STATUS
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_OUTBOX_UNPROCESSED
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_9
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_OUTBOX_PKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltOutboxRecord
 
 import java.time.LocalDateTime
@@ -27,13 +27,14 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
+import org.jooq.impl.Internal
 import org.jooq.impl.SQLDataType
 import org.jooq.impl.TableImpl
 
@@ -65,7 +66,7 @@ open class PltOutbox(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_OUTBOX</code>
+         * The reference instance of <code>public.plt_outbox</code>
          */
         val PLT_OUTBOX: PltOutbox = PltOutbox()
     }
@@ -76,71 +77,71 @@ open class PltOutbox(
     override fun getRecordType(): Class<PltOutboxRecord> = PltOutboxRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_OUTBOX.ID</code>.
+     * The column <code>public.plt_outbox.id</code>.
      */
-    val ID: TableField<PltOutboxRecord, UUID?> = createField(DSL.name("ID"), SQLDataType.UUID.nullable(false), this, "")
+    val ID: TableField<PltOutboxRecord, UUID?> = createField(DSL.name("id"), SQLDataType.UUID.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OUTBOX.PAYLOAD_TYPE</code>.
+     * The column <code>public.plt_outbox.payload_type</code>.
      */
-    val PAYLOAD_TYPE: TableField<PltOutboxRecord, String?> = createField(DSL.name("PAYLOAD_TYPE"), SQLDataType.VARCHAR(255).nullable(false), this, "")
+    val PAYLOAD_TYPE: TableField<PltOutboxRecord, String?> = createField(DSL.name("payload_type"), SQLDataType.VARCHAR(255).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OUTBOX.PAYLOAD</code>.
+     * The column <code>public.plt_outbox.payload</code>.
      */
-    val PAYLOAD: TableField<PltOutboxRecord, String?> = createField(DSL.name("PAYLOAD"), SQLDataType.VARCHAR.nullable(false), this, "")
+    val PAYLOAD: TableField<PltOutboxRecord, String?> = createField(DSL.name("payload"), SQLDataType.CLOB.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OUTBOX.STATUS</code>.
+     * The column <code>public.plt_outbox.status</code>.
      */
-    val STATUS: TableField<PltOutboxRecord, String?> = createField(DSL.name("STATUS"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'PENDING'"), SQLDataType.VARCHAR)), this, "")
+    val STATUS: TableField<PltOutboxRecord, String?> = createField(DSL.name("status"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'PENDING'::character varying"), SQLDataType.VARCHAR)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OUTBOX.CREATED_AT</code>.
+     * The column <code>public.plt_outbox.created_at</code>.
      */
-    val CREATED_AT: TableField<PltOutboxRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltOutboxRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OUTBOX.PROCESSED_AT</code>.
+     * The column <code>public.plt_outbox.processed_at</code>.
      */
-    val PROCESSED_AT: TableField<PltOutboxRecord, LocalDateTime?> = createField(DSL.name("PROCESSED_AT"), SQLDataType.LOCALDATETIME(6), this, "")
+    val PROCESSED_AT: TableField<PltOutboxRecord, LocalDateTime?> = createField(DSL.name("processed_at"), SQLDataType.LOCALDATETIME(6), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OUTBOX.RETRY_COUNT</code>.
+     * The column <code>public.plt_outbox.retry_count</code>.
      */
-    val RETRY_COUNT: TableField<PltOutboxRecord, Int?> = createField(DSL.name("RETRY_COUNT"), SQLDataType.INTEGER.defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "")
+    val RETRY_COUNT: TableField<PltOutboxRecord, Int?> = createField(DSL.name("retry_count"), SQLDataType.INTEGER.defaultValue(DSL.field(DSL.raw("0"), SQLDataType.INTEGER)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OUTBOX.LAST_ERROR</code>.
+     * The column <code>public.plt_outbox.last_error</code>.
      */
-    val LAST_ERROR: TableField<PltOutboxRecord, String?> = createField(DSL.name("LAST_ERROR"), SQLDataType.VARCHAR, this, "")
+    val LAST_ERROR: TableField<PltOutboxRecord, String?> = createField(DSL.name("last_error"), SQLDataType.CLOB, this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_OUTBOX.DELETED_AT</code>.
+     * The column <code>public.plt_outbox.deleted_at</code>.
      */
-    val DELETED_AT: TableField<PltOutboxRecord, LocalDateTime?> = createField(DSL.name("DELETED_AT"), SQLDataType.LOCALDATETIME(6), this, "")
+    val DELETED_AT: TableField<PltOutboxRecord, LocalDateTime?> = createField(DSL.name("deleted_at"), SQLDataType.LOCALDATETIME(6), this, "")
 
     private constructor(alias: Name, aliased: Table<PltOutboxRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltOutboxRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltOutboxRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_OUTBOX</code> table reference
+     * Create an aliased <code>public.plt_outbox</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_OUTBOX</code> table reference
+     * Create an aliased <code>public.plt_outbox</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_OUTBOX</code> table reference
+     * Create a <code>public.plt_outbox</code> table reference
      */
-    constructor(): this(DSL.name("PLT_OUTBOX"), null)
+    constructor(): this(DSL.name("plt_outbox"), null)
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIndexes(): List<Index> = listOf(IDX_PLT_OUTBOX_STATUS, IDX_PLT_OUTBOX_UNPROCESSED)
-    override fun getPrimaryKey(): UniqueKey<PltOutboxRecord> = CONSTRAINT_9
+    override fun getPrimaryKey(): UniqueKey<PltOutboxRecord> = PLT_OUTBOX_PKEY
     override fun `as`(alias: String): PltOutbox = PltOutbox(DSL.name(alias), this)
     override fun `as`(alias: Name): PltOutbox = PltOutbox(alias, this)
     override fun `as`(alias: Table<*>): PltOutbox = PltOutbox(alias.qualifiedName, this)
@@ -163,7 +164,7 @@ open class PltOutbox(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltOutbox = PltOutbox(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltOutbox = PltOutbox(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -203,10 +204,10 @@ open class PltOutbox(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltOutbox = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltOutbox = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltOutbox = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltOutbox = where(DSL.notExists(select))
 }

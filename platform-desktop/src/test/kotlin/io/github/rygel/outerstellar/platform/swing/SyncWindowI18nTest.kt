@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.sync.SyncService
 import io.mockk.mockk
 import java.awt.Component
 import java.awt.Container
+import java.awt.GraphicsEnvironment
 import java.util.Locale
 import javax.swing.AbstractButton
 import javax.swing.JComponent
@@ -16,11 +17,23 @@ import javax.swing.JMenuItem
 import javax.swing.SwingUtilities
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 class SyncWindowI18nTest {
     private val messageService = mockk<MessageService>(relaxed = true)
     private val syncService = mockk<SyncService>(relaxed = true)
+
+    companion object {
+        @JvmStatic
+        @BeforeAll
+        fun assumeNotHeadless() {
+            org.junit.jupiter.api.Assumptions.assumeFalse(
+                GraphicsEnvironment.isHeadless(),
+                "Test requires a display (SyncWindow creates JFrame)",
+            )
+        }
+    }
 
     @Test
     fun `refreshTranslations updates primary window labels and menus`() {

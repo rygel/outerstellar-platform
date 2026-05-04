@@ -15,8 +15,13 @@ class JdbiDeviceTokenRepository(private val jdbi: Jdbi) : DeviceTokenRepository 
             handle
                 .createUpdate(
                     """
-                    MERGE INTO plt_device_tokens (user_id, platform, token, app_bundle, created_at, last_seen)
-                    KEY(token) VALUES (:userId, :platform, :token, :appBundle, :now, :now)
+                    INSERT INTO plt_device_tokens (user_id, platform, token, app_bundle, created_at, last_seen)
+                    VALUES (:userId, :platform, :token, :appBundle, :now, :now)
+                    ON CONFLICT (token) DO UPDATE SET
+                        user_id = EXCLUDED.user_id,
+                        platform = EXCLUDED.platform,
+                        app_bundle = EXCLUDED.app_bundle,
+                        last_seen = EXCLUDED.last_seen
                     """
                 )
                 .bind("userId", deviceToken.userId)

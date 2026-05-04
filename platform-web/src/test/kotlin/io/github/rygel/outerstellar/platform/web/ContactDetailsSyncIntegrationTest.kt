@@ -31,7 +31,7 @@ import org.junit.jupiter.api.BeforeEach
  * - Updated contact preserves all detail fields
  * - Deleted flag is respected on push
  */
-class ContactDetailsSyncIntegrationTest : H2WebTest() {
+class ContactDetailsSyncIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User

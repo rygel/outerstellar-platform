@@ -7,8 +7,8 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 import io.github.rygel.outerstellar.platform.jooq.Public
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_NOTIFICATIONS_USER_ID
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_NOTIFICATIONS_USER_UNREAD
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_7
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_7F
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_NOTIFICATIONS_PKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_NOTIFICATIONS__PLT_NOTIFICATIONS_USER_ID_FKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.PltUsers.PltUsersPath
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltNotificationsRecord
 
@@ -30,10 +30,10 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
@@ -69,7 +69,7 @@ open class PltNotifications(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_NOTIFICATIONS</code>
+         * The reference instance of <code>public.plt_notifications</code>
          */
         val PLT_NOTIFICATIONS: PltNotifications = PltNotifications()
     }
@@ -80,58 +80,58 @@ open class PltNotifications(
     override fun getRecordType(): Class<PltNotificationsRecord> = PltNotificationsRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_NOTIFICATIONS.ID</code>.
+     * The column <code>public.plt_notifications.id</code>.
      */
-    val ID: TableField<PltNotificationsRecord, UUID?> = createField(DSL.name("ID"), SQLDataType.UUID.nullable(false), this, "")
+    val ID: TableField<PltNotificationsRecord, UUID?> = createField(DSL.name("id"), SQLDataType.UUID.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_NOTIFICATIONS.USER_ID</code>.
+     * The column <code>public.plt_notifications.user_id</code>.
      */
-    val USER_ID: TableField<PltNotificationsRecord, UUID?> = createField(DSL.name("USER_ID"), SQLDataType.UUID.nullable(false), this, "")
+    val USER_ID: TableField<PltNotificationsRecord, UUID?> = createField(DSL.name("user_id"), SQLDataType.UUID.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_NOTIFICATIONS.TITLE</code>.
+     * The column <code>public.plt_notifications.title</code>.
      */
-    val TITLE: TableField<PltNotificationsRecord, String?> = createField(DSL.name("TITLE"), SQLDataType.VARCHAR(255).nullable(false), this, "")
+    val TITLE: TableField<PltNotificationsRecord, String?> = createField(DSL.name("title"), SQLDataType.VARCHAR(255).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_NOTIFICATIONS.BODY</code>.
+     * The column <code>public.plt_notifications.body</code>.
      */
-    val BODY: TableField<PltNotificationsRecord, String?> = createField(DSL.name("BODY"), SQLDataType.VARCHAR.nullable(false), this, "")
+    val BODY: TableField<PltNotificationsRecord, String?> = createField(DSL.name("body"), SQLDataType.CLOB.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_NOTIFICATIONS.TYPE</code>.
+     * The column <code>public.plt_notifications.type</code>.
      */
-    val TYPE: TableField<PltNotificationsRecord, String?> = createField(DSL.name("TYPE"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'info'"), SQLDataType.VARCHAR)), this, "")
+    val TYPE: TableField<PltNotificationsRecord, String?> = createField(DSL.name("type"), SQLDataType.VARCHAR(20).nullable(false).defaultValue(DSL.field(DSL.raw("'info'::character varying"), SQLDataType.VARCHAR)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_NOTIFICATIONS.READ_AT</code>.
+     * The column <code>public.plt_notifications.read_at</code>.
      */
-    val READ_AT: TableField<PltNotificationsRecord, LocalDateTime?> = createField(DSL.name("READ_AT"), SQLDataType.LOCALDATETIME(6), this, "")
+    val READ_AT: TableField<PltNotificationsRecord, LocalDateTime?> = createField(DSL.name("read_at"), SQLDataType.LOCALDATETIME(6), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_NOTIFICATIONS.CREATED_AT</code>.
+     * The column <code>public.plt_notifications.created_at</code>.
      */
-    val CREATED_AT: TableField<PltNotificationsRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltNotificationsRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     private constructor(alias: Name, aliased: Table<PltNotificationsRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltNotificationsRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltNotificationsRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_NOTIFICATIONS</code> table reference
+     * Create an aliased <code>public.plt_notifications</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_NOTIFICATIONS</code> table reference
+     * Create an aliased <code>public.plt_notifications</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_NOTIFICATIONS</code> table reference
+     * Create a <code>public.plt_notifications</code> table reference
      */
-    constructor(): this(DSL.name("PLT_NOTIFICATIONS"), null)
+    constructor(): this(DSL.name("plt_notifications"), null)
 
     constructor(path: Table<out Record>, childPath: ForeignKey<out Record, PltNotificationsRecord>?, parentPath: InverseForeignKey<out Record, PltNotificationsRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, PLT_NOTIFICATIONS, null, null)
 
@@ -147,14 +147,14 @@ open class PltNotifications(
     }
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIndexes(): List<Index> = listOf(IDX_PLT_NOTIFICATIONS_USER_ID, IDX_PLT_NOTIFICATIONS_USER_UNREAD)
-    override fun getPrimaryKey(): UniqueKey<PltNotificationsRecord> = CONSTRAINT_7
-    override fun getReferences(): List<ForeignKey<PltNotificationsRecord, *>> = listOf(CONSTRAINT_7F)
+    override fun getPrimaryKey(): UniqueKey<PltNotificationsRecord> = PLT_NOTIFICATIONS_PKEY
+    override fun getReferences(): List<ForeignKey<PltNotificationsRecord, *>> = listOf(PLT_NOTIFICATIONS__PLT_NOTIFICATIONS_USER_ID_FKEY)
 
     /**
-     * Get the implicit join path to the <code>PUBLIC.PLT_USERS</code> table.
+     * Get the implicit join path to the <code>public.plt_users</code> table.
      */
     fun pltUsers(): PltUsersPath = pltUsers
-    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, CONSTRAINT_7F, null) }
+    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, PLT_NOTIFICATIONS__PLT_NOTIFICATIONS_USER_ID_FKEY, null) }
     override fun `as`(alias: String): PltNotifications = PltNotifications(DSL.name(alias), this)
     override fun `as`(alias: Name): PltNotifications = PltNotifications(alias, this)
     override fun `as`(alias: Table<*>): PltNotifications = PltNotifications(alias.qualifiedName, this)
@@ -177,7 +177,7 @@ open class PltNotifications(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltNotifications = PltNotifications(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltNotifications = PltNotifications(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -217,10 +217,10 @@ open class PltNotifications(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltNotifications = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltNotifications = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltNotifications = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltNotifications = where(DSL.notExists(select))
 }

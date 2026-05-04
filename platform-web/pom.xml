@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.4.2</version>
+        <version>1.5.0</version>
 
     </parent>
 
@@ -89,6 +89,16 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -288,14 +298,13 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Web tests share an in-memory H2 database — parallel execution would cause races -->
+            <!-- Web tests share a PostgreSQL database — parallel execution would cause races -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <parallel>none</parallel>
                     <systemPropertyVariables>
-                        <!-- Use precompiled JTE templates in tests — avoids 60+ s of source compilation per fork -->
                         <jte.production>true</jte.production>
                     </systemPropertyVariables>
                 </configuration>

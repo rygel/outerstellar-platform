@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach
  * Integration tests for web UI rendering, navigation, CORS, security headers, correlation IDs, health check, rate
  * limiting, and session timeout.
  */
-class UserManagementWebUiIntegrationTest : H2WebTest() {
+class UserManagementWebUiIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var securityService: SecurityService
@@ -148,7 +148,7 @@ class UserManagementWebUiIntegrationTest : H2WebTest() {
         val admin = seedAdmin()
         testDsl.execute(
             "UPDATE plt_users SET last_activity_at = " +
-                "TIMESTAMPADD(MINUTE, -5, CURRENT_TIMESTAMP) " +
+                "CURRENT_TIMESTAMP - INTERVAL '5 minutes' " +
                 "WHERE id = '${admin.id}'"
         )
         val response =

@@ -18,8 +18,7 @@ val securityModule
                 getOrNull(),
                 getOrNull(),
                 getOrNull(),
-                getOrNull<String>(named("appBaseUrl"))
-                    ?: get<io.github.rygel.outerstellar.platform.AppConfig>().appBaseUrl,
+                getOrNull<String>(named("appBaseUrl")) ?: "http://localhost:8080",
                 getOrNull(),
                 get<io.github.rygel.outerstellar.platform.AppConfig>().sessionTimeoutMinutes.toLong() * 60,
                 get(),

@@ -21,7 +21,7 @@ updates:
       logging:
         patterns: ["org.slf4j:*", "ch.qos.logback:*"]
       persistence:
-        patterns: ["org.jooq:*", "org.jdbi:*", "com.h2database:*", "org.postgresql:*", "org.flywaydb:*"]
+        patterns: ["org.jooq:*", "org.jdbi:*", "org.postgresql:*", "org.flywaydb:*"]
       micrometer:
         patterns: ["io.micrometer:*"]
       outerstellar:
@@ -38,8 +38,6 @@ updates:
           - "org.apache.maven.plugins:*"
           - "org.codehaus.mojo:*"
         dependency-type: "development"
-      maven-all:
-        patterns: ["*"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

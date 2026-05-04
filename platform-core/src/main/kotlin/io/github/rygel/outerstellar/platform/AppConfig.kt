@@ -4,6 +4,11 @@ import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addEnvironmentSource
 import com.sksamuel.hoplite.addResourceSource
+import com.sksamuel.hoplite.sources.SystemPropertiesPropertySource
+import org.koin.dsl.module
+
+val configModule
+    get() = module { single { AppConfig.fromEnvironment() } }
 
 data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
 
@@ -35,9 +40,9 @@ data class EmailConfig(
 data class AppConfig(
     val version: String = "dev",
     val port: Int = 8080,
-    val jdbcUrl: String = "jdbc:h2:file:./data/outerstellar-platform;MODE=PostgreSQL;AUTO_SERVER=TRUE",
-    val jdbcUser: String = "sa",
-    val jdbcPassword: String = "",
+    val jdbcUrl: String = "jdbc:postgresql://localhost:5432/outerstellar",
+    val jdbcUser: String = "outerstellar",
+    val jdbcPassword: String = "outerstellar",
     val devDashboardEnabled: Boolean = false,
     val devMode: Boolean = false,
     // Defaults to false for local development (HTTP). Set to true in production via
@@ -53,12 +58,9 @@ data class AppConfig(
     /** Public-facing base URL used in emails, e.g. https://app.example.com */
     val appBaseUrl: String = "http://localhost:8080",
     val jwt: JwtConfig = JwtConfig(),
-    // 'unsafe-inline' is intentionally absent from script-src: all scripts are loaded from
-    // external files so inline scripts are never needed. style-src retains 'unsafe-inline'
-    // because inline style= attributes are used extensively in templates.
     val cspPolicy: String =
         "default-src 'self'; " +
-            "script-src 'self'; " +
+            "script-src 'self' 'unsafe-inline'; " +
             "style-src 'self' 'unsafe-inline'; " +
             "font-src 'self'; " +
             "connect-src 'self' ws: wss:; " +
@@ -68,7 +70,11 @@ data class AppConfig(
         @OptIn(ExperimentalHoplite::class)
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
-            val builder = ConfigLoaderBuilder.default().withExplicitSealedTypes().addEnvironmentSource()
+            val builder =
+                ConfigLoaderBuilder.default()
+                    .withExplicitSealedTypes()
+                    .addEnvironmentSource()
+                    .addSource(SystemPropertiesPropertySource())
 
             if (profile != "default") {
                 builder.addResourceSource("/application-$profile.yaml", optional = true)

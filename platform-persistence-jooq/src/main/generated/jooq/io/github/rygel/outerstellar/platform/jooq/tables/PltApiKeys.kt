@@ -7,8 +7,8 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 import io.github.rygel.outerstellar.platform.jooq.Public
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_API_KEYS_HASH
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_API_KEYS_USER
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_3
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_32
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_API_KEYS_PKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_API_KEYS__PLT_API_KEYS_USER_ID_FKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.PltUsers.PltUsersPath
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltApiKeysRecord
 
@@ -31,10 +31,10 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
@@ -70,7 +70,7 @@ open class PltApiKeys(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_API_KEYS</code>
+         * The reference instance of <code>public.plt_api_keys</code>
          */
         val PLT_API_KEYS: PltApiKeys = PltApiKeys()
     }
@@ -81,63 +81,63 @@ open class PltApiKeys(
     override fun getRecordType(): Class<PltApiKeysRecord> = PltApiKeysRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_API_KEYS.ID</code>.
+     * The column <code>public.plt_api_keys.id</code>.
      */
-    val ID: TableField<PltApiKeysRecord, Long?> = createField(DSL.name("ID"), SQLDataType.BIGINT.nullable(false).identity(true), this, "")
+    val ID: TableField<PltApiKeysRecord, Long?> = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).generatedByDefaultAsIdentity(), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_API_KEYS.USER_ID</code>.
+     * The column <code>public.plt_api_keys.user_id</code>.
      */
-    val USER_ID: TableField<PltApiKeysRecord, UUID?> = createField(DSL.name("USER_ID"), SQLDataType.UUID.nullable(false), this, "")
+    val USER_ID: TableField<PltApiKeysRecord, UUID?> = createField(DSL.name("user_id"), SQLDataType.UUID.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_API_KEYS.KEY_HASH</code>.
+     * The column <code>public.plt_api_keys.key_hash</code>.
      */
-    val KEY_HASH: TableField<PltApiKeysRecord, String?> = createField(DSL.name("KEY_HASH"), SQLDataType.VARCHAR(255).nullable(false), this, "")
+    val KEY_HASH: TableField<PltApiKeysRecord, String?> = createField(DSL.name("key_hash"), SQLDataType.VARCHAR(255).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_API_KEYS.KEY_PREFIX</code>.
+     * The column <code>public.plt_api_keys.key_prefix</code>.
      */
-    val KEY_PREFIX: TableField<PltApiKeysRecord, String?> = createField(DSL.name("KEY_PREFIX"), SQLDataType.VARCHAR(10).nullable(false), this, "")
+    val KEY_PREFIX: TableField<PltApiKeysRecord, String?> = createField(DSL.name("key_prefix"), SQLDataType.VARCHAR(10).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_API_KEYS.NAME</code>.
+     * The column <code>public.plt_api_keys.name</code>.
      */
-    val NAME: TableField<PltApiKeysRecord, String?> = createField(DSL.name("NAME"), SQLDataType.VARCHAR(255).nullable(false), this, "")
+    val NAME: TableField<PltApiKeysRecord, String?> = createField(DSL.name("name"), SQLDataType.VARCHAR(255).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_API_KEYS.ENABLED</code>.
+     * The column <code>public.plt_api_keys.enabled</code>.
      */
-    val ENABLED: TableField<PltApiKeysRecord, Boolean?> = createField(DSL.name("ENABLED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("TRUE"), SQLDataType.BOOLEAN)), this, "")
+    val ENABLED: TableField<PltApiKeysRecord, Boolean?> = createField(DSL.name("enabled"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_API_KEYS.CREATED_AT</code>.
+     * The column <code>public.plt_api_keys.created_at</code>.
      */
-    val CREATED_AT: TableField<PltApiKeysRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltApiKeysRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_API_KEYS.LAST_USED_AT</code>.
+     * The column <code>public.plt_api_keys.last_used_at</code>.
      */
-    val LAST_USED_AT: TableField<PltApiKeysRecord, LocalDateTime?> = createField(DSL.name("LAST_USED_AT"), SQLDataType.LOCALDATETIME(6), this, "")
+    val LAST_USED_AT: TableField<PltApiKeysRecord, LocalDateTime?> = createField(DSL.name("last_used_at"), SQLDataType.LOCALDATETIME(6), this, "")
 
     private constructor(alias: Name, aliased: Table<PltApiKeysRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltApiKeysRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltApiKeysRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_API_KEYS</code> table reference
+     * Create an aliased <code>public.plt_api_keys</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_API_KEYS</code> table reference
+     * Create an aliased <code>public.plt_api_keys</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_API_KEYS</code> table reference
+     * Create a <code>public.plt_api_keys</code> table reference
      */
-    constructor(): this(DSL.name("PLT_API_KEYS"), null)
+    constructor(): this(DSL.name("plt_api_keys"), null)
 
     constructor(path: Table<out Record>, childPath: ForeignKey<out Record, PltApiKeysRecord>?, parentPath: InverseForeignKey<out Record, PltApiKeysRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, PLT_API_KEYS, null, null)
 
@@ -154,14 +154,14 @@ open class PltApiKeys(
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIndexes(): List<Index> = listOf(IDX_PLT_API_KEYS_HASH, IDX_PLT_API_KEYS_USER)
     override fun getIdentity(): Identity<PltApiKeysRecord, Long?> = super.getIdentity() as Identity<PltApiKeysRecord, Long?>
-    override fun getPrimaryKey(): UniqueKey<PltApiKeysRecord> = CONSTRAINT_3
-    override fun getReferences(): List<ForeignKey<PltApiKeysRecord, *>> = listOf(CONSTRAINT_32)
+    override fun getPrimaryKey(): UniqueKey<PltApiKeysRecord> = PLT_API_KEYS_PKEY
+    override fun getReferences(): List<ForeignKey<PltApiKeysRecord, *>> = listOf(PLT_API_KEYS__PLT_API_KEYS_USER_ID_FKEY)
 
     /**
-     * Get the implicit join path to the <code>PUBLIC.PLT_USERS</code> table.
+     * Get the implicit join path to the <code>public.plt_users</code> table.
      */
     fun pltUsers(): PltUsersPath = pltUsers
-    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, CONSTRAINT_32, null) }
+    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, PLT_API_KEYS__PLT_API_KEYS_USER_ID_FKEY, null) }
     override fun `as`(alias: String): PltApiKeys = PltApiKeys(DSL.name(alias), this)
     override fun `as`(alias: Name): PltApiKeys = PltApiKeys(alias, this)
     override fun `as`(alias: Table<*>): PltApiKeys = PltApiKeys(alias.qualifiedName, this)
@@ -184,7 +184,7 @@ open class PltApiKeys(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltApiKeys = PltApiKeys(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltApiKeys = PltApiKeys(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -224,10 +224,10 @@ open class PltApiKeys(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltApiKeys = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltApiKeys = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltApiKeys = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltApiKeys = where(DSL.notExists(select))
 }

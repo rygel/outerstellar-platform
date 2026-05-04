@@ -27,7 +27,7 @@ import org.http4k.format.Jackson.auto
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
-class UserManagementIntegrationTest : H2WebTest() {
+class UserManagementIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var securityService: SecurityService

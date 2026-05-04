@@ -7,8 +7,8 @@ This platform is meant to provide a working vertical slice for:
 - Kotlin on JDK 21
 - http4k for the web server
 - Flyway for schema migration
-- jOOQ for database access and code generation
-- H2 for local development and demo persistence
+- jOOQ or JDBI for database access (jOOQ with code generation by default, JDBI as a lighter alternative)
+- PostgreSQL for persistence
 - JTE with Kotlin templates (`.kte`) for server-rendered HTML
 - HTMX for progressive enhancement and fragment swapping
 - A Swing desktop demo with local persistence and two-way sync
@@ -50,7 +50,7 @@ The web UI is **server-rendered first**, with HTMX used for partial replacement 
 ### Desktop application
 
 - `SwingSyncApp.kt` runs a local Swing client.
-- It uses its own H2 database and the same repository style.
+- It uses its own PostgreSQL database and the same repository style.
 - `SyncService.kt` pushes local dirty changes and pulls server changes through `/api/v1/sync`.
 - `ThemeManager.kt` applies FlatLaf plus an Outerstellar-inspired palette.
 
@@ -58,14 +58,14 @@ This gives a concrete offline-capable sync example without introducing a second 
 
 ## Persistence and schema
 
-### H2
+### PostgreSQL
 
-H2 was chosen because it is ideal for a platform:
+PostgreSQL is the sole database engine for the platform:
 
-- zero external setup
-- easy local use for both server and Swing demo
+- production-grade RDBMS
+- used for local development via Podman/Docker
 - works well with Flyway and jOOQ
-- keeps the platform easy to run
+- keeps the platform consistent across environments
 
 ### Flyway
 
@@ -73,21 +73,72 @@ Flyway is the source of truth for schema evolution.
 
 Current migrations:
 
-- `V1__create_messages.sql`
-- `V2__add_sync_support.sql`
+- `V1__initial_schema.sql`
+- `V2__user_profile_enhancements.sql`
+- `V3__sessions_table.sql`
+- `V4__user_preferences.sql`
 
-### jOOQ
+### Persistence modules: jOOQ and JDBI
 
-jOOQ is the database interface by design.
+The platform provides **two independent, interchangeable persistence modules**. You choose one at the application level — they are never both on the classpath at the same time.
 
-Why:
+| Module | Artifact | Database access | Koin module |
+|--------|----------|----------------|-------------|
+| jOOQ | `platform-persistence-jooq` | jOOQ with code generation | `persistenceModule` (from `io.github.rygel.outerstellar.platform.di`) |
+| JDBI | `platform-persistence-jdbi` | JDBI lightweight SQL | `persistenceModule` (from `io.github.rygel.outerstellar.platform.di`) |
 
-- type-safe SQL access
-- generated schema bindings
+Both modules:
+
+- Implement the **same repository interfaces** defined in `platform-core`
+- Provide the **same Flyway migrations** at `classpath:db/migration`
+- Provide the **same Koin module name** (`persistenceModule`) so the rest of the app is agnostic
+- Provide the **same `DatabaseInfra` functions** (`migrate`, `migratePlugin`, `createDataSource`)
+
+#### Choosing jOOQ (default)
+
+`platform-web` and `platform-desktop` use jOOQ by default. jOOQ provides:
+
+- type-safe SQL access via generated schema bindings
 - clean fit for Kotlin
-- keeps SQL explicit instead of hiding it behind ORM behavior
+- explicit SQL instead of ORM behavior
 
 The repository layer wraps jOOQ so the app uses a small domain-oriented API rather than scattered DSL calls.
+
+Include in your POM:
+```xml
+<dependency>
+    <groupId>io.github.rygel</groupId>
+    <artifactId>outerstellar-platform-persistence-jooq</artifactId>
+</dependency>
+```
+
+#### Choosing JDBI
+
+JDBI is a lighter alternative with no code generation step. It provides the same repository interfaces and Koin wiring.
+
+To use JDBI instead of jOOQ:
+
+1. Replace `outerstellar-platform-persistence-jooq` with `outerstellar-platform-persistence-jdbi` in your POM
+2. Import the JDBI `persistenceModule` instead of the jOOQ one
+3. No other code changes needed — all repository interfaces are the same
+
+```xml
+<!-- Replace jOOQ with JDBI -->
+<dependency>
+    <groupId>io.github.rygel</groupId>
+    <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
+</dependency>
+```
+
+**Important:** The JDBI module has zero jOOQ dependencies. If you use JDBI, no jOOQ classes will be on your compile or runtime classpath.
+
+#### Adding new repositories
+
+When adding a new repository:
+
+1. Define the interface in `platform-core` (e.g. `FooRepository`)
+2. Implement it in **both** `platform-persistence-jooq` and `platform-persistence-jdbi`
+3. Register both implementations in their respective `PersistenceModule.kt`
 
 #### jOOQ code generation policy
 
@@ -99,6 +150,23 @@ The project uses **manual jOOQ code generation** with generated sources checked 
 - PowerShell shortcut: `./generate-jooq.ps1`
 
 This keeps builds deterministic and removes implicit schema/codegen drift between environments.
+
+### Plugin migrations
+
+The platform supports plugin applications that have their own Flyway migrations without version conflicts. The `PluginMigrationSource` interface (in `platform-core`) provides:
+
+- **`migrationLocation`**: classpath location for the plugin's SQL files (e.g. `classpath:db/migration/plugin`). Defaults to `null` (no migrations).
+- **`migrationHistoryTable`**: separate Flyway history table name. Defaults to `"flyway_plugin_history"`.
+
+The host runs two separate Flyway instances:
+
+| Aspect | Host (platform) | Plugin |
+|--------|----------------|--------|
+| Migration location | `classpath:db/migration` | Configurable via `migrationLocation` |
+| History table | `flyway_schema_history` | Configurable via `migrationHistoryTable` |
+| `baselineOnMigrate` | No | Yes |
+
+Plugins implement `PlatformPlugin` (which extends `PluginMigrationSource`) and register in Koin. The `PersistenceModule` discovers the plugin at startup and runs its migrations after the host migrations, using a separate Flyway instance. This means plugins can use **any** version numbers (including V1–V4) without conflicting with the platform's own migrations.
 
 ## Sync design
 
@@ -245,13 +313,13 @@ Use this whenever Flyway migrations or jOOQ generation config changes.
 
 These are worth preserving because they caused real issues during implementation.
 
-### 1. jOOQ/Flyway code generation against H2
+### 1. jOOQ/Flyway code generation against PostgreSQL
 
-**Finding:** H2 file locking can occur when Flyway and jOOQ touch the same database during code generation.
+**Finding:** jOOQ code generation requires a running PostgreSQL instance to introspect the schema.
 
-**Decision:** use `AUTO_SERVER=TRUE` on the codegen JDBC URL and run generation manually via profile `jooq-codegen`.
+**Decision:** run codegen manually via profile `jooq-codegen` against the local PostgreSQL instance (started via `docker/podman-compose.yml`).
 
-**Why:** it prevents code generation lock contention while avoiding implicit generation during every build.
+**Why:** it avoids starting a database during every build while ensuring generated code matches the real schema.
 
 ### 2. Kotlin/http4k compatibility
 
@@ -342,12 +410,12 @@ The web module uses http4k's in-memory testing pattern: the `app()` function ret
 
 Pattern:
 ```kotlin
-class SomeIntegrationTest : H2WebTest() {
+class SomeIntegrationTest : WebTest() {
     private lateinit var app: HttpHandler
 
     @BeforeEach
     fun setup() {
-        // Wire real repositories against the shared H2 test database
+        // Wire real repositories against the shared PostgreSQL test database
         app = app(messageService, contactService, ...).http!!
     }
 
@@ -529,9 +597,10 @@ For this platform to remain healthy, these pieces are important:
 
 - Flyway remains the schema authority
 - Detekt ensures Kotlin code style and formatting (configured in `detekt.yml`)
-- jOOQ remains the database access layer
+- jOOQ remains the default database access layer (JDBI is the alternative)
 - jOOQ generated sources remain checked in under `persistence-jooq/src/main/generated/jooq`
 - jOOQ sources are regenerated manually with `-Pjooq-codegen` when schema changes
+- New repositories must be implemented in both `platform-persistence-jooq` and `platform-persistence-jdbi`
 - JTE/KTE remains the server rendering path
 - `jte-runtime` stays on the runtime classpath
 - JTE hot-reload continues using the explicit application classloader

@@ -50,9 +50,14 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             handle
                 .createUpdate(
                     """
-                    MERGE INTO plt_users (id, username, email, password_hash, role, enabled)
-                    KEY (id)
+                    INSERT INTO plt_users (id, username, email, password_hash, role, enabled)
                     VALUES (:id, :username, :email, :passwordHash, :role, :enabled)
+                    ON CONFLICT (id) DO UPDATE SET
+                        username = EXCLUDED.username,
+                        email = EXCLUDED.email,
+                        password_hash = EXCLUDED.password_hash,
+                        role = EXCLUDED.role,
+                        enabled = EXCLUDED.enabled
                     """
                 )
                 .bind("id", user.id)

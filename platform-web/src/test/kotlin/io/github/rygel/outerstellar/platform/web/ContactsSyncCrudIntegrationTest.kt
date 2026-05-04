@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeEach
  * - Empty push returns appliedCount 0 and empty contacts list
  * - GET /api/v1/sync/contacts?since= filters by timestamp
  */
-class ContactsSyncCrudIntegrationTest : H2WebTest() {
+class ContactsSyncCrudIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User

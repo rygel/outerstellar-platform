@@ -12,7 +12,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JdbiApiKeyRepositoryTest : H2JdbiTest() {
+class JdbiApiKeyRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiApiKeyRepository(jdbi) }
     private val userRepo by lazy { JdbiUserRepository(jdbi) }

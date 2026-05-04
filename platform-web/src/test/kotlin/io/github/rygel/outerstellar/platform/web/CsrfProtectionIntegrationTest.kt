@@ -1,5 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -10,9 +13,6 @@ import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 /**
  * Integration tests for CSRF protection.
@@ -26,7 +26,7 @@ import kotlin.test.assertNotEquals
  * - API routes (/api/v1/) are exempt
  * - OAuth routes (/oauth/) are exempt
  */
-class CsrfProtectionIntegrationTest : H2WebTest() {
+class CsrfProtectionIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
 

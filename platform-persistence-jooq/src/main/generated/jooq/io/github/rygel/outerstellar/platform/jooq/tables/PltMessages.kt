@@ -9,7 +9,7 @@ import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_MESSAGES_AUTHO
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_MESSAGES_CREATED
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_MESSAGES_DELETED
 import io.github.rygel.outerstellar.platform.jooq.indexes.UX_PLT_MESSAGES_SYNC_ID
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_D
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_MESSAGES_PKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltMessagesRecord
 
 import java.time.LocalDateTime
@@ -29,13 +29,14 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
+import org.jooq.impl.Internal
 import org.jooq.impl.SQLDataType
 import org.jooq.impl.TableImpl
 
@@ -67,7 +68,7 @@ open class PltMessages(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_MESSAGES</code>
+         * The reference instance of <code>public.plt_messages</code>
          */
         val PLT_MESSAGES: PltMessages = PltMessages()
     }
@@ -78,82 +79,82 @@ open class PltMessages(
     override fun getRecordType(): Class<PltMessagesRecord> = PltMessagesRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.ID</code>.
+     * The column <code>public.plt_messages.id</code>.
      */
-    val ID: TableField<PltMessagesRecord, Long?> = createField(DSL.name("ID"), SQLDataType.BIGINT.nullable(false).identity(true), this, "")
+    val ID: TableField<PltMessagesRecord, Long?> = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).generatedByDefaultAsIdentity(), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.SYNC_ID</code>.
+     * The column <code>public.plt_messages.sync_id</code>.
      */
-    val SYNC_ID: TableField<PltMessagesRecord, String?> = createField(DSL.name("SYNC_ID"), SQLDataType.VARCHAR(36).nullable(false), this, "")
+    val SYNC_ID: TableField<PltMessagesRecord, String?> = createField(DSL.name("sync_id"), SQLDataType.VARCHAR(36).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.AUTHOR</code>.
+     * The column <code>public.plt_messages.author</code>.
      */
-    val AUTHOR: TableField<PltMessagesRecord, String?> = createField(DSL.name("AUTHOR"), SQLDataType.VARCHAR(100).nullable(false), this, "")
+    val AUTHOR: TableField<PltMessagesRecord, String?> = createField(DSL.name("author"), SQLDataType.VARCHAR(100).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.CONTENT</code>.
+     * The column <code>public.plt_messages.content</code>.
      */
-    val CONTENT: TableField<PltMessagesRecord, String?> = createField(DSL.name("CONTENT"), SQLDataType.VARCHAR(500).nullable(false), this, "")
+    val CONTENT: TableField<PltMessagesRecord, String?> = createField(DSL.name("content"), SQLDataType.VARCHAR(500).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.CREATED_AT</code>.
+     * The column <code>public.plt_messages.created_at</code>.
      */
-    val CREATED_AT: TableField<PltMessagesRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltMessagesRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.UPDATED_AT_EPOCH_MS</code>.
+     * The column <code>public.plt_messages.updated_at_epoch_ms</code>.
      */
-    val UPDATED_AT_EPOCH_MS: TableField<PltMessagesRecord, Long?> = createField(DSL.name("UPDATED_AT_EPOCH_MS"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BIGINT)), this, "")
+    val UPDATED_AT_EPOCH_MS: TableField<PltMessagesRecord, Long?> = createField(DSL.name("updated_at_epoch_ms"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BIGINT)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.DELETED</code>.
+     * The column <code>public.plt_messages.deleted</code>.
      */
-    val DELETED: TableField<PltMessagesRecord, Boolean?> = createField(DSL.name("DELETED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("FALSE"), SQLDataType.BOOLEAN)), this, "")
+    val DELETED: TableField<PltMessagesRecord, Boolean?> = createField(DSL.name("deleted"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.DIRTY</code>.
+     * The column <code>public.plt_messages.dirty</code>.
      */
-    val DIRTY: TableField<PltMessagesRecord, Boolean?> = createField(DSL.name("DIRTY"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("FALSE"), SQLDataType.BOOLEAN)), this, "")
+    val DIRTY: TableField<PltMessagesRecord, Boolean?> = createField(DSL.name("dirty"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.DELETED_AT</code>.
+     * The column <code>public.plt_messages.deleted_at</code>.
      */
-    val DELETED_AT: TableField<PltMessagesRecord, LocalDateTime?> = createField(DSL.name("DELETED_AT"), SQLDataType.LOCALDATETIME(6), this, "")
+    val DELETED_AT: TableField<PltMessagesRecord, LocalDateTime?> = createField(DSL.name("deleted_at"), SQLDataType.LOCALDATETIME(6), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.VERSION</code>.
+     * The column <code>public.plt_messages.version</code>.
      */
-    val VERSION: TableField<PltMessagesRecord, Long?> = createField(DSL.name("VERSION"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.BIGINT)), this, "")
+    val VERSION: TableField<PltMessagesRecord, Long?> = createField(DSL.name("version"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.BIGINT)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_MESSAGES.SYNC_CONFLICT</code>.
+     * The column <code>public.plt_messages.sync_conflict</code>.
      */
-    val SYNC_CONFLICT: TableField<PltMessagesRecord, String?> = createField(DSL.name("SYNC_CONFLICT"), SQLDataType.VARCHAR, this, "")
+    val SYNC_CONFLICT: TableField<PltMessagesRecord, String?> = createField(DSL.name("sync_conflict"), SQLDataType.CLOB, this, "")
 
     private constructor(alias: Name, aliased: Table<PltMessagesRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltMessagesRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltMessagesRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_MESSAGES</code> table reference
+     * Create an aliased <code>public.plt_messages</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_MESSAGES</code> table reference
+     * Create an aliased <code>public.plt_messages</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_MESSAGES</code> table reference
+     * Create a <code>public.plt_messages</code> table reference
      */
-    constructor(): this(DSL.name("PLT_MESSAGES"), null)
+    constructor(): this(DSL.name("plt_messages"), null)
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIndexes(): List<Index> = listOf(IDX_PLT_MESSAGES_AUTHOR, IDX_PLT_MESSAGES_CREATED, IDX_PLT_MESSAGES_DELETED, UX_PLT_MESSAGES_SYNC_ID)
     override fun getIdentity(): Identity<PltMessagesRecord, Long?> = super.getIdentity() as Identity<PltMessagesRecord, Long?>
-    override fun getPrimaryKey(): UniqueKey<PltMessagesRecord> = CONSTRAINT_D
+    override fun getPrimaryKey(): UniqueKey<PltMessagesRecord> = PLT_MESSAGES_PKEY
     override fun `as`(alias: String): PltMessages = PltMessages(DSL.name(alias), this)
     override fun `as`(alias: Name): PltMessages = PltMessages(alias, this)
     override fun `as`(alias: Table<*>): PltMessages = PltMessages(alias.qualifiedName, this)
@@ -176,7 +177,7 @@ open class PltMessages(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltMessages = PltMessages(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltMessages = PltMessages(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -216,10 +217,10 @@ open class PltMessages(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltMessages = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltMessages = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltMessages = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltMessages = where(DSL.notExists(select))
 }

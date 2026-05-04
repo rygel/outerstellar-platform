@@ -14,7 +14,7 @@ import org.http4k.websocket.WsStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
-class WebSocketSyncIntegrationTest : H2WebTest() {
+class WebSocketSyncIntegrationTest : WebTest() {
 
     private lateinit var testUser: User
     private lateinit var syncWebSocket: SyncWebSocket

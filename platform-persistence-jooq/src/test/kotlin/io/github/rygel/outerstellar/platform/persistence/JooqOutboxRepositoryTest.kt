@@ -5,7 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class JooqOutboxRepositoryTest : H2JooqTest() {
+class JooqOutboxRepositoryTest : JooqTest() {
 
     private val repo by lazy { JooqOutboxRepository(dsl) }
 

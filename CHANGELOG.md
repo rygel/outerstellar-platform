@@ -9,6 +9,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.5.0] – 2026-05-04
+
+### Breaking
+- **Removed H2 database support.** PostgreSQL is now the sole database engine. H2 file-based and in-memory databases are no longer supported. All tests and production defaults use PostgreSQL exclusively.
+- Production default `jdbcUrl` changed from `jdbc:h2:file:...` to `jdbc:postgresql://localhost:5432/outerstellar` with credentials `outerstellar`/`outerstellar`. Existing deployments must set `JDBCURL`, `JDBCUSER`, and `JDBCPASSWORD` environment variables or use `APP_PROFILE=postgres`.
+- jOOQ code generation (`-Pjooq-codegen`) now requires a running PostgreSQL instance instead of a file-based H2 database. Use `docker/podman-compose.yml` to start PostgreSQL locally.
+- Test base classes renamed: `H2JooqTest` → `JooqTest`, `H2JdbiTest` → `JdbiTest`, `H2WebTest` → `WebTest`. Downstream code extending these must update imports.
+
+### Changed
+- `SQLDialect.H2` removed from `PersistenceModule` — always uses `SQLDialect.POSTGRES`
+- All test base classes use Testcontainers `PostgreSQLContainer` for ephemeral test databases
+- `flyway-database-postgresql` added to persistence modules (required by Flyway 12+)
+- `AppConfig` extracted from `webModule` into dedicated `configModule` — tests provide their own config
+- Desktop GUI tests skip gracefully in headless mode via `Assumptions.assumeFalse`
+- Desktop test container entrypoint builds upstream separately (skip tests) and disables Ryuk for Docker-in-Docker
+
+### Security
+- Generated admin password no longer logged in plaintext at startup
+- `SESSIONCOOKIESECURE=false` override removed from `docker-compose.yml` (Dockerfile defaults to `true`)
+- `/health` endpoint no longer exposes user count or raw database error messages
+
+### Fixed
+- `podman-compose.yml` PostgreSQL volume mount corrected to `/var/lib/postgresql/data`
+- `serverBaseUrl` derived from `AppConfig.port` instead of hardcoded `localhost:8080`
+- Docker E2E CI workflow now provisions PostgreSQL service container for the app
+
+---
+
 ## [1.4.2] – 2026-04-13
 
 ### Fixed
