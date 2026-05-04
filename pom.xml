@@ -58,7 +58,7 @@
         <postgresql.version>42.7.11</postgresql.version>
         <jooq.version>3.21.2</jooq.version>
         <jdbi.version>3.53.0</jdbi.version>
-        <testcontainers.version>1.21.0</testcontainers.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
         <jte.version>3.2.4</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
         <junit.version>6.0.3</junit.version>
