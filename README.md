@@ -21,8 +21,8 @@ A modern, full-stack Kotlin application designed as a platform template for buil
 ### Project Structure
 
 - `platform-core`: Domain models, service interfaces, and shared business logic.
-- `platform-persistence-jooq`: Database implementation using jOOQ, Flyway migrations, and Caffeine caching.
-- `platform-persistence-jdbi`: Alternative database implementation using JDBI (drop-in replacement for `platform-persistence-jooq`).
+- `platform-persistence-jooq`: Database implementation using jOOQ, Flyway migrations, and Caffeine caching. This is the default persistence module.
+- `platform-persistence-jdbi`: Alternative database implementation using JDBI. Drop-in replacement — implements the same repository interfaces and Koin module as `platform-persistence-jooq`. Has zero jOOQ dependency. Swap the Maven artifact to switch.
 - `platform-sync-client`: Shared DTOs and client logic for synchronization between components.
 - `platform-security`: Authentication models, role-based access control, fine-grained permissions, multi-realm auth, and security filters.
 - `platform-web`: The main http4k server, JTE templates, and web-specific infrastructure.
