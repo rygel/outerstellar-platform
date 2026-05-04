@@ -5,17 +5,14 @@ import io.github.rygel.outerstellar.platform.infra.migrate
 import org.jdbi.v3.core.Jdbi
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.testcontainers.containers.PostgreSQLContainer
 
-abstract class H2JdbiTest {
-
+abstract class JdbiTest {
     protected lateinit var jdbi: Jdbi
 
     @BeforeEach
     fun setupDatabase() {
-        val jdbcUrl = "jdbc:h2:mem:${javaClass.simpleName.lowercase()};MODE=PostgreSQL;DB_CLOSE_DELAY=-1"
-        val dataSource = createDataSource(jdbcUrl, "sa", "")
-        migrate(dataSource)
-        jdbi = Jdbi.create(dataSource)
+        jdbi = sharedJdbi
     }
 
     @AfterEach
@@ -36,6 +33,22 @@ abstract class H2JdbiTest {
             handle.execute("DELETE FROM plt_messages")
             handle.execute("DELETE FROM plt_sync_state")
             handle.execute("DELETE FROM plt_users")
+        }
+    }
+
+    companion object {
+        private val container =
+            PostgreSQLContainer<Nothing>("postgres:18").apply {
+                withDatabaseName("outerstellar")
+                withUsername("outerstellar")
+                withPassword("outerstellar")
+                start()
+            }
+
+        private val sharedJdbi: Jdbi by lazy {
+            val dataSource = createDataSource(container.jdbcUrl, container.username, container.password)
+            migrate(dataSource)
+            Jdbi.create(dataSource)
         }
     }
 }

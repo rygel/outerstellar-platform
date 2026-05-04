@@ -12,7 +12,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JdbiPasswordResetRepositoryTest : H2JdbiTest() {
+class JdbiPasswordResetRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiPasswordResetRepository(jdbi) }
     private val userRepo by lazy { JdbiUserRepository(jdbi) }

@@ -69,8 +69,7 @@
 ## Persistence
 
 ### Database Support
-- **H2** — embedded database for development and testing (PostgreSQL compatibility mode)
-- **PostgreSQL** — production database support
+- **PostgreSQL** — sole database engine for development, testing, and production
 - **Flyway migrations** — versioned schema management with plugin migration support
 - **jOOQ** — type-safe SQL with code generation (default)
 - **JDBI** — lightweight SQL abstraction (alternative to jOOQ; zero jOOQ dependency)

@@ -193,7 +193,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             handle
                 .createUpdate(
                     """
-                    UPDATE plt_messages SET deleted_at = CURRENT_TIMESTAMP(), version = version + 1
+                    UPDATE plt_messages SET deleted_at = CURRENT_TIMESTAMP, version = version + 1
                     WHERE sync_id = :syncId
                     """
                 )

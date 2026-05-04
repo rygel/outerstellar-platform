@@ -4,6 +4,12 @@ import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_USERS
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
@@ -12,12 +18,6 @@ import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Integration tests for session timeout enforcement.
@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
  * - Expired session cookie redirects to /auth?expired=true on HTML routes
  * - Fresh user with null lastActivityAt is not expired
  */
-class SessionTimeoutIntegrationTest : H2WebTest() {
+class SessionTimeoutIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var activeUser: User
@@ -63,7 +63,7 @@ class SessionTimeoutIntegrationTest : H2WebTest() {
 
         // Expire the session for expiredUser by setting expires_at to past
         testDsl.execute(
-            "UPDATE plt_sessions SET expires_at = TIMESTAMPADD(HOUR, -2, CURRENT_TIMESTAMP)" +
+            "UPDATE plt_sessions SET expires_at = CURRENT_TIMESTAMP - INTERVAL '2 hours'" +
                 " WHERE user_id = '${expiredUser.id}'"
         )
 

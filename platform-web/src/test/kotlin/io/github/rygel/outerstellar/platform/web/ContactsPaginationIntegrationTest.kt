@@ -1,15 +1,15 @@
 package io.github.rygel.outerstellar.platform.web
 
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 /**
  * Integration tests for contacts page pagination (Feature 3).
@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
  * - Search query (?q=) is respected
  * - Contacts card grid is rendered for each result
  */
-class ContactsPaginationIntegrationTest : H2WebTest() {
+class ContactsPaginationIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
 

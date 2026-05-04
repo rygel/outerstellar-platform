@@ -1,5 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -7,10 +11,6 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 /**
  * Integration tests for error pages and the global error handler (Feature 8).
@@ -30,7 +30,7 @@ import kotlin.test.assertTrue
  * - Health endpoint JSON includes database key
  * - /errors/components/help/{kind} with unknown kind still returns 200 (graceful fallback)
  */
-class ErrorPagesIntegrationTest : H2WebTest() {
+class ErrorPagesIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
 

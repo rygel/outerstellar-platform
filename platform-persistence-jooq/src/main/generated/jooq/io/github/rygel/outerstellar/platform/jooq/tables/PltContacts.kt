@@ -6,10 +6,10 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 
 import io.github.rygel.outerstellar.platform.jooq.Public
 import io.github.rygel.outerstellar.platform.jooq.indexes.UX_PLT_CONTACTS_SYNC_ID
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_A
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_B
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_D5
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_D9
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_CONTACTS_PKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_CONTACT_EMAILS__PLT_CONTACT_EMAILS_CONTACT_ID_FKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_CONTACT_PHONES__PLT_CONTACT_PHONES_CONTACT_ID_FKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_CONTACT_SOCIALS__PLT_CONTACT_SOCIALS_CONTACT_ID_FKEY
 import io.github.rygel.outerstellar.platform.jooq.tables.PltContactEmails.PltContactEmailsPath
 import io.github.rygel.outerstellar.platform.jooq.tables.PltContactPhones.PltContactPhonesPath
 import io.github.rygel.outerstellar.platform.jooq.tables.PltContactSocials.PltContactSocialsPath
@@ -33,10 +33,10 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
@@ -72,7 +72,7 @@ open class PltContacts(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_CONTACTS</code>
+         * The reference instance of <code>public.plt_contacts</code>
          */
         val PLT_CONTACTS: PltContacts = PltContacts()
     }
@@ -83,83 +83,83 @@ open class PltContacts(
     override fun getRecordType(): Class<PltContactsRecord> = PltContactsRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.ID</code>.
+     * The column <code>public.plt_contacts.id</code>.
      */
-    val ID: TableField<PltContactsRecord, Long?> = createField(DSL.name("ID"), SQLDataType.BIGINT.nullable(false).identity(true), this, "")
+    val ID: TableField<PltContactsRecord, Long?> = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).generatedByDefaultAsIdentity(), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.SYNC_ID</code>.
+     * The column <code>public.plt_contacts.sync_id</code>.
      */
-    val SYNC_ID: TableField<PltContactsRecord, String?> = createField(DSL.name("SYNC_ID"), SQLDataType.VARCHAR(36).nullable(false), this, "")
+    val SYNC_ID: TableField<PltContactsRecord, String?> = createField(DSL.name("sync_id"), SQLDataType.VARCHAR(36).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.NAME</code>.
+     * The column <code>public.plt_contacts.name</code>.
      */
-    val NAME: TableField<PltContactsRecord, String?> = createField(DSL.name("NAME"), SQLDataType.VARCHAR(200).nullable(false), this, "")
+    val NAME: TableField<PltContactsRecord, String?> = createField(DSL.name("name"), SQLDataType.VARCHAR(200).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.COMPANY</code>.
+     * The column <code>public.plt_contacts.company</code>.
      */
-    val COMPANY: TableField<PltContactsRecord, String?> = createField(DSL.name("COMPANY"), SQLDataType.VARCHAR(200), this, "")
+    val COMPANY: TableField<PltContactsRecord, String?> = createField(DSL.name("company"), SQLDataType.VARCHAR(200), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.COMPANY_ADDRESS</code>.
+     * The column <code>public.plt_contacts.company_address</code>.
      */
-    val COMPANY_ADDRESS: TableField<PltContactsRecord, String?> = createField(DSL.name("COMPANY_ADDRESS"), SQLDataType.VARCHAR(500), this, "")
+    val COMPANY_ADDRESS: TableField<PltContactsRecord, String?> = createField(DSL.name("company_address"), SQLDataType.VARCHAR(500), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.DEPARTMENT</code>.
+     * The column <code>public.plt_contacts.department</code>.
      */
-    val DEPARTMENT: TableField<PltContactsRecord, String?> = createField(DSL.name("DEPARTMENT"), SQLDataType.VARCHAR(200), this, "")
+    val DEPARTMENT: TableField<PltContactsRecord, String?> = createField(DSL.name("department"), SQLDataType.VARCHAR(200), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.CREATED_AT</code>.
+     * The column <code>public.plt_contacts.created_at</code>.
      */
-    val CREATED_AT: TableField<PltContactsRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltContactsRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).nullable(false).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.UPDATED_AT_EPOCH_MS</code>.
+     * The column <code>public.plt_contacts.updated_at_epoch_ms</code>.
      */
-    val UPDATED_AT_EPOCH_MS: TableField<PltContactsRecord, Long?> = createField(DSL.name("UPDATED_AT_EPOCH_MS"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BIGINT)), this, "")
+    val UPDATED_AT_EPOCH_MS: TableField<PltContactsRecord, Long?> = createField(DSL.name("updated_at_epoch_ms"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("0"), SQLDataType.BIGINT)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.DELETED</code>.
+     * The column <code>public.plt_contacts.deleted</code>.
      */
-    val DELETED: TableField<PltContactsRecord, Boolean?> = createField(DSL.name("DELETED"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("FALSE"), SQLDataType.BOOLEAN)), this, "")
+    val DELETED: TableField<PltContactsRecord, Boolean?> = createField(DSL.name("deleted"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("false"), SQLDataType.BOOLEAN)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.DIRTY</code>.
+     * The column <code>public.plt_contacts.dirty</code>.
      */
-    val DIRTY: TableField<PltContactsRecord, Boolean?> = createField(DSL.name("DIRTY"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("TRUE"), SQLDataType.BOOLEAN)), this, "")
+    val DIRTY: TableField<PltContactsRecord, Boolean?> = createField(DSL.name("dirty"), SQLDataType.BOOLEAN.nullable(false).defaultValue(DSL.field(DSL.raw("true"), SQLDataType.BOOLEAN)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.VERSION</code>.
+     * The column <code>public.plt_contacts.version</code>.
      */
-    val VERSION: TableField<PltContactsRecord, Long?> = createField(DSL.name("VERSION"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.BIGINT)), this, "")
+    val VERSION: TableField<PltContactsRecord, Long?> = createField(DSL.name("version"), SQLDataType.BIGINT.nullable(false).defaultValue(DSL.field(DSL.raw("1"), SQLDataType.BIGINT)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_CONTACTS.SYNC_CONFLICT</code>.
+     * The column <code>public.plt_contacts.sync_conflict</code>.
      */
-    val SYNC_CONFLICT: TableField<PltContactsRecord, String?> = createField(DSL.name("SYNC_CONFLICT"), SQLDataType.VARCHAR, this, "")
+    val SYNC_CONFLICT: TableField<PltContactsRecord, String?> = createField(DSL.name("sync_conflict"), SQLDataType.CLOB, this, "")
 
     private constructor(alias: Name, aliased: Table<PltContactsRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltContactsRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltContactsRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_CONTACTS</code> table reference
+     * Create an aliased <code>public.plt_contacts</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_CONTACTS</code> table reference
+     * Create an aliased <code>public.plt_contacts</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_CONTACTS</code> table reference
+     * Create a <code>public.plt_contacts</code> table reference
      */
-    constructor(): this(DSL.name("PLT_CONTACTS"), null)
+    constructor(): this(DSL.name("plt_contacts"), null)
 
     constructor(path: Table<out Record>, childPath: ForeignKey<out Record, PltContactsRecord>?, parentPath: InverseForeignKey<out Record, PltContactsRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, PLT_CONTACTS, null, null)
 
@@ -176,17 +176,17 @@ open class PltContacts(
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIndexes(): List<Index> = listOf(UX_PLT_CONTACTS_SYNC_ID)
     override fun getIdentity(): Identity<PltContactsRecord, Long?> = super.getIdentity() as Identity<PltContactsRecord, Long?>
-    override fun getPrimaryKey(): UniqueKey<PltContactsRecord> = CONSTRAINT_D5
+    override fun getPrimaryKey(): UniqueKey<PltContactsRecord> = PLT_CONTACTS_PKEY
 
     private lateinit var _pltContactEmails: PltContactEmailsPath
 
     /**
      * Get the implicit to-many join path to the
-     * <code>PUBLIC.PLT_CONTACT_EMAILS</code> table
+     * <code>public.plt_contact_emails</code> table
      */
     fun pltContactEmails(): PltContactEmailsPath {
         if (!this::_pltContactEmails.isInitialized)
-            _pltContactEmails = PltContactEmailsPath(this, null, CONSTRAINT_A.inverseKey)
+            _pltContactEmails = PltContactEmailsPath(this, null, PLT_CONTACT_EMAILS__PLT_CONTACT_EMAILS_CONTACT_ID_FKEY.inverseKey)
 
         return _pltContactEmails;
     }
@@ -198,11 +198,11 @@ open class PltContacts(
 
     /**
      * Get the implicit to-many join path to the
-     * <code>PUBLIC.PLT_CONTACT_PHONES</code> table
+     * <code>public.plt_contact_phones</code> table
      */
     fun pltContactPhones(): PltContactPhonesPath {
         if (!this::_pltContactPhones.isInitialized)
-            _pltContactPhones = PltContactPhonesPath(this, null, CONSTRAINT_B.inverseKey)
+            _pltContactPhones = PltContactPhonesPath(this, null, PLT_CONTACT_PHONES__PLT_CONTACT_PHONES_CONTACT_ID_FKEY.inverseKey)
 
         return _pltContactPhones;
     }
@@ -214,11 +214,11 @@ open class PltContacts(
 
     /**
      * Get the implicit to-many join path to the
-     * <code>PUBLIC.PLT_CONTACT_SOCIALS</code> table
+     * <code>public.plt_contact_socials</code> table
      */
     fun pltContactSocials(): PltContactSocialsPath {
         if (!this::_pltContactSocials.isInitialized)
-            _pltContactSocials = PltContactSocialsPath(this, null, CONSTRAINT_D9.inverseKey)
+            _pltContactSocials = PltContactSocialsPath(this, null, PLT_CONTACT_SOCIALS__PLT_CONTACT_SOCIALS_CONTACT_ID_FKEY.inverseKey)
 
         return _pltContactSocials;
     }
@@ -247,7 +247,7 @@ open class PltContacts(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltContacts = PltContacts(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltContacts = PltContacts(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -287,10 +287,10 @@ open class PltContacts(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltContacts = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltContacts = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltContacts = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltContacts = where(DSL.notExists(select))
 }

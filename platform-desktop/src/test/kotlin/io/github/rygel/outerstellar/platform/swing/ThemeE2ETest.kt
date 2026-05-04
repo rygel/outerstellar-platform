@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.platform.model.ThemeCatalog
 import java.awt.Color
+import java.awt.GraphicsEnvironment
 import javax.swing.JPanel
 import javax.swing.JTextField
 import javax.swing.UIManager
@@ -128,6 +129,11 @@ class ThemeE2ETest {
 
     @Test
     fun `settings dialog theme preview should update live when selection changes`() {
+        org.junit.jupiter.api.Assumptions.assumeFalse(
+            GraphicsEnvironment.isHeadless(),
+            "Test requires a display (AssertJ Swing BasicRobot)",
+        )
+
         val themeManager = ThemeManager()
         val i18nService = io.github.rygel.outerstellar.i18n.I18nService.create("messages")
         val viewModel =

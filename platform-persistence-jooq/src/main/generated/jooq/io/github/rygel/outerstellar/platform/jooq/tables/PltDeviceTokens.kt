@@ -6,8 +6,8 @@ package io.github.rygel.outerstellar.platform.jooq.tables
 
 import io.github.rygel.outerstellar.platform.jooq.Public
 import io.github.rygel.outerstellar.platform.jooq.indexes.IDX_PLT_DEVICE_TOKENS_USER
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_98
-import io.github.rygel.outerstellar.platform.jooq.keys.CONSTRAINT_980
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_DEVICE_TOKENS_PKEY
+import io.github.rygel.outerstellar.platform.jooq.keys.PLT_DEVICE_TOKENS__PLT_DEVICE_TOKENS_USER_ID_FKEY
 import io.github.rygel.outerstellar.platform.jooq.keys.UQ_PLT_DEVICE_TOKEN
 import io.github.rygel.outerstellar.platform.jooq.tables.PltUsers.PltUsersPath
 import io.github.rygel.outerstellar.platform.jooq.tables.records.PltDeviceTokensRecord
@@ -31,10 +31,10 @@ import org.jooq.QueryPart
 import org.jooq.Record
 import org.jooq.SQL
 import org.jooq.Schema
-import org.jooq.Select
 import org.jooq.Stringly
 import org.jooq.Table
 import org.jooq.TableField
+import org.jooq.TableLike
 import org.jooq.TableOptions
 import org.jooq.UniqueKey
 import org.jooq.impl.DSL
@@ -70,7 +70,7 @@ open class PltDeviceTokens(
     companion object {
 
         /**
-         * The reference instance of <code>PUBLIC.PLT_DEVICE_TOKENS</code>
+         * The reference instance of <code>public.plt_device_tokens</code>
          */
         val PLT_DEVICE_TOKENS: PltDeviceTokens = PltDeviceTokens()
     }
@@ -81,58 +81,58 @@ open class PltDeviceTokens(
     override fun getRecordType(): Class<PltDeviceTokensRecord> = PltDeviceTokensRecord::class.java
 
     /**
-     * The column <code>PUBLIC.PLT_DEVICE_TOKENS.ID</code>.
+     * The column <code>public.plt_device_tokens.id</code>.
      */
-    val ID: TableField<PltDeviceTokensRecord, Long?> = createField(DSL.name("ID"), SQLDataType.BIGINT.nullable(false).identity(true), this, "")
+    val ID: TableField<PltDeviceTokensRecord, Long?> = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).generatedByDefaultAsIdentity(), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_DEVICE_TOKENS.USER_ID</code>.
+     * The column <code>public.plt_device_tokens.user_id</code>.
      */
-    val USER_ID: TableField<PltDeviceTokensRecord, UUID?> = createField(DSL.name("USER_ID"), SQLDataType.UUID.nullable(false), this, "")
+    val USER_ID: TableField<PltDeviceTokensRecord, UUID?> = createField(DSL.name("user_id"), SQLDataType.UUID.nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_DEVICE_TOKENS.PLATFORM</code>.
+     * The column <code>public.plt_device_tokens.platform</code>.
      */
-    val PLATFORM: TableField<PltDeviceTokensRecord, String?> = createField(DSL.name("PLATFORM"), SQLDataType.VARCHAR(20).nullable(false), this, "")
+    val PLATFORM: TableField<PltDeviceTokensRecord, String?> = createField(DSL.name("platform"), SQLDataType.VARCHAR(20).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_DEVICE_TOKENS.TOKEN</code>.
+     * The column <code>public.plt_device_tokens.token</code>.
      */
-    val TOKEN: TableField<PltDeviceTokensRecord, String?> = createField(DSL.name("TOKEN"), SQLDataType.VARCHAR(512).nullable(false), this, "")
+    val TOKEN: TableField<PltDeviceTokensRecord, String?> = createField(DSL.name("token"), SQLDataType.VARCHAR(512).nullable(false), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_DEVICE_TOKENS.APP_BUNDLE</code>.
+     * The column <code>public.plt_device_tokens.app_bundle</code>.
      */
-    val APP_BUNDLE: TableField<PltDeviceTokensRecord, String?> = createField(DSL.name("APP_BUNDLE"), SQLDataType.VARCHAR(255), this, "")
+    val APP_BUNDLE: TableField<PltDeviceTokensRecord, String?> = createField(DSL.name("app_bundle"), SQLDataType.VARCHAR(255), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_DEVICE_TOKENS.CREATED_AT</code>.
+     * The column <code>public.plt_device_tokens.created_at</code>.
      */
-    val CREATED_AT: TableField<PltDeviceTokensRecord, LocalDateTime?> = createField(DSL.name("CREATED_AT"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val CREATED_AT: TableField<PltDeviceTokensRecord, LocalDateTime?> = createField(DSL.name("created_at"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     /**
-     * The column <code>PUBLIC.PLT_DEVICE_TOKENS.LAST_SEEN</code>.
+     * The column <code>public.plt_device_tokens.last_seen</code>.
      */
-    val LAST_SEEN: TableField<PltDeviceTokensRecord, LocalDateTime?> = createField(DSL.name("LAST_SEEN"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
+    val LAST_SEEN: TableField<PltDeviceTokensRecord, LocalDateTime?> = createField(DSL.name("last_seen"), SQLDataType.LOCALDATETIME(6).defaultValue(DSL.field(DSL.raw("CURRENT_TIMESTAMP"), SQLDataType.LOCALDATETIME)), this, "")
 
     private constructor(alias: Name, aliased: Table<PltDeviceTokensRecord>?): this(alias, null, null, null, aliased, null, null)
     private constructor(alias: Name, aliased: Table<PltDeviceTokensRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, null, aliased, parameters, null)
     private constructor(alias: Name, aliased: Table<PltDeviceTokensRecord>?, where: Condition?): this(alias, null, null, null, aliased, null, where)
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_DEVICE_TOKENS</code> table reference
+     * Create an aliased <code>public.plt_device_tokens</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>PUBLIC.PLT_DEVICE_TOKENS</code> table reference
+     * Create an aliased <code>public.plt_device_tokens</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>PUBLIC.PLT_DEVICE_TOKENS</code> table reference
+     * Create a <code>public.plt_device_tokens</code> table reference
      */
-    constructor(): this(DSL.name("PLT_DEVICE_TOKENS"), null)
+    constructor(): this(DSL.name("plt_device_tokens"), null)
 
     constructor(path: Table<out Record>, childPath: ForeignKey<out Record, PltDeviceTokensRecord>?, parentPath: InverseForeignKey<out Record, PltDeviceTokensRecord>?): this(Internal.createPathAlias(path, childPath, parentPath), path, childPath, parentPath, PLT_DEVICE_TOKENS, null, null)
 
@@ -149,15 +149,15 @@ open class PltDeviceTokens(
     override fun getSchema(): Schema? = if (aliased()) null else Public.PUBLIC
     override fun getIndexes(): List<Index> = listOf(IDX_PLT_DEVICE_TOKENS_USER)
     override fun getIdentity(): Identity<PltDeviceTokensRecord, Long?> = super.getIdentity() as Identity<PltDeviceTokensRecord, Long?>
-    override fun getPrimaryKey(): UniqueKey<PltDeviceTokensRecord> = CONSTRAINT_98
+    override fun getPrimaryKey(): UniqueKey<PltDeviceTokensRecord> = PLT_DEVICE_TOKENS_PKEY
     override fun getUniqueKeys(): List<UniqueKey<PltDeviceTokensRecord>> = listOf(UQ_PLT_DEVICE_TOKEN)
-    override fun getReferences(): List<ForeignKey<PltDeviceTokensRecord, *>> = listOf(CONSTRAINT_980)
+    override fun getReferences(): List<ForeignKey<PltDeviceTokensRecord, *>> = listOf(PLT_DEVICE_TOKENS__PLT_DEVICE_TOKENS_USER_ID_FKEY)
 
     /**
-     * Get the implicit join path to the <code>PUBLIC.PLT_USERS</code> table.
+     * Get the implicit join path to the <code>public.plt_users</code> table.
      */
     fun pltUsers(): PltUsersPath = pltUsers
-    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, CONSTRAINT_980, null) }
+    val pltUsers: PltUsersPath by lazy { PltUsersPath(this, PLT_DEVICE_TOKENS__PLT_DEVICE_TOKENS_USER_ID_FKEY, null) }
     override fun `as`(alias: String): PltDeviceTokens = PltDeviceTokens(DSL.name(alias), this)
     override fun `as`(alias: Name): PltDeviceTokens = PltDeviceTokens(alias, this)
     override fun `as`(alias: Table<*>): PltDeviceTokens = PltDeviceTokens(alias.qualifiedName, this)
@@ -180,7 +180,7 @@ open class PltDeviceTokens(
     /**
      * Create an inline derived table from this table
      */
-    override fun where(condition: Condition?): PltDeviceTokens = PltDeviceTokens(qualifiedName, if (aliased()) this else null, condition)
+    override fun where(condition: Condition?): PltDeviceTokens = PltDeviceTokens(qualifiedName, if (aliased()) this else null, Internal.condition(this, condition))
 
     /**
      * Create an inline derived table from this table
@@ -220,10 +220,10 @@ open class PltDeviceTokens(
     /**
      * Create an inline derived table from this table
      */
-    override fun whereExists(select: Select<*>): PltDeviceTokens = where(DSL.exists(select))
+    override fun whereExists(select: TableLike<*>): PltDeviceTokens = where(DSL.exists(select))
 
     /**
      * Create an inline derived table from this table
      */
-    override fun whereNotExists(select: Select<*>): PltDeviceTokens = where(DSL.notExists(select))
+    override fun whereNotExists(select: TableLike<*>): PltDeviceTokens = where(DSL.notExists(select))
 }

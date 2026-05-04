@@ -9,6 +9,9 @@ import io.github.rygel.outerstellar.platform.security.PasswordEncoder
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.securityModule
 import io.github.rygel.outerstellar.platform.service.OutboxProcessor
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
@@ -18,9 +21,6 @@ import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 
 private const val OUTBOX_INTERVAL_SECONDS = 30L
 private const val SHUTDOWN_TIMEOUT_SECONDS = 5L
@@ -39,17 +39,14 @@ object MainComponent : KoinComponent {
 }
 
 fun main() {
-    startKoin { modules(persistenceModule, coreModule, webModule, securityModule) }
+    startKoin { modules(configModule, persistenceModule, coreModule, webModule, securityModule) }
 
     val main = MainComponent
 
     val adminPassword =
         System.getenv("ADMIN_PASSWORD")
-            ?: java.util.UUID.randomUUID().toString().also { generated ->
-                logger.warn(
-                    "ADMIN_PASSWORD env var not set. Using generated password for first-boot admin: {}",
-                    generated,
-                )
+            ?: java.util.UUID.randomUUID().toString().also {
+                logger.warn("ADMIN_PASSWORD env var not set. A random password was generated for first-boot admin.")
                 logger.warn("Set ADMIN_PASSWORD to a secure value before deploying to production.")
             }
     if (main.userRepository.findByUsername("admin") == null) {

@@ -1,14 +1,14 @@
 package io.github.rygel.outerstellar.platform.web
 
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Integration tests for static asset serving (classpath static/ directory).
@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
  * - Static files are served without authentication
  * - Static file response body is not empty
  */
-class StaticAssetIntegrationTest : H2WebTest() {
+class StaticAssetIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
 

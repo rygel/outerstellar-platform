@@ -13,12 +13,12 @@ import org.jooq.impl.SQLDataType
 class JooqOAuthRepository(private val dsl: DSLContext) : OAuthRepository {
 
     private val table = DSL.table("plt_oauth_connections")
-    private val idField = DSL.field(DSL.name("ID"), SQLDataType.BIGINT)
-    private val userIdField = DSL.field(DSL.name("USER_ID"), SQLDataType.UUID)
-    private val providerField = DSL.field(DSL.name("PROVIDER"), SQLDataType.VARCHAR)
-    private val subjectField = DSL.field(DSL.name("SUBJECT"), SQLDataType.VARCHAR)
-    private val emailField = DSL.field(DSL.name("EMAIL"), SQLDataType.VARCHAR)
-    private val createdAtField = DSL.field(DSL.name("CREATED_AT"), SQLDataType.TIMESTAMP)
+    private val idField = DSL.field(DSL.name("id"), SQLDataType.BIGINT)
+    private val userIdField = DSL.field(DSL.name("user_id"), SQLDataType.UUID)
+    private val providerField = DSL.field(DSL.name("provider"), SQLDataType.VARCHAR)
+    private val subjectField = DSL.field(DSL.name("subject"), SQLDataType.VARCHAR)
+    private val emailField = DSL.field(DSL.name("email"), SQLDataType.VARCHAR)
+    private val createdAtField = DSL.field(DSL.name("created_at"), SQLDataType.TIMESTAMP)
 
     private fun mapRecord(record: Record): OAuthConnection =
         OAuthConnection(

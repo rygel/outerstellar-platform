@@ -53,7 +53,19 @@ This file defines repository-specific guardrails for coding agents and contribut
 - Minimum for persistence/schema changes:
   - `mvn -pl platform-persistence-jooq test`
 - Minimum for Swing UI/theming changes:
-  - `mvn -pl platform-desktop test`
+  - `mvn -pl platform-desktop -Ptests-headless test`
+- **Desktop/Swing tests must NEVER run directly on the host machine.** They capture mouse and keyboard, which is disruptive and non-negotiable. Always run them inside the Podman container:
+  ```bash
+  podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
+  podman run --rm --network host \
+    -v "${PWD}:/app:Z" \
+    -v "${HOME}/.m2/settings.xml:/root/.m2/settings.xml:Z" \
+    -v "${HOME}/.m2/repository:/root/.m2/repository:Z" \
+    -v "/var/run/docker.sock:/var/run/docker.sock:Z" \
+    outerstellar-test-desktop
+  ```
+  The container starts Xvfb internally. `--network host` is required so Testcontainers can reach its PostgreSQL sibling containers. Running `mvn -pl platform-desktop test` on the host is forbidden.
+- After any `mvn clean install -DskipTests` that changes compiled production code in a dependency module, the dependent module's test classpath may hold stale classes. Always do a full `mvn clean install -DskipTests` before running tests in downstream modules.
 
 ## Safety and repository hygiene
 

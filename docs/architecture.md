@@ -8,7 +8,7 @@ This platform is meant to provide a working vertical slice for:
 - http4k for the web server
 - Flyway for schema migration
 - jOOQ or JDBI for database access (jOOQ with code generation by default, JDBI as a lighter alternative)
-- H2 for local development and demo persistence
+- PostgreSQL for persistence
 - JTE with Kotlin templates (`.kte`) for server-rendered HTML
 - HTMX for progressive enhancement and fragment swapping
 - A Swing desktop demo with local persistence and two-way sync
@@ -50,7 +50,7 @@ The web UI is **server-rendered first**, with HTMX used for partial replacement 
 ### Desktop application
 
 - `SwingSyncApp.kt` runs a local Swing client.
-- It uses its own H2 database and the same repository style.
+- It uses its own PostgreSQL database and the same repository style.
 - `SyncService.kt` pushes local dirty changes and pulls server changes through `/api/v1/sync`.
 - `ThemeManager.kt` applies FlatLaf plus an Outerstellar-inspired palette.
 
@@ -58,14 +58,14 @@ This gives a concrete offline-capable sync example without introducing a second 
 
 ## Persistence and schema
 
-### H2
+### PostgreSQL
 
-H2 was chosen because it is ideal for a platform:
+PostgreSQL is the sole database engine for the platform:
 
-- zero external setup
-- easy local use for both server and Swing demo
+- production-grade RDBMS
+- used for local development via Podman/Docker
 - works well with Flyway and jOOQ
-- keeps the platform easy to run
+- keeps the platform consistent across environments
 
 ### Flyway
 
@@ -313,13 +313,13 @@ Use this whenever Flyway migrations or jOOQ generation config changes.
 
 These are worth preserving because they caused real issues during implementation.
 
-### 1. jOOQ/Flyway code generation against H2
+### 1. jOOQ/Flyway code generation against PostgreSQL
 
-**Finding:** H2 file locking can occur when Flyway and jOOQ touch the same database during code generation.
+**Finding:** jOOQ code generation requires a running PostgreSQL instance to introspect the schema.
 
-**Decision:** use `AUTO_SERVER=TRUE` on the codegen JDBC URL and run generation manually via profile `jooq-codegen`.
+**Decision:** run codegen manually via profile `jooq-codegen` against the local PostgreSQL instance (started via `docker/podman-compose.yml`).
 
-**Why:** it prevents code generation lock contention while avoiding implicit generation during every build.
+**Why:** it avoids starting a database during every build while ensuring generated code matches the real schema.
 
 ### 2. Kotlin/http4k compatibility
 
@@ -410,12 +410,12 @@ The web module uses http4k's in-memory testing pattern: the `app()` function ret
 
 Pattern:
 ```kotlin
-class SomeIntegrationTest : H2WebTest() {
+class SomeIntegrationTest : WebTest() {
     private lateinit var app: HttpHandler
 
     @BeforeEach
     fun setup() {
-        // Wire real repositories against the shared H2 test database
+        // Wire real repositories against the shared PostgreSQL test database
         app = app(messageService, contactService, ...).http!!
     }
 

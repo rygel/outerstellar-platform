@@ -7,6 +7,11 @@ import io.github.rygel.outerstellar.platform.di.webModule
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.security.securityModule
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.http4k.core.Method.GET
 import org.http4k.core.PolyHandler
 import org.http4k.core.Request
@@ -17,13 +22,19 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.testcontainers.containers.PostgreSQLContainer
 
 class ComprehensiveWebE2ETest : KoinTest {
+
+    companion object {
+        private val container =
+            PostgreSQLContainer<Nothing>("postgres:18").apply {
+                withDatabaseName("outerstellar")
+                withUsername("outerstellar")
+                withPassword("outerstellar")
+                start()
+            }
+    }
 
     private val app: PolyHandler by inject(named("webServer"))
     private val messageRepo: MessageRepository by inject()
@@ -37,7 +48,9 @@ class ComprehensiveWebE2ETest : KoinTest {
                 module {
                     single {
                         AppConfig(
-                            jdbcUrl = "jdbc:h2:mem:comprehensive_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
+                            jdbcUrl = container.jdbcUrl,
+                            jdbcUser = container.username,
+                            jdbcPassword = container.password,
                             devMode = true,
                         )
                     }

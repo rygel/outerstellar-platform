@@ -1,7 +1,7 @@
 port: 8080
-jdbcUrl: "jdbc:h2:file:./data/outerstellar-platform;MODE=PostgreSQL;AUTO_SERVER=TRUE"
-jdbcUser: "sa"
-jdbcPassword: ""
+jdbcUrl: "jdbc:postgresql://localhost:5432/outerstellar"
+jdbcUser: "outerstellar"
+jdbcPassword: "outerstellar"
 devDashboardEnabled: false
 devMode: false
 sessionCookieSecure: false

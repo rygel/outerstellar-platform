@@ -25,81 +25,81 @@ import io.github.rygel.outerstellar.platform.jooq.tables.PltUsers
 
 
 /**
- * The table <code>PUBLIC.flyway_schema_history</code>.
+ * The table <code>public.flyway_schema_history</code>.
  */
 val FLYWAY_SCHEMA_HISTORY: FlywaySchemaHistory = FlywaySchemaHistory.FLYWAY_SCHEMA_HISTORY
 
 /**
- * The table <code>PUBLIC.PLT_API_KEYS</code>.
+ * The table <code>public.plt_api_keys</code>.
  */
 val PLT_API_KEYS: PltApiKeys = PltApiKeys.PLT_API_KEYS
 
 /**
- * The table <code>PUBLIC.PLT_AUDIT_LOG</code>.
+ * The table <code>public.plt_audit_log</code>.
  */
 val PLT_AUDIT_LOG: PltAuditLog = PltAuditLog.PLT_AUDIT_LOG
 
 /**
- * The table <code>PUBLIC.PLT_CONTACT_EMAILS</code>.
+ * The table <code>public.plt_contact_emails</code>.
  */
 val PLT_CONTACT_EMAILS: PltContactEmails = PltContactEmails.PLT_CONTACT_EMAILS
 
 /**
- * The table <code>PUBLIC.PLT_CONTACT_PHONES</code>.
+ * The table <code>public.plt_contact_phones</code>.
  */
 val PLT_CONTACT_PHONES: PltContactPhones = PltContactPhones.PLT_CONTACT_PHONES
 
 /**
- * The table <code>PUBLIC.PLT_CONTACT_SOCIALS</code>.
+ * The table <code>public.plt_contact_socials</code>.
  */
 val PLT_CONTACT_SOCIALS: PltContactSocials = PltContactSocials.PLT_CONTACT_SOCIALS
 
 /**
- * The table <code>PUBLIC.PLT_CONTACTS</code>.
+ * The table <code>public.plt_contacts</code>.
  */
 val PLT_CONTACTS: PltContacts = PltContacts.PLT_CONTACTS
 
 /**
- * The table <code>PUBLIC.PLT_DEVICE_TOKENS</code>.
+ * The table <code>public.plt_device_tokens</code>.
  */
 val PLT_DEVICE_TOKENS: PltDeviceTokens = PltDeviceTokens.PLT_DEVICE_TOKENS
 
 /**
- * The table <code>PUBLIC.PLT_MESSAGES</code>.
+ * The table <code>public.plt_messages</code>.
  */
 val PLT_MESSAGES: PltMessages = PltMessages.PLT_MESSAGES
 
 /**
- * The table <code>PUBLIC.PLT_NOTIFICATIONS</code>.
+ * The table <code>public.plt_notifications</code>.
  */
 val PLT_NOTIFICATIONS: PltNotifications = PltNotifications.PLT_NOTIFICATIONS
 
 /**
- * The table <code>PUBLIC.PLT_OAUTH_CONNECTIONS</code>.
+ * The table <code>public.plt_oauth_connections</code>.
  */
 val PLT_OAUTH_CONNECTIONS: PltOauthConnections = PltOauthConnections.PLT_OAUTH_CONNECTIONS
 
 /**
- * The table <code>PUBLIC.PLT_OUTBOX</code>.
+ * The table <code>public.plt_outbox</code>.
  */
 val PLT_OUTBOX: PltOutbox = PltOutbox.PLT_OUTBOX
 
 /**
- * The table <code>PUBLIC.PLT_PASSWORD_RESET_TOKENS</code>.
+ * The table <code>public.plt_password_reset_tokens</code>.
  */
 val PLT_PASSWORD_RESET_TOKENS: PltPasswordResetTokens = PltPasswordResetTokens.PLT_PASSWORD_RESET_TOKENS
 
 /**
- * The table <code>PUBLIC.PLT_SESSIONS</code>.
+ * The table <code>public.plt_sessions</code>.
  */
 val PLT_SESSIONS: PltSessions = PltSessions.PLT_SESSIONS
 
 /**
- * The table <code>PUBLIC.PLT_SYNC_STATE</code>.
+ * The table <code>public.plt_sync_state</code>.
  */
 val PLT_SYNC_STATE: PltSyncState = PltSyncState.PLT_SYNC_STATE
 
 /**
- * The table <code>PUBLIC.PLT_USERS</code>.
+ * The table <code>public.plt_users</code>.
  */
 val PLT_USERS: PltUsers = PltUsers.PLT_USERS
