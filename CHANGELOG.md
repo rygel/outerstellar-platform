@@ -19,8 +19,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - `SQLDialect.H2` removed from `PersistenceModule` — always uses `SQLDialect.POSTGRES`
-- Maven `test-db` profile auto-starts Podman PostgreSQL for local test runs
-- CI uses GitHub Actions PostgreSQL service containers
+- All test base classes use Testcontainers `PostgreSQLContainer` for ephemeral test databases
 - `flyway-database-postgresql` added to persistence modules (required by Flyway 12+)
 
 ---

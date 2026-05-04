@@ -1,8 +1,5 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRole
-import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -21,8 +18,6 @@ import org.junit.jupiter.api.BeforeEach
  * - Response is JSON with content-type application/json
  * - Response contains "status": "UP"
  * - Response contains "database" object with "status": "UP"
- * - Response contains user count in database.users
- * - User count increases after registering a new user
  * - Response contains "timestamp" field
  * - No authentication required
  */
@@ -69,7 +64,6 @@ class HealthCheckIntegrationTest : WebTest() {
     fun `GET health database status is UP`() {
         val response = app(Request(GET, "/health"))
         val body = response.bodyString()
-        // database.status should be UP
         val databaseIdx = body.indexOf("database")
         assertTrue(databaseIdx >= 0, "Should contain database section")
         val dbSection = body.substring(databaseIdx)
@@ -85,36 +79,16 @@ class HealthCheckIntegrationTest : WebTest() {
 
     @Test
     fun `GET health does not require authentication`() {
-        // No auth header, no cookies — should still succeed
         val response = app(Request(GET, "/health"))
         assertEquals(Status.OK, response.status)
     }
 
     @Test
-    fun `GET health user count reflects actual users in database`() {
-        // Add a user and check count increases
-        val userBefore = parseUserCount(app(Request(GET, "/health")).bodyString())
-
-        val newUser =
-            User(
-                id = UUID.randomUUID(),
-                username = "healthcheckuser",
-                email = "healthcheck@test.com",
-                passwordHash = "x".repeat(60),
-                role = UserRole.USER,
-            )
-        userRepository.save(newUser)
-
-        val userAfter = parseUserCount(app(Request(GET, "/health")).bodyString())
-        assertTrue(
-            userAfter > userBefore,
-            "User count should increase after saving user: before=$userBefore, after=$userAfter",
-        )
-    }
-
-    private fun parseUserCount(body: String): Int {
-        // Extract users count from JSON: "users":N
-        val match = """"users"\s*:\s*(\d+)""".toRegex().find(body)
-        return match?.groupValues?.get(1)?.toIntOrNull() ?: -1
+    fun `GET health does not expose internal details`() {
+        val response = app(Request(GET, "/health"))
+        val body = response.bodyString()
+        assertEquals(-1, body.indexOf("jdbc:"), "Should not expose JDBC URL")
+        assertEquals(-1, body.indexOf("users"), "Should not expose user count")
+        assertEquals(-1, body.indexOf("Exception"), "Should not expose exception traces")
     }
 }
