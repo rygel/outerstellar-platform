@@ -292,12 +292,12 @@ internal object ColorUtils {
             intArrayOf()
         } else {
             runCatching {
-                    intArrayOf(
-                        expanded.substring(0, HEX_PAIR_1_END).toInt(HEX_RADIX),
-                        expanded.substring(HEX_PAIR_2_START, HEX_PAIR_2_END).toInt(HEX_RADIX),
-                        expanded.substring(HEX_PAIR_3_START, HEX_PAIR_3_END).toInt(HEX_RADIX),
-                    )
-                }
+                intArrayOf(
+                    expanded.substring(0, HEX_PAIR_1_END).toInt(HEX_RADIX),
+                    expanded.substring(HEX_PAIR_2_START, HEX_PAIR_2_END).toInt(HEX_RADIX),
+                    expanded.substring(HEX_PAIR_3_START, HEX_PAIR_3_END).toInt(HEX_RADIX),
+                )
+            }
                 .getOrDefault(intArrayOf())
         }
     }

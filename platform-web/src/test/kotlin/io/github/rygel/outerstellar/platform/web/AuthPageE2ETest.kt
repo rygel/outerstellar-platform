@@ -23,8 +23,11 @@ class AuthPageE2ETest : H2WebTest() {
         val app =
             buildApp(
                 securityService = mockk<SecurityService>(relaxed = true),
-                userRepository = mockk<UserRepository>(relaxed = true),
-                contactService = mockk<ContactService>(relaxed = true),
+                overrides =
+                TestOverrides(
+                    userRepository = mockk<UserRepository>(relaxed = true),
+                    contactService = mockk<ContactService>(relaxed = true),
+                ),
             )
         val response = app(Request(GET, "/auth"))
 

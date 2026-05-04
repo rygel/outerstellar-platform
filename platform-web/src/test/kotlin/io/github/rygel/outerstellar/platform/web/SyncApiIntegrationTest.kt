@@ -7,11 +7,6 @@ import io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushContactResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushResponse
-import java.util.UUID
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -20,6 +15,11 @@ import org.http4k.core.Status
 import org.http4k.format.Jackson
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import java.util.UUID
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * Integration tests for the sync API (Feature 4 — bearer-authenticated sync endpoints).

@@ -4,13 +4,13 @@ import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.mockk.mockk
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.cookies
 import org.junit.jupiter.api.AfterEach
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class StatePersistenceE2ETest : H2WebTest() {
     @AfterEach
@@ -23,8 +23,11 @@ class StatePersistenceE2ETest : H2WebTest() {
         val app =
             buildApp(
                 securityService = mockk<SecurityService>(relaxed = true),
-                userRepository = mockk<UserRepository>(relaxed = true),
-                contactService = mockk<ContactService>(relaxed = true),
+                overrides =
+                TestOverrides(
+                    userRepository = mockk<UserRepository>(relaxed = true),
+                    contactService = mockk<ContactService>(relaxed = true),
+                ),
             )
 
         val response = app(Request(GET, "/?lang=fr"))
