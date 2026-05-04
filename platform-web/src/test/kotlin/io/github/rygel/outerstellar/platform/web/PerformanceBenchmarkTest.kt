@@ -3,24 +3,14 @@ package io.github.rygel.outerstellar.platform.web
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
-import io.github.rygel.outerstellar.platform.service.MessageService
 import io.mockk.mockk
-import java.nio.file.Path
-import java.time.LocalDateTime
-import kotlin.test.Test
-import kotlin.test.assertTrue
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -34,6 +24,10 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.slf4j.LoggerFactory
+import java.nio.file.Path
+import java.time.LocalDateTime
+import kotlin.test.Test
+import kotlin.test.assertTrue
 
 // ---------------------------------------------------------------------------
 // Baseline persistence model
@@ -161,18 +155,18 @@ class PerformanceBenchmarkTest : H2WebTest() {
                     recordedAt = LocalDateTime.now().toString(),
                     javaVersion = System.getProperty("java.version"),
                     benchmarks =
-                        collectedReports.values
-                            .sortedBy { it.name }
-                            .map { r ->
-                                BenchmarkEntry(
-                                    name = r.name,
-                                    iterations = r.count,
-                                    p50Ms = r.p50Ms(),
-                                    p95Ms = r.p95Ms(),
-                                    p99Ms = r.p99Ms(),
-                                    maxMs = r.maxMs(),
-                                )
-                            },
+                    collectedReports.values
+                        .sortedBy { it.name }
+                        .map { r ->
+                            BenchmarkEntry(
+                                name = r.name,
+                                iterations = r.count,
+                                p50Ms = r.p50Ms(),
+                                p95Ms = r.p95Ms(),
+                                p99Ms = r.p99Ms(),
+                                maxMs = r.maxMs(),
+                            )
+                        },
                 )
             mapper.writeValue(baselineFile, baseline)
             logger.info("Baseline written to {}", baselineFile.canonicalPath)
@@ -190,32 +184,17 @@ class PerformanceBenchmarkTest : H2WebTest() {
     fun setupBenchmark() {
         cleanup()
 
-        val userRepository = JooqUserRepository(testDsl)
-        val messageRepository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = CaffeineMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService = MessageService(messageRepository, outbox, txManager, cache)
-        // logRounds=4 keeps non-BCrypt benchmarks fast; the login benchmark uses its own encoder
-        val encoder = BCryptPasswordEncoder(logRounds = 4)
-        val securityService =
-            SecurityService(userRepository, encoder, sessionRepository = JooqSessionRepository(testDsl))
-        val contactService = mockk<ContactService>(relaxed = true)
-        val pageFactory = WebPageFactory(messageRepository, messageService, contactService, securityService)
+        val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
 
         app =
-            app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    securityService,
-                    userRepository,
-                )
-                .http!!
+            buildApp(
+                securityService = securityService,
+                overrides =
+                TestOverrides(
+                    messageCache = CaffeineMessageCache(),
+                    contactService = mockk<ContactService>(relaxed = true),
+                ),
+            )
 
         val registerLens = Body.auto<RegisterRequest>().toLens()
         val loginLens = Body.auto<LoginRequest>().toLens()
@@ -341,9 +320,7 @@ class PerformanceBenchmarkTest : H2WebTest() {
     @Test
     fun `POST login latency (BCrypt logRounds=10)`() {
         val prodEncoder = BCryptPasswordEncoder(logRounds = 10)
-        val userRepository = JooqUserRepository(testDsl)
-        val prodSecurityService =
-            SecurityService(userRepository, prodEncoder, sessionRepository = JooqSessionRepository(testDsl))
+        val prodSecurityService = SecurityService(userRepository, prodEncoder, sessionRepository = sessionRepository)
 
         userRepository.save(
             io.github.rygel.outerstellar.platform.security.User(
@@ -356,27 +333,15 @@ class PerformanceBenchmarkTest : H2WebTest() {
         )
 
         val loginLens = Body.auto<LoginRequest>().toLens()
-        val contactService = mockk<ContactService>(relaxed = true)
-        val messageRepository = JooqMessageRepository(testDsl)
-        val outbox = StubOutboxRepository()
-        val cache = CaffeineMessageCache()
-        val txManager = StubTransactionManager()
-        val messageService = MessageService(messageRepository, outbox, txManager, cache)
-        val pageFactory = WebPageFactory(messageRepository, messageService, contactService, prodSecurityService)
-
         val prodApp =
-            app(
-                    messageService,
-                    contactService,
-                    outbox,
-                    cache,
-                    createRenderer(),
-                    pageFactory,
-                    testConfig,
-                    prodSecurityService,
-                    userRepository,
-                )
-                .http!!
+            buildApp(
+                securityService = prodSecurityService,
+                overrides =
+                TestOverrides(
+                    messageCache = CaffeineMessageCache(),
+                    contactService = mockk<ContactService>(relaxed = true),
+                ),
+            )
 
         val req = Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))
 

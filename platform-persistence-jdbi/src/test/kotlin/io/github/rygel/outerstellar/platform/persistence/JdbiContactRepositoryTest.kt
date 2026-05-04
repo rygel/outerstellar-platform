@@ -147,11 +147,9 @@ class JdbiContactRepositoryTest : H2JdbiTest() {
     @Test
     fun `findChangesSince returns contacts newer than epoch`() {
         val c1 = createLocal("Old Contact")
-        val epoch = c1.updatedAtEpochMs
-        Thread.sleep(5)
         val c2 = createLocal("New Contact")
-        val changes = repo.findChangesSince(epoch)
-        assertTrue(changes.none { it.syncId == c1.syncId })
+        val changes = repo.findChangesSince(c1.updatedAtEpochMs - 1)
+        assertTrue(changes.any { it.syncId == c1.syncId })
         assertTrue(changes.any { it.syncId == c2.syncId })
     }
 

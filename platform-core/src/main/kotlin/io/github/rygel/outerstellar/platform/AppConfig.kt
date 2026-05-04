@@ -4,6 +4,7 @@ import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.ExperimentalHoplite
 import com.sksamuel.hoplite.addEnvironmentSource
 import com.sksamuel.hoplite.addResourceSource
+import com.sksamuel.hoplite.sources.SystemPropertiesPropertySource
 
 data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
 
@@ -65,7 +66,11 @@ data class AppConfig(
         @OptIn(ExperimentalHoplite::class)
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
-            val builder = ConfigLoaderBuilder.default().withExplicitSealedTypes().addEnvironmentSource()
+            val builder =
+                ConfigLoaderBuilder.default()
+                    .withExplicitSealedTypes()
+                    .addEnvironmentSource()
+                    .addSource(SystemPropertiesPropertySource())
 
             if (profile != "default") {
                 builder.addResourceSource("/application-$profile.yaml", optional = true)

@@ -9,8 +9,8 @@ import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import org.junit.jupiter.api.Test
 
 class MessageCacheTest {
     private val repository = mockk<MessageRepository>(relaxed = true)
@@ -50,16 +50,16 @@ class MessageCacheTest {
     @Test
     fun `write operations invalidate cache and use entity cache`() {
         val msg = service.createServerMessage("author", "content")
-        verify { cache.invalidateAll() }
+        verify { cache.invalidateByPrefix("list:") }
         verify { cache.put("entity:${msg.syncId}", msg) }
 
         val localMsg = service.createLocalMessage("author", "content")
-        verify(exactly = 2) { cache.invalidateAll() }
+        verify(exactly = 2) { cache.invalidateByPrefix("list:") }
         verify { cache.put("entity:${localMsg.syncId}", localMsg) }
 
         service.processPushRequest(SyncPushRequest(emptyList()))
         // SyncPushRequest with empty list appliedCount is 0, no invalidation
-        verify(exactly = 2) { cache.invalidateAll() }
+        verify(exactly = 2) { cache.invalidateByPrefix("list:") }
     }
 
     @Test

@@ -37,7 +37,7 @@ jobs:
           server-password: GH_PACKAGES_TOKEN
 
       - name: Cache CodeQL database
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: ~/.codeql/databases
           key: codeql-db-${{ hashFiles('**/pom.xml') }}
@@ -49,7 +49,7 @@ jobs:
           servers: '[{"id": "github-rygel", "username": "${{ github.actor }}", "password": "${{ secrets.GH_PACKAGES_TOKEN }}"}]'
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
         with:
           languages: java-kotlin
           build-mode: manual
@@ -58,6 +58,6 @@ jobs:
         run: mvn compile -q -Denforcer.skip -T 4
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
         with:
           category: '/language:java-kotlin'

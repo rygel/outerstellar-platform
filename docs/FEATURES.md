@@ -72,9 +72,17 @@
 - **H2** — embedded database for development and testing (PostgreSQL compatibility mode)
 - **PostgreSQL** — production database support
 - **Flyway migrations** — versioned schema management with plugin migration support
-- **jOOQ** — type-safe SQL with code generation
-- **JDBI** — lightweight SQL abstraction (alternative to jOOQ)
+- **jOOQ** — type-safe SQL with code generation (default)
+- **JDBI** — lightweight SQL abstraction (alternative to jOOQ; zero jOOQ dependency)
 - **HikariCP** — connection pooling
+
+### Dual Persistence Architecture
+
+The platform provides two independent persistence modules (`platform-persistence-jooq` and `platform-persistence-jdbi`) that implement identical repository interfaces. Applications choose one at the POM level — the rest of the code is persistence-agnostic. See `docs/architecture.md` for details on switching between them.
+
+### Plugin Migration Isolation
+
+Plugins that need their own database migrations use `PluginMigrationSource` (extended by `PlatformPlugin`). The host runs plugin migrations with a separate Flyway instance, separate classpath location, and separate history table (`flyway_plugin_history` by default). This prevents version number conflicts between platform migrations (V1–V4) and plugin migrations.
 
 ### Repositories
 - Message repository (CRUD, sync, conflict tracking)

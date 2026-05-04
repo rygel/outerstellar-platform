@@ -34,6 +34,11 @@ import org.jooq.SQLDialect
 import org.jooq.impl.DSL
 import org.koin.dsl.module
 
+/**
+ * Persistence module backed by jOOQ with generated type-safe SQL. Preferred for PostgreSQL and H2 deployments where
+ * compile-time query safety is valuable. Wire this into your Koin app in place of the JDBI module — never include both
+ * `platform-persistence-jooq` and `platform-persistence-jdbi` at runtime.
+ */
 val persistenceModule
     get() = module {
         single<DataSource> {
