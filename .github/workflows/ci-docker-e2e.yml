@@ -28,7 +28,7 @@ jobs:
     permissions:
       contents: read
     env:
-      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Password seeded into the container and read by tests via E2E_ADMIN_PASSWORD
       E2E_ADMIN_PASSWORD: e2eTestPassword123
 
