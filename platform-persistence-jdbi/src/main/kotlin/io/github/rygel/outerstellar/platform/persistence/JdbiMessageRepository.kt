@@ -7,7 +7,7 @@ import io.github.rygel.outerstellar.platform.sync.SyncMessage
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.util.UUID
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.jdbi.v3.core.Handle
 import org.jdbi.v3.core.Jdbi
 
@@ -244,7 +244,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     }
 
     override fun markConflict(syncId: String, serverVersion: SyncMessage) {
-        val json = Jackson.asFormatString(serverVersion)
+        val json = KotlinxSerialization.asFormatString(serverVersion)
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_messages SET sync_conflict = :json WHERE sync_id = :syncId")

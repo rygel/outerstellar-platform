@@ -10,7 +10,7 @@ import io.github.rygel.outerstellar.platform.model.OptimisticLockException
 import io.github.rygel.outerstellar.platform.model.StoredContact
 import io.github.rygel.outerstellar.platform.sync.SyncContact
 import java.util.UUID
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -244,7 +244,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
     }
 
     override fun markConflict(syncId: String, serverVersion: SyncContact) {
-        val json = Jackson.asFormatString(serverVersion)
+        val json = KotlinxSerialization.asFormatString(serverVersion)
         dsl.update(PLT_CONTACTS).set(PLT_CONTACTS.SYNC_CONFLICT, json).where(PLT_CONTACTS.SYNC_ID.eq(syncId)).execute()
     }
 

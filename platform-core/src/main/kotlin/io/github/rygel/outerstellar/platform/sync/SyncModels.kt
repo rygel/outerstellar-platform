@@ -1,8 +1,9 @@
 package io.github.rygel.outerstellar.platform.sync
 
 import io.github.rygel.outerstellar.platform.model.ValidationException
+import kotlinx.serialization.Serializable
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class SyncMessage(
     val syncId: String,
     val author: String,
@@ -22,7 +23,7 @@ data class SyncMessage(
     }
 }
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class SyncPushRequest(val messages: List<SyncMessage> = emptyList()) {
     companion object {
         fun validate(request: SyncPushRequest): SyncPushRequest {
@@ -32,18 +33,15 @@ data class SyncPushRequest(val messages: List<SyncMessage> = emptyList()) {
     }
 }
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncConflict(val syncId: String, val reason: String, val serverMessage: SyncMessage? = null)
+@Serializable data class SyncConflict(val syncId: String, val reason: String, val serverMessage: SyncMessage? = null)
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncPushResponse(val appliedCount: Int = 0, val conflicts: List<SyncConflict> = emptyList())
+@Serializable data class SyncPushResponse(val appliedCount: Int = 0, val conflicts: List<SyncConflict> = emptyList())
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class SyncPullResponse(val messages: List<SyncMessage> = emptyList(), val serverTimestamp: Long = 0)
+@Serializable data class SyncPullResponse(val messages: List<SyncMessage> = emptyList(), val serverTimestamp: Long = 0)
 
 data class SyncStats(val pushedCount: Int = 0, val pulledCount: Int = 0, val conflictCount: Int = 0)
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class SyncContact(
     val syncId: String,
     val name: String,
@@ -67,7 +65,7 @@ data class SyncContact(
     }
 }
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class SyncPushContactRequest(val contacts: List<SyncContact> = emptyList()) {
     companion object {
         fun validate(request: SyncPushContactRequest): SyncPushContactRequest {
@@ -77,15 +75,11 @@ data class SyncPushContactRequest(val contacts: List<SyncContact> = emptyList())
     }
 }
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class SyncContactConflict(val syncId: String, val reason: String, val serverContact: SyncContact? = null)
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class SyncPushContactResponse(val appliedCount: Int = 0, val conflicts: List<SyncContactConflict> = emptyList())
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class SyncPullContactResponse(val contacts: List<SyncContact> = emptyList(), val serverTimestamp: Long = 0)
-
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class JsonIgnoreProperties(val ignoreUnknown: Boolean = false)

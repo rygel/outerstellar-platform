@@ -8,7 +8,7 @@ import org.http4k.contract.meta
 import org.http4k.core.Method.GET
 import org.http4k.core.Response
 import org.http4k.core.Status
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.http4k.template.TemplateRenderer
 
 private const val DEFAULT_SEARCH_LIMIT = 20
@@ -50,7 +50,9 @@ class SearchRoutes(
                             providers.flatMap { it.search(query, limit) }.sortedByDescending { it.score }.take(limit)
                         }
                     val json =
-                        Jackson.asJsonObject(mapOf("query" to query, "results" to results, "total" to results.size))
+                        KotlinxSerialization.asJsonObject(
+                            mapOf("query" to query, "results" to results, "total" to results.size)
+                        )
                     Response(Status.OK).header("content-type", "application/json; charset=utf-8").body(json.toString())
                 },
         )

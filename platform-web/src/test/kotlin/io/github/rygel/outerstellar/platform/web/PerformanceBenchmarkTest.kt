@@ -1,8 +1,5 @@
 package io.github.rygel.outerstellar.platform.web
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
@@ -15,13 +12,15 @@ import java.nio.file.Path
 import java.time.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.with
-import org.http4k.format.Jackson.auto
+import org.http4k.format.KotlinxSerialization.auto
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
@@ -29,11 +28,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.slf4j.LoggerFactory
 
-// ---------------------------------------------------------------------------
-// Baseline persistence model
-// ---------------------------------------------------------------------------
-
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class BenchmarkEntry(
     val name: String = "",
     val iterations: Int = 0,
@@ -43,7 +38,7 @@ data class BenchmarkEntry(
     val maxMs: Double = 0.0,
 )
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Serializable
 data class BenchmarkBaseline(
     val recordedAt: String = "",
     val javaVersion: String = "",
@@ -79,7 +74,10 @@ class PerformanceBenchmarkTest : WebTest() {
         private const val WARMUP = 10
         private const val ITERATIONS = 200
         private val logger = LoggerFactory.getLogger(PerformanceBenchmarkTest::class.java)
-        private val mapper = jacksonObjectMapper().writerWithDefaultPrettyPrinter()
+        private val json = Json {
+            prettyPrint = true
+            ignoreUnknownKeys = true
+        }
 
         /** Written by @BeforeAll from the committed baseline.json, if present. */
         private var previousBaseline: BenchmarkBaseline? = null
@@ -96,7 +94,7 @@ class PerformanceBenchmarkTest : WebTest() {
         fun loadPreviousBaseline() {
             collectedReports.clear()
             if (baselineFile.exists()) {
-                previousBaseline = jacksonObjectMapper().readValue<BenchmarkBaseline>(baselineFile)
+                previousBaseline = json.decodeFromString<BenchmarkBaseline>(baselineFile.readText())
                 logger.info(
                     "Loaded previous baseline from {} (recorded {})",
                     baselineFile,
@@ -168,7 +166,8 @@ class PerformanceBenchmarkTest : WebTest() {
                                 )
                             },
                 )
-            mapper.writeValue(baselineFile, baseline)
+            val pretty = json.encodeToString(BenchmarkBaseline.serializer(), baseline)
+            baselineFile.writeText(pretty)
             logger.info("Baseline written to {}", baselineFile.canonicalPath)
         }
 

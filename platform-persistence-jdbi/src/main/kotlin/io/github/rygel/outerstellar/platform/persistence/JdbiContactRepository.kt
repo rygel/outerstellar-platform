@@ -5,7 +5,7 @@ import io.github.rygel.outerstellar.platform.model.OptimisticLockException
 import io.github.rygel.outerstellar.platform.model.StoredContact
 import io.github.rygel.outerstellar.platform.sync.SyncContact
 import java.util.UUID
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.jdbi.v3.core.Handle
 import org.jdbi.v3.core.Jdbi
 import org.slf4j.LoggerFactory
@@ -282,7 +282,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     }
 
     override fun markConflict(syncId: String, serverVersion: SyncContact) {
-        val json = Jackson.asFormatString(serverVersion)
+        val json = KotlinxSerialization.asFormatString(serverVersion)
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_contacts SET sync_conflict = :json WHERE sync_id = :syncId")

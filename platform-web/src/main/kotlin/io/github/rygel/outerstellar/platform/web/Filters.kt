@@ -27,7 +27,7 @@ import org.http4k.core.with
 import org.http4k.filter.MicrometerMetrics
 import org.http4k.filter.OpenTelemetryTracing
 import org.http4k.filter.ServerFilters
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
@@ -479,7 +479,7 @@ object Filters {
     }
 
     private fun jsonErrorResponse(status: Status, message: String): Response {
-        val body = Jackson.asJsonObject(mapOf("message" to message, "status" to status.code)).toString()
+        val body = KotlinxSerialization.asJsonObject(mapOf("message" to message, "status" to status.code)).toString()
         return Response(status).header("content-type", "application/json; charset=utf-8").body(body)
     }
 }

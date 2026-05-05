@@ -217,9 +217,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-kotlin</artifactId>
-                <version>${jackson.version}</version>
+                <groupId>org.http4k</groupId>
+                <artifactId>http4k-format-kotlinx-serialization</artifactId>
+                <version>${http4k.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.http4k</groupId>
@@ -239,11 +239,6 @@
             <dependency>
                 <groupId>org.http4k</groupId>
                 <artifactId>http4k-template-jte</artifactId>
-                <version>${http4k.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.http4k</groupId>
-                <artifactId>http4k-format-jackson</artifactId>
                 <version>${http4k.version}</version>
             </dependency>
             <dependency>

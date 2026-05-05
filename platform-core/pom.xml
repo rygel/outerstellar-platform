@@ -57,11 +57,7 @@
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
-            <artifactId>http4k-format-jackson</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-kotlin</artifactId>
+            <artifactId>http4k-format-kotlinx-serialization</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
