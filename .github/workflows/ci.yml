@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build and Quality Gate
+    name: Build, Test, and Quality
     runs-on: ubuntu-latest
     environment: ci
     permissions:
