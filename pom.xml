@@ -79,7 +79,8 @@
         <bytebuddy.version>1.18.8</bytebuddy.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <koin.version>4.2.1</koin.version>
-        <hoplite.version>2.9.0</hoplite.version>
+        <kotlinx.serialization.version>1.8.1</kotlinx.serialization.version>
+        <snakeyaml.engine.version>2.9</snakeyaml.engine.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
         <archunit.version>1.4.2</archunit.version>
@@ -326,14 +327,14 @@
                 <version>${flatlaf.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sksamuel.hoplite</groupId>
-                <artifactId>hoplite-core</artifactId>
-                <version>${hoplite.version}</version>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-serialization-json-jvm</artifactId>
+                <version>${kotlinx.serialization.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sksamuel.hoplite</groupId>
-                <artifactId>hoplite-yaml</artifactId>
-                <version>${hoplite.version}</version>
+                <groupId>org.snakeyaml</groupId>
+                <artifactId>snakeyaml-engine</artifactId>
+                <version>${snakeyaml.engine.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -503,7 +504,17 @@
                         <jvmTarget>${java.version}</jvmTarget>
                         <useDaemon>false</useDaemon>
                         <executionStrategy>in-process</executionStrategy>
+                        <compilerPlugins>
+                            <plugin>kotlinx-serialization</plugin>
+                        </compilerPlugins>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.jetbrains.kotlin</groupId>
+                            <artifactId>kotlin-maven-serialization</artifactId>
+                            <version>${kotlin.version}</version>
+                        </dependency>
+                    </dependencies>
                     <executions>
                         <execution>
                             <id>compile</id>

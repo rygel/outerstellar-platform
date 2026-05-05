@@ -1,36 +1,33 @@
 package io.github.rygel.outerstellar.platform
 
-import com.sksamuel.hoplite.ConfigLoaderBuilder
-import com.sksamuel.hoplite.ExperimentalHoplite
-import com.sksamuel.hoplite.addEnvironmentSource
-import com.sksamuel.hoplite.addResourceSource
-import com.sksamuel.hoplite.sources.SystemPropertiesPropertySource
 import org.koin.dsl.module
+import org.snakeyaml.engine.v2.api.Load
+import org.snakeyaml.engine.v2.api.LoadSettings
+
+private const val DEFAULT_HTTP_PORT = 8080
+private const val DEFAULT_SMTP_PORT = 587
+private const val DEFAULT_SESSION_TIMEOUT_MINUTES = 30
+private const val DEFAULT_JWT_EXPIRY_SECONDS = 86400L
+private const val DEFAULT_CSP_POLICY =
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; " +
+        "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:;"
 
 val configModule
     get() = module { single { AppConfig.fromEnvironment() } }
 
 data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
 
-/**
- * JWT authentication configuration. Disabled by default. Enable for apps that need stateless token auth (e.g.
- * device/API clients). Set [enabled] = true and provide a strong random [secret] to activate.
- */
 data class JwtConfig(
     val enabled: Boolean = false,
     val secret: String = "",
     val issuer: String = "outerstellar",
-    val expirySeconds: Long = 86400L,
+    val expirySeconds: Long = DEFAULT_JWT_EXPIRY_SECONDS,
 )
 
-/**
- * SMTP email configuration. Email sending is **disabled by default**. Set [enabled] = true and provide
- * [host]/[username]/[password] to activate.
- */
 data class EmailConfig(
     val enabled: Boolean = false,
     val host: String = "localhost",
-    val port: Int = 587,
+    val port: Int = DEFAULT_SMTP_PORT,
     val username: String = "",
     val password: String = "",
     val from: String = "noreply@example.com",
@@ -39,50 +36,111 @@ data class EmailConfig(
 
 data class AppConfig(
     val version: String = "dev",
-    val port: Int = 8080,
+    val port: Int = DEFAULT_HTTP_PORT,
     val jdbcUrl: String = "jdbc:postgresql://localhost:5432/outerstellar",
     val jdbcUser: String = "outerstellar",
     val jdbcPassword: String = "outerstellar",
     val devDashboardEnabled: Boolean = false,
     val devMode: Boolean = false,
-    // Defaults to false for local development (HTTP). Set to true in production via
-    // APP_PROFILE=prod or the SESSIONCOOKIESECURE environment variable.
     val sessionCookieSecure: Boolean = false,
-    val sessionTimeoutMinutes: Int = 30,
-    // WARNING: "*" allows any origin. Override with a comma-separated allow-list in production
-    // (e.g. CORSORIGINS=https://app.example.com) to prevent cross-origin credential theft.
+    val sessionTimeoutMinutes: Int = DEFAULT_SESSION_TIMEOUT_MINUTES,
     val corsOrigins: String = "*",
     val csrfEnabled: Boolean = true,
     val segment: SegmentConfig = SegmentConfig(),
     val email: EmailConfig = EmailConfig(),
-    /** Public-facing base URL used in emails, e.g. https://app.example.com */
     val appBaseUrl: String = "http://localhost:8080",
     val jwt: JwtConfig = JwtConfig(),
-    val cspPolicy: String =
-        "default-src 'self'; " +
-            "script-src 'self' 'unsafe-inline'; " +
-            "style-src 'self' 'unsafe-inline'; " +
-            "font-src 'self'; " +
-            "connect-src 'self' ws: wss:; " +
-            "img-src 'self' data:;",
+    val cspPolicy: String = DEFAULT_CSP_POLICY,
 ) {
     companion object {
-        @OptIn(ExperimentalHoplite::class)
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
-            val builder =
-                ConfigLoaderBuilder.default()
-                    .withExplicitSealedTypes()
-                    .addEnvironmentSource()
-                    .addSource(SystemPropertiesPropertySource())
+            val yamlData = loadYaml(profile)
+            return buildFromYaml(yamlData, environment)
+        }
 
+        private fun loadYaml(profile: String): Map<String, Any>? {
+            val loader = Load(LoadSettings.builder().build())
             if (profile != "default") {
-                builder.addResourceSource("/application-$profile.yaml", optional = true)
+                val result = readResource(loader, "/application-$profile.yaml")
+                if (result != null) return result
             }
+            return readResource(loader, "/application.yaml")
+        }
 
-            builder.addResourceSource("/application.yaml", optional = true)
+        private fun readResource(loader: Load, path: String): Map<String, Any>? {
+            val stream = AppConfig::class.java.getResourceAsStream(path) ?: return null
+            return try {
+                loader.loadFromInputStream(stream) as? Map<String, Any>
+            } finally {
+                stream.close()
+            }
+        }
 
-            return builder.build().loadConfigOrThrow<AppConfig>()
+        private fun buildFromYaml(yaml: Map<String, Any>?, env: Map<String, String>): AppConfig {
+            if (yaml == null) return AppConfig()
+            return AppConfig(
+                version = yaml.str("version", env, "VERSION", "dev"),
+                port = yaml.int("port", env, "PORT", DEFAULT_HTTP_PORT),
+                jdbcUrl = yaml.str("jdbcUrl", env, "JDBC_URL", "jdbc:postgresql://localhost:5432/outerstellar"),
+                jdbcUser = yaml.str("jdbcUser", env, "JDBC_USER", "outerstellar"),
+                jdbcPassword = yaml.str("jdbcPassword", env, "JDBC_PASSWORD", "outerstellar"),
+                devDashboardEnabled = yaml.bool("devDashboardEnabled", env, "DEV_DASHBOARD_ENABLED", false),
+                devMode = yaml.bool("devMode", env, "DEVMODE", false),
+                sessionCookieSecure = yaml.bool("sessionCookieSecure", env, "SESSIONCOOKIESECURE", false),
+                sessionTimeoutMinutes =
+                yaml.int("sessionTimeoutMinutes", env, "SESSIONTIMEOUTMINUTES", DEFAULT_SESSION_TIMEOUT_MINUTES),
+                corsOrigins = yaml.str("corsOrigins", env, "CORSORIGINS", "*"),
+                csrfEnabled = yaml.bool("csrfEnabled", env, "CSRFENABLED", true),
+                segment = buildSegmentConfig(yaml["segment"] as? Map<String, Any>, env),
+                email = buildEmailConfig(yaml["email"] as? Map<String, Any>, env),
+                appBaseUrl = yaml.str("appBaseUrl", env, "APPBASEURL", "http://localhost:8080"),
+                jwt = buildJwtConfig(yaml["jwt"] as? Map<String, Any>, env),
+                cspPolicy = (yaml["cspPolicy"] as? String) ?: DEFAULT_CSP_POLICY,
+            )
+        }
+
+        private fun buildSegmentConfig(yaml: Map<String, Any>?, env: Map<String, String>): SegmentConfig {
+            if (yaml == null) return SegmentConfig()
+            return SegmentConfig(
+                writeKey = yaml.str("writeKey", env, "SEGMENT_WRITEKEY", ""),
+                enabled = yaml.bool("enabled", env, "SEGMENT_ENABLED", false),
+            )
+        }
+
+        private fun buildEmailConfig(yaml: Map<String, Any>?, env: Map<String, String>): EmailConfig {
+            if (yaml == null) return EmailConfig()
+            return EmailConfig(
+                enabled = yaml.bool("enabled", env, "EMAIL_ENABLED", false),
+                host = yaml.str("host", env, "EMAIL_HOST", "localhost"),
+                port = yaml.int("port", env, "EMAIL_PORT", DEFAULT_SMTP_PORT),
+                username = yaml.str("username", env, "EMAIL_USERNAME", ""),
+                password = yaml.str("password", env, "EMAIL_PASSWORD", ""),
+                from = yaml.str("from", env, "EMAIL_FROM", "noreply@example.com"),
+                startTls = yaml.bool("startTls", env, "EMAIL_STARTTLS", true),
+            )
+        }
+
+        private fun buildJwtConfig(yaml: Map<String, Any>?, env: Map<String, String>): JwtConfig {
+            if (yaml == null) return JwtConfig()
+            return JwtConfig(
+                enabled = yaml.bool("enabled", env, "JWT_ENABLED", false),
+                secret = yaml.str("secret", env, "JWT_SECRET", ""),
+                issuer = yaml.str("issuer", env, "JWT_ISSUER", "outerstellar"),
+                expirySeconds = yaml.long("expirySeconds", env, "JWT_EXPIRYSECONDS", DEFAULT_JWT_EXPIRY_SECONDS),
+            )
         }
     }
 }
+
+private fun Map<String, Any>.str(key: String, env: Map<String, String>, envKey: String, default: String): String =
+    env[envKey] ?: (this[key] as? String) ?: default
+
+private fun Map<String, Any>.int(key: String, env: Map<String, String>, envKey: String, default: Int): Int =
+    env[envKey]?.toInt() ?: (this[key] as? Int) ?: default
+
+private fun Map<String, Any>.bool(key: String, env: Map<String, String>, envKey: String, default: Boolean): Boolean =
+    env[envKey]?.toBoolean() ?: (this[key] as? Boolean) ?: default
+
+private fun Map<String, Any>.long(key: String, env: Map<String, String>, envKey: String, default: Long): Long =
+    env[envKey]?.toLong() ?: (this[key] as? Long) ?: default
