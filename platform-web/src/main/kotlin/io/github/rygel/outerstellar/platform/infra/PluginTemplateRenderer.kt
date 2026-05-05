@@ -10,6 +10,10 @@ class PluginTemplateRenderer(
 ) : TemplateRenderer {
 
     override fun invoke(viewModel: ViewModel): String {
+        val templateName = "${viewModel.template()}.kte"
+        if (overrideTemplates.contains(templateName) && pluginClassLoader != null) {
+            return delegate(viewModel)
+        }
         return delegate(viewModel)
     }
 }
