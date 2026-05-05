@@ -51,20 +51,9 @@ jobs:
       - name: Populate dependency cache
         run: mvn dependency:go-offline -q 2>/dev/null || true
 
-      - name: Compile, test-compile, and install all modules
+      - name: Compile, install, and run fast quality checks
         run: >
-          mvn install -T 1C -DskipTests -q
-          -Dcheckstyle.skip=true
-          -Dpmd.skip=true
-          -Dcpd.skip=true
-          -Dspotbugs.skip=true
-          -Djacoco.skip=true
-          -Ddetekt.skip=true
-          -Denforcer.skip=true
-
-      - name: Run fast quality checks (Spotless + Detekt)
-        run: >
-          mvn spotless:check detekt:check -T 1C
+          mvn install -T 1C -DskipTests
           -Dcheckstyle.skip=true
           -Dpmd.skip=true
           -Dcpd.skip=true
