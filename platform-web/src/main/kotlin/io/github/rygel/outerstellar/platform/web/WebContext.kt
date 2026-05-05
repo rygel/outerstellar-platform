@@ -199,19 +199,7 @@ class WebContext(
                     selectName = "theme",
                     options =
                         ThemeCatalog.allThemes().map { t ->
-                            ShellOption(
-                                id = t.id,
-                                label = t.name,
-                                url = t.id,
-                                active = t.id == theme,
-                                previewColors =
-                                    ThemePreviewColors(
-                                        background = t.colors["background"] ?: "#1e1e1e",
-                                        foreground = t.colors["foreground"] ?: "#d4d4d4",
-                                        accent = t.colors["accent"] ?: "#007acc",
-                                        componentBackground = t.colors["componentBackground"] ?: "#252526",
-                                    ),
-                            )
+                            ShellOption(id = t.id, label = t.name, url = t.id, active = t.id == theme)
                         },
                     hiddenFields =
                         listOf(
