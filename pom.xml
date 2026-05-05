@@ -347,6 +347,12 @@
                 <groupId>io.insert-koin</groupId>
                 <artifactId>koin-core-jvm</artifactId>
                 <version>${koin.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-reflect</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.insert-koin</groupId>
@@ -365,6 +371,12 @@
                 <artifactId>mockk-jvm</artifactId>
                 <version>${mockk.version}</version>
                 <scope>test</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-reflect</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>
