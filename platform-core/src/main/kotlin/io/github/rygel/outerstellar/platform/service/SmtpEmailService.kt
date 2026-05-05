@@ -1,10 +1,13 @@
 package io.github.rygel.outerstellar.platform.service
 
-import org.simplejavamail.api.mailer.Mailer
-import org.simplejavamail.api.mailer.config.TransportStrategy
-import org.simplejavamail.email.EmailBuilder
-import org.simplejavamail.mailer.MailerBuilder
+import jakarta.mail.Authenticator
+import jakarta.mail.PasswordAuthentication
+import jakarta.mail.Session
+import jakarta.mail.Transport
+import jakarta.mail.internet.InternetAddress
+import jakarta.mail.internet.MimeMessage
 import org.slf4j.LoggerFactory
+import java.util.Properties
 
 class EmailDeliveryException(message: String, cause: Throwable) : RuntimeException(message, cause)
 
@@ -20,32 +23,42 @@ data class SmtpConfig(
 class SmtpEmailService(private val config: SmtpConfig) : EmailService {
     private val logger = LoggerFactory.getLogger(SmtpEmailService::class.java)
 
-    private val mailer: Mailer by lazy {
-        val builder =
-            MailerBuilder.withSMTPServer(config.host, config.port)
-                .withTransportStrategy(if (config.startTls) TransportStrategy.SMTP_TLS else TransportStrategy.SMTP)
+    private val session: Session by lazy {
+        val props = Properties()
+        props["mail.smtp.host"] = config.host
+        props["mail.smtp.port"] = config.port.toString()
+        props["mail.smtp.starttls.enable"] = config.startTls.toString()
+        props["mail.smtp.ssl.trust"] = config.host
 
         if (config.username.isNotBlank()) {
-            builder.withSMTPServerUsername(config.username)
-            builder.withSMTPServerPassword(config.password)
+            props["mail.smtp.auth"] = "true"
+            Session.getInstance(
+                props,
+                object : Authenticator() {
+                    override fun getPasswordAuthentication(): PasswordAuthentication {
+                        return PasswordAuthentication(config.username, config.password)
+                    }
+                },
+            )
+        } else {
+            Session.getInstance(props)
         }
-
-        builder.buildMailer()
     }
 
     override fun send(to: String, subject: String, body: String) {
         try {
-            val email =
-                EmailBuilder.startingBlank()
-                    .from(config.from)
-                    .to(to)
-                    .withSubject(subject)
-                    .withPlainText(body)
-                    .buildEmail()
+            val message =
+                MimeMessage(session).apply {
+                    setFrom(InternetAddress(config.from))
+                    setRecipient(jakarta.mail.Message.RecipientType.TO, InternetAddress(to))
+                    setSubject(subject, "UTF-8")
+                    setText(body, "UTF-8")
+                }
 
-            mailer.sendMail(email)
+            Transport.send(message)
+
             logger.info("Email sent to {} subject='{}'", to, subject)
-        } catch (e: org.simplejavamail.MailException) {
+        } catch (e: jakarta.mail.MessagingException) {
             logger.warn("Failed to send email to {}: {}", to, e.message)
             throw EmailDeliveryException("Email delivery failed to $to: ${e.message}", e)
         }
