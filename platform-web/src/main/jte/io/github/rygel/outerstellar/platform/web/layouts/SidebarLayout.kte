@@ -4,7 +4,7 @@
 @param content: Content
 
 <!DOCTYPE html>
-<html lang="${shell.localeTag}">
+<html lang="${shell.localeTag}" data-theme="@if(shell.isDarkMode)dark@elselight@endif">
 @template.io.github.rygel.outerstellar.platform.web.layouts.LayoutHead(shell = shell)
 <body class="${shell.layoutClass}" hx-ext="ws" ws-connect="/ws/sync"
       data-toast-error="${shell.toastErrorLabel}" data-toast-success="${shell.toastSuccessLabel}">
