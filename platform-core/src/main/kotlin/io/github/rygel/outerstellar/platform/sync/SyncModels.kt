@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.sync
 
-import io.konform.validation.Validation
-import io.konform.validation.constraints.minLength
+import io.github.rygel.outerstellar.platform.model.ValidationException
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncMessage(
@@ -12,19 +11,24 @@ data class SyncMessage(
     val deleted: Boolean = false,
 ) {
     companion object {
-        val validate =
-            Validation<SyncMessage> {
-                SyncMessage::syncId { minLength(1) }
-                SyncMessage::author { minLength(1) }
-                SyncMessage::content { minLength(1) }
-            }
+        fun validate(msg: SyncMessage): SyncMessage {
+            val errors = mutableListOf<String>()
+            if (msg.syncId.isBlank()) errors += "syncId must not be blank"
+            if (msg.author.isBlank()) errors += "author must not be blank"
+            if (msg.content.isBlank()) errors += "content must not be blank"
+            if (errors.isNotEmpty()) throw ValidationException(errors)
+            return msg
+        }
     }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncPushRequest(val messages: List<SyncMessage> = emptyList()) {
     companion object {
-        val validate = Validation<SyncPushRequest> { SyncPushRequest::messages onEach { run(SyncMessage.validate) } }
+        fun validate(request: SyncPushRequest): SyncPushRequest {
+            request.messages.forEach { SyncMessage.validate(it) }
+            return request
+        }
     }
 }
 
@@ -53,19 +57,23 @@ data class SyncContact(
     val deleted: Boolean = false,
 ) {
     companion object {
-        val validate =
-            Validation<SyncContact> {
-                SyncContact::syncId { minLength(1) }
-                SyncContact::name { minLength(1) }
-            }
+        fun validate(contact: SyncContact): SyncContact {
+            val errors = mutableListOf<String>()
+            if (contact.syncId.isBlank()) errors += "syncId must not be blank"
+            if (contact.name.isBlank()) errors += "name must not be blank"
+            if (errors.isNotEmpty()) throw ValidationException(errors)
+            return contact
+        }
     }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncPushContactRequest(val contacts: List<SyncContact> = emptyList()) {
     companion object {
-        val validate =
-            Validation<SyncPushContactRequest> { SyncPushContactRequest::contacts onEach { run(SyncContact.validate) } }
+        fun validate(request: SyncPushContactRequest): SyncPushContactRequest {
+            request.contacts.forEach { SyncContact.validate(it) }
+            return request
+        }
     }
 }
 
@@ -78,10 +86,6 @@ data class SyncPushContactResponse(val appliedCount: Int = 0, val conflicts: Lis
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SyncPullContactResponse(val contacts: List<SyncContact> = emptyList(), val serverTimestamp: Long = 0)
 
-/**
- * Annotation to ignore unknown properties during JSON deserialization. Replaces Jackson's JsonIgnoreProperties to avoid
- * dependency conflicts with http4k 6.x.
- */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 annotation class JsonIgnoreProperties(val ignoreUnknown: Boolean = false)

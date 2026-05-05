@@ -21,10 +21,9 @@ import io.github.rygel.outerstellar.platform.sync.SyncMessage
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
 import io.github.rygel.outerstellar.platform.sync.SyncPushResponse
-import io.konform.validation.Invalid
-import java.util.UUID
 import org.http4k.format.Jackson
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 @Suppress("TooManyFunctions")
 class MessageService(
@@ -159,10 +158,7 @@ class MessageService(
     }
 
     fun processPushRequest(request: SyncPushRequest): SyncPushResponse {
-        val validationResult = SyncPushRequest.validate(request)
-        if (validationResult is Invalid) {
-            throw ValidationException(validationResult.errors.map { "${it.dataPath}: ${it.message}" })
-        }
+        SyncPushRequest.validate(request)
 
         val conflicts = mutableListOf<SyncConflict>()
         var appliedCount = 0

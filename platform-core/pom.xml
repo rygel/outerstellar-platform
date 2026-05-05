@@ -51,11 +51,7 @@
             <groupId>io.insert-koin</groupId>
             <artifactId>koin-core-jvm</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.konform</groupId>
-            <artifactId>konform-jvm</artifactId>
-        </dependency>
-        <dependency>
+<dependency>
             <groupId>org.http4k</groupId>
             <artifactId>http4k-core</artifactId>
         </dependency>
