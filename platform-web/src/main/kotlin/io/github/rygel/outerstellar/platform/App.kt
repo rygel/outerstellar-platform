@@ -28,6 +28,7 @@ import io.github.rygel.outerstellar.platform.web.NotificationRoutes
 import io.github.rygel.outerstellar.platform.web.OAuthRoutes
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
 import io.github.rygel.outerstellar.platform.web.PluginContext
+import io.github.rygel.outerstellar.platform.web.PluginOptions
 import io.github.rygel.outerstellar.platform.web.SearchRoutes
 import io.github.rygel.outerstellar.platform.web.SettingsRoutes
 import io.github.rygel.outerstellar.platform.web.SyncApi
@@ -434,7 +435,7 @@ private fun buildFilterChain(
                     userRepository,
                     config.version,
                     jwtService,
-                    plugin?.navItems ?: emptyList(),
+                    PluginOptions(navItems = plugin?.navItems ?: emptyList(), textResolver = plugin?.textResolver),
                 )
             )
 

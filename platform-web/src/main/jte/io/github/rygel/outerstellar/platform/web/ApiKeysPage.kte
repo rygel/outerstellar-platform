@@ -16,7 +16,7 @@
             <p style="font-family: monospace; word-break: break-all; padding: 0.75rem; background: var(--color-background); border-radius: 4px;">
                 ${model.data.newKey}
             </p>
-            <p class="text-muted">Name: ${model.data.newKeyName}</p>
+            <p class="text-muted">${model.data.nameLabel} ${model.data.newKeyName}</p>
         </section>
     @endif
 

@@ -44,7 +44,7 @@
                             <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                                 <strong style="font-size:0.95rem;">${n.title}</strong>
                                 @if(!n.read)
-                                    <span class="chip" style="font-size:0.7rem; padding:0.1rem 0.4rem;">New</span>
+                                    <span class="chip" style="font-size:0.7rem; padding:0.1rem 0.4rem;">${model.data.newLabel}</span>
                                 @endif
                                 <span style="opacity:0.45; font-size:0.8rem; margin-left:auto;">${n.timeAgo}</span>
                             </div>

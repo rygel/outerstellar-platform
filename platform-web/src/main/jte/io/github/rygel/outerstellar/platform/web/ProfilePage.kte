@@ -11,7 +11,7 @@
 
             <div style="display:flex; align-items:center; gap:1.25rem; margin-bottom:1.25rem;">
                 <img src="${model.data.avatarUrl}"
-                     alt="Avatar"
+                     alt="${model.data.avatarAlt}"
                      style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:2px solid var(--color-border, #333);">
                 <div>
                     <div style="font-weight:600; font-size:1.05rem;">${model.data.username}</div>
@@ -37,7 +37,7 @@
                 <input type="url" id="avatarUrl" name="avatarUrl"
                        value="${model.data.avatarUrl}"
                        placeholder="${model.data.avatarPlaceholder}">
-                <small style="opacity:0.55; font-size:0.8rem;">Leave blank to use Gravatar.</small>
+                <small style="opacity:0.55; font-size:0.8rem;">${model.data.gravatarHint}</small>
 
                 <button type="submit" style="margin-top:1rem;">${model.data.submitLabel}</button>
             </form>

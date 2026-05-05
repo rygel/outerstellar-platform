@@ -32,8 +32,8 @@
                 </div>
                 <footer class="message-footer">
                     <div class="message-meta">
-                        <span>ID: ${msg.syncId.take(8)}</span>
-                        <span>Version ${msg.version}</span>
+                        <span>${model.idLabel} ${msg.syncId.take(8)}</span>
+                        <span>${model.versionLabel} ${msg.version}</span>
                     </div>
                     <div class="button-row">
                         @if(model.isTrash)
@@ -72,6 +72,7 @@
                 totalPages = pagination.totalPages,
                 showingPageLabel = model.showingPageLabel,
                 ofLabel = model.ofLabel,
+                pageLabel = pagination.pageLabel,
             )
         @endif
     @endif

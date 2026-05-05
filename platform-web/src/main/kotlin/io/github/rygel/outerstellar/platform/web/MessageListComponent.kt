@@ -21,6 +21,8 @@ data class MessageListViewModel(
     val ofLabel: String = "of",
     val localBadge: String = "Local",
     val conflictBadge: String = "Conflict",
+    val idLabel: String = "ID:",
+    val versionLabel: String = "Version",
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/MessageList"
 }
@@ -90,6 +92,7 @@ class MessageListComponent(private val messageService: MessageService) : WebComp
                         (1..metadata.totalPages).map { p ->
                             PageNumberViewModel(p, createUrl(p), p == metadata.currentPage)
                         },
+                    pageLabel = i18n.translate("web.pagination.page"),
                 )
             } else {
                 null
@@ -118,6 +121,8 @@ class MessageListComponent(private val messageService: MessageService) : WebComp
             ofLabel = i18n.translate("web.messages.of"),
             localBadge = i18n.translate("web.messages.local.badge"),
             conflictBadge = i18n.translate("web.messages.conflict.badge"),
+            idLabel = i18n.translate("web.messages.id.label"),
+            versionLabel = i18n.translate("web.messages.version.label"),
         )
     }
 }

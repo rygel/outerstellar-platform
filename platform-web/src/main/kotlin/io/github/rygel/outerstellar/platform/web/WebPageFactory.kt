@@ -260,6 +260,7 @@ open class WebPageFactory(
                     secondaryActionUrl = ctx.url("/auth"),
                     helpButtonLabel = i18n.translate("web.error.help"),
                     helpUrl = ctx.url("/errors/components/help/$normalizedKind"),
+                    errorLabel = i18n.translate("web.error.label"),
                 ),
         )
     }
@@ -345,6 +346,9 @@ open class WebPageFactory(
                     telemetryLabel = i18n.translate("web.dev.telemetry"),
                     metricsLabel = i18n.translate("web.dev.metrics"),
                     triggerSyncLabel = i18n.translate("web.dev.trigger.sync"),
+                    protocolDescription = i18n.translate("web.dev.protocol.description"),
+                    searchHtmxLabel = i18n.translate("web.dev.protocol.search.htmx"),
+                    searchDraculaLabel = i18n.translate("web.dev.protocol.search.dracula"),
                 ),
         )
     }
@@ -579,7 +583,17 @@ open class WebPageFactory(
             )
         return Page(
             shell = shell,
-            data = SettingsPage(title = i18n.translate("web.settings.title"), tabs = tabs, activeTab = normalizedTab),
+            data =
+                SettingsPage(
+                    title = i18n.translate("web.settings.title"),
+                    tabs = tabs,
+                    activeTab = normalizedTab,
+                    profileDescription = i18n.translate("web.settings.profile.description"),
+                    passwordDescription = i18n.translate("web.settings.password.description"),
+                    apiKeysDescription = i18n.translate("web.settings.apikeys.description"),
+                    notificationsDescription = i18n.translate("web.settings.notifications.description"),
+                    appearanceDescription = i18n.translate("web.settings.appearance.description"),
+                ),
         )
     }
 

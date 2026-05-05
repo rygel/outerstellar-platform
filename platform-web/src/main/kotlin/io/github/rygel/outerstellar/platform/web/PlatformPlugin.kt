@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.security.SecurityService
@@ -21,6 +22,8 @@ import org.koin.core.module.Module
  * against the current path to highlight the active link (the same convention used by the host's built-in nav links).
  */
 data class PluginNavItem(val label: String, val url: String, val icon: String, val activeSection: String = url)
+
+data class PluginOptions(val navItems: List<PluginNavItem> = emptyList(), val textResolver: TextResolver? = null)
 
 /**
  * Host services provided to the plugin when it builds its routes. The plugin should depend only on this context rather
@@ -121,6 +124,19 @@ interface PlatformPlugin : PluginMigrationSource {
      */
     val navItems: List<PluginNavItem>
         get() = emptyList()
+
+    /**
+     * Custom text resolver for all UI strings. Override to provide plugin-specific translations. When null the host
+     * uses its default I18nService-backed resolver.
+     */
+    val textResolver: TextResolver?
+        get() = null
+
+    /**
+     * JTE template paths that this plugin overrides (e.g. `setOf("layouts/SidebarLayout.kte")`). The host resolves
+     * these templates from the plugin's classpath instead of its own.
+     */
+    fun templateOverrides(): Set<String> = emptySet()
 
     /** HTTP routes contributed to the application. */
     fun routes(context: PluginContext): List<ContractRoute> = emptyList()

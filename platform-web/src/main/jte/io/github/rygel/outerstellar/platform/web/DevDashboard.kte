@@ -45,11 +45,11 @@
 
     <section class="panel">
         <h2>${model.data.protocolLabel}</h2>
-        <p class="opacity-70 mb-4">Test the <code>outerstellar://</code> deep link integration with the desktop application.</p>
+        <p class="opacity-70 mb-4">${model.data.protocolDescription}</p>
         <div class="button-row">
             <a href="outerstellar://sync" class="button-link">${model.data.triggerSyncLabel}</a>
-            <a href="outerstellar://search?q=HTMX" class="button-link button-secondary">Search "HTMX"</a>
-            <a href="outerstellar://search?q=Dracula" class="button-link button-secondary">Search "Dracula"</a>
+            <a href="outerstellar://search?q=HTMX" class="button-link button-secondary">${model.data.searchHtmxLabel}</a>
+            <a href="outerstellar://search?q=Dracula" class="button-link button-secondary">${model.data.searchDraculaLabel}</a>
         </div>
     </section>
 
