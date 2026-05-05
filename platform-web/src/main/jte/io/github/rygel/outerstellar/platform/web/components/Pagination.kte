@@ -4,8 +4,8 @@
 @param previousUrl: String
 @param nextUrl: String
 @param currentPage: Int
-@param previousLabel: String = "Previous page"
-@param nextLabel: String = "Next page"
+@param previousLabel: String = ""
+@param nextLabel: String = ""
 @param totalCount: Long = 0L
 @param totalCountLabel: String = ""
 @param hxTarget: String = ""
@@ -13,6 +13,7 @@
 @param totalPages: Int = 0
 @param showingPageLabel: String = ""
 @param ofLabel: String = ""
+@param pageLabel: String = "Page"
 
 @if(hasPrevious || hasNext)
 <div class="pagination-nav">
@@ -20,9 +21,9 @@
         @if(showingPageLabel.isNotEmpty() && totalPages > 0)
             ${showingPageLabel} <strong>${currentPage}</strong> ${ofLabel} <strong>${totalPages}</strong>
         @elseif(totalCount > 0 && totalCountLabel.isNotEmpty())
-            Page ${currentPage} &middot; ${totalCount} ${totalCountLabel}
+            ${pageLabel} ${currentPage} &middot; ${totalCount} ${totalCountLabel}
         @else
-            Page ${currentPage}
+            ${pageLabel} ${currentPage}
         @endif
     </span>
     <div class="flex gap-2">

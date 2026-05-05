@@ -47,7 +47,7 @@
     </aside>
     <div class="main-shell">
         <header class="topbar">
-            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="${shell.toggleMenuLabel}">
                 <i class="ri-menu-line"></i>
             </button>
             <div style="display: flex; flex-direction: column;">
@@ -57,7 +57,7 @@
             <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
                 <a href="${shell.darkModeToggleUrl}"
                    class="button-icon"
-                   title="Toggle dark/light mode"
+                   title="${shell.toggleThemeLabel}"
                    style="text-decoration: none; font-size: 1.1rem;">
                     @if(shell.isDarkMode)
                         <i class="ri-sun-line"></i>
@@ -78,7 +78,7 @@
                         <span class="user-name">${shell.username}</span>
                         <div style="display:flex; gap:0.5rem; align-items:center;">
                             @if(shell.profileUrl != null)
-                                <a href="${shell.profileUrl}" class="sign-out-link" style="font-size:0.8rem;"><i class="ri-user-settings-line"></i> Profile</a>
+                                <a href="${shell.profileUrl}" class="sign-out-link" style="font-size:0.8rem;"><i class="ri-user-settings-line"></i> ${shell.profileLabel}</a>
                                 <span style="opacity:0.3;">|</span>
                             @endif
                             @if(shell.changePasswordUrl != null)

@@ -25,15 +25,15 @@
         <%-- Tab content panel --%>
         <section class="panel" id="settings-content">
             @if(model.data.activeTab == "profile")
-                <p>Visit <a href="/auth/profile">your profile page</a> to update your personal information.</p>
+                ${model.data.profileDescription}
             @elseif(model.data.activeTab == "password")
-                <p>Visit <a href="/auth/change-password">change password</a> to update your credentials.</p>
+                ${model.data.passwordDescription}
             @elseif(model.data.activeTab == "api-keys")
-                <p>Visit <a href="/auth/api-keys">API keys</a> to manage your programmatic access tokens.</p>
+                ${model.data.apiKeysDescription}
             @elseif(model.data.activeTab == "notifications")
-                <p>Visit <a href="/notifications">notifications</a> to view and manage your alerts.</p>
+                ${model.data.notificationsDescription}
             @elseif(model.data.activeTab == "appearance")
-                <p>Use the sidebar selectors to change your theme, language, and layout preferences.</p>
+                ${model.data.appearanceDescription}
             @endif
         </section>
     </div>

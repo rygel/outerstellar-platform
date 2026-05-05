@@ -5,7 +5,7 @@
 @template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
     <section class="panel hero-grid">
         <div>
-            <p class="status-badge">Error ${model.data.statusCode}</p>
+            <p class="status-badge">${model.data.errorLabel} ${model.data.statusCode}</p>
             <h1>${model.data.heading}</h1>
             <p>${model.data.message}</p>
         </div>
