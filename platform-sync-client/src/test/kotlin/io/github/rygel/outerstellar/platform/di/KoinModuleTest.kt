@@ -16,13 +16,13 @@ class KoinModuleTest : KoinTest {
     fun `sync-client modules should be valid`() {
         apiClientModule.verify(
             extraTypes =
-                listOf(
-                    String::class,
-                    MessageRepository::class,
-                    OutboxRepository::class,
-                    MessageCache::class,
-                    TransactionManager::class,
-                )
+            listOf(
+                String::class,
+                MessageRepository::class,
+                OutboxRepository::class,
+                MessageCache::class,
+                TransactionManager::class,
+            )
         )
     }
 }
