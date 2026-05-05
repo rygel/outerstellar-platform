@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import java.io.File
 import java.io.FileInputStream
 import java.util.Properties
@@ -44,5 +45,14 @@ class DefaultTextResolver(private val texts: Map<String, String>) : TextResolver
             val map = props.stringPropertyNames().associateWith { props.getProperty(it) }
             return DefaultTextResolver(map)
         }
+    }
+}
+
+class I18nTextResolver(private val i18n: I18nService) : TextResolver {
+
+    override fun resolve(key: String, vararg args: Any?): String {
+        if (!i18n.hasKey(key)) return key
+        val template = i18n.translate(key)
+        return if (args.isEmpty()) template else String.format(template, *args)
     }
 }

@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.TextResolver
 import org.http4k.template.ViewModel
 
 data class ShellLink(val label: String, val url: String, val icon: String, val active: Boolean)
@@ -40,7 +41,10 @@ data class ShellView(
     val csrfToken: String = "",
     val notificationsUrl: String? = null,
     val unreadNotificationCount: Int = 0,
-)
+    val textResolver: TextResolver? = null,
+) {
+    fun text(key: String, vararg args: Any?): String = textResolver?.resolve(key, *args) ?: key
+}
 
 data class HomeFeature(val label: String, val value: String)
 

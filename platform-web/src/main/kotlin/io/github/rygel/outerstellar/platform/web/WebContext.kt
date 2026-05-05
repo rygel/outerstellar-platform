@@ -1,6 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.I18nTextResolver
+import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
@@ -19,7 +21,7 @@ class WebContext(
     private val userRepository: UserRepository? = null,
     private val appVersion: String = "dev",
     private val jwtService: JwtService? = null,
-    private val pluginNavItems: List<PluginNavItem> = emptyList(),
+    private val pluginOptions: PluginOptions = PluginOptions(),
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
@@ -90,6 +92,8 @@ class WebContext(
 
     val i18n: I18nService by lazy { cachedI18n(lang) }
 
+    val textResolver: TextResolver by lazy { pluginOptions.textResolver ?: I18nTextResolver(i18n) }
+
     val csrfToken: String by lazy { request.cookie(CSRF_COOKIE)?.value ?: java.util.UUID.randomUUID().toString() }
 
     fun url(path: String): String = path
@@ -99,9 +103,9 @@ class WebContext(
 
     private fun buildNavLinks(activeSection: String): List<ShellLink> {
         val links: MutableList<ShellLink> =
-            if (pluginNavItems.isNotEmpty()) {
+            if (pluginOptions.navItems.isNotEmpty()) {
                 // Plugin replaces the default nav; admin links are still appended below.
-                pluginNavItems
+                pluginOptions.navItems
                     .map { item ->
                         ShellLink(item.label, url(item.url), item.icon, activeSection == item.activeSection)
                     }
@@ -265,6 +269,7 @@ class WebContext(
             signOutLabel = i18n.translate("web.layout.sign.out"),
             csrfToken = csrfToken,
             notificationsUrl = if (user != null) url("/notifications") else null,
+            textResolver = textResolver,
         )
     }
 }

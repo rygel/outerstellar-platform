@@ -1,7 +1,10 @@
 package io.github.rygel.outerstellar.platform
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import java.io.File
+import java.util.Locale
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
 
 class TextResolverTest {
@@ -39,5 +42,40 @@ class TextResolverTest {
         assertEquals("Inbox", resolver.resolve("nav.inbox"))
         assertEquals("Contacts", resolver.resolve("nav.contacts"))
         file.delete()
+    }
+
+    @Test
+    fun `I18nTextResolver delegates to I18nService`() {
+        val i18n = I18nService.create("messages")
+        i18n.setLocale(Locale.ENGLISH)
+        val resolver = I18nTextResolver(i18n)
+        val resolved = resolver.resolve("web.nav.home")
+        assertEquals("Home", resolved)
+    }
+
+    @Test
+    fun `I18nTextResolver returns key for missing entries`() {
+        val i18n = I18nService.create("messages")
+        i18n.setLocale(Locale.ENGLISH)
+        val resolver = I18nTextResolver(i18n)
+        assertEquals("nonexistent.key", resolver.resolve("nonexistent.key"))
+    }
+
+    @Test
+    fun `I18nTextResolver formats args`() {
+        val i18n = I18nService.create("messages")
+        i18n.setLocale(Locale.ENGLISH)
+        val resolver = I18nTextResolver(i18n)
+        val result = resolver.resolve("web.footer.version", "1.0")
+        assertTrue(result.contains("1.0"), "Expected formatted version in: $result")
+    }
+
+    @Test
+    fun `I18nTextResolver filters null args`() {
+        val i18n = I18nService.create("messages")
+        i18n.setLocale(Locale.ENGLISH)
+        val resolver = I18nTextResolver(i18n)
+        val result = resolver.resolve("web.nav.home", null)
+        assertEquals("Home", result)
     }
 }

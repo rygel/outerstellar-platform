@@ -231,11 +231,11 @@ object Filters {
         userRepository: UserRepository,
         appVersion: String = "dev",
         jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
-        pluginNavItems: List<PluginNavItem> = emptyList(),
+        pluginOptions: PluginOptions = PluginOptions(),
     ): Filter = Filter { next: HttpHandler ->
         { request ->
             val context =
-                WebContext(request, devDashboardEnabled, userRepository, appVersion, jwtService, pluginNavItems)
+                WebContext(request, devDashboardEnabled, userRepository, appVersion, jwtService, pluginOptions)
             val contextUser =
                 try {
                     context.user
