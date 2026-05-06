@@ -283,6 +283,12 @@
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-jar-with-dependencies.jar</outputFile>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes><exclude>META-INF/native-image/org.jline/**</exclude></excludes>
+                                </filter>
+                            </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>io.github.rygel.outerstellar.platform.MainKt</mainClass>
@@ -334,7 +340,7 @@
                                 <buildArg>--enable-http</buildArg>
                                 <buildArg>--enable-https</buildArg>
                                 <buildArg>-DJTE_PRODUCTION=true</buildArg>
-                                <buildArg>--initialize-at-build-time=org.slf4j.LoggerFactory,ch.qos.logback</buildArg>
+                                <buildArg>--initialize-at-build-time=org.slf4j,ch.qos.logback</buildArg>
                                 <buildArg>--initialize-at-run-time=io.netty.channel.DefaultFileRegion</buildArg>
                             </buildArgs>
                         </configuration>
