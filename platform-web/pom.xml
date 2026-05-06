@@ -153,7 +153,7 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
+            <artifactId>opentelemetry-sdk-trace</artifactId>
             <version>${opentelemetry.version}</version>
         </dependency>
         <dependency>
@@ -333,7 +333,9 @@
                                 <buildArg>--no-fallback</buildArg>
                                 <buildArg>--enable-http</buildArg>
                                 <buildArg>--enable-https</buildArg>
+                                <buildArg>-DJTE_PRODUCTION=true</buildArg>
                                 <buildArg>--initialize-at-build-time=org.slf4j.LoggerFactory,ch.qos.logback</buildArg>
+                                <buildArg>--initialize-at-run-time=io.netty.channel.DefaultFileRegion</buildArg>
                             </buildArgs>
                         </configuration>
                     </plugin>

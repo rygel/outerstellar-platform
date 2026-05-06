@@ -5,8 +5,6 @@ import io.github.rygel.outerstellar.platform.model.SyncException
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.mockk.mockk
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import org.http4k.core.Body
 import org.http4k.core.Method
 import org.http4k.core.Request
@@ -16,6 +14,8 @@ import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class SyncServiceTest {
 

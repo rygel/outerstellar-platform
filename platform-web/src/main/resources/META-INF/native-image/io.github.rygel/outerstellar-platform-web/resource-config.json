@@ -1,16 +1,96 @@
 {
   "resources": {
     "includes": [
-      { "pattern": "themes.json" },
-      { "pattern": "messages.*\\.properties" },
-      { "pattern": "application.*\\.yaml" },
-      { "pattern": "static/.*" },
-      { "pattern": "gg/jte/generated/.*" },
-      { "pattern": "db/migration/.*" },
-      { "pattern": "logback.*\\.xml" },
-      { "pattern": "META-INF/services/.*" },
-      { "pattern": "org/jooq.*" },
-      { "pattern": "jte-classes/.*" }
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      },
+      {
+        "pattern": null
+      }
     ]
   }
 }
