@@ -1,6 +1,5 @@
 package io.github.rygel.outerstellar.platform.service
 
-import com.fasterxml.jackson.core.JsonProcessingException
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.MessageNotFoundException
@@ -21,9 +20,9 @@ import io.github.rygel.outerstellar.platform.sync.SyncMessage
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
 import io.github.rygel.outerstellar.platform.sync.SyncPushResponse
-import io.konform.validation.Invalid
 import java.util.UUID
-import org.http4k.format.Jackson
+import kotlinx.serialization.SerializationException
+import org.http4k.format.KotlinxSerialization
 import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
@@ -159,10 +158,7 @@ class MessageService(
     }
 
     fun processPushRequest(request: SyncPushRequest): SyncPushResponse {
-        val validationResult = SyncPushRequest.validate(request)
-        if (validationResult is Invalid) {
-            throw ValidationException(validationResult.errors.map { "${it.dataPath}: ${it.message}" })
-        }
+        SyncPushRequest.validate(request)
 
         val conflicts = mutableListOf<SyncConflict>()
         var appliedCount = 0
@@ -285,8 +281,8 @@ class MessageService(
 
         val serverVersion =
             try {
-                Jackson.asA(currentConflict, SyncMessage::class)
-            } catch (e: JsonProcessingException) {
+                KotlinxSerialization.asA(currentConflict, SyncMessage::class)
+            } catch (e: SerializationException) {
                 throw IllegalStateException("Cannot parse conflict data for message $syncId: ${e.message}", e)
             }
 

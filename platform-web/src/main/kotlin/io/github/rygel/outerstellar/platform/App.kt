@@ -54,7 +54,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
 import org.http4k.core.with
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.http4k.routing.ResourceLoader
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
@@ -235,13 +235,13 @@ private fun buildApiRoutes(
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
 ): List<org.http4k.routing.RoutingHttpHandler> {
     val apiRoutes = contract {
-        renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), Jackson)
+        renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
         routes += AuthApi(securityService).routes
     }
 
     val syncContract = contract {
-        renderer = OpenApi3(ApiInfo("Sync", "v1.0"), Jackson)
+        renderer = OpenApi3(ApiInfo("Sync", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/v1/sync/openapi.json"
         security = bearerSecurity
         if (messageService != null || contactService != null) {
@@ -257,7 +257,7 @@ private fun buildApiRoutes(
     }
 
     val bearerAdminApiContract = contract {
-        renderer = OpenApi3(ApiInfo("$appLabel Admin API", "v1.0"), Jackson)
+        renderer = OpenApi3(ApiInfo("$appLabel Admin API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/v1/admin/api-openapi.json"
         security = bearerAdminSecurity
         routes += UserAdminApi(securityService).routes
@@ -281,7 +281,7 @@ private fun buildUiRoutes(
     userRepository: UserRepository,
     plugin: PlatformPlugin?,
 ): org.http4k.routing.RoutingHttpHandler = contract {
-    renderer = OpenApi3(ApiInfo("$appLabel UI", "v1.0"), Jackson)
+    renderer = OpenApi3(ApiInfo("$appLabel UI", "v1.0"), KotlinxSerialization)
     descriptionPath = "/ui/openapi.json"
     if (messageService != null && "/" !in excludedRoutes) {
         routes += HomeRoutes(messageService, pageFactory, jteRenderer).routes
@@ -332,7 +332,7 @@ private fun buildComponentRoutes(
     pageFactory: WebPageFactory,
     jteRenderer: TemplateRenderer,
 ): RoutingHttpHandler = contract {
-    renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), Jackson)
+    renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), KotlinxSerialization)
     descriptionPath = "/components/openapi.json"
     routes += ComponentRoutes(pageFactory, jteRenderer).routes
 }
@@ -347,7 +347,7 @@ private fun buildAdminRoutes(
     config: AppConfig,
     securityService: SecurityService,
 ): org.http4k.routing.RoutingHttpHandler = contract {
-    renderer = OpenApi3(ApiInfo("$appLabel Admin", "v1.0"), Jackson)
+    renderer = OpenApi3(ApiInfo("$appLabel Admin", "v1.0"), KotlinxSerialization)
     descriptionPath = "/admin/openapi.json"
     security =
         object : org.http4k.security.Security {
@@ -403,7 +403,7 @@ private fun buildHealthResponse(userRepository: UserRepository): Response {
     val status = if (checks["status"] == "UP") Status.OK else Status.SERVICE_UNAVAILABLE
     return Response(status)
         .header("content-type", "application/json; charset=utf-8")
-        .body(Jackson.asJsonObject(checks).toString())
+        .body(KotlinxSerialization.asJsonObject(checks).toString())
 }
 
 @Suppress("LongParameterList")

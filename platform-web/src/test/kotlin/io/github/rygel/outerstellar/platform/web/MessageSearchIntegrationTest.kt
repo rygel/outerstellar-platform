@@ -15,7 +15,7 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -86,7 +86,7 @@ class MessageSearchIntegrationTest : WebTest() {
     private fun pullMessages(since: Long = 0L): SyncPullResponse {
         val response = app(Request(GET, "/api/v1/sync?since=$since").header("Authorization", bearer()))
         assertEquals(Status.OK, response.status)
-        return Jackson.asA(response.bodyString(), SyncPullResponse::class)
+        return KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
     }
 
     @Test
@@ -160,7 +160,7 @@ class MessageSearchIntegrationTest : WebTest() {
         val pushResponse = pushMessage(syncId, "Count test", timestamp = 1000L)
 
         assertEquals(Status.OK, pushResponse.status)
-        val body = Jackson.asA(pushResponse.bodyString(), SyncPushResponse::class)
+        val body = KotlinxSerialization.asA(pushResponse.bodyString(), SyncPushResponse::class)
         assertEquals(1, body.appliedCount, "One message should be applied")
     }
 

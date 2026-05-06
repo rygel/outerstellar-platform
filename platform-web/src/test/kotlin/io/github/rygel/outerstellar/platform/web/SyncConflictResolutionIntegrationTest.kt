@@ -12,7 +12,7 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -77,7 +77,7 @@ class SyncConflictResolutionIntegrationTest : WebTest() {
                     )
             )
         assertEquals(Status.OK, response.status)
-        return Jackson.asA(response.bodyString(), SyncPushResponse::class)
+        return KotlinxSerialization.asA(response.bodyString(), SyncPushResponse::class)
     }
 
     @Test
@@ -162,7 +162,7 @@ class SyncConflictResolutionIntegrationTest : WebTest() {
                     )
             )
 
-        val body = Jackson.asA(response.bodyString(), SyncPushResponse::class)
+        val body = KotlinxSerialization.asA(response.bodyString(), SyncPushResponse::class)
         assertEquals(1, body.appliedCount, "One new message should be applied")
         assertEquals(1, body.conflicts.size, "One conflict expected")
         assertEquals(conflictSyncId, body.conflicts[0].syncId)
@@ -194,7 +194,7 @@ class SyncConflictResolutionIntegrationTest : WebTest() {
                     )
             )
 
-        val body = Jackson.asA(response.bodyString(), SyncPushResponse::class)
+        val body = KotlinxSerialization.asA(response.bodyString(), SyncPushResponse::class)
         assertEquals(0, body.appliedCount)
         assertEquals(2, body.conflicts.size, "Both conflicts should be reported")
     }

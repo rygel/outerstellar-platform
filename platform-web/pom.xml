@@ -56,7 +56,7 @@
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
-            <artifactId>http4k-format-jackson</artifactId>
+            <artifactId>http4k-format-kotlinx-serialization</artifactId>
         </dependency>
         <dependency>
             <groupId>gg.jte</groupId>
@@ -120,10 +120,6 @@
             <groupId>io.mockk</groupId>
             <artifactId>mockk-jvm</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-kotlin</artifactId>
         </dependency>
         <dependency>
             <groupId>io.insert-koin</groupId>

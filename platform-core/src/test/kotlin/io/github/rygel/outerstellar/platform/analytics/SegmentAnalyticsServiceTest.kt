@@ -4,6 +4,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.JsonObject
 
 class SegmentAnalyticsServiceTest {
 
@@ -11,21 +12,21 @@ class SegmentAnalyticsServiceTest {
     fun `identify calls send with identify endpoint`() {
         val service = spyk(SegmentAnalyticsService("test-key"), recordPrivateCalls = true)
         service.identify("user1", mapOf("name" to "Alice"))
-        verify { service["send"]("identify", ofType<Map<String, Any>>()) }
+        verify { service["send"]("identify", ofType<JsonObject>()) }
     }
 
     @Test
     fun `track calls send with track endpoint`() {
         val service = spyk(SegmentAnalyticsService("test-key"), recordPrivateCalls = true)
         service.track("user1", "event", mapOf("key" to "value"))
-        verify { service["send"]("track", ofType<Map<String, Any>>()) }
+        verify { service["send"]("track", ofType<JsonObject>()) }
     }
 
     @Test
     fun `page calls send with page endpoint`() {
         val service = spyk(SegmentAnalyticsService("test-key"), recordPrivateCalls = true)
         service.page("user1", "/home")
-        verify { service["send"]("page", ofType<Map<String, Any>>()) }
+        verify { service["send"]("page", ofType<JsonObject>()) }
     }
 
     @Test

@@ -357,7 +357,7 @@ open class WebPageFactory(
         val message =
             checkNotNull(repository) { "MessageRepository is required for conflict resolution" }.findBySyncId(syncId)
                 ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(syncId)
-        val serverVersion = org.http4k.format.Jackson.asA(message.syncConflict!!, SyncMessage::class)
+        val serverVersion = org.http4k.format.KotlinxSerialization.asA(message.syncConflict!!, SyncMessage::class)
 
         val i18n = ctx.i18n
         return ConflictResolveViewModel(

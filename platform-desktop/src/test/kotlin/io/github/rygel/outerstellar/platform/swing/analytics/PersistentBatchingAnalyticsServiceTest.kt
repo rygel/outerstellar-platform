@@ -1,7 +1,5 @@
 package io.github.rygel.outerstellar.platform.swing.analytics
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -15,6 +13,11 @@ import java.time.temporal.ChronoUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -22,7 +25,10 @@ import org.junit.jupiter.api.io.TempDir
 class PersistentBatchingAnalyticsServiceTest {
     @TempDir lateinit var tempDir: Path
 
-    private val mapper = jacksonObjectMapper()
+    private val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+    }
     private lateinit var httpClient: HttpClient
     private lateinit var httpResponse: HttpResponse<Void>
 
@@ -44,8 +50,10 @@ class PersistentBatchingAnalyticsServiceTest {
     private val analyticsFile
         get() = tempDir.resolve("analytics.ndjson")
 
-    private fun readEvents(): List<Map<String, Any>> =
-        Files.readAllLines(analyticsFile).filter { it.isNotBlank() }.map { mapper.readValue(it) }
+    private fun readEvents(): List<JsonObject> =
+        Files.readAllLines(analyticsFile)
+            .filter { it.isNotBlank() }
+            .map { json.decodeFromString(JsonElement.serializer(), it).jsonObject }
 
     private fun respondWith(statusCode: Int) {
         every { httpResponse.statusCode() } returns statusCode
@@ -56,8 +64,6 @@ class PersistentBatchingAnalyticsServiceTest {
         every { httpClient.send(any(), any<HttpResponse.BodyHandler<Void>>()) } throws IOException("Connection refused")
     }
 
-    // ── append ───────────────────────────────────────────────────────────────
-
     @Test
     fun `track appends event to file`() {
         service().track("alice", "Button Clicked", mapOf("button" to "sync"))
@@ -65,9 +71,9 @@ class PersistentBatchingAnalyticsServiceTest {
         assertTrue(Files.exists(analyticsFile))
         val events = readEvents()
         assertEquals(1, events.size)
-        assertEquals("track", events[0]["type"])
-        assertEquals("alice", events[0]["userId"])
-        assertEquals("Button Clicked", events[0]["event"])
+        assertEquals("track", events[0]["type"]!!.jsonPrimitive.content)
+        assertEquals("alice", events[0]["userId"]!!.jsonPrimitive.content)
+        assertEquals("Button Clicked", events[0]["event"]!!.jsonPrimitive.content)
     }
 
     @Test
@@ -76,8 +82,8 @@ class PersistentBatchingAnalyticsServiceTest {
 
         val events = readEvents()
         assertEquals(1, events.size)
-        assertEquals("identify", events[0]["type"])
-        assertEquals("alice", events[0]["userId"])
+        assertEquals("identify", events[0]["type"]!!.jsonPrimitive.content)
+        assertEquals("alice", events[0]["userId"]!!.jsonPrimitive.content)
     }
 
     @Test
@@ -86,8 +92,8 @@ class PersistentBatchingAnalyticsServiceTest {
 
         val events = readEvents()
         assertEquals(1, events.size)
-        assertEquals("page", events[0]["type"])
-        assertEquals("/messages", events[0]["name"])
+        assertEquals("page", events[0]["type"]!!.jsonPrimitive.content)
+        assertEquals("/messages", events[0]["name"]!!.jsonPrimitive.content)
     }
 
     @Test
@@ -106,11 +112,9 @@ class PersistentBatchingAnalyticsServiceTest {
         svc.track("alice", "Event One")
         svc.track("alice", "Event Two")
 
-        val ids = readEvents().map { it["messageId"] }
+        val ids = readEvents().map { it["messageId"]!!.jsonPrimitive.content }
         assertEquals(2, ids.distinct().size)
     }
-
-    // ── flush — success ───────────────────────────────────────────────────────
 
     @Test
     fun `flush sends all events as a single batch and deletes file on success`() {
@@ -152,8 +156,6 @@ class PersistentBatchingAnalyticsServiceTest {
         verify(exactly = 0) { httpClient.send(any(), any<HttpResponse.BodyHandler<Void>>()) }
     }
 
-    // ── flush — failure: retain events ───────────────────────────────────────
-
     @Test
     fun `flush retains events when Segment returns non-2xx`() {
         val svc = service()
@@ -178,14 +180,11 @@ class PersistentBatchingAnalyticsServiceTest {
         assertEquals(1, readEvents().size)
     }
 
-    // ── flush — failure: prune old events ────────────────────────────────────
-
     @Test
     fun `flush prunes events older than maxEventAgeDays after failed flush`() {
         val svc = service(maxEventAgeDays = 7)
         respondWithException()
 
-        // Write one fresh event and one stale event directly
         val fresh =
             """{"type":"track","userId":"alice","event":"Recent","timestamp":"${Instant.now()}","messageId":"1"}"""
         val stale =
@@ -197,7 +196,7 @@ class PersistentBatchingAnalyticsServiceTest {
         assertTrue(Files.exists(analyticsFile))
         val kept = readEvents()
         assertEquals(1, kept.size)
-        assertEquals("Recent", kept[0]["event"])
+        assertEquals("Recent", kept[0]["event"]!!.jsonPrimitive.content)
     }
 
     @Test
@@ -222,7 +221,6 @@ class PersistentBatchingAnalyticsServiceTest {
 
         service().flush()
 
-        // File deleted after successful flush — malformed lines were silently dropped
         assertFalse(Files.exists(analyticsFile))
         verify(exactly = 1) { httpClient.send(any(), any<HttpResponse.BodyHandler<Void>>()) }
     }
@@ -237,21 +235,15 @@ class PersistentBatchingAnalyticsServiceTest {
         verify(exactly = 0) { httpClient.send(any(), any<HttpResponse.BodyHandler<Void>>()) }
     }
 
-    // ── file size guardrail ───────────────────────────────────────────────────
-
     @Test
     fun `append trims oldest half of events when file exceeds maxFileSizeBytes`() {
-        // Use a tiny limit so we can trigger it with a few events
         val svc = service(maxFileSizeBytes = 200)
 
-        // Fill the file past the limit
         repeat(10) { i -> svc.track("alice", "Event $i") }
 
         val events = readEvents()
-        // Fewer than 10 events should remain — oldest were dropped
         assertTrue(events.size < 10, "Expected some events to be trimmed, got ${events.size}")
-        // The last event written must still be present
-        assertTrue(events.any { it["event"] == "Event 9" }, "Newest event should be retained")
+        assertTrue(events.any { it["event"]!!.jsonPrimitive.content == "Event 9" }, "Newest event should be retained")
     }
 
     @Test
@@ -261,8 +253,7 @@ class PersistentBatchingAnalyticsServiceTest {
         repeat(10) { i -> svc.track("alice", "Event $i") }
 
         val events = readEvents()
-        val eventNames = events.map { it["event"] as String }
-        // The very first events should have been dropped
+        val eventNames = events.map { it["event"]!!.jsonPrimitive.content }
         assertFalse(eventNames.contains("Event 0"), "Oldest event should have been trimmed")
     }
 }

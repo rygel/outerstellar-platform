@@ -33,10 +33,6 @@
             <artifactId>jdbi3-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jdbi</groupId>
-            <artifactId>jdbi3-kotlin</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
@@ -54,7 +50,7 @@
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
-            <artifactId>http4k-format-jackson</artifactId>
+            <artifactId>http4k-format-kotlinx-serialization</artifactId>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>

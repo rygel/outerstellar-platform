@@ -13,17 +13,17 @@ import io.github.rygel.outerstellar.platform.security.securityModule
 import java.util.UUID
 import javax.sql.DataSource
 import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
+import org.koin.core.component.get
 import org.koin.core.context.startKoin
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.seed.SeedData")
 
 object SeedComponent : KoinComponent {
-    val dataSource: DataSource by inject()
-    val messageRepository: MessageRepository by inject()
-    val contactRepository: ContactRepository by inject()
-    val userRepository: UserRepository by inject()
+    val dataSource: DataSource = get()
+    val messageRepository: MessageRepository = get()
+    val contactRepository: ContactRepository = get()
+    val userRepository: UserRepository = get()
 }
 
 fun main() {

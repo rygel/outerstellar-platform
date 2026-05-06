@@ -28,12 +28,12 @@
             <artifactId>outerstellar-i18n</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.sksamuel.hoplite</groupId>
-            <artifactId>hoplite-core</artifactId>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-serialization-json-jvm</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.sksamuel.hoplite</groupId>
-            <artifactId>hoplite-yaml</artifactId>
+            <groupId>org.snakeyaml</groupId>
+            <artifactId>snakeyaml-engine</artifactId>
         </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
@@ -51,21 +51,13 @@
             <groupId>io.insert-koin</groupId>
             <artifactId>koin-core-jvm</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.konform</groupId>
-            <artifactId>konform-jvm</artifactId>
-        </dependency>
-        <dependency>
+<dependency>
             <groupId>org.http4k</groupId>
             <artifactId>http4k-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
-            <artifactId>http4k-format-jackson</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-kotlin</artifactId>
+            <artifactId>http4k-format-kotlinx-serialization</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -76,8 +68,12 @@
             <artifactId>logback-classic</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.simplejavamail</groupId>
-            <artifactId>simple-java-mail</artifactId>
+            <groupId>jakarta.mail</groupId>
+            <artifactId>jakarta.mail-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-mail</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>

@@ -93,9 +93,9 @@ jobs:
             -e ADMIN_PASSWORD="${E2E_ADMIN_PASSWORD}" \
             -e DEVMODE=true \
             -e SESSIONCOOKIESECURE=false \
-            -e "JDBCURL=jdbc:postgresql://host.docker.internal:5432/outerstellar" \
-            -e JDBCUSER=outerstellar \
-            -e JDBCPASSWORD=outerstellar \
+            -e "JDBC_URL=jdbc:postgresql://host.docker.internal:5432/outerstellar" \
+            -e JDBC_USER=outerstellar \
+            -e JDBC_PASSWORD=outerstellar \
             outerstellar-platform:e2e
 
       - name: Wait for application to be ready

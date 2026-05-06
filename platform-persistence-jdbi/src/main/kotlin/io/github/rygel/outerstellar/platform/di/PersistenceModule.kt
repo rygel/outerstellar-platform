@@ -30,7 +30,6 @@ import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.micrometer.core.instrument.Metrics
 import javax.sql.DataSource
 import org.jdbi.v3.core.Jdbi
-import org.jdbi.v3.core.kotlin.KotlinPlugin
 import org.koin.dsl.module
 
 /**
@@ -55,14 +54,13 @@ val persistenceModule
                 throw e
             }
             if (config.devMode) {
-                JdbiUserRepository(Jdbi.create(ds).installPlugin(KotlinPlugin()))
-                    .seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
+                JdbiUserRepository(Jdbi.create(ds)).seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
             }
             ds
         }
 
         single<Jdbi> {
-            Jdbi.create(get<DataSource>()).installPlugin(KotlinPlugin()).also {
+            Jdbi.create(get<DataSource>()).also {
                 if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
                     Metrics.globalRegistry.gauge("database.connections.active", 1)
                 }

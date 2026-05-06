@@ -15,7 +15,7 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -123,7 +123,7 @@ class ContactDetailsSyncIntegrationTest : WebTest() {
     private fun pullContacts(): SyncPullContactResponse {
         val response = app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
         assertEquals(Status.OK, response.status)
-        return Jackson.asA(response.bodyString(), SyncPullContactResponse::class)
+        return KotlinxSerialization.asA(response.bodyString(), SyncPullContactResponse::class)
     }
 
     @Test
@@ -133,7 +133,7 @@ class ContactDetailsSyncIntegrationTest : WebTest() {
 
         val pushResponse = pushContact(PushContactParams(syncId, "Alice", emails = emails))
         assertEquals(Status.OK, pushResponse.status)
-        val pushBody = Jackson.asA(pushResponse.bodyString(), SyncPushContactResponse::class)
+        val pushBody = KotlinxSerialization.asA(pushResponse.bodyString(), SyncPushContactResponse::class)
         assertEquals(1, pushBody.appliedCount)
 
         val pulled = pullContacts()

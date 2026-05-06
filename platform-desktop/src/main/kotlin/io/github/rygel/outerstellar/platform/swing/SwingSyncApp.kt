@@ -66,7 +66,7 @@ import javax.swing.event.DocumentListener
 import javax.swing.table.DefaultTableModel
 import net.miginfocom.swing.MigLayout
 import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
+import org.koin.core.component.get
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
 import org.koin.core.qualifier.named
@@ -79,10 +79,10 @@ private const val DIALOG_WIDTH = 600
 private const val DIALOG_HEIGHT = 400
 
 object DesktopComponent : KoinComponent {
-    val config: SwingAppConfig by inject()
-    val messageService: MessageService by inject()
-    val contactService: io.github.rygel.outerstellar.platform.service.ContactService by inject()
-    val syncService: SyncService by inject()
+    val config: SwingAppConfig = get()
+    val messageService: MessageService = get()
+    val contactService: io.github.rygel.outerstellar.platform.service.ContactService = get()
+    val syncService: SyncService = get()
 }
 
 fun main() {

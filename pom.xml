@@ -79,7 +79,8 @@
         <bytebuddy.version>1.18.8</bytebuddy.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <koin.version>4.2.1</koin.version>
-        <hoplite.version>2.9.0</hoplite.version>
+        <kotlinx.serialization.version>1.8.1</kotlinx.serialization.version>
+        <snakeyaml.engine.version>2.9</snakeyaml.engine.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
         <archunit.version>1.4.2</archunit.version>
@@ -94,8 +95,8 @@
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.2</java-jwt.version>
         <hikaricp.version>7.0.2</hikaricp.version>
-        <simplejavamail.version>8.12.6</simplejavamail.version>
-        <konform.version>0.11.1</konform.version>
+        <angus.mail.version>2.0.4</angus.mail.version>
+        <jakarta.mail.api.version>2.1.3</jakarta.mail.api.version>
         <playwright.version>1.59.0</playwright.version>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.resources.plugin.version>3.5.0</maven.resources.plugin.version>
@@ -216,9 +217,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-kotlin</artifactId>
-                <version>${jackson.version}</version>
+                <groupId>org.http4k</groupId>
+                <artifactId>http4k-format-kotlinx-serialization</artifactId>
+                <version>${http4k.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.http4k</groupId>
@@ -238,11 +239,6 @@
             <dependency>
                 <groupId>org.http4k</groupId>
                 <artifactId>http4k-template-jte</artifactId>
-                <version>${http4k.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.http4k</groupId>
-                <artifactId>http4k-format-jackson</artifactId>
                 <version>${http4k.version}</version>
             </dependency>
             <dependency>
@@ -306,11 +302,6 @@
                 <version>${jdbi.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jdbi</groupId>
-                <artifactId>jdbi3-kotlin</artifactId>
-                <version>${jdbi.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgresql.version}</version>
@@ -331,14 +322,14 @@
                 <version>${flatlaf.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sksamuel.hoplite</groupId>
-                <artifactId>hoplite-core</artifactId>
-                <version>${hoplite.version}</version>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-serialization-json-jvm</artifactId>
+                <version>${kotlinx.serialization.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sksamuel.hoplite</groupId>
-                <artifactId>hoplite-yaml</artifactId>
-                <version>${hoplite.version}</version>
+                <groupId>org.snakeyaml</groupId>
+                <artifactId>snakeyaml-engine</artifactId>
+                <version>${snakeyaml.engine.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -356,6 +347,12 @@
                 <groupId>io.insert-koin</groupId>
                 <artifactId>koin-core-jvm</artifactId>
                 <version>${koin.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-reflect</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.insert-koin</groupId>
@@ -469,20 +466,15 @@
                 <version>${hikaricp.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.simplejavamail</groupId>
-                <artifactId>simple-java-mail</artifactId>
-                <version>${simplejavamail.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.github.bbottema</groupId>
-                        <artifactId>jetbrains-runtime-annotations</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>jakarta.mail</groupId>
+                <artifactId>jakarta.mail-api</artifactId>
+                <version>${jakarta.mail.api.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.konform</groupId>
-                <artifactId>konform-jvm</artifactId>
-                <version>${konform.version}</version>
+                <groupId>org.eclipse.angus</groupId>
+                <artifactId>angus-mail</artifactId>
+                <version>${angus.mail.version}</version>
+                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>com.microsoft.playwright</groupId>
@@ -513,7 +505,17 @@
                         <jvmTarget>${java.version}</jvmTarget>
                         <useDaemon>false</useDaemon>
                         <executionStrategy>in-process</executionStrategy>
+                        <compilerPlugins>
+                            <plugin>kotlinx-serialization</plugin>
+                        </compilerPlugins>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.jetbrains.kotlin</groupId>
+                            <artifactId>kotlin-maven-serialization</artifactId>
+                            <version>${kotlin.version}</version>
+                        </dependency>
+                    </dependencies>
                     <executions>
                         <execution>
                             <id>compile</id>

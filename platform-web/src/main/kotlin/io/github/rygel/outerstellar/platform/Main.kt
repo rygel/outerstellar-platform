@@ -17,7 +17,7 @@ import org.http4k.server.Http4kServer
 import org.http4k.server.Jetty
 import org.http4k.server.asServer
 import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
+import org.koin.core.component.get
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
@@ -28,14 +28,14 @@ private const val SHUTDOWN_TIMEOUT_SECONDS = 5L
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.Main")
 
 object MainComponent : KoinComponent {
-    val config: AppConfig by inject()
-    val repository: MessageRepository by inject()
-    val contactRepository: io.github.rygel.outerstellar.platform.persistence.ContactRepository by inject()
-    val userRepository: UserRepository by inject()
-    val passwordEncoder: PasswordEncoder by inject()
-    val outboxProcessor: OutboxProcessor by inject()
-    val activityUpdater: AsyncActivityUpdater by inject()
-    val app: PolyHandler by inject(named("webServer"))
+    val config: AppConfig = get()
+    val repository: MessageRepository = get()
+    val contactRepository: io.github.rygel.outerstellar.platform.persistence.ContactRepository = get()
+    val userRepository: UserRepository = get()
+    val passwordEncoder: PasswordEncoder = get()
+    val outboxProcessor: OutboxProcessor = get()
+    val activityUpdater: AsyncActivityUpdater = get()
+    val app: PolyHandler = get(named("webServer"))
 }
 
 fun main() {

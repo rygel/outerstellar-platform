@@ -62,12 +62,12 @@
             <artifactId>koin-core-jvm</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.sksamuel.hoplite</groupId>
-            <artifactId>hoplite-core</artifactId>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-serialization-json-jvm</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.sksamuel.hoplite</groupId>
-            <artifactId>hoplite-yaml</artifactId>
+            <groupId>org.snakeyaml</groupId>
+            <artifactId>snakeyaml-engine</artifactId>
         </dependency>
         <dependency>
             <groupId>io.insert-koin</groupId>
