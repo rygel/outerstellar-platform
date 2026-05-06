@@ -5,6 +5,7 @@ import io.mockk.verify
 import kotlinx.serialization.json.JsonObject
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.JsonObject
 
 class SegmentAnalyticsServiceTest {
 
