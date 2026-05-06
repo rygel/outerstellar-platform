@@ -14,7 +14,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
-import org.http4k.server.Jetty
+import org.http4k.server.Netty
 import org.http4k.server.asServer
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
@@ -64,7 +64,7 @@ fun main() {
         OUTBOX_INTERVAL_SECONDS,
         TimeUnit.SECONDS,
     )
-    val server = main.app.asServer(Jetty(main.config.port)).start()
+    val server = main.app.asServer(Netty(main.config.port)).start()
     logger.info("Outerstellar platform running on http://localhost:{}", server.port())
 
     registerShutdownHook(main, outboxScheduler, server)

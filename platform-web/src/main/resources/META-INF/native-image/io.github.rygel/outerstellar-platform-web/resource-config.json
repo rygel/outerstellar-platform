@@ -5,7 +5,12 @@
       { "pattern": "messages.*\\.properties" },
       { "pattern": "application.*\\.yaml" },
       { "pattern": "static/.*" },
-      { "pattern": "gg/jte/generated/.*" }
+      { "pattern": "gg/jte/generated/.*" },
+      { "pattern": "db/migration/.*" },
+      { "pattern": "logback.*\\.xml" },
+      { "pattern": "META-INF/services/.*" },
+      { "pattern": "org/jooq.*" },
+      { "pattern": "jte-classes/.*" }
     ]
   }
 }
