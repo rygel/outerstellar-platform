@@ -273,7 +273,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.2</version>
+                <version>${maven.shade.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -340,7 +340,7 @@
                     </plugin>
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
-                        <artifactId>native-image-maven-plugin</artifactId>
+                        <artifactId>native-maven-plugin</artifactId>
                         <extensions>true</extensions>
                         <executions>
                             <execution>
