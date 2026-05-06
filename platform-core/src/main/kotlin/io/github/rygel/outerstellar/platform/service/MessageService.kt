@@ -20,10 +20,10 @@ import io.github.rygel.outerstellar.platform.sync.SyncMessage
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
 import io.github.rygel.outerstellar.platform.sync.SyncPushResponse
+import java.util.UUID
 import kotlinx.serialization.SerializationException
 import org.http4k.format.KotlinxSerialization
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 @Suppress("TooManyFunctions")
 class MessageService(

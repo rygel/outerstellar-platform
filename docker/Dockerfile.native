@@ -1,0 +1,67 @@
+FROM maven:3.9-eclipse-temurin-21@sha256:481aad0b7042ad7a924ebd49ea5b307a049bd33d758f8613d68dcbd2904f3c8e AS builder
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl gnupg python3 ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+        -o /tmp/nodesource.gpg.key && \
+    gpg --dearmor < /tmp/nodesource.gpg.key > /etc/apt/keyrings/nodesource.gpg && \
+    rm /tmp/nodesource.gpg.key && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" \
+        > /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY pom.xml .
+COPY platform-core/pom.xml platform-core/
+COPY platform-security/pom.xml platform-security/
+COPY platform-persistence-jooq/pom.xml platform-persistence-jooq/
+COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
+COPY platform-sync-client/pom.xml platform-sync-client/
+COPY platform-web/pom.xml platform-web/
+COPY platform-desktop/pom.xml platform-desktop/
+COPY platform-seed/pom.xml platform-seed/
+
+COPY package.json package-lock.json* ./
+
+RUN (mvn dependency:go-offline -pl platform-web -am -DskipTests -Denforcer.skip=true || true) && \
+    npm ci --no-audit --no-fund
+
+COPY . .
+
+RUN mvn package -pl platform-web -am -DskipTests -Denforcer.skip=true \
+    -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
+    -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true
+
+FROM ghcr.io/graalvm/native-image-community:25.0.2@sha256:native-image-community AS native-builder
+WORKDIR /app
+COPY --from=builder /app/platform-web/target/*-jar-with-dependencies.jar app.jar
+COPY --from=builder /app/platform-web/src/main/resources/META-INF/native-image/io.github.rygel/outerstellar-platform-web/reachability-metadata.json META-INF/native-image/io.github.rygel/outerstellar-platform-web/reachability-metadata.json
+
+RUN native-image \
+    --no-fallback \
+    --enable-http --enable-https \
+    -DJTE_PRODUCTION=true \
+    --initialize-at-build-time=org.slf4j,ch.qos.logback \
+    --initialize-at-run-time=io.netty.channel.DefaultFileRegion \
+    -H:Name=outerstellar-web \
+    -jar app.jar
+
+FROM debian:bookworm-slim@sha256:b33b7406520f69165e2c0b1fb3b0f7a0e8a72b4e6d8428b27f17e0c0e0e0c0e0
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libstdc++6 && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd -r appgroup && useradd -r -g appgroup appuser && \
+    mkdir -p /app/data && chown -R appuser:appgroup /app/data
+WORKDIR /app
+COPY --from=native-builder /app/outerstellar-web ./outerstellar-web
+RUN chmod +x outerstellar-web && chown appuser:appgroup outerstellar-web
+USER appuser
+
+EXPOSE 8080
+ENV APP_PROFILE=prod
+ENV SESSIONCOOKIESECURE=true
+
+ENTRYPOINT ["./outerstellar-web"]

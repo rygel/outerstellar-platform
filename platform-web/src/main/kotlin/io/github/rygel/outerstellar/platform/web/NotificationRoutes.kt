@@ -14,6 +14,7 @@ import org.http4k.core.Status
 import org.http4k.lens.Path
 import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
+import org.slf4j.LoggerFactory
 
 class NotificationRoutes(
     private val pageFactory: WebPageFactory,
@@ -21,6 +22,7 @@ class NotificationRoutes(
     private val notificationService: NotificationService,
 ) : ServerRoutes {
     private val notificationIdPath = Path.string().of("notificationId")
+    private val logger = LoggerFactory.getLogger(NotificationRoutes::class.java)
 
     override val routes: List<ContractRoute> =
         listOf(
@@ -67,8 +69,8 @@ class NotificationRoutes(
                         } else {
                             try {
                                 notificationService.markRead(UUID.fromString(notificationId), user.id)
-                            } catch (_: IllegalArgumentException) {
-                                // ignore invalid UUID
+                            } catch (e: IllegalArgumentException) {
+                                logger.debug("Invalid notification UUID: {}", e.message)
                             }
                             Response(Status.FOUND).header("location", "/notifications")
                         }

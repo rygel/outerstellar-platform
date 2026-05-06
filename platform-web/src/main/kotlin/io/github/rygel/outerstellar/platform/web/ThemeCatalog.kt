@@ -227,6 +227,8 @@ private object ExtendedCssBuilder {
 
 /** Hex-color parsing and manipulation utilities shared between [ThemeCatalog] and [ExtendedCssBuilder]. */
 internal object ColorUtils {
+    private val logger = org.slf4j.LoggerFactory.getLogger(ColorUtils::class.java)
+
     private const val MAX_CHANNEL = 255
     private const val MAX_CHANNEL_D = 255.0
     private const val PERCENT_DIVISOR = 100.0
@@ -297,6 +299,7 @@ internal object ColorUtils {
                         expanded.substring(HEX_PAIR_3_START, HEX_PAIR_3_END).toInt(HEX_RADIX),
                     )
                 }
+                .onFailure { logger.warn("Failed to parse hex color: {}", it.message) }
                 .getOrDefault(intArrayOf())
         }
     }

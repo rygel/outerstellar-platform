@@ -32,7 +32,7 @@ class SyncWebSocket(private val userRepository: UserRepository) :
                     try {
                         userRepository.findById(UUID.fromString(it))
                     } catch (e: IllegalArgumentException) {
-                        logger.debug("Invalid session cookie UUID: {}", e.message)
+                        logger.warn("Invalid session cookie UUID: {}", e.message)
                         null
                     }
                 }

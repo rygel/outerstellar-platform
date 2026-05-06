@@ -57,7 +57,7 @@ class JwtService(private val config: JwtConfig) {
             val isAdmin = jwt.getClaim("admin")?.asBoolean() ?: false
             (userId to isAdmin).also { claimsCache.put(token, it) }
         } catch (e: JWTVerificationException) {
-            logger.debug("JWT verification failed: {}", e.message)
+            logger.warn("JWT verification failed: {}", e.message)
             null
         }
     }

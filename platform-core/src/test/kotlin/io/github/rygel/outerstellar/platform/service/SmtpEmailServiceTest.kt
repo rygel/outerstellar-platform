@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.service
 
+import kotlin.test.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import kotlin.test.assertNotNull
 
 class SmtpEmailServiceTest {
     @Test

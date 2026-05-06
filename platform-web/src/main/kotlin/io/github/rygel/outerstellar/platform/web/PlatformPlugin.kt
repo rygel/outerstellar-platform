@@ -14,8 +14,8 @@ import org.http4k.core.Filter
 import org.http4k.core.Request
 import org.http4k.lens.LensFailure
 import org.http4k.template.TemplateRenderer
-import org.http4k.template.ViewModel
 import org.koin.core.module.Module
+import org.slf4j.LoggerFactory
 
 /**
  * Nav item contributed by a plugin to the shell navigation bar. [activeSection] defaults to [url] and is compared
@@ -45,23 +45,14 @@ data class PluginContext(
     fun currentUser(request: Request): User? =
         try {
             request.webContext.user
-        } catch (_: LensFailure) {
+        } catch (e: LensFailure) {
+            logger.debug("Lens extraction failed for current user check: {}", e.message)
             null
         }
 
-    /**
-     * Wraps a plugin [ViewModel] in a [Page] with the platform's shell (nav, theme, CSRF token, etc.). This is the
-     * recommended way for plugins to render full pages that integrate with the platform layout.
-     *
-     * The resulting [Page] includes the CSRF token in the shell, so plugin templates can use `${model.shell.csrfToken}`
-     * in form hidden fields without manual extraction.
-     */
-    fun <T : ViewModel> buildPage(request: Request, pageTitle: String, activeSection: String, data: T): Page<T> {
-        val ctx = request.webContext
-        return Page(shell = ctx.shell(pageTitle, activeSection), data = data)
-    }
-
     companion object {
+        private val logger = LoggerFactory.getLogger(PluginContext::class.java)
+
         /**
          * Creates a [PluginContext] with sensible defaults for testing. Only the three services that cannot be stubbed
          * without a mocking library are required — use `mockk(relaxed = true)` for them.

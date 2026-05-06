@@ -330,8 +330,21 @@
                                     <goal>compile-no-fork</goal>
                                 </goals>
                                 <phase>package</phase>
-                            </execution>
-                        </executions>
+                    </execution>
+                    <execution>
+                        <id>jte-precompile</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>precompile</goal>
+                        </goals>
+                        <configuration>
+                            <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
+                            <targetDirectory>${project.build.outputDirectory}</targetDirectory>
+                            <contentType>Html</contentType>
+                            <packageName>gg.jte.generated.precompiled.outerstellar</packageName>
+                        </configuration>
+                    </execution>
+                </executions>
                         <configuration>
                             <imageName>outerstellar-web</imageName>
                             <mainClass>io.github.rygel.outerstellar.platform.MainKt</mainClass>

@@ -208,7 +208,8 @@ class SecurityService(
                 val host =
                     try {
                         java.net.URI(sanitizedUrl).host?.lowercase()
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        logger.warn("Failed to parse avatar URL for SSRF check: {}", e.message)
                         null
                     }
                 if (host != null && PRIVATE_HOST_PATTERNS.any { it.matches(host) }) {

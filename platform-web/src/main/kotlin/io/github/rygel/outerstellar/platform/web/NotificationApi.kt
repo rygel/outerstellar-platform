@@ -78,7 +78,7 @@ class NotificationApi(private val notificationService: NotificationService) : Se
                             notificationService.markRead(UUID.fromString(notificationId), user.id)
                             Response(Status.NO_CONTENT)
                         } catch (e: IllegalArgumentException) {
-                            logger.debug("Invalid notification id: {}", e.message)
+                            logger.warn("Invalid notification id: {}", e.message)
                             Response(Status.BAD_REQUEST).body("Invalid notification id")
                         }
                     }
