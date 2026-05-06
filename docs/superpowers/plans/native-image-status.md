@@ -13,32 +13,33 @@
 
 ## What's broken
 
-### JTE template rendering in native-image (CRITICAL)
+### JTE template rendering in native-image
 
-All HTML page routes return 500 because JTE cannot find precompiled template classes.
+JTE 3.2.4 does not provide the native-image resource extension needed for the normal precompiled renderer path. The project therefore uses a registry-based production renderer as a workaround.
 
-**Symptom:** `TemplateNotFoundException: io/github/rygel/outerstellar/platform/web/AuthPage.kte not found`
+**Original symptom:** `TemplateNotFoundException: io/github/rygel/outerstellar/platform/web/AuthPage.kte not found`
 
-**Root cause:** `Class.forName("gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuthPageGenerated")` returns `ClassNotFoundException` in native-image, even though:
+**Original root cause:** JTE 3.2.4's `TemplateEngine.createPrecompiled(...)` path delegates to `RuntimeTemplateLoader.load()`, which constructs a generated template class name from the template path and package prefix, then calls `ClassLoader.loadClass(...)`.
+
+That is reliable on a normal JVM, where generated classes live in jars or directories and the classloader can discover them dynamically. It is not reliable in a GraalVM native image:
 
 1. The class IS in the fat jar (95 JTE classes confirmed)
 2. The class IS in the reachability-metadata.json reflection config with `allDeclaredFields: true`
-3. A direct compile-time reference (`JteAuthPageGenerated::class.java`) was added — still excluded
-4. `--initialize-at-build-time=gg.jte.generated.precompiled.outerstellar` was tried — still excluded
+3. The reflection metadata allows reflective member access, but it does not make arbitrary string-based `ClassLoader.loadClass(...)` work in a closed-world native image
+4. `findPrecompiledDir()` is also a poor native-image dependency: a non-null path makes JTE create a `URLClassLoader` over a filesystem directory, while `null` falls back to the context classloader. Neither maps reliably to classes embedded inside the native executable.
 
-**Diagnosis so far:**
-- `RuntimeTemplateLoader.load()` constructs the class name from template name + package prefix
-- It calls `ClassLoader.loadClass()` which fails with `ClassNotFoundException`
-- The classes exist in the jar but GraalVM's reachability analysis excludes them as "unreachable dead code"
-- Neither reflection config entries nor direct code references force inclusion
-- JTE's `jte-native-resources` extension (generates proper GraalVM metadata) exists but is only in 3.2.5-SNAPSHOT, not released
+**Implemented workaround:**
+- `JteClassRegistry` keeps direct compile-time references to all 33 generated JTE template classes.
+- Production rendering no longer calls `TemplateEngine.createPrecompiled(...)`.
+- `JteInfra.kt` resolves the generated class from `JteClassRegistry` and renders via JTE runtime `Template(templateName, templateClass)`.
+- This bypasses string-based classloader resolution and avoids filesystem probing for a precompiled template directory.
+- The workaround should be removable when a released JTE version includes native-image support equivalent to the unreleased `NativeResourcesExtension` from 3.2.5-SNAPSHOT.
 
-**Possible fixes to try next:**
-1. **`-H:IncludeResources` with class listing** — explicitly tell native-image to include all JTE classes
-2. **Feature class** — implement a GraalVM `Feature` that registers all JTE classes at build time via `BeforeAnalysisAccess.registerForReflectiveAccess()`
-3. **Custom `RuntimeTemplateLoader`** — bypass `ClassLoader.loadClass()` by maintaining a hard-coded class map
-4. **Wait for JTE 3.2.5** — use `jte-native-resources` extension when released
-5. **Use `native-image-agent` with thorough exercise** — re-run the tracing agent while actually rendering all templates
+**Validation so far:**
+- `mvn -pl platform-web -DskipTests compile` passes.
+- `mvn -pl platform-web -Dtest=TestRender test` passes with `jte.production=true`, exercising the production renderer path.
+- The runtime diagnostic reports `JTE: preloaded 33 template classes, 0 not found`.
+- Full native-image validation is still blocked if Maven cannot resolve `org.graalvm.buildtools:native-image-maven-plugin:0.10.5` from the configured repositories or local cache.
 
 ### Other open issues
 
@@ -68,7 +69,8 @@ All HTML page routes return 500 because JTE cannot find precompiled template cla
 ### JTE diagnostic logging (`JteInfra.kt`)
 - Added `ensureTemplateClassesLoaded()` probe that counts how many JTE classes `Class.forName()` can find
 - Added detailed diagnostic output on template render failure (class name, ClassLoader type, loadClass result)
-- Added `findPrecompiledDir()` to locate compiled templates on disk (for non-native-image production)
+- Removed native production dependence on `findPrecompiledDir()` and `TemplateEngine.createPrecompiled(...)`
+- Added registry-based production rendering for precompiled JTE templates
 
 ### Reachability metadata
 - Added 84 JTE generated template classes to reflection config with `allDeclaredFields: true` and `allDeclaredMethods: true`
@@ -76,4 +78,4 @@ All HTML page routes return 500 because JTE cannot find precompiled template cla
 
 ### JTE precompile goal
 - Added `jte-precompile` execution to `platform-web/pom.xml` (runs at `process-classes` phase)
-- Does not yet produce `.bin` metadata files — needs `jte-native-resources` extension (unreleased)
+- Kept on the released `gg.jte:jte-maven-plugin` 3.2.4 API; do not configure `gg.jte.nativeimage.NativeResourcesExtension` until it exists in a released JTE dependency

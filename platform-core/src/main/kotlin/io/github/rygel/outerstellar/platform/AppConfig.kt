@@ -89,7 +89,7 @@ data class AppConfig(
                 devMode = yaml.bool("devMode", env, "DEVMODE", false),
                 sessionCookieSecure = yaml.bool("sessionCookieSecure", env, "SESSIONCOOKIESECURE", false),
                 sessionTimeoutMinutes =
-                    yaml.int("sessionTimeoutMinutes", env, "SESSIONTIMEOUTMINUTES", DEFAULT_SESSION_TIMEOUT_MINUTES),
+                yaml.int("sessionTimeoutMinutes", env, "SESSIONTIMEOUTMINUTES", DEFAULT_SESSION_TIMEOUT_MINUTES),
                 corsOrigins = yaml.str("corsOrigins", env, "CORSORIGINS", "*"),
                 csrfEnabled = yaml.bool("csrfEnabled", env, "CSRFENABLED", true),
                 segment = buildSegmentConfig(yaml["segment"] as? Map<String, Any>, env),

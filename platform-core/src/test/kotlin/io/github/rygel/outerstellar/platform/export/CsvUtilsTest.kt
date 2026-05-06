@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.export
 
-import kotlin.test.assertEquals
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 
 class CsvUtilsTest {
 

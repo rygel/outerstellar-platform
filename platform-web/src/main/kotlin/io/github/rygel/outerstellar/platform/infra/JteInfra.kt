@@ -1,9 +1,11 @@
 package io.github.rygel.outerstellar.platform.infra
 
 import gg.jte.TemplateEngine
+import gg.jte.html.OwaspHtmlTemplateOutput
 import gg.jte.output.StringOutput
 import gg.jte.resolve.DirectoryCodeResolver
 import gg.jte.resolve.ResourceCodeResolver
+import gg.jte.runtime.Template
 import java.nio.file.Files
 import java.nio.file.Path
 import org.http4k.core.ContentType
@@ -25,16 +27,13 @@ fun createRenderer(): TemplateRenderer {
 
     if (isProduction) {
         System.err.println(
-            "JTE: production mode, template classes referenced: ${JteAuthPageGenerated::class.java.name}, ${JteErrorPageGenerated::class.java.name}"
+            "JTE: production mode, JteClassRegistry has ${JteClassRegistry.allClasses.size} template classes"
         )
         ensureTemplateClassesLoaded()
     }
 
     val templateEngine =
-        if (isProduction) {
-            val precompiledDir = findPrecompiledDir()
-            TemplateEngine.createPrecompiled(precompiledDir, gg.jte.ContentType.Html, null, PLATFORM_JTE_PACKAGE)
-        } else {
+        if (!isProduction) {
             val applicationClassLoader = Thread.currentThread().contextClassLoader
             val projectDirectory = Path.of(System.getProperty("user.dir"))
             val sourceTemplates = projectDirectory.resolve(Path.of("web", "src", "main", "jte"))
@@ -58,9 +57,11 @@ fun createRenderer(): TemplateRenderer {
                     applicationClassLoader,
                 )
             }
+        } else {
+            null
         }
 
-    return renderUsing { templateEngine }
+    return if (isProduction) renderUsingPrecompiledRegistry() else renderUsing { requireNotNull(templateEngine) }
 }
 
 private fun ensureTemplateClassesLoaded() {
@@ -73,46 +74,9 @@ private fun ensureTemplateClassesLoaded() {
         System.err.println("JTE: reachability-metadata NOT FOUND on classpath")
     }
 
-    val classNames = mutableListOf<String>()
-    val base = "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web"
-    val templateNames =
-        listOf(
-            "ApiKeysPage",
-            "AuditLogPage",
-            "AuthFormFragment",
-            "AuthPage",
-            "AuthResultFragment",
-            "ConflictResolveModal",
-            "ContactForm",
-            "ContactsPage",
-            "DashboardPage",
-            "ErrorPage",
-            "Layout",
-            "LoginPage",
-            "MessageList",
-            "MessagesPage",
-            "Modal",
-            "ModalOverlay",
-            "NavTag",
-            "NotificationBell",
-            "NotificationPage",
-            "PageHeader",
-            "Pagination",
-            "PasswordResetPage",
-            "ProfilePage",
-            "SettingsPage",
-            "SidebarSelector",
-            "SyncPage",
-            "UserAdminPage",
-        )
-    for (name in templateNames) {
-        classNames += "$base.Jte${name}Generated"
-        classNames += "$base.components.Jte${name}Generated"
-        classNames += "$base.layouts.Jte${name}Generated"
-    }
     var loaded = 0
     var failed = 0
-    for (className in classNames) {
+    for (className in JteClassRegistry.allClasses.map { it.name }) {
         try {
             Class.forName(className)
             loaded++
@@ -123,23 +87,13 @@ private fun ensureTemplateClassesLoaded() {
     System.err.println("JTE: preloaded $loaded template classes, $failed not found")
 }
 
-private fun findPrecompiledDir(): Path? {
-    val resource = Thread.currentThread().contextClassLoader.getResource("gg/jte/generated/precompiled/outerstellar")
-    if (resource != null && resource.protocol == "file") {
-        val dir = Path.of(resource.toURI())
-        if (Files.isDirectory(dir)) return dir.parent.parent
-    }
-    val cwd = Path.of(System.getProperty("user.dir"))
-    val candidate = cwd.resolve("platform-web").resolve("target").resolve("classes")
-    if (Files.isDirectory(candidate.resolve("gg").resolve("jte").resolve("generated"))) return candidate
-    val candidate2 = cwd.resolve("target").resolve("classes")
-    if (Files.isDirectory(candidate2.resolve("gg").resolve("jte").resolve("generated"))) return candidate2
-    return null
-}
-
 private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer = { viewModel: ViewModel ->
     val templateName = "${viewModel.template()}.kte"
     val templateEngine = engineProvider()
+
+    JteClassRegistry.getTemplateClass(viewModel.template())?.let { cls ->
+        System.err.println("JTE: Template ${viewModel.template()} resolved to class ${cls.name}")
+    }
 
     try {
         StringOutput().also { templateEngine.render(templateName, viewModel, it) }.toString()
@@ -149,6 +103,7 @@ private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer 
         System.err.println("=== JTE DIAGNOSTIC ===")
         System.err.println("  templateName: $templateName")
         System.err.println("  expected class: $fullClassName")
+        System.err.println("  allKnownClasses: ${JteClassRegistry.allClasses.map { it.simpleName }}")
         try {
             val cls = Class.forName(fullClassName)
             System.err.println("  Class.forName: OK (${cls.name})")
@@ -169,6 +124,29 @@ private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer 
         } catch (lc: Exception) {
             System.err.println("  loader.loadClass error: ${lc.javaClass.name}: ${lc.message}")
         }
+        System.err.println("  original error: ${e.javaClass.name}: ${e.message}")
+        System.err.println("=== END DIAGNOSTIC ===")
+        throw ViewNotFound(viewModel)
+    }
+}
+
+private fun renderUsingPrecompiledRegistry(): TemplateRenderer = { viewModel: ViewModel ->
+    val templateName = "${viewModel.template()}.kte"
+    val templateClass = JteClassRegistry.getTemplateClass(viewModel.template())
+
+    if (templateClass == null) {
+        System.err.println("JTE: Template ${viewModel.template()} not found in generated class registry")
+        throw ViewNotFound(viewModel)
+    }
+
+    try {
+        val output = StringOutput()
+        Template(templateName, templateClass).render(OwaspHtmlTemplateOutput(output), null, viewModel)
+        output.toString()
+    } catch (e: Exception) {
+        System.err.println("=== JTE REGISTRY DIAGNOSTIC ===")
+        System.err.println("  templateName: $templateName")
+        System.err.println("  resolved class: ${templateClass.name}")
         System.err.println("  original error: ${e.javaClass.name}: ${e.message}")
         System.err.println("=== END DIAGNOSTIC ===")
         throw ViewNotFound(viewModel)

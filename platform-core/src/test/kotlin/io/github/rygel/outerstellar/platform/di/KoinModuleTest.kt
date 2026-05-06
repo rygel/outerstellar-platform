@@ -16,13 +16,13 @@ class KoinModuleTest : KoinTest {
     fun `core modules should be valid`() {
         coreModule.verify(
             extraTypes =
-                listOf(
-                    MessageRepository::class,
-                    io.github.rygel.outerstellar.platform.persistence.ContactRepository::class,
-                    OutboxRepository::class,
-                    MessageCache::class,
-                    TransactionManager::class,
-                )
+            listOf(
+                MessageRepository::class,
+                io.github.rygel.outerstellar.platform.persistence.ContactRepository::class,
+                OutboxRepository::class,
+                MessageCache::class,
+                TransactionManager::class,
+            )
         )
     }
 }

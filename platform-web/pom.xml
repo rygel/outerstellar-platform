@@ -320,6 +320,25 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>gg.jte</groupId>
+                        <artifactId>jte-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>jte-precompile</id>
+                                <phase>process-classes</phase>
+                                <goals>
+                                    <goal>precompile</goal>
+                                </goals>
+                                <configuration>
+                                    <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
+                                    <targetDirectory>${project.build.outputDirectory}</targetDirectory>
+                                    <contentType>Html</contentType>
+                                    <packageName>gg.jte.generated.precompiled.outerstellar</packageName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-image-maven-plugin</artifactId>
                         <extensions>true</extensions>
@@ -330,21 +349,8 @@
                                     <goal>compile-no-fork</goal>
                                 </goals>
                                 <phase>package</phase>
-                    </execution>
-                    <execution>
-                        <id>jte-precompile</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>precompile</goal>
-                        </goals>
-                        <configuration>
-                            <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
-                            <targetDirectory>${project.build.outputDirectory}</targetDirectory>
-                            <contentType>Html</contentType>
-                            <packageName>gg.jte.generated.precompiled.outerstellar</packageName>
-                        </configuration>
-                    </execution>
-                </executions>
+                            </execution>
+                        </executions>
                         <configuration>
                             <imageName>outerstellar-web</imageName>
                             <mainClass>io.github.rygel.outerstellar.platform.MainKt</mainClass>
@@ -355,6 +361,7 @@
                                 <buildArg>-DJTE_PRODUCTION=true</buildArg>
                                 <buildArg>--initialize-at-build-time=org.slf4j,ch.qos.logback</buildArg>
                                 <buildArg>--initialize-at-run-time=io.netty.channel.DefaultFileRegion</buildArg>
+                                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
                             </buildArgs>
                         </configuration>
                     </plugin>
@@ -363,4 +370,3 @@
         </profile>
     </profiles>
 </project>
-
