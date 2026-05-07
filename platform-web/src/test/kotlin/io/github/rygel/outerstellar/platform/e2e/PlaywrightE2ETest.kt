@@ -13,7 +13,7 @@ import io.github.rygel.outerstellar.platform.security.securityModule
 import kotlin.test.assertTrue
 import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
-import org.http4k.server.Jetty
+import org.http4k.server.Netty
 import org.http4k.server.asServer
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -97,7 +97,7 @@ class PlaywrightE2ETest : KoinTest {
         contactRepo.seedContacts()
 
         // Start real HTTP server on random port
-        server = app.asServer(Jetty(0)).start()
+        server = app.asServer(Netty(0)).start()
 
         browserContext = browser.newContext()
         page = browserContext.newPage()

@@ -43,7 +43,7 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
                         try {
                             KotlinxSerialization.asA(request.bodyString(), RegisterDeviceRequest::class)
                         } catch (e: Exception) {
-                            logger.debug("Failed to parse device registration request: {}", e.message)
+                            logger.warn("Failed to parse device registration request: {}", e.message)
                             return@to Response(Status.BAD_REQUEST).body("Invalid request body")
                         }
 
@@ -83,7 +83,7 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
                         try {
                             KotlinxSerialization.asA(request.bodyString(), DeregisterDeviceRequest::class).token
                         } catch (e: Exception) {
-                            logger.debug(
+                            logger.warn(
                                 "Failed to parse deregister request, falling back to query param: {}",
                                 e.message,
                             )
@@ -101,7 +101,7 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
         try {
             SecurityRules.USER_KEY(this)
         } catch (e: IllegalStateException) {
-            logger.trace("No security user found on request: {}", e.message)
+            logger.debug("No security user found on request: {}", e.message)
             null
         }
 

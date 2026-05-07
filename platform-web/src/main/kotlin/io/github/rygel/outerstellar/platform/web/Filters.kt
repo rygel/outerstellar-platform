@@ -32,6 +32,8 @@ import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 
+private val analyticsLogger = LoggerFactory.getLogger("outerstellar.Filters.analytics")
+
 private const val COOKIE_MAX_AGE_DAYS = 365L
 private const val REQUEST_ID_HEADER = "X-Request-Id"
 private const val LOG_ID_LENGTH = 8
@@ -89,8 +91,8 @@ fun analyticsPageViewFilter(analytics: AnalyticsService): Filter = Filter { next
                 if (userId != null) {
                     analytics.page(userId, request.uri.path)
                 }
-            } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
-                // Not authenticated or context unavailable — skip page view
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                analyticsLogger.debug("Failed to record page view: {}", e.message)
             }
         }
         response
@@ -240,7 +242,7 @@ object Filters {
                 try {
                     context.user
                 } catch (e: IllegalStateException) {
-                    logger.trace("Could not resolve user from context: {}", e.message)
+                    logger.debug("Could not resolve user from context: {}", e.message)
                     null
                 }
             if (contextUser != null) {
@@ -295,7 +297,7 @@ object Filters {
                 try {
                     request.webContext.user
                 } catch (e: IllegalStateException) {
-                    logger.trace("Could not resolve user for session timeout check: {}", e.message)
+                    logger.debug("Could not resolve user for session timeout check: {}", e.message)
                     null
                 }
 

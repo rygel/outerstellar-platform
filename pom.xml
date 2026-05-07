@@ -107,7 +107,11 @@
         <miglayout.version>11.4.3</miglayout.version>
         <assertj.swing.version>4.0.0-beta-3</assertj.swing.version>
         <i18n.tools.version>1.0.14</i18n.tools.version>
-        <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
+        <native.maven.plugin.version>0.10.6</native.maven.plugin.version>
+        <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
+        <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
+        <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
+        <central.publishing.plugin.version>0.10.0</central.publishing.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
         <!-- Surefire tag filters — overridden by the performance profile -->
@@ -121,13 +125,30 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
             <id>github-rygel</id>
             <name>Rygel GitHub Packages</name>
             <url>https://maven.pkg.github.com/rygel/outerstellar-framework</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <layout>default</layout>
         </repository>
     </repositories>
 
     <pluginRepositories>
+        <pluginRepository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </pluginRepository>
         <pluginRepository>
             <id>github-rygel</id>
             <name>Rygel GitHub Packages</name>
@@ -234,6 +255,11 @@
             <dependency>
                 <groupId>org.http4k</groupId>
                 <artifactId>http4k-server-jetty</artifactId>
+                <version>${http4k.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.http4k</groupId>
+                <artifactId>http4k-server-netty</artifactId>
                 <version>${http4k.version}</version>
             </dependency>
             <dependency>
@@ -417,7 +443,7 @@
             </dependency>
             <dependency>
                 <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
+                <artifactId>opentelemetry-sdk-trace</artifactId>
                 <version>${opentelemetry.version}</version>
             </dependency>
             <dependency>
@@ -569,7 +595,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.4.0</version>
+                    <version>${maven.source.plugin.version}</version>
                     <executions>
                         <execution>
                             <id>attach-sources</id>
@@ -642,8 +668,13 @@
                 </plugin>
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
-                    <artifactId>native-image-maven-plugin</artifactId>
+                    <artifactId>native-maven-plugin</artifactId>
                     <version>${native.maven.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${maven.shade.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>com.fizzed</groupId>
@@ -1118,7 +1149,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.8</version>
+                        <version>${maven.gpg.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -1132,7 +1163,7 @@
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.10.0</version>
+                        <version>${central.publishing.plugin.version}</version>
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>

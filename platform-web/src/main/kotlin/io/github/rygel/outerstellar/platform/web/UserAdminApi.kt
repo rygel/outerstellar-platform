@@ -81,7 +81,7 @@ class UserAdminApi(private val securityService: SecurityService) : ServerRoutes 
                         } catch (e: InsufficientPermissionException) {
                             Response(Status.BAD_REQUEST).body(e.message ?: "Not allowed")
                         } catch (e: IllegalArgumentException) {
-                            logger.debug("Invalid role value: {}", e.message)
+                            logger.warn("Invalid role value: {}", e.message)
                             Response(Status.BAD_REQUEST).body("Invalid role")
                         }
                     }

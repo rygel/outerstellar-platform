@@ -14,9 +14,9 @@ fun createDataSource(jdbcUrl: String, jdbcUser: String, jdbcPassword: String): H
             maximumPoolSize = 20
             minimumIdle = 2
             idleTimeout = 300_000
-            maxLifetime = 1_800_000 // 30 minutes — prevents stale connections
+            maxLifetime = 1_800_000
             connectionTimeout = 10_000
-            leakDetectionThreshold = 60_000 // warn if connection held > 60s
+            leakDetectionThreshold = 60_000
             poolName = "outerstellar-pool"
         }
     )

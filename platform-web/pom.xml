@@ -48,7 +48,7 @@
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
-            <artifactId>http4k-server-jetty</artifactId>
+            <artifactId>http4k-server-netty</artifactId>
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
@@ -153,7 +153,7 @@
         </dependency>
         <dependency>
             <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
+            <artifactId>opentelemetry-sdk-trace</artifactId>
             <version>${opentelemetry.version}</version>
         </dependency>
         <dependency>
@@ -273,7 +273,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.6.2</version>
+                <version>${maven.shade.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -283,6 +283,12 @@
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-jar-with-dependencies.jar</outputFile>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes><exclude>META-INF/native-image/org.jline/**</exclude></excludes>
+                                </filter>
+                            </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>io.github.rygel.outerstellar.platform.MainKt</mainClass>
@@ -314,8 +320,27 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>gg.jte</groupId>
+                        <artifactId>jte-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>jte-precompile</id>
+                                <phase>process-classes</phase>
+                                <goals>
+                                    <goal>precompile</goal>
+                                </goals>
+                                <configuration>
+                                    <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
+                                    <targetDirectory>${project.build.outputDirectory}</targetDirectory>
+                                    <contentType>Html</contentType>
+                                    <packageName>gg.jte.generated.precompiled.outerstellar</packageName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
-                        <artifactId>native-image-maven-plugin</artifactId>
+                        <artifactId>native-maven-plugin</artifactId>
                         <extensions>true</extensions>
                         <executions>
                             <execution>
@@ -333,7 +358,10 @@
                                 <buildArg>--no-fallback</buildArg>
                                 <buildArg>--enable-http</buildArg>
                                 <buildArg>--enable-https</buildArg>
-                                <buildArg>--initialize-at-build-time=org.slf4j.LoggerFactory,ch.qos.logback</buildArg>
+                                <buildArg>-DJTE_PRODUCTION=true</buildArg>
+                                <buildArg>--initialize-at-build-time=org.slf4j,ch.qos.logback</buildArg>
+                                <buildArg>--initialize-at-run-time=io.netty.channel.DefaultFileRegion</buildArg>
+                                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
                             </buildArgs>
                         </configuration>
                     </plugin>
@@ -342,4 +370,3 @@
         </profile>
     </profiles>
 </project>
-

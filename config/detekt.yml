@@ -51,6 +51,8 @@ empty-blocks:
 
 exceptions:
   active: true
+  SwallowedException:
+    active: true
   TooGenericExceptionCaught:
     active: true
   TooGenericExceptionThrown:

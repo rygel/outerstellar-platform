@@ -78,7 +78,7 @@ class WebContext(
                 val uid = UUID.fromString(sessionUserId)
                 userRepository?.findById(uid)
             } catch (e: IllegalArgumentException) {
-                logger.debug("Invalid session cookie format: {}", e.message)
+                logger.warn("Invalid session cookie format: {}", e.message)
                 null
             }
         }
