@@ -125,9 +125,21 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
             <id>github-rygel</id>
             <name>Rygel GitHub Packages</name>
             <url>https://maven.pkg.github.com/rygel/outerstellar-framework</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <layout>default</layout>
         </repository>
     </repositories>
 
