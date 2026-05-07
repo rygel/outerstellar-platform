@@ -212,8 +212,8 @@ object Filters {
             if (enabled && isLoopback && request.cookie(WebContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {
+                    userRepository.updateLastActivity(admin.id)
                     val response = next(request.cookie(Cookie(WebContext.SESSION_COOKIE, admin.id.toString())))
-                    // Also ensure the cookie is set in the response so the browser keeps it
                     if (response.cookies().none { it.name == WebContext.SESSION_COOKIE }) {
                         response.cookie(Cookie(WebContext.SESSION_COOKIE, admin.id.toString(), path = "/"))
                     } else {
