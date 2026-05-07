@@ -256,7 +256,6 @@ class WebContext(
             logoutUrl = url("/logout"),
             changePasswordUrl = if (user != null) url("/auth/change-password") else null,
             profileUrl = if (user != null) url("/auth/profile") else null,
-
             toastErrorLabel = i18n.translate("web.layout.toast.error"),
             toastSuccessLabel = i18n.translate("web.layout.toast.success"),
             changePasswordLabel = i18n.translate("web.layout.change.password"),

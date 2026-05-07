@@ -17,6 +17,6 @@ class ReproductionTest : WebTest() {
         val response = app(Request(GET, "/?theme=dracula"))
         assertEquals(Status.OK, response.status)
         val body = response.bodyString()
-        assertTrue(body.contains("--color-background: #282A36"), "Should contain Dracula background color")
+        assertTrue(body.contains("""data-theme="dracula""""), "Should set data-theme to dracula")
     }
 }
