@@ -685,6 +685,10 @@
                     <groupId>com.github.ozsie</groupId>
                     <artifactId>detekt-maven-plugin</artifactId>
                     <version>${detekt.version}</version>
+                    <configuration>
+                        <config>${maven.multiModuleProjectDirectory}/config/detekt.yml</config>
+                        <buildUponDefaultConfig>false</buildUponDefaultConfig>
+                    </configuration>
                     <executions>
                         <execution>
                             <phase>verify</phase>
@@ -692,23 +696,13 @@
                                 <goal>check</goal>
                             </goals>
                             <configuration>
-                                <config>${maven.multiModuleProjectDirectory}/config/detekt.yml</config>
                                 <report>
                                     <report>xml:${project.build.directory}/detekt-reports/detekt.xml</report>
                                     <report>html:${project.build.directory}/detekt-reports/detekt.html</report>
                                 </report>
-                                <autoCorrect>true</autoCorrect>
-                                <buildUponDefaultConfig>true</buildUponDefaultConfig>
                             </configuration>
                         </execution>
                     </executions>
-                    <dependencies>
-                        <dependency>
-                            <groupId>io.gitlab.arturbosch.detekt</groupId>
-                            <artifactId>detekt-formatting</artifactId>
-                            <version>${detekt.version}</version>
-                        </dependency>
-                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
