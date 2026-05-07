@@ -3,33 +3,33 @@
 @param model: Page<HomePage>
 
 @template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
-    <section class="hero-grid">
-        <div class="panel">
+    <section class="mb-4">
+        <div class="card bg-base-200 border border-base-300">
             <p class="topbar-label">${model.data.eyebrow}</p>
             <h1>${model.shell.appTitle}</h1>
-            <p class="text-muted">${model.shell.appTagline}</p>
+            <p class="opacity-50">${model.shell.appTagline}</p>
             
-            <div class="card-grid mt-6">
+            <div class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4 mt-6">
                 @for (feature in model.data.features)
-                    <div class="panel panel-muted">
+                    <div class="card bg-base-100">
                         <strong style="display: block; margin-bottom: 0.25rem;">${feature.label}</strong>
-                        <p class="text-muted" style="margin: 0;">${feature.value}</p>
+                        <p class="opacity-50" style="margin: 0;">${feature.value}</p>
                     </div>
                 @endfor
             </div>
         </div>
     </section>
 
-    <section class="panel mt-6">
+    <section class="card bg-base-200 border border-base-300 mt-6">
         <h2>${model.data.composerTitle}</h2>
-        <p class="text-muted mb-6">${model.data.composerIntro}</p>
+        <p class="opacity-50 mb-6">${model.data.composerIntro}</p>
         <form hx-post="${model.data.submitUrl}" 
               hx-target="#message-list-container" 
               hx-swap="outerHTML"
               hx-indicator="#submit-indicator"
-              class="form-grid">
-            <input type="text" name="author" placeholder="${model.data.authorPlaceholder}">
-            <textarea name="content" placeholder="${model.data.contentPlaceholder}" required style="min-height: 120px;"></textarea>
+              class="flex flex-col gap-3">
+            <input type="text" name="author" placeholder="${model.data.authorPlaceholder}" class="input input-bordered">
+            <textarea name="content" placeholder="${model.data.contentPlaceholder}" required style="min-height: 120px;" class="textarea textarea-bordered"></textarea>
             <div class="flex justify-end">
                 <button type="submit">
                     <i id="submit-indicator" class="ri-send-plane-fill htmx-indicator"></i>

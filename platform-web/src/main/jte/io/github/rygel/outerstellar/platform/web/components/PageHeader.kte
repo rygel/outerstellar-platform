@@ -4,14 +4,14 @@
 @param breadcrumb: String = ""
 @param action: Content? = null
 
-<div class="page-header">
-    <div class="page-header-text">
+<div class="flex justify-between items-start gap-4 mb-4 p-5 bg-base-200 border border-base-300 rounded-lg">
+    <div class="flex flex-col gap-1">
         @if(breadcrumb.isNotEmpty())
             <p class="topbar-label">${breadcrumb}</p>
         @endif
         <h1>${title}</h1>
         @if(description.isNotEmpty())
-            <p class="text-muted">${description}</p>
+            <p class="opacity-50">${description}</p>
         @endif
     </div>
     @if(action != null)

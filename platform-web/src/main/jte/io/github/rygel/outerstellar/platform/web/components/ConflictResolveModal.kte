@@ -1,11 +1,12 @@
 @import io.github.rygel.outerstellar.platform.web.ConflictResolveViewModel
 @param model: ConflictResolveViewModel
 
-<div id="modal-container" class="modal-overlay" hx-target="this" hx-swap="outerHTML">
-    <div class="modal-content panel">
-        <header class="modal-header">
-            <h2>${model.modalTitle}</h2>
-            <button class="button-icon" onclick="document.getElementById('modal-container').remove()">
+<div id="modal-container" class="modal fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" hx-target="this" hx-swap="outerHTML"
+     onclick="if(event.target === this) this.remove()">
+    <div class="modal-box w-full max-w-3xl" onclick="event.stopPropagation()">
+        <header class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold">${model.modalTitle}</h2>
+            <button class="btn btn-ghost btn-sm btn-square" onclick="document.getElementById('modal-container').remove()">
                 <i class="ri-close-line"></i>
             </button>
         </header>
@@ -13,39 +14,39 @@
         <div class="modal-body">
             <p class="mb-4">${model.description}</p>
 
-            <div class="card-grid">
-                <div class="panel panel-muted">
+            <div class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+                <div class="card bg-base-100">
                     <h3>${model.myVersionLabel}</h3>
                     <div class="message-meta mb-2">
                         <span>${model.authorLabel}:</span>
                         <strong>${model.myAuthor}</strong>
                     </div>
-                    <div class="panel panel-cozy bg-opacity-10 bg-white">
+                    <div class="card bg-base-200 p-4 bg-opacity-10 bg-white">
                         ${model.myContent}
                     </div>
-                    <form hx-post="${model.resolveUrl}" hx-vals='{"strategy": "mine"}' hx-target="closest .modal-overlay" hx-swap="delete" class="mt-4">
-                        <button type="submit" class="button-link w-full">${model.keepMineLabel}</button>
+                    <form hx-post="${model.resolveUrl}" hx-vals='{"strategy": "mine"}' hx-target="closest .modal" hx-swap="delete" class="mt-4">
+                        <button type="submit" class="btn btn-ghost w-full">${model.keepMineLabel}</button>
                     </form>
                 </div>
 
-                <div class="panel panel-muted border-accent">
+                <div class="card bg-base-100 border-accent">
                     <h3>${model.serverVersionLabel}</h3>
                     <div class="message-meta mb-2">
                         <span>${model.authorLabel}:</span>
                         <strong>${model.serverAuthor}</strong>
                     </div>
-                    <div class="panel panel-cozy bg-opacity-10 bg-white">
+                    <div class="card bg-base-200 p-4 bg-opacity-10 bg-white">
                         ${model.serverContent}
                     </div>
-                    <form hx-post="${model.resolveUrl}" hx-vals='{"strategy": "server"}' hx-target="closest .modal-overlay" hx-swap="delete" class="mt-4">
-                        <button type="submit" class="button-link button-secondary w-full">${model.acceptServerLabel}</button>
+                    <form hx-post="${model.resolveUrl}" hx-vals='{"strategy": "server"}' hx-target="closest .modal" hx-swap="delete" class="mt-4">
+                        <button type="submit" class="btn btn-ghost w-full">${model.acceptServerLabel}</button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <footer class="modal-footer button-row">
-            <button class="button-link button-muted" onclick="document.getElementById('modal-container').remove()">${model.decideLaterLabel}</button>
+        <footer class="flex gap-3 justify-end mt-4">
+            <button class="btn btn-ghost" onclick="document.getElementById('modal-container').remove()">${model.decideLaterLabel}</button>
         </footer>
     </div>
 </div>
