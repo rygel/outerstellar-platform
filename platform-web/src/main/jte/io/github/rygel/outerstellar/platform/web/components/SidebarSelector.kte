@@ -2,9 +2,9 @@
 @param model: SidebarSelector
 
 <div>
-    <h3 class="sidebar-select-label">${model.heading}</h3>
+    <h3 class="text-[0.65rem] uppercase tracking-widest font-extrabold opacity-50 mb-2">${model.heading}</h3>
     <form hx-get="${model.refreshUrl}" hx-target="body" hx-push-url="true">
-        <select id="${model.selectId}" name="${model.selectName}" class="sidebar-select" onchange="htmx.trigger(this.form, 'submit')" aria-label="${model.label}">
+        <select id="${model.selectId}" name="${model.selectName}" class="select select-bordered select-sm w-full" onchange="htmx.trigger(this.form, 'submit')" aria-label="${model.label}">
             @for (option in model.options)
                 <option value="${option.id}" selected="${option.active}">${option.label}</option>
             @endfor
