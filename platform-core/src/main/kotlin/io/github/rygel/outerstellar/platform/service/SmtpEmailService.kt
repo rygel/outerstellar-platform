@@ -6,8 +6,8 @@ import jakarta.mail.Session
 import jakarta.mail.Transport
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
-import org.slf4j.LoggerFactory
 import java.util.Properties
+import org.slf4j.LoggerFactory
 
 class EmailDeliveryException(message: String, cause: Throwable) : RuntimeException(message, cause)
 

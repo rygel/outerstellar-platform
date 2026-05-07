@@ -15,7 +15,6 @@
     <name>Platform Persistence Jdbi</name>
 
     <properties>
-        <detekt.skip>true</detekt.skip>
     </properties>
 
     <dependencies>

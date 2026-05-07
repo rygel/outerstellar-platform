@@ -63,4 +63,9 @@ class CachingUserRepository(private val delegate: UserRepository, maximumSize: L
         cache.invalidate(userId)
         delegate.updatePreferences(userId, language, theme, layout)
     }
+
+    override fun updateLastActivity(userId: UUID) {
+        cache.invalidate(userId)
+        delegate.updateLastActivity(userId)
+    }
 }

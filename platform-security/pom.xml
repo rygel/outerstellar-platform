@@ -15,7 +15,6 @@
     <name>Platform Security</name>
 
     <properties>
-        <detekt.skip>true</detekt.skip>
     </properties>
 
     <dependencies>

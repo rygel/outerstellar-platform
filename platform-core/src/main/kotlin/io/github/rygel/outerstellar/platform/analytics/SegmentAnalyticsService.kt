@@ -1,12 +1,5 @@
 package io.github.rygel.outerstellar.platform.analytics
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.net.URI
 import java.net.http.HttpClient
@@ -15,6 +8,13 @@ import java.net.http.HttpResponse
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import org.slf4j.LoggerFactory
 
 class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
     private val logger = LoggerFactory.getLogger(SegmentAnalyticsService::class.java)
@@ -97,9 +97,7 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                 is String -> put(key, value)
                 is Number -> put(key, value)
                 is Boolean -> put(key, value)
-                is Map<*, *> ->
-                    @Suppress("UNCHECKED_CAST")
-                    put(key, (value as Map<String, Any>).toJsonObject())
+                is Map<*, *> -> @Suppress("UNCHECKED_CAST") put(key, (value as Map<String, Any>).toJsonObject())
                 is List<*> ->
                     put(
                         key,
@@ -110,8 +108,7 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                                     is Number -> add(JsonPrimitive(item.toString().toDouble()))
                                     is Boolean -> add(JsonPrimitive(item))
                                     is Map<*, *> ->
-                                        @Suppress("UNCHECKED_CAST")
-                                        add((item as Map<String, Any>).toJsonObject())
+                                        @Suppress("UNCHECKED_CAST") add((item as Map<String, Any>).toJsonObject())
                                     else -> add(JsonPrimitive(item.toString()))
                                 }
                             }
