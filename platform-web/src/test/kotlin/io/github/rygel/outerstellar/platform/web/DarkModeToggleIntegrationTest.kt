@@ -17,16 +17,17 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
- * Integration tests for the dark mode toggle button (Feature 2).
+ * Integration tests for the DaisyUI theme system.
  *
  * Verifies:
- * - Dark mode toggle button (sun/moon icon) is rendered in the topbar
- * - The toggle URL correctly points to the opposite theme
+ * - data-theme attribute is set on <html> element
+ * - Theme selector dropdown is present in the sidebar
  * - Requesting /?theme=dark sets the app_theme cookie to "dark"
- * - Requesting /?theme=default sets the app_theme cookie to "default"
+ * - Requesting /?theme=light sets the app_theme cookie to "light"
  * - The page respects the app_theme cookie on subsequent requests
- * - System preference detection JS is injected into every page
- * - Dark mode CSS variables are applied for dark theme
+ * - platform.js is included for client-side behavior
+ * - Default theme is "dark"
+ * - Invalid theme values are ignored
  */
 class DarkModeToggleIntegrationTest : WebTest() {
 
@@ -45,42 +46,38 @@ class DarkModeToggleIntegrationTest : WebTest() {
         return id
     }
 
-    // ---- Toggle button rendering ----
+    // ---- data-theme attribute ----
 
     @Test
-    fun `topbar contains dark mode toggle button`() {
+    fun `html element has data-theme attribute set to dark by default`() {
         val body = app(Request(GET, "/")).bodyString()
-
-        // The toggle button has ri-sun-line (on dark) or ri-moon-line (on light)
-        val hasSun = body.contains("ri-sun-line")
-        val hasMoon = body.contains("ri-moon-line")
-        assertTrue(hasSun || hasMoon, "Topbar must have a sun or moon icon for the dark mode toggle")
+        assertTrue(body.contains("data-theme=\"dark\""), "Default theme should be dark")
     }
 
     @Test
-    fun `dark theme page shows sun icon to switch to light`() {
-        // Default theme is dark — toggle should show sun (click to go light)
+    fun `html element has data-theme attribute set to light when requested`() {
+        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "light"))).bodyString()
+        assertTrue(body.contains("data-theme=\"light\""), "Light theme cookie should set data-theme=light")
+    }
+
+    @Test
+    fun `html element has data-theme attribute set to nord when requested`() {
+        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "nord"))).bodyString()
+        assertTrue(body.contains("data-theme=\"nord\""), "Nord theme cookie should set data-theme=nord")
+    }
+
+    // ---- Theme selector dropdown ----
+
+    @Test
+    fun `sidebar contains theme selector dropdown`() {
         val body = app(Request(GET, "/")).bodyString()
-        assertTrue(body.contains("ri-sun-line"), "Dark mode page should show sun icon")
+        assertTrue(body.contains("id=\"theme-selector\""), "Sidebar must contain theme-selector element")
     }
 
     @Test
-    fun `light theme page shows moon icon to switch to dark`() {
-        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "default"))).bodyString()
-        assertTrue(body.contains("ri-moon-line"), "Light mode page should show moon icon")
-    }
-
-    @Test
-    fun `dark theme toggle URL points to default theme`() {
-        // Server defaults to dark; the toggle URL should switch to default (light)
+    fun `theme selector is a select element with theme options`() {
         val body = app(Request(GET, "/")).bodyString()
-        assertTrue(body.contains("?theme=default"), "Dark mode page toggle should link to ?theme=default")
-    }
-
-    @Test
-    fun `light theme toggle URL points to dark theme`() {
-        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "default"))).bodyString()
-        assertTrue(body.contains("?theme=dark"), "Light mode page toggle should link to ?theme=dark")
+        assertTrue(body.contains("name=\"theme\""), "Theme selector must have a select with name=theme")
     }
 
     // ---- Cookie setting via ?theme query param ----
@@ -98,14 +95,14 @@ class DarkModeToggleIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `requesting with theme=default sets app_theme cookie to default`() {
-        val response = app(Request(GET, "/?theme=default"))
+    fun `requesting with theme=light sets app_theme cookie to light`() {
+        val response = app(Request(GET, "/?theme=light"))
 
         assertEquals(Status.OK, response.status)
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
-            setCookie.contains("app_theme=default") || setCookie.contains("app_theme=\"default\""),
-            "Response should set app_theme=default cookie, got: $setCookie",
+            setCookie.contains("app_theme=light") || setCookie.contains("app_theme=\"light\""),
+            "Response should set app_theme=light cookie, got: $setCookie",
         )
     }
 
@@ -134,40 +131,31 @@ class DarkModeToggleIntegrationTest : WebTest() {
     @Test
     fun `page respects dark theme cookie`() {
         val body = app(Request(GET, "/").cookie(Cookie("app_theme", "dark"))).bodyString()
-
-        // Dark theme should show the sun icon (to toggle to light)
-        assertTrue(body.contains("ri-sun-line"), "Dark theme cookie should produce sun icon")
+        assertTrue(body.contains("data-theme=\"dark\""), "Dark theme cookie should produce data-theme=dark")
     }
 
     @Test
     fun `page respects light theme cookie`() {
-        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "default"))).bodyString()
-
-        // Light theme should show the moon icon (to toggle to dark)
-        assertTrue(body.contains("ri-moon-line"), "Default theme cookie should produce moon icon")
+        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "light"))).bodyString()
+        assertTrue(body.contains("data-theme=\"light\""), "Light theme cookie should produce data-theme=light")
     }
 
     @Test
-    fun `theme id is embedded in page when dark`() {
+    fun `no inline theme style block is present`() {
         val body = app(Request(GET, "/")).bodyString()
-        // The theme CSS variables are rendered; dark theme has a dark background variable
-        // We can check that the dark theme CSS variables block is present
-        assertTrue(body.contains("theme-style"), "Page should have an inline style block with theme CSS variables")
+        assertFalse(body.contains("id=\"theme-style\""), "DaisyUI themes should not use inline style blocks")
     }
 
-    // ---- System preference detection JS ----
+    // ---- platform.js inclusion ----
 
     @Test
-    fun `every page includes system preference detection script`() {
+    fun `every page includes platform js`() {
         val body = app(Request(GET, "/")).bodyString()
-        assertTrue(
-            body.contains("platform.js"),
-            "Page should include platform.js which contains system color-scheme detection",
-        )
+        assertTrue(body.contains("platform.js"), "Page should include platform.js")
     }
 
     @Test
-    fun `system preference script checks for existing app_theme cookie`() {
+    fun `page references toast data attributes`() {
         val body = app(Request(GET, "/")).bodyString()
         assertTrue(
             body.contains("data-toast-error") || body.contains("platform.js"),
@@ -176,36 +164,31 @@ class DarkModeToggleIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `system preference script only runs when no cookie is set`() {
+    fun `platform js is loaded for theme cookie detection`() {
         val body = app(Request(GET, "/")).bodyString()
         assertTrue(body.contains("platform.js"), "Page should load platform.js which handles theme cookie detection")
     }
 
-    // ---- Toggle button on admin pages ----
+    // ---- Theme selector on admin pages ----
 
     @Test
-    fun `dark mode toggle is present on admin pages too`() {
+    fun `data-theme is present on admin pages too`() {
         val adminId = seedAdmin()
 
         val body = app(Request(GET, "/admin/users").cookie(Cookie("app_session", adminId.toString()))).bodyString()
-
-        val hasSun = body.contains("ri-sun-line")
-        val hasMoon = body.contains("ri-moon-line")
-        assertTrue(hasSun || hasMoon, "Admin page topbar should also have dark mode toggle")
+        assertTrue(body.contains("data-theme=\"dark\""), "Admin page should have data-theme attribute")
     }
 
     @Test
-    fun `dark mode toggle is present on auth page`() {
+    fun `data-theme is present on auth page`() {
         val body = app(Request(GET, "/auth")).bodyString()
-        val hasSun = body.contains("ri-sun-line")
-        val hasMoon = body.contains("ri-moon-line")
-        assertTrue(hasSun || hasMoon, "Auth page should have dark mode toggle")
+        assertTrue(body.contains("data-theme=\"dark\""), "Auth page should have data-theme attribute")
     }
 
-    // ---- Theme selector still works alongside the toggle ----
+    // ---- Theme selector still present ----
 
     @Test
-    fun `sidebar theme selector is still present when dark mode toggle exists`() {
+    fun `sidebar theme selector is present`() {
         val body = app(Request(GET, "/")).bodyString()
         assertTrue(body.contains("theme-selector"), "Sidebar theme selector component should still be rendered")
     }
