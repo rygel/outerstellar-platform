@@ -1,0 +1,67 @@
+<h2>How should layouts be handled?</h2>
+<p class="subtitle">You have two layout modes (sidebar and topbar) with ~200 lines of custom layout CSS each. DaisyUI's <code>drawer</code> component handles sidebar layouts natively with built-in mobile responsiveness.</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Option A: DaisyUI drawer + navbar (Recommended)</div>
+    <div class="mockup-body" style="padding:1rem;background:#1d232a;color:#e2e8f0;font-family:system-ui;font-size:0.8rem;">
+      <div style="display:flex;gap:0;border:1px solid #3b4252;border-radius:0.5rem;overflow:hidden;height:260px;">
+        <div style="width:100px;background:#1e293b;border-right:1px solid #334155;padding:0.5rem;flex-shrink:0;">
+          <div style="color:#10b981;font-weight:800;font-size:0.65rem;margin-bottom:0.75rem;">LOGO</div>
+          <div style="background:#3b82f6;color:white;padding:0.25rem 0.4rem;border-radius:0.25rem;margin-bottom:0.25rem;font-size:0.6rem;">Home</div>
+          <div style="padding:0.25rem 0.4rem;color:#94a3b8;margin-bottom:0.25rem;font-size:0.6rem;">Messages</div>
+          <div style="padding:0.25rem 0.4rem;color:#94a3b8;margin-bottom:0.25rem;font-size:0.6rem;">Contacts</div>
+          <div style="padding:0.25rem 0.4rem;color:#94a3b8;margin-bottom:0.25rem;font-size:0.6rem;">Settings</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;">
+          <div style="height:40px;border-bottom:1px solid #334155;display:flex;align-items:center;padding:0 0.75rem;justify-content:space-between;">
+            <span style="font-size:0.6rem;opacity:0.5;">DASHBOARD</span>
+            <span style="font-size:0.6rem;">User ▾</span>
+          </div>
+          <div style="flex:1;padding:0.75rem;">
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:0.35rem;padding:0.75rem;margin-bottom:0.5rem;">
+              <div style="font-size:0.7rem;font-weight:700;">Welcome back</div>
+              <div style="font-size:0.6rem;opacity:0.5;margin-top:0.25rem;">Content area</div>
+            </div>
+          </div>
+          <div style="height:28px;border-top:1px solid #334155;display:flex;align-items:center;padding:0 0.75rem;font-size:0.55rem;opacity:0.5;">
+            v1.6.0
+          </div>
+        </div>
+      </div>
+      <p style="margin-top:0.5rem;font-size:0.75rem;color:#94a3b8;">Sidebar = DaisyUI <code>drawer</code> · Topbar = DaisyUI <code>navbar</code> · Mobile = built-in off-canvas. Delete all custom layout CSS.</p>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header">Option B: Keep custom layout CSS</div>
+    <div class="mockup-body" style="padding:1rem;background:#1d232a;color:#e2e8f0;font-family:system-ui;font-size:0.8rem;">
+      <div style="display:flex;gap:0;border:1px solid #3b4252;border-radius:0.5rem;overflow:hidden;height:260px;">
+        <div style="width:100px;background:#1e293b;border-right:1px solid #334155;padding:0.5rem;flex-shrink:0;">
+          <div style="color:#10b981;font-weight:800;font-size:0.65rem;margin-bottom:0.75rem;">LOGO</div>
+          <div style="background:#3b82f6;color:white;padding:0.25rem 0.4rem;border-radius:0.25rem;margin-bottom:0.25rem;font-size:0.6rem;">Home</div>
+          <div style="padding:0.25rem 0.4rem;color:#94a3b8;margin-bottom:0.25rem;font-size:0.6rem;">Messages</div>
+          <div style="padding:0.25rem 0.4rem;color:#94a3b8;margin-bottom:0.25rem;font-size:0.6rem;">Contacts</div>
+          <div style="padding:0.25rem 0.4rem;color:#94a3b8;margin-bottom:0.25rem;font-size:0.6rem;">Settings</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;">
+          <div style="height:40px;border-bottom:1px solid #334155;display:flex;align-items:center;padding:0 0.75rem;justify-content:space-between;">
+            <span style="font-size:0.6rem;opacity:0.5;">DASHBOARD</span>
+            <span style="font-size:0.6rem;">User ▾</span>
+          </div>
+          <div style="flex:1;padding:0.75rem;">
+            <div style="background:#1e293b;border:1px solid #334155;border-radius:0.35rem;padding:0.75rem;margin-bottom:0.5rem;">
+              <div style="font-size:0.7rem;font-weight:700;">Welcome back</div>
+              <div style="font-size:0.6rem;opacity:0.5;margin-top:0.25rem;">Content area</div>
+            </div>
+          </div>
+          <div style="height:28px;border-top:1px solid #334155;display:flex;align-items:center;padding:0 0.75rem;font-size:0.55rem;opacity:0.5;">
+            v1.6.0
+          </div>
+        </div>
+      </div>
+      <p style="margin-top:0.5rem;font-size:0.75rem;color:#94a3b8;">Same visual result, but you maintain ~200 lines of custom layout CSS + responsive breakpoints yourself. DaisyUI only used for components.</p>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:1rem;font-size:0.85rem;color:#94a3b8;">The layouts look identical, but Option A lets DaisyUI handle responsive breakpoints, off-canvas mobile sidebar, and z-index stacking automatically.</p>

@@ -388,8 +388,8 @@ open class WebPageFactory(
             selectId = "theme-selector",
             selectName = "theme",
             options =
-                ThemeCatalog.allThemes().map { theme ->
-                    ShellOption(id = theme.id, label = theme.name, url = theme.id, active = theme.id == ctx.theme)
+                ThemeCatalog.allThemes.map { theme ->
+                    ShellOption(id = theme.id, label = theme.label, url = theme.id, active = theme.id == ctx.theme)
                 },
             hiddenFields =
                 listOf(
