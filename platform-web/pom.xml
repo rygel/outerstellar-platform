@@ -354,6 +354,9 @@
                         <configuration>
                             <imageName>outerstellar-web</imageName>
                             <mainClass>io.github.rygel.outerstellar.platform.MainKt</mainClass>
+                            <classpath>
+                                <param>${project.build.directory}/${project.artifactId}-${project.version}-jar-with-dependencies.jar</param>
+                            </classpath>
                             <buildArgs>
                                 <buildArg>--no-fallback</buildArg>
                                 <buildArg>--enable-http</buildArg>
