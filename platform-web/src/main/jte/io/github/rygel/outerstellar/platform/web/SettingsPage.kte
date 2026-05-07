@@ -7,23 +7,20 @@
         <h1 style="margin-bottom: 1.5rem;">${model.data.title}</h1>
 
         <%-- Tab bar --%>
-        <nav style="display: flex; gap: 0; border-bottom: 2px solid var(--color-border, #333); margin-bottom: 1.5rem;">
+        <nav class="tabs tabs-bordered mb-6">
             @for(tab in model.data.tabs)
                 <a href="${tab.url}"
                    hx-get="${tab.url}"
                    hx-target="body"
                    hx-push-url="true"
-                   style="padding: 0.6rem 1.2rem; text-decoration: none;
-                          color: ${if (tab.active) "var(--color-primary, #3b82f6)" else "var(--color-text-muted, #888)"};
-                          border-bottom: 2px solid ${if (tab.active) "var(--color-primary, #3b82f6)" else "transparent"};
-                          margin-bottom: -2px; font-weight: ${if (tab.active) "600" else "400"};">
+                   class="tab ${if (tab.active) "tab-active" else ""}">
                     ${tab.label}
                 </a>
             @endfor
         </nav>
 
         <%-- Tab content panel --%>
-        <section class="panel" id="settings-content">
+        <section class="card bg-base-200 border border-base-300" id="settings-content">
             @if(model.data.activeTab == "profile")
                 ${model.data.profileDescription}
             @elseif(model.data.activeTab == "password")

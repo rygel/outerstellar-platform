@@ -12,7 +12,7 @@
             @if(model.data.unreadCount > 0)
                 <form method="post" action="${model.data.markAllReadUrl}">
                     <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
-                    <button type="submit" class="button-secondary" style="font-size:0.85rem;">
+                    <button type="submit" class="btn btn-ghost" style="font-size:0.85rem;">
                         <i class="ri-check-double-line"></i> ${model.data.markAllReadLabel}
                     </button>
                 </form>
@@ -20,14 +20,14 @@
         </div>
 
         @if(model.data.notifications.isEmpty())
-            <div class="panel panel-muted" style="text-align:center; padding:3rem;">
+            <div class="card bg-base-100" style="text-align:center; padding:3rem;">
                 <i class="ri-notification-off-line" style="font-size:2.5rem; opacity:0.3;"></i>
                 <p style="margin:0.75rem 0 0; opacity:0.5;">${model.data.emptyLabel}</p>
             </div>
         @else
             <div style="display:flex; flex-direction:column; gap:0.75rem;">
                 @for(n in model.data.notifications)
-                    <div class="panel@if(!n.read) panel-accent@endif"
+                    <div class="card@if(!n.read) bg-accent/10 border border-accent/30@else bg-base-200 border border-base-300@endif"
                          style="display:flex; align-items:flex-start; gap:1rem; padding:1rem 1.25rem;">
                         <div style="padding-top:0.15rem;">
                             @if(n.type == "success")
@@ -44,7 +44,7 @@
                             <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                                 <strong style="font-size:0.95rem;">${n.title}</strong>
                                 @if(!n.read)
-                                    <span class="chip" style="font-size:0.7rem; padding:0.1rem 0.4rem;">${model.data.newLabel}</span>
+                                    <span class="badge" style="font-size:0.7rem; padding:0.1rem 0.4rem;">${model.data.newLabel}</span>
                                 @endif
                                 <span style="opacity:0.45; font-size:0.8rem; margin-left:auto;">${n.timeAgo}</span>
                             </div>
@@ -53,7 +53,7 @@
                         @if(!n.read)
                             <form method="post" action="${n.markReadUrl}" style="flex-shrink:0;">
                                 <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
-                                <button type="submit" class="button-ghost" style="font-size:0.8rem; padding:0.3rem 0.6rem;"
+                                <button type="submit" class="btn btn-ghost" style="font-size:0.8rem; padding:0.3rem 0.6rem;"
                                         title="${model.data.markReadLabel}">
                                     <i class="ri-check-line"></i>
                                 </button>

@@ -9,6 +9,7 @@
         <form action="/search" method="get" style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem;">
             <input type="text" name="q" value="${model.data.query}"
                    placeholder="${model.data.searchPlaceholder}"
+                   class="input input-bordered"
                    style="flex: 1;" autofocus>
             <button type="submit">${model.data.searchLabel}</button>
         </form>
@@ -20,12 +21,12 @@
         @else
             <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem;">
                 @for(result in model.data.results)
-                    <li class="panel" style="padding: 1rem;">
+                    <li class="card bg-base-200 border border-base-300" style="padding: 1rem;">
                         <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
                             <a href="${result.url}" style="font-weight: 600; font-size: 1.05rem; text-decoration: none;">
                                 ${result.title}
                             </a>
-                            <span class="chip">${result.type}</span>
+                            <span class="badge">${result.type}</span>
                         </div>
                         <p style="margin: 0; opacity: 0.7; font-size: 0.9rem;">${result.subtitle}</p>
                     </li>

@@ -3,16 +3,16 @@
 @param model: Page<DevDashboardPage>
 
 @template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
-    <section class="panel hero-grid">
+    <section class="card bg-base-200 border border-base-300 mb-4">
         <div>
-            <p class="status-badge">${model.data.badge}</p>
+            <p class="badge badge-outline">${model.data.badge}</p>
             <h1>${model.data.heading}</h1>
             <p>${model.data.description}</p>
         </div>
     </section>
 
-    <div class="card-grid">
-        <section class="panel">
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
+        <section class="card bg-base-200 border border-base-300">
             <h2>${model.data.outboxLabel}</h2>
             <div class="message-list">
                 <div class="message-meta">
@@ -30,7 +30,7 @@
             </div>
         </section>
 
-        <section class="panel">
+        <section class="card bg-base-200 border border-base-300">
             <h2>${model.data.cacheLabel}</h2>
             <div class="message-list">
                 @for(entry in model.data.cacheStats)
@@ -43,24 +43,24 @@
         </section>
     </div>
 
-    <section class="panel">
+    <section class="card bg-base-200 border border-base-300">
         <h2>${model.data.protocolLabel}</h2>
         <p class="opacity-70 mb-4">${model.data.protocolDescription}</p>
-        <div class="button-row">
+        <div class="flex gap-3 justify-end">
             <a href="outerstellar://sync" class="button-link">${model.data.triggerSyncLabel}</a>
-            <a href="outerstellar://search?q=HTMX" class="button-link button-secondary">${model.data.searchHtmxLabel}</a>
-            <a href="outerstellar://search?q=Dracula" class="button-link button-secondary">${model.data.searchDraculaLabel}</a>
+            <a href="outerstellar://search?q=HTMX" class="button-link btn btn-ghost">${model.data.searchHtmxLabel}</a>
+            <a href="outerstellar://search?q=Dracula" class="button-link btn btn-ghost">${model.data.searchDraculaLabel}</a>
         </div>
     </section>
 
-    <section class="panel">
+    <section class="card bg-base-200 border border-base-300">
         <h2>${model.data.telemetryLabel}</h2>
-        <p class="status-badge">${model.data.telemetryStatus}</p>
+        <p class="badge badge-outline">${model.data.telemetryStatus}</p>
     </section>
 
-    <section class="panel">
+    <section class="card bg-base-200 border border-base-300">
         <h2>${model.data.metricsLabel}</h2>
-        <pre class="panel panel-muted" style="overflow: auto; max-height: 400px; font-size: 12px; font-family: monospace;">
+        <pre class="card bg-base-100" style="overflow: auto; max-height: 400px; font-size: 12px; font-family: monospace;">
 ${model.data.metrics}
         </pre>
     </section>
