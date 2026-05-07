@@ -1,6 +1,5 @@
 package io.github.rygel.outerstellar.platform.swing
 
-import com.formdev.flatlaf.FlatLightLaf
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
@@ -9,7 +8,6 @@ import io.github.rygel.outerstellar.platform.di.desktopModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.MessageSummary
-import io.github.rygel.outerstellar.platform.model.ThemeCatalog
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
 import io.github.rygel.outerstellar.platform.service.MessageService
@@ -156,12 +154,11 @@ private fun initializeUi(
     savedState: DesktopState?,
     i18nService: I18nService,
 ) {
-    FlatLightLaf.setup()
-
     val themeManager = ThemeManager()
     val startupTheme =
-        savedState?.themeId?.let { themeId -> ThemeCatalog.allThemes().find { it.id == themeId } }
-            ?: ThemeCatalog.findTheme("default")
+        savedState?.themeId?.let { themeId ->
+            DesktopTheme.entries.firstOrNull { it.name.equals(themeId, ignoreCase = true) }
+        } ?: DesktopTheme.DARK
     themeManager.applyTheme(startupTheme)
 
     val notifier = SystemTrayNotifier(i18nService)
@@ -500,7 +497,7 @@ class SyncWindow(
                 windowBounds = frame.bounds,
                 isMaximized = (frame.extendedState and JFrame.MAXIMIZED_BOTH) != 0,
                 lastSearchQuery = viewModel.searchQuery.takeIf { it.isNotBlank() },
-                themeId = ThemeCatalog.allThemes().find { it.name == themeName }?.id,
+                themeId = DesktopTheme.entries.firstOrNull { it.label == themeName }?.name,
                 language = Locale.getDefault().language,
             )
         DesktopStateProvider.saveState(state)
@@ -1402,10 +1399,10 @@ class SyncWindow(
         dialog.add(langCombo, "growx, wrap")
 
         dialog.add(JLabel(i18nService.translate("swing.settings.theme")))
-        val allThemes = ThemeCatalog.allThemes().sortedBy { it.name }
-        val themeCombo = JComboBox<String>(allThemes.map { it.name }.toTypedArray()).apply { name = "themeCombo" }
+        val allThemes = DesktopTheme.entries.sortedBy { it.label }
+        val themeCombo = JComboBox<String>(allThemes.map { it.label }.toTypedArray()).apply { name = "themeCombo" }
         val currentThemeName = UIManager.get("current_theme_name") as? String
-        themeCombo.selectedIndex = allThemes.indexOfFirst { it.name == currentThemeName }.coerceAtLeast(0)
+        themeCombo.selectedIndex = allThemes.indexOfFirst { it.label == currentThemeName }.coerceAtLeast(0)
         dialog.add(themeCombo, "growx, wrap")
 
         val previewPanel =
@@ -1418,19 +1415,17 @@ class SyncWindow(
         previewPanel.add(sampleButton, "center")
         dialog.add(previewPanel, "span, growx, wrap, gaptop 15")
 
-        fun updatePreview(theme: io.github.rygel.outerstellar.platform.model.ThemeDefinition) {
-            val colors = theme.colors
-            val bg = themeManager.decodeColor(colors["background"]) ?: Color.WHITE
-            val fg = themeManager.decodeColor(colors["foreground"]) ?: Color.BLACK
-            val compBg = themeManager.decodeColor(colors["componentBackground"]) ?: Color.WHITE
-            val accent = themeManager.decodeColor(colors["accent"]) ?: Color.BLUE
-            val border = themeManager.decodeColor(colors["borderColor"]) ?: Color.GRAY
+        fun updatePreview(theme: DesktopTheme) {
+            theme.lafSetup()
+            val bg = UIManager.getColor("Panel.background") ?: Color.WHITE
+            val fg = UIManager.getColor("Label.foreground") ?: Color.BLACK
+            val compBg = UIManager.getColor("TextField.background") ?: Color.WHITE
 
             previewPanel.background = bg
             previewPanel.border =
                 BorderFactory.createTitledBorder(
-                    BorderFactory.createLineBorder(border),
-                    "Theme Preview: ${theme.name}",
+                    BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor") ?: Color.GRAY),
+                    "Theme Preview: ${theme.label}",
                     TitledBorder.DEFAULT_JUSTIFICATION,
                     TitledBorder.DEFAULT_POSITION,
                     null,
@@ -1439,8 +1434,11 @@ class SyncWindow(
             sampleLabel.foreground = fg
             sampleField.background = compBg
             sampleField.foreground = fg
-            sampleButton.background = accent
             sampleButton.foreground = fg
+
+            val savedTheme =
+                DesktopTheme.entries.firstOrNull { it.label == UIManager.get("current_theme_name") as? String }
+            if (savedTheme != null) savedTheme.lafSetup()
         }
 
         themeCombo.addActionListener { updatePreview(allThemes[themeCombo.selectedIndex]) }

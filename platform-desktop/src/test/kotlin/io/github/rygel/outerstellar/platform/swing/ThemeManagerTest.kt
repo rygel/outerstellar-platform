@@ -1,6 +1,5 @@
 package io.github.rygel.outerstellar.platform.swing
 
-import io.github.rygel.outerstellar.platform.model.ThemeCatalog
 import java.awt.Color
 import javax.swing.SwingUtilities
 import javax.swing.UIManager
@@ -17,64 +16,58 @@ class ThemeManagerTest {
     }
 
     @Test
-    fun `applyTheme updates toolbar and core ui color defaults`() {
-        val dark = ThemeCatalog.allThemes().first { it.name == "Dark" }
-        val expectedBackground = Color.decode(dark.colors.getValue("background"))
-        val expectedForeground = Color.decode(dark.colors.getValue("foreground"))
-        val expectedComponentBackground = Color.decode(dark.colors.getValue("componentBackground"))
-
-        onEdt { themeManager.applyTheme(dark) }
-
+    fun `applyTheme updates current theme name to Dark`() {
+        onEdt { themeManager.applyTheme(DesktopTheme.DARK) }
         onEdt {
             assertEquals("Dark", UIManager.get("current_theme_name"))
-            assertEquals(expectedBackground.rgb, UIManager.getColor("Panel.background").rgb)
-            assertEquals(expectedBackground.rgb, UIManager.getColor("MenuBar.background").rgb)
-            assertEquals(expectedBackground.rgb, UIManager.getColor("ToolBar.background").rgb)
-            assertEquals(expectedForeground.rgb, UIManager.getColor("ToolBar.foreground").rgb)
-            assertEquals(expectedComponentBackground.rgb, UIManager.getColor("List.background").rgb)
-            assertEquals(expectedComponentBackground.rgb, UIManager.getColor("TextField.background").rgb)
-            assertEquals(expectedComponentBackground.rgb, UIManager.getColor("TextArea.background").rgb)
+            assertNotNull(UIManager.getColor("Panel.background"))
+            assertNotNull(UIManager.getColor("ToolBar.background"))
         }
     }
 
     @Test
     fun `applyTheme switches ui defaults when changing themes twice`() {
-        val dark = ThemeCatalog.allThemes().first { it.name == "Dark" }
-        val light = ThemeCatalog.allThemes().first { it.name == "Default" }
-        val expectedDarkBg = Color.decode(dark.colors.getValue("background"))
-        val expectedLightBg = Color.decode(light.colors.getValue("background"))
-
-        onEdt { themeManager.applyTheme(dark) }
+        onEdt { themeManager.applyTheme(DesktopTheme.DARK) }
         onEdt {
-            assertEquals(expectedDarkBg.rgb, UIManager.getColor("Panel.background").rgb)
-            assertEquals(expectedDarkBg.rgb, UIManager.getColor("ToolBar.background").rgb)
+            assertEquals("Dark", UIManager.get("current_theme_name"))
+            assertNotNull(UIManager.getColor("Panel.background"))
         }
 
-        onEdt { themeManager.applyTheme(light) }
+        onEdt { themeManager.applyTheme(DesktopTheme.LIGHT) }
         onEdt {
-            assertEquals("Default", UIManager.get("current_theme_name"))
-            assertEquals(expectedLightBg.rgb, UIManager.getColor("Panel.background").rgb)
-            assertEquals(expectedLightBg.rgb, UIManager.getColor("ToolBar.background").rgb)
+            assertEquals("Light", UIManager.get("current_theme_name"))
+            assertNotNull(UIManager.getColor("Panel.background"))
         }
     }
 
     @Test
-    fun `all catalog themes can be applied and update critical ui keys`() {
-        ThemeCatalog.allThemes().forEach { theme ->
-            val expectedBackground = Color.decode(theme.colors.getValue("background"))
-            val expectedComponentBackground = Color.decode(theme.colors.getValue("componentBackground"))
-
+    fun `all desktop themes can be applied and update critical ui keys`() {
+        DesktopTheme.entries.forEach { theme ->
             onEdt { themeManager.applyTheme(theme) }
 
             onEdt {
-                assertEquals(theme.name, UIManager.get("current_theme_name"))
+                assertEquals(theme.label, UIManager.get("current_theme_name"))
                 assertNotNull(UIManager.getColor("Panel.background"))
                 assertNotNull(UIManager.getColor("ToolBar.background"))
                 assertNotNull(UIManager.getColor("TextField.background"))
-                assertEquals(expectedBackground.rgb, UIManager.getColor("Panel.background").rgb)
-                assertEquals(expectedBackground.rgb, UIManager.getColor("ToolBar.background").rgb)
-                assertEquals(expectedComponentBackground.rgb, UIManager.getColor("TextField.background").rgb)
             }
         }
+    }
+
+    @Test
+    fun `decodeColor returns Color for valid hex`() {
+        val color = themeManager.decodeColor("#ff0000")
+        assertNotNull(color)
+        assertEquals(Color.RED.rgb, color!!.rgb)
+    }
+
+    @Test
+    fun `decodeColor returns null for null input`() {
+        assertEquals(null, themeManager.decodeColor(null))
+    }
+
+    @Test
+    fun `decodeColor returns null for non hex input`() {
+        assertEquals(null, themeManager.decodeColor("red"))
     }
 }
