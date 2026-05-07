@@ -15,7 +15,6 @@
     <name>Platform Desktop</name>
 
     <properties>
-        <detekt.skip>true</detekt.skip>
     </properties>
 
     <dependencies>

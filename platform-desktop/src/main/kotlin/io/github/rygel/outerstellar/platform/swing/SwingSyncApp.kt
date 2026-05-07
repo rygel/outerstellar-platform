@@ -146,49 +146,65 @@ fun main() {
 
     val i18nService = I18nService.create("messages").also { it.setLocale(initialLocale) }
 
-    SwingUtilities.invokeLater {
-        FlatLightLaf.setup()
+    SwingUtilities.invokeLater { initializeUi(splash, analytics, connectivityChecker, savedState, i18nService) }
+}
 
-        val themeManager = ThemeManager()
-        val startupTheme =
-            savedState?.themeId?.let { themeId -> ThemeCatalog.allThemes().find { it.id == themeId } }
-                ?: ThemeCatalog.findTheme("default")
-        themeManager.applyTheme(startupTheme)
+private fun initializeUi(
+    splash: JWindow,
+    analytics: PersistentBatchingAnalyticsService?,
+    connectivityChecker: ConnectivityChecker,
+    savedState: DesktopState?,
+    i18nService: I18nService,
+) {
+    FlatLightLaf.setup()
 
-        val notifier = SystemTrayNotifier(i18nService)
-        val viewModel =
-            SyncViewModel(
-                desktop.messageService,
-                desktop.contactService,
-                desktop.syncService,
-                i18nService,
-                notifier,
-                analytics ?: NoOpAnalyticsService(),
-                connectivityChecker,
-            )
-        val window = SyncWindow(viewModel, themeManager, i18nService, desktop.config.version, desktop.config.updateUrl)
+    val themeManager = ThemeManager()
+    val startupTheme =
+        savedState?.themeId?.let { themeId -> ThemeCatalog.allThemes().find { it.id == themeId } }
+            ?: ThemeCatalog.findTheme("default")
+    themeManager.applyTheme(startupTheme)
 
-        DeepLinkHandler.setup(
-            onSearch = { query ->
-                SwingUtilities.invokeLater {
-                    viewModel.searchQuery = query
-                    window.updateSearchField(query)
-                }
-            },
-            onSync = { SwingUtilities.invokeLater { viewModel.sync() } },
+    val notifier = SystemTrayNotifier(i18nService)
+    val viewModel =
+        SyncViewModel(
+            DesktopComponent.messageService,
+            DesktopComponent.contactService,
+            DesktopComponent.syncService,
+            i18nService,
+            notifier,
+            analytics ?: NoOpAnalyticsService(),
+            connectivityChecker,
+        )
+    val window =
+        SyncWindow(
+            viewModel,
+            themeManager,
+            i18nService,
+            DesktopComponent.config.version,
+            DesktopComponent.config.updateUrl,
         )
 
-        window.show()
-        splash.dispose()
+    DeepLinkHandler.setup(
+        onSearch = { query ->
+            SwingUtilities.invokeLater {
+                viewModel.searchQuery = query
+                window.updateSearchField(query)
+            }
+        },
+        onSync = { SwingUtilities.invokeLater { viewModel.sync() } },
+    )
 
-        // Auto-login in development mode — credentials must be set via config/env, never hardcoded
-        if (
-            desktop.config.devMode && desktop.config.devUsername.isNotBlank() && desktop.config.devPassword.isNotBlank()
-        ) {
-            viewModel.login(desktop.config.devUsername, desktop.config.devPassword) { success, error ->
-                if (!success) {
-                    println("Dev auto-login failed: $error")
-                }
+    window.show()
+    splash.dispose()
+
+    if (
+        DesktopComponent.config.devMode &&
+            DesktopComponent.config.devUsername.isNotBlank() &&
+            DesktopComponent.config.devPassword.isNotBlank()
+    ) {
+        viewModel.login(DesktopComponent.config.devUsername, DesktopComponent.config.devPassword) { success, error ->
+            if (!success) {
+                println("Dev auto-login failed: $error")
             }
         }
     }
@@ -292,7 +308,7 @@ class SyncWindow(
         JLabel().apply {
             name = "offlineBadge"
             isVisible = false
-            foreground = Color(0xCC, 0x44, 0x44)
+            foreground = COLOR_DANGER
             font = font.deriveFont(Font.BOLD, 11f)
         }
     private val statusHintLabel = JLabel().apply { name = "statusHintLabel" }
@@ -620,8 +636,43 @@ class SyncWindow(
         frame.setLocationRelativeTo(null)
         frame.jMenuBar = createMenuBar()
 
-        // SIDEBAR
-        sidebarPanel =
+        mainCardPanel = JPanel(mainLayout)
+        sidebarPanel = createSidebar()
+
+        messagesPanel = createMessagesView()
+        mainCardPanel.add(messagesPanel, "MESSAGES")
+
+        contactsPanel = createContactsView()
+        mainCardPanel.add(contactsPanel, "CONTACTS")
+
+        usersPanel = createUsersAdminView()
+        mainCardPanel.add(usersPanel, "USERS")
+
+        notificationsPanel = createNotificationsView()
+        mainCardPanel.add(notificationsPanel, "NOTIFICATIONS")
+
+        profilePanel = createProfileView()
+        mainCardPanel.add(profilePanel, "PROFILE")
+
+        val splitPane =
+            JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebarPanel, mainCardPanel).apply {
+                dividerLocation = 140
+                dividerSize = 1
+                border = null
+            }
+
+        configureStatusBar()
+        rootPanel =
+            JPanel(BorderLayout()).apply {
+                add(splitPane, BorderLayout.CENTER)
+                add(statusBar, BorderLayout.SOUTH)
+            }
+        frame.contentPane = rootPanel
+        applyTranslations()
+    }
+
+    private fun createSidebar(): JPanel {
+        val panel =
             JPanel(MigLayout("fillx, ins 10, gap 10", "[grow]", "[]10[]10[grow]")).apply { name = "sidebarPanel" }
 
         navMessagesBtn.addActionListener { mainLayout.show(mainCardPanel, "MESSAGES") }
@@ -639,24 +690,24 @@ class SyncWindow(
             viewModel.loadProfile { _, _ -> }
         }
 
-        sidebarPanel.add(navMessagesBtn, "growx, h 100!, wrap")
-        sidebarPanel.add(navContactsBtn, "growx, h 100!, wrap")
-        sidebarPanel.add(navUsersBtn, "growx, h 100!, wrap")
-        sidebarPanel.add(navNotificationsBtn, "growx, h 100!, wrap")
-        sidebarPanel.add(navProfileBtn, "growx, h 100!, wrap")
-        sidebarPanel.add(Box.createVerticalGlue(), "growy")
+        panel.add(navMessagesBtn, "growx, h 100!, wrap")
+        panel.add(navContactsBtn, "growx, h 100!, wrap")
+        panel.add(navUsersBtn, "growx, h 100!, wrap")
+        panel.add(navNotificationsBtn, "growx, h 100!, wrap")
+        panel.add(navProfileBtn, "growx, h 100!, wrap")
+        panel.add(Box.createVerticalGlue(), "growy")
 
-        // MAIN CONTENT (CARD LAYOUT)
-        mainCardPanel = JPanel(mainLayout)
+        return panel
+    }
 
-        // --- Messages View ---
-        messagesPanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][grow]"))
+    private fun createMessagesView(): JPanel {
+        val panel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][grow]"))
 
         searchPanel = JPanel(MigLayout("fillx, ins 0", "[][grow][]", "[]"))
         searchPanel.add(searchLabel)
         searchPanel.add(searchField, "growx")
         searchPanel.add(syncButton, "w 120!")
-        messagesPanel.add(searchPanel, "growx, wrap")
+        panel.add(searchPanel, "growx, wrap")
 
         messagesList.cellRenderer =
             object : DefaultListCellRenderer() {
@@ -685,7 +736,7 @@ class SyncWindow(
                     }
             }
         messagesScrollPane = JScrollPane(messagesList)
-        messagesPanel.add(messagesScrollPane, "grow, wrap")
+        panel.add(messagesScrollPane, "grow, wrap")
 
         footerPanel = JPanel(MigLayout("fillx, ins 0", "[grow][]", "[][]"))
         footerPanel.add(authorLabel, "split 2")
@@ -693,12 +744,13 @@ class SyncWindow(
         contentScrollPane = JScrollPane(contentArea)
         footerPanel.add(contentScrollPane, "grow, h 80!, span, wrap")
         footerPanel.add(createButton, "w 180!")
-        messagesPanel.add(footerPanel, "growx")
+        panel.add(footerPanel, "growx")
 
-        mainCardPanel.add(messagesPanel, "MESSAGES")
+        return panel
+    }
 
-        // --- Contacts View ---
-        contactsPanel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow]"))
+    private fun createContactsView(): JPanel {
+        val panel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow]"))
 
         val contactsHeaderPanel = JPanel(MigLayout("fillx, ins 0", "[grow][]", "[]"))
         contactsHeaderPanel.add(JLabel("Contacts Directory").apply { font = font.deriveFont(Font.BOLD, 18f) })
@@ -710,8 +762,8 @@ class SyncWindow(
             }
         contactsHeaderPanel.add(createContactBtn, "right")
 
-        contactsPanel.add(contactsHeaderPanel, "wrap, growx, gapbottom 10")
-        contactsPanel.add(JScrollPane(contactsTable), "grow")
+        panel.add(contactsHeaderPanel, "wrap, growx, gapbottom 10")
+        panel.add(JScrollPane(contactsTable), "grow")
 
         contactsTable.addMouseListener(
             object : MouseAdapter() {
@@ -727,17 +779,18 @@ class SyncWindow(
             }
         )
 
-        mainCardPanel.add(contactsPanel, "CONTACTS")
+        return panel
+    }
 
-        // --- Users Admin View ---
-        usersPanel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow][]"))
+    private fun createUsersAdminView(): JPanel {
+        val panel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow][]"))
 
         val usersHeaderPanel = JPanel(MigLayout("fillx, ins 0", "[grow]", "[]"))
         usersHeaderPanel.add(
             JLabel(i18nService.translate("swing.admin.users.title")).apply { font = font.deriveFont(Font.BOLD, 18f) }
         )
-        usersPanel.add(usersHeaderPanel, "wrap, growx, gapbottom 10")
-        usersPanel.add(JScrollPane(usersTable), "grow, wrap")
+        panel.add(usersHeaderPanel, "wrap, growx, gapbottom 10")
+        panel.add(JScrollPane(usersTable), "grow, wrap")
 
         val userActionsPanel = JPanel(MigLayout("ins 0, fillx", "[][]", "[]"))
         val toggleEnabledBtn =
@@ -764,12 +817,13 @@ class SyncWindow(
             }
         userActionsPanel.add(toggleEnabledBtn)
         userActionsPanel.add(toggleRoleBtn)
-        usersPanel.add(userActionsPanel, "growx")
+        panel.add(userActionsPanel, "growx")
 
-        mainCardPanel.add(usersPanel, "USERS")
+        return panel
+    }
 
-        // --- Notifications View ---
-        notificationsPanel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow][]"))
+    private fun createNotificationsView(): JPanel {
+        val panel = JPanel(MigLayout("fill, ins 20", "[grow]", "[][grow][]"))
 
         val notifHeaderPanel = JPanel(MigLayout("fillx, ins 0", "[grow][]", "[]"))
         notifHeaderPanel.add(
@@ -784,7 +838,7 @@ class SyncWindow(
                 addActionListener { viewModel.markAllNotificationsRead() }
             }
         notifHeaderPanel.add(markAllReadBtn, "right")
-        notificationsPanel.add(notifHeaderPanel, "wrap, growx, gapbottom 10")
+        panel.add(notifHeaderPanel, "wrap, growx, gapbottom 10")
 
         val notifListModel =
             javax.swing.DefaultListModel<io.github.rygel.outerstellar.platform.model.NotificationSummary>()
@@ -810,7 +864,7 @@ class SyncWindow(
                         }
                     }
             }
-        notificationsPanel.add(JScrollPane(notifList), "grow, wrap")
+        panel.add(JScrollPane(notifList), "grow, wrap")
 
         val notifActionsPanel = JPanel(MigLayout("ins 0, fillx", "[]", "[]"))
         val markReadBtn =
@@ -825,11 +879,8 @@ class SyncWindow(
                 }
             }
         notifActionsPanel.add(markReadBtn)
-        notificationsPanel.add(notifActionsPanel, "growx")
+        panel.add(notifActionsPanel, "growx")
 
-        mainCardPanel.add(notificationsPanel, "NOTIFICATIONS")
-
-        // Wire notification list updates from viewModel
         viewModel.addObserver {
             javax.swing.SwingUtilities.invokeLater {
                 val unread = viewModel.unreadNotificationCount
@@ -846,115 +897,145 @@ class SyncWindow(
             }
         }
 
-        // --- Profile View ---
-        profilePanel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][][][grow]"))
+        return panel
+    }
 
-        profilePanel.add(
+    private fun createProfileView(): JPanel {
+        val panel = JPanel(MigLayout("fill, ins 20, gap 15", "[grow]", "[][][][grow]"))
+
+        panel.add(
             JLabel(i18nService.translate("swing.profile.title")).apply { font = font.deriveFont(Font.BOLD, 18f) },
             "wrap, gapbottom 10",
         )
 
-        // Section 1: Profile info
-        val profileInfoPanel = JPanel(MigLayout("fillx, ins 10, gap 8", "[120!][grow]", "[][][][] "))
-        profileInfoPanel.border =
-            javax.swing.BorderFactory.createTitledBorder(i18nService.translate("swing.profile.section.info"))
+        val (profileInfoPanel, profileFields, _) = createProfileInfoPanel()
+        panel.add(profileInfoPanel, "growx, wrap, gapbottom 12")
 
-        val profileEmailField = JTextField().apply { name = "profileEmailField" }
-        val profileUsernameField = JTextField().apply { name = "profileUsernameField" }
-        val profileAvatarUrlField = JTextField().apply { name = "profileAvatarUrlField" }
-        val profileStatusLabel =
+        val (notifPanel, emailCheckbox, pushCheckbox) = createNotifPrefsPanel()
+        panel.add(notifPanel, "growx, wrap, gapbottom 12")
+
+        val dangerPanel = createDangerPanel()
+        panel.add(dangerPanel, "growx, wrap")
+
+        viewModel.addObserver {
+            javax.swing.SwingUtilities.invokeLater {
+                navProfileBtn.isEnabled = viewModel.isLoggedIn
+                if (viewModel.isLoggedIn) {
+                    profileFields[0].text = viewModel.userName
+                    profileFields[1].text = viewModel.userEmail
+                    profileFields[2].text = viewModel.userAvatarUrl ?: ""
+                    emailCheckbox.isSelected = viewModel.emailNotificationsEnabled
+                    pushCheckbox.isSelected = viewModel.pushNotificationsEnabled
+                }
+            }
+        }
+
+        return panel
+    }
+
+    private fun createProfileInfoPanel(): Triple<JPanel, Array<JTextField>, JLabel> {
+        val panel = JPanel(MigLayout("fillx, ins 10, gap 8", "[120!][grow]", "[][][][] "))
+        panel.border = javax.swing.BorderFactory.createTitledBorder(i18nService.translate("swing.profile.section.info"))
+
+        val emailField = JTextField().apply { name = "profileEmailField" }
+        val usernameField = JTextField().apply { name = "profileUsernameField" }
+        val avatarUrlField = JTextField().apply { name = "profileAvatarUrlField" }
+        val statusLabel =
             JLabel().apply {
                 name = "profileStatusLabel"
-                foreground = Color(0x22, 0x77, 0x22)
+                foreground = COLOR_SUCCESS
             }
 
-        profileInfoPanel.add(JLabel(i18nService.translate("swing.profile.label.email")))
-        profileInfoPanel.add(profileEmailField, "growx, wrap")
-        profileInfoPanel.add(JLabel(i18nService.translate("swing.profile.label.username")))
-        profileInfoPanel.add(profileUsernameField, "growx, wrap")
-        profileInfoPanel.add(JLabel(i18nService.translate("swing.profile.label.avatar")))
-        profileInfoPanel.add(profileAvatarUrlField, "growx, wrap")
-        profileInfoPanel.add(profileStatusLabel, "skip 1, wrap")
+        panel.add(JLabel(i18nService.translate("swing.profile.label.email")))
+        panel.add(emailField, "growx, wrap")
+        panel.add(JLabel(i18nService.translate("swing.profile.label.username")))
+        panel.add(usernameField, "growx, wrap")
+        panel.add(JLabel(i18nService.translate("swing.profile.label.avatar")))
+        panel.add(avatarUrlField, "growx, wrap")
+        panel.add(statusLabel, "skip 1, wrap")
 
-        val saveProfileBtn =
+        val saveBtn =
             JButton(i18nService.translate("swing.profile.save")).apply {
                 name = "saveProfileBtn"
                 icon = RemixIcon.get("system/save-line")
             }
-        saveProfileBtn.addActionListener {
-            val email = profileEmailField.text.trim()
-            val username = profileUsernameField.text.trim().takeIf { it.isNotBlank() }
-            val avatarUrl = profileAvatarUrlField.text.trim().takeIf { it.isNotBlank() }
-            saveProfileBtn.isEnabled = false
+        saveBtn.addActionListener {
+            val email = emailField.text.trim()
+            val username = usernameField.text.trim().takeIf { it.isNotBlank() }
+            val avatarUrl = avatarUrlField.text.trim().takeIf { it.isNotBlank() }
+            saveBtn.isEnabled = false
             viewModel.updateProfile(email, username, avatarUrl) { success, error ->
-                saveProfileBtn.isEnabled = true
+                saveBtn.isEnabled = true
                 if (success) {
-                    profileStatusLabel.foreground = Color(0x22, 0x77, 0x22)
-                    profileStatusLabel.text = i18nService.translate("swing.profile.saved")
+                    statusLabel.foreground = COLOR_SUCCESS
+                    statusLabel.text = i18nService.translate("swing.profile.saved")
                 } else {
-                    profileStatusLabel.foreground = Color(0xCC, 0x44, 0x44)
-                    profileStatusLabel.text = error ?: i18nService.translate("swing.profile.save.failed")
+                    statusLabel.foreground = COLOR_DANGER
+                    statusLabel.text = error ?: i18nService.translate("swing.profile.save.failed")
                 }
             }
         }
-        profileInfoPanel.add(saveProfileBtn, "skip 1, wrap")
-        profilePanel.add(profileInfoPanel, "growx, wrap, gapbottom 12")
+        panel.add(saveBtn, "skip 1, wrap")
 
-        // Section 2: Notification preferences
-        val notifPrefsPanel = JPanel(MigLayout("fillx, ins 10, gap 8", "[grow]", "[][]"))
-        notifPrefsPanel.border =
+        return Triple(panel, arrayOf(emailField, usernameField, avatarUrlField), statusLabel)
+    }
+
+    private fun createNotifPrefsPanel(): Triple<JPanel, JCheckBox, JCheckBox> {
+        val panel = JPanel(MigLayout("fillx, ins 10, gap 8", "[grow]", "[][]"))
+        panel.border =
             javax.swing.BorderFactory.createTitledBorder(i18nService.translate("swing.profile.section.notifications"))
 
-        val emailNotifCheckbox =
+        val emailCheckbox =
             JCheckBox(i18nService.translate("swing.profile.notif.email")).apply { name = "emailNotifCheckbox" }
-        val pushNotifCheckbox =
+        val pushCheckbox =
             JCheckBox(i18nService.translate("swing.profile.notif.push")).apply { name = "pushNotifCheckbox" }
-        val notifStatusLabel =
+        val statusLabel =
             JLabel().apply {
                 name = "notifStatusLabel"
-                foreground = Color(0x22, 0x77, 0x22)
+                foreground = COLOR_SUCCESS
             }
 
-        notifPrefsPanel.add(emailNotifCheckbox, "wrap")
-        notifPrefsPanel.add(pushNotifCheckbox, "wrap")
-        notifPrefsPanel.add(notifStatusLabel, "wrap")
+        panel.add(emailCheckbox, "wrap")
+        panel.add(pushCheckbox, "wrap")
+        panel.add(statusLabel, "wrap")
 
-        val saveNotifBtn = JButton(i18nService.translate("swing.profile.notif.save")).apply { name = "saveNotifBtn" }
-        saveNotifBtn.addActionListener {
-            saveNotifBtn.isEnabled = false
-            viewModel.updateNotificationPreferences(emailNotifCheckbox.isSelected, pushNotifCheckbox.isSelected) {
-                success,
-                error ->
-                saveNotifBtn.isEnabled = true
+        val saveBtn = JButton(i18nService.translate("swing.profile.notif.save")).apply { name = "saveNotifBtn" }
+        saveBtn.addActionListener {
+            saveBtn.isEnabled = false
+            viewModel.updateNotificationPreferences(emailCheckbox.isSelected, pushCheckbox.isSelected) { success, error
+                ->
+                saveBtn.isEnabled = true
                 if (success) {
-                    notifStatusLabel.foreground = Color(0x22, 0x77, 0x22)
-                    notifStatusLabel.text = i18nService.translate("swing.profile.notif.saved")
+                    statusLabel.foreground = COLOR_SUCCESS
+                    statusLabel.text = i18nService.translate("swing.profile.notif.saved")
                 } else {
-                    notifStatusLabel.foreground = Color(0xCC, 0x44, 0x44)
-                    notifStatusLabel.text = error ?: i18nService.translate("swing.profile.save.failed")
+                    statusLabel.foreground = COLOR_DANGER
+                    statusLabel.text = error ?: i18nService.translate("swing.profile.save.failed")
                 }
             }
         }
-        notifPrefsPanel.add(saveNotifBtn, "wrap")
-        profilePanel.add(notifPrefsPanel, "growx, wrap, gapbottom 12")
+        panel.add(saveBtn, "wrap")
 
-        // Section 3: Danger zone
-        val dangerPanel = JPanel(MigLayout("fillx, ins 10, gap 8", "[grow]", "[][]"))
-        dangerPanel.border =
+        return Triple(panel, emailCheckbox, pushCheckbox)
+    }
+
+    private fun createDangerPanel(): JPanel {
+        val panel = JPanel(MigLayout("fillx, ins 10, gap 8", "[grow]", "[][]"))
+        panel.border =
             BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(Color(0xCC, 0x44, 0x44), 1),
+                BorderFactory.createLineBorder(COLOR_DANGER, 1),
                 i18nService.translate("swing.profile.section.danger"),
                 TitledBorder.DEFAULT_JUSTIFICATION,
                 TitledBorder.DEFAULT_POSITION,
                 null,
-                Color(0xCC, 0x44, 0x44),
+                COLOR_DANGER,
             )
 
-        dangerPanel.add(JLabel(i18nService.translate("swing.profile.danger.description")), "wrap")
+        panel.add(JLabel(i18nService.translate("swing.profile.danger.description")), "wrap")
         val deleteAccountBtn =
             JButton(i18nService.translate("swing.profile.delete")).apply {
                 name = "deleteAccountBtn"
-                foreground = Color(0xCC, 0x44, 0x44)
+                foreground = COLOR_DANGER
             }
         deleteAccountBtn.addActionListener {
             val confirmed =
@@ -988,40 +1069,8 @@ class SyncWindow(
                 }
             }
         }
-        dangerPanel.add(deleteAccountBtn, "wrap")
-        profilePanel.add(dangerPanel, "growx, wrap")
-
-        mainCardPanel.add(profilePanel, "PROFILE")
-
-        // Wire profile fields from viewModel
-        viewModel.addObserver {
-            javax.swing.SwingUtilities.invokeLater {
-                navProfileBtn.isEnabled = viewModel.isLoggedIn
-                if (viewModel.isLoggedIn) {
-                    profileUsernameField.text = viewModel.userName
-                    profileEmailField.text = viewModel.userEmail
-                    profileAvatarUrlField.text = viewModel.userAvatarUrl ?: ""
-                    emailNotifCheckbox.isSelected = viewModel.emailNotificationsEnabled
-                    pushNotifCheckbox.isSelected = viewModel.pushNotificationsEnabled
-                }
-            }
-        }
-
-        val splitPane =
-            JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sidebarPanel, mainCardPanel).apply {
-                dividerLocation = 140
-                dividerSize = 1
-                border = null
-            }
-
-        configureStatusBar()
-        rootPanel =
-            JPanel(BorderLayout()).apply {
-                add(splitPane, BorderLayout.CENTER)
-                add(statusBar, BorderLayout.SOUTH)
-            }
-        frame.contentPane = rootPanel
-        applyTranslations()
+        panel.add(deleteAccountBtn, "wrap")
+        return panel
     }
 
     private fun createMenuBar(): JMenuBar {
@@ -1155,6 +1204,14 @@ class SyncWindow(
         dialog.isVisible = true
     }
 
+    private fun createListManageButton(label: String, list: MutableList<String>): JButton =
+        JButton("Manage $label (${list.size})").apply {
+            addActionListener {
+                showListEditDialog(label, list)
+                text = "Manage $label (${list.size})"
+            }
+        }
+
     private fun showContactFormDialog(syncId: String?) {
         val isEditing = syncId != null
         val title = if (isEditing) "Edit Contact" else "Create Contact"
@@ -1175,34 +1232,13 @@ class SyncWindow(
         dialog.add(nameField, "growx, wrap")
 
         dialog.add(JLabel("Emails:"), "right")
-        val editEmailsBtn =
-            JButton("Manage Emails (${emails.size})").apply {
-                addActionListener {
-                    showListEditDialog("Emails", emails)
-                    text = "Manage Emails (${emails.size})"
-                }
-            }
-        dialog.add(editEmailsBtn, "growx, wrap")
+        dialog.add(createListManageButton("Emails", emails), "growx, wrap")
 
         dialog.add(JLabel("Phones:"), "right")
-        val editPhonesBtn =
-            JButton("Manage Phones (${phones.size})").apply {
-                addActionListener {
-                    showListEditDialog("Phones", phones)
-                    text = "Manage Phones (${phones.size})"
-                }
-            }
-        dialog.add(editPhonesBtn, "growx, wrap")
+        dialog.add(createListManageButton("Phones", phones), "growx, wrap")
 
         dialog.add(JLabel("Social Media:"), "right")
-        val editSocialsBtn =
-            JButton("Manage Socials (${socials.size})").apply {
-                addActionListener {
-                    showListEditDialog("Social Media", socials)
-                    text = "Manage Socials (${socials.size})"
-                }
-            }
-        dialog.add(editSocialsBtn, "growx, wrap")
+        dialog.add(createListManageButton("Socials", socials), "growx, wrap")
 
         dialog.add(JLabel("Company:"), "right")
         dialog.add(companyField, "growx, wrap")
@@ -1655,6 +1691,8 @@ class SyncWindow(
     companion object {
         private const val MIN_DIALOG_WIDTH = 420
         private const val MIN_DIALOG_HEIGHT = 250
+        private val COLOR_DANGER = Color(0xCC, 0x44, 0x44)
+        private val COLOR_SUCCESS = Color(0x22, 0x77, 0x22)
     }
 
     private fun createActionRow(vararg buttons: JButton): JPanel =

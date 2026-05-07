@@ -13,26 +13,21 @@ import org.junit.jupiter.api.Test
 class ThemeE2ETest {
 
     @Test
-    fun `components should use colors from UIManager after theme application`() {
+    fun `dark theme should apply colors from UIManager to components`() {
         val themeManager = ThemeManager()
         val darkTheme = ThemeCatalog.allThemes().first { it.id == "dark" }
-        val lightTheme = ThemeCatalog.allThemes().first { it.id == "default" }
 
-        val expectedDarkBg = Color.decode(darkTheme.colors.getValue("background"))
-        val expectedDarkCompBg = Color.decode(darkTheme.colors.getValue("componentBackground"))
+        val expectedBg = Color.decode(darkTheme.colors.getValue("background"))
+        val expectedCompBg = Color.decode(darkTheme.colors.getValue("componentBackground"))
 
-        val expectedLightBg = Color.decode(lightTheme.colors.getValue("background"))
-        val expectedLightCompBg = Color.decode(lightTheme.colors.getValue("componentBackground"))
-
-        // Apply dark theme
         GuiActionRunner.execute { themeManager.applyTheme(darkTheme) }
 
         val panel = GuiActionRunner.execute<JPanel> { JPanel() }!!
         val textField = GuiActionRunner.execute<JTextField> { JTextField() }!!
         val button = GuiActionRunner.execute<javax.swing.JButton> { javax.swing.JButton() }!!
 
-        assertEquals(expectedDarkBg.rgb, panel.background.rgb, "Panel background should match dark theme")
-        assertEquals(expectedDarkCompBg.rgb, textField.background.rgb, "TextField background should match dark theme")
+        assertEquals(expectedBg.rgb, panel.background.rgb, "Panel background should match dark theme")
+        assertEquals(expectedCompBg.rgb, textField.background.rgb, "TextField background should match dark theme")
         assertEquals(
             Color.decode(darkTheme.colors.getValue("foreground")).rgb,
             textField.foreground.rgb,
@@ -56,40 +51,42 @@ class ThemeE2ETest {
             Color.decode(darkTheme.colors.getValue("danger")).rgb,
             (UIManager.get("Theme.danger") as Color).rgb,
         )
-
-        // Verify some new keys
-        assertEquals(expectedDarkCompBg.rgb, (UIManager.get("TextArea.background") as Color).rgb)
+        assertEquals(expectedCompBg.rgb, (UIManager.get("TextArea.background") as Color).rgb)
         assertEquals(
             Color.decode(darkTheme.colors.getValue("selectionBackground")).rgb,
             (UIManager.get("List.selectionBackground") as Color).rgb,
         )
+    }
 
-        // Apply light theme
+    @Test
+    fun `light theme should apply colors from UIManager to components`() {
+        val themeManager = ThemeManager()
+        val lightTheme = ThemeCatalog.allThemes().first { it.id == "default" }
+
+        val expectedBg = Color.decode(lightTheme.colors.getValue("background"))
+        val expectedCompBg = Color.decode(lightTheme.colors.getValue("componentBackground"))
+
         GuiActionRunner.execute { themeManager.applyTheme(lightTheme) }
 
-        val panel2 = GuiActionRunner.execute<JPanel> { JPanel() }!!
-        val textField2 = GuiActionRunner.execute<JTextField> { JTextField() }!!
-        val button2 = GuiActionRunner.execute<javax.swing.JButton> { javax.swing.JButton() }!!
+        val panel = GuiActionRunner.execute<JPanel> { JPanel() }!!
+        val textField = GuiActionRunner.execute<JTextField> { JTextField() }!!
+        val button = GuiActionRunner.execute<javax.swing.JButton> { javax.swing.JButton() }!!
 
-        assertEquals(expectedLightBg.rgb, panel2.background.rgb, "Panel background should match light theme")
-        assertEquals(
-            expectedLightCompBg.rgb,
-            textField2.background.rgb,
-            "TextField background should match light theme",
-        )
+        assertEquals(expectedBg.rgb, panel.background.rgb, "Panel background should match light theme")
+        assertEquals(expectedCompBg.rgb, textField.background.rgb, "TextField background should match light theme")
         assertEquals(
             Color.decode(lightTheme.colors.getValue("foreground")).rgb,
-            textField2.foreground.rgb,
+            textField.foreground.rgb,
             "TextField foreground should match light theme",
         )
         assertEquals(
             Color.decode(lightTheme.colors.getValue("accent")).rgb,
-            button2.background.rgb,
+            button.background.rgb,
             "Button background should match accent",
         )
         assertEquals(
             Color.decode(lightTheme.colors.getValue("foreground")).rgb,
-            button2.foreground.rgb,
+            button.foreground.rgb,
             "Button foreground should match foreground",
         )
         assertEquals(
@@ -100,9 +97,7 @@ class ThemeE2ETest {
             Color.decode(lightTheme.colors.getValue("danger")).rgb,
             (UIManager.get("Theme.danger") as Color).rgb,
         )
-
-        // Verify some new keys in light theme
-        assertEquals(expectedLightCompBg.rgb, (UIManager.get("ComboBox.background") as Color).rgb)
+        assertEquals(expectedCompBg.rgb, (UIManager.get("ComboBox.background") as Color).rgb)
         assertEquals(
             Color.decode(lightTheme.colors.getValue("background")).rgb,
             (UIManager.get("List.selectionForeground") as Color).rgb,
