@@ -14,8 +14,9 @@ import org.http4k.core.Status
 import org.http4k.template.TemplateRenderer
 import org.http4k.template.ViewModel
 import org.http4k.template.ViewNotFound
+import org.slf4j.LoggerFactory
 
-private const val PLATFORM_JTE_PACKAGE = "gg.jte.generated.precompiled.outerstellar"
+private val logger = LoggerFactory.getLogger("JteInfra")
 
 fun TemplateRenderer.render(viewModel: ViewModel, status: Status = Status.OK): Response =
     Response(status)
@@ -26,9 +27,7 @@ fun createRenderer(): TemplateRenderer {
     val isProduction = System.getProperty("jte.production") == "true" || System.getenv("JTE_PRODUCTION") == "true"
 
     if (isProduction) {
-        System.err.println(
-            "JTE: production mode, JteClassRegistry has ${JteClassRegistry.allClasses.size} template classes"
-        )
+        logger.info("Production mode: JteClassRegistry has {} template classes", JteClassRegistry.allClasses.size)
         ensureTemplateClassesLoaded()
     }
 
@@ -65,15 +64,6 @@ fun createRenderer(): TemplateRenderer {
 }
 
 private fun ensureTemplateClassesLoaded() {
-    val loader = Thread.currentThread().contextClassLoader
-    val resource =
-        loader.getResource("META-INF/native-image/io.github.rygel/outerstellar-platform-web/reachability-metadata.json")
-    if (resource != null) {
-        System.err.println("JTE: reachability-metadata found at ${resource.protocol}")
-    } else {
-        System.err.println("JTE: reachability-metadata NOT FOUND on classpath")
-    }
-
     var loaded = 0
     var failed = 0
     for (className in JteClassRegistry.allClasses.map { it.name }) {
@@ -84,48 +74,20 @@ private fun ensureTemplateClassesLoaded() {
             failed++
         }
     }
-    System.err.println("JTE: preloaded $loaded template classes, $failed not found")
+    logger.info("Preloaded {} template classes, {} not found", loaded, failed)
 }
 
 private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer = { viewModel: ViewModel ->
     val templateName = "${viewModel.template()}.kte"
     val templateEngine = engineProvider()
 
-    JteClassRegistry.getTemplateClass(viewModel.template())?.let { cls ->
-        System.err.println("JTE: Template ${viewModel.template()} resolved to class ${cls.name}")
-    }
-
     try {
         StringOutput().also { templateEngine.render(templateName, viewModel, it) }.toString()
-    } catch (e: Exception) {
-        val className = "$PLATFORM_JTE_PACKAGE.${viewModel.template().replace('/', '.')}"
-        val fullClassName = className.replace(".kte", "") + "Generated"
-        System.err.println("=== JTE DIAGNOSTIC ===")
-        System.err.println("  templateName: $templateName")
-        System.err.println("  expected class: $fullClassName")
-        System.err.println("  allKnownClasses: ${JteClassRegistry.allClasses.map { it.simpleName }}")
-        try {
-            val cls = Class.forName(fullClassName)
-            System.err.println("  Class.forName: OK (${cls.name})")
-            val field = cls.getField("JTE_NAME")
-            System.err.println("  JTE_NAME field: ${field.get(null)}")
-        } catch (cf: ClassNotFoundException) {
-            System.err.println("  Class.forName: NOT FOUND")
-        } catch (cf: NoSuchFieldException) {
-            System.err.println("  JTE_NAME field: NOT FOUND")
-        } catch (cf: Exception) {
-            System.err.println("  Class.forName error: ${cf.javaClass.name}: ${cf.message}")
-        }
-        try {
-            val loader = Thread.currentThread().contextClassLoader
-            System.err.println("  classLoader: ${loader.javaClass.name}")
-            val loaded = loader.loadClass(fullClassName)
-            System.err.println("  loader.loadClass: OK (${loaded.name})")
-        } catch (lc: Exception) {
-            System.err.println("  loader.loadClass error: ${lc.javaClass.name}: ${lc.message}")
-        }
-        System.err.println("  original error: ${e.javaClass.name}: ${e.message}")
-        System.err.println("=== END DIAGNOSTIC ===")
+    } catch (e: IllegalArgumentException) {
+        logger.error("JTE render failed for template {}: {}", templateName, e.message)
+        throw ViewNotFound(viewModel)
+    } catch (e: IllegalStateException) {
+        logger.error("JTE render failed for template {}: {}", templateName, e.message)
         throw ViewNotFound(viewModel)
     }
 }
@@ -135,7 +97,7 @@ private fun renderUsingPrecompiledRegistry(): TemplateRenderer = { viewModel: Vi
     val templateClass = JteClassRegistry.getTemplateClass(viewModel.template())
 
     if (templateClass == null) {
-        System.err.println("JTE: Template ${viewModel.template()} not found in generated class registry")
+        logger.error("Template {} not found in generated class registry", viewModel.template())
         throw ViewNotFound(viewModel)
     }
 
@@ -143,12 +105,11 @@ private fun renderUsingPrecompiledRegistry(): TemplateRenderer = { viewModel: Vi
         val output = StringOutput()
         Template(templateName, templateClass).render(OwaspHtmlTemplateOutput(output), null, viewModel)
         output.toString()
-    } catch (e: Exception) {
-        System.err.println("=== JTE REGISTRY DIAGNOSTIC ===")
-        System.err.println("  templateName: $templateName")
-        System.err.println("  resolved class: ${templateClass.name}")
-        System.err.println("  original error: ${e.javaClass.name}: ${e.message}")
-        System.err.println("=== END DIAGNOSTIC ===")
+    } catch (e: IllegalArgumentException) {
+        logger.error("JTE registry render failed for {} (class {}): {}", templateName, templateClass.name, e.message)
+        throw ViewNotFound(viewModel)
+    } catch (e: IllegalStateException) {
+        logger.error("JTE registry render failed for {} (class {}): {}", templateName, templateClass.name, e.message)
         throw ViewNotFound(viewModel)
     }
 }

@@ -33,8 +33,11 @@ import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.pl
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteLayoutHeadGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteSidebarLayoutGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteTopbarLayoutGenerated
+import org.slf4j.LoggerFactory
 
 object JteClassRegistry {
+    private val logger = LoggerFactory.getLogger(JteClassRegistry::class.java)
+
     private val pageClasses =
         listOf(
             JteApiKeysPageGenerated::class.java,
@@ -87,14 +90,12 @@ object JteClassRegistry {
     val allClasses: List<Class<*>> = pageClasses + fragmentClasses + componentClasses + layoutClasses
 
     init {
-        System.err.println("JTE ClassRegistry: Initializing ${allClasses.size} JTE template classes")
+        logger.info("Initializing {} JTE template classes", allClasses.size)
         for (cls in allClasses) {
-            System.err.println("JTE ClassRegistry: - ${cls.name}")
             try {
                 Class.forName(cls.name, true, cls.classLoader)
-                System.err.println("JTE ClassRegistry:   Force-loaded: ${cls.name} OK")
-            } catch (e: Exception) {
-                System.err.println("JTE ClassRegistry:   Force-load FAILED: ${cls.name}: ${e.message}")
+            } catch (e: ClassNotFoundException) {
+                logger.warn("Failed to force-load JTE template class {}: {}", cls.name, e.message)
             }
         }
     }
