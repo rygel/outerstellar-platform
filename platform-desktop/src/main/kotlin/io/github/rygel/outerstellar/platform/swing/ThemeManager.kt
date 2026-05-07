@@ -28,7 +28,6 @@ class ThemeManager {
     fun applyTheme(theme: ThemeDefinition) {
         val isDark = theme.type == "dark"
 
-        // Use FlatLaf setup which is more robust for runtime switching
         if (isDark) {
             FlatDarkLaf.setup()
         } else {
@@ -38,122 +37,133 @@ class ThemeManager {
         UIManager.put("current_theme_name", theme.name)
         val palette = theme.colors
 
-        // Helper to put ColorUIResource which updateComponentTreeUI respects
         fun putColor(key: String, hex: String?) {
             decodeSafe(hex)?.let { color -> UIManager.put(key, ColorUIResource(color)) }
         }
 
-        // Standard background/foreground
-        putColor("Panel.background", palette["background"])
-        putColor("Window.background", palette["background"])
-        putColor("MenuBar.background", palette["background"])
-        putColor("Menu.background", palette["background"])
-        putColor("MenuItem.background", palette["background"])
-        putColor("CheckBoxMenuItem.background", palette["background"])
-        putColor("RadioButtonMenuItem.background", palette["background"])
-        putColor("ToolBar.background", palette["background"])
-        putColor("ScrollBar.background", palette["background"])
-        putColor("Label.background", palette["background"])
-        putColor("OptionPane.background", palette["background"])
-
-        decodeSafe(palette["foreground"])?.let { color ->
-            val res = ColorUIResource(color)
-            UIManager.put("Label.foreground", res)
-            UIManager.put("MenuBar.foreground", res)
-            UIManager.put("Menu.foreground", res)
-            UIManager.put("MenuItem.foreground", res)
-            UIManager.put("CheckBoxMenuItem.foreground", res)
-            UIManager.put("RadioButtonMenuItem.foreground", res)
-            UIManager.put("ToolBar.foreground", res)
-            UIManager.put("CheckBox.foreground", res)
-            UIManager.put("RadioButton.foreground", res)
-            UIManager.put("TitledBorder.titleColor", res)
-            UIManager.put("Button.foreground", res)
-            UIManager.put("ToggleButton.foreground", res)
-            UIManager.put("TextField.foreground", res)
-            UIManager.put("TextArea.foreground", res)
-            UIManager.put("TextPane.foreground", res)
-            UIManager.put("EditorPane.foreground", res)
-            UIManager.put("ComboBox.foreground", res)
-            UIManager.put("List.foreground", res)
-            UIManager.put("Table.foreground", res)
-            UIManager.put("TableHeader.foreground", res)
-            UIManager.put("Tree.foreground", res)
-            UIManager.put("FormattedTextField.foreground", res)
-            UIManager.put("PasswordField.foreground", res)
-            UIManager.put("ToolTip.foreground", res)
+        fun putColorToKeys(hex: String?, keys: List<String>) {
+            decodeSafe(hex)?.let { color ->
+                val res = ColorUIResource(color)
+                keys.forEach { UIManager.put(it, res) }
+            }
         }
 
-        // Component specific backgrounds
-        putColor("List.background", palette["componentBackground"])
-        putColor("TextArea.background", palette["componentBackground"])
-        putColor("TextField.background", palette["componentBackground"])
-        putColor("PasswordField.background", palette["componentBackground"])
-        putColor("ScrollPane.background", palette["componentBackground"])
-        putColor("Viewport.background", palette["componentBackground"])
-        putColor("ComboBox.background", palette["componentBackground"])
-        putColor("Table.background", palette["componentBackground"])
-        putColor("TableHeader.background", palette["componentBackground"])
-        putColor("Tree.background", palette["componentBackground"])
-        putColor("TextPane.background", palette["componentBackground"])
-        putColor("EditorPane.background", palette["componentBackground"])
-        putColor("FormattedTextField.background", palette["componentBackground"])
-        putColor("ToolTip.background", palette["componentBackground"])
+        putColorToKeys(palette["background"], backgroundKeys)
+        putColorToKeys(palette["foreground"], foregroundKeys)
+        putColorToKeys(palette["componentBackground"], componentBackgroundKeys)
+        putColorToKeys(palette["selectionBackground"], selectionBackgroundKeys)
+        putColorToKeys(palette["background"], selectionForegroundKeys)
+        putColorToKeys(palette["accent"], accentKeys)
+        putColorToKeys(palette["borderColor"], borderKeys)
 
-        // Selection and Accents
-        putColor("List.selectionBackground", palette["selectionBackground"])
-        putColor("Menu.selectionBackground", palette["selectionBackground"])
-        putColor("MenuItem.selectionBackground", palette["selectionBackground"])
-        putColor("TextField.selectionBackground", palette["selectionBackground"])
-        putColor("TextArea.selectionBackground", palette["selectionBackground"])
-        putColor("TextPane.selectionBackground", palette["selectionBackground"])
-        putColor("EditorPane.selectionBackground", palette["selectionBackground"])
-        putColor("Table.selectionBackground", palette["selectionBackground"])
-        putColor("Tree.selectionBackground", palette["selectionBackground"])
-        putColor("FormattedTextField.selectionBackground", palette["selectionBackground"])
-        putColor("ComboBox.selectionBackground", palette["selectionBackground"])
-
-        // We use background for selection foreground as most selection backgrounds are
-        // dark/accented
-        decodeSafe(palette["background"])?.let { color ->
-            val res = ColorUIResource(color)
-            UIManager.put("List.selectionForeground", res)
-            UIManager.put("Table.selectionForeground", res)
-            UIManager.put("TextField.selectionForeground", res)
-            UIManager.put("TextArea.selectionForeground", res)
-            UIManager.put("TextPane.selectionForeground", res)
-            UIManager.put("EditorPane.selectionForeground", res)
-            UIManager.put("ComboBox.selectionForeground", res)
-            UIManager.put("Tree.selectionForeground", res)
-            UIManager.put("FormattedTextField.selectionForeground", res)
-        }
-
-        decodeSafe(palette["accent"])?.let { color ->
-            val res = ColorUIResource(color)
-            UIManager.put("Component.focusColor", res)
-            UIManager.put("Component.accentColor", res)
-            UIManager.put("Button.focusedBorderColor", res)
-            UIManager.put("Button.background", res)
-            UIManager.put("Button.default.background", res)
-            UIManager.put("ToggleButton.background", res)
-        }
-
-        decodeSafe(palette["borderColor"])?.let { color ->
-            val res = ColorUIResource(color)
-            UIManager.put("Component.borderColor", res)
-            UIManager.put("Button.borderColor", res)
-            UIManager.put("Separator.foreground", res)
-        }
-
-        // Custom Outerstellar keys for use in renderers/manual painting
         decodeSafe(palette["success"])?.let { UIManager.put("Theme.success", it) }
         decodeSafe(palette["danger"])?.let { UIManager.put("Theme.danger", it) }
         decodeSafe(palette["warning"])?.let { UIManager.put("Theme.warning", it) }
         decodeSafe(palette["accent"])?.let { UIManager.put("Theme.accent", it) }
 
-        // FlatLaf way to update all windows
         FlatLaf.updateUI()
     }
+
+    private val backgroundKeys =
+        listOf(
+            "Panel.background",
+            "Window.background",
+            "MenuBar.background",
+            "Menu.background",
+            "MenuItem.background",
+            "CheckBoxMenuItem.background",
+            "RadioButtonMenuItem.background",
+            "ToolBar.background",
+            "ScrollBar.background",
+            "Label.background",
+            "OptionPane.background",
+        )
+
+    private val foregroundKeys =
+        listOf(
+            "Label.foreground",
+            "MenuBar.foreground",
+            "Menu.foreground",
+            "MenuItem.foreground",
+            "CheckBoxMenuItem.foreground",
+            "RadioButtonMenuItem.foreground",
+            "ToolBar.foreground",
+            "CheckBox.foreground",
+            "RadioButton.foreground",
+            "TitledBorder.titleColor",
+            "Button.foreground",
+            "ToggleButton.foreground",
+            "TextField.foreground",
+            "TextArea.foreground",
+            "TextPane.foreground",
+            "EditorPane.foreground",
+            "ComboBox.foreground",
+            "List.foreground",
+            "Table.foreground",
+            "TableHeader.foreground",
+            "Tree.foreground",
+            "FormattedTextField.foreground",
+            "PasswordField.foreground",
+            "ToolTip.foreground",
+        )
+
+    private val componentBackgroundKeys =
+        listOf(
+            "List.background",
+            "TextArea.background",
+            "TextField.background",
+            "PasswordField.background",
+            "ScrollPane.background",
+            "Viewport.background",
+            "ComboBox.background",
+            "Table.background",
+            "TableHeader.background",
+            "Tree.background",
+            "TextPane.background",
+            "EditorPane.background",
+            "FormattedTextField.background",
+            "ToolTip.background",
+        )
+
+    private val selectionBackgroundKeys =
+        listOf(
+            "List.selectionBackground",
+            "Menu.selectionBackground",
+            "MenuItem.selectionBackground",
+            "TextField.selectionBackground",
+            "TextArea.selectionBackground",
+            "TextPane.selectionBackground",
+            "EditorPane.selectionBackground",
+            "Table.selectionBackground",
+            "Tree.selectionBackground",
+            "FormattedTextField.selectionBackground",
+            "ComboBox.selectionBackground",
+        )
+
+    private val selectionForegroundKeys =
+        listOf(
+            "List.selectionForeground",
+            "Table.selectionForeground",
+            "TextField.selectionForeground",
+            "TextArea.selectionForeground",
+            "TextPane.selectionForeground",
+            "EditorPane.selectionForeground",
+            "ComboBox.selectionForeground",
+            "Tree.selectionForeground",
+            "FormattedTextField.selectionForeground",
+        )
+
+    private val accentKeys =
+        listOf(
+            "Component.focusColor",
+            "Component.accentColor",
+            "Button.focusedBorderColor",
+            "Button.background",
+            "Button.default.background",
+            "ToggleButton.background",
+        )
+
+    private val borderKeys = listOf("Component.borderColor", "Button.borderColor", "Separator.foreground")
 
     fun decodeColor(hex: String?): Color? = decodeSafe(hex)
 

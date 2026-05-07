@@ -102,10 +102,15 @@ class ChipCellRenderer<T>(private val labelFn: (T) -> String, private val colorF
         }
 
         companion object {
-            /** Choose white or black foreground based on luminance of the chip background. */
+            private const val LUMA_RED = 0.299
+            private const val LUMA_GREEN = 0.587
+            private const val LUMA_BLUE = 0.114
+            private const val LUMA_DIVISOR = 255.0
+            private const val LUMA_THRESHOLD = 0.5
+
             private fun contrastForeground(bg: Color): Color {
-                val luminance = (0.299 * bg.red + 0.587 * bg.green + 0.114 * bg.blue) / 255.0
-                return if (luminance > 0.5) Color.BLACK else Color.WHITE
+                val luminance = (LUMA_RED * bg.red + LUMA_GREEN * bg.green + LUMA_BLUE * bg.blue) / LUMA_DIVISOR
+                return if (luminance > LUMA_THRESHOLD) Color.BLACK else Color.WHITE
             }
         }
     }
@@ -119,11 +124,16 @@ class ChipCellRenderer<T>(private val labelFn: (T) -> String, private val colorF
          * Generates a deterministic color from a string hash. Useful as a default [colorFn] when there is no
          * domain-specific mapping.
          */
+        private const val HUE_RANGE = 360
+        private const val HASH_MASK = 0x7FFFFFFF
+        private const val HSB_SATURATION = 0.55f
+        private const val HSB_BRIGHTNESS = 0.70f
+
         @JvmStatic
         fun hashColor(label: String): Color {
             val hash = label.hashCode()
-            val hue = (hash and 0x7FFFFFFF) % 360
-            return Color.getHSBColor(hue / 360f, 0.55f, 0.70f)
+            val hue = (hash and HASH_MASK) % HUE_RANGE
+            return Color.getHSBColor(hue / HUE_RANGE.toFloat(), HSB_SATURATION, HSB_BRIGHTNESS)
         }
 
         /** Convenience factory that uses [Any.toString] as label and hash-based coloring. */
