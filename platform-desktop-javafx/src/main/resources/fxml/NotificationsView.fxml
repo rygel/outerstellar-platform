@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.control.Label?>
-<BorderPane xmlns:fx="http://javafx.com/fxml">
-    <center><Label text="Notifications Placeholder"/></center>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Button?>
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="io.github.rygel.outerstellar.platform.fx.controller.NotificationsController">
+    <top>
+        <HBox spacing="8" style="-fx-padding: 8;">
+            <Button text="Mark Read" onAction="#onMarkRead"/>
+            <Button text="Mark All Read" onAction="#onMarkAllRead"/>
+            <Button text="Refresh" onAction="#onRefresh"/>
+        </HBox>
+    </top>
+    <center>
+        <ListView fx:id="notificationsList"/>
+    </center>
 </BorderPane>

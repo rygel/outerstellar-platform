@@ -1,6 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.control.Label?>
-<BorderPane xmlns:fx="http://javafx.com/fxml">
-    <center><Label text="Users Placeholder"/></center>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.Button?>
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="io.github.rygel.outerstellar.platform.fx.controller.UsersController">
+    <top>
+        <HBox spacing="8" style="-fx-padding: 8;">
+            <Button text="Refresh" onAction="#onRefresh"/>
+            <Button text="Toggle Enabled" onAction="#onToggleEnabled"/>
+            <Button text="Toggle Role" onAction="#onToggleRole"/>
+        </HBox>
+    </top>
+    <center>
+        <TableView fx:id="usersTable">
+            <columns>
+                <TableColumn fx:id="usernameColumn" text="Username" prefWidth="150"/>
+                <TableColumn fx:id="emailColumn" text="Email" prefWidth="200"/>
+                <TableColumn fx:id="roleColumn" text="Role" prefWidth="100"/>
+                <TableColumn fx:id="enabledColumn" text="Enabled" prefWidth="80"/>
+            </columns>
+        </TableView>
+    </center>
 </BorderPane>
