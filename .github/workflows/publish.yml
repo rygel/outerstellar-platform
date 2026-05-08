@@ -64,6 +64,8 @@ jobs:
           server-id: github-rygel
           server-username: GITHUB_ACTOR
           server-password: GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Node.js 20
         if: steps.check.outputs.exists == 'false'
