@@ -9,9 +9,11 @@ import javafx.scene.control.TextField
 import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 class ContactFormController : KoinComponent {
 
+    private val logger = LoggerFactory.getLogger(ContactFormController::class.java)
     private val contactService: ContactService by inject()
 
     @FXML private lateinit var nameField: TextField
@@ -116,7 +118,9 @@ class ContactFormController : KoinComponent {
             }
             saved = true
             close()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            logger.warn("Save contact failed: {}", e.message)
+        }
     }
 
     @FXML
@@ -137,7 +141,9 @@ class ContactFormController : KoinComponent {
                         phoneList.items.setAll(contact.phones)
                         socialList.items.setAll(contact.socialMedia)
                     }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Load contact failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -147,14 +153,12 @@ class ContactFormController : KoinComponent {
         val dialog = javafx.scene.control.TextInputDialog()
         dialog.title = title
         dialog.headerText = null
-        val stage = nameField.scene.window as Stage
-        dialog.initOwner(stage)
+        (nameField.scene.window as? Stage)?.let { dialog.initOwner(it) }
         val result = dialog.showAndWait()
         return result.orElse(null)
     }
 
     private fun close() {
-        val stage = nameField.scene.window as Stage
-        stage.close()
+        (nameField.scene.window as? Stage)?.close()
     }
 }

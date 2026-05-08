@@ -20,7 +20,6 @@ class AboutController : KoinComponent {
 
     @FXML
     fun onClose() {
-        val stage = versionLabel.scene.window as Stage
-        stage.close()
+        (versionLabel.scene.window as? Stage)?.close()
     }
 }

@@ -13,9 +13,11 @@ import javafx.stage.Modality
 import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 class ContactsController : KoinComponent {
 
+    private val logger = LoggerFactory.getLogger(ContactsController::class.java)
     private val contactService: ContactService by inject()
     private val themeManager: FxThemeManager by inject()
 
@@ -49,7 +51,9 @@ class ContactsController : KoinComponent {
         try {
             val contacts = contactService.listContacts()
             contactsTable.items.setAll(contacts)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            logger.warn("Load contacts failed: {}", e.message)
+        }
     }
 
     private fun showContactFormDialog(syncId: String?) {

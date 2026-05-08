@@ -7,9 +7,11 @@ import javafx.scene.control.PasswordField
 import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 class ChangePasswordController : KoinComponent {
 
+    private val logger = LoggerFactory.getLogger(ChangePasswordController::class.java)
     private val syncService: SyncService by inject()
 
     @FXML private lateinit var currentField: PasswordField
@@ -27,7 +29,9 @@ class ChangePasswordController : KoinComponent {
                 try {
                     syncService.changePassword(current, newPass)
                     Platform.runLater { close() }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Password change failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -39,7 +43,6 @@ class ChangePasswordController : KoinComponent {
     }
 
     private fun close() {
-        val stage = currentField.scene.window as Stage
-        stage.close()
+        (currentField.scene.window as? Stage)?.close()
     }
 }

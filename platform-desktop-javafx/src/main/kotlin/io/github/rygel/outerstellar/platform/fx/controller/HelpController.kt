@@ -10,7 +10,6 @@ class HelpController {
 
     @FXML
     fun onClose() {
-        val stage = helpTextArea.scene.window as Stage
-        stage.close()
+        (helpTextArea.scene.window as? Stage)?.close()
     }
 }

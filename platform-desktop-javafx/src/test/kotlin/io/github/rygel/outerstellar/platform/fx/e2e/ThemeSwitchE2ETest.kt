@@ -87,19 +87,19 @@ class ThemeSwitchE2ETest {
     }
 
     @Test
-    fun `applying DARK theme updates currentThemeName`(robot: FxRobot) {
+    fun `applying DARK theme updates currentThemeName`(@Suppress("UNUSED_PARAMETER") robot: FxRobot) {
         themeManager.applyThemeByName("DARK")
         assertEquals("Dark", themeManager.currentThemeName())
     }
 
     @Test
-    fun `applying LIGHT theme updates currentThemeName`(robot: FxRobot) {
+    fun `applying LIGHT theme updates currentThemeName`(@Suppress("UNUSED_PARAMETER") robot: FxRobot) {
         themeManager.applyThemeByName("LIGHT")
         assertEquals("Light", themeManager.currentThemeName())
     }
 
     @Test
-    fun `applying DARCULA theme updates currentThemeName`(robot: FxRobot) {
+    fun `applying DARCULA theme updates currentThemeName`(@Suppress("UNUSED_PARAMETER") robot: FxRobot) {
         themeManager.applyThemeByName("DARCULA")
         assertEquals("Darcula", themeManager.currentThemeName())
     }

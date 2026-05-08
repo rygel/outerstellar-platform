@@ -77,7 +77,6 @@ class SettingsController : KoinComponent {
     }
 
     private fun close() {
-        val stage = langCombo.scene.window as Stage
-        stage.close()
+        (langCombo.scene.window as? Stage)?.close()
     }
 }

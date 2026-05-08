@@ -18,9 +18,15 @@ import javafx.stage.Modality
 import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 class MessagesController : KoinComponent {
 
+    private companion object {
+        const val MESSAGE_PREVIEW_LENGTH = 80
+    }
+
+    private val logger = LoggerFactory.getLogger(MessagesController::class.java)
     private val messageService: MessageService by inject()
     private val syncService: SyncService by inject()
     private val themeManager: FxThemeManager by inject()
@@ -44,7 +50,7 @@ class MessagesController : KoinComponent {
                     } else {
                         graphic =
                             Label(
-                                "${item.author}: ${item.content.take(80)}${if (item.content.length > 80) "..." else ""}"
+                                "${item.author}: ${item.content.take(MESSAGE_PREVIEW_LENGTH)}${if (item.content.length > MESSAGE_PREVIEW_LENGTH) "..." else ""}"
                             )
                     }
                 }
@@ -72,7 +78,9 @@ class MessagesController : KoinComponent {
             authorField.clear()
             contentArea.clear()
             loadMessages()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            logger.warn("Create message failed: {}", e.message)
+        }
     }
 
     @FXML
@@ -81,7 +89,9 @@ class MessagesController : KoinComponent {
                 try {
                     syncService.sync()
                     Platform.runLater { loadMessages() }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Sync failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -92,7 +102,9 @@ class MessagesController : KoinComponent {
             val result = messageService.listMessages()
             allMessages.setAll(result.items)
             messagesList.items.setAll(result.items)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            logger.warn("Load messages failed: {}", e.message)
+        }
     }
 
     private fun filterMessages(query: String?) {

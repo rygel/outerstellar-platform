@@ -16,8 +16,11 @@ object FxTrayNotifier {
         }
         val image = Toolkit.getDefaultToolkit().getImage(javaClass.getResource("/icons/tray.png"))
         trayIcon = TrayIcon(image, "Outerstellar").apply { isImageAutoSize = true }
-        runCatching { SystemTray.getSystemTray().add(trayIcon) }
-            .onFailure { logger.warn("Failed to add tray icon: {}", it.message) }
+        val icon = trayIcon
+        if (icon != null) {
+            runCatching { SystemTray.getSystemTray().add(icon) }
+                .onFailure { logger.warn("Failed to add tray icon: {}", it.message) }
+        }
     }
 
     fun notify(title: String, message: String) {

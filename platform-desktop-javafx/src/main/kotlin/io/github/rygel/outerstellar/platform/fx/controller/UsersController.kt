@@ -9,9 +9,11 @@ import javafx.scene.control.TableColumn
 import javafx.scene.control.TableView
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 class UsersController : KoinComponent {
 
+    private val logger = LoggerFactory.getLogger(UsersController::class.java)
     private val syncService: SyncService by inject()
 
     @FXML private lateinit var usersTable: TableView<UserSummary>
@@ -41,7 +43,9 @@ class UsersController : KoinComponent {
                 try {
                     syncService.setUserEnabled(selected.id, !selected.enabled)
                     Platform.runLater { loadUsers() }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Toggle user enabled failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -55,7 +59,9 @@ class UsersController : KoinComponent {
                 try {
                     syncService.setUserRole(selected.id, newRole)
                     Platform.runLater { loadUsers() }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Toggle user role failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -66,7 +72,9 @@ class UsersController : KoinComponent {
                 try {
                     val users = syncService.listUsers()
                     Platform.runLater { usersTable.items.setAll(users) }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Load users failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()

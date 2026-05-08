@@ -45,7 +45,6 @@ class ConflictController : KoinComponent {
     }
 
     private fun close() {
-        val stage = localAuthorLabel.scene.window as Stage
-        stage.close()
+        (localAuthorLabel.scene.window as? Stage)?.close()
     }
 }

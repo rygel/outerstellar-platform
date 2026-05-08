@@ -9,9 +9,11 @@ import javafx.scene.control.TextField
 import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 class ProfileController : KoinComponent {
 
+    private val logger = LoggerFactory.getLogger(ProfileController::class.java)
     private val syncService: SyncService by inject()
 
     @FXML private lateinit var usernameField: TextField
@@ -33,7 +35,9 @@ class ProfileController : KoinComponent {
                 try {
                     syncService.updateProfile(email)
                     Platform.runLater { loadProfile() }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Update profile failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -46,7 +50,9 @@ class ProfileController : KoinComponent {
         Thread {
                 try {
                     syncService.updateNotificationPreferences(emailEnabled, pushEnabled)
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Update notification preferences failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -54,7 +60,7 @@ class ProfileController : KoinComponent {
 
     @FXML
     fun onDeleteAccount() {
-        val stage = usernameField.scene.window as Stage
+        val ownerStage = usernameField.scene.window as? Stage
         val alert =
             javafx.scene.control.Alert(
                 javafx.scene.control.Alert.AlertType.CONFIRMATION,
@@ -62,7 +68,7 @@ class ProfileController : KoinComponent {
                 javafx.scene.control.ButtonType.YES,
                 javafx.scene.control.ButtonType.NO,
             )
-        alert.initOwner(stage)
+        if (ownerStage != null) alert.initOwner(ownerStage)
         alert.title = "Delete Account"
         val result = alert.showAndWait()
         if (result.isPresent && result.get() == javafx.scene.control.ButtonType.YES) {
@@ -70,8 +76,10 @@ class ProfileController : KoinComponent {
                     try {
                         syncService.deleteAccount()
                         syncService.logout()
-                        Platform.runLater { stage.close() }
-                    } catch (_: Exception) {}
+                        Platform.runLater { ownerStage?.close() }
+                    } catch (e: Exception) {
+                        logger.warn("Delete account failed: {}", e.message)
+                    }
                 }
                 .also { it.isDaemon = true }
                 .start()
@@ -88,7 +96,9 @@ class ProfileController : KoinComponent {
                         emailNotifCheckbox.isSelected = profile.emailNotificationsEnabled
                         pushNotifCheckbox.isSelected = profile.pushNotificationsEnabled
                     }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Load profile failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()

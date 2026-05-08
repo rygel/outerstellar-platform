@@ -1,6 +1,5 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
-import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
 import io.github.rygel.outerstellar.platform.sync.SyncService
 import javafx.fxml.FXML
@@ -14,11 +13,12 @@ import javafx.stage.Modality
 import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 class MainController : KoinComponent {
 
+    private val logger = LoggerFactory.getLogger(MainController::class.java)
     private val syncService: SyncService by inject()
-    private val i18nService: I18nService by inject()
     private val themeManager: FxThemeManager by inject()
 
     @FXML private lateinit var sidebar: VBox
@@ -104,7 +104,8 @@ class MainController : KoinComponent {
             val loader = FXMLLoader(javaClass.getResource("/fxml/$fxmlFile"))
             val view = loader.load<javafx.scene.Parent>()
             centerPane.children.setAll(view)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            logger.warn("Navigate to {} failed: {}", fxmlFile, e.message)
             centerPane.children.clear()
         }
     }

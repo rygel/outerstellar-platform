@@ -26,8 +26,8 @@ class JavaFxApp : Application() {
         val loader = FXMLLoader(javaClass.getResource("/fxml/MainWindow.fxml"))
         val root = loader.load<javafx.scene.Parent>()
 
-        val width = savedState?.width ?: 1200.0
-        val height = savedState?.height ?: 800.0
+        val width = savedState?.width ?: DEFAULT_WIDTH
+        val height = savedState?.height ?: DEFAULT_HEIGHT
         val scene = Scene(root, width, height)
 
         val themeManager = FxThemeManager()
@@ -60,9 +60,12 @@ class JavaFxApp : Application() {
     }
 
     companion object {
+        private const val DEFAULT_WIDTH = 1200.0
+        private const val DEFAULT_HEIGHT = 800.0
+
         @JvmStatic
         fun main(args: Array<String>) {
-            Application.launch(JavaFxApp::class.java, *args)
+            Application.launch(JavaFxApp::class.java)
         }
     }
 }

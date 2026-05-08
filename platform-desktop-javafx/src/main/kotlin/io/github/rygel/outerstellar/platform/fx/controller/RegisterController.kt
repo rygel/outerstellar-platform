@@ -8,9 +8,11 @@ import javafx.scene.control.TextField
 import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 class RegisterController : KoinComponent {
 
+    private val logger = LoggerFactory.getLogger(RegisterController::class.java)
     private val syncService: SyncService by inject()
 
     @FXML private lateinit var usernameField: TextField
@@ -28,7 +30,9 @@ class RegisterController : KoinComponent {
                 try {
                     syncService.register(username, password)
                     Platform.runLater { close() }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Registration failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -40,7 +44,6 @@ class RegisterController : KoinComponent {
     }
 
     private fun close() {
-        val stage = usernameField.scene.window as Stage
-        stage.close()
+        (usernameField.scene.window as? Stage)?.close()
     }
 }

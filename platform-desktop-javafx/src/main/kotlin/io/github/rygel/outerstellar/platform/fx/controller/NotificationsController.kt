@@ -8,9 +8,11 @@ import javafx.scene.control.ListCell
 import javafx.scene.control.ListView
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import org.slf4j.LoggerFactory
 
 class NotificationsController : KoinComponent {
 
+    private val logger = LoggerFactory.getLogger(NotificationsController::class.java)
     private val syncService: SyncService by inject()
 
     @FXML private lateinit var notificationsList: ListView<NotificationSummary>
@@ -41,7 +43,9 @@ class NotificationsController : KoinComponent {
                 try {
                     syncService.markNotificationRead(selected.id)
                     Platform.runLater { loadNotifications() }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Mark notification read failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -53,7 +57,9 @@ class NotificationsController : KoinComponent {
                 try {
                     syncService.markAllNotificationsRead()
                     Platform.runLater { loadNotifications() }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Mark all notifications read failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
@@ -69,7 +75,9 @@ class NotificationsController : KoinComponent {
                 try {
                     val notifications = syncService.listNotifications()
                     Platform.runLater { notificationsList.items.setAll(notifications) }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    logger.warn("Load notifications failed: {}", e.message)
+                }
             }
             .also { it.isDaemon = true }
             .start()
