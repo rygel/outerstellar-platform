@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.di
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
@@ -16,6 +17,7 @@ val fxModule
     get() = module {
         single { FxAppConfig.fromEnvironment() }
         single { FxThemeManager() }
+        single<I18nService> { I18nService.create("messages") }
         single {
             val cfg = get<FxAppConfig>()
             AppConfig(jdbcUrl = cfg.jdbcUrl, jdbcUser = cfg.jdbcUser, jdbcPassword = cfg.jdbcPassword)

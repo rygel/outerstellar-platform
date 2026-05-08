@@ -1,5 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.ToolBar?>
+
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="io.github.rygel.outerstellar.platform.fx.controller.MainController"
-            prefWidth="1200" prefHeight="800"/>
+            prefWidth="1200" prefHeight="800">
+
+    <left>
+        <VBox fx:id="sidebar" styleClass="sidebar" prefWidth="200" spacing="4" style="-fx-padding: 12;">
+            <Button fx:id="navMessagesBtn" text="Messages" styleClass="nav-button" maxWidth="Infinity" onAction="#onNavMessages"/>
+            <Button fx:id="navContactsBtn" text="Contacts" styleClass="nav-button" maxWidth="Infinity" onAction="#onNavContacts"/>
+            <Button fx:id="navUsersBtn" text="Users" styleClass="nav-button" maxWidth="Infinity" onAction="#onNavUsers" visible="false" managed="false"/>
+            <Button fx:id="navNotificationsBtn" text="Notifications" styleClass="nav-button" maxWidth="Infinity" onAction="#onNavNotifications"/>
+            <Button fx:id="navProfileBtn" text="Profile" styleClass="nav-button" maxWidth="Infinity" onAction="#onNavProfile"/>
+            <VBox VBox.vgrow="ALWAYS"/>
+            <Button fx:id="navSettingsBtn" text="Settings" styleClass="nav-button" maxWidth="Infinity" onAction="#onNavSettings"/>
+            <Button fx:id="navLoginBtn" text="Login" styleClass="nav-button" maxWidth="Infinity" onAction="#onNavLogin"/>
+            <Button fx:id="navLogoutBtn" text="Logout" styleClass="nav-button" maxWidth="Infinity" onAction="#onNavLogout" visible="false" managed="false"/>
+        </VBox>
+    </left>
+
+    <center>
+        <StackPane fx:id="centerPane"/>
+    </center>
+
+    <bottom>
+        <ToolBar fx:id="statusBar" styleClass="status-bar">
+            <Label fx:id="statusLabel" text="Ready"/>
+            <HBox HBox.hgrow="ALWAYS"/>
+            <Label fx:id="offlineBadge" text="Offline" visible="false" style="-fx-text-fill: red;"/>
+        </ToolBar>
+    </bottom>
+</BorderPane>
