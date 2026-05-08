@@ -23,7 +23,13 @@ import org.slf4j.LoggerFactory
  */
 data class PluginNavItem(val label: String, val url: String, val icon: String, val activeSection: String = url)
 
-data class PluginOptions(val navItems: List<PluginNavItem> = emptyList(), val textResolver: TextResolver? = null)
+data class AdminNavItem(
+    val label: String,
+    val url: String,
+    val icon: String,
+)
+
+data class PluginOptions(val navItems: List<PluginNavItem> = emptyList(), val textResolver: TextResolver? = null, val adminNavItems: List<AdminNavItem> = emptyList())
 
 /**
  * Host services provided to the plugin when it builds its routes. The plugin should depend only on this context rather
@@ -137,6 +143,8 @@ interface PlatformPlugin : PluginMigrationSource {
      * dispatch. Use this to set up plugin-specific request context (e.g. custom session resolution, context keys).
      */
     fun filters(context: PluginContext): List<Filter> = emptyList()
+
+    fun adminSections(context: PluginContext): List<AdminSection> = emptyList()
 
     /** Koin modules this plugin needs. Register in `startKoin` rather than relying on this. */
     fun koinModules(): List<Module> = emptyList()
