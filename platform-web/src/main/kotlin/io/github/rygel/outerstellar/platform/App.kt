@@ -14,6 +14,7 @@ import io.github.rygel.outerstellar.platform.security.SessionRealm
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.MessageService
+import io.github.rygel.outerstellar.platform.web.AdminNavItem
 import io.github.rygel.outerstellar.platform.web.AuthApi
 import io.github.rygel.outerstellar.platform.web.AuthRoutes
 import io.github.rygel.outerstellar.platform.web.ComponentRoutes
@@ -26,7 +27,9 @@ import io.github.rygel.outerstellar.platform.web.HomeRoutes
 import io.github.rygel.outerstellar.platform.web.NotificationApi
 import io.github.rygel.outerstellar.platform.web.NotificationRoutes
 import io.github.rygel.outerstellar.platform.web.OAuthRoutes
+import io.github.rygel.outerstellar.platform.web.Page
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
+import io.github.rygel.outerstellar.platform.web.PluginAdminDashboardPage
 import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.PluginOptions
 import io.github.rygel.outerstellar.platform.web.SearchRoutes
@@ -165,7 +168,19 @@ private fun assembleHttpHandler(
             plugin,
         )
     val adminRoutes =
-        buildAdminRoutes(appLabel, outboxRepository, cache, pageFactory, jteRenderer, config, securityService)
+        buildAdminRoutes(
+            appLabel,
+            outboxRepository,
+            cache,
+            pageFactory,
+            jteRenderer,
+            config,
+            securityService,
+            plugin,
+            userRepository,
+            analytics,
+            notificationService,
+        )
     val componentRoutes = buildComponentRoutes(appLabel, pageFactory, jteRenderer)
     val baseApp = buildBaseApp(excludedRoutes, adminRoutes, apiRoutes, uiRoutes, componentRoutes, userRepository)
     return buildFilterChain(
@@ -346,20 +361,73 @@ private fun buildAdminRoutes(
     jteRenderer: org.http4k.template.TemplateRenderer,
     config: AppConfig,
     securityService: SecurityService,
-): org.http4k.routing.RoutingHttpHandler = contract {
-    renderer = OpenApi3(ApiInfo("$appLabel Admin", "v1.0"), KotlinxSerialization)
-    descriptionPath = "/admin/openapi.json"
-    security =
+    plugin: PlatformPlugin?,
+    userRepository: UserRepository,
+    analytics: io.github.rygel.outerstellar.platform.analytics.AnalyticsService,
+    notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
+): org.http4k.routing.RoutingHttpHandler {
+    val adminSecurity =
         object : org.http4k.security.Security {
             override val filter = Filter { next ->
                 SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
             }
         }
-    if (outboxRepository != null && cache != null) {
-        routes +=
-            DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
+    val pluginSections =
+        if (plugin != null) {
+            val pluginCtx =
+                PluginContext(
+                    jteRenderer,
+                    config,
+                    securityService,
+                    userRepository,
+                    analytics,
+                    notificationService,
+                    pageFactory,
+                )
+            plugin.adminSections(pluginCtx)
+        } else {
+            emptyList()
+        }
+    val adminContract = contract {
+        renderer = OpenApi3(ApiInfo("$appLabel Admin", "v1.0"), KotlinxSerialization)
+        descriptionPath = "/admin/openapi.json"
+        security = adminSecurity
+        if (outboxRepository != null && cache != null) {
+            routes +=
+                DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
+        }
+        routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
+        pluginSections.forEach { section -> routes += section.route }
     }
-    routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
+    return if (pluginSections.isNotEmpty()) {
+        val adminAuthFilter = Filter { next ->
+            SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
+        }
+        val pluginDashboardRoute =
+            adminAuthFilter.then(
+                "/admin/plugins" bind
+                    GET to
+                    { req ->
+                        val ctx =
+                            io.github.rygel.outerstellar.platform.web.WebContext(
+                                request = req,
+                                pluginOptions =
+                                    PluginOptions(
+                                        adminNavItems =
+                                            pluginSections.map {
+                                                AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon)
+                                            }
+                                    ),
+                            )
+                        val shell = ctx.shell("Plugin Dashboard", "/admin/plugins")
+                        val page = Page(shell, PluginAdminDashboardPage(pluginSections.map { it.summaryCard }))
+                        Response(Status.OK).body(jteRenderer(page) ?: "")
+                    }
+            )
+        routes(adminContract, pluginDashboardRoute)
+    } else {
+        adminContract
+    }
 }
 
 @Suppress("LongParameterList")
@@ -419,6 +487,22 @@ private fun buildFilterChain(
     pageFactory: WebPageFactory,
     jteRenderer: org.http4k.template.TemplateRenderer,
 ): Filter {
+    val adminNavItems =
+        if (plugin != null) {
+            val pluginCtx =
+                PluginContext(
+                    jteRenderer,
+                    config,
+                    securityService,
+                    userRepository,
+                    analytics,
+                    notificationService,
+                    pageFactory,
+                )
+            plugin.adminSections(pluginCtx).map { AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon) }
+        } else {
+            emptyList()
+        }
     var chain =
         Filters.correlationId
             .then(Filters.cors(config.corsOrigins))
@@ -435,7 +519,11 @@ private fun buildFilterChain(
                     userRepository,
                     config.version,
                     jwtService,
-                    PluginOptions(navItems = plugin?.navItems ?: emptyList(), textResolver = plugin?.textResolver),
+                    PluginOptions(
+                        navItems = plugin?.navItems ?: emptyList(),
+                        textResolver = plugin?.textResolver,
+                        adminNavItems = adminNavItems,
+                    ),
                 )
             )
 

@@ -172,6 +172,9 @@ class WebContext(
                 )
             )
         }
+        pluginOptions.adminNavItems.forEach { item ->
+            links.add(ShellLink(item.label, url(item.url), item.icon, activeSection == item.url))
+        }
     }
 
     @Suppress("LongMethod")

@@ -153,15 +153,14 @@ class SwingAppE2ETest {
     }
 
     private fun clickMenuItemThroughMenu(w: FrameFixture, menuItemName: String) {
-        val menu = GuiActionRunner.execute<javax.swing.JMenu> {
+        GuiActionRunner.execute {
             val rootMenu = (w.target() as JFrame).jMenuBar.getMenu(0)
-            rootMenu.isSelected = false
-            rootMenu.popupMenu.isVisible = false
-            rootMenu
-        }!!
-        w.menuItem(menu.name).click()
-        Thread.sleep(150)
-        w.menuItem(menuItemName).click()
+            rootMenu.isSelected = true
+            val item = rootMenu.popupMenu.components.filterIsInstance<javax.swing.JMenuItem>()
+                .firstOrNull { it.name == menuItemName }
+            item?.doClick()
+            null
+        }
     }
 
     private fun waitUntil(timeoutMs: Long, condition: BooleanSupplier) {
