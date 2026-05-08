@@ -55,9 +55,9 @@
         <outerstellar.version>1.0.14</outerstellar.version>
         <http4k.version>6.46.0.0</http4k.version>
         <netty.version>4.2.13.Final</netty.version>
-        <flyway.version>12.5.0</flyway.version>
+        <flyway.version>12.6.0</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
-        <jooq.version>3.21.2</jooq.version>
+        <jooq.version>3.21.3</jooq.version>
         <jdbi.version>3.53.0</jdbi.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <jte.version>3.2.4</jte.version>
