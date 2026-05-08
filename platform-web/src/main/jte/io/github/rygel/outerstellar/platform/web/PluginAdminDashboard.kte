@@ -1,0 +1,37 @@
+@import io.github.rygel.outerstellar.platform.web.PluginAdminDashboardPage
+@import io.github.rygel.outerstellar.platform.web.Page
+@param model: Page<PluginAdminDashboardPage>
+
+@template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
+<div class="p-6">
+    <h2 class="text-2xl font-bold mb-6">Plugin Dashboard</h2>
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
+        @for(card in model.data.cards)
+        <div class="card bg-base-200 border border-base-300">
+            <div class="card-body">
+                <h3 class="card-title text-lg">${card.title}</h3>
+                <div class="space-y-1 mt-2">
+                    @for(metric in card.metrics)
+                    <div class="flex justify-between text-sm">
+                        <span class="opacity-70">${metric.label}</span>
+                        <span class="font-semibold">${metric.value}</span>
+                        @if(metric.trend != null)
+                        <span class="text-xs opacity-60 ml-2">${metric.trend}</span>
+                        @endif
+                    </div>
+                    @endfor
+                </div>
+                <div class="card-actions justify-end mt-4">
+                    <a href="${card.linkUrl}" class="btn btn-primary btn-sm">${card.linkLabel}</a>
+                </div>
+            </div>
+        </div>
+        @endfor
+    </div>
+    @if(model.data.cards.isEmpty())
+    <div class="text-center opacity-60 mt-12">
+        <p>No plugin admin sections registered.</p>
+    </div>
+    @endif
+</div>
+`)
