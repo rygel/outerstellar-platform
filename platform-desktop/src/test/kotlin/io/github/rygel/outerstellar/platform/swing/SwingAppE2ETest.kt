@@ -153,12 +153,13 @@ class SwingAppE2ETest {
     }
 
     private fun clickMenuItemThroughMenu(w: FrameFixture, menuItemName: String) {
-        GuiActionRunner.execute<Void> {
+        GuiActionRunner.execute {
             val rootMenu = (w.target() as JFrame).jMenuBar.getMenu(0)
             rootMenu.isSelected = true
             val item = rootMenu.popupMenu.components.filterIsInstance<javax.swing.JMenuItem>()
                 .firstOrNull { it.name == menuItemName }
             item?.doClick()
+            null
         }
     }
 
