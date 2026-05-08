@@ -14,17 +14,17 @@
     <div class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
         <section class="card bg-base-200 border border-base-300">
             <h2>${model.data.outboxLabel}</h2>
-            <div class="message-list">
-                <div class="message-meta">
-                    <span>${model.data.pendingLabel}</span>
+            <div class="flex flex-col gap-2 mt-2">
+                <div class="flex justify-between text-sm">
+                    <span class="opacity-60">${model.data.pendingLabel}</span>
                     <strong>${model.data.outboxStats.pending}</strong>
                 </div>
-                <div class="message-meta">
-                    <span>${model.data.processedLabel}</span>
+                <div class="flex justify-between text-sm">
+                    <span class="opacity-60">${model.data.processedLabel}</span>
                     <strong>${model.data.outboxStats.processed}</strong>
                 </div>
-                <div class="message-meta">
-                    <span>${model.data.failedLabel}</span>
+                <div class="flex justify-between text-sm">
+                    <span class="opacity-60">${model.data.failedLabel}</span>
                     <strong>${model.data.outboxStats.failed}</strong>
                 </div>
             </div>
@@ -32,10 +32,10 @@
 
         <section class="card bg-base-200 border border-base-300">
             <h2>${model.data.cacheLabel}</h2>
-            <div class="message-list">
+            <div class="flex flex-col gap-2 mt-2">
                 @for(entry in model.data.cacheStats)
-                    <div class="message-meta">
-                        <span>${entry.key}</span>
+                    <div class="flex justify-between text-sm">
+                        <span class="opacity-60">${entry.key}</span>
                         <strong>${entry.value.toString()}</strong>
                     </div>
                 @endfor
@@ -43,25 +43,23 @@
         </section>
     </div>
 
-    <section class="card bg-base-200 border border-base-300">
+    <section class="card bg-base-200 border border-base-300 mt-4">
         <h2>${model.data.protocolLabel}</h2>
-        <p class="opacity-70 mb-4">${model.data.protocolDescription}</p>
+        <p class="opacity-60 text-sm mb-4">${model.data.protocolDescription}</p>
         <div class="flex gap-3 justify-end">
-            <a href="outerstellar://sync" class="button-link">${model.data.triggerSyncLabel}</a>
-            <a href="outerstellar://search?q=HTMX" class="button-link btn btn-ghost">${model.data.searchHtmxLabel}</a>
-            <a href="outerstellar://search?q=Dracula" class="button-link btn btn-ghost">${model.data.searchDraculaLabel}</a>
+            <a href="outerstellar://sync" class="btn btn-primary btn-sm">${model.data.triggerSyncLabel}</a>
+            <a href="outerstellar://search?q=HTMX" class="btn btn-ghost btn-sm">${model.data.searchHtmxLabel}</a>
+            <a href="outerstellar://search?q=Dracula" class="btn btn-ghost btn-sm">${model.data.searchDraculaLabel}</a>
         </div>
     </section>
 
-    <section class="card bg-base-200 border border-base-300">
+    <section class="card bg-base-200 border border-base-300 mt-4">
         <h2>${model.data.telemetryLabel}</h2>
-        <p class="badge badge-outline">${model.data.telemetryStatus}</p>
+        <p class="badge badge-outline mt-2">${model.data.telemetryStatus}</p>
     </section>
 
-    <section class="card bg-base-200 border border-base-300">
+    <section class="card bg-base-200 border border-base-300 mt-4">
         <h2>${model.data.metricsLabel}</h2>
-        <pre class="card bg-base-100" style="overflow: auto; max-height: 400px; font-size: 12px; font-family: monospace;">
-${model.data.metrics}
-        </pre>
+        <pre class="bg-base-100 p-4 rounded-lg mt-2 text-xs font-mono overflow-auto max-h-96">${model.data.metrics}</pre>
     </section>
 `)

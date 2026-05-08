@@ -19,27 +19,33 @@
                 </div>
             </div>
 
-            <form hx-post="${model.data.submitUrl}" hx-target="#profile-result" hx-swap="innerHTML">
+            <form hx-post="${model.data.submitUrl}" hx-target="#profile-result" hx-swap="innerHTML" class="flex flex-col gap-4">
                 <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
 
-                <label for="username">${model.data.usernameLabel}</label>
-                <input type="text" id="username" name="username"
-                       value="${model.data.username}"
-                       placeholder="${model.data.usernamePlaceholder}"
-                       maxlength="50" required class="input input-bordered">
+                <div class="flex flex-col gap-1.5">
+                    <label for="username" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.data.usernameLabel}</label>
+                    <input type="text" id="username" name="username"
+                           value="${model.data.username}"
+                           placeholder="${model.data.usernamePlaceholder}"
+                           maxlength="50" required class="input input-bordered w-full">
+                </div>
 
-                <label for="email">${model.data.emailLabel}</label>
-                <input type="email" id="email" name="email"
-                       value="${model.data.email}"
-                       placeholder="${model.data.emailPlaceholder}" required class="input input-bordered">
+                <div class="flex flex-col gap-1.5">
+                    <label for="email" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.data.emailLabel}</label>
+                    <input type="email" id="email" name="email"
+                           value="${model.data.email}"
+                           placeholder="${model.data.emailPlaceholder}" required class="input input-bordered w-full">
+                </div>
 
-                <label for="avatarUrl">${model.data.avatarLabel}</label>
-                <input type="url" id="avatarUrl" name="avatarUrl"
-                       value="${model.data.avatarUrl}"
-                       placeholder="${model.data.avatarPlaceholder}" class="input input-bordered">
-                <small style="opacity:0.55; font-size:0.8rem;">${model.data.gravatarHint}</small>
+                <div class="flex flex-col gap-1.5">
+                    <label for="avatarUrl" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.data.avatarLabel}</label>
+                    <input type="url" id="avatarUrl" name="avatarUrl"
+                           value="${model.data.avatarUrl}"
+                           placeholder="${model.data.avatarPlaceholder}" class="input input-bordered w-full">
+                    <small class="opacity-50 text-xs">${model.data.gravatarHint}</small>
+                </div>
 
-                <button type="submit" style="margin-top:1rem;">${model.data.submitLabel}</button>
+                <button type="submit" class="btn btn-primary">${model.data.submitLabel}</button>
             </form>
             <div id="profile-result" class="mt-4"></div>
         </section>
@@ -47,48 +53,52 @@
         <%-- ── Section 2: Notification Preferences ────────────────────────── --%>
         <section class="card bg-base-200 border border-base-300">
             <h3 style="margin-top:0;">${model.data.notificationPrefsLabel}</h3>
-            <form hx-post="${model.data.notificationPrefsUrl}" hx-target="#notif-result" hx-swap="innerHTML">
+            <form hx-post="${model.data.notificationPrefsUrl}" hx-target="#notif-result" hx-swap="innerHTML" class="flex flex-col gap-4">
                 <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
 
-                <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; margin-bottom:0.75rem;">
-                    <input type="checkbox" name="emailNotifications" checked="${model.data.emailNotificationsEnabled}">
-                    ${model.data.emailNotifLabel}
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" name="emailNotifications" checked="${model.data.emailNotificationsEnabled}" class="checkbox checkbox-sm">
+                    <span>${model.data.emailNotifLabel}</span>
                 </label>
 
-                <label style="display:flex; align-items:center; gap:0.6rem; cursor:pointer; margin-bottom:1rem;">
-                    <input type="checkbox" name="pushNotifications" checked="${model.data.pushNotificationsEnabled}">
-                    ${model.data.pushNotifLabel}
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" name="pushNotifications" checked="${model.data.pushNotificationsEnabled}" class="checkbox checkbox-sm">
+                    <span>${model.data.pushNotifLabel}</span>
                 </label>
 
-                <button type="submit" class="btn btn-ghost">${model.data.savePrefsLabel}</button>
+                <button type="submit" class="btn btn-ghost btn-sm w-fit">${model.data.savePrefsLabel}</button>
             </form>
             <div id="notif-result" class="mt-4"></div>
         </section>
 
         <%-- ── Section 3: Danger Zone ──────────────────────────────────────── --%>
-        <section class="card bg-error/10 border-error/30 text-error" style="border-color: var(--color-danger, #ef4444);">
-            <h3 style="margin-top:0; color: var(--color-danger, #ef4444);">${model.data.dangerZoneLabel}</h3>
-            <p style="margin-bottom:1rem; opacity:0.75;">${model.data.deleteAccountDescription}</p>
+        <section class="card bg-base-200 border border-error/30">
+            <h3 class="text-error">${model.data.dangerZoneLabel}</h3>
+            <p class="opacity-60 text-sm mb-4">${model.data.deleteAccountDescription}</p>
 
             <button type="button"
-                    class="btn btn-error"
-                    onclick="document.getElementById('delete-confirm-dialog').style.display='block'">
+                    class="btn btn-error btn-sm"
+                    onclick="document.getElementById('delete-confirm-dialog').showModal()">
                 ${model.data.deleteAccountLabel}
             </button>
 
-            <div id="delete-confirm-dialog"
-                 style="display:none; margin-top:1rem; padding:1rem; background:var(--color-bg-alt, #1a1a1a); border-radius:6px; border:1px solid var(--color-danger, #ef4444);">
-                <p style="margin-bottom:0.75rem; font-weight:600;">${model.data.deleteAccountConfirmLabel}</p>
-                <form method="post" action="${model.data.deleteAccountUrl}"
-                      style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-                    <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
-                    <button type="submit" class="btn btn-error">${model.data.deleteAccountLabel}</button>
-                    <button type="button" class="btn btn-ghost"
-                            onclick="document.getElementById('delete-confirm-dialog').style.display='none'">
-                        ${model.data.deleteAccountCancelLabel}
-                    </button>
-                </form>
-            </div>
+            <dialog id="delete-confirm-dialog" class="modal">
+                <div class="modal-box">
+                    <h3 class="text-lg font-bold">${model.data.deleteAccountConfirmLabel}</h3>
+                    <p class="py-4 opacity-60">${model.data.deleteAccountDescription}</p>
+                    <div class="flex gap-3 justify-end">
+                        <form method="post" action="${model.data.deleteAccountUrl}">
+                            <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
+                            <button type="submit" class="btn btn-error">${model.data.deleteAccountLabel}</button>
+                        </form>
+                        <button type="button" class="btn btn-ghost"
+                                onclick="document.getElementById('delete-confirm-dialog').close()">
+                            ${model.data.deleteAccountCancelLabel}
+                        </button>
+                    </div>
+                </div>
+                <form method="dialog" class="modal-backdrop"><button>close</button></form>
+            </dialog>
             <div id="delete-result" class="mt-4"></div>
         </section>
 

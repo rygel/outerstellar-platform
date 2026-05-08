@@ -3,37 +3,37 @@
 @param model: Page<AuthViewModel>
 
 @template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
-    <section class="mb-4">
-        <div class="card bg-base-200 border border-base-300">
-            <p class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.shell.pageTitle}</p>
-            <h1>${model.data.heading}</h1>
-            <p class="opacity-50">${model.data.intro}</p>
-        </div>
-    </section>
-    
-    <div style="max-width: 500px; margin: 2rem auto;">
-        <section class="card bg-base-200 border border-base-300">
-            <div class="tabs mb-6" style="display: flex; gap: 0.5rem; justify-content: center;">
-                @for (tab in model.data.tabs)
-                    <button class="btn btn-ghost"
-                            style="flex: 1;"
-                            hx-get="${tab.url}"
-                            hx-target="#auth-form-slot"
-                            hx-swap="innerHTML">
-                        ${tab.label}
-                    </button>
-                @endfor
+    <div class="flex items-center justify-center min-h-[80vh]">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-extrabold">${model.data.heading}</h1>
+                <p class="opacity-60 mt-2">${model.data.intro}</p>
             </div>
-            <div id="auth-form-slot"
-                 hx-get="${model.data.defaultFormUrl}"
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-            </div>
-            <div id="auth-result-slot" class="mt-4"></div>
-        </section>
-        
-        <div class="card bg-base-100 mt-6 text-center">
-            <p class="opacity-50" style="margin: 0;">${model.data.helperText}</p>
+
+            <section class="card bg-base-200 border border-base-300 p-8">
+                <div class="tabs tabs-bordered mb-8" style="display: flex;">
+                    @for (tab in model.data.tabs)
+                        <a class="tab flex-1 text-center @if(tab.url == model.data.defaultFormUrl) tab-active @endif"
+                                hx-get="${tab.url}"
+                                hx-target="#auth-form-slot"
+                                hx-swap="innerHTML">
+                            ${tab.label}
+                        </a>
+                    @endfor
+                </div>
+                <div id="auth-form-slot"
+                     hx-get="${model.data.defaultFormUrl}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+                <div id="auth-result-slot" class="mt-4"></div>
+            </section>
+
+            @if(model.data.helperText.isNotBlank())
+                <div class="text-center mt-6">
+                    <p class="opacity-50 text-sm">${model.data.helperText}</p>
+                </div>
+            @endif
         </div>
     </div>
 `)

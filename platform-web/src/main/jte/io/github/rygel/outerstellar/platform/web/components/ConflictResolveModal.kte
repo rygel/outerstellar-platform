@@ -17,8 +17,8 @@
             <div class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
                 <div class="card bg-base-100">
                     <h3>${model.myVersionLabel}</h3>
-                    <div class="message-meta mb-2">
-                        <span>${model.authorLabel}:</span>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="opacity-60">${model.authorLabel}:</span>
                         <strong>${model.myAuthor}</strong>
                     </div>
                     <div class="card bg-base-200 p-4 bg-opacity-10 bg-white">
@@ -31,8 +31,8 @@
 
                 <div class="card bg-base-100 border-accent">
                     <h3>${model.serverVersionLabel}</h3>
-                    <div class="message-meta mb-2">
-                        <span>${model.authorLabel}:</span>
+                    <div class="flex justify-between text-sm mb-2">
+                        <span class="opacity-60">${model.authorLabel}:</span>
                         <strong>${model.serverAuthor}</strong>
                     </div>
                     <div class="card bg-base-200 p-4 bg-opacity-10 bg-white">

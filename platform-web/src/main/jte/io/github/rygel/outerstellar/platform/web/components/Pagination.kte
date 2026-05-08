@@ -17,7 +17,7 @@
 
 @if(hasPrevious || hasNext)
 <div class="flex justify-between items-center mt-4 text-sm">
-    <span class="pagination-info">
+    <span class="text-sm opacity-60">
         @if(showingPageLabel.isNotEmpty() && totalPages > 0)
             ${showingPageLabel} <strong>${currentPage}</strong> ${ofLabel} <strong>${totalPages}</strong>
         @elseif(totalCount > 0 && totalCountLabel.isNotEmpty())

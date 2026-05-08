@@ -11,23 +11,21 @@
     )
 
     @if(model.data.newKey != null)
-        <section class="card bg-success/10 border-success/30 text-success" style="margin-bottom: 1rem;">
+        <section class="card bg-success/10 border border-success/30 text-success mb-4">
             <h3>${model.data.newKeyBanner}</h3>
-            <p style="font-family: monospace; word-break: break-all; padding: 0.75rem; background: var(--color-background); border-radius: 4px;">
-                ${model.data.newKey}
-            </p>
-            <p class="opacity-50">${model.data.nameLabel} ${model.data.newKeyName}</p>
+            <pre class="bg-base-100 p-4 rounded-lg mt-2 text-sm font-mono break-all">${model.data.newKey}</pre>
+            <p class="opacity-50 text-sm mt-2">${model.data.nameLabel} ${model.data.newKeyName}</p>
         </section>
     @endif
 
     <section class="card bg-base-200 border border-base-300">
         <h2>${model.data.createLabel}</h2>
-        <form method="post" action="${model.data.createUrl}" style="display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap;">
-            <div>
-                <label for="key-name">${model.data.keyNameLabel}</label>
-                <input type="text" id="key-name" name="name" placeholder="${model.data.keyNamePlaceholder}" required style="min-width: 250px;" class="input input-bordered" />
+        <form method="post" action="${model.data.createUrl}" class="flex gap-3 items-end flex-wrap mt-4">
+            <div class="flex flex-col gap-1.5 flex-1" style="min-width: 250px;">
+                <label for="key-name" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.data.keyNameLabel}</label>
+                <input type="text" id="key-name" name="name" placeholder="${model.data.keyNamePlaceholder}" required class="input input-bordered w-full" />
             </div>
-            <button type="submit">${model.data.createLabel}</button>
+            <button type="submit" class="btn btn-primary">${model.data.createLabel}</button>
         </form>
     </section>
 

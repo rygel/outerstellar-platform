@@ -6,17 +6,17 @@
         <p class="card bg-base-100 text-center py-8 opacity-60">${model.emptyMessage}</p>
     @else
         @for(msg in model.messages)
-            <article class="card bg-base-200 border border-base-300 card hover:-translate-y-1 transition-transform @if(msg.dirty) border-accent @endif">
-                <header class="message-header">
-                    <div class="flex items-center gap-4">
-                        <span class="message-author">${msg.author}</span>
+            <article class="card bg-base-200 border border-base-300 hover:-translate-y-1 transition-transform @if(msg.dirty) border-accent @endif">
+                <header class="flex items-center justify-between pb-3 border-b border-base-content/5">
+                    <div class="flex items-center gap-3">
+                        <span class="font-semibold">${msg.author}</span>
                         @if(msg.dirty)
-                            <span class="badge badge-outline" style="color: var(--color-accent);">
+                            <span class="badge badge-outline badge-accent">
                                 <i class="ri-refresh-line"></i> ${model.localBadge}
                             </span>
                         @endif
                         @if(msg.hasConflict)
-                            <button class="badge badge-outline card bg-error/10 border-error/30 text-error"
+                            <button class="badge badge-outline bg-error/10 border-error/30 text-error"
                                     hx-get="/messages/resolve/${msg.syncId}"
                                     hx-target="body"
                                     hx-swap="beforeend"
@@ -25,13 +25,13 @@
                             </button>
                         @endif
                     </div>
-                    <time class="message-time">${msg.updatedAtLabel()}</time>
+                    <time class="text-xs opacity-50">${msg.updatedAtLabel()}</time>
                 </header>
-                <div class="message-content">
+                <div class="py-3">
                     ${msg.content}
                 </div>
-                <footer class="message-footer">
-                    <div class="message-meta">
+                <footer class="flex items-center justify-between pt-3 border-t border-base-content/5">
+                    <div class="flex gap-4 text-xs opacity-50">
                         <span>${model.idLabel} ${msg.syncId.take(8)}</span>
                         <span>${model.versionLabel} ${msg.version}</span>
                     </div>
