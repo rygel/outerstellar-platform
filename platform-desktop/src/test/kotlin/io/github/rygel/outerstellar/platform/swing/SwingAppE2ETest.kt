@@ -156,7 +156,7 @@ class SwingAppE2ETest {
         val menu = GuiActionRunner.execute<javax.swing.JMenu> {
             val rootMenu = (w.target() as JFrame).jMenuBar.getMenu(0)
             rootMenu.isSelected = false
-            rootMenu.popup?.isVisible = false
+            rootMenu.popupMenu.isVisible = false
             rootMenu
         }!!
         w.menuItem(menu.name).click()
