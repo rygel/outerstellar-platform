@@ -14,7 +14,7 @@
 
     <properties>
         <javafx.version>21</javafx.version>
-        <atlantafx.version>2.0.1</atlantafx.version>
+        <atlantafx.version>2.1.0</atlantafx.version>
         <testfx.version>4.0.18</testfx.version>
     </properties>
 
