@@ -43,6 +43,7 @@
         <module>platform-sync-client</module>
         <module>platform-web</module>
         <module>platform-desktop</module>
+        <module>platform-desktop-javafx</module>
         <module>platform-security</module>
         <module>platform-seed</module>
     </modules>

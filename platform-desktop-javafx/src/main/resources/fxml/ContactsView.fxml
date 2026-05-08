@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.Button?>
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="io.github.rygel.outerstellar.platform.fx.controller.ContactsController">
+    <top>
+        <HBox spacing="8" style="-fx-padding: 8;">
+            <Button text="Create Contact" onAction="#onCreateContact"/>
+        </HBox>
+    </top>
+    <center>
+        <TableView fx:id="contactsTable">
+            <columns>
+                <TableColumn fx:id="nameColumn" text="Name" prefWidth="200"/>
+                <TableColumn fx:id="emailColumn" text="Email" prefWidth="250"/>
+                <TableColumn fx:id="companyColumn" text="Company" prefWidth="200"/>
+            </columns>
+        </TableView>
+    </center>
+</BorderPane>

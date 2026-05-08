@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<VBox spacing="10" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="io.github.rygel.outerstellar.platform.fx.controller.ConflictController"
+      style="-fx-padding: 20;">
+    <Label text="A sync conflict was detected. Choose which version to keep:" wrapText="true"/>
+    <HBox spacing="10">
+        <VBox spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="My Local Version" style="-fx-font-weight: bold;"/>
+            <Label fx:id="localAuthorLabel"/>
+            <TextArea fx:id="localContent" editable="false" prefRowCount="6" wrapText="true"/>
+        </VBox>
+        <VBox spacing="8" HBox.hgrow="ALWAYS">
+            <Label text="Server Version" style="-fx-font-weight: bold;"/>
+            <Label text="Server has a newer version."/>
+            <Label text="Accepting it will overwrite your local changes." wrapText="true"/>
+        </VBox>
+    </HBox>
+    <HBox spacing="10">
+        <Button text="Keep My Version" onAction="#onKeepMine"/>
+        <Button text="Accept Server Version" onAction="#onAcceptServer"/>
+    </HBox>
+</VBox>
