@@ -23,13 +23,13 @@ import org.slf4j.LoggerFactory
  */
 data class PluginNavItem(val label: String, val url: String, val icon: String, val activeSection: String = url)
 
-data class AdminNavItem(
-    val label: String,
-    val url: String,
-    val icon: String,
-)
+data class AdminNavItem(val label: String, val url: String, val icon: String)
 
-data class PluginOptions(val navItems: List<PluginNavItem> = emptyList(), val textResolver: TextResolver? = null, val adminNavItems: List<AdminNavItem> = emptyList())
+data class PluginOptions(
+    val navItems: List<PluginNavItem> = emptyList(),
+    val textResolver: TextResolver? = null,
+    val adminNavItems: List<AdminNavItem> = emptyList(),
+)
 
 /**
  * Host services provided to the plugin when it builds its routes. The plugin should depend only on this context rather
