@@ -131,7 +131,7 @@ class SwingAppE2ETest {
     fun `changing theme from settings updates key ui surfaces`() {
         val w = window!!
 
-        w.menuItem("settingsItem").click()
+        clickMenuItemThroughMenu(w, "settingsItem")
         w.dialog().comboBox("themeCombo").selectItem("Dark")
         w.dialog().button("applyButton").click()
 
@@ -141,7 +141,7 @@ class SwingAppE2ETest {
 
         assertThemeApplied(w, "Dark")
 
-        w.menuItem("settingsItem").click()
+        clickMenuItemThroughMenu(w, "settingsItem")
         w.dialog().comboBox("themeCombo").selectItem("Light")
         w.dialog().button("applyButton").click()
 
@@ -150,6 +150,18 @@ class SwingAppE2ETest {
         }
 
         assertThemeApplied(w, "Light")
+    }
+
+    private fun clickMenuItemThroughMenu(w: FrameFixture, menuItemName: String) {
+        val menu = GuiActionRunner.execute<javax.swing.JMenu> {
+            val rootMenu = (w.target() as JFrame).jMenuBar.getMenu(0)
+            rootMenu.isSelected = false
+            rootMenu.popup?.isVisible = false
+            rootMenu
+        }!!
+        w.menuItem(menu.name).click()
+        Thread.sleep(150)
+        w.menuItem(menuItemName).click()
     }
 
     private fun waitUntil(timeoutMs: Long, condition: BooleanSupplier) {
