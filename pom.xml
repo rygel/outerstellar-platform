@@ -687,7 +687,7 @@
                     <version>${detekt.version}</version>
                     <configuration>
                         <config>${maven.multiModuleProjectDirectory}/config/detekt.yml</config>
-                        <buildUponDefaultConfig>false</buildUponDefaultConfig>
+                        <buildUponDefaultConfig>true</buildUponDefaultConfig>
                     </configuration>
                     <executions>
                         <execution>

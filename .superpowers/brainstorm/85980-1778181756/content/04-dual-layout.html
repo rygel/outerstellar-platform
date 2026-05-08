@@ -1,0 +1,19 @@
+<h2>Keep both layout modes or simplify?</h2>
+<p class="subtitle">You currently support sidebar and topbar layouts, switchable per user preference. DaisyUI's drawer handles the sidebar natively. Maintaining both means two layout templates that must stay in sync.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Keep both — sidebar + topbar</h3>
+      <p>Keep the user-selectable layout preference. DaisyUI <code>drawer</code> for sidebar mode, DaisyUI <code>navbar</code> for topbar mode. <code>LayoutRouter.kte</code> stays. Two templates to maintain, but users get their choice.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Sidebar only — drop topbar layout</h3>
+      <p>Remove the topbar layout and <code>LayoutRouter.kte</code>. One layout template using DaisyUI <code>drawer</code>. Remove the layout selector from settings. Simpler codebase, fewer templates to maintain.</p>
+    </div>
+  </div>
+</div>

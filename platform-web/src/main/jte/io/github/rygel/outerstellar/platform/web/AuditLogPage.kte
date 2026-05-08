@@ -8,8 +8,8 @@
         title = model.data.title
     )
 
-    <section class="panel">
-        <table class="data-table">
+    <section class="card bg-base-200 border border-base-300">
+        <table class="table">
             <thead>
                 <tr>
                     <th>${model.data.headerWhen}</th>
@@ -24,7 +24,7 @@
                     <tr>
                         <td style="white-space:nowrap;">${entry.timestamp}</td>
                         <td>${entry.actorUsername}</td>
-                        <td><span class="chip">${entry.action}</span></td>
+                        <td><span class="badge">${entry.action}</span></td>
                         <td>${entry.targetUsername}</td>
                         <td>${entry.detail}</td>
                     </tr>

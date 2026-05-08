@@ -225,13 +225,13 @@ open class WebPageFactory(
             AuthResultFragment(
                 title = i18n.translate("web.auth.result.success.title"),
                 message = i18n.translate("web.auth.result.success.body", email),
-                toneClass = "panel-success",
+                toneClass = "bg-success/10 border-success/30 text-success",
             )
         } else {
             AuthResultFragment(
                 title = i18n.translate("web.auth.result.error.title"),
                 message = errors.joinToString(" "),
-                toneClass = "panel-danger",
+                toneClass = "bg-error/10 border-error/30 text-error",
             )
         }
     }
@@ -388,8 +388,8 @@ open class WebPageFactory(
             selectId = "theme-selector",
             selectName = "theme",
             options =
-                ThemeCatalog.allThemes().map { theme ->
-                    ShellOption(id = theme.id, label = theme.name, url = theme.id, active = theme.id == ctx.theme)
+                ThemeCatalog.allThemes.map { theme ->
+                    ShellOption(id = theme.id, label = theme.label, url = theme.id, active = theme.id == ctx.theme)
                 },
             hiddenFields =
                 listOf(

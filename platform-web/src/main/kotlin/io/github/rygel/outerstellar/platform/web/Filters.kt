@@ -261,7 +261,7 @@ object Filters {
             val themeCookie =
                 request
                     .query("theme")
-                    ?.takeIf { v -> ThemeCatalog.allThemes().any { it.id == v } }
+                    ?.takeIf { v -> ThemeCatalog.isValidTheme(v) }
                     ?.let { Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
             val layoutCookie =
                 request

@@ -1,0 +1,26 @@
+<h2>How should the theme system work with DaisyUI?</h2>
+<p class="subtitle">You currently have a custom theme system with 32 themes defined in themes.json, injected via CSS variables at runtime. DaisyUI has 30+ built-in themes with its own color semantics. These can coexist in different ways.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Use DaisyUI themes exclusively (Recommended)</h3>
+      <p>Replace your 32 custom themes with DaisyUI's built-in themes. Set theme via <code>data-theme="dark"</code> on <code>&lt;html&gt;</code> (you already have this attribute). DaisyUI handles all color semantics automatically — no CSS variables needed. Users pick from DaisyUI's theme list. Delete <code>themes.json</code> and the Kotlin theme engine.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Custom DaisyUI themes from your existing palettes</h3>
+      <p>Convert your 32 themes from <code>themes.json</code> into DaisyUI custom theme definitions (CSS <code>@theme</code> blocks). Keeps your exact brand colors but gets DaisyUI's component integration. More upfront work, but your users keep the themes they know.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid — DaisyUI themes + CSS variable overrides</h3>
+      <p>Use DaisyUI's theme system but keep your custom themes.json as overrides on top. DaisyUI sets base colors, your theme engine adjusts specific variables. Maximum flexibility but you maintain two systems.</p>
+    </div>
+  </div>
+</div>

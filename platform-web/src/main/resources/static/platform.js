@@ -1,4 +1,3 @@
-// Toast notification handler
 (function () {
     var errorLabel = document.body.dataset.toastError;
     var successLabel = document.body.dataset.toastSuccess;
@@ -11,13 +10,10 @@
     window.showToast = function (message, type) {
         var container = document.getElementById('toast-container');
         var toast = document.createElement('div');
-        toast.className = 'panel animate-in slide-in-from-right-10 fade-in duration-300 ' + (type === 'error' ? 'panel-danger' : 'panel-success');
-        toast.style.padding = '0.75rem 1.25rem';
+        toast.className = 'alert shadow-lg animate-in slide-in-from-right-10 fade-in duration-300 ' + (type === 'error' ? 'alert-error' : 'alert-success');
         toast.style.marginBottom = '0.75rem';
         toast.style.pointerEvents = 'auto';
-        toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
 
-        var title = type === 'error' ? errorLabel : successLabel;
         var icon = type === 'error' ? 'ri-error-warning-fill' : 'ri-checkbox-circle-fill';
 
         var row = document.createElement('div');
@@ -31,7 +27,7 @@
 
         var titleEl = document.createElement('strong');
         titleEl.style.cssText = 'display: block; font-size: 0.9rem;';
-        titleEl.textContent = title;
+        titleEl.textContent = type === 'error' ? errorLabel : successLabel;
 
         var msgEl = document.createElement('p');
         msgEl.style.cssText = 'margin:0; font-size: 0.85rem; opacity: 0.9;';
@@ -53,7 +49,6 @@
     };
 })();
 
-// Inject CSRF token into every HTMX request automatically
 document.addEventListener('htmx:configRequest', function (event) {
     var token = document.querySelector('meta[name="csrf-token"]');
     if (token) {
@@ -61,8 +56,6 @@ document.addEventListener('htmx:configRequest', function (event) {
     }
 });
 
-// On first visit (no theme cookie set), apply system color-scheme preference.
-// The server defaults to dark; if the user prefers light we redirect once.
 (function () {
     var hasCookie = document.cookie.split(';').some(function (c) {
         return c.trim().startsWith('app_theme=');
@@ -71,21 +64,8 @@ document.addEventListener('htmx:configRequest', function (event) {
         var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
         if (prefersLight) {
             var expires = new Date(Date.now() + 365 * 86400 * 1000).toUTCString();
-            document.cookie = 'app_theme=default;path=/;expires=' + expires;
+            document.cookie = 'app_theme=light;path=/;expires=' + expires;
             window.location.reload();
         }
     }
 })();
-
-// Mobile menu toggle
-function toggleMobileMenu() {
-    document.querySelector('.sidebar').classList.toggle('open');
-    document.getElementById('sidebar-overlay').classList.toggle('open');
-}
-function closeMobileMenu() {
-    document.querySelector('.sidebar').classList.remove('open');
-    document.getElementById('sidebar-overlay').classList.remove('open');
-}
-document.querySelectorAll('.nav-link').forEach(function(link) {
-    link.addEventListener('click', closeMobileMenu);
-});

@@ -8,7 +8,7 @@
         title = model.data.title,
         description = model.data.description,
         action = @`
-            <button class="button-accent"
+            <button class="btn btn-accent"
                     hx-get="/contacts/new"
                     hx-target="body"
                     hx-swap="beforeend">
@@ -19,21 +19,21 @@
     )
 
     <div id="contact-list-container">
-        <div class="card-grid">
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
             @for (contact in model.data.contacts)
-                <div id="contact-${contact.syncId}" class="panel contact-card">
-                    <div class="contact-header">
-                        <div class="contact-avatar">
+                <div id="contact-${contact.syncId}" class="card bg-base-200 border border-base-300 h-full">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-primary to-purple-500 text-white rounded-xl flex items-center justify-center font-extrabold text-xl shadow-lg">
                             ${contact.name.take(1).uppercase()}
                         </div>
                         <div class="contact-info">
                             <h3>${contact.name}</h3>
-                            <p class="text-muted">${contact.company} &middot; ${contact.department}</p>
+                            <p class="opacity-50">${contact.company} &middot; ${contact.department}</p>
                         </div>
                     </div>
 
-                    <div class="contact-details mt-4">
-                        <div class="contact-detail-item">
+                    <div class="flex flex-col gap-2 flex-1 mt-4">
+                        <div class="flex gap-4">
                             <i class="ri-mail-line"></i>
                             <div>
                                 @for (email in contact.emails)
@@ -41,7 +41,7 @@
                                 @endfor
                             </div>
                         </div>
-                        <div class="contact-detail-item">
+                        <div class="flex gap-4">
                             <i class="ri-phone-line"></i>
                             <div>
                                 @for (phone in contact.phones)
@@ -50,29 +50,29 @@
                             </div>
                         </div>
                         @if (contact.socialMedia.isNotEmpty())
-                            <div class="contact-detail-item">
+                            <div class="flex gap-4">
                                 <i class="ri-share-line"></i>
                                 <div class="flex gap-2">
                                     @for (social in contact.socialMedia)
-                                        <span class="chip">${social}</span>
+                                        <span class="badge">${social}</span>
                                     @endfor
                                 </div>
                             </div>
                         @endif
-                        <div class="contact-detail-item">
+                        <div class="flex gap-4">
                             <i class="ri-map-pin-line"></i>
                             <div>${contact.companyAddress}</div>
                         </div>
                     </div>
 
                     <div class="flex justify-end gap-2 mt-6">
-                        <button class="button-icon" title="${model.data.editTitle}"
+                        <button class="btn btn-ghost btn-sm btn-square" title="${model.data.editTitle}"
                                 hx-get="${contact.editUrl}"
                                 hx-target="body"
                                 hx-swap="beforeend">
                             <i class="ri-edit-line"></i>
                         </button>
-                        <button class="button-icon text-danger" title="${model.data.deleteTitle}"
+                        <button class="btn btn-ghost btn-sm btn-square text-error" title="${model.data.deleteTitle}"
                                 hx-post="${contact.deleteUrl}"
                                 hx-target="#contact-${contact.syncId}"
                                 hx-swap="outerHTML"

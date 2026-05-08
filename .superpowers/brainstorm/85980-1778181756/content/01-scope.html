@@ -1,0 +1,26 @@
+<h2>How far should the DaisyUI migration go?</h2>
+<p class="subtitle">Your project has ~90 custom CSS classes, 60+ templates, and 817 lines of hand-written CSS. DaisyUI can replace most of it.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Full replacement (Recommended)</h3>
+      <p>Rip out all 817 lines of custom CSS. Replace every custom class with DaisyUI semantic equivalents (<code>panel</code> → <code>card</code>, <code>button-secondary</code> → <code>btn btn-ghost</code>, <code>chip</code> → <code>badge</code>, <code>data-table</code> → DaisyUI table, etc.). Delete <code>input.css</code> entirely. Your templates become cleaner and your theme system becomes DaisyUI's built-in 30+ themes.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Incremental — components first, layout later</h3>
+      <p>Replace component classes (buttons, panels, badges, tables, forms, modals) with DaisyUI. Keep layout classes (<code>shell</code>, <code>sidebar</code>, <code>topbar</code>, <code>content</code>, <code>footer</code>) as custom CSS. Faster to ship, less risky, but you'll maintain a hybrid CSS file.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Drop-in only — add DaisyUI, replace nothing</h3>
+      <p>Install DaisyUI alongside existing CSS. Only use DaisyUI for <em>new</em> components going forward. Old templates keep their custom classes. Zero migration risk, but you now have two competing design systems.</p>
+    </div>
+  </div>
+</div>

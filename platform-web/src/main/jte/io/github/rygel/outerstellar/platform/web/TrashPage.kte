@@ -3,10 +3,10 @@
 @param model: Page<TrashPage>
 
 @template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
-    <section class="hero-grid">
-        <div class="panel">
+    <section class="mb-4">
+        <div class="card bg-base-200 border border-base-300">
             <h1>${model.data.title}</h1>
-            <p class="text-muted">${model.data.description}</p>
+            <p class="opacity-50">${model.data.description}</p>
         </div>
     </section>
 

@@ -17,8 +17,7 @@
   "type": "commonjs",
   "devDependencies": {
     "@tailwindcss/cli": "^4.2.4",
-    "autoprefixer": "^10.5.0",
-    "postcss": "^8.5.13",
+    "daisyui": "^5.5.19",
     "tailwindcss": "^4.2.2"
   }
 }

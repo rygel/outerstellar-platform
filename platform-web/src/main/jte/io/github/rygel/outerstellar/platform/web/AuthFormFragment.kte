@@ -2,66 +2,58 @@
 @param model: AuthFormFragment
 
 <div>
-    <h2 style="font-size: 1.25rem;">${model.title}</h2>
-    <p class="text-muted mb-6">${model.description}</p>
-    <form class="form-grid"
+    <h2 class="text-xl font-bold">${model.title}</h2>
+    <p class="opacity-50 text-sm mt-1 mb-6">${model.description}</p>
+    <form class="flex flex-col gap-4"
           hx-post="${model.submitUrl}"
           hx-target="#auth-result-slot"
           hx-swap="innerHTML">
         <input type="hidden" name="mode" value="${model.mode}">
         <input type="hidden" name="lang" value="${model.language}">
         <input type="hidden" name="theme" value="${model.theme}">
-        
+
         @if (model.includeNameField)
-            <div class="mb-2">
-                <label class="topbar-label">${model.nameLabel}</label>
-                <input type="text" name="displayName" placeholder="${model.namePlaceholder}">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.nameLabel}</label>
+                <input type="text" name="displayName" placeholder="${model.namePlaceholder}" class="input input-bordered w-full">
             </div>
         @endif
-        
-        <div class="mb-2">
-            <label class="topbar-label">${model.emailLabel}</label>
-            <input type="email" name="email" placeholder="${model.emailPlaceholder}">
+
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.emailLabel}</label>
+            <input type="email" name="email" placeholder="${model.emailPlaceholder}" class="input input-bordered w-full">
         </div>
-        
+
         @if (model.mode != "recover")
-            <div class="mb-2">
-                <label class="topbar-label">${model.passwordLabel}</label>
-                <input type="password" name="password" placeholder="${model.passwordPlaceholder}">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.passwordLabel}</label>
+                <input type="password" name="password" placeholder="${model.passwordPlaceholder}" class="input input-bordered w-full">
             </div>
         @endif
-        
+
         @if (model.includeConfirmPasswordField)
-            <div class="mb-2">
-                <label class="topbar-label">${model.confirmPasswordLabel}</label>
-                <input type="password" name="confirmPassword" placeholder="${model.confirmPasswordPlaceholder}">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.confirmPasswordLabel}</label>
+                <input type="password" name="confirmPassword" placeholder="${model.confirmPasswordPlaceholder}" class="input input-bordered w-full">
             </div>
         @endif
-        
+
         @if (model.includeRememberField)
-            <div class="flex items-center gap-2 mb-4">
-                <input type="checkbox" name="rememberMe" style="width: auto;">
-                <label class="text-muted" style="font-size: 0.875rem;">${model.rememberLabel}</label>
-            </div>
+            <label class="flex items-center gap-2 cursor-pointer mt-1">
+                <input type="checkbox" name="rememberMe" class="checkbox checkbox-sm">
+                <span class="opacity-60 text-sm">${model.rememberLabel}</span>
+            </label>
         @endif
-        
-        <button type="submit" class="w-full">${model.submitLabel}</button>
+
+        <button type="submit" class="btn btn-primary w-full mt-2">${model.submitLabel}</button>
     </form>
 
     @if (model.mode == "sign-in")
-        <div style="margin-top: 1.5rem; text-align: center;">
-            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-                <hr style="flex: 1; border: none; border-top: 1px solid var(--color-border, #333);">
-                <span class="text-muted" style="font-size: 0.8rem;">${model.oauthSeparator}</span>
-                <hr style="flex: 1; border: none; border-top: 1px solid var(--color-border, #333);">
-            </div>
-            <a href="/auth/oauth/apple"
-               style="display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.5rem;
-                      border: 1px solid var(--color-border, #333); border-radius: 6px;
-                      text-decoration: none; font-size: 0.9rem; width: 100%; justify-content: center;">
-                <i class="ri-apple-fill" style="font-size: 1.1rem;"></i>
-                ${model.signInWithApple}
-            </a>
-        </div>
+        <div class="divider my-6">${model.oauthSeparator}</div>
+        <a href="/auth/oauth/apple"
+           class="btn btn-outline w-full gap-2">
+            <i class="ri-apple-fill text-lg"></i>
+            ${model.signInWithApple}
+        </a>
     @endif
 </div>
