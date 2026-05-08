@@ -14,7 +14,7 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -97,7 +97,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
             )
 
         assertEquals(Status.OK, response.status)
-        val body = Jackson.asA(response.bodyString(), SyncPushContactResponse::class)
+        val body = KotlinxSerialization.asA(response.bodyString(), SyncPushContactResponse::class)
         assertEquals(1, body.appliedCount, "One contact should be applied")
         assertTrue(body.conflicts.isEmpty(), "No conflicts expected")
     }
@@ -118,7 +118,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
         val response = app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
         assertEquals(Status.OK, response.status)
 
-        val body = Jackson.asA(response.bodyString(), SyncPullContactResponse::class)
+        val body = KotlinxSerialization.asA(response.bodyString(), SyncPullContactResponse::class)
         val found = body.contacts.any { it.syncId == syncId }
         assertTrue(found, "Pushed contact should be returned in pull response")
     }
@@ -135,7 +135,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
         )
 
         val response = app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
-        val body = Jackson.asA(response.bodyString(), SyncPullContactResponse::class)
+        val body = KotlinxSerialization.asA(response.bodyString(), SyncPullContactResponse::class)
         val contact = body.contacts.find { it.syncId == syncId }
         assertEquals(syncId, contact?.syncId, "SyncId should match pushed value")
     }
@@ -161,7 +161,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
                     .body(contactJson(syncId, "Diana Prince UPDATED", timestamp = 1000L))
             )
 
-        val body = Jackson.asA(response.bodyString(), SyncPushContactResponse::class)
+        val body = KotlinxSerialization.asA(response.bodyString(), SyncPushContactResponse::class)
         assertEquals(0, body.appliedCount, "Older version should not be applied")
         assertEquals(1, body.conflicts.size, "One conflict expected")
         assertEquals(syncId, body.conflicts[0].syncId, "Conflict should reference the syncId")
@@ -188,7 +188,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
                     .body(contactJson(syncId, "Eve Adams UPDATED", timestamp = 3000L))
             )
 
-        val body = Jackson.asA(response.bodyString(), SyncPushContactResponse::class)
+        val body = KotlinxSerialization.asA(response.bodyString(), SyncPushContactResponse::class)
         assertEquals(1, body.appliedCount, "Newer version should be applied")
         assertTrue(body.conflicts.isEmpty())
     }
@@ -204,7 +204,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
             )
 
         assertEquals(Status.OK, response.status)
-        val body = Jackson.asA(response.bodyString(), SyncPushContactResponse::class)
+        val body = KotlinxSerialization.asA(response.bodyString(), SyncPushContactResponse::class)
         assertEquals(0, body.appliedCount)
         assertTrue(body.conflicts.isEmpty())
     }
@@ -224,7 +224,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
         // Pull with since=Long.MAX_VALUE — should be empty
         val response =
             app(Request(GET, "/api/v1/sync/contacts?since=${Long.MAX_VALUE - 1}").header("Authorization", bearer()))
-        val body = Jackson.asA(response.bodyString(), SyncPullContactResponse::class)
+        val body = KotlinxSerialization.asA(response.bodyString(), SyncPullContactResponse::class)
         assertTrue(body.contacts.isEmpty(), "No contacts should be returned with future timestamp")
     }
 }

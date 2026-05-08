@@ -9,7 +9,31 @@
         *, *:before, *:after { box-sizing: inherit; }
         body { margin: 0; background: #fafafa; }
         .topbar { display: none; }
+        html[data-theme="dark"] body { background: #1E1E1E; }
+        html[data-theme="dark"] .swagger-ui { background: #1E1E1E; color: #E0E0E0; }
+        html[data-theme="dark"] .swagger-ui .info .title,
+        html[data-theme="dark"] .swagger-ui .opblock-tag-section tag-name,
+        html[data-theme="dark"] .swagger-ui .opblock .opblock-summary-description,
+        html[data-theme="dark"] .swagger-ui label,
+        html[data-theme="dark"] .swagger-ui .scheme-container { color: #E0E0E0; }
+        html[data-theme="dark"] .swagger-ui .opblock { background: #2A2A2A; border-color: #444; }
+        html[data-theme="dark"] .swagger-ui .opblock-body { background: #2A2A2A; }
     </style>
+    <script>
+        (function () {
+            var cookie = document.cookie.split(';').find(function (c) {
+                return c.trim().startsWith('app_theme=');
+            });
+            var isDark = true;
+            if (cookie) {
+                var themeId = cookie.trim().split('=')[1];
+                isDark = themeId !== 'default' && themeId !== 'light';
+            } else if (window.matchMedia) {
+                isDark = !window.matchMedia('(prefers-color-scheme: light)').matches;
+            }
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        })();
+    </script>
 </head>
 <body>
     <div id="swagger-ui"></div>

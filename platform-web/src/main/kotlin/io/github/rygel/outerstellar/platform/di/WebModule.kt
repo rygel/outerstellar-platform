@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.SegmentAnalyticsService
 import io.github.rygel.outerstellar.platform.app
+import io.github.rygel.outerstellar.platform.infra.PluginTemplateRenderer
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
@@ -35,7 +36,16 @@ val webModule
         single(named("jdbcUrl")) { get<AppConfig>().jdbcUrl }
         single(named("serverBaseUrl")) { "http://localhost:${get<AppConfig>().port}" }
         single(named("appBaseUrl")) { get<AppConfig>().appBaseUrl }
-        single<TemplateRenderer> { createRenderer() }
+        single<TemplateRenderer> {
+            val baseRenderer = createRenderer()
+            val plugin = getOrNull<PlatformPlugin>()
+            val overrides = plugin?.templateOverrides()
+            if (plugin != null && overrides != null && overrides.isNotEmpty()) {
+                PluginTemplateRenderer(baseRenderer, overrides, plugin::class.java.classLoader)
+            } else {
+                baseRenderer
+            }
+        }
         single {
             WebPageFactory(
                 getOrNull(),

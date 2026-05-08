@@ -21,7 +21,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.cookie
 import org.http4k.core.with
-import org.http4k.format.Jackson.auto
+import org.http4k.format.KotlinxSerialization.auto
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -248,14 +248,14 @@ class UserManagementWebUiIntegrationTest : WebTest() {
         val response = app(Request(GET, "/"))
         assertEquals(Status.OK, response.status)
         val body = response.bodyString()
-        assertTrue(body.contains("class=\"shell\""))
-        assertTrue(body.contains("class=\"sidebar\""))
+        assertTrue(body.contains("drawer lg:drawer-open"))
+        assertTrue(body.contains("drawer-side"))
     }
 
     @Test
     fun `error pages render inside layout shell`() {
         val response = app(Request(GET, "/nonexistent-page"))
         assertEquals(Status.NOT_FOUND, response.status)
-        assertTrue(response.bodyString().contains("class=\"shell\""))
+        assertTrue(response.bodyString().contains("drawer lg:drawer-open"))
     }
 }

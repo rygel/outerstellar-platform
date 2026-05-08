@@ -1,23 +1,11 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.TextResolver
 import org.http4k.template.ViewModel
 
 data class ShellLink(val label: String, val url: String, val icon: String, val active: Boolean)
 
-data class ShellOption(
-    val id: String,
-    val label: String,
-    val url: String,
-    val active: Boolean,
-    val previewColors: ThemePreviewColors? = null,
-)
-
-data class ThemePreviewColors(
-    val background: String,
-    val foreground: String,
-    val accent: String,
-    val componentBackground: String,
-)
+data class ShellOption(val id: String, val label: String, val url: String, val active: Boolean)
 
 data class HiddenField(val name: String, val value: String)
 
@@ -27,8 +15,7 @@ data class ShellView(
     val appTagline: String,
     val currentPath: String,
     val localeTag: String,
-    val themeId: String,
-    val themeCss: String,
+    val themeName: String,
     val layoutClass: String,
     val navLinks: List<ShellLink>,
     val themeSelector: SidebarSelector,
@@ -44,8 +31,6 @@ data class ShellView(
     val logoutUrl: String? = null,
     val changePasswordUrl: String? = null,
     val profileUrl: String? = null,
-    val isDarkMode: Boolean = true,
-    val darkModeToggleUrl: String = "?theme=default",
     val toastErrorLabel: String = "Error",
     val toastSuccessLabel: String = "Success",
     val changePasswordLabel: String = "Change password",
@@ -53,7 +38,13 @@ data class ShellView(
     val csrfToken: String = "",
     val notificationsUrl: String? = null,
     val unreadNotificationCount: Int = 0,
-)
+    val textResolver: TextResolver? = null,
+    val toggleMenuLabel: String = "Toggle menu",
+    val profileLabel: String = "Profile",
+    val notificationBellTitle: String = "Notifications",
+) {
+    fun text(key: String, vararg args: Any?): String = textResolver?.resolve(key, *args) ?: key
+}
 
 data class HomeFeature(val label: String, val value: String)
 
@@ -88,6 +79,7 @@ data class PaginationViewModel(
     val previousUrl: String?,
     val nextUrl: String?,
     val pages: List<PageNumberViewModel>,
+    val pageLabel: String = "Page",
 )
 
 data class PageNumberViewModel(val number: Int, val url: String, val isActive: Boolean)
@@ -141,6 +133,7 @@ data class ErrorPage(
     val secondaryActionUrl: String,
     val helpButtonLabel: String,
     val helpUrl: String,
+    val errorLabel: String = "Error",
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/ErrorPage"
 }
@@ -166,6 +159,9 @@ data class DevDashboardPage(
     val telemetryLabel: String = "OpenTelemetry",
     val metricsLabel: String = "Application Metrics",
     val triggerSyncLabel: String = "Trigger Sync",
+    val protocolDescription: String = "",
+    val searchHtmxLabel: String = "Search \"HTMX\"",
+    val searchDraculaLabel: String = "Search \"Dracula\"",
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/DevDashboard"
 }
@@ -324,6 +320,8 @@ data class ProfilePage(
     val deleteAccountDescription: String,
     val deleteAccountConfirmLabel: String,
     val deleteAccountCancelLabel: String,
+    val avatarAlt: String = "Avatar",
+    val gravatarHint: String = "Leave blank to use Gravatar.",
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/ProfilePage"
 }
@@ -361,6 +359,7 @@ data class ApiKeysPage(
     val neverLabel: String = "Never",
     val deleteConfirm: String = "Delete this key?",
     val deleteLabel: String = "Delete",
+    val nameLabel: String = "Name:",
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/ApiKeysPage"
 }
@@ -385,11 +384,16 @@ data class NotificationsPage(
     val markAllReadLabel: String = "Mark all as read",
     val markReadLabel: String = "Mark as read",
     val readLabel: String = "Read",
+    val newLabel: String = "New",
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/NotificationsPage"
 }
 
-data class NotificationBellFragment(val unreadCount: Int, val notificationsUrl: String) : ViewModel {
+data class NotificationBellFragment(
+    val unreadCount: Int,
+    val notificationsUrl: String,
+    val title: String = "Notifications",
+) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/NotificationBell"
 }
 
@@ -452,7 +456,16 @@ data class SearchPage(
 
 data class SettingsTab(val key: String, val label: String, val url: String, val active: Boolean)
 
-data class SettingsPage(val title: String, val tabs: List<SettingsTab>, val activeTab: String) : ViewModel {
+data class SettingsPage(
+    val title: String,
+    val tabs: List<SettingsTab>,
+    val activeTab: String,
+    val profileDescription: String = "",
+    val passwordDescription: String = "",
+    val apiKeysDescription: String = "",
+    val notificationsDescription: String = "",
+    val appearanceDescription: String = "",
+) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/SettingsPage"
 }
 

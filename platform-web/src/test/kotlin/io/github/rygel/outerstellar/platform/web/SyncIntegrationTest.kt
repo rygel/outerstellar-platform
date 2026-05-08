@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.format.Jackson.asA
+import org.http4k.format.KotlinxSerialization
 import org.junit.jupiter.api.AfterEach
 
 class SyncIntegrationTest : WebTest() {
@@ -50,7 +50,7 @@ class SyncIntegrationTest : WebTest() {
         val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $adminToken"))
 
         assertEquals(Status.OK, response.status)
-        val pullResponse = asA(response.bodyString(), SyncPullResponse::class)
+        val pullResponse = KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
         assertEquals(2, pullResponse.messages.size)
     }
 }

@@ -14,7 +14,7 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -74,7 +74,7 @@ class ApiKeyAuthIntegrationTest : WebTest() {
                     .body("""{"name":"$name"}""")
             )
         assertEquals(Status.OK, response.status, "Key creation should succeed")
-        return Jackson.asA(response.bodyString(), CreateApiKeyResponse::class)
+        return KotlinxSerialization.asA(response.bodyString(), CreateApiKeyResponse::class)
     }
 
     @Test

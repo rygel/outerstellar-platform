@@ -137,6 +137,7 @@ class AdminPageFactory(
                     neverLabel = i18n.translate("web.apikeys.table.never"),
                     deleteConfirm = i18n.translate("web.apikeys.delete.confirm"),
                     deleteLabel = i18n.translate("web.apikeys.delete"),
+                    nameLabel = i18n.translate("web.apikeys.name.label"),
                 ),
         )
     }
@@ -177,6 +178,8 @@ class AdminPageFactory(
                     deleteAccountDescription = i18n.translate("web.profile.delete.account.description"),
                     deleteAccountConfirmLabel = i18n.translate("web.profile.delete.confirm"),
                     deleteAccountCancelLabel = i18n.translate("web.profile.delete.cancel"),
+                    avatarAlt = i18n.translate("web.profile.avatar.alt"),
+                    gravatarHint = i18n.translate("web.profile.avatar.gravatar.hint"),
                 ),
         )
     }
@@ -213,13 +216,18 @@ class AdminPageFactory(
                     markAllReadLabel = i18n.translate("web.notifications.mark.all.read"),
                     markReadLabel = i18n.translate("web.notifications.mark.read"),
                     readLabel = i18n.translate("web.notifications.read"),
+                    newLabel = i18n.translate("web.notifications.new"),
                 ),
         )
     }
 
     fun buildNotificationBell(ctx: WebContext): NotificationBellFragment {
         val unreadCount = ctx.user?.id?.let { notificationService?.countUnread(it) } ?: 0
-        return NotificationBellFragment(unreadCount = unreadCount, notificationsUrl = ctx.url("/notifications"))
+        return NotificationBellFragment(
+            unreadCount = unreadCount,
+            notificationsUrl = ctx.url("/notifications"),
+            title = ctx.i18n.translate("web.notification.bell.title"),
+        )
     }
 
     fun formatTimeAgo(instant: java.time.Instant): String {

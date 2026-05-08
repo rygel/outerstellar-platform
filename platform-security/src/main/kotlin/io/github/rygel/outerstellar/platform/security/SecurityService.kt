@@ -78,8 +78,9 @@ class SecurityService(
 
     fun register(username: String, password: String): User {
         require(username.isNotBlank()) { "Username is required" }
-        if (password.length < MIN_PASSWORD_LENGTH)
+        if (password.length < MIN_PASSWORD_LENGTH) {
             throw WeakPasswordException("Password must be at least $MIN_PASSWORD_LENGTH characters")
+        }
         if (userRepository.findByUsername(username) != null) throw UsernameAlreadyExistsException(username)
 
         val created =
@@ -208,7 +209,8 @@ class SecurityService(
                 val host =
                     try {
                         java.net.URI(sanitizedUrl).host?.lowercase()
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        logger.warn("Failed to parse avatar URL for SSRF check: {}", e.message)
                         null
                     }
                 if (host != null && PRIVATE_HOST_PATTERNS.any { it.matches(host) }) {

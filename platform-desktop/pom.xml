@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.5.0</version>
+        <version>1.6.0</version>
 
     </parent>
 
@@ -15,7 +15,6 @@
     <name>Platform Desktop</name>
 
     <properties>
-        <detekt.skip>true</detekt.skip>
     </properties>
 
     <dependencies>
@@ -62,12 +61,12 @@
             <artifactId>koin-core-jvm</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.sksamuel.hoplite</groupId>
-            <artifactId>hoplite-core</artifactId>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-serialization-json-jvm</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.sksamuel.hoplite</groupId>
-            <artifactId>hoplite-yaml</artifactId>
+            <groupId>org.snakeyaml</groupId>
+            <artifactId>snakeyaml-engine</artifactId>
         </dependency>
         <dependency>
             <groupId>io.insert-koin</groupId>
@@ -88,12 +87,12 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
+            <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

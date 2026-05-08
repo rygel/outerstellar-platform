@@ -1,31 +1,37 @@
 package io.github.rygel.outerstellar.platform.model
 
-data class LoginRequest(val username: String, val password: String)
+import kotlinx.serialization.Contextual
+import kotlinx.serialization.Serializable
 
-data class RegisterRequest(val username: String, val password: String)
+@Serializable data class LoginRequest(val username: String, val password: String)
 
-data class AuthTokenResponse(val token: String, val username: String, val role: String)
+@Serializable data class RegisterRequest(val username: String, val password: String)
 
-data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
+@Serializable data class AuthTokenResponse(val token: String, val username: String, val role: String)
 
+@Serializable data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
+
+@Serializable
 data class UserSummary(val id: String, val username: String, val email: String, val role: String, val enabled: Boolean)
 
-data class SetUserEnabledRequest(val enabled: Boolean)
+@Serializable data class SetUserEnabledRequest(val enabled: Boolean)
 
-data class SetUserRoleRequest(val role: String)
+@Serializable data class SetUserRoleRequest(val role: String)
 
+@Serializable
 data class PasswordResetToken(
     val id: Long = 0,
-    val userId: java.util.UUID,
+    @Contextual val userId: java.util.UUID,
     val token: String,
-    val expiresAt: java.time.Instant,
+    @Contextual val expiresAt: java.time.Instant,
     val used: Boolean = false,
 )
 
-data class PasswordResetRequest(val email: String)
+@Serializable data class PasswordResetRequest(val email: String)
 
-data class PasswordResetConfirm(val token: String, val newPassword: String)
+@Serializable data class PasswordResetConfirm(val token: String, val newPassword: String)
 
+@Serializable
 data class AuditEntry(
     val id: Long = 0,
     val actorId: String?,
@@ -34,20 +40,22 @@ data class AuditEntry(
     val targetUsername: String?,
     val action: String,
     val detail: String?,
-    val createdAt: java.time.Instant = java.time.Instant.now(),
+    @Contextual val createdAt: java.time.Instant = java.time.Instant.now(),
 )
 
+@Serializable
 data class ApiKey(
     val id: Long = 0,
-    val userId: java.util.UUID,
+    @Contextual val userId: java.util.UUID,
     val keyHash: String,
     val keyPrefix: String,
     val name: String,
     val enabled: Boolean = true,
-    val createdAt: java.time.Instant = java.time.Instant.now(),
-    val lastUsedAt: java.time.Instant? = null,
+    @Contextual val createdAt: java.time.Instant = java.time.Instant.now(),
+    @Contextual val lastUsedAt: java.time.Instant? = null,
 )
 
+@Serializable
 data class ApiKeySummary(
     val id: Long,
     val keyPrefix: String,
@@ -57,14 +65,16 @@ data class ApiKeySummary(
     val lastUsedAt: String?,
 )
 
-data class CreateApiKeyRequest(val name: String)
+@Serializable data class CreateApiKeyRequest(val name: String)
 
-data class CreateApiKeyResponse(val key: String, val name: String, val keyPrefix: String)
+@Serializable data class CreateApiKeyResponse(val key: String, val name: String, val keyPrefix: String)
 
+@Serializable
 data class UpdateProfileRequest(val email: String, val username: String? = null, val avatarUrl: String? = null)
 
-data class UpdateNotificationPrefsRequest(val emailEnabled: Boolean, val pushEnabled: Boolean)
+@Serializable data class UpdateNotificationPrefsRequest(val emailEnabled: Boolean, val pushEnabled: Boolean)
 
+@Serializable
 data class NotificationSummary(
     val id: String,
     val title: String,
@@ -74,6 +84,7 @@ data class NotificationSummary(
     val createdAt: String,
 )
 
+@Serializable
 data class UserProfileResponse(
     val username: String,
     val email: String,

@@ -3,26 +3,26 @@
 @param model: Page<ErrorPage>
 
 @template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
-    <section class="panel hero-grid">
+    <section class="card bg-base-200 border border-base-300 mb-4">
         <div>
-            <p class="status-badge">Error ${model.data.statusCode}</p>
+            <p class="badge badge-outline">${model.data.errorLabel} ${model.data.statusCode}</p>
             <h1>${model.data.heading}</h1>
             <p>${model.data.message}</p>
         </div>
-        <div class="button-row">
-            <a href="${model.data.primaryActionUrl}" class="button-link">${model.data.primaryActionLabel}</a>
-            <a href="${model.data.secondaryActionUrl}" class="button-link button-secondary">${model.data.secondaryActionLabel}</a>
+        <div class="flex gap-3 justify-end mt-4">
+            <a href="${model.data.primaryActionUrl}" class="btn btn-primary btn-sm">${model.data.primaryActionLabel}</a>
+            <a href="${model.data.secondaryActionUrl}" class="btn btn-ghost btn-sm">${model.data.secondaryActionLabel}</a>
         </div>
     </section>
 
-    <section class="panel">
-        <button class="button-link button-secondary"
+    <section class="card bg-base-200 border border-base-300">
+        <button class="btn btn-ghost btn-sm"
                 hx-get="${model.data.helpUrl}"
                 hx-target="#error-help-slot"
                 hx-swap="innerHTML">
             ${model.data.helpButtonLabel}
         </button>
-        <div id="error-help-slot" class="panel panel-muted mt-6" style="margin-top: 1.5rem; display: none;" :style="{ display: 'block' }">
+        <div id="error-help-slot" class="mt-4" style="display: none;">
             <!-- Content loaded via HTMX -->
         </div>
     </section>

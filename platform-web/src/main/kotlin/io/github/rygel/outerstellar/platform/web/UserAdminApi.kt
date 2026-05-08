@@ -19,7 +19,7 @@ import org.http4k.core.Method.PUT
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.with
-import org.http4k.format.Jackson.auto
+import org.http4k.format.KotlinxSerialization.auto
 import org.http4k.lens.Path
 import org.http4k.lens.string
 
@@ -81,7 +81,7 @@ class UserAdminApi(private val securityService: SecurityService) : ServerRoutes 
                         } catch (e: InsufficientPermissionException) {
                             Response(Status.BAD_REQUEST).body(e.message ?: "Not allowed")
                         } catch (e: IllegalArgumentException) {
-                            logger.debug("Invalid role value: {}", e.message)
+                            logger.warn("Invalid role value: {}", e.message)
                             Response(Status.BAD_REQUEST).body("Invalid role")
                         }
                     }

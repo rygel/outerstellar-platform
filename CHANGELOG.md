@@ -9,6 +9,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.6.0] – 2026-05-08
+
+### Breaking
+- **Full DaisyUI v5 migration.** All custom CSS (817 lines) removed and replaced with DaisyUI v5.5.19 semantic components. The web UI now uses DaisyUI's `data-theme` attribute for theming instead of custom CSS variables.
+- **Theme system overhauled.** `themes.json` and `ThemeCatalog` CSS generation engine removed. Themes are now DaisyUI built-in theme IDs (dark, light, cupcake, dracula, nord, etc.) — 32 themes available via sidebar selector or settings.
+- **Desktop theming decoupled.** Desktop app uses a separate `DesktopTheme` enum with FlatLaf themes, independent from the web theme catalog.
+- `buildUponDefaultConfig` re-enabled for detekt — codebases extending this project may see new violations.
+
+### Added
+- DaisyUI v5.5.19 integrated via Tailwind v4 CSS-first configuration (`@plugin "daisyui"`)
+- Sidebar layout rewritten with DaisyUI `drawer lg:drawer-open`
+- Topbar layout rewritten with DaisyUI `navbar`
+- All 60+ JTE templates migrated to DaisyUI semantic classes (`card`, `badge`, `btn`, `table`, etc.)
+- Auth pages (sign-in, register, recover, reset password, change password) redesigned with centered viewport, proper form spacing, DaisyUI tabs and inputs
+- Profile page uses DaisyUI `dialog` for delete confirmation
+- Developer integration manual at `docs/MANUAL.md`
+
+### Changed
+- `tailwind.config.js`, `autoprefixer`, `postcss` removed — Tailwind v4 CSS-first config in `input.css` (14 lines)
+- `ShellView` simplified: `themeId` renamed to `themeName`, removed `themeCss`, `isDarkMode`, `darkModeToggleUrl`, `toggleThemeLabel`
+- `WebContext` uses `ThemeCatalog.isValidTheme()` and `allThemes` property
+- `platform.js`: removed `toggleMobileMenu()`/`closeMobileMenu()`, toasts use `alert-error`/`alert-success`
+- `SyncWindow` (1541 lines) split into `SyncDialogs`, `SyncProfilePanel`, `SyncViews` to pass detekt `LargeClass` rule
+- All inline `style="..."` attributes in JTE templates replaced with DaisyUI/Tailwind utility classes
+- Stale CSS class names (`button-link`, `message-meta`, `topbar-label`, `pagination-info`) removed
+
+### Fixed
+- `buildUponDefaultConfig` restored to `true` in `pom.xml` (was `false`)
+- Missing `assertNotNull` import in `SwingAppE2ETest`
+- `ImplicitDefaultLocale` in `SwingSyncApp` `Color.toHtml()`
+- Unused `handle` parameter in `JdbiMessageRepository.buildFilterClause()`
+- Layout spacing across all pages: proper `w-full` inputs, `gap-4` form spacing, consistent label styling
+
+---
+
 ## [1.5.0] – 2026-05-04
 
 ### Breaking

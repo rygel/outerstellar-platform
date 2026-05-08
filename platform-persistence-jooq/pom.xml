@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.5.0</version>
+        <version>1.6.0</version>
 
     </parent>
 
@@ -51,7 +51,7 @@
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
-            <artifactId>http4k-format-jackson</artifactId>
+            <artifactId>http4k-format-kotlinx-serialization</artifactId>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
@@ -73,12 +73,12 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
+            <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -13,7 +13,7 @@ import io.github.rygel.outerstellar.platform.security.securityModule
 import kotlin.test.assertTrue
 import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
-import org.http4k.server.Jetty
+import org.http4k.server.Netty
 import org.http4k.server.asServer
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -26,15 +26,15 @@ import org.koin.core.context.stopKoin
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
-import org.koin.test.inject
+import org.koin.test.get
 import org.testcontainers.containers.PostgreSQLContainer
 
 @Tag("e2e")
 class PlaywrightE2ETest : KoinTest {
 
-    private val app: PolyHandler by inject(named("webServer"))
-    private val messageRepo: MessageRepository by inject()
-    private val contactRepo: ContactRepository by inject()
+    private val app: PolyHandler by lazy { get<PolyHandler>(named("webServer")) }
+    private val messageRepo: MessageRepository by lazy { get<MessageRepository>() }
+    private val contactRepo: ContactRepository by lazy { get<ContactRepository>() }
 
     private lateinit var server: Http4kServer
     private lateinit var browserContext: com.microsoft.playwright.BrowserContext
@@ -97,7 +97,7 @@ class PlaywrightE2ETest : KoinTest {
         contactRepo.seedContacts()
 
         // Start real HTTP server on random port
-        server = app.asServer(Jetty(0)).start()
+        server = app.asServer(Netty(0)).start()
 
         browserContext = browser.newContext()
         page = browserContext.newPage()

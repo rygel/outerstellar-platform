@@ -3,34 +3,32 @@
 @param model: Page<SearchPage>
 
 @template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
-    <div style="max-width: 700px; margin: 2rem auto;">
-        <h1 style="margin-bottom: 1.5rem;">${model.data.title}</h1>
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-extrabold mb-6">${model.data.title}</h1>
 
-        <form action="/search" method="get" style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem;">
+        <form action="/search" method="get" class="flex gap-3 mb-8">
             <input type="text" name="q" value="${model.data.query}"
                    placeholder="${model.data.searchPlaceholder}"
-                   style="flex: 1;" autofocus>
-            <button type="submit">${model.data.searchLabel}</button>
+                   class="input input-bordered flex-1" autofocus>
+            <button type="submit" class="btn btn-primary">${model.data.searchLabel}</button>
         </form>
 
         @if(model.data.results.isEmpty())
             @if(model.data.query.isNotBlank())
-                <p style="opacity: 0.6;">${model.data.emptyLabel}</p>
+                <p class="opacity-50 text-center py-8">${model.data.emptyLabel}</p>
             @endif
         @else
-            <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="flex flex-col gap-3">
                 @for(result in model.data.results)
-                    <li class="panel" style="padding: 1rem;">
-                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
-                            <a href="${result.url}" style="font-weight: 600; font-size: 1.05rem; text-decoration: none;">
-                                ${result.title}
-                            </a>
-                            <span class="chip">${result.type}</span>
+                    <div class="card bg-base-200 border border-base-300">
+                        <div class="flex items-center gap-3 mb-1">
+                            <a href="${result.url}" class="font-semibold text-lg hover:text-accent transition-colors">${result.title}</a>
+                            <span class="badge badge-sm">${result.type}</span>
                         </div>
-                        <p style="margin: 0; opacity: 0.7; font-size: 0.9rem;">${result.subtitle}</p>
-                    </li>
+                        <p class="opacity-60 text-sm">${result.subtitle}</p>
+                    </div>
                 @endfor
-            </ul>
+            </div>
         @endif
     </div>
 `)

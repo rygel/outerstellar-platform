@@ -18,12 +18,12 @@ import org.koin.core.context.stopKoin
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
-import org.koin.test.inject
+import org.koin.test.get
 import org.testcontainers.containers.PostgreSQLContainer
 
 class SmokeE2ETest : KoinTest {
 
-    private val app: PolyHandler by inject(named("webServer"))
+    private val app: PolyHandler by lazy { get<PolyHandler>(named("webServer")) }
 
     companion object {
         private val container =

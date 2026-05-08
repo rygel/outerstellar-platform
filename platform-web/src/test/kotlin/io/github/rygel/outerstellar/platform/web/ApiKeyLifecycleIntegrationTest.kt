@@ -17,7 +17,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Method.PUT
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.format.Jackson.auto
+import org.http4k.format.KotlinxSerialization.auto
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 

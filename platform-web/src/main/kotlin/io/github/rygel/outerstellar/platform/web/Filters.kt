@@ -7,9 +7,11 @@ import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
+import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import org.http4k.core.Body
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method
@@ -25,10 +27,12 @@ import org.http4k.core.with
 import org.http4k.filter.MicrometerMetrics
 import org.http4k.filter.OpenTelemetryTracing
 import org.http4k.filter.ServerFilters
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
+
+private val analyticsLogger = LoggerFactory.getLogger("outerstellar.Filters.analytics")
 
 private const val COOKIE_MAX_AGE_DAYS = 365L
 private const val REQUEST_ID_HEADER = "X-Request-Id"
@@ -50,14 +54,14 @@ val etagCachingFilter: Filter = Filter { next: HttpHandler ->
     { request ->
         val response = next(request)
         if (response.status == Status.OK && response.header("ETag") == null) {
-            val body = response.bodyString()
-            val hash = body.hashCode().toUInt().toString(radix = 16)
+            val bytes = response.body.stream.readBytes()
+            val hash = String(bytes).hashCode().toUInt().toString(radix = 16)
             val etag = "\"$hash\""
             val ifNoneMatch = request.header("If-None-Match")
             if (ifNoneMatch == etag) {
                 Response(Status.NOT_MODIFIED)
             } else {
-                response.header("ETag", etag)
+                response.body(Body(ByteBuffer.wrap(bytes))).header("ETag", etag)
             }
         } else {
             response
@@ -87,8 +91,8 @@ fun analyticsPageViewFilter(analytics: AnalyticsService): Filter = Filter { next
                 if (userId != null) {
                     analytics.page(userId, request.uri.path)
                 }
-            } catch (@Suppress("TooGenericExceptionCaught") _: Exception) {
-                // Not authenticated or context unavailable — skip page view
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                analyticsLogger.debug("Failed to record page view: {}", e.message)
             }
         }
         response
@@ -208,8 +212,8 @@ object Filters {
             if (enabled && isLoopback && request.cookie(WebContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {
+                    userRepository.updateLastActivity(admin.id)
                     val response = next(request.cookie(Cookie(WebContext.SESSION_COOKIE, admin.id.toString())))
-                    // Also ensure the cookie is set in the response so the browser keeps it
                     if (response.cookies().none { it.name == WebContext.SESSION_COOKIE }) {
                         response.cookie(Cookie(WebContext.SESSION_COOKIE, admin.id.toString(), path = "/"))
                     } else {
@@ -229,16 +233,16 @@ object Filters {
         userRepository: UserRepository,
         appVersion: String = "dev",
         jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
-        pluginNavItems: List<PluginNavItem> = emptyList(),
+        pluginOptions: PluginOptions = PluginOptions(),
     ): Filter = Filter { next: HttpHandler ->
         { request ->
             val context =
-                WebContext(request, devDashboardEnabled, userRepository, appVersion, jwtService, pluginNavItems)
+                WebContext(request, devDashboardEnabled, userRepository, appVersion, jwtService, pluginOptions)
             val contextUser =
                 try {
                     context.user
                 } catch (e: IllegalStateException) {
-                    logger.trace("Could not resolve user from context: {}", e.message)
+                    logger.debug("Could not resolve user from context: {}", e.message)
                     null
                 }
             if (contextUser != null) {
@@ -257,7 +261,7 @@ object Filters {
             val themeCookie =
                 request
                     .query("theme")
-                    ?.takeIf { v -> ThemeCatalog.allThemes().any { it.id == v } }
+                    ?.takeIf { v -> ThemeCatalog.isValidTheme(v) }
                     ?.let { Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
             val layoutCookie =
                 request
@@ -293,7 +297,7 @@ object Filters {
                 try {
                     request.webContext.user
                 } catch (e: IllegalStateException) {
-                    logger.trace("Could not resolve user for session timeout check: {}", e.message)
+                    logger.debug("Could not resolve user for session timeout check: {}", e.message)
                     null
                 }
 
@@ -477,7 +481,7 @@ object Filters {
     }
 
     private fun jsonErrorResponse(status: Status, message: String): Response {
-        val body = Jackson.asJsonObject(mapOf("message" to message, "status" to status.code)).toString()
+        val body = KotlinxSerialization.asJsonObject(mapOf("message" to message, "status" to status.code)).toString()
         return Response(status).header("content-type", "application/json; charset=utf-8").body(body)
     }
 }

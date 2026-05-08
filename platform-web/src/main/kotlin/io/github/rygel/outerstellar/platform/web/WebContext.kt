@@ -1,6 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.I18nTextResolver
+import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
@@ -19,7 +21,7 @@ class WebContext(
     private val userRepository: UserRepository? = null,
     private val appVersion: String = "dev",
     private val jwtService: JwtService? = null,
-    private val pluginNavItems: List<PluginNavItem> = emptyList(),
+    private val pluginOptions: PluginOptions = PluginOptions(),
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
@@ -53,7 +55,7 @@ class WebContext(
 
     val theme: String by lazy {
         val value = request.query("theme") ?: request.cookie(THEME_COOKIE)?.value ?: user?.theme ?: "dark"
-        if (ThemeCatalog.allThemes().any { it.id == value }) value else "dark"
+        if (ThemeCatalog.isValidTheme(value)) value else "dark"
     }
 
     val layout: String by lazy {
@@ -76,7 +78,7 @@ class WebContext(
                 val uid = UUID.fromString(sessionUserId)
                 userRepository?.findById(uid)
             } catch (e: IllegalArgumentException) {
-                logger.debug("Invalid session cookie format: {}", e.message)
+                logger.warn("Invalid session cookie format: {}", e.message)
                 null
             }
         }
@@ -90,6 +92,8 @@ class WebContext(
 
     val i18n: I18nService by lazy { cachedI18n(lang) }
 
+    val textResolver: TextResolver by lazy { pluginOptions.textResolver ?: I18nTextResolver(i18n) }
+
     val csrfToken: String by lazy { request.cookie(CSRF_COOKIE)?.value ?: java.util.UUID.randomUUID().toString() }
 
     fun url(path: String): String = path
@@ -99,9 +103,9 @@ class WebContext(
 
     private fun buildNavLinks(activeSection: String): List<ShellLink> {
         val links: MutableList<ShellLink> =
-            if (pluginNavItems.isNotEmpty()) {
+            if (pluginOptions.navItems.isNotEmpty()) {
                 // Plugin replaces the default nav; admin links are still appended below.
-                pluginNavItems
+                pluginOptions.navItems
                     .map { item ->
                         ShellLink(item.label, url(item.url), item.icon, activeSection == item.activeSection)
                     }
@@ -173,12 +177,8 @@ class WebContext(
     @Suppress("LongMethod")
     fun shell(pageTitle: String, activeSection: String): ShellView {
         val currentPath = if (request.uri.path.isBlank()) "/" else request.uri.path
-        val themeCss = ThemeCatalog.toCssVariables(theme)
         val layoutClass = if (layout == "nice") "" else "layout-$layout"
         val navLinks = buildNavLinks(activeSection)
-        val isDark = theme == "dark"
-        val toggleTheme = if (isDark) "default" else "dark"
-        val darkModeToggleUrl = "$currentPath?theme=$toggleTheme"
 
         return ShellView(
             pageTitle = pageTitle,
@@ -186,8 +186,7 @@ class WebContext(
             appTagline = i18n.translate("web.app.tagline"),
             currentPath = currentPath,
             localeTag = lang,
-            themeId = theme,
-            themeCss = themeCss,
+            themeName = theme,
             layoutClass = layoutClass,
             layoutStyle = shellStyle,
             navLinks = navLinks,
@@ -198,20 +197,8 @@ class WebContext(
                     selectId = "theme-selector",
                     selectName = "theme",
                     options =
-                        ThemeCatalog.allThemes().map { t ->
-                            ShellOption(
-                                id = t.id,
-                                label = t.name,
-                                url = t.id,
-                                active = t.id == theme,
-                                previewColors =
-                                    ThemePreviewColors(
-                                        background = t.colors["background"] ?: "#1e1e1e",
-                                        foreground = t.colors["foreground"] ?: "#d4d4d4",
-                                        accent = t.colors["accent"] ?: "#007acc",
-                                        componentBackground = t.colors["componentBackground"] ?: "#252526",
-                                    ),
-                            )
+                        ThemeCatalog.allThemes.map { t ->
+                            ShellOption(id = t.id, label = t.label, url = t.id, active = t.id == theme)
                         },
                     hiddenFields =
                         listOf(
@@ -269,14 +256,13 @@ class WebContext(
             logoutUrl = url("/logout"),
             changePasswordUrl = if (user != null) url("/auth/change-password") else null,
             profileUrl = if (user != null) url("/auth/profile") else null,
-            isDarkMode = isDark,
-            darkModeToggleUrl = darkModeToggleUrl,
             toastErrorLabel = i18n.translate("web.layout.toast.error"),
             toastSuccessLabel = i18n.translate("web.layout.toast.success"),
             changePasswordLabel = i18n.translate("web.layout.change.password"),
             signOutLabel = i18n.translate("web.layout.sign.out"),
             csrfToken = csrfToken,
             notificationsUrl = if (user != null) url("/notifications") else null,
+            textResolver = textResolver,
         )
     }
 }

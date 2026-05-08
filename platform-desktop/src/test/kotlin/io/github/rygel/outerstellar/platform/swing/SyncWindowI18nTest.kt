@@ -78,18 +78,21 @@ class SyncWindowI18nTest {
         queue.add(root)
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
-            val compName = (current as? JComponent)?.name
-            if (compName == name) return current
-            if (current is JMenu) {
-                for (i in 0 until current.itemCount) {
-                    current.getItem(i)?.let { queue.add(it) }
-                }
-            }
-            if (current is Container) {
-                current.components.forEach { queue.add(it) }
-            }
+            if ((current as? JComponent)?.name == name) return current
+            enqueueChildren(current, queue)
         }
         throw AssertionError("Component not found: $name")
+    }
+
+    private fun enqueueChildren(component: Component, queue: ArrayDeque<Component>) {
+        if (component is JMenu) {
+            for (i in 0 until component.itemCount) {
+                component.getItem(i)?.let { queue.add(it) }
+            }
+        }
+        if (component is Container) {
+            component.components.forEach { queue.add(it) }
+        }
     }
 
     private fun runOnEdt(block: () -> Unit) {

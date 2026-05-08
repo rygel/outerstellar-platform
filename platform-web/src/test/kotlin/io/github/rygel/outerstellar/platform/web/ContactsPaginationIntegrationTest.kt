@@ -64,7 +64,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
         val body = app(Request(GET, "/contacts")).bodyString()
 
         (1..3).forEach { assertTrue(body.contains("Contact $it"), "Page should render card for Contact $it") }
-        assertTrue(body.contains("contact-card"), "Page should use contact-card CSS class")
+        assertTrue(body.contains("card"), "Page should use DaisyUI card class for contacts")
     }
 
     @Test

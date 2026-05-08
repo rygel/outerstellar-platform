@@ -1,22 +1,22 @@
 @import io.github.rygel.outerstellar.platform.web.MessageListViewModel
 @param model: MessageListViewModel
 
-<div id="message-list-container" class="message-list" hx-get="${model.refreshUrl}" hx-trigger="refresh from:body" hx-swap="outerHTML">
+<div id="message-list-container" class="flex flex-col gap-3 mt-4" hx-get="${model.refreshUrl}" hx-trigger="refresh from:body" hx-swap="outerHTML">
     @if(model.messages.isEmpty())
-        <p class="panel panel-muted text-center py-8 opacity-60">${model.emptyMessage}</p>
+        <p class="card bg-base-100 text-center py-8 opacity-60">${model.emptyMessage}</p>
     @else
         @for(msg in model.messages)
-            <article class="panel message-item @if(msg.dirty) border-accent @endif">
-                <header class="message-header">
-                    <div class="flex items-center gap-4">
-                        <span class="message-author">${msg.author}</span>
+            <article class="card bg-base-200 border border-base-300 hover:-translate-y-1 transition-transform @if(msg.dirty) border-accent @endif">
+                <header class="flex items-center justify-between pb-3 border-b border-base-content/5">
+                    <div class="flex items-center gap-3">
+                        <span class="font-semibold">${msg.author}</span>
                         @if(msg.dirty)
-                            <span class="status-badge" style="color: var(--color-accent);">
+                            <span class="badge badge-outline badge-accent">
                                 <i class="ri-refresh-line"></i> ${model.localBadge}
                             </span>
                         @endif
                         @if(msg.hasConflict)
-                            <button class="status-badge panel-danger"
+                            <button class="badge badge-outline bg-error/10 border-error/30 text-error"
                                     hx-get="/messages/resolve/${msg.syncId}"
                                     hx-target="body"
                                     hx-swap="beforeend"
@@ -25,28 +25,28 @@
                             </button>
                         @endif
                     </div>
-                    <time class="message-time">${msg.updatedAtLabel()}</time>
+                    <time class="text-xs opacity-50">${msg.updatedAtLabel()}</time>
                 </header>
-                <div class="message-content">
+                <div class="py-3">
                     ${msg.content}
                 </div>
-                <footer class="message-footer">
-                    <div class="message-meta">
-                        <span>ID: ${msg.syncId.take(8)}</span>
-                        <span>Version ${msg.version}</span>
+                <footer class="flex items-center justify-between pt-3 border-t border-base-content/5">
+                    <div class="flex gap-4 text-xs opacity-50">
+                        <span>${model.idLabel} ${msg.syncId.take(8)}</span>
+                        <span>${model.versionLabel} ${msg.version}</span>
                     </div>
-                    <div class="button-row">
+                    <div class="flex gap-3 justify-end">
                         @if(model.isTrash)
                             <form hx-post="/messages/restore/${msg.syncId}" hx-target="#message-list-container" hx-swap="outerHTML">
-                                <button type="submit" class="button-icon" title="${model.restoreTitle}">
+                                <button type="submit" class="btn btn-ghost btn-sm btn-square" title="${model.restoreTitle}">
                                     <i class="ri-restart-line"></i>
                                 </button>
                             </form>
                         @else
-                            <button class="button-icon" title="${model.editTitle}">
+                            <button class="btn btn-ghost btn-sm btn-square" title="${model.editTitle}">
                                 <i class="ri-edit-line"></i>
                             </button>
-                            <button class="button-icon text-danger" title="${model.deleteTitle}"
+                            <button class="btn btn-ghost btn-sm btn-square text-error" title="${model.deleteTitle}"
                                     hx-delete="/messages/${msg.syncId}"
                                     hx-confirm="${model.deleteConfirm}"
                                     hx-target="closest article"
@@ -72,6 +72,7 @@
                 totalPages = pagination.totalPages,
                 showingPageLabel = model.showingPageLabel,
                 ofLabel = model.ofLabel,
+                pageLabel = pagination.pageLabel,
             )
         @endif
     @endif

@@ -4,6 +4,7 @@ import io.github.rygel.outerstellar.platform.persistence.Notification
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import java.util.UUID
+import kotlinx.serialization.Serializable
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -14,10 +15,11 @@ import org.http4k.core.Method.PUT
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.with
-import org.http4k.format.Jackson.auto
+import org.http4k.format.KotlinxSerialization.auto
 import org.http4k.lens.Path
 import org.http4k.lens.string
 
+@Serializable
 data class NotificationDto(
     val id: String,
     val title: String,
@@ -76,7 +78,7 @@ class NotificationApi(private val notificationService: NotificationService) : Se
                             notificationService.markRead(UUID.fromString(notificationId), user.id)
                             Response(Status.NO_CONTENT)
                         } catch (e: IllegalArgumentException) {
-                            logger.debug("Invalid notification id: {}", e.message)
+                            logger.warn("Invalid notification id: {}", e.message)
                             Response(Status.BAD_REQUEST).body("Invalid notification id")
                         }
                     }

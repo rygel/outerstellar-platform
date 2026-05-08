@@ -1,7 +1,7 @@
 @import io.github.rygel.outerstellar.platform.web.NotificationBellFragment
 @param model: NotificationBellFragment
 
-<a href="${model.notificationsUrl}" class="button-icon" title="Notifications"
+<a href="${model.notificationsUrl}" class="btn btn-ghost btn-sm btn-square" title="${model.title}"
    style="text-decoration:none; font-size:1.1rem; position:relative;">
     <i class="ri-notification-3-line"></i>
     @if(model.unreadCount > 0)

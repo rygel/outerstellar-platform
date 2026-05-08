@@ -1,0 +1,26 @@
+<h2>How should theme selection work in the UI?</h2>
+<p class="subtitle">DaisyUI has 30+ built-in themes. Users currently pick from a dropdown in the sidebar. With DaisyUI, you could show actual color previews instead of just names.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Simple select dropdown (current pattern)</h3>
+      <p>Keep the sidebar dropdown selector. Replace <code>themes.json</code> data with DaisyUI theme names. Theme applies instantly via <code>data-theme</code> attribute swap. No visual preview — just the name. Works well in the compact sidebar.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Color swatch grid on settings page</h3>
+      <p>Move theme selection to the Settings > Appearance tab. Show a grid of theme names with colored accent dots or mini-preview bars. Sidebar selector removed. Users go to settings to change themes — more room for preview but extra click.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Both — dropdown in sidebar, preview in settings</h3>
+      <p>Quick switch via sidebar dropdown (names only). Full preview grid in Settings > Appearance for browsing. Same DaisyUI theme list used in both places.</p>
+    </div>
+  </div>
+</div>

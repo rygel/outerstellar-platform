@@ -1,4 +1,4 @@
 @import io.github.rygel.outerstellar.platform.web.FooterStatusFragment
 @param model: FooterStatusFragment
 
-<span>${model.text}</span>
+<span class="badge">${model.text}</span>

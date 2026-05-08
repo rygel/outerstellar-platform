@@ -4,8 +4,8 @@
 @param previousUrl: String
 @param nextUrl: String
 @param currentPage: Int
-@param previousLabel: String = "Previous page"
-@param nextLabel: String = "Next page"
+@param previousLabel: String = ""
+@param nextLabel: String = ""
 @param totalCount: Long = 0L
 @param totalCountLabel: String = ""
 @param hxTarget: String = ""
@@ -13,66 +13,67 @@
 @param totalPages: Int = 0
 @param showingPageLabel: String = ""
 @param ofLabel: String = ""
+@param pageLabel: String = "Page"
 
 @if(hasPrevious || hasNext)
-<div class="pagination-nav">
-    <span class="pagination-info">
+<div class="flex justify-between items-center mt-4 text-sm">
+    <span class="text-sm opacity-60">
         @if(showingPageLabel.isNotEmpty() && totalPages > 0)
             ${showingPageLabel} <strong>${currentPage}</strong> ${ofLabel} <strong>${totalPages}</strong>
         @elseif(totalCount > 0 && totalCountLabel.isNotEmpty())
-            Page ${currentPage} &middot; ${totalCount} ${totalCountLabel}
+            ${pageLabel} ${currentPage} &middot; ${totalCount} ${totalCountLabel}
         @else
-            Page ${currentPage}
+            ${pageLabel} ${currentPage}
         @endif
     </span>
-    <div class="flex gap-2">
+    <div class="join">
         @if(hasPrevious)
             @if(hxTarget.isNotEmpty())
-                <button class="button-icon" title="${previousLabel}"
+                <button class="join-item btn btn-sm" title="${previousLabel}"
                         hx-get="${previousUrl}"
                         hx-target="${hxTarget}"
                         hx-push-url="true">
                     <i class="ri-arrow-left-s-line"></i>
                 </button>
             @else
-                <a href="${previousUrl}" class="button-icon" title="${previousLabel}">
+                <a href="${previousUrl}" class="join-item btn btn-sm" title="${previousLabel}">
                     <i class="ri-arrow-left-s-line"></i>
                 </a>
             @endif
         @else
-            <button class="button-icon" disabled style="opacity: 0.3; cursor: not-allowed;">
+            <button class="join-item btn btn-sm" disabled style="opacity: 0.3; cursor: not-allowed;">
                 <i class="ri-arrow-left-s-line"></i>
             </button>
         @endif
         @for(page in pages)
             @if(hxTarget.isNotEmpty())
-                <button class="button-icon @if(page.isActive) border-accent text-accent font-bold @endif"
+                <button class="join-item btn btn-sm @if(page.isActive) border-accent text-accent font-bold @endif"
                         hx-get="${page.url}"
                         hx-target="${hxTarget}"
                         hx-push-url="true">
                     ${page.number}
                 </button>
             @else
-                <a href="${page.url}" class="button-icon @if(page.isActive) border-accent text-accent font-bold @endif">
+                <a href="${page.url}" class="join-item btn btn-sm @if(page.isActive) border-accent text-accent font-bold @endif">
                     ${page.number}
                 </a>
             @endif
         @endfor
         @if(hasNext)
             @if(hxTarget.isNotEmpty())
-                <button class="button-icon" title="${nextLabel}"
+                <button class="join-item btn btn-sm" title="${nextLabel}"
                         hx-get="${nextUrl}"
                         hx-target="${hxTarget}"
                         hx-push-url="true">
                     <i class="ri-arrow-right-s-line"></i>
                 </button>
             @else
-                <a href="${nextUrl}" class="button-icon" title="${nextLabel}">
+                <a href="${nextUrl}" class="join-item btn btn-sm" title="${nextLabel}">
                     <i class="ri-arrow-right-s-line"></i>
                 </a>
             @endif
         @else
-            <button class="button-icon" disabled style="opacity: 0.3; cursor: not-allowed;">
+            <button class="join-item btn btn-sm" disabled style="opacity: 0.3; cursor: not-allowed;">
                 <i class="ri-arrow-right-s-line"></i>
             </button>
         @endif

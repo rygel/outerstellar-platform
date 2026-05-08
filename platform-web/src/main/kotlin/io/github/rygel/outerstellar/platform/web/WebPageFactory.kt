@@ -225,13 +225,13 @@ open class WebPageFactory(
             AuthResultFragment(
                 title = i18n.translate("web.auth.result.success.title"),
                 message = i18n.translate("web.auth.result.success.body", email),
-                toneClass = "panel-success",
+                toneClass = "bg-success/10 border-success/30 text-success",
             )
         } else {
             AuthResultFragment(
                 title = i18n.translate("web.auth.result.error.title"),
                 message = errors.joinToString(" "),
-                toneClass = "panel-danger",
+                toneClass = "bg-error/10 border-error/30 text-error",
             )
         }
     }
@@ -260,6 +260,7 @@ open class WebPageFactory(
                     secondaryActionUrl = ctx.url("/auth"),
                     helpButtonLabel = i18n.translate("web.error.help"),
                     helpUrl = ctx.url("/errors/components/help/$normalizedKind"),
+                    errorLabel = i18n.translate("web.error.label"),
                 ),
         )
     }
@@ -345,6 +346,9 @@ open class WebPageFactory(
                     telemetryLabel = i18n.translate("web.dev.telemetry"),
                     metricsLabel = i18n.translate("web.dev.metrics"),
                     triggerSyncLabel = i18n.translate("web.dev.trigger.sync"),
+                    protocolDescription = i18n.translate("web.dev.protocol.description"),
+                    searchHtmxLabel = i18n.translate("web.dev.protocol.search.htmx"),
+                    searchDraculaLabel = i18n.translate("web.dev.protocol.search.dracula"),
                 ),
         )
     }
@@ -353,7 +357,7 @@ open class WebPageFactory(
         val message =
             checkNotNull(repository) { "MessageRepository is required for conflict resolution" }.findBySyncId(syncId)
                 ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(syncId)
-        val serverVersion = org.http4k.format.Jackson.asA(message.syncConflict!!, SyncMessage::class)
+        val serverVersion = org.http4k.format.KotlinxSerialization.asA(message.syncConflict!!, SyncMessage::class)
 
         val i18n = ctx.i18n
         return ConflictResolveViewModel(
@@ -384,20 +388,8 @@ open class WebPageFactory(
             selectId = "theme-selector",
             selectName = "theme",
             options =
-                ThemeCatalog.allThemes().map { theme ->
-                    ShellOption(
-                        id = theme.id,
-                        label = theme.name,
-                        url = theme.id,
-                        active = theme.id == ctx.theme,
-                        previewColors =
-                            ThemePreviewColors(
-                                background = theme.colors["background"] ?: "#1e1e1e",
-                                foreground = theme.colors["foreground"] ?: "#d4d4d4",
-                                accent = theme.colors["accent"] ?: "#007acc",
-                                componentBackground = theme.colors["componentBackground"] ?: "#252526",
-                            ),
-                    )
+                ThemeCatalog.allThemes.map { theme ->
+                    ShellOption(id = theme.id, label = theme.label, url = theme.id, active = theme.id == ctx.theme)
                 },
             hiddenFields =
                 listOf(
@@ -591,7 +583,17 @@ open class WebPageFactory(
             )
         return Page(
             shell = shell,
-            data = SettingsPage(title = i18n.translate("web.settings.title"), tabs = tabs, activeTab = normalizedTab),
+            data =
+                SettingsPage(
+                    title = i18n.translate("web.settings.title"),
+                    tabs = tabs,
+                    activeTab = normalizedTab,
+                    profileDescription = i18n.translate("web.settings.profile.description"),
+                    passwordDescription = i18n.translate("web.settings.password.description"),
+                    apiKeysDescription = i18n.translate("web.settings.apikeys.description"),
+                    notificationsDescription = i18n.translate("web.settings.notifications.description"),
+                    appearanceDescription = i18n.translate("web.settings.appearance.description"),
+                ),
         )
     }
 

@@ -1,0 +1,1394 @@
+{
+  "reflection": [
+    {
+      "type": "ch.qos.logback.classic.encoder.PatternLayoutEncoder",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.classic.spi.LogbackServiceProvider"
+    },
+    {
+      "type": "ch.qos.logback.classic.util.DefaultJoranConfigurator",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.ConsoleAppender",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.OutputStreamAppender",
+      "methods": [
+        {
+          "name": "setEncoder",
+          "parameterTypes": [
+            "ch.qos.logback.core.encoder.Encoder"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.encoder.Encoder"
+    },
+    {
+      "type": "ch.qos.logback.core.encoder.LayoutWrappingEncoder",
+      "methods": [
+        {
+          "name": "setParent",
+          "parameterTypes": [
+            "ch.qos.logback.core.spi.ContextAware"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.pattern.PatternLayoutEncoderBase",
+      "methods": [
+        {
+          "name": "setPattern",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ch.qos.logback.core.spi.ContextAware"
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.BLCHeader$DrainStatusRef",
+      "fields": [
+        {
+          "name": "drainStatus"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.BaseMpscLinkedArrayQueueColdProducerFields",
+      "fields": [
+        {
+          "name": "producerLimit"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.BaseMpscLinkedArrayQueueConsumerFields",
+      "fields": [
+        {
+          "name": "consumerIndex"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.BaseMpscLinkedArrayQueueProducerFields",
+      "fields": [
+        {
+          "name": "producerIndex"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.BoundedLocalCache",
+      "fields": [
+        {
+          "name": "refreshes"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.PS",
+      "fields": [
+        {
+          "name": "key"
+        },
+        {
+          "name": "value"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.PSW",
+      "fields": [
+        {
+          "name": "writeTime"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.PSWMS",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.SSMS",
+      "fields": [
+        {
+          "name": "maximum"
+        },
+        {
+          "name": "weightedSize"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.SSMSW",
+      "fields": [
+        {
+          "name": "FACTORY"
+        },
+        {
+          "name": "expiresAfterWriteNanos"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.SSSMS",
+      "fields": [
+        {
+          "name": "maximum"
+        },
+        {
+          "name": "weightedSize"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.SSSMSW",
+      "fields": [
+        {
+          "name": "FACTORY"
+        },
+        {
+          "name": "expiresAfterWriteNanos"
+        }
+      ]
+    },
+    {
+      "type": "com.github.benmanes.caffeine.cache.StripedBuffer",
+      "fields": [
+        {
+          "name": "tableBusy"
+        }
+      ]
+    },
+    {
+      "type": "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.zaxxer.hikari.HikariConfig",
+      "fields": [
+        {
+          "name": "catalog"
+        },
+        {
+          "name": "connectionInitSql"
+        },
+        {
+          "name": "connectionTestQuery"
+        },
+        {
+          "name": "connectionTimeout"
+        },
+        {
+          "name": "credentials"
+        },
+        {
+          "name": "credentialsProvider"
+        },
+        {
+          "name": "credentialsProviderClassName"
+        },
+        {
+          "name": "dataSource"
+        },
+        {
+          "name": "dataSourceClassName"
+        },
+        {
+          "name": "dataSourceJndiName"
+        },
+        {
+          "name": "dataSourceProperties"
+        },
+        {
+          "name": "driverClassName"
+        },
+        {
+          "name": "exceptionOverride"
+        },
+        {
+          "name": "exceptionOverrideClassName"
+        },
+        {
+          "name": "healthCheckProperties"
+        },
+        {
+          "name": "healthCheckRegistry"
+        },
+        {
+          "name": "idleTimeout"
+        },
+        {
+          "name": "initializationFailTimeout"
+        },
+        {
+          "name": "isAllowPoolSuspension"
+        },
+        {
+          "name": "isAutoCommit"
+        },
+        {
+          "name": "isIsolateInternalQueries"
+        },
+        {
+          "name": "isReadOnly"
+        },
+        {
+          "name": "isRegisterMbeans"
+        },
+        {
+          "name": "jdbcUrl"
+        },
+        {
+          "name": "keepaliveTime"
+        },
+        {
+          "name": "leakDetectionThreshold"
+        },
+        {
+          "name": "maxLifetime"
+        },
+        {
+          "name": "maxPoolSize"
+        },
+        {
+          "name": "metricRegistry"
+        },
+        {
+          "name": "metricsTrackerFactory"
+        },
+        {
+          "name": "minIdle"
+        },
+        {
+          "name": "poolName"
+        },
+        {
+          "name": "scheduledExecutor"
+        },
+        {
+          "name": "schema"
+        },
+        {
+          "name": "sealed"
+        },
+        {
+          "name": "threadFactory"
+        },
+        {
+          "name": "transactionIsolationName"
+        },
+        {
+          "name": "unitTest"
+        },
+        {
+          "name": "validationTimeout"
+        }
+      ]
+    },
+    {
+      "type": "com.zaxxer.hikari.pool.PoolBase"
+    },
+    {
+      "type": "com.zaxxer.hikari.pool.PoolEntry"
+    },
+    {
+      "type": "com.zaxxer.hikari.util.ConcurrentBag$IConcurrentBagEntry[]"
+    },
+    {
+      "type": "io.github.rygel.outerstellar.platform.MainKt",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "main",
+          "parameterTypes": [
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "io.github.rygel.outerstellar.platform.jooq.tables.records.PltOutboxRecord"
+    },
+    {
+      "type": "io.github.rygel.outerstellar.platform.jooq.tables.records.PltUsersRecord",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "io.netty.bootstrap.ServerBootstrap$1"
+    },
+    {
+      "type": "io.netty.bootstrap.ServerBootstrap$ServerBootstrapAcceptor"
+    },
+    {
+      "type": "io.netty.buffer.AbstractByteBufAllocator"
+    },
+    {
+      "type": "io.netty.buffer.AdaptivePoolingAllocator$Magazine"
+    },
+    {
+      "type": "io.netty.buffer.AdaptivePoolingAllocator$SizeClassedChunk"
+    },
+    {
+      "type": "io.netty.channel.AbstractChannelHandlerContext"
+    },
+    {
+      "type": "io.netty.channel.ChannelOutboundBuffer"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelConfig"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelPipeline"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelPipeline$HeadContext"
+    },
+    {
+      "type": "io.netty.channel.DefaultChannelPipeline$TailContext"
+    },
+    {
+      "type": "io.netty.handler.codec.http.HttpObjectAggregator"
+    },
+    {
+      "type": "io.netty.handler.codec.http.HttpServerCodec"
+    },
+    {
+      "type": "io.netty.handler.codec.http.HttpServerKeepAliveHandler"
+    },
+    {
+      "type": "io.netty.handler.stream.ChunkedWriteHandler"
+    },
+    {
+      "type": "io.netty.util.DefaultAttributeMap"
+    },
+    {
+      "type": "io.netty.util.Recycler$DefaultHandle"
+    },
+    {
+      "type": "io.netty.util.ReferenceCountUtil"
+    },
+    {
+      "type": "io.netty.util.ResourceLeakDetector$DefaultResourceLeak"
+    },
+    {
+      "type": "io.netty.util.concurrent.ConcurrentSkipListIntObjMultimap"
+    },
+    {
+      "type": "io.netty.util.concurrent.ConcurrentSkipListIntObjMultimap$Index"
+    },
+    {
+      "type": "io.netty.util.concurrent.ConcurrentSkipListIntObjMultimap$Node"
+    },
+    {
+      "type": "io.netty.util.concurrent.DefaultPromise"
+    },
+    {
+      "type": "io.netty.util.concurrent.MpscIntQueue$MpscAtomicIntegerArrayQueue"
+    },
+    {
+      "type": "io.netty.util.concurrent.SingleThreadEventExecutor"
+    },
+    {
+      "type": "io.netty.util.internal.CleanerJava25$CleanableDirectBufferImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.AutoCloseable",
+            "java.nio.ByteBuffer",
+            "long"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.atomic.BaseMpscLinkedAtomicArrayQueueColdProducerFields"
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.atomic.BaseMpscLinkedAtomicArrayQueueConsumerFields"
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.atomic.BaseMpscLinkedAtomicArrayQueueProducerFields"
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.atomic.MpmcAtomicArrayQueueConsumerIndexField"
+    },
+    {
+      "type": "io.netty.util.internal.shaded.org.jctools.queues.atomic.MpmcAtomicArrayQueueProducerIndexField"
+    },
+    {
+      "type": "io.opentelemetry.api.incubator.ExtendedOpenTelemetry"
+    },
+    {
+      "type": "io.opentelemetry.api.incubator.metrics.ExtendedDefaultMeterProvider"
+    },
+    {
+      "type": "io.opentelemetry.api.incubator.trace.ExtendedDefaultTracerProvider"
+    },
+    {
+      "type": "io.prometheus.metrics.expositionformats.internal.PrometheusProtobufWriterImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.Boolean",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "getBoolean",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.lang.Boolean[]"
+    },
+    {
+      "type": "java.lang.Byte[]"
+    },
+    {
+      "type": "java.lang.Class",
+      "methods": [
+        {
+          "name": "getModule",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.ClassValue"
+    },
+    {
+      "type": "java.lang.Comparable"
+    },
+    {
+      "type": "java.lang.Double[]"
+    },
+    {
+      "type": "java.lang.Float[]"
+    },
+    {
+      "type": "java.lang.Integer[]"
+    },
+    {
+      "type": "java.lang.Long[]"
+    },
+    {
+      "type": "java.lang.Module",
+      "methods": [
+        {
+          "name": "isNativeAccessEnabled",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.Object[]"
+    },
+    {
+      "type": "java.lang.ProcessHandle",
+      "methods": [
+        {
+          "name": "current",
+          "parameterTypes": []
+        },
+        {
+          "name": "pid",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.SecurityManager",
+      "methods": [
+        {
+          "name": "checkPermission",
+          "parameterTypes": [
+            "java.security.Permission"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.lang.Short[]"
+    },
+    {
+      "type": "java.lang.String[]"
+    },
+    {
+      "type": "java.lang.System",
+      "methods": [
+        {
+          "name": "getSecurityManager",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.Thread",
+      "methods": [
+        {
+          "name": "isVirtual",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.foreign.Arena",
+      "methods": [
+        {
+          "name": "allocate",
+          "parameterTypes": [
+            "long"
+          ]
+        },
+        {
+          "name": "ofShared",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.foreign.MemorySegment",
+      "methods": [
+        {
+          "name": "address",
+          "parameterTypes": []
+        },
+        {
+          "name": "asByteBuffer",
+          "parameterTypes": []
+        },
+        {
+          "name": "ofBuffer",
+          "parameterTypes": [
+            "java.nio.Buffer"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.lang.invoke.MethodHandles",
+      "methods": [
+        {
+          "name": "byteArrayViewVarHandle",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.nio.ByteOrder"
+          ]
+        },
+        {
+          "name": "byteBufferViewVarHandle",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.nio.ByteOrder"
+          ]
+        },
+        {
+          "name": "privateLookupIn",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.lang.invoke.MethodHandles$Lookup"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.lang.invoke.MethodHandles$Lookup",
+      "methods": [
+        {
+          "name": "findVarHandle",
+          "parameterTypes": [
+            "java.lang.Class",
+            "java.lang.String",
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.lang.invoke.VarHandle",
+      "methods": [
+        {
+          "name": "acquireFence",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.management.ManagementFactory",
+      "methods": [
+        {
+          "name": "getRuntimeMXBean",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.management.RuntimeMXBean",
+      "methods": [
+        {
+          "name": "getInputArguments",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.math.BigDecimal[]"
+    },
+    {
+      "type": "java.math.BigInteger[]"
+    },
+    {
+      "type": "java.nio.ByteBuffer",
+      "methods": [
+        {
+          "name": "alignedSlice",
+          "parameterTypes": [
+            "int"
+          ]
+        },
+        {
+          "name": "put",
+          "parameterTypes": [
+            "int",
+            "java.nio.ByteBuffer",
+            "int",
+            "int"
+          ]
+        },
+        {
+          "name": "put",
+          "parameterTypes": [
+            "int",
+            "byte[]",
+            "int",
+            "int"
+          ]
+        },
+        {
+          "name": "slice",
+          "parameterTypes": [
+            "int",
+            "int"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.nio.channels.spi.SelectorProvider"
+    },
+    {
+      "type": "java.security.AccessController",
+      "methods": [
+        {
+          "name": "doPrivileged",
+          "parameterTypes": [
+            "java.security.PrivilegedExceptionAction"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.sql.Date[]"
+    },
+    {
+      "type": "java.sql.Statement[]"
+    },
+    {
+      "type": "java.sql.Time[]"
+    },
+    {
+      "type": "java.sql.Timestamp[]"
+    },
+    {
+      "type": "java.time.Instant[]"
+    },
+    {
+      "type": "java.time.LocalDateTime[]"
+    },
+    {
+      "type": "java.time.LocalDate[]"
+    },
+    {
+      "type": "java.time.LocalTime[]"
+    },
+    {
+      "type": "java.time.OffsetDateTime[]"
+    },
+    {
+      "type": "java.time.OffsetTime[]"
+    },
+    {
+      "type": "java.time.Year[]"
+    },
+    {
+      "type": "java.util.UUID[]"
+    },
+    {
+      "type": "kotlin.SafePublicationLazyImpl"
+    },
+    {
+      "type": "kotlin.jvm.internal.DefaultConstructorMarker"
+    },
+    {
+      "type": "kotlin.reflect.jvm.internal.ReflectionFactoryImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.flywaydb.core.api.migration.baseline.BaselineAppliedMigration"
+    },
+    {
+      "type": "org.flywaydb.core.api.migration.baseline.BaselineMigrationConfigurationExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getBaselineMigrationPrefix",
+          "parameterTypes": []
+        },
+        {
+          "name": "setBaselineMigrationPrefix",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.flywaydb.core.api.migration.baseline.BaselineMigrationResolver"
+    },
+    {
+      "type": "org.flywaydb.core.api.migration.baseline.BaselineResourceTypeProvider"
+    },
+    {
+      "type": "org.flywaydb.core.extensibility.ConfigurationExtension"
+    },
+    {
+      "type": "org.flywaydb.core.extensibility.Plugin"
+    },
+    {
+      "type": "org.flywaydb.core.internal.NullFlywayTelemetryManager"
+    },
+    {
+      "type": "org.flywaydb.core.internal.configuration.resolvers.EnvironmentProvisionerNone"
+    },
+    {
+      "type": "org.flywaydb.core.internal.configuration.resolvers.EnvironmentVariableResolver"
+    },
+    {
+      "type": "org.flywaydb.core.internal.configuration.resolvers.PlaceholderPropertyResolver"
+    },
+    {
+      "type": "org.flywaydb.core.internal.database.base.TestContainersDatabaseType"
+    },
+    {
+      "type": "org.flywaydb.core.internal.database.h2.H2DatabaseType"
+    },
+    {
+      "type": "org.flywaydb.core.internal.database.sqlite.SQLiteDatabaseType"
+    },
+    {
+      "type": "org.flywaydb.core.internal.jdbc.ErrorOverrideInitializerStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.logging.slf4j.Slf4jLogCreator",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.AuthCommandExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.CheckCommandExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.DeployCommandExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.DiffCommandExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.DiffTextCommandExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.GenerateCommandExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.LicensingConfigurationExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.ModelCommandExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.OfflinePermitConfigurationExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.PATTokenConfigurationExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.PrepareCommandExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.proprietaryStubs.UndoCommandExtensionStub"
+    },
+    {
+      "type": "org.flywaydb.core.internal.publishing.PublishingConfigurationExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "isCheckDriftOnMigrate",
+          "parameterTypes": []
+        },
+        {
+          "name": "isPublishResult",
+          "parameterTypes": []
+        },
+        {
+          "name": "setCheckDriftOnMigrate",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setPublishResult",
+          "parameterTypes": [
+            "boolean"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.flywaydb.core.internal.resource.CoreResourceTypeProvider"
+    },
+    {
+      "type": "org.flywaydb.core.internal.scanner.classpath.ClasspathLocationHandlerImpl"
+    },
+    {
+      "type": "org.flywaydb.core.internal.scanner.filesystem.FilesystemLocationHandler"
+    },
+    {
+      "type": "org.flywaydb.core.internal.schemahistory.BaseAppliedMigration"
+    },
+    {
+      "type": "org.flywaydb.database.cockroachdb.CockroachDBDatabaseType"
+    },
+    {
+      "type": "org.flywaydb.database.postgresql.PostgreSQLConfigurationExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "getTransactional",
+          "parameterTypes": []
+        },
+        {
+          "name": "isTransactionalLock",
+          "parameterTypes": []
+        },
+        {
+          "name": "setTransactional",
+          "parameterTypes": [
+            "org.flywaydb.database.postgresql.TransactionalModel"
+          ]
+        },
+        {
+          "name": "setTransactionalLock",
+          "parameterTypes": [
+            "boolean"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.flywaydb.database.postgresql.PostgreSQLDatabaseType"
+    },
+    {
+      "type": "org.flywaydb.database.postgresql.TransactionalModel"
+    },
+    {
+      "type": "org.http4k.server.Http4kChannelHandler"
+    },
+    {
+      "type": "org.http4k.server.Netty$toServer$1$start$1$2"
+    },
+    {
+      "type": "org.http4k.server.WebSocketServerHandler"
+    },
+    {
+      "type": "org.jooq.Decfloat[]"
+    },
+    {
+      "type": "org.jooq.Geography[]"
+    },
+    {
+      "type": "org.jooq.Geometry[]"
+    },
+    {
+      "type": "org.jooq.JSONB[]"
+    },
+    {
+      "type": "org.jooq.JSON[]"
+    },
+    {
+      "type": "org.jooq.Record[]"
+    },
+    {
+      "type": "org.jooq.Result[]"
+    },
+    {
+      "type": "org.jooq.RowId[]"
+    },
+    {
+      "type": "org.jooq.XML[]"
+    },
+    {
+      "type": "org.jooq.impl.SQLDataType"
+    },
+    {
+      "type": "org.jooq.impl.SQLDataTypes$ClickHouseDataType"
+    },
+    {
+      "type": "org.jooq.impl.SQLDataTypes$DuckDBDataType"
+    },
+    {
+      "type": "org.jooq.impl.SQLDataTypes$TrinoDataType"
+    },
+    {
+      "type": "org.jooq.types.DayToSecond[]"
+    },
+    {
+      "type": "org.jooq.types.UByte[]"
+    },
+    {
+      "type": "org.jooq.types.UInteger[]"
+    },
+    {
+      "type": "org.jooq.types.ULong[]"
+    },
+    {
+      "type": "org.jooq.types.UShort[]"
+    },
+    {
+      "type": "org.jooq.types.YearToMonth[]"
+    },
+    {
+      "type": "org.jooq.types.YearToSecond[]"
+    },
+    {
+      "type": "org.jooq.util.cubrid.CUBRIDDataType"
+    },
+    {
+      "type": "org.jooq.util.derby.DerbyDataType"
+    },
+    {
+      "type": "org.jooq.util.firebird.FirebirdDataType"
+    },
+    {
+      "type": "org.jooq.util.h2.H2DataType"
+    },
+    {
+      "type": "org.jooq.util.hsqldb.HSQLDBDataType"
+    },
+    {
+      "type": "org.jooq.util.ignite.IgniteDataType"
+    },
+    {
+      "type": "org.jooq.util.mariadb.MariaDBDataType"
+    },
+    {
+      "type": "org.jooq.util.mysql.MySQLDataType"
+    },
+    {
+      "type": "org.jooq.util.postgres.PostgresDataType"
+    },
+    {
+      "type": "org.jooq.util.sqlite.SQLiteDataType"
+    },
+    {
+      "type": "org.jooq.util.yugabytedb.YugabyteDBDataType"
+    },
+    {
+      "type": "org.postgresql.Driver"
+    },
+    {
+      "type": "org.postgresql.core.QueryExecutorCloseAction"
+    },
+    {
+      "type": "org.postgresql.jdbc.PgStatement"
+    },
+    {
+      "type": "org.slf4j.Logger"
+    },
+    {
+      "type": "org.slf4j.impl.StaticLoggerBinder"
+    },
+    {
+      "type": "org.slf4j.spi.SLF4JServiceProvider"
+    },
+    {
+      "type": "sun.launcher.LauncherHelper",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "isStaticMain"
+        },
+        {
+          "name": "noArgMain"
+        }
+      ],
+      "methods": [
+        {
+          "name": "getApplicationClass",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.management.VMManagementImpl",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "compTimeMonitoringSupport"
+        },
+        {
+          "name": "currentThreadCpuTimeSupport"
+        },
+        {
+          "name": "objectMonitorUsageSupport"
+        },
+        {
+          "name": "otherThreadCpuTimeSupport"
+        },
+        {
+          "name": "remoteDiagnosticCommandsSupport"
+        },
+        {
+          "name": "synchronizerUsageSupport"
+        },
+        {
+          "name": "threadAllocatedMemorySupport"
+        },
+        {
+          "name": "threadContentionMonitoringSupport"
+        }
+      ]
+    },
+    {
+      "type": "sun.nio.ch.SelectorImpl"
+    },
+    {
+      "type": "sun.security.provider.DRBG",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.security.SecureRandomParameters"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA2$SHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.text.resources.cldr.FormatData"
+    },
+    {
+      "type": "sun.text.resources.cldr.FormatData_en"
+    },
+    {
+      "type": "sun.text.resources.cldr.FormatData_en_US"
+    },
+    {
+      "type": "sun.util.resources.cldr.CalendarData"
+    },
+    {
+      "type": "tools.jackson.databind.deser.Deserializers[]"
+    },
+    {
+      "type": "tools.jackson.databind.deser.KeyDeserializers[]"
+    },
+    {
+      "type": "tools.jackson.databind.deser.ValueInstantiators[]"
+    },
+    {
+      "type": "tools.jackson.databind.ser.Serializers[]"
+    },
+    {
+      "type": {
+        "proxy": [
+          "java.sql.Connection"
+        ]
+      }
+    },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteConflictResolveModalGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteConflictResolveModalGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteContactFormGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteContactFormGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteContactFormGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteMessageListGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteMessageListGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalOverlayGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalOverlayGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteNotificationBellGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteNotificationBellGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JtePageHeaderGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JtePageHeaderGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JtePaginationGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JtePaginationGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteSidebarSelectorGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteSidebarSelectorGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteApiKeysPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteApiKeysPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteApiKeysPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuditLogPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuditLogPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuditLogPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuthFormFragmentGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuthFormFragmentGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuthPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuthPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuthPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuthResultFragmentGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteAuthResultFragmentGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteChangePasswordFormGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteChangePasswordFormGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteChangePasswordPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteChangePasswordPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteChangePasswordPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteContactsPageGenerated$Companion$render$1$writeTo$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteContactsPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteContactsPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteContactsPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteDevDashboardGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteDevDashboardGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteDevDashboardGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteErrorHelpFragmentGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteErrorHelpFragmentGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteErrorPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteErrorPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteErrorPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteFooterStatusFragmentGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteFooterStatusFragmentGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteHomePageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteHomePageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteHomePageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteLayoutRouterGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteLayoutRouterGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteNotificationsPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteNotificationsPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteNotificationsPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteProfilePageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteProfilePageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteProfilePageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteResetPasswordPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteResetPasswordPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteResetPasswordPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSearchPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSearchPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSearchPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSettingsPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSettingsPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSettingsPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTrashPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTrashPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTrashPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteUserAdminPageGenerated$Companion$render$1" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteUserAdminPageGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteUserAdminPageGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteLayoutHeadGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteLayoutHeadGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteSidebarLayoutGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteSidebarLayoutGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteTopbarLayoutGenerated$Companion" },
+    { "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteTopbarLayoutGenerated", "allDeclaredFields": true, "allDeclaredMethods": true, "allPublicMethods": true, "allDeclaredConstructors": true }
+  ],
+  "resources": [
+    {
+      "glob": "META-INF/org/http4k/core/mime.types"
+    },
+    {
+      "glob": "META-INF/services/ch.qos.logback.classic.spi.Configurator"
+    },
+    {
+      "glob": "META-INF/services/io.opentelemetry.context.ContextStorageProvider"
+    },
+    {
+      "glob": "META-INF/services/java.net.spi.InetAddressResolverProvider"
+    },
+    {
+      "glob": "META-INF/services/java.net.spi.URLStreamHandlerProvider"
+    },
+    {
+      "glob": "META-INF/services/java.nio.channels.spi.SelectorProvider"
+    },
+    {
+      "glob": "META-INF/services/java.sql.Driver"
+    },
+    {
+      "glob": "META-INF/services/java.time.zone.ZoneRulesProvider"
+    },
+    {
+      "glob": "META-INF/services/javax.xml.parsers.SAXParserFactory"
+    },
+    {
+      "glob": "META-INF/services/org.flywaydb.core.extensibility.Plugin"
+    },
+    {
+      "glob": "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
+    },
+    {
+      "glob": "application.yaml"
+    },
+    {
+      "glob": "ch/qos/logback/classic/logback-classic-version.properties"
+    },
+    {
+      "glob": "ch/qos/logback/core/logback-core-version.properties"
+    },
+    {
+      "glob": "db/migration"
+    },
+    {
+      "glob": "db/migration/V1__initial_schema.sql"
+    },
+    {
+      "glob": "db/migration/V2__user_profile_enhancements.sql"
+    },
+    {
+      "glob": "db/migration/V3__sessions_table.sql"
+    },
+    {
+      "glob": "db/migration/V4__user_preferences.sql"
+    },
+    {
+      "glob": "jooq-settings.xml"
+    },
+    {
+      "glob": "logback-test.xml"
+    },
+    {
+      "glob": "logback.xml"
+    },
+    {
+      "glob": "org/flywaydb/core/internal/version.txt"
+    },
+    {
+      "glob": "org/postgresql/driverconfig.properties"
+    },
+    {
+      "glob": "prometheus.properties"
+    },
+    {
+      "glob": "themes.json"
+    },
+    {
+      "glob": "themes/default.json"
+    },
+    {
+      "glob": "themes/dark.json"
+    },
+    {
+      "glob": "messages.properties"
+    },
+    {
+      "glob": "messages_fr.properties"
+    },
+    {
+      "module": "java.logging",
+      "glob": "sun/util/logging/resources/logging_en.properties"
+    },
+    {
+      "module": "java.logging",
+      "glob": "sun/util/logging/resources/logging_en_GB.properties"
+    },
+    {
+      "module": "jdk.jfr",
+      "glob": "jdk/jfr/internal/types/metadata.bin"
+    },
+    {
+      "bundle": "sun.util.logging.resources.logging"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import org.slf4j.LoggerFactory
 
 /**
  * Polls the server `/health` endpoint at a fixed interval and tracks whether the server is reachable. Observers are
@@ -20,6 +21,8 @@ class ConnectivityChecker(
     private val timeoutSeconds: Long = 5L,
     private val httpClient: HttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build(),
 ) {
+    private val logger = LoggerFactory.getLogger(ConnectivityChecker::class.java)
+
     private val _isOnline = AtomicBoolean(true)
     val isOnline: Boolean
         get() = _isOnline.get()
@@ -57,6 +60,7 @@ class ConnectivityChecker(
                 val response = httpClient.send(request, HttpResponse.BodyHandlers.discarding())
                 response.statusCode() in 200..299
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                logger.debug("Connectivity check failed for {}", healthUrl, e)
                 false
             }
 

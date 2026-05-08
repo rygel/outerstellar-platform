@@ -22,6 +22,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import javax.swing.SwingWorker
+import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
 class SyncViewModel(
@@ -33,6 +34,8 @@ class SyncViewModel(
     private val analytics: AnalyticsService = NoOpAnalyticsService(),
     val connectivityChecker: ConnectivityChecker? = null,
 ) {
+    private val logger = LoggerFactory.getLogger(SyncViewModel::class.java)
+
     private val observers = CopyOnWriteArrayList<() -> Unit>()
     private var autoSyncExecutor: ScheduledExecutorService? = null
 
@@ -357,6 +360,7 @@ class SyncViewModel(
                         syncService.changePassword(currentPassword, newPassword)
                         true to null
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                         false to i18nService.translate("swing.session.expired")
                     } catch (e: SyncException) {
@@ -381,6 +385,7 @@ class SyncViewModel(
                     try {
                         adminUsers = syncService.listUsers()
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         status = e.message ?: "Failed to load users"
@@ -401,6 +406,7 @@ class SyncViewModel(
                         syncService.setUserEnabled(userId, !currentEnabled)
                         adminUsers = syncService.listUsers()
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         status = e.message ?: "Failed to toggle user"
@@ -422,6 +428,7 @@ class SyncViewModel(
                         syncService.setUserRole(userId, newRole)
                         adminUsers = syncService.listUsers()
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         status = e.message ?: "Failed to toggle role"
@@ -441,9 +448,10 @@ class SyncViewModel(
                     try {
                         notifications = syncService.listNotifications()
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        // non-critical: silently ignore
+                        logger.debug("Failed to load notifications", e)
                     }
                 }
 
@@ -461,6 +469,7 @@ class SyncViewModel(
                         syncService.markNotificationRead(notificationId)
                         notifications = syncService.listNotifications()
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         status = e.message ?: "Failed to mark notification as read"
@@ -481,6 +490,7 @@ class SyncViewModel(
                         syncService.markAllNotificationsRead()
                         notifications = syncService.listNotifications()
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         status = e.message ?: "Failed to mark all notifications as read"
@@ -505,6 +515,7 @@ class SyncViewModel(
                         pushNotificationsEnabled = profile.pushNotificationsEnabled
                         true to null
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                         false to i18nService.translate("swing.session.expired")
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
@@ -533,6 +544,7 @@ class SyncViewModel(
                         userAvatarUrl = profile.avatarUrl
                         true to null
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                         false to i18nService.translate("swing.session.expired")
                     } catch (e: SyncException) {
@@ -564,6 +576,7 @@ class SyncViewModel(
                         pushNotificationsEnabled = pushEnabled
                         true to null
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired", e)
                         handleSessionExpired()
                         false to i18nService.translate("swing.session.expired")
                     } catch (e: SyncException) {
@@ -589,6 +602,7 @@ class SyncViewModel(
                         syncService.deleteAccount()
                         true to null
                     } catch (e: SessionExpiredException) {
+                        logger.debug("Session expired during account deletion", e)
                         false to i18nService.translate("swing.session.expired")
                     } catch (e: SyncException) {
                         false to e.message

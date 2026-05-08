@@ -13,7 +13,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
-import org.http4k.server.Jetty
+import org.http4k.server.Netty
 import org.http4k.server.asServer
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -26,13 +26,13 @@ import org.koin.core.context.stopKoin
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
-import org.koin.test.inject
+import org.koin.test.get
 import org.testcontainers.containers.PostgreSQLContainer
 
 @Tag("e2e")
 class ResponsiveLayoutE2ETest : KoinTest {
 
-    private val app: PolyHandler by inject(named("webServer"))
+    private val app: PolyHandler by lazy { get<PolyHandler>(named("webServer")) }
     private lateinit var server: Http4kServer
     private lateinit var browserContext: com.microsoft.playwright.BrowserContext
     private lateinit var page: Page
@@ -98,7 +98,7 @@ class ResponsiveLayoutE2ETest : KoinTest {
         io.github.rygel.outerstellar.platform.infra.migrate(ds)
         getKoin().get<io.github.rygel.outerstellar.platform.persistence.MessageRepository>().seedMessages()
         getKoin().get<io.github.rygel.outerstellar.platform.persistence.ContactRepository>().seedContacts()
-        server = app.asServer(Jetty(0)).start()
+        server = app.asServer(Netty(0)).start()
         baseUrl = "http://localhost:${server.port()}"
     }
 

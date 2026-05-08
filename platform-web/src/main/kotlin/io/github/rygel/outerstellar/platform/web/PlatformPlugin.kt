@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.security.SecurityService
@@ -13,14 +14,16 @@ import org.http4k.core.Filter
 import org.http4k.core.Request
 import org.http4k.lens.LensFailure
 import org.http4k.template.TemplateRenderer
-import org.http4k.template.ViewModel
 import org.koin.core.module.Module
+import org.slf4j.LoggerFactory
 
 /**
  * Nav item contributed by a plugin to the shell navigation bar. [activeSection] defaults to [url] and is compared
  * against the current path to highlight the active link (the same convention used by the host's built-in nav links).
  */
 data class PluginNavItem(val label: String, val url: String, val icon: String, val activeSection: String = url)
+
+data class PluginOptions(val navItems: List<PluginNavItem> = emptyList(), val textResolver: TextResolver? = null)
 
 /**
  * Host services provided to the plugin when it builds its routes. The plugin should depend only on this context rather
@@ -42,23 +45,14 @@ data class PluginContext(
     fun currentUser(request: Request): User? =
         try {
             request.webContext.user
-        } catch (_: LensFailure) {
+        } catch (e: LensFailure) {
+            logger.debug("Lens extraction failed for current user check: {}", e.message)
             null
         }
 
-    /**
-     * Wraps a plugin [ViewModel] in a [Page] with the platform's shell (nav, theme, CSRF token, etc.). This is the
-     * recommended way for plugins to render full pages that integrate with the platform layout.
-     *
-     * The resulting [Page] includes the CSRF token in the shell, so plugin templates can use `${model.shell.csrfToken}`
-     * in form hidden fields without manual extraction.
-     */
-    fun <T : ViewModel> buildPage(request: Request, pageTitle: String, activeSection: String, data: T): Page<T> {
-        val ctx = request.webContext
-        return Page(shell = ctx.shell(pageTitle, activeSection), data = data)
-    }
-
     companion object {
+        private val logger = LoggerFactory.getLogger(PluginContext::class.java)
+
         /**
          * Creates a [PluginContext] with sensible defaults for testing. Only the three services that cannot be stubbed
          * without a mocking library are required — use `mockk(relaxed = true)` for them.
@@ -121,6 +115,19 @@ interface PlatformPlugin : PluginMigrationSource {
      */
     val navItems: List<PluginNavItem>
         get() = emptyList()
+
+    /**
+     * Custom text resolver for all UI strings. Override to provide plugin-specific translations. When null the host
+     * uses its default I18nService-backed resolver.
+     */
+    val textResolver: TextResolver?
+        get() = null
+
+    /**
+     * JTE template paths that this plugin overrides (e.g. `setOf("layouts/SidebarLayout.kte")`). The host resolves
+     * these templates from the plugin's classpath instead of its own.
+     */
+    fun templateOverrides(): Set<String> = emptySet()
 
     /** HTTP routes contributed to the application. */
     fun routes(context: PluginContext): List<ContractRoute> = emptyList()

@@ -19,7 +19,7 @@ import org.koin.core.context.stopKoin
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
-import org.koin.test.inject
+import org.koin.test.get
 import org.testcontainers.containers.PostgreSQLContainer
 
 class SmokeE2ETest : KoinTest {
@@ -67,7 +67,7 @@ class SmokeE2ETest : KoinTest {
 
     @Test
     fun `desktop application starts up and initializes viewmodel`() {
-        val viewModel: SyncViewModel by inject()
+        val viewModel: SyncViewModel = get()
 
         assertNotNull(viewModel)
         assertNotNull(viewModel.messages)

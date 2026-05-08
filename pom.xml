@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>1.5.0</version>
+    <version>1.6.0</version>
 
     <packaging>pom</packaging>
 
@@ -54,11 +54,12 @@
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.14</outerstellar.version>
         <http4k.version>6.45.1.0</http4k.version>
+        <netty.version>4.2.13.Final</netty.version>
         <flyway.version>12.5.0</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
         <jooq.version>3.21.2</jooq.version>
         <jdbi.version>3.53.0</jdbi.version>
-        <testcontainers.version>1.21.0</testcontainers.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
         <jte.version>3.2.4</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
         <junit.version>6.0.3</junit.version>
@@ -79,13 +80,14 @@
         <bytebuddy.version>1.18.8</bytebuddy.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <koin.version>4.2.1</koin.version>
-        <hoplite.version>2.9.0</hoplite.version>
+        <kotlinx.serialization.version>1.8.1</kotlinx.serialization.version>
+        <snakeyaml.engine.version>2.9</snakeyaml.engine.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
         <archunit.version>1.4.2</archunit.version>
         <micrometer.version>1.16.5</micrometer.version>
         <resilience4j.version>2.4.0</resilience4j.version>
-        <caffeine.version>3.2.3</caffeine.version>
+        <caffeine.version>3.2.4</caffeine.version>
         <opentelemetry.version>1.61.0</opentelemetry.version>
 
         <jackson.version>2.21.3</jackson.version>
@@ -94,8 +96,8 @@
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.2</java-jwt.version>
         <hikaricp.version>7.0.2</hikaricp.version>
-        <simplejavamail.version>8.12.6</simplejavamail.version>
-        <konform.version>0.11.1</konform.version>
+        <angus.mail.version>2.0.4</angus.mail.version>
+        <jakarta.mail.api.version>2.1.3</jakarta.mail.api.version>
         <playwright.version>1.59.0</playwright.version>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.resources.plugin.version>3.5.0</maven.resources.plugin.version>
@@ -106,7 +108,11 @@
         <miglayout.version>11.4.3</miglayout.version>
         <assertj.swing.version>4.0.0-beta-3</assertj.swing.version>
         <i18n.tools.version>1.0.14</i18n.tools.version>
-        <native.maven.plugin.version>0.10.5</native.maven.plugin.version>
+        <native.maven.plugin.version>0.10.6</native.maven.plugin.version>
+        <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
+        <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
+        <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
+        <central.publishing.plugin.version>0.10.0</central.publishing.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
         <!-- Surefire tag filters — overridden by the performance profile -->
@@ -120,13 +126,30 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
             <id>github-rygel</id>
             <name>Rygel GitHub Packages</name>
             <url>https://maven.pkg.github.com/rygel/outerstellar-framework</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <layout>default</layout>
         </repository>
     </repositories>
 
     <pluginRepositories>
+        <pluginRepository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </pluginRepository>
         <pluginRepository>
             <id>github-rygel</id>
             <name>Rygel GitHub Packages</name>
@@ -216,9 +239,9 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-kotlin</artifactId>
-                <version>${jackson.version}</version>
+                <groupId>org.http4k</groupId>
+                <artifactId>http4k-format-kotlinx-serialization</artifactId>
+                <version>${http4k.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.http4k</groupId>
@@ -237,12 +260,19 @@
             </dependency>
             <dependency>
                 <groupId>org.http4k</groupId>
-                <artifactId>http4k-template-jte</artifactId>
+                <artifactId>http4k-server-netty</artifactId>
                 <version>${http4k.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.http4k</groupId>
-                <artifactId>http4k-format-jackson</artifactId>
+                <artifactId>http4k-template-jte</artifactId>
                 <version>${http4k.version}</version>
             </dependency>
             <dependency>
@@ -306,11 +336,6 @@
                 <version>${jdbi.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jdbi</groupId>
-                <artifactId>jdbi3-kotlin</artifactId>
-                <version>${jdbi.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgresql.version}</version>
@@ -331,14 +356,14 @@
                 <version>${flatlaf.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sksamuel.hoplite</groupId>
-                <artifactId>hoplite-core</artifactId>
-                <version>${hoplite.version}</version>
+                <groupId>org.jetbrains.kotlinx</groupId>
+                <artifactId>kotlinx-serialization-json-jvm</artifactId>
+                <version>${kotlinx.serialization.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sksamuel.hoplite</groupId>
-                <artifactId>hoplite-yaml</artifactId>
-                <version>${hoplite.version}</version>
+                <groupId>org.snakeyaml</groupId>
+                <artifactId>snakeyaml-engine</artifactId>
+                <version>${snakeyaml.engine.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
@@ -356,6 +381,12 @@
                 <groupId>io.insert-koin</groupId>
                 <artifactId>koin-core-jvm</artifactId>
                 <version>${koin.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jetbrains.kotlin</groupId>
+                        <artifactId>kotlin-reflect</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.insert-koin</groupId>
@@ -420,7 +451,7 @@
             </dependency>
             <dependency>
                 <groupId>io.opentelemetry</groupId>
-                <artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
+                <artifactId>opentelemetry-sdk-trace</artifactId>
                 <version>${opentelemetry.version}</version>
             </dependency>
             <dependency>
@@ -469,20 +500,15 @@
                 <version>${hikaricp.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.simplejavamail</groupId>
-                <artifactId>simple-java-mail</artifactId>
-                <version>${simplejavamail.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.github.bbottema</groupId>
-                        <artifactId>jetbrains-runtime-annotations</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>jakarta.mail</groupId>
+                <artifactId>jakarta.mail-api</artifactId>
+                <version>${jakarta.mail.api.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.konform</groupId>
-                <artifactId>konform-jvm</artifactId>
-                <version>${konform.version}</version>
+                <groupId>org.eclipse.angus</groupId>
+                <artifactId>angus-mail</artifactId>
+                <version>${angus.mail.version}</version>
+                <scope>runtime</scope>
             </dependency>
             <dependency>
                 <groupId>com.microsoft.playwright</groupId>
@@ -513,7 +539,17 @@
                         <jvmTarget>${java.version}</jvmTarget>
                         <useDaemon>false</useDaemon>
                         <executionStrategy>in-process</executionStrategy>
+                        <compilerPlugins>
+                            <plugin>kotlinx-serialization</plugin>
+                        </compilerPlugins>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.jetbrains.kotlin</groupId>
+                            <artifactId>kotlin-maven-serialization</artifactId>
+                            <version>${kotlin.version}</version>
+                        </dependency>
+                    </dependencies>
                     <executions>
                         <execution>
                             <id>compile</id>
@@ -567,7 +603,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.4.0</version>
+                    <version>${maven.source.plugin.version}</version>
                     <executions>
                         <execution>
                             <id>attach-sources</id>
@@ -640,8 +676,13 @@
                 </plugin>
                 <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
-                    <artifactId>native-image-maven-plugin</artifactId>
+                    <artifactId>native-maven-plugin</artifactId>
                     <version>${native.maven.plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>${maven.shade.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>com.fizzed</groupId>
@@ -652,6 +693,10 @@
                     <groupId>com.github.ozsie</groupId>
                     <artifactId>detekt-maven-plugin</artifactId>
                     <version>${detekt.version}</version>
+                    <configuration>
+                        <config>${maven.multiModuleProjectDirectory}/config/detekt.yml</config>
+                        <buildUponDefaultConfig>true</buildUponDefaultConfig>
+                    </configuration>
                     <executions>
                         <execution>
                             <phase>verify</phase>
@@ -659,23 +704,13 @@
                                 <goal>check</goal>
                             </goals>
                             <configuration>
-                                <config>${maven.multiModuleProjectDirectory}/config/detekt.yml</config>
                                 <report>
                                     <report>xml:${project.build.directory}/detekt-reports/detekt.xml</report>
                                     <report>html:${project.build.directory}/detekt-reports/detekt.html</report>
                                 </report>
-                                <autoCorrect>true</autoCorrect>
-                                <buildUponDefaultConfig>true</buildUponDefaultConfig>
                             </configuration>
                         </execution>
                     </executions>
-                    <dependencies>
-                        <dependency>
-                            <groupId>io.gitlab.arturbosch.detekt</groupId>
-                            <artifactId>detekt-formatting</artifactId>
-                            <version>${detekt.version}</version>
-                        </dependency>
-                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -1116,7 +1151,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.2.8</version>
+                        <version>${maven.gpg.plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -1130,7 +1165,7 @@
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.10.0</version>
+                        <version>${central.publishing.plugin.version}</version>
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>

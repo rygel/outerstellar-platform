@@ -7,7 +7,7 @@ import io.github.rygel.outerstellar.platform.sync.SyncMessage
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.util.UUID
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.jdbi.v3.core.Handle
 import org.jdbi.v3.core.Jdbi
 
@@ -21,7 +21,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         includeDeleted: Boolean,
     ): List<MessageSummary> {
         return jdbi.withHandle<List<MessageSummary>, Exception> { handle ->
-            val (whereClause, bindings) = buildFilterClause(handle, query, year, includeDeleted)
+            val (whereClause, bindings) = buildFilterClause(query, year, includeDeleted)
             val sql =
                 """
                 SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict
@@ -42,7 +42,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
 
     override fun countMessages(query: String?, year: Int?, includeDeleted: Boolean): Long {
         return jdbi.withHandle<Long, Exception> { handle ->
-            val (whereClause, bindings) = buildFilterClause(handle, query, year, includeDeleted)
+            val (whereClause, bindings) = buildFilterClause(query, year, includeDeleted)
             val q = handle.createQuery("SELECT COUNT(*) FROM plt_messages WHERE $whereClause")
             bindings(q)
             q.mapTo(Long::class.java).one()
@@ -244,7 +244,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     }
 
     override fun markConflict(syncId: String, serverVersion: SyncMessage) {
-        val json = Jackson.asFormatString(serverVersion)
+        val json = KotlinxSerialization.asFormatString(serverVersion)
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_messages SET sync_conflict = :json WHERE sync_id = :syncId")
@@ -297,7 +297,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
 
     private data class FilterClause(val sql: String, val binder: (org.jdbi.v3.core.statement.Query) -> Unit)
 
-    private fun buildFilterClause(handle: Handle, query: String?, year: Int?, includeDeleted: Boolean): FilterClause {
+    private fun buildFilterClause(query: String?, year: Int?, includeDeleted: Boolean): FilterClause {
         val conditions = mutableListOf<String>()
         val bindings = mutableMapOf<String, Any>()
 

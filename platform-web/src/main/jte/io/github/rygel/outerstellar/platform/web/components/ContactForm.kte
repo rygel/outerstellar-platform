@@ -9,42 +9,42 @@
           hx-target="#contact-list-container"
           hx-swap="outerHTML"
           hx-on::after-request="document.getElementById('contact-form-modal').remove()"
-          class="form-grid" style="margin-top: 1rem;">
-        <div>
-            <label>${model.nameLabel}</label>
-            <input type="text" name="name" value="${model.name}" required />
+          class="flex flex-col gap-4 mt-4">
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.nameLabel}</label>
+            <input class="input input-bordered w-full" type="text" name="name" value="${model.name}" required />
         </div>
-        <div>
-            <label>${model.emailsLabel}</label>
-            <input type="text" name="emails" value="${model.emails}" />
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.emailsLabel}</label>
+            <input class="input input-bordered w-full" type="text" name="emails" value="${model.emails}" />
         </div>
-        <div>
-            <label>${model.phonesLabel}</label>
-            <input type="text" name="phones" value="${model.phones}" />
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.phonesLabel}</label>
+            <input class="input input-bordered w-full" type="text" name="phones" value="${model.phones}" />
         </div>
-        <div>
-            <label>${model.socialLabel}</label>
-            <input type="text" name="socialMedia" value="${model.socialMedia}" />
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.socialLabel}</label>
+            <input class="input input-bordered w-full" type="text" name="socialMedia" value="${model.socialMedia}" />
         </div>
-        <div>
-            <label>${model.companyLabel}</label>
-            <input type="text" name="company" value="${model.company}" />
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.companyLabel}</label>
+            <input class="input input-bordered w-full" type="text" name="company" value="${model.company}" />
         </div>
-        <div>
-            <label>${model.addressLabel}</label>
-            <input type="text" name="companyAddress" value="${model.companyAddress}" />
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.addressLabel}</label>
+            <input class="input input-bordered w-full" type="text" name="companyAddress" value="${model.companyAddress}" />
         </div>
-        <div>
-            <label>${model.departmentLabel}</label>
-            <input type="text" name="department" value="${model.department}" />
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.departmentLabel}</label>
+            <input class="input input-bordered w-full" type="text" name="department" value="${model.department}" />
         </div>
 
-        <div class="flex justify-end gap-3" style="margin-top: 0.5rem;">
-            <button type="button" class="secondary"
+        <div class="flex justify-end gap-3 mt-2">
+            <button type="button" class="btn btn-ghost"
                     onclick="document.getElementById('contact-form-modal').remove()">
                 ${model.cancelLabel}
             </button>
-            <button type="submit">${model.saveLabel}</button>
+            <button type="submit" class="btn btn-primary">${model.saveLabel}</button>
         </div>
     </form>
 `)

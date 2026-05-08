@@ -79,7 +79,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.auth.result.error.title"),
                                     message = "Invalid credentials",
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         }
@@ -94,7 +94,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.auth.result.error.title"),
                                     message = e.message ?: "Registration failed",
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         } catch (e: WeakPasswordException) {
@@ -102,7 +102,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.auth.result.error.title"),
                                     message = e.message ?: "Registration failed",
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         } catch (e: IllegalArgumentException) {
@@ -110,7 +110,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.auth.result.error.title"),
                                     message = e.message ?: "Registration failed",
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         }
@@ -123,7 +123,7 @@ class AuthRoutes(
                             AuthResultFragment(
                                 title = ctx.i18n.translate("web.auth.result.success.title"),
                                 message = ctx.i18n.translate("web.reset.request.success"),
-                                toneClass = "panel-success",
+                                toneClass = "bg-success/10 border-success/30 text-success",
                             )
                         )
                     } else {
@@ -164,7 +164,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.password.error.title"),
                                     message = ctx.i18n.translate("web.password.error.mismatch"),
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         } else {
@@ -174,7 +174,7 @@ class AuthRoutes(
                                     AuthResultFragment(
                                         title = ctx.i18n.translate("web.password.success.title"),
                                         message = ctx.i18n.translate("web.password.success.body"),
-                                        toneClass = "panel-success",
+                                        toneClass = "bg-success/10 border-success/30 text-success",
                                     )
                                 )
                             } catch (e: WeakPasswordException) {
@@ -182,7 +182,7 @@ class AuthRoutes(
                                     AuthResultFragment(
                                         title = ctx.i18n.translate("web.password.error.title"),
                                         message = e.message ?: "Password change failed",
-                                        toneClass = "panel-danger",
+                                        toneClass = "bg-error/10 border-error/30 text-error",
                                     )
                                 )
                             }
@@ -215,7 +215,7 @@ class AuthRoutes(
                             AuthResultFragment(
                                 title = ctx.i18n.translate("web.reset.error.title"),
                                 message = ctx.i18n.translate("web.reset.error.mismatch"),
-                                toneClass = "panel-danger",
+                                toneClass = "bg-error/10 border-error/30 text-error",
                             )
                         )
                     } else {
@@ -225,16 +225,16 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.reset.success.title"),
                                     message = ctx.i18n.translate("web.reset.success.body"),
-                                    toneClass = "panel-success",
+                                    toneClass = "bg-success/10 border-success/30 text-success",
                                 )
                             )
                         } catch (e: IllegalArgumentException) {
-                            logger.debug("Password reset failed with invalid token: {}", e.message)
+                            logger.warn("Password reset failed with invalid token: {}", e.message)
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.reset.error.title"),
                                     message = ctx.i18n.translate("web.reset.error.invalid"),
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         } catch (e: WeakPasswordException) {
@@ -242,7 +242,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.reset.error.title"),
                                     message = e.message ?: ctx.i18n.translate("web.reset.error.invalid"),
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
@@ -251,7 +251,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.reset.error.title"),
                                     message = ctx.i18n.translate("web.reset.error.invalid"),
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         }
@@ -290,7 +290,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.success.title"),
                                     message = ctx.i18n.translate("web.profile.success.body"),
-                                    toneClass = "panel-success",
+                                    toneClass = "bg-success/10 border-success/30 text-success",
                                 )
                             )
                         } catch (e: UsernameAlreadyExistsException) {
@@ -298,7 +298,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.error.title"),
                                     message = e.message ?: "Update failed",
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         } catch (e: IllegalArgumentException) {
@@ -306,7 +306,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.error.title"),
                                     message = e.message ?: "Update failed",
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         }
@@ -330,7 +330,7 @@ class AuthRoutes(
                             AuthResultFragment(
                                 title = ctx.i18n.translate("web.profile.notif.success.title"),
                                 message = ctx.i18n.translate("web.profile.notif.success.body"),
-                                toneClass = "panel-success",
+                                toneClass = "bg-success/10 border-success/30 text-success",
                             )
                         )
                     }
@@ -356,7 +356,7 @@ class AuthRoutes(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.profile.delete.error.title"),
                                     message = e.message ?: "Cannot delete account",
-                                    toneClass = "panel-danger",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         }

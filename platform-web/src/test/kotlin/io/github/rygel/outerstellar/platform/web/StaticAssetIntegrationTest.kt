@@ -87,4 +87,23 @@ class StaticAssetIntegrationTest : WebTest() {
         val response = app(Request(GET, "/site.css"))
         assertEquals(Status.OK, response.status, "Static files should not require authentication")
     }
+
+    @Test
+    fun `ETag filter does not consume static resource body`() {
+        val response = app(Request(GET, "/site.css"))
+        assertEquals(Status.OK, response.status)
+        val etag = response.header("ETag")
+        assertTrue(etag != null && etag.startsWith("\""), "Response should have ETag header, got: $etag")
+        val body = response.bodyString()
+        assertTrue(body.isNotBlank(), "Body must not be empty after ETag computation")
+    }
+
+    @Test
+    fun `ETag 304 Not Modified for static resources`() {
+        val first = app(Request(GET, "/site.css"))
+        val etag = first.header("ETag")
+        assertTrue(etag != null, "First response should have ETag")
+        val second = app(Request(GET, "/site.css").header("If-None-Match", etag))
+        assertEquals(Status.NOT_MODIFIED, second.status, "Should return 304 for matching ETag")
+    }
 }

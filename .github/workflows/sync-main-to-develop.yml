@@ -24,6 +24,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          REMOTE="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+
           # Check if already in sync
           if git merge-base --is-ancestor main develop; then
             echo "main is already an ancestor of develop — nothing to sync."
@@ -43,7 +45,7 @@ jobs:
             git commit --no-edit -m "sync: merge main into develop (conflicts resolved by taking main)"
           fi
 
-          git push origin "$SYNC_BRANCH"
+          git push "${REMOTE}" "$SYNC_BRANCH"
           gh pr create \
             --base develop \
             --head "$SYNC_BRANCH" \

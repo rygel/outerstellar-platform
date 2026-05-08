@@ -17,7 +17,7 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -95,7 +95,7 @@ class ConcurrentSyncIntegrationTest : WebTest() {
     private fun pullMessages(token: String): SyncPullResponse {
         val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $token"))
         assertEquals(Status.OK, response.status)
-        return Jackson.asA(response.bodyString(), SyncPullResponse::class)
+        return KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
     }
 
     @Test

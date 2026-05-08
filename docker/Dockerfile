@@ -8,7 +8,10 @@ WORKDIR /app
 # The repo is already pinned to node_20.x — exact apt patch pinning is
 # intentionally omitted because NodeSource drops old packages on each release.
 # hadolint ignore=DL3008
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl gnupg python3 ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
         -o /tmp/nodesource.gpg.key && \
     gpg --dearmor < /tmp/nodesource.gpg.key > /etc/apt/keyrings/nodesource.gpg && \
     rm /tmp/nodesource.gpg.key && \

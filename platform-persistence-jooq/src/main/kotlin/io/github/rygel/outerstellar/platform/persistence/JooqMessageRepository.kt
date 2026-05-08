@@ -9,7 +9,7 @@ import io.github.rygel.outerstellar.platform.sync.SyncMessage
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
-import org.http4k.format.Jackson
+import org.http4k.format.KotlinxSerialization
 import org.jooq.Condition
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -208,7 +208,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
     }
 
     override fun markConflict(syncId: String, serverVersion: SyncMessage) {
-        val json = Jackson.asFormatString(serverVersion)
+        val json = KotlinxSerialization.asFormatString(serverVersion)
         dsl.update(PLT_MESSAGES).set(PLT_MESSAGES.SYNC_CONFLICT, json).where(PLT_MESSAGES.SYNC_ID.eq(syncId)).execute()
     }
 

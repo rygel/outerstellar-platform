@@ -1,0 +1,19 @@
+<h2>What about the desktop (Swing) app?</h2>
+<p class="subtitle">The desktop app currently reads <code>themes.json</code> from platform-core to apply FlatLaf themes. If we delete <code>themes.json</code>, the desktop app loses its theme data. These are two completely different rendering engines — DaisyUI themes don't apply to Swing.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Desktop keeps its own theme list (Recommended)</h3>
+      <p>Delete <code>themes.json</code> from platform-core. Desktop app hardcodes its own 5-6 FlatLaf-compatible theme definitions (dark, light, etc.). Web and desktop have independent theme systems — they don't need to match 1:1.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Keep themes.json for desktop compatibility</h3>
+      <p>Keep <code>themes.json</code> in platform-core but web ignores it entirely (uses DaisyUI themes instead). Desktop still reads it for FlatLaf. Shared artifact but only one consumer.</p>
+    </div>
+  </div>
+</div>
