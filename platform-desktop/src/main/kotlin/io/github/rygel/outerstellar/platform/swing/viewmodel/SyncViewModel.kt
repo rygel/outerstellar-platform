@@ -374,22 +374,36 @@ class SyncViewModel(
     }
 
     fun loadProfile(onResult: (Boolean, String?) -> Unit) {
-        object : SwingWorker<Boolean, Unit>() {
-                override fun doInBackground(): Boolean {
-                    engine.loadProfile()
-                    return true
+        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
+                override fun doInBackground(): Pair<Boolean, String?> {
+                    var errorMessage: String? = null
+                    val listener =
+                        object : EngineListener {
+                            override fun onStateChanged(newState: EngineState) {}
+
+                            override fun onError(operation: String, message: String) {
+                                if (operation == "loadProfile") errorMessage = message
+                            }
+                        }
+                    engine.addListener(listener)
+                    try {
+                        engine.loadProfile()
+                    } finally {
+                        engine.removeListener(listener)
+                    }
+                    val loggedIn = engine.state.isLoggedIn
+                    return if (!loggedIn) false to engine.state.status
+                    else errorMessage?.let { false to it } ?: true to null
                 }
 
                 override fun done() {
-                    val success =
+                    val (success, error) =
                         try {
                             get()
                         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                            onResult(false, e.message ?: "Failed to load profile")
-                            notifyObservers()
-                            return
+                            false to (e.message ?: "Failed to load profile")
                         }
-                    onResult(success, null)
+                    onResult(success, error)
                     notifyObservers()
                 }
             }
