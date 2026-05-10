@@ -55,7 +55,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    private data class RegisteredUser(val id: UUID, val token: String)
+    private data class RegisteredUser(val id: UUID, val token: String, val sessionToken: String)
 
     private fun registerUser(username: String, password: String): RegisteredUser {
         val response =
@@ -63,7 +63,8 @@ class UserManagementWebUiIntegrationTest : WebTest() {
         assertEquals(Status.OK, response.status)
         val auth = tokenLens(response)
         val userId = userRepository.findByUsername(username)!!.id
-        return RegisteredUser(userId, auth.token)
+        val sessionToken = securityService.createSession(userId)
+        return RegisteredUser(userId, auth.token, sessionToken)
     }
 
     private data class AdminInfo(val id: UUID, val token: String, val password: String)
@@ -90,7 +91,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     fun `admin can access user admin page`() {
         val admin = seedAdmin()
         val response =
-            app(Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
+            app(Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
         assertEquals(Status.OK, response.status)
         assertTrue(response.bodyString().contains("User Administration"))
     }
@@ -100,8 +101,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
         val userAuth = registerUser("nonadminuser", testPassword())
         val response =
             app(
-                Request(GET, "/admin/users")
-                    .cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.id.toString()))
+                Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.sessionToken))
             )
         assertEquals(Status.FORBIDDEN, response.status)
     }
@@ -112,7 +112,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
         val userAuth = registerUser("toggleuser", testPassword())
         app(
             Request(POST, "/admin/users/${userAuth.id}/toggle-enabled")
-                .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
+                .cookie(org.http4k.core.cookie.Cookie("app_session", admin.token))
         )
         val user = userRepository.findByUsername("toggleuser")!!
         assertFalse(user.enabled)
@@ -124,7 +124,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
         val userAuth = registerUser("roleuser", testPassword())
         app(
             Request(POST, "/admin/users/${userAuth.id}/toggle-role")
-                .cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString()))
+                .cookie(org.http4k.core.cookie.Cookie("app_session", admin.token))
         )
         val user = userRepository.findByUsername("roleuser")!!
         assertEquals(UserRole.ADMIN, user.role)
@@ -136,9 +136,9 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     fun `session timeout redirects HTML requests to auth page`() {
         val admin = seedAdmin()
         testDsl.execute(
-            "UPDATE plt_users SET last_activity_at = " + "TIMESTAMP '2020-01-01 00:00:00' " + "WHERE id = '${admin.id}'"
+            "UPDATE plt_sessions SET expires_at = TIMESTAMP '2020-01-01 00:00:00' WHERE user_id = '${admin.id}'"
         )
-        val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
+        val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
         assertEquals(Status.FOUND, response.status)
         assertEquals("/auth?expired=true", response.header("location"))
     }
@@ -146,13 +146,8 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     @Test
     fun `active session is not expired`() {
         val admin = seedAdmin()
-        testDsl.execute(
-            "UPDATE plt_users SET last_activity_at = " +
-                "CURRENT_TIMESTAMP - INTERVAL '5 minutes' " +
-                "WHERE id = '${admin.id}'"
-        )
         val response =
-            app(Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
+            app(Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
         assertEquals(Status.OK, response.status)
     }
 
@@ -161,7 +156,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     @Test
     fun `admin user sees Users nav link`() {
         val admin = seedAdmin()
-        val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.id.toString())))
+        val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
         assertTrue(response.bodyString().contains("/admin/users"))
     }
 
@@ -169,7 +164,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     fun `regular user does not see Users nav link`() {
         val userAuth = registerUser("navuser", testPassword())
         val response =
-            app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.id.toString())))
+            app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.sessionToken)))
         assertFalse(response.bodyString().contains("/admin/users"))
     }
 

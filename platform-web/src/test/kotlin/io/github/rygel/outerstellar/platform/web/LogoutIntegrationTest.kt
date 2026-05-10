@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
@@ -33,11 +34,11 @@ class LogoutIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var user: User
+    private lateinit var securityService: SecurityService
+    private lateinit var userToken: String
 
     @BeforeEach
     fun setupTest() {
-        app = buildApp()
-
         user =
             User(
                 id = UUID.randomUUID(),
@@ -47,11 +48,24 @@ class LogoutIntegrationTest : WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(user)
+
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        userToken = securityService.createSession(user.id)
+
+        app = buildApp(securityService = securityService)
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, user.id.toString())
+    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, userToken)
 
     @Test
     fun `POST logout redirects to home`() {

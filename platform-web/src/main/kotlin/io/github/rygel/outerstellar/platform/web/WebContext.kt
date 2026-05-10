@@ -4,11 +4,12 @@ import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.I18nTextResolver
 import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.security.JwtService
+import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionLookup
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.Locale
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
@@ -21,6 +22,7 @@ class WebContext(
     private val userRepository: UserRepository? = null,
     private val appVersion: String = "dev",
     private val jwtService: JwtService? = null,
+    private val securityService: SecurityService? = null,
     private val pluginOptions: PluginOptions = PluginOptions(),
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
@@ -68,26 +70,26 @@ class WebContext(
         if (listOf("sidebar", "topbar").any { it == value }) value else "sidebar"
     }
 
-    // Performance note: this lookup is cheap because CachingUserRepository (wired in DI)
-    // absorbs the DB hit. If that cache is removed or its TTL is significantly reduced,
-    // every request will incur a database round-trip — profile before changing.
     val user: User? by lazy {
-        // 1. Session cookie — standard browser auth
-        request.cookie(SESSION_COOKIE)?.value?.let { sessionUserId ->
-            try {
-                val uid = UUID.fromString(sessionUserId)
-                userRepository?.findById(uid)
-            } catch (e: IllegalArgumentException) {
-                logger.warn("Invalid session cookie format: {}", e.message)
-                null
+        request.cookie(SESSION_COOKIE)?.value?.let { rawToken ->
+            when (val lookup = securityService?.lookupSession(rawToken)) {
+                is SessionLookup.Active -> lookup.user
+                SessionLookup.Expired -> null
+                SessionLookup.NotFound -> null
+                null -> null
             }
         }
-            // 2. JWT cookie — device/API client auth (e.g. e-reader sync, mobile)
             ?: request.cookie(JWT_COOKIE)?.value?.let { token ->
                 jwtService?.extractClaims(token)?.let { (userId, _) ->
                     userRepository?.findById(userId)?.takeIf { it.enabled }
                 }
             }
+    }
+
+    val sessionExpired: Boolean by lazy {
+        request.cookie(SESSION_COOKIE)?.value?.let { rawToken ->
+            securityService?.lookupSession(rawToken) is SessionLookup.Expired
+        } ?: false
     }
 
     val i18n: I18nService by lazy { cachedI18n(lang) }

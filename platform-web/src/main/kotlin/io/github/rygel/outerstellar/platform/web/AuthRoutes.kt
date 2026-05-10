@@ -71,9 +71,10 @@ class AuthRoutes(
                                 mapOf("username" to user.username, "role" to user.role.name),
                             )
                             analytics.track(user.id.toString(), "User Logged In")
+                            val sessionToken = securityService.createSession(user.id)
                             Response(Status.FOUND)
                                 .header("location", ctx.url(returnTo))
-                                .header("Set-Cookie", SessionCookie.create(user.id.toString(), sessionCookieSecure))
+                                .header("Set-Cookie", SessionCookie.create(sessionToken, sessionCookieSecure))
                         } else {
                             renderer.render(
                                 AuthResultFragment(
