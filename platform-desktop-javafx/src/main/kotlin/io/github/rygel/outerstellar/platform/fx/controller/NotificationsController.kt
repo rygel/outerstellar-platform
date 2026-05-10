@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.platform.model.NotificationSummary
-import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import javafx.application.Platform
 import javafx.fxml.FXML
 import javafx.scene.control.ListCell
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 class NotificationsController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(NotificationsController::class.java)
-    private val syncService: SyncService by inject()
+    private val engine: DesktopSyncEngine by inject()
 
     @FXML private lateinit var notificationsList: ListView<NotificationSummary>
 
@@ -40,12 +40,8 @@ class NotificationsController : KoinComponent {
     fun onMarkRead() {
         val selected = notificationsList.selectionModel.selectedItem ?: return
         Thread {
-                try {
-                    syncService.markNotificationRead(selected.id)
-                    Platform.runLater { loadNotifications() }
-                } catch (e: Exception) {
-                    logger.warn("Mark notification read failed: {}", e.message)
-                }
+                engine.markNotificationRead(selected.id)
+                Platform.runLater { loadNotifications() }
             }
             .also { it.isDaemon = true }
             .start()
@@ -54,12 +50,8 @@ class NotificationsController : KoinComponent {
     @FXML
     fun onMarkAllRead() {
         Thread {
-                try {
-                    syncService.markAllNotificationsRead()
-                    Platform.runLater { loadNotifications() }
-                } catch (e: Exception) {
-                    logger.warn("Mark all notifications read failed: {}", e.message)
-                }
+                engine.markAllNotificationsRead()
+                Platform.runLater { loadNotifications() }
             }
             .also { it.isDaemon = true }
             .start()
@@ -72,12 +64,8 @@ class NotificationsController : KoinComponent {
 
     private fun loadNotifications() {
         Thread {
-                try {
-                    val notifications = syncService.listNotifications()
-                    Platform.runLater { notificationsList.items.setAll(notifications) }
-                } catch (e: Exception) {
-                    logger.warn("Load notifications failed: {}", e.message)
-                }
+                engine.loadNotifications()
+                Platform.runLater { notificationsList.items.setAll(engine.state.notifications) }
             }
             .also { it.isDaemon = true }
             .start()

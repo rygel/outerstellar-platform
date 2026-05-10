@@ -1,6 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
-import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import javafx.application.Platform
 import javafx.fxml.FXML
 import javafx.scene.control.Button
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 class ProfileController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(ProfileController::class.java)
-    private val syncService: SyncService by inject()
+    private val engine: DesktopSyncEngine by inject()
 
     @FXML private lateinit var usernameField: TextField
     @FXML private lateinit var emailField: TextField
@@ -32,12 +32,10 @@ class ProfileController : KoinComponent {
         val email = emailField.text.trim()
         if (email.isBlank()) return
         Thread {
-                try {
-                    syncService.updateProfile(email)
-                    Platform.runLater { loadProfile() }
-                } catch (e: Exception) {
-                    logger.warn("Update profile failed: {}", e.message)
-                }
+                engine
+                    .updateProfile(email)
+                    .onSuccess { Platform.runLater { refreshProfileUi() } }
+                    .onFailure { logger.warn("Update profile failed: {}", it.message) }
             }
             .also { it.isDaemon = true }
             .start()
@@ -48,10 +46,8 @@ class ProfileController : KoinComponent {
         val emailEnabled = emailNotifCheckbox.isSelected
         val pushEnabled = pushNotifCheckbox.isSelected
         Thread {
-                try {
-                    syncService.updateNotificationPreferences(emailEnabled, pushEnabled)
-                } catch (e: Exception) {
-                    logger.warn("Update notification preferences failed: {}", e.message)
+                engine.updateNotificationPreferences(emailEnabled, pushEnabled).onFailure {
+                    logger.warn("Update notification preferences failed: {}", it.message)
                 }
             }
             .also { it.isDaemon = true }
@@ -73,13 +69,10 @@ class ProfileController : KoinComponent {
         val result = alert.showAndWait()
         if (result.isPresent && result.get() == javafx.scene.control.ButtonType.YES) {
             Thread {
-                    try {
-                        syncService.deleteAccount()
-                        syncService.logout()
-                        Platform.runLater { ownerStage?.close() }
-                    } catch (e: Exception) {
-                        logger.warn("Delete account failed: {}", e.message)
-                    }
+                    engine
+                        .deleteAccount()
+                        .onSuccess { Platform.runLater { ownerStage?.close() } }
+                        .onFailure { logger.warn("Delete account failed: {}", it.message) }
                 }
                 .also { it.isDaemon = true }
                 .start()
@@ -88,19 +81,18 @@ class ProfileController : KoinComponent {
 
     private fun loadProfile() {
         Thread {
-                try {
-                    val profile = syncService.fetchProfile()
-                    Platform.runLater {
-                        usernameField.text = profile.username
-                        emailField.text = profile.email
-                        emailNotifCheckbox.isSelected = profile.emailNotificationsEnabled
-                        pushNotifCheckbox.isSelected = profile.pushNotificationsEnabled
-                    }
-                } catch (e: Exception) {
-                    logger.warn("Load profile failed: {}", e.message)
-                }
+                engine.loadProfile()
+                Platform.runLater { refreshProfileUi() }
             }
             .also { it.isDaemon = true }
             .start()
+    }
+
+    private fun refreshProfileUi() {
+        val s = engine.state
+        usernameField.text = s.userName
+        emailField.text = s.userEmail
+        emailNotifCheckbox.isSelected = s.emailNotificationsEnabled
+        pushNotifCheckbox.isSelected = s.pushNotificationsEnabled
     }
 }

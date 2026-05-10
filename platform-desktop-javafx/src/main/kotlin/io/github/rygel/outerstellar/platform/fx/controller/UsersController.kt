@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.platform.model.UserSummary
-import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import javafx.application.Platform
 import javafx.beans.property.SimpleStringProperty
 import javafx.fxml.FXML
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 class UsersController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(UsersController::class.java)
-    private val syncService: SyncService by inject()
+    private val engine: DesktopSyncEngine by inject()
 
     @FXML private lateinit var usersTable: TableView<UserSummary>
     @FXML private lateinit var usernameColumn: TableColumn<UserSummary, String>
@@ -40,12 +40,10 @@ class UsersController : KoinComponent {
     fun onToggleEnabled() {
         val selected = usersTable.selectionModel.selectedItem ?: return
         Thread {
-                try {
-                    syncService.setUserEnabled(selected.id, !selected.enabled)
-                    Platform.runLater { loadUsers() }
-                } catch (e: Exception) {
-                    logger.warn("Toggle user enabled failed: {}", e.message)
-                }
+                engine
+                    .setUserEnabled(selected.id, !selected.enabled)
+                    .onSuccess { Platform.runLater { loadUsers() } }
+                    .onFailure { logger.warn("Toggle user enabled failed: {}", it.message) }
             }
             .also { it.isDaemon = true }
             .start()
@@ -56,12 +54,10 @@ class UsersController : KoinComponent {
         val selected = usersTable.selectionModel.selectedItem ?: return
         val newRole = if (selected.role == "ADMIN") "USER" else "ADMIN"
         Thread {
-                try {
-                    syncService.setUserRole(selected.id, newRole)
-                    Platform.runLater { loadUsers() }
-                } catch (e: Exception) {
-                    logger.warn("Toggle user role failed: {}", e.message)
-                }
+                engine
+                    .setUserRole(selected.id, newRole)
+                    .onSuccess { Platform.runLater { loadUsers() } }
+                    .onFailure { logger.warn("Toggle user role failed: {}", it.message) }
             }
             .also { it.isDaemon = true }
             .start()
@@ -69,12 +65,8 @@ class UsersController : KoinComponent {
 
     private fun loadUsers() {
         Thread {
-                try {
-                    val users = syncService.listUsers()
-                    Platform.runLater { usersTable.items.setAll(users) }
-                } catch (e: Exception) {
-                    logger.warn("Load users failed: {}", e.message)
-                }
+                engine.loadUsers()
+                Platform.runLater { usersTable.items.setAll(engine.state.adminUsers) }
             }
             .also { it.isDaemon = true }
             .start()
