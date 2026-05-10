@@ -15,7 +15,9 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findById(id: UUID): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_users WHERE id = :id")
+                .createQuery(
+                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users WHERE id = :id"
+                )
                 .bind("id", id)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -26,7 +28,9 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findByUsername(username: String): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_users WHERE username = :username")
+                .createQuery(
+                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users WHERE username = :username"
+                )
                 .bind("username", username)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -37,7 +41,9 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findByEmail(email: String): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_users WHERE email = :email")
+                .createQuery(
+                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users WHERE email = :email"
+                )
                 .bind("email", email)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -87,14 +93,21 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
 
     override fun findAll(): List<User> {
         return jdbi.withHandle<List<User>, Exception> { handle ->
-            handle.createQuery("SELECT * FROM plt_users ORDER BY username").map { rs, _ -> mapUser(rs) }.list()
+            handle
+                .createQuery(
+                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users ORDER BY username"
+                )
+                .map { rs, _ -> mapUser(rs) }
+                .list()
         }
     }
 
     override fun findPage(limit: Int, offset: Int): List<User> =
         jdbi.withHandle<List<User>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_users ORDER BY username LIMIT :limit OFFSET :offset")
+                .createQuery(
+                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users ORDER BY username LIMIT :limit OFFSET :offset"
+                )
                 .bind("limit", limit)
                 .bind("offset", offset)
                 .map { rs, _ -> mapUser(rs) }

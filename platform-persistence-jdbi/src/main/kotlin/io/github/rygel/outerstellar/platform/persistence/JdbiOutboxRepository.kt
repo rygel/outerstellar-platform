@@ -28,7 +28,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
             handle
                 .createQuery(
                     """
-                    SELECT * FROM plt_outbox
+                    SELECT id, payload_type, payload, status, created_at FROM plt_outbox
                     WHERE status = 'PENDING'
                     ORDER BY created_at ASC
                     LIMIT :limit
@@ -88,7 +88,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
             handle
                 .createQuery(
                     """
-                    SELECT * FROM plt_outbox
+                    SELECT id, payload_type, payload, status, created_at FROM plt_outbox
                     WHERE status = 'FAILED'
                     ORDER BY created_at DESC
                     """

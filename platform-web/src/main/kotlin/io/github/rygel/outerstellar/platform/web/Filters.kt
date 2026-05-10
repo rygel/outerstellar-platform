@@ -8,6 +8,7 @@ import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -49,13 +50,21 @@ private const val DEFAULT_CSP_POLICY =
 private fun isNonPagePath(path: String): Boolean =
     path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
 
-/** Adds ETag headers based on response body hash and returns 304 Not Modified when matched. */
+/**
+ * Adds ETag headers based on response body hash and returns 304 Not Modified when matched. Skips JSON responses — their
+ * content is dynamic and not cache-worthy at the ETag level.
+ */
 val etagCachingFilter: Filter = Filter { next: HttpHandler ->
     { request ->
         val response = next(request)
-        if (response.status == Status.OK && response.header("ETag") == null) {
+        val contentType = response.header("content-type") ?: ""
+        if (
+            response.status == Status.OK && response.header("ETag") == null && !contentType.contains("application/json")
+        ) {
+            val digest = MessageDigest.getInstance("SHA-256")
             val bytes = response.body.stream.readBytes()
-            val hash = String(bytes).hashCode().toUInt().toString(radix = 16)
+            digest.update(bytes)
+            val hash = digest.digest().take(8).joinToString("") { "%02x".format(it) }
             val etag = "\"$hash\""
             val ifNoneMatch = request.header("If-None-Match")
             if (ifNoneMatch == etag) {
@@ -431,7 +440,7 @@ object Filters {
         renderer: TemplateRenderer,
     ): Response {
         return if (request.uri.path.startsWith("/api/")) {
-            jsonErrorResponse(Status.NOT_FOUND, "Resource not found")
+            jsonErrorResponse(Status.NOT_FOUND, "Resource not found", request)
         } else {
             val ctx =
                 try {
@@ -462,7 +471,7 @@ object Filters {
         logger.error("Error handling request {}: {}", request.uri, e.message, e)
 
         return if (request.uri.path.startsWith("/api/")) {
-            jsonErrorResponse(status, e.message ?: "An unexpected error occurred")
+            jsonErrorResponse(status, e.message ?: "An unexpected error occurred", request)
         } else if (request.header("HX-Request") == "true") {
             val safeMessage = if (e is OuterstellarException) e.message ?: "Action failed" else "Action failed"
             Response(status).body(safeMessage)
@@ -480,8 +489,13 @@ object Filters {
         }
     }
 
-    private fun jsonErrorResponse(status: Status, message: String): Response {
-        val body = KotlinxSerialization.asJsonObject(mapOf("message" to message, "status" to status.code)).toString()
+    private fun jsonErrorResponse(status: Status, message: String, request: org.http4k.core.Request): Response {
+        val requestId = request.header(REQUEST_ID_HEADER) ?: "-"
+        val body =
+            KotlinxSerialization.asJsonObject(
+                    mapOf("message" to message, "status" to status.code, "requestId" to requestId)
+                )
+                .toString()
         return Response(status).header("content-type", "application/json; charset=utf-8").body(body)
     }
 }
