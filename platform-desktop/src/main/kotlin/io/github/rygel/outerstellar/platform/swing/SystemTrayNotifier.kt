@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.sync.engine.EngineNotifier
 import java.awt.AWTException
 import java.awt.SystemTray
 import java.awt.TrayIcon
@@ -11,7 +12,7 @@ import org.slf4j.LoggerFactory
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.swing.SystemTrayNotifier")
 private const val FALLBACK_IMAGE_SIZE = 16
 
-class SystemTrayNotifier(private val i18nService: I18nService) {
+class SystemTrayNotifier(private val i18nService: I18nService) : EngineNotifier {
     private val trayIcon: TrayIcon? by lazy {
         if (!SystemTray.isSupported()) {
             logger.warn("SystemTray is not supported")
@@ -44,7 +45,7 @@ class SystemTrayNotifier(private val i18nService: I18nService) {
         }
     }
 
-    fun notifySuccess(message: String) {
+    override fun notifySuccess(message: String) {
         trayIcon?.displayMessage(
             i18nService.translate("swing.notification.success.title"),
             message,
@@ -52,7 +53,7 @@ class SystemTrayNotifier(private val i18nService: I18nService) {
         )
     }
 
-    fun notifyFailure(message: String) {
+    override fun notifyFailure(message: String) {
         trayIcon?.displayMessage(
             i18nService.translate("swing.notification.failure.title"),
             message,

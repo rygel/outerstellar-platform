@@ -36,6 +36,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
     private lateinit var securityService: SecurityService
+    private lateinit var testToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -59,12 +60,14 @@ class ChangePasswordWebIntegrationTest : WebTest() {
                 auditRepository = auditRepository,
             )
 
+        testToken = securityService.createSession(testUser.id)
+
         app = buildApp(securityService = securityService)
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testUser.id.toString())
+    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
 
     private fun changePasswordRequest(
         currentPassword: String,

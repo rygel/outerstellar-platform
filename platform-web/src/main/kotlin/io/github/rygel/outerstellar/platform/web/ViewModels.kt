@@ -166,6 +166,10 @@ data class DevDashboardPage(
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/DevDashboard"
 }
 
+data class PluginAdminDashboardPage(val cards: List<AdminSummaryCard>) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/PluginAdminDashboard"
+}
+
 data class OutboxStatsViewModel(val pending: Int, val processed: Int, val failed: Int)
 
 data class ModalViewModel(

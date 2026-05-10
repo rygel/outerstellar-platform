@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
@@ -32,18 +33,28 @@ import org.junit.jupiter.api.BeforeEach
 class DarkModeToggleIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
+    private lateinit var securityService: SecurityService
 
     @BeforeEach
     fun setupTest() {
-        app = buildApp()
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        app = buildApp(securityService = securityService)
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun seedAdmin(): UUID {
+    private fun seedAdmin(): String {
         val id = UUID.randomUUID()
         userRepository.save(User(id, "admin", "admin@test.com", encoder.encode(testPassword()), UserRole.ADMIN))
-        return id
+        return securityService.createSession(id)
     }
 
     // ---- data-theme attribute ----
@@ -173,9 +184,9 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `data-theme is present on admin pages too`() {
-        val adminId = seedAdmin()
+        val adminToken = seedAdmin()
 
-        val body = app(Request(GET, "/admin/users").cookie(Cookie("app_session", adminId.toString()))).bodyString()
+        val body = app(Request(GET, "/admin/users").cookie(Cookie("app_session", adminToken))).bodyString()
         assertTrue(body.contains("data-theme=\"dark\""), "Admin page should have data-theme attribute")
     }
 

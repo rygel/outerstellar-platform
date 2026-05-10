@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
@@ -39,6 +40,8 @@ class ComponentFragmentIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
+    private lateinit var securityService: SecurityService
+    private lateinit var testToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -52,12 +55,23 @@ class ComponentFragmentIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        app = buildApp()
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        testToken = securityService.createSession(testUser.id)
+
+        app = buildApp(securityService = securityService)
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testUser.id.toString())
+    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
 
     // ---- /components/navigation/page ----
 

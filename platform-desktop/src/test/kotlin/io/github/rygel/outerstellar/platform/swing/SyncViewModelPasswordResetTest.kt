@@ -1,11 +1,13 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.SyncException
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -20,25 +22,16 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/**
- * Unit tests for password reset flow in SyncViewModel (Swing desktop UI).
- *
- * Covers:
- * - requestPasswordReset success calls callback with true and no error
- * - requestPasswordReset failure propagates error message to callback
- * - requestPasswordReset with unknown email returns success (server always 200, no user leak)
- * - resetPassword success calls callback with true
- * - resetPassword with invalid token returns error
- * - resetPassword with weak password returns error
- * - resetPassword does not log out an authenticated user on failure
- * - requestPasswordReset invokes the sync service method exactly once
- * - resetPassword invokes the sync service method exactly once
- */
 class SyncViewModelPasswordResetTest {
 
     private val messageService = mockk<MessageService>(relaxed = true)
     private val syncService = mockk<SyncService>(relaxed = true)
     private val i18nService = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
+
+    private fun createVm(): SyncViewModel {
+        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
+        return SyncViewModel(engine, i18nService)
+    }
 
     // ---- requestPasswordReset ----
 
@@ -46,7 +39,7 @@ class SyncViewModelPasswordResetTest {
     fun `requestPasswordReset success calls callback with true and no error`() {
         every { syncService.requestPasswordReset("user@example.com") } just runs
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         var success = false
         var error: String? = "initial"
@@ -67,7 +60,7 @@ class SyncViewModelPasswordResetTest {
         every { syncService.requestPasswordReset("user@example.com") } throws
             SyncException("Password reset request failed: 500 INTERNAL_SERVER_ERROR")
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         var success = true
         var error: String? = null
@@ -87,11 +80,9 @@ class SyncViewModelPasswordResetTest {
 
     @Test
     fun `requestPasswordReset for unknown email still returns success (server 200)`() {
-        // The server always returns 200 for reset requests (no user enumeration)
-        // So the client SyncService.requestPasswordReset will succeed
         every { syncService.requestPasswordReset("nobody@unknown.com") } just runs
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         var success = false
 
@@ -108,7 +99,7 @@ class SyncViewModelPasswordResetTest {
     fun `requestPasswordReset invokes sync service once`() {
         every { syncService.requestPasswordReset(any()) } just runs
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         vm.requestPasswordReset("user@example.com") { _, _ -> latch.countDown() }
 
@@ -122,7 +113,7 @@ class SyncViewModelPasswordResetTest {
     fun `resetPassword success calls callback with true`() {
         every { syncService.resetPassword("valid-token-123", "newSecurePass99") } just runs
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         var success = false
 
@@ -140,7 +131,7 @@ class SyncViewModelPasswordResetTest {
         every { syncService.resetPassword("bad-token", any()) } throws
             SyncException("Password reset failed: Invalid or expired token")
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         var success = true
         var error: String? = null
@@ -163,7 +154,7 @@ class SyncViewModelPasswordResetTest {
         every { syncService.resetPassword(any(), "short") } throws
             SyncException("Password reset failed: Password must be at least 8 characters")
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         var success = true
         var error: String? = null
@@ -185,7 +176,7 @@ class SyncViewModelPasswordResetTest {
         every { syncService.resetPassword("bad-token", any()) } throws
             SyncException("Password reset failed: Invalid token")
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val loginLatch = CountDownLatch(1)
         vm.login("alice", "secret") { _, _ -> loginLatch.countDown() }
         assertTrue(loginLatch.await(3, TimeUnit.SECONDS))
@@ -203,7 +194,7 @@ class SyncViewModelPasswordResetTest {
     fun `resetPassword invokes sync service once`() {
         every { syncService.resetPassword(any(), any()) } just runs
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         vm.resetPassword("token-abc", "newpass123") { _, _ -> latch.countDown() }
 
@@ -215,7 +206,7 @@ class SyncViewModelPasswordResetTest {
     fun `resetPassword notifies observers on success`() {
         every { syncService.resetPassword(any(), any()) } just runs
 
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         var notified = false
         vm.addObserver { notified = true }
         val latch = CountDownLatch(1)
@@ -223,7 +214,6 @@ class SyncViewModelPasswordResetTest {
         vm.resetPassword("token-abc", "newpass123") { _, _ -> latch.countDown() }
 
         assertTrue(latch.await(3, TimeUnit.SECONDS))
-        // Observer notification fires on the EDT after onResult — give it time to dispatch
         javax.swing.SwingUtilities.invokeAndWait {}
         assertTrue(notified, "Observers should be notified after resetPassword")
     }

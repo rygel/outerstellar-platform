@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
@@ -27,6 +28,8 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
+    private lateinit var securityService: SecurityService
+    private lateinit var testToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -41,12 +44,23 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        app = buildApp()
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        testToken = securityService.createSession(testUser.id)
+
+        app = buildApp(securityService = securityService)
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testUser.id.toString())
+    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
 
     private fun formBody(vararg pairs: Pair<String, String>): String =
         pairs.joinToString("&") { (k, v) -> "$k=${java.net.URLEncoder.encode(v, "UTF-8")}" }
@@ -215,7 +229,8 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                 role = UserRole.ADMIN,
             )
         userRepository.save(adminUser)
-        val adminCookie = Cookie(WebContext.SESSION_COOKIE, adminUser.id.toString())
+        val adminToken = securityService.createSession(adminUser.id)
+        val adminCookie = Cookie(WebContext.SESSION_COOKIE, adminToken)
 
         val response =
             app(

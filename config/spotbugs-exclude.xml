@@ -50,4 +50,16 @@
     <Match>
         <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
     </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.service.FxTrayNotifier"/>
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+    </Match>
 </FindBugsFilter>

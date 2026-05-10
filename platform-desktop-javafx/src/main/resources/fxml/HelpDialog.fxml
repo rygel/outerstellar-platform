@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<VBox spacing="10" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="io.github.rygel.outerstellar.platform.fx.controller.HelpController"
+      style="-fx-padding: 20;">
+    <Label text="Help" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+    <TextArea fx:id="helpTextArea" editable="false" wrapText="true" prefRowCount="15"
+              text="Outerstellar Desktop Help&#10;&#10;Messages:&#10;- Use the search field to filter messages&#10;- Click Create to write a new message&#10;- Click Sync to synchronize with the server&#10;&#10;Contacts:&#10;- View and manage your contacts&#10;- Click Create Contact to add a new contact&#10;- Double-click a contact row to edit it&#10;&#10;Settings:&#10;- Change language and theme&#10;- Preview themes before applying&#10;&#10;Keyboard Shortcuts:&#10;- Ctrl+N: New message&#10;- Ctrl+S: Save"/>
+    <HBox spacing="10">
+        <Button text="Close" onAction="#onClose" cancelButton="true"/>
+    </HBox>
+</VBox>

@@ -1,0 +1,8 @@
+@import "atlantafx.base.css";
+
+.sidebar { -fx-background-color: derive(-fx-background, -10%); }
+.nav-button { -fx-background-color: transparent; -fx-text-fill: -fx-text-background-color; -fx-padding: 8 16; -fx-cursor: hand; }
+.nav-button:hover { -fx-background-color: derive(-fx-background, 10%); }
+.nav-button:selected { -fx-background-color: -fx-accent; }
+.status-bar { -fx-background-color: derive(-fx-background, -5%); -fx-padding: 4 12; }
+.message-card { -fx-background-color: -fx-card-color; -fx-background-radius: 8; -fx-padding: 12; }

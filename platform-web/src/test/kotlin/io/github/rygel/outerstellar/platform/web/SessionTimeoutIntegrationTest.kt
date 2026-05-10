@@ -1,11 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_USERS
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,15 +16,6 @@ import org.http4k.core.cookie.cookie
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
-/**
- * Integration tests for session timeout enforcement.
- *
- * Covers:
- * - Active session (recent lastActivityAt) is not expired
- * - Expired bearer token (lastActivityAt > sessionTimeoutMinutes ago) returns 401 + X-Session-Expired header
- * - Expired session cookie redirects to /auth?expired=true on HTML routes
- * - Fresh user with null lastActivityAt is not expired
- */
 class SessionTimeoutIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
@@ -49,25 +37,19 @@ class SessionTimeoutIntegrationTest : WebTest() {
                 auditRepository = auditRepository,
             )
 
-        // User with recent activity (1 minute ago)
         activeUser = createTestUser("activeuser", "active@test.com")
-        // User with expired session (activity > 30 minutes ago)
         expiredUser = createTestUser("expireduser", "expired@test.com")
 
         userRepository.save(activeUser)
         userRepository.save(expiredUser)
 
-        // Create session tokens
         activeToken = securityService.createSession(activeUser.id)
         expiredToken = securityService.createSession(expiredUser.id)
 
-        // Expire the session for expiredUser by setting expires_at to past
         testDsl.execute(
             "UPDATE plt_sessions SET expires_at = CURRENT_TIMESTAMP - INTERVAL '2 hours'" +
                 " WHERE user_id = '${expiredUser.id}'"
         )
-
-        configureActivityTimestamps()
 
         app = buildApp(securityService = securityService)
     }
@@ -81,24 +63,7 @@ class SessionTimeoutIntegrationTest : WebTest() {
             role = UserRole.USER,
         )
 
-    private fun configureActivityTimestamps() {
-        val twoHoursAgo = LocalDateTime.now(ZoneOffset.UTC).minusHours(2)
-        val oneMinuteAgo = LocalDateTime.now(ZoneOffset.UTC).minusMinutes(1)
-        testDsl
-            .update(PLT_USERS)
-            .set(PLT_USERS.LAST_ACTIVITY_AT, twoHoursAgo)
-            .where(PLT_USERS.ID.eq(expiredUser.id))
-            .execute()
-        testDsl
-            .update(PLT_USERS)
-            .set(PLT_USERS.LAST_ACTIVITY_AT, oneMinuteAgo)
-            .where(PLT_USERS.ID.eq(activeUser.id))
-            .execute()
-    }
-
     @AfterEach fun teardown() = cleanup()
-
-    // ---- Bearer token timeout ----
 
     @Test
     fun `expired bearer token returns 401 with X-Session-Expired header`() {
@@ -117,7 +82,6 @@ class SessionTimeoutIntegrationTest : WebTest() {
 
     @Test
     fun `fresh user with null lastActivityAt is not expired`() {
-        // freshUser has no lastActivityAt (null) — should not be expired (treated as "never set")
         val freshUser =
             User(
                 id = UUID.randomUUID(),
@@ -134,13 +98,10 @@ class SessionTimeoutIntegrationTest : WebTest() {
         assertEquals(Status.OK, response.status)
     }
 
-    // ---- Session cookie timeout ----
-
     @Test
     fun `expired session cookie on HTML route redirects to auth with expired param`() {
-        val response = app(Request(GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, expiredUser.id.toString())))
+        val response = app(Request(GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, expiredToken)))
 
-        // Redirect to /auth?expired=true
         assertEquals(Status.FOUND, response.status, "Expired session should cause redirect")
         val location = response.header("location").orEmpty()
         assertTrue(location.contains("expired"), "Redirect location should indicate session expired, got: $location")
@@ -148,7 +109,7 @@ class SessionTimeoutIntegrationTest : WebTest() {
 
     @Test
     fun `active session cookie on HTML route is accepted`() {
-        val response = app(Request(GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, activeUser.id.toString())))
+        val response = app(Request(GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, activeToken)))
 
         assertEquals(Status.OK, response.status, "Active session should succeed")
     }

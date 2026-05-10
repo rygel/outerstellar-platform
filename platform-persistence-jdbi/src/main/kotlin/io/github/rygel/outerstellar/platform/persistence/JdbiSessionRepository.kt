@@ -31,7 +31,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
             handle
                 .createQuery(
                     """
-                    SELECT * FROM plt_sessions
+                    SELECT id, token_hash, user_id, created_at, expires_at FROM plt_sessions
                     WHERE token_hash = :tokenHash AND expires_at > :now
                     """
                 )
@@ -46,7 +46,9 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
     override fun findByTokenHashIncludingExpired(tokenHash: String): Session? {
         return jdbi.withHandle<Session?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_sessions WHERE token_hash = :tokenHash")
+                .createQuery(
+                    "SELECT id, token_hash, user_id, created_at, expires_at FROM plt_sessions WHERE token_hash = :tokenHash"
+                )
                 .bind("tokenHash", tokenHash)
                 .map { rs, _ -> mapSession(rs) }
                 .findOne()

@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.security.UserRepository
-import java.util.UUID
+import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionLookup
 import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
 import org.http4k.websocket.Websocket
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 
 private const val WS_AUTH_REQUIRED_STATUS = 4401
 
-class SyncWebSocket(private val userRepository: UserRepository) :
+class SyncWebSocket(private val securityService: SecurityService) :
     io.github.rygel.outerstellar.platform.service.EventPublisher {
     private val logger = LoggerFactory.getLogger(SyncWebSocket::class.java)
     private val connections = ConcurrentHashMap.newKeySet<Websocket>()
@@ -28,12 +28,11 @@ class SyncWebSocket(private val userRepository: UserRepository) :
                     ?.find { it.startsWith("${WebContext.SESSION_COOKIE}=") }
                     ?.substringAfter("=")
             val user =
-                sessionCookie?.let {
-                    try {
-                        userRepository.findById(UUID.fromString(it))
-                    } catch (e: IllegalArgumentException) {
-                        logger.warn("Invalid session cookie UUID: {}", e.message)
-                        null
+                sessionCookie?.let { rawToken ->
+                    when (val lookup = securityService.lookupSession(rawToken)) {
+                        is SessionLookup.Active -> lookup.user
+                        SessionLookup.Expired -> null
+                        SessionLookup.NotFound -> null
                     }
                 }
             if (user == null) {

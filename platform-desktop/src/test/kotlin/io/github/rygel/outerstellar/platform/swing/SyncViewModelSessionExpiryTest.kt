@@ -1,11 +1,13 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -18,31 +20,20 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/**
- * Unit tests for session expiry handling in SyncViewModel admin operations.
- *
- * Covers:
- * - loadUsers throwing SessionExpiredException sets isLoggedIn=false
- * - loadUsers session expiry clears userName and userRole
- * - loadUsers session expiry notifies observers
- * - toggleUserEnabled throwing SessionExpiredException sets isLoggedIn=false
- * - toggleUserEnabled session expiry clears userName and userRole
- * - toggleUserRole throwing SessionExpiredException sets isLoggedIn=false
- * - toggleUserRole session expiry clears userName and userRole
- * - changePassword throwing SessionExpiredException sets isLoggedIn=false
- * - Non-session errors in loadUsers do not log out the user
- */
 class SyncViewModelSessionExpiryTest {
 
     private val messageService = mockk<MessageService>(relaxed = true)
     private val syncService = mockk<SyncService>(relaxed = true)
     private val i18nService = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
 
-    /** Login the VM and wait for login to complete. Returns the VM. */
+    private fun createVm(): SyncViewModel {
+        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
+        return SyncViewModel(engine, i18nService)
+    }
+
     private fun loginVm(): SyncViewModel {
         every { syncService.login("alice", "secret") } returns AuthTokenResponse("token", "alice", "ADMIN")
-
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         vm.login("alice", "secret") { _, _ -> latch.countDown() }
         assertTrue(latch.await(3, TimeUnit.SECONDS), "Login timed out")

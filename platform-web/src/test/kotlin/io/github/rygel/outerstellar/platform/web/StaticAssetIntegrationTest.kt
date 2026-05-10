@@ -106,4 +106,14 @@ class StaticAssetIntegrationTest : WebTest() {
         val second = app(Request(GET, "/site.css").header("If-None-Match", etag))
         assertEquals(Status.NOT_MODIFIED, second.status, "Should return 304 for matching ETag")
     }
+
+    @Test
+    fun `ETag is not set for JSON responses`() {
+        val response = app(Request(GET, "/health"))
+        assertEquals(Status.OK, response.status)
+        assertTrue(
+            response.header("ETag") == null,
+            "JSON responses should not have ETag, got: ${response.header("ETag")}",
+        )
+    }
 }

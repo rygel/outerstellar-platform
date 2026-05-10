@@ -14,6 +14,7 @@ import io.github.rygel.outerstellar.platform.security.SessionRealm
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.MessageService
+import io.github.rygel.outerstellar.platform.web.AdminNavItem
 import io.github.rygel.outerstellar.platform.web.AuthApi
 import io.github.rygel.outerstellar.platform.web.AuthRoutes
 import io.github.rygel.outerstellar.platform.web.ComponentRoutes
@@ -26,7 +27,9 @@ import io.github.rygel.outerstellar.platform.web.HomeRoutes
 import io.github.rygel.outerstellar.platform.web.NotificationApi
 import io.github.rygel.outerstellar.platform.web.NotificationRoutes
 import io.github.rygel.outerstellar.platform.web.OAuthRoutes
+import io.github.rygel.outerstellar.platform.web.Page
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
+import io.github.rygel.outerstellar.platform.web.PluginAdminDashboardPage
 import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.PluginOptions
 import io.github.rygel.outerstellar.platform.web.SearchRoutes
@@ -52,6 +55,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.PolyHandler
 import org.http4k.core.Response
 import org.http4k.core.Status
+import org.http4k.core.cookie.cookie
 import org.http4k.core.then
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization
@@ -83,6 +87,7 @@ fun app(
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
     plugin: PlatformPlugin? = null,
+    @Suppress("UNUSED_PARAMETER")
     activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater? = null,
     syncWebSocket: SyncWebSocket? = null,
 ): PolyHandler {
@@ -108,7 +113,6 @@ fun app(
             notificationService,
             jwtService,
             plugin,
-            activityUpdater,
         )
     val wsHandler = syncWebSocket?.let { websockets("/ws/sync" wsBind it.handler) }
 
@@ -133,7 +137,6 @@ private fun assembleHttpHandler(
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService?,
     plugin: PlatformPlugin?,
-    activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater?,
 ): HttpHandler {
     val realms: List<AuthRealm> = listOf(SessionRealm(securityService), ApiKeyRealm(securityService))
     val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(realms)
@@ -165,7 +168,19 @@ private fun assembleHttpHandler(
             plugin,
         )
     val adminRoutes =
-        buildAdminRoutes(appLabel, outboxRepository, cache, pageFactory, jteRenderer, config, securityService)
+        buildAdminRoutes(
+            appLabel,
+            outboxRepository,
+            cache,
+            pageFactory,
+            jteRenderer,
+            config,
+            securityService,
+            plugin,
+            userRepository,
+            analytics,
+            notificationService,
+        )
     val componentRoutes = buildComponentRoutes(appLabel, pageFactory, jteRenderer)
     val baseApp = buildBaseApp(excludedRoutes, adminRoutes, apiRoutes, uiRoutes, componentRoutes, userRepository)
     return buildFilterChain(
@@ -176,7 +191,6 @@ private fun assembleHttpHandler(
             notificationService,
             jwtService,
             plugin,
-            activityUpdater,
             pageFactory,
             jteRenderer,
         )
@@ -318,6 +332,10 @@ private fun buildUiRoutes(
     }
     routes +=
         ("/logout" bindContract POST).to { request: org.http4k.core.Request ->
+            val rawToken = request.cookie(io.github.rygel.outerstellar.platform.web.WebContext.SESSION_COOKIE)?.value
+            if (rawToken != null) {
+                securityService.deleteSession(rawToken)
+            }
             Response(Status.FOUND)
                 .header("location", request.webContext.url("/"))
                 .header(
@@ -346,20 +364,73 @@ private fun buildAdminRoutes(
     jteRenderer: org.http4k.template.TemplateRenderer,
     config: AppConfig,
     securityService: SecurityService,
-): org.http4k.routing.RoutingHttpHandler = contract {
-    renderer = OpenApi3(ApiInfo("$appLabel Admin", "v1.0"), KotlinxSerialization)
-    descriptionPath = "/admin/openapi.json"
-    security =
+    plugin: PlatformPlugin?,
+    userRepository: UserRepository,
+    analytics: io.github.rygel.outerstellar.platform.analytics.AnalyticsService,
+    notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
+): org.http4k.routing.RoutingHttpHandler {
+    val adminSecurity =
         object : org.http4k.security.Security {
             override val filter = Filter { next ->
                 SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
             }
         }
-    if (outboxRepository != null && cache != null) {
-        routes +=
-            DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
+    val pluginSections =
+        if (plugin != null) {
+            val pluginCtx =
+                PluginContext(
+                    jteRenderer,
+                    config,
+                    securityService,
+                    userRepository,
+                    analytics,
+                    notificationService,
+                    pageFactory,
+                )
+            plugin.adminSections(pluginCtx)
+        } else {
+            emptyList()
+        }
+    val adminContract = contract {
+        renderer = OpenApi3(ApiInfo("$appLabel Admin", "v1.0"), KotlinxSerialization)
+        descriptionPath = "/admin/openapi.json"
+        security = adminSecurity
+        if (outboxRepository != null && cache != null) {
+            routes +=
+                DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, config.devDashboardEnabled).routes
+        }
+        routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
+        pluginSections.forEach { section -> routes += section.route }
     }
-    routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
+    return if (pluginSections.isNotEmpty()) {
+        val adminAuthFilter = Filter { next ->
+            SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
+        }
+        val pluginDashboardRoute =
+            adminAuthFilter.then(
+                "/admin/plugins" bind
+                    GET to
+                    { req ->
+                        val ctx =
+                            io.github.rygel.outerstellar.platform.web.WebContext(
+                                request = req,
+                                pluginOptions =
+                                    PluginOptions(
+                                        adminNavItems =
+                                            pluginSections.map {
+                                                AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon)
+                                            }
+                                    ),
+                            )
+                        val shell = ctx.shell("Plugin Dashboard", "/admin/plugins")
+                        val page = Page(shell, PluginAdminDashboardPage(pluginSections.map { it.summaryCard }))
+                        Response(Status.OK).body(jteRenderer(page) ?: "")
+                    }
+            )
+        routes(adminContract, pluginDashboardRoute)
+    } else {
+        adminContract
+    }
 }
 
 @Suppress("LongParameterList")
@@ -415,10 +486,25 @@ private fun buildFilterChain(
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService?,
     plugin: PlatformPlugin?,
-    activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater?,
     pageFactory: WebPageFactory,
     jteRenderer: org.http4k.template.TemplateRenderer,
 ): Filter {
+    val adminNavItems =
+        if (plugin != null) {
+            val pluginCtx =
+                PluginContext(
+                    jteRenderer,
+                    config,
+                    securityService,
+                    userRepository,
+                    analytics,
+                    notificationService,
+                    pageFactory,
+                )
+            plugin.adminSections(pluginCtx).map { AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon) }
+        } else {
+            emptyList()
+        }
     var chain =
         Filters.correlationId
             .then(Filters.cors(config.corsOrigins))
@@ -428,14 +514,19 @@ private fun buildFilterChain(
             .then(Filters.telemetry)
             .then(rateLimitFilter())
             .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
-            .then(Filters.devAutoLogin(config.devMode, userRepository))
+            .then(Filters.devAutoLogin(config.devMode, userRepository, securityService, config.sessionCookieSecure))
             .then(
                 Filters.stateFilter(
                     config.devDashboardEnabled,
                     userRepository,
                     config.version,
                     jwtService,
-                    PluginOptions(navItems = plugin?.navItems ?: emptyList(), textResolver = plugin?.textResolver),
+                    securityService,
+                    PluginOptions(
+                        navItems = plugin?.navItems ?: emptyList(),
+                        textResolver = plugin?.textResolver,
+                        adminNavItems = adminNavItems,
+                    ),
                 )
             )
 
@@ -457,14 +548,7 @@ private fun buildFilterChain(
 
     return chain
         .then(analyticsPageViewFilter(analytics))
-        .then(
-            Filters.sessionTimeout(
-                config.sessionTimeoutMinutes,
-                userRepository,
-                config.sessionCookieSecure,
-                activityUpdater,
-            )
-        )
+        .then(Filters.sessionTimeout(config.sessionCookieSecure))
         .then(Filters.securityFilter)
         .then(Filters.requestLogging)
         .then(Filters.serverMetrics)

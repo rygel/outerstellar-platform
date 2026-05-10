@@ -31,7 +31,9 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
     override fun findByKeyHash(keyHash: String): ApiKey? {
         return jdbi.withHandle<ApiKey?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_api_keys WHERE key_hash = :keyHash")
+                .createQuery(
+                    "SELECT id, user_id, key_hash, key_prefix, name, enabled, created_at, last_used_at FROM plt_api_keys WHERE key_hash = :keyHash"
+                )
                 .bind("keyHash", keyHash)
                 .map { rs, _ -> mapApiKey(rs) }
                 .findOne()
@@ -42,7 +44,9 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
     override fun findByUserId(userId: UUID): List<ApiKey> {
         return jdbi.withHandle<List<ApiKey>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_api_keys WHERE user_id = :userId ORDER BY created_at DESC")
+                .createQuery(
+                    "SELECT id, user_id, key_hash, key_prefix, name, enabled, created_at, last_used_at FROM plt_api_keys WHERE user_id = :userId ORDER BY created_at DESC"
+                )
                 .bind("userId", userId)
                 .map { rs, _ -> mapApiKey(rs) }
                 .list()

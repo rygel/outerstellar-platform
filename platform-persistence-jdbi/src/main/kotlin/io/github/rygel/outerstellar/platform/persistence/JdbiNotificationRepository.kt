@@ -31,7 +31,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
         return jdbi.withHandle<List<Notification>, Exception> { handle ->
             handle
                 .createQuery(
-                    "SELECT * FROM plt_notifications WHERE user_id = :userId ORDER BY created_at DESC LIMIT :limit"
+                    "SELECT id, user_id, title, body, type, read_at, created_at FROM plt_notifications WHERE user_id = :userId ORDER BY created_at DESC LIMIT :limit"
                 )
                 .bind("userId", userId)
                 .bind("limit", limit)

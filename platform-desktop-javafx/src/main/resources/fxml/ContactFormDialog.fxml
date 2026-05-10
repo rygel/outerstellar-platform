@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<ScrollPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="io.github.rygel.outerstellar.platform.fx.controller.ContactFormController"
+            fitToWidth="true">
+    <VBox spacing="10" style="-fx-padding: 20;">
+        <GridPane hgap="10" vgap="10">
+            <Label text="Name:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+            <TextField fx:id="nameField" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+            <Label text="Company:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+            <TextField fx:id="companyField" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+            <Label text="Department:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+            <TextField fx:id="departmentField" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+            <Label text="Address:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+            <TextField fx:id="addressField" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+        </GridPane>
+        <Label text="Emails:" style="-fx-font-weight: bold;"/>
+        <HBox spacing="8">
+            <ListView fx:id="emailList" prefHeight="80" HBox.hgrow="ALWAYS"/>
+            <VBox spacing="4">
+                <Button text="Add" onAction="#onAddEmail"/>
+                <Button text="Remove" onAction="#onRemoveEmail"/>
+            </VBox>
+        </HBox>
+        <Label text="Phones:" style="-fx-font-weight: bold;"/>
+        <HBox spacing="8">
+            <ListView fx:id="phoneList" prefHeight="80" HBox.hgrow="ALWAYS"/>
+            <VBox spacing="4">
+                <Button text="Add" onAction="#onAddPhone"/>
+                <Button text="Remove" onAction="#onRemovePhone"/>
+            </VBox>
+        </HBox>
+        <Label text="Social Media:" style="-fx-font-weight: bold;"/>
+        <HBox spacing="8">
+            <ListView fx:id="socialList" prefHeight="80" HBox.hgrow="ALWAYS"/>
+            <VBox spacing="4">
+                <Button text="Add" onAction="#onAddSocial"/>
+                <Button text="Remove" onAction="#onRemoveSocial"/>
+            </VBox>
+        </HBox>
+        <HBox spacing="10">
+            <Button text="Save" onAction="#onSave" defaultButton="true"/>
+            <Button text="Cancel" onAction="#onCancel" cancelButton="true"/>
+        </HBox>
+    </VBox>
+</ScrollPane>

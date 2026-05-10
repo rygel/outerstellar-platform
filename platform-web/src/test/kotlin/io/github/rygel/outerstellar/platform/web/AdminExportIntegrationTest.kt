@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.UserSummary
+import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
@@ -39,6 +40,9 @@ class AdminExportIntegrationTest : WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var adminUser: User
     private lateinit var regularUser: User
+    private lateinit var securityService: SecurityService
+    private lateinit var adminToken: String
+    private lateinit var userToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -62,14 +66,26 @@ class AdminExportIntegrationTest : WebTest() {
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        app = buildApp()
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        adminToken = securityService.createSession(adminUser.id)
+        userToken = securityService.createSession(regularUser.id)
+
+        app = buildApp(securityService = securityService)
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminUser.id.toString())
+    private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminToken)
 
-    private fun userSession() = Cookie(WebContext.SESSION_COOKIE, regularUser.id.toString())
+    private fun userSession() = Cookie(WebContext.SESSION_COOKIE, userToken)
 
     // ---- GET /admin/users/export ----
 

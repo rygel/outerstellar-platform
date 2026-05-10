@@ -85,7 +85,7 @@ val webModule
         }
 
         single<I18nService> { I18nService.create("messages") }
-        single { SyncWebSocket(get()) }
+        single { SyncWebSocket(get<SecurityService>()) }
         single<EventPublisher> { get<SyncWebSocket>() }
         single<PolyHandler>(named("webServer")) {
             app(
