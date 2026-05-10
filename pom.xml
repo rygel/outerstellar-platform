@@ -54,7 +54,7 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.14</outerstellar.version>
-        <http4k.version>6.46.0.0</http4k.version>
+        <http4k.version>6.46.1.0</http4k.version>
         <netty.version>4.2.13.Final</netty.version>
         <flyway.version>12.6.0</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
@@ -89,7 +89,7 @@
         <micrometer.version>1.16.5</micrometer.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <caffeine.version>3.2.4</caffeine.version>
-        <opentelemetry.version>1.61.0</opentelemetry.version>
+        <opentelemetry.version>1.62.0</opentelemetry.version>
 
         <jackson.version>2.21.3</jackson.version>
         <slf4j.version>2.0.17</slf4j.version>
@@ -97,7 +97,7 @@
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.2</java-jwt.version>
         <hikaricp.version>7.0.2</hikaricp.version>
-        <angus.mail.version>2.0.4</angus.mail.version>
+        <angus.mail.version>2.0.5</angus.mail.version>
         <jakarta.mail.api.version>2.1.5</jakarta.mail.api.version>
         <jakarta.activation.api.version>2.1.4</jakarta.activation.api.version>
         <playwright.version>1.59.0</playwright.version>
