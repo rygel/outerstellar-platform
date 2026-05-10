@@ -288,6 +288,11 @@ class SecurityService(
         sessionRepository?.deleteExpired()
     }
 
+    fun deleteSession(rawToken: String) {
+        val repo = sessionRepository ?: return
+        repo.deleteByTokenHash(hashToken(rawToken))
+    }
+
     private fun generateRandomHex(length: Int): String {
         val bytes = ByteArray(length / 2)
         secureRandom.nextBytes(bytes)

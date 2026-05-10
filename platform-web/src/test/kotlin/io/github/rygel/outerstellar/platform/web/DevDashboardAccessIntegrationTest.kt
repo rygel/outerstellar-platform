@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
@@ -31,6 +32,9 @@ class DevDashboardAccessIntegrationTest : WebTest() {
     private lateinit var appWithDashboardDisabled: HttpHandler
     private lateinit var adminUser: User
     private lateinit var regularUser: User
+    private lateinit var securityService: SecurityService
+    private lateinit var adminToken: String
+    private lateinit var userToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -53,18 +57,29 @@ class DevDashboardAccessIntegrationTest : WebTest() {
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        // testConfig already has devDashboardEnabled=true
-        app = buildApp()
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        adminToken = securityService.createSession(adminUser.id)
+        userToken = securityService.createSession(regularUser.id)
 
-        // A second app instance with the dashboard disabled
-        appWithDashboardDisabled = buildApp(config = testConfig.copy(devDashboardEnabled = false))
+        app = buildApp(securityService = securityService)
+
+        appWithDashboardDisabled =
+            buildApp(securityService = securityService, config = testConfig.copy(devDashboardEnabled = false))
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminUser.id.toString())
+    private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminToken)
 
-    private fun userSession() = Cookie(WebContext.SESSION_COOKIE, regularUser.id.toString())
+    private fun userSession() = Cookie(WebContext.SESSION_COOKIE, userToken)
 
     @Test
     fun `admin can access dev dashboard`() {

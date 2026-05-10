@@ -55,6 +55,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.PolyHandler
 import org.http4k.core.Response
 import org.http4k.core.Status
+import org.http4k.core.cookie.cookie
 import org.http4k.core.then
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization
@@ -86,6 +87,7 @@ fun app(
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
     plugin: PlatformPlugin? = null,
+    @Suppress("UNUSED_PARAMETER")
     activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater? = null,
     syncWebSocket: SyncWebSocket? = null,
 ): PolyHandler {
@@ -111,7 +113,6 @@ fun app(
             notificationService,
             jwtService,
             plugin,
-            activityUpdater,
         )
     val wsHandler = syncWebSocket?.let { websockets("/ws/sync" wsBind it.handler) }
 
@@ -136,7 +137,6 @@ private fun assembleHttpHandler(
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService?,
     plugin: PlatformPlugin?,
-    activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater?,
 ): HttpHandler {
     val realms: List<AuthRealm> = listOf(SessionRealm(securityService), ApiKeyRealm(securityService))
     val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(realms)
@@ -191,7 +191,6 @@ private fun assembleHttpHandler(
             notificationService,
             jwtService,
             plugin,
-            activityUpdater,
             pageFactory,
             jteRenderer,
         )
@@ -333,6 +332,10 @@ private fun buildUiRoutes(
     }
     routes +=
         ("/logout" bindContract POST).to { request: org.http4k.core.Request ->
+            val rawToken = request.cookie(io.github.rygel.outerstellar.platform.web.WebContext.SESSION_COOKIE)?.value
+            if (rawToken != null) {
+                securityService.deleteSession(rawToken)
+            }
             Response(Status.FOUND)
                 .header("location", request.webContext.url("/"))
                 .header(
@@ -483,7 +486,6 @@ private fun buildFilterChain(
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService?,
     plugin: PlatformPlugin?,
-    activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater?,
     pageFactory: WebPageFactory,
     jteRenderer: org.http4k.template.TemplateRenderer,
 ): Filter {
@@ -512,13 +514,14 @@ private fun buildFilterChain(
             .then(Filters.telemetry)
             .then(rateLimitFilter())
             .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
-            .then(Filters.devAutoLogin(config.devMode, userRepository))
+            .then(Filters.devAutoLogin(config.devMode, userRepository, securityService, config.sessionCookieSecure))
             .then(
                 Filters.stateFilter(
                     config.devDashboardEnabled,
                     userRepository,
                     config.version,
                     jwtService,
+                    securityService,
                     PluginOptions(
                         navItems = plugin?.navItems ?: emptyList(),
                         textResolver = plugin?.textResolver,
@@ -545,14 +548,7 @@ private fun buildFilterChain(
 
     return chain
         .then(analyticsPageViewFilter(analytics))
-        .then(
-            Filters.sessionTimeout(
-                config.sessionTimeoutMinutes,
-                userRepository,
-                config.sessionCookieSecure,
-                activityUpdater,
-            )
-        )
+        .then(Filters.sessionTimeout(config.sessionCookieSecure))
         .then(Filters.securityFilter)
         .then(Filters.requestLogging)
         .then(Filters.serverMetrics)

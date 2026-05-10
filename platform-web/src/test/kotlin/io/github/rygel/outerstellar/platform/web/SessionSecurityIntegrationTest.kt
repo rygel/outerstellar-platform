@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
@@ -45,9 +46,22 @@ class SessionSecurityIntegrationTest : WebTest() {
     private lateinit var regularUser: User
     private lateinit var adminUser: User
     private lateinit var disabledUser: User
+    private lateinit var securityService: SecurityService
+    private lateinit var sessionTokens: MutableMap<UUID, String>
 
     @BeforeEach
     fun setupTest() {
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        sessionTokens = mutableMapOf()
+
         regularUser =
             User(
                 id = UUID.randomUUID(),
@@ -71,18 +85,27 @@ class SessionSecurityIntegrationTest : WebTest() {
                 email = "disabled@test.com",
                 passwordHash = encoder.encode(testPassword()),
                 role = UserRole.USER,
-                enabled = false,
+                enabled = true,
             )
         userRepository.save(regularUser)
         userRepository.save(adminUser)
         userRepository.save(disabledUser)
 
-        app = buildApp()
+        sessionTokens[regularUser.id] = securityService.createSession(regularUser.id)
+        sessionTokens[adminUser.id] = securityService.createSession(adminUser.id)
+        sessionTokens[disabledUser.id] = securityService.createSession(disabledUser.id)
+        userRepository.updateEnabled(disabledUser.id, false)
+
+        app = buildApp(securityService = securityService)
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun sessionFor(user: User) = Cookie(WebContext.SESSION_COOKIE, user.id.toString())
+    private fun sessionFor(user: User): Cookie {
+        val token =
+            sessionTokens[user.id] ?: securityService.createSession(user.id).also { sessionTokens[user.id] = it }
+        return Cookie(WebContext.SESSION_COOKIE, token)
+    }
 
     // ---- Unauthenticated access ----
 
@@ -132,11 +155,10 @@ class SessionSecurityIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `unknown UUID in session cookie is rejected`() {
+    fun `unknown token in session cookie is rejected`() {
         val response =
             app(
-                Request(GET, "/auth/change-password")
-                    .cookie(Cookie(WebContext.SESSION_COOKIE, UUID.randomUUID().toString()))
+                Request(GET, "/auth/change-password").cookie(Cookie(WebContext.SESSION_COOKIE, "oss_" + "a".repeat(48)))
             )
         assertEquals(Status.FOUND, response.status)
         assertTrue(response.header("location").orEmpty().contains("/auth"))
