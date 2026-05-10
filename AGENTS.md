@@ -65,6 +65,16 @@ This file defines repository-specific guardrails for coding agents and contribut
     outerstellar-test-desktop
   ```
   The container starts Xvfb internally. `--network host` is required so Testcontainers can reach its PostgreSQL sibling containers. Running `mvn -pl platform-desktop test` on the host is forbidden.
+- **Full reactor `mvn verify` must exclude desktop modules**, then verify desktop separately via Podman:
+  ```bash
+  mvn clean verify -T4 -pl '!platform-desktop,!platform-desktop-javafx'
+  podman run --rm --network host \
+    -v "${PWD}:/app:Z" \
+    -v "${HOME}/.m2/settings.xml:/root/.m2/settings.xml:Z" \
+    -v "${HOME}/.m2/repository:/root/.m2/repository:Z" \
+    -v "/var/run/docker.sock:/var/run/docker.sock:Z" \
+    outerstellar-test-desktop
+  ```
 - After any `mvn clean install -DskipTests` that changes compiled production code in a dependency module, the dependent module's test classpath may hold stale classes. Always do a full `mvn clean install -DskipTests` before running tests in downstream modules.
 
 ## Safety and repository hygiene

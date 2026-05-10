@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
@@ -34,6 +35,9 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var adminUser: User
     private lateinit var regularUser: User
+    private lateinit var securityService: SecurityService
+    private lateinit var adminToken: String
+    private lateinit var regularToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -57,14 +61,26 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        app = buildApp()
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        adminToken = securityService.createSession(adminUser.id)
+        regularToken = securityService.createSession(regularUser.id)
+
+        app = buildApp(securityService = securityService)
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun adminCookie() = Cookie(WebContext.SESSION_COOKIE, adminUser.id.toString())
+    private fun adminCookie() = Cookie(WebContext.SESSION_COOKIE, adminToken)
 
-    private fun regularCookie() = Cookie(WebContext.SESSION_COOKIE, regularUser.id.toString())
+    private fun regularCookie() = Cookie(WebContext.SESSION_COOKIE, regularToken)
 
     @Test
     fun `GET admin-users returns 200 for admin`() {

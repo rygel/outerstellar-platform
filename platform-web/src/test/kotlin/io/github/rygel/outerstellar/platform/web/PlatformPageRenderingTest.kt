@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.persistence.JooqNotificationRepository
+import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.NotificationService
@@ -45,6 +46,9 @@ class PlatformPageRenderingTest : WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var adminUser: User
     private lateinit var regularUser: User
+    private lateinit var securityService: SecurityService
+    private lateinit var adminToken: String
+    private lateinit var userToken: String
 
     @BeforeEach
     fun setupTest() {
@@ -67,15 +71,31 @@ class PlatformPageRenderingTest : WebTest() {
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
+        securityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        adminToken = securityService.createSession(adminUser.id)
+        userToken = securityService.createSession(regularUser.id)
+
         val notificationService = NotificationService(JooqNotificationRepository(testDsl))
-        app = buildApp(overrides = TestOverrides(notificationService = notificationService))
+        app =
+            buildApp(
+                securityService = securityService,
+                overrides = TestOverrides(notificationService = notificationService),
+            )
     }
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminUser.id.toString())
+    private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminToken)
 
-    private fun userSession() = Cookie(WebContext.SESSION_COOKIE, regularUser.id.toString())
+    private fun userSession() = Cookie(WebContext.SESSION_COOKIE, userToken)
 
     private fun assertHtmlPage(response: org.http4k.core.Response, path: String) {
         assertEquals(Status.OK, response.status, "Expected 200 for $path")

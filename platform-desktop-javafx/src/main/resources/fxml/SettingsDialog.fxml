@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<VBox spacing="10" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="io.github.rygel.outerstellar.platform.fx.controller.SettingsController"
+      style="-fx-padding: 20;">
+    <GridPane hgap="10" vgap="10">
+        <Label text="Language:" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <ComboBox fx:id="langCombo" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+        <Label text="Theme:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <ComboBox fx:id="themeCombo" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+    </GridPane>
+    <TitledPane text="Theme Preview">
+        <VBox spacing="8" style="-fx-padding: 10;" fx:id="previewPanel">
+            <Label fx:id="sampleLabel" text="Sample Label Text"/>
+            <TextField fx:id="sampleField" text="Sample Input Text"/>
+            <Button fx:id="sampleButton" text="Sample Button"/>
+        </VBox>
+    </TitledPane>
+    <HBox spacing="10">
+        <Button text="Apply" onAction="#onApply" defaultButton="true"/>
+        <Button text="Cancel" onAction="#onCancel" cancelButton="true"/>
+    </HBox>
+</VBox>

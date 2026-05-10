@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>1.6.0</version>
+    <version>1.6.1-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
@@ -43,6 +43,7 @@
         <module>platform-sync-client</module>
         <module>platform-web</module>
         <module>platform-desktop</module>
+        <module>platform-desktop-javafx</module>
         <module>platform-security</module>
         <module>platform-seed</module>
     </modules>
@@ -53,11 +54,11 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.14</outerstellar.version>
-        <http4k.version>6.45.1.0</http4k.version>
+        <http4k.version>6.46.0.0</http4k.version>
         <netty.version>4.2.13.Final</netty.version>
-        <flyway.version>12.5.0</flyway.version>
+        <flyway.version>12.6.0</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
-        <jooq.version>3.21.2</jooq.version>
+        <jooq.version>3.21.3</jooq.version>
         <jdbi.version>3.53.0</jdbi.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <jte.version>3.2.4</jte.version>
@@ -80,8 +81,8 @@
         <bytebuddy.version>1.18.8</bytebuddy.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <koin.version>4.2.1</koin.version>
-        <kotlinx.serialization.version>1.8.1</kotlinx.serialization.version>
-        <snakeyaml.engine.version>2.9</snakeyaml.engine.version>
+        <kotlinx.serialization.version>1.11.0</kotlinx.serialization.version>
+        <snakeyaml.engine.version>3.0.1</snakeyaml.engine.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.9</mockk.version>
         <archunit.version>1.4.2</archunit.version>
@@ -97,7 +98,8 @@
         <java-jwt.version>4.5.2</java-jwt.version>
         <hikaricp.version>7.0.2</hikaricp.version>
         <angus.mail.version>2.0.4</angus.mail.version>
-        <jakarta.mail.api.version>2.1.3</jakarta.mail.api.version>
+        <jakarta.mail.api.version>2.1.5</jakarta.mail.api.version>
+        <jakarta.activation.api.version>2.1.4</jakarta.activation.api.version>
         <playwright.version>1.59.0</playwright.version>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.resources.plugin.version>3.5.0</maven.resources.plugin.version>
@@ -503,6 +505,11 @@
                 <groupId>jakarta.mail</groupId>
                 <artifactId>jakarta.mail-api</artifactId>
                 <version>${jakarta.mail.api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.activation</groupId>
+                <artifactId>jakarta.activation-api</artifactId>
+                <version>${jakarta.activation.api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.angus</groupId>

@@ -14,6 +14,9 @@ import io.github.rygel.outerstellar.platform.service.SyncProvider
 import io.github.rygel.outerstellar.platform.swing.analytics.PersistentBatchingAnalyticsService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.HttpConnectivityChecker
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.awt.Color
@@ -96,7 +99,7 @@ fun main() {
 
     // Start connectivity checker early so analytics scheduler can skip flush when offline
     val connectivityChecker =
-        ConnectivityChecker(healthUrl = "${desktop.config.serverBaseUrl}/health").also { it.start() }
+        HttpConnectivityChecker(healthUrl = "${desktop.config.serverBaseUrl}/health").also { it.start() }
 
     // Flush any events left over from the previous session, then schedule daily flushes
     val analyticsScheduler =
@@ -151,16 +154,16 @@ private fun initializeUi(
     themeManager.applyTheme(startupTheme)
 
     val notifier = SystemTrayNotifier(i18nService)
-    val viewModel =
-        SyncViewModel(
+    val engine =
+        DesktopSyncEngine(
+            DesktopComponent.syncService,
             DesktopComponent.messageService,
             DesktopComponent.contactService,
-            DesktopComponent.syncService,
-            i18nService,
-            notifier,
             analytics ?: NoOpAnalyticsService(),
             connectivityChecker,
+            notifier,
         )
+    val viewModel = SyncViewModel(engine, i18nService, DesktopComponent.contactService)
     val window =
         SyncWindow(
             viewModel,
@@ -655,7 +658,6 @@ class SyncWindow(
                 override fun windowClosing(e: WindowEvent?) {
                     saveState()
                     viewModel.stopAutoSync()
-                    viewModel.connectivityChecker?.stop()
                 }
             }
         )

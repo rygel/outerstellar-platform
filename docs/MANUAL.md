@@ -284,6 +284,10 @@ Requires `upx` on PATH. Disabled by default due to antivirus false positives.
 docker build -f docker/Dockerfile.native -t outerstellar-platform:native .
 ```
 
+### Reverse Proxy
+
+The application does not bundle gzip compression or TLS. Compression, TLS termination, and security headers (HSTS) should be handled by a reverse proxy such as Caddy, nginx, or Traefik. See the reverse proxy section in `docs/aot-native-image.md` for configuration examples.
+
 ## Testing
 
 ### Web Tests

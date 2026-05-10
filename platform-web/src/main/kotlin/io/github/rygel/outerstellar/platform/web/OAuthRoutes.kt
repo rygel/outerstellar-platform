@@ -24,8 +24,6 @@ import org.slf4j.LoggerFactory
  * 2. GET /auth/oauth/{provider}/callback → exchange code, create/find user, set session cookie
  * 3. POST /auth/oauth/{provider}/callback → same as above (Apple uses form_post response mode)
  */
-private const val SESSION_MAX_AGE_SECONDS = 365L * 24 * 3600
-
 class OAuthRoutes(
     private val providers: Map<String, OAuthProvider>,
     private val securityService: SecurityService,
@@ -128,20 +126,12 @@ class OAuthRoutes(
         return try {
             val userInfo = provider.exchangeCode(validated.code, validated.state, redirectUri)
             val user = securityService.findOrCreateOAuthUser(providerName, userInfo.subject, userInfo.email)
+            val sessionToken = securityService.createSession(user.id)
 
             logger.info("OAuth sign-in successful: user={} provider={}", user.username, providerName)
             Response(Status.FOUND)
                 .header("location", "/")
-                .cookie(
-                    Cookie(
-                        WebContext.SESSION_COOKIE,
-                        user.id.toString(),
-                        maxAge = SESSION_MAX_AGE_SECONDS,
-                        path = "/",
-                        secure = sessionCookieSecure,
-                        httpOnly = true,
-                    )
-                )
+                .header("Set-Cookie", SessionCookie.create(sessionToken, sessionCookieSecure))
                 .cookie(Cookie("oauth_state", "", maxAge = 0L, path = "/"))
         } catch (e: OAuthException) {
             logger.warn("OAuth callback error for provider={}: {}", providerName, e.message)
