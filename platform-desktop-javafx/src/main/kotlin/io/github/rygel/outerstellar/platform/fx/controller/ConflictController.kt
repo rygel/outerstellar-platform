@@ -2,7 +2,7 @@ package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.MessageSummary
-import io.github.rygel.outerstellar.platform.service.MessageService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import javafx.fxml.FXML
 import javafx.scene.control.Label
 import javafx.scene.control.TextArea
@@ -12,7 +12,7 @@ import org.koin.core.component.inject
 
 class ConflictController : KoinComponent {
 
-    private val messageService: MessageService by inject()
+    private val engine: DesktopSyncEngine by inject()
 
     @FXML private lateinit var localAuthorLabel: Label
     @FXML private lateinit var localContent: TextArea
@@ -31,7 +31,7 @@ class ConflictController : KoinComponent {
     @FXML
     fun onKeepMine() {
         val id = syncId ?: return
-        messageService.resolveConflict(id, ConflictStrategy.MINE)
+        engine.resolveConflict(id, ConflictStrategy.MINE)
         conflictStrategy = ConflictStrategy.MINE
         close()
     }
@@ -39,7 +39,7 @@ class ConflictController : KoinComponent {
     @FXML
     fun onAcceptServer() {
         val id = syncId ?: return
-        messageService.resolveConflict(id, ConflictStrategy.SERVER)
+        engine.resolveConflict(id, ConflictStrategy.SERVER)
         conflictStrategy = ConflictStrategy.SERVER
         close()
     }

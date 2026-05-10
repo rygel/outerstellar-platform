@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
-import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
-import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import javafx.application.Platform
 import javafx.fxml.FXML
 import javafx.scene.control.PasswordField
@@ -14,12 +13,13 @@ import org.slf4j.LoggerFactory
 class LoginController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(LoginController::class.java)
-    private val syncService: SyncService by inject()
+    private val engine: DesktopSyncEngine by inject()
 
     @FXML private lateinit var usernameField: TextField
     @FXML private lateinit var passwordField: PasswordField
 
-    var loginResult: AuthTokenResponse? = null
+    var loginSucceeded: Boolean = false
+        private set
 
     @FXML
     fun onLogin() {
@@ -36,14 +36,16 @@ class LoginController : KoinComponent {
 
     private fun performLogin(user: String, pass: String) {
         Thread {
-                try {
-                    val result = syncService.login(user, pass)
-                    loginResult = result
-                    Platform.runLater { close() }
-                } catch (e: Exception) {
-                    logger.warn("Login failed: {}", e.message)
-                    loginResult = null
-                }
+                engine
+                    .login(user, pass)
+                    .onSuccess {
+                        loginSucceeded = true
+                        Platform.runLater { close() }
+                    }
+                    .onFailure {
+                        logger.warn("Login failed: {}", it.message)
+                        loginSucceeded = false
+                    }
             }
             .also { it.isDaemon = true }
             .start()

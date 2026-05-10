@@ -1,54 +1,36 @@
 package io.github.rygel.outerstellar.platform.swing.viewmodel
 
 import io.github.rygel.outerstellar.i18n.I18nService
-import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
-import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.ContactNotFoundException
-import io.github.rygel.outerstellar.platform.model.ContactSummary
-import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
-import io.github.rygel.outerstellar.platform.model.SessionExpiredException
-import io.github.rygel.outerstellar.platform.model.SyncException
-import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.service.ContactService
-import io.github.rygel.outerstellar.platform.service.MessageService
-import io.github.rygel.outerstellar.platform.swing.ConnectivityChecker
-import io.github.rygel.outerstellar.platform.swing.SystemTrayNotifier
-import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.EngineListener
+import io.github.rygel.outerstellar.platform.sync.engine.EngineState
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 import javax.swing.SwingWorker
-import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
 class SyncViewModel(
-    private val messageService: MessageService,
-    private val contactService: ContactService? = null,
-    private val syncService: SyncService,
+    private val engine: DesktopSyncEngine,
     private var i18nService: I18nService,
-    private val notifier: SystemTrayNotifier? = null,
-    private val analytics: AnalyticsService = NoOpAnalyticsService(),
-    val connectivityChecker: ConnectivityChecker? = null,
+    private val contactService: ContactService? = null,
 ) {
-    private val logger = LoggerFactory.getLogger(SyncViewModel::class.java)
-
     private val observers = CopyOnWriteArrayList<() -> Unit>()
-    private var autoSyncExecutor: ScheduledExecutorService? = null
 
     @Volatile
-    var isOnline: Boolean = connectivityChecker?.isOnline ?: true
+    var isOnline: Boolean = engine.state.isOnline
         private set
 
     @Volatile
-    var messages: List<MessageSummary> = emptyList()
+    var messages = engine.state.messages
         private set
 
     @Volatile
-    var contacts: List<ContactSummary> = emptyList()
+    var contacts = engine.state.contacts
         private set
 
     @Volatile
@@ -56,46 +38,46 @@ class SyncViewModel(
         private set
 
     @Volatile
-    var isSyncing: Boolean = false
+    var isSyncing: Boolean = engine.state.isSyncing
         private set
 
     @Volatile
-    var userName: String = ""
+    var userName: String = engine.state.userName
         private set
 
     @Volatile
-    var isLoggedIn: Boolean = false
+    var isLoggedIn: Boolean = engine.state.isLoggedIn
         private set
 
     @Volatile
-    var userRole: String? = null
+    var userRole: String? = engine.state.userRole
         private set
 
     @Volatile
-    var adminUsers: List<UserSummary> = emptyList()
+    var adminUsers = engine.state.adminUsers
         private set
 
     @Volatile
-    var notifications: List<io.github.rygel.outerstellar.platform.model.NotificationSummary> = emptyList()
+    var notifications = engine.state.notifications
         private set
 
     val unreadNotificationCount: Int
         get() = notifications.count { !it.read }
 
     @Volatile
-    var userEmail: String = ""
+    var userEmail: String = engine.state.userEmail
         private set
 
     @Volatile
-    var userAvatarUrl: String? = null
+    var userAvatarUrl: String? = engine.state.userAvatarUrl
         private set
 
     @Volatile
-    var emailNotificationsEnabled: Boolean = true
+    var emailNotificationsEnabled: Boolean = engine.state.emailNotificationsEnabled
         private set
 
     @Volatile
-    var pushNotificationsEnabled: Boolean = true
+    var pushNotificationsEnabled: Boolean = engine.state.pushNotificationsEnabled
         private set
 
     var author: String = i18nService.translate("swing.author.default")
@@ -106,11 +88,37 @@ class SyncViewModel(
             loadMessages()
         }
 
+    val connectivityChecker: ConnectivityChecker? = null
+
     init {
-        connectivityChecker?.addObserver { online ->
-            isOnline = online
-            notifyObservers()
-        }
+        engine.addListener(
+            object : EngineListener {
+                override fun onStateChanged(newState: EngineState) {
+                    isOnline = newState.isOnline
+                    messages = newState.messages
+                    contacts = newState.contacts
+                    isSyncing = newState.isSyncing
+                    userName = newState.userName
+                    isLoggedIn = newState.isLoggedIn
+                    userRole = newState.userRole
+                    adminUsers = newState.adminUsers
+                    notifications = newState.notifications
+                    userEmail = newState.userEmail
+                    userAvatarUrl = newState.userAvatarUrl
+                    emailNotificationsEnabled = newState.emailNotificationsEnabled
+                    pushNotificationsEnabled = newState.pushNotificationsEnabled
+                    if (newState.status.isNotBlank()) {
+                        status = newState.status
+                    }
+                    notifyObservers()
+                }
+
+                override fun onSessionExpired() {
+                    status = i18nService.translate("swing.session.expired")
+                    notifyObservers()
+                }
+            }
+        )
     }
 
     fun addObserver(observer: () -> Unit) {
@@ -128,21 +136,23 @@ class SyncViewModel(
     }
 
     fun loadMessages() {
-        messages = messageService.listMessages(searchQuery.takeIf { it.isNotBlank() }).items
-        contacts = contactService?.listContacts(searchQuery.takeIf { it.isNotBlank() }) ?: emptyList()
-        notifyObservers()
+        engine.loadMessages()
     }
 
     fun createMessage(onValidationError: (String) -> Unit) {
-        try {
-            messageService.createLocalMessage(author, content)
+        val result = engine.createLocalMessage(author, content)
+        if (result.isSuccess) {
             content = ""
             status = i18nService.translate("swing.status.created")
-            loadMessages()
-        } catch (e: ValidationException) {
-            onValidationError(e.message ?: i18nService.translate("swing.validation.messageRequired"))
-        } catch (e: OuterstellarException) {
-            onValidationError(e.message ?: "Action failed")
+            notifyObservers()
+        } else {
+            val ex = result.exceptionOrNull()
+            when (ex) {
+                is ValidationException ->
+                    onValidationError(ex.message ?: i18nService.translate("swing.validation.messageRequired"))
+                is OuterstellarException -> onValidationError(ex.message ?: "Action failed")
+                else -> onValidationError(ex?.message ?: "Action failed")
+            }
         }
     }
 
@@ -156,12 +166,11 @@ class SyncViewModel(
         department: String,
         onValidationError: (String) -> Unit,
     ) {
-        try {
-            contactService?.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
+        val result = engine.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
+        if (result.isSuccess) {
             status = i18nService.translate("swing.status.created")
-            loadMessages()
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            onValidationError(e.message ?: "Action failed")
+        } else {
+            onValidationError(result.exceptionOrNull()?.message ?: "Action failed")
         }
     }
 
@@ -177,7 +186,8 @@ class SyncViewModel(
         onValidationError: (String) -> Unit,
     ) {
         try {
-            val stored = contactService?.getContactBySyncId(syncId) ?: throw ContactNotFoundException(syncId)
+            val svc = contactService ?: throw ContactNotFoundException(syncId)
+            val stored = svc.getContactBySyncId(syncId) ?: throw ContactNotFoundException(syncId)
             val updated =
                 stored.copy(
                     name = name,
@@ -189,7 +199,7 @@ class SyncViewModel(
                     department = department,
                     dirty = true,
                 )
-            contactService.updateContact(updated)
+            svc.updateContact(updated)
             status = i18nService.translate("swing.status.contactUpdated")
             loadMessages()
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
@@ -198,31 +208,16 @@ class SyncViewModel(
     }
 
     fun login(user: String, pass: String, onResult: (Boolean, String?) -> Unit) {
-        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
-                override fun doInBackground(): Pair<Boolean, String?> {
-                    return try {
-                        val result = syncService.login(user, pass)
-                        userName = result.username
-                        userRole = result.role
-                        isLoggedIn = true
-                        analytics.identify(userName, mapOf("role" to (userRole ?: "user"), "platform" to "desktop"))
-                        analytics.track(userName, "User Logged In", mapOf("platform" to "desktop"))
-                        true to null
-                    } catch (e: SyncException) {
-                        false to e.message
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        false to (e.cause?.message ?: e.message ?: "Unknown error")
-                    }
-                }
+        object : SwingWorker<Result<Unit>, Unit>() {
+                override fun doInBackground(): Result<Unit> = engine.login(user, pass)
 
                 override fun done() {
-                    val (success, error) = get()
-                    if (success) {
+                    val result = get()
+                    if (result.isSuccess) {
                         status = i18nService.translate("swing.status.loggedIn", userName)
                         author = userName
-                        startAutoSync()
                     }
-                    onResult(success, error)
+                    onResult(result.isSuccess, result.exceptionOrNull()?.message)
                     notifyObservers()
                 }
             }
@@ -230,29 +225,16 @@ class SyncViewModel(
     }
 
     fun register(user: String, pass: String, onResult: (Boolean, String?) -> Unit) {
-        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
-                override fun doInBackground(): Pair<Boolean, String?> {
-                    return try {
-                        val result = syncService.register(user, pass)
-                        userName = result.username
-                        userRole = result.role
-                        isLoggedIn = true
-                        true to null
-                    } catch (e: SyncException) {
-                        false to e.message
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        false to (e.cause?.message ?: e.message ?: "Unknown error")
-                    }
-                }
+        object : SwingWorker<Result<Unit>, Unit>() {
+                override fun doInBackground(): Result<Unit> = engine.register(user, pass)
 
                 override fun done() {
-                    val (success, error) = get()
-                    if (success) {
+                    val result = get()
+                    if (result.isSuccess) {
                         status = i18nService.translate("swing.status.registered", userName)
                         author = userName
-                        startAutoSync()
                     }
-                    onResult(success, error)
+                    onResult(result.isSuccess, result.exceptionOrNull()?.message)
                     notifyObservers()
                 }
             }
@@ -260,40 +242,18 @@ class SyncViewModel(
     }
 
     fun logout() {
-        stopAutoSync()
-        syncService.logout()
-        isLoggedIn = false
-        userRole = null
-        userName = ""
-        userEmail = ""
-        userAvatarUrl = null
-        adminUsers = emptyList()
+        engine.logout()
         author = i18nService.translate("swing.author.default")
         status = i18nService.translate("swing.status.loggedOut")
         notifyObservers()
     }
 
     fun startAutoSync() {
-        if (autoSyncExecutor != null) return
-
-        autoSyncExecutor =
-            Executors.newSingleThreadScheduledExecutor().apply {
-                scheduleAtFixedRate(
-                    {
-                        if (!isSyncing && isLoggedIn) {
-                            sync(isAuto = true)
-                        }
-                    },
-                    1,
-                    1,
-                    TimeUnit.MINUTES,
-                )
-            }
+        engine.startAutoSync()
     }
 
     fun stopAutoSync() {
-        autoSyncExecutor?.shutdownNow()
-        autoSyncExecutor = null
+        engine.stopAutoSync()
     }
 
     fun sync(isAuto: Boolean = false) {
@@ -304,75 +264,30 @@ class SyncViewModel(
             return
         }
 
-        object : SwingWorker<Unit, Unit>() {
-                override fun doInBackground() {
-                    isSyncing = true
-                    status =
-                        if (isAuto) i18nService.translate("swing.status.autoSyncing")
-                        else i18nService.translate("swing.status.syncing")
-                    notifyObservers()
+        object : SwingWorker<Result<Unit>, Unit>() {
+                override fun doInBackground(): Result<Unit> = engine.sync(isAuto)
 
-                    try {
-                        val stats = syncService.sync()
-                        status =
-                            i18nService.translate(
-                                "swing.status.complete",
-                                stats.pushedCount,
-                                stats.pulledCount,
-                                stats.conflictCount,
-                            )
-                        analytics.track(
-                            userName,
-                            "Sync Completed",
-                            mapOf(
-                                "pushed" to stats.pushedCount,
-                                "pulled" to stats.pulledCount,
-                                "conflicts" to stats.conflictCount,
-                                "platform" to "desktop",
-                            ),
-                        )
-                        if (!isAuto) {
-                            notifier?.notifySuccess(status)
-                        }
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        val errorMsg =
-                            i18nService.translate(
-                                "swing.status.failed",
-                                e.cause?.message ?: e.message ?: "unknown error",
-                            )
-                        if (!isAuto) {
-                            notifier?.notifyFailure(errorMsg)
-                        }
-                        status = errorMsg
-                    } finally {
-                        isSyncing = false
-                        loadMessages()
+                override fun done() {
+                    val result = get()
+                    if (result.isSuccess) {
+                        status = engine.state.status
+                    } else {
+                        val msg = result.exceptionOrNull()?.message ?: "unknown error"
+                        status = i18nService.translate("swing.status.failed", msg)
                     }
+                    notifyObservers()
                 }
             }
             .execute()
     }
 
     fun changePassword(currentPassword: String, newPassword: String, onResult: (Boolean, String?) -> Unit) {
-        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
-                override fun doInBackground(): Pair<Boolean, String?> {
-                    return try {
-                        syncService.changePassword(currentPassword, newPassword)
-                        true to null
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                        false to i18nService.translate("swing.session.expired")
-                    } catch (e: SyncException) {
-                        false to e.message
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        false to (e.message ?: "Unknown error")
-                    }
-                }
+        object : SwingWorker<Result<Unit>, Unit>() {
+                override fun doInBackground(): Result<Unit> = engine.changePassword(currentPassword, newPassword)
 
                 override fun done() {
-                    val (success, error) = get()
-                    onResult(success, error)
+                    val result = get()
+                    onResult(result.isSuccess, result.exceptionOrNull()?.message)
                     notifyObservers()
                 }
             }
@@ -382,14 +297,7 @@ class SyncViewModel(
     fun loadUsers() {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    try {
-                        adminUsers = syncService.listUsers()
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        status = e.message ?: "Failed to load users"
-                    }
+                    engine.loadUsers()
                 }
 
                 override fun done() {
@@ -402,15 +310,7 @@ class SyncViewModel(
     fun toggleUserEnabled(userId: String, currentEnabled: Boolean) {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    try {
-                        syncService.setUserEnabled(userId, !currentEnabled)
-                        adminUsers = syncService.listUsers()
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        status = e.message ?: "Failed to toggle user"
-                    }
+                    engine.setUserEnabled(userId, !currentEnabled)
                 }
 
                 override fun done() {
@@ -421,18 +321,10 @@ class SyncViewModel(
     }
 
     fun toggleUserRole(userId: String, currentRole: String) {
+        val newRole = if (currentRole == "ADMIN") "USER" else "ADMIN"
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    try {
-                        val newRole = if (currentRole == "ADMIN") "USER" else "ADMIN"
-                        syncService.setUserRole(userId, newRole)
-                        adminUsers = syncService.listUsers()
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        status = e.message ?: "Failed to toggle role"
-                    }
+                    engine.setUserRole(userId, newRole)
                 }
 
                 override fun done() {
@@ -445,14 +337,7 @@ class SyncViewModel(
     fun loadNotifications() {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    try {
-                        notifications = syncService.listNotifications()
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        logger.debug("Failed to load notifications", e)
-                    }
+                    engine.loadNotifications()
                 }
 
                 override fun done() {
@@ -465,15 +350,7 @@ class SyncViewModel(
     fun markNotificationRead(notificationId: String) {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    try {
-                        syncService.markNotificationRead(notificationId)
-                        notifications = syncService.listNotifications()
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        status = e.message ?: "Failed to mark notification as read"
-                    }
+                    engine.markNotificationRead(notificationId)
                 }
 
                 override fun done() {
@@ -486,15 +363,7 @@ class SyncViewModel(
     fun markAllNotificationsRead() {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    try {
-                        syncService.markAllNotificationsRead()
-                        notifications = syncService.listNotifications()
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        status = e.message ?: "Failed to mark all notifications as read"
-                    }
+                    engine.markAllNotificationsRead()
                 }
 
                 override fun done() {
@@ -507,24 +376,31 @@ class SyncViewModel(
     fun loadProfile(onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Pair<Boolean, String?>, Unit>() {
                 override fun doInBackground(): Pair<Boolean, String?> {
-                    return try {
-                        val profile = syncService.fetchProfile()
-                        userEmail = profile.email
-                        userAvatarUrl = profile.avatarUrl
-                        emailNotificationsEnabled = profile.emailNotificationsEnabled
-                        pushNotificationsEnabled = profile.pushNotificationsEnabled
-                        true to null
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                        false to i18nService.translate("swing.session.expired")
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        false to (e.message ?: "Failed to load profile")
+                    var errorMessage: String? = null
+                    val listener =
+                        object : EngineListener {
+                            override fun onError(operation: String, message: String) {
+                                if (operation == "loadProfile") errorMessage = message
+                            }
+                        }
+                    engine.addListener(listener)
+                    try {
+                        engine.loadProfile()
+                    } finally {
+                        engine.removeListener(listener)
                     }
+                    val loggedIn = engine.state.isLoggedIn
+                    return if (!loggedIn) false to engine.state.status
+                    else errorMessage?.let { false to it } ?: true to null
                 }
 
                 override fun done() {
-                    val (success, error) = get()
+                    val (success, error) =
+                        try {
+                            get()
+                        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                            false to (e.message ?: "Failed to load profile")
+                        }
                     onResult(success, error)
                     notifyObservers()
                 }
@@ -533,30 +409,12 @@ class SyncViewModel(
     }
 
     fun updateProfile(email: String, username: String?, avatarUrl: String?, onResult: (Boolean, String?) -> Unit) {
-        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
-                override fun doInBackground(): Pair<Boolean, String?> {
-                    return try {
-                        syncService.updateProfile(email, username, avatarUrl)
-                        // Reload to sync local state
-                        val profile = syncService.fetchProfile()
-                        userName = profile.username
-                        userEmail = profile.email
-                        userAvatarUrl = profile.avatarUrl
-                        true to null
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                        false to i18nService.translate("swing.session.expired")
-                    } catch (e: SyncException) {
-                        false to e.message
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        false to (e.message ?: "Unknown error")
-                    }
-                }
+        object : SwingWorker<Result<Unit>, Unit>() {
+                override fun doInBackground(): Result<Unit> = engine.updateProfile(email, username, avatarUrl)
 
                 override fun done() {
-                    val (success, error) = get()
-                    onResult(success, error)
+                    val result = get()
+                    onResult(result.isSuccess, result.exceptionOrNull()?.message)
                     notifyObservers()
                 }
             }
@@ -568,27 +426,13 @@ class SyncViewModel(
         pushEnabled: Boolean,
         onResult: (Boolean, String?) -> Unit,
     ) {
-        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
-                override fun doInBackground(): Pair<Boolean, String?> {
-                    return try {
-                        syncService.updateNotificationPreferences(emailEnabled, pushEnabled)
-                        emailNotificationsEnabled = emailEnabled
-                        pushNotificationsEnabled = pushEnabled
-                        true to null
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired", e)
-                        handleSessionExpired()
-                        false to i18nService.translate("swing.session.expired")
-                    } catch (e: SyncException) {
-                        false to e.message
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        false to (e.message ?: "Unknown error")
-                    }
-                }
+        object : SwingWorker<Result<Unit>, Unit>() {
+                override fun doInBackground(): Result<Unit> =
+                    engine.updateNotificationPreferences(emailEnabled, pushEnabled)
 
                 override fun done() {
-                    val (success, error) = get()
-                    onResult(success, error)
+                    val result = get()
+                    onResult(result.isSuccess, result.exceptionOrNull()?.message)
                     notifyObservers()
                 }
             }
@@ -596,64 +440,25 @@ class SyncViewModel(
     }
 
     fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
-        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
-                override fun doInBackground(): Pair<Boolean, String?> {
-                    return try {
-                        syncService.deleteAccount()
-                        true to null
-                    } catch (e: SessionExpiredException) {
-                        logger.debug("Session expired during account deletion", e)
-                        false to i18nService.translate("swing.session.expired")
-                    } catch (e: SyncException) {
-                        false to e.message
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        false to (e.message ?: "Unknown error")
-                    }
-                }
+        object : SwingWorker<Result<Unit>, Unit>() {
+                override fun doInBackground(): Result<Unit> = engine.deleteAccount()
 
                 override fun done() {
-                    val (success, error) = get()
-                    if (success) {
-                        // Force local session clear after account deletion
-                        isLoggedIn = false
-                        userRole = null
-                        userName = ""
-                        userEmail = ""
-                        stopAutoSync()
-                    }
-                    onResult(success, error)
+                    val result = get()
+                    onResult(result.isSuccess, result.exceptionOrNull()?.message)
                     notifyObservers()
                 }
             }
             .execute()
     }
 
-    private fun handleSessionExpired() {
-        isLoggedIn = false
-        userRole = null
-        userName = ""
-        userEmail = ""
-        userAvatarUrl = null
-        stopAutoSync()
-        status = i18nService.translate("swing.session.expired")
-    }
-
     fun requestPasswordReset(email: String, onResult: (Boolean, String?) -> Unit) {
-        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
-                override fun doInBackground(): Pair<Boolean, String?> {
-                    return try {
-                        syncService.requestPasswordReset(email)
-                        true to null
-                    } catch (e: SyncException) {
-                        false to e.message
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        false to (e.message ?: "Unknown error")
-                    }
-                }
+        object : SwingWorker<Result<Unit>, Unit>() {
+                override fun doInBackground(): Result<Unit> = engine.requestPasswordReset(email)
 
                 override fun done() {
-                    val (success, error) = get()
-                    onResult(success, error)
+                    val result = get()
+                    onResult(result.isSuccess, result.exceptionOrNull()?.message)
                     notifyObservers()
                 }
             }
@@ -661,21 +466,12 @@ class SyncViewModel(
     }
 
     fun resetPassword(token: String, newPassword: String, onResult: (Boolean, String?) -> Unit) {
-        object : SwingWorker<Pair<Boolean, String?>, Unit>() {
-                override fun doInBackground(): Pair<Boolean, String?> {
-                    return try {
-                        syncService.resetPassword(token, newPassword)
-                        true to null
-                    } catch (e: SyncException) {
-                        false to e.message
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        false to (e.message ?: "Unknown error")
-                    }
-                }
+        object : SwingWorker<Result<Unit>, Unit>() {
+                override fun doInBackground(): Result<Unit> = engine.resetPassword(token, newPassword)
 
                 override fun done() {
-                    val (success, error) = get()
-                    onResult(success, error)
+                    val result = get()
+                    onResult(result.isSuccess, result.exceptionOrNull()?.message)
                     notifyObservers()
                 }
             }
@@ -683,13 +479,8 @@ class SyncViewModel(
     }
 
     fun resolveConflict(syncId: String, strategy: ConflictStrategy) {
-        try {
-            messageService.resolveConflict(syncId, strategy)
-            status = i18nService.translate("swing.status.conflictResolved", strategy.name)
-            loadMessages()
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            status = i18nService.translate("swing.status.conflictFailed", e.message ?: "unknown")
-            notifyObservers()
-        }
+        engine.resolveConflict(syncId, strategy)
+        status = i18nService.translate("swing.status.conflictResolved", strategy.name)
+        notifyObservers()
     }
 }

@@ -2,7 +2,7 @@ package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
 import io.github.rygel.outerstellar.platform.model.ContactSummary
-import io.github.rygel.outerstellar.platform.service.ContactService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import javafx.beans.property.SimpleStringProperty
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
 class ContactsController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(ContactsController::class.java)
-    private val contactService: ContactService by inject()
+    private val engine: DesktopSyncEngine by inject()
     private val themeManager: FxThemeManager by inject()
 
     @FXML private lateinit var contactsTable: TableView<ContactSummary>
@@ -49,8 +49,8 @@ class ContactsController : KoinComponent {
 
     private fun loadContacts() {
         try {
-            val contacts = contactService.listContacts()
-            contactsTable.items.setAll(contacts)
+            engine.loadContacts()
+            contactsTable.items.setAll(engine.state.contacts)
         } catch (e: Exception) {
             logger.warn("Load contacts failed: {}", e.message)
         }

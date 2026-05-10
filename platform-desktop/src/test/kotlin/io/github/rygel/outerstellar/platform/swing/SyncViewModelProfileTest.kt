@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.model.SyncException
@@ -8,6 +9,7 @@ import io.github.rygel.outerstellar.platform.model.UserProfileResponse
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -20,30 +22,20 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/**
- * Unit tests for profile operations in SyncViewModel.
- *
- * Covers:
- * - loadProfile populates userEmail, userAvatarUrl, notification flags
- * - loadProfile on session expiry logs out
- * - loadProfile on generic error reports error but stays logged in
- * - updateProfile calls syncService and reloads profile state
- * - updateProfile on session expiry logs out
- * - updateProfile on SyncException propagates error message
- * - updateNotificationPreferences persists flags in ViewModel
- * - updateNotificationPreferences on session expiry logs out
- * - deleteAccount clears session state on success
- * - deleteAccount on SyncException propagates error, keeps session
- */
 class SyncViewModelProfileTest {
 
     private val messageService = mockk<MessageService>(relaxed = true)
     private val syncService = mockk<SyncService>(relaxed = true)
     private val i18nService = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
 
+    private fun createVm(): SyncViewModel {
+        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
+        return SyncViewModel(engine, i18nService)
+    }
+
     private fun loginVm(): SyncViewModel {
         every { syncService.login("alice", "secret") } returns AuthTokenResponse("token", "alice", "USER")
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         vm.login("alice", "secret") { _, _ -> latch.countDown() }
         assertTrue(latch.await(3, TimeUnit.SECONDS), "Login timed out")
@@ -248,6 +240,7 @@ class SyncViewModelProfileTest {
     @Test
     fun `deleteAccount clears session state on success`() {
         every { syncService.deleteAccount() } returns Unit
+        every { syncService.logout() } returns Unit
         val vm = loginVm()
 
         val (success, error) = awaitCallback { vm.deleteAccount(it) }
@@ -263,6 +256,7 @@ class SyncViewModelProfileTest {
     @Test
     fun `deleteAccount notifies observers`() {
         every { syncService.deleteAccount() } returns Unit
+        every { syncService.logout() } returns Unit
         val vm = loginVm()
         val latch = CountDownLatch(1)
         vm.addObserver { latch.countDown() }

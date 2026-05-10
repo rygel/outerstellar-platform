@@ -1,10 +1,12 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -58,10 +60,15 @@ class SwingAppE2ETest {
         }
     }
 
+    private fun createVm(): SyncViewModel {
+        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
+        return SyncViewModel(engine, i18nService)
+    }
+
     @BeforeEach
     fun onSetUp() {
         robot = BasicRobot.robotWithNewAwtHierarchy()
-        val viewModel = SyncViewModel(messageService, null, syncService, i18nService)
+        val viewModel = createVm()
         val syncWindow =
             GuiActionRunner.execute<SyncWindow> {
                 val sw = SyncWindow(viewModel, ThemeManager(), i18nService)
@@ -80,7 +87,7 @@ class SwingAppE2ETest {
 
     @Test
     fun `viewmodel correctly holds author and content`() {
-        val viewModel = SyncViewModel(messageService, null, syncService, i18nService)
+        val viewModel = createVm()
         viewModel.author = "E2E Tester"
         viewModel.content = "Test content from E2E"
 

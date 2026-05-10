@@ -2,8 +2,7 @@ package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
 import io.github.rygel.outerstellar.platform.model.MessageSummary
-import io.github.rygel.outerstellar.platform.service.MessageService
-import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import javafx.application.Platform
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
@@ -27,8 +26,7 @@ class MessagesController : KoinComponent {
     }
 
     private val logger = LoggerFactory.getLogger(MessagesController::class.java)
-    private val messageService: MessageService by inject()
-    private val syncService: SyncService by inject()
+    private val engine: DesktopSyncEngine by inject()
     private val themeManager: FxThemeManager by inject()
 
     @FXML private lateinit var searchField: TextField
@@ -73,38 +71,39 @@ class MessagesController : KoinComponent {
         val author = authorField.text.trim()
         val content = contentArea.text.trim()
         if (author.isBlank() || content.isBlank()) return
-        try {
-            messageService.createLocalMessage(author, content)
-            authorField.clear()
-            contentArea.clear()
-            loadMessages()
-        } catch (e: Exception) {
-            logger.warn("Create message failed: {}", e.message)
-        }
+        Thread {
+                engine
+                    .createLocalMessage(author, content)
+                    .onSuccess {
+                        Platform.runLater {
+                            authorField.clear()
+                            contentArea.clear()
+                            loadMessages()
+                        }
+                    }
+                    .onFailure { logger.warn("Create message failed: {}", it.message) }
+            }
+            .also { it.isDaemon = true }
+            .start()
     }
 
     @FXML
     fun onSync() {
         Thread {
-                try {
-                    syncService.sync()
-                    Platform.runLater { loadMessages() }
-                } catch (e: Exception) {
-                    logger.warn("Sync failed: {}", e.message)
-                }
+                engine
+                    .sync()
+                    .onSuccess { Platform.runLater { loadMessages() } }
+                    .onFailure { logger.warn("Sync failed: {}", it.message) }
             }
             .also { it.isDaemon = true }
             .start()
     }
 
     private fun loadMessages() {
-        try {
-            val result = messageService.listMessages()
-            allMessages.setAll(result.items)
-            messagesList.items.setAll(result.items)
-        } catch (e: Exception) {
-            logger.warn("Load messages failed: {}", e.message)
-        }
+        engine.loadMessages()
+        val items = engine.state.messages
+        allMessages.setAll(items)
+        messagesList.items.setAll(items)
     }
 
     private fun filterMessages(query: String?) {
