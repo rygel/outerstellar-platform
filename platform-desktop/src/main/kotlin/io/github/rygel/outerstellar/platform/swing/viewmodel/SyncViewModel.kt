@@ -114,6 +114,10 @@ class SyncViewModel(
                 }
 
                 override fun onSessionExpired() {
+                    val s = engine.state
+                    isLoggedIn = s.isLoggedIn
+                    userName = s.userName
+                    userRole = s.userRole
                     status = i18nService.translate("swing.session.expired")
                     notifyObservers()
                 }
