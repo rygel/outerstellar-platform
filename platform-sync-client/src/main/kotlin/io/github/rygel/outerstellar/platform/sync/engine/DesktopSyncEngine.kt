@@ -181,7 +181,7 @@ class DesktopSyncEngine(
             val users = syncService.listUsers()
             updateState { it.copy(adminUsers = users) }
         } catch (e: SessionExpiredException) {
-            handleSessionExpired()
+            handleSessionExpired(e)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.warn("Failed to load users", e)
             fireError("loadUsers", e.message ?: "Unknown error")
@@ -249,7 +249,7 @@ class DesktopSyncEngine(
             val notifications = syncService.listNotifications()
             updateState { it.copy(notifications = notifications) }
         } catch (e: SessionExpiredException) {
-            handleSessionExpired()
+            handleSessionExpired(e)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.warn("Failed to load notifications", e)
             fireError("loadNotifications", e.message ?: "Unknown error")
@@ -261,7 +261,7 @@ class DesktopSyncEngine(
             syncService.markNotificationRead(notificationId)
             loadNotifications()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired()
+            handleSessionExpired(e)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.warn("Failed to mark notification read", e)
             fireError("markNotificationRead", e.message ?: "Unknown error")
@@ -273,7 +273,7 @@ class DesktopSyncEngine(
             syncService.markAllNotificationsRead()
             loadNotifications()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired()
+            handleSessionExpired(e)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.warn("Failed to mark all notifications read", e)
             fireError("markAllNotificationsRead", e.message ?: "Unknown error")
@@ -293,7 +293,7 @@ class DesktopSyncEngine(
                 )
             }
         } catch (e: SessionExpiredException) {
-            handleSessionExpired()
+            handleSessionExpired(e)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.warn("Failed to load profile", e)
             fireError("loadProfile", e.message ?: "Unknown error")
@@ -469,7 +469,10 @@ class DesktopSyncEngine(
         listeners.clear()
     }
 
-    private fun handleSessionExpired() {
+    private fun handleSessionExpired(e: Exception? = null) {
+        if (e != null) {
+            logger.warn("Session expired: ${e.message}", e)
+        }
         stopAutoSync()
         syncService.logout()
         updateState { EngineState(isOnline = it.isOnline, status = "Session expired") }
