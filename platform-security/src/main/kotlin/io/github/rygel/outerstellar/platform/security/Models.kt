@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.security
 
 import java.time.Instant
+import java.time.LocalDateTime
 import java.util.UUID
 
 enum class UserRole {
@@ -58,6 +59,8 @@ interface UserRepository {
     fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean)
 
     fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?)
+
+    fun countUsersSince(cutoff: LocalDateTime): Long
 }
 
 interface PasswordResetRepository {

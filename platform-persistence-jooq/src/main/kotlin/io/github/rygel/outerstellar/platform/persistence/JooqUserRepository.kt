@@ -129,4 +129,12 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             .where(PLT_USERS.ID.eq(userId))
             .execute()
     }
+
+    override fun countUsersSince(cutoff: LocalDateTime): Long {
+        val cutoffOffset = cutoff.atZone(ZoneOffset.UTC).toOffsetDateTime()
+        return dsl.selectCount()
+            .from(PLT_USERS)
+            .where(PLT_USERS.CREATED_AT.ge(cutoffOffset))
+            .fetchOne(0, Long::class.java) ?: 0L
+    }
 }
