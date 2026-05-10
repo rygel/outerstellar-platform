@@ -1,9 +1,11 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.mockk.mockk
 import java.awt.Component
 import java.awt.Container
@@ -39,7 +41,8 @@ class SyncWindowI18nTest {
     fun `refreshTranslations updates primary window labels and menus`() {
         val en = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
         val fr = I18nService.create("messages").also { it.setLocale(Locale.FRENCH) }
-        val viewModel = SyncViewModel(messageService, null, syncService, en)
+        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
+        val viewModel = SyncViewModel(engine, en)
         lateinit var window: SyncWindow
         runOnEdt { window = SyncWindow(viewModel, ThemeManager(), en) }
 

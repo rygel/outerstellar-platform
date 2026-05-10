@@ -1,11 +1,13 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -16,30 +18,20 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-/**
- * Unit tests for admin operations in SyncViewModel.
- *
- * Covers:
- * - loadUsers populates adminUsers on success
- * - loadUsers with empty result clears adminUsers
- * - toggleUserEnabled calls setUserEnabled with flipped value then reloads
- * - toggleUserRole flips USER→ADMIN and ADMIN→USER
- * - loadUsers non-session error sets status but does not log out
- * - toggleUserEnabled non-session error sets status but does not log out
- * - toggleUserRole non-session error sets status but does not log out
- * - loadUsers notifies observers after completion
- * - toggleUserEnabled notifies observers after completion
- * - toggleUserRole notifies observers after completion
- */
 class SyncViewModelAdminOperationsTest {
 
     private val messageService = mockk<MessageService>(relaxed = true)
     private val syncService = mockk<SyncService>(relaxed = true)
     private val i18nService = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
 
+    private fun createVm(): SyncViewModel {
+        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
+        return SyncViewModel(engine, i18nService)
+    }
+
     private fun loginVm(): SyncViewModel {
         every { syncService.login("alice", "secret") } returns AuthTokenResponse("token", "alice", "ADMIN")
-        val vm = SyncViewModel(messageService, null, syncService, i18nService)
+        val vm = createVm()
         val latch = CountDownLatch(1)
         vm.login("alice", "secret") { _, _ -> latch.countDown() }
         assertTrue(latch.await(3, TimeUnit.SECONDS), "Login timed out")

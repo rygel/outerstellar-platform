@@ -1,9 +1,11 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.mockk.mockk
 import java.awt.GraphicsEnvironment
 import java.util.Locale
@@ -32,7 +34,8 @@ class InfoDialogLayoutTest {
     @Test
     fun `info dialog action button is anchored below content`() {
         val i18n = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
-        val viewModel = SyncViewModel(messageService, null, syncService, i18n)
+        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
+        val viewModel = SyncViewModel(engine, i18n)
         val window = runOnEdtResult { SyncWindow(viewModel, ThemeManager(), i18n) }
 
         runOnEdt { window.configureForTest() }
