@@ -379,8 +379,6 @@ class SyncViewModel(
                     var errorMessage: String? = null
                     val listener =
                         object : EngineListener {
-                            override fun onStateChanged(newState: EngineState) {}
-
                             override fun onError(operation: String, message: String) {
                                 if (operation == "loadProfile") errorMessage = message
                             }
