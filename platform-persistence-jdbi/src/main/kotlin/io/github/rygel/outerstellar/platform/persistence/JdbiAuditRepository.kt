@@ -28,7 +28,9 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
     override fun findRecent(limit: Int): List<AuditEntry> {
         return jdbi.withHandle<List<AuditEntry>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_audit_log ORDER BY created_at DESC LIMIT :limit")
+                .createQuery(
+                    "SELECT id, actor_id, actor_username, target_id, target_username, action, detail, created_at FROM plt_audit_log ORDER BY created_at DESC LIMIT :limit"
+                )
                 .bind("limit", limit)
                 .map { rs, _ ->
                     AuditEntry(
@@ -49,7 +51,9 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
     override fun findPage(limit: Int, offset: Int): List<AuditEntry> =
         jdbi.withHandle<List<AuditEntry>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_audit_log ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
+                .createQuery(
+                    "SELECT id, actor_id, actor_username, target_id, target_username, action, detail, created_at FROM plt_audit_log ORDER BY created_at DESC LIMIT :limit OFFSET :offset"
+                )
                 .bind("limit", limit)
                 .bind("offset", offset)
                 .map { rs, _ ->

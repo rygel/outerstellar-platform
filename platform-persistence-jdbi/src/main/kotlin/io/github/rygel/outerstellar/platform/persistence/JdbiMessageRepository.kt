@@ -52,7 +52,9 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     override fun listDirtyMessages(): List<StoredMessage> =
         jdbi.withHandle<List<StoredMessage>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_messages WHERE dirty = true AND deleted_at IS NULL")
+                .createQuery(
+                    "SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages WHERE dirty = true AND deleted_at IS NULL"
+                )
                 .map { rs, _ -> mapMessage(rs) }
                 .list()
         }
@@ -70,7 +72,9 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
 
     private fun findBySyncId(handle: Handle, syncId: String): StoredMessage? =
         handle
-            .createQuery("SELECT * FROM plt_messages WHERE sync_id = :syncId")
+            .createQuery(
+                "SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages WHERE sync_id = :syncId"
+            )
             .bind("syncId", syncId)
             .map { rs, _ -> mapMessage(rs) }
             .findOne()
@@ -81,7 +85,7 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             handle
                 .createQuery(
                     """
-                    SELECT * FROM plt_messages
+                    SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages
                     WHERE updated_at_epoch_ms > :since AND deleted_at IS NULL
                     """
                 )

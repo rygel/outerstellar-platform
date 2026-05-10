@@ -199,4 +199,14 @@ class ErrorPagesIntegrationTest : WebTest() {
         val contentType = response.header("content-type").orEmpty()
         assertTrue(contentType.contains("application/json"))
     }
+
+    // ---- requestId in JSON errors ----
+
+    @Test
+    fun `404 API JSON body includes requestId`() {
+        val response = app(Request(GET, "/api/v1/nonexistent").header("X-Request-Id", "test-req-123"))
+        val body = response.bodyString()
+        assertTrue(body.contains("requestId"), "API 404 JSON should include requestId, got: $body")
+        assertTrue(body.contains("test-req-123"), "API 404 JSON should include the request ID value, got: $body")
+    }
 }

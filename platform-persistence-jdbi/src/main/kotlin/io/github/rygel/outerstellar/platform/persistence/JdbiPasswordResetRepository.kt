@@ -26,7 +26,9 @@ class JdbiPasswordResetRepository(private val jdbi: Jdbi) : PasswordResetReposit
     override fun findByToken(token: String): PasswordResetToken? {
         return jdbi.withHandle<PasswordResetToken?, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_password_reset_tokens WHERE token = :token")
+                .createQuery(
+                    "SELECT id, user_id, token, expires_at, used FROM plt_password_reset_tokens WHERE token = :token"
+                )
                 .bind("token", token)
                 .map { rs, _ ->
                     PasswordResetToken(

@@ -9,6 +9,6 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="io.github.rygel.outerstellar.platform" level="DEBUG"/>
+    <logger name="io.github.rygel.outerstellar.platform" level="INFO"/>
     <logger name="org.flywaydb.core.internal.scanner.classpath.ClassPathScanner" level="ERROR"/>
 </configuration>

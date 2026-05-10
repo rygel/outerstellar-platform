@@ -24,16 +24,19 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
                 ORDER BY name ASC
                 LIMIT :limit OFFSET :offset
                 """
-            val q = handle.createQuery(sql)
-            bindings(q)
-            q.bind("limit", limit)
-                .bind("offset", offset)
-                .map { rs, _ ->
-                    val contactId = rs.getLong("id")
-                    mapContact(rs, handle, contactId)
-                }
-                .list()
-                .map(StoredContact::toSummary)
+            val contacts =
+                handle
+                    .createQuery(sql)
+                    .also { bindings(it) }
+                    .bind("limit", limit)
+                    .bind("offset", offset)
+                    .map { rs, _ -> readContactRow(rs) }
+                    .list()
+            val contactIds = contacts.map { it.id }
+            val emailsByContact = loadEmailsForContacts(handle, contactIds)
+            val phonesByContact = loadPhonesForContacts(handle, contactIds)
+            val socialsByContact = loadSocialsForContacts(handle, contactIds)
+            contacts.map { mapContact(it, emailsByContact, phonesByContact, socialsByContact).toSummary() }
         }
     }
 
@@ -48,30 +51,48 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
 
     override fun listDirtyContacts(): List<StoredContact> =
         jdbi.withHandle<List<StoredContact>, Exception> { handle ->
-            handle
-                .createQuery("SELECT * FROM plt_contacts WHERE dirty = true")
-                .map { rs, _ -> mapContact(rs, handle, rs.getLong("id")) }
-                .list()
+            val contacts =
+                handle
+                    .createQuery("SELECT * FROM plt_contacts WHERE dirty = true")
+                    .map { rs, _ -> readContactRow(rs) }
+                    .list()
+            val contactIds = contacts.map { it.id }
+            val emailsByContact = loadEmailsForContacts(handle, contactIds)
+            val phonesByContact = loadPhonesForContacts(handle, contactIds)
+            val socialsByContact = loadSocialsForContacts(handle, contactIds)
+            contacts.map { mapContact(it, emailsByContact, phonesByContact, socialsByContact) }
         }
 
     override fun findBySyncId(syncId: String): StoredContact? =
         jdbi.withHandle<StoredContact?, Exception> { handle -> findBySyncId(handle, syncId) }
 
-    private fun findBySyncId(handle: Handle, syncId: String): StoredContact? =
-        handle
-            .createQuery("SELECT * FROM plt_contacts WHERE sync_id = :syncId")
-            .bind("syncId", syncId)
-            .map { rs, _ -> mapContact(rs, handle, rs.getLong("id")) }
-            .findOne()
-            .orElse(null)
+    private fun findBySyncId(handle: Handle, syncId: String): StoredContact? {
+        val contact =
+            handle
+                .createQuery("SELECT * FROM plt_contacts WHERE sync_id = :syncId")
+                .bind("syncId", syncId)
+                .map { rs, _ -> readContactRow(rs) }
+                .findOne()
+                .orElse(null) ?: return null
+        val emailsByContact = loadEmailsForContacts(handle, listOf(contact.id))
+        val phonesByContact = loadPhonesForContacts(handle, listOf(contact.id))
+        val socialsByContact = loadSocialsForContacts(handle, listOf(contact.id))
+        return mapContact(contact, emailsByContact, phonesByContact, socialsByContact)
+    }
 
     override fun findChangesSince(updatedAtEpochMs: Long): List<StoredContact> =
         jdbi.withHandle<List<StoredContact>, Exception> { handle ->
-            handle
-                .createQuery("SELECT * FROM plt_contacts WHERE updated_at_epoch_ms > :since")
-                .bind("since", updatedAtEpochMs)
-                .map { rs, _ -> mapContact(rs, handle, rs.getLong("id")) }
-                .list()
+            val contacts =
+                handle
+                    .createQuery("SELECT * FROM plt_contacts WHERE updated_at_epoch_ms > :since")
+                    .bind("since", updatedAtEpochMs)
+                    .map { rs, _ -> readContactRow(rs) }
+                    .list()
+            val contactIds = contacts.map { it.id }
+            val emailsByContact = loadEmailsForContacts(handle, contactIds)
+            val phonesByContact = loadPhonesForContacts(handle, contactIds)
+            val socialsByContact = loadSocialsForContacts(handle, contactIds)
+            contacts.map { mapContact(it, emailsByContact, phonesByContact, socialsByContact) }
         }
 
     override fun createServerContact(
@@ -426,32 +447,25 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         return FilterClause(whereClause) { q -> bindings.forEach { (key, value) -> q.bind(key, value) } }
     }
 
-    private fun mapContact(rs: java.sql.ResultSet, handle: Handle, contactId: Long): StoredContact {
-        val emails =
-            handle
-                .createQuery("SELECT email FROM plt_contact_emails WHERE contact_id = :id")
-                .bind("id", contactId)
-                .mapTo(String::class.java)
-                .list()
-        val phones =
-            handle
-                .createQuery("SELECT phone FROM plt_contact_phones WHERE contact_id = :id")
-                .bind("id", contactId)
-                .mapTo(String::class.java)
-                .list()
-        val socials =
-            handle
-                .createQuery("SELECT social_media FROM plt_contact_socials WHERE contact_id = :id")
-                .bind("id", contactId)
-                .mapTo(String::class.java)
-                .list()
+    private data class ContactRowData(
+        val id: Long,
+        val syncId: String,
+        val name: String,
+        val company: String,
+        val companyAddress: String,
+        val department: String,
+        val updatedAtEpochMs: Long,
+        val dirty: Boolean,
+        val deleted: Boolean,
+        val version: Long,
+        val syncConflict: String?,
+    )
 
-        return StoredContact(
+    private fun readContactRow(rs: java.sql.ResultSet): ContactRowData =
+        ContactRowData(
+            id = rs.getLong("id"),
             syncId = rs.getString("sync_id") ?: "unknown",
             name = rs.getString("name") ?: "unknown",
-            emails = emails,
-            phones = phones,
-            socialMedia = socials,
             company = rs.getString("company") ?: "",
             companyAddress = rs.getString("company_address") ?: "",
             department = rs.getString("department") ?: "",
@@ -461,6 +475,57 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
             version = rs.getLong("version"),
             syncConflict = rs.getString("sync_conflict"),
         )
+
+    private fun mapContact(
+        row: ContactRowData,
+        emailsByContact: Map<Long, List<String>>,
+        phonesByContact: Map<Long, List<String>>,
+        socialsByContact: Map<Long, List<String>>,
+    ): StoredContact =
+        StoredContact(
+            syncId = row.syncId,
+            name = row.name,
+            emails = emailsByContact[row.id] ?: emptyList(),
+            phones = phonesByContact[row.id] ?: emptyList(),
+            socialMedia = socialsByContact[row.id] ?: emptyList(),
+            company = row.company,
+            companyAddress = row.companyAddress,
+            department = row.department,
+            updatedAtEpochMs = row.updatedAtEpochMs,
+            dirty = row.dirty,
+            deleted = row.deleted,
+            version = row.version,
+            syncConflict = row.syncConflict,
+        )
+
+    private fun loadEmailsForContacts(handle: Handle, contactIds: Collection<Long>): Map<Long, List<String>> {
+        if (contactIds.isEmpty()) return emptyMap()
+        return handle
+            .createQuery("SELECT contact_id, email FROM plt_contact_emails WHERE contact_id IN (<ids>)")
+            .bindList("ids", contactIds)
+            .map { rs, _ -> rs.getLong("contact_id") to rs.getString("email")!! }
+            .list()
+            .groupBy({ it.first }, { it.second })
+    }
+
+    private fun loadPhonesForContacts(handle: Handle, contactIds: Collection<Long>): Map<Long, List<String>> {
+        if (contactIds.isEmpty()) return emptyMap()
+        return handle
+            .createQuery("SELECT contact_id, phone FROM plt_contact_phones WHERE contact_id IN (<ids>)")
+            .bindList("ids", contactIds)
+            .map { rs, _ -> rs.getLong("contact_id") to rs.getString("phone")!! }
+            .list()
+            .groupBy({ it.first }, { it.second })
+    }
+
+    private fun loadSocialsForContacts(handle: Handle, contactIds: Collection<Long>): Map<Long, List<String>> {
+        if (contactIds.isEmpty()) return emptyMap()
+        return handle
+            .createQuery("SELECT contact_id, social_media FROM plt_contact_socials WHERE contact_id IN (<ids>)")
+            .bindList("ids", contactIds)
+            .map { rs, _ -> rs.getLong("contact_id") to rs.getString("social_media")!! }
+            .list()
+            .groupBy({ it.first }, { it.second })
     }
 
     companion object {

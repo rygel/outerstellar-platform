@@ -42,7 +42,9 @@ class JdbiDeviceTokenRepository(private val jdbi: Jdbi) : DeviceTokenRepository 
     override fun findByUserId(userId: UUID): List<DeviceToken> =
         jdbi.withHandle<List<DeviceToken>, Exception> { handle ->
             handle
-                .createQuery("SELECT * FROM plt_device_tokens WHERE user_id = :userId ORDER BY last_seen DESC")
+                .createQuery(
+                    "SELECT id, user_id, platform, token, app_bundle FROM plt_device_tokens WHERE user_id = :userId ORDER BY last_seen DESC"
+                )
                 .bind("userId", userId)
                 .map { rs, _ -> mapRow(rs) }
                 .list()

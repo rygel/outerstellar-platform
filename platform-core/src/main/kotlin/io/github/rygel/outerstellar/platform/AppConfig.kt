@@ -1,13 +1,17 @@
 package io.github.rygel.outerstellar.platform
 
 import org.koin.dsl.module
+import org.slf4j.LoggerFactory
 import org.snakeyaml.engine.v2.api.Load
 import org.snakeyaml.engine.v2.api.LoadSettings
 
 private const val DEFAULT_HTTP_PORT = 8080
 private const val DEFAULT_SMTP_PORT = 587
 private const val DEFAULT_SESSION_TIMEOUT_MINUTES = 30
+private const val MIN_SESSION_TIMEOUT_MINUTES = 1
 private const val DEFAULT_JWT_EXPIRY_SECONDS = 86400L
+private const val MAX_HTTP_PORT = 65535
+private const val MIN_HTTP_PORT = 1
 private const val DEFAULT_CSP_POLICY =
     "default-src 'self'; script-src 'self' 'unsafe-inline'; " +
         "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:;"
@@ -53,6 +57,8 @@ data class AppConfig(
     val cspPolicy: String = DEFAULT_CSP_POLICY,
 ) {
     companion object {
+        private val logger = LoggerFactory.getLogger(AppConfig::class.java)
+
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
             val yamlData = loadYaml(profile)
@@ -79,17 +85,25 @@ data class AppConfig(
 
         private fun buildFromYaml(yaml: Map<String, Any>?, env: Map<String, String>): AppConfig {
             if (yaml == null) return AppConfig()
+            val port = yaml.int("port", env, "PORT", DEFAULT_HTTP_PORT).coerceIn(MIN_HTTP_PORT, MAX_HTTP_PORT)
+            val timeout =
+                yaml
+                    .int("sessionTimeoutMinutes", env, "SESSIONTIMEOUTMINUTES", DEFAULT_SESSION_TIMEOUT_MINUTES)
+                    .coerceAtLeast(MIN_SESSION_TIMEOUT_MINUTES)
+            val jdbcUrl = yaml.str("jdbcUrl", env, "JDBC_URL", "jdbc:postgresql://localhost:5432/outerstellar")
+            if (jdbcUrl.isBlank()) {
+                logger.warn("JDBC_URL is blank — database connection will fail at runtime")
+            }
             return AppConfig(
                 version = yaml.str("version", env, "VERSION", "dev"),
-                port = yaml.int("port", env, "PORT", DEFAULT_HTTP_PORT),
-                jdbcUrl = yaml.str("jdbcUrl", env, "JDBC_URL", "jdbc:postgresql://localhost:5432/outerstellar"),
+                port = port,
+                jdbcUrl = jdbcUrl,
                 jdbcUser = yaml.str("jdbcUser", env, "JDBC_USER", "outerstellar"),
                 jdbcPassword = yaml.str("jdbcPassword", env, "JDBC_PASSWORD", "outerstellar"),
                 devDashboardEnabled = yaml.bool("devDashboardEnabled", env, "DEV_DASHBOARD_ENABLED", false),
                 devMode = yaml.bool("devMode", env, "DEVMODE", false),
                 sessionCookieSecure = yaml.bool("sessionCookieSecure", env, "SESSIONCOOKIESECURE", false),
-                sessionTimeoutMinutes =
-                    yaml.int("sessionTimeoutMinutes", env, "SESSIONTIMEOUTMINUTES", DEFAULT_SESSION_TIMEOUT_MINUTES),
+                sessionTimeoutMinutes = timeout,
                 corsOrigins = yaml.str("corsOrigins", env, "CORSORIGINS", "*"),
                 csrfEnabled = yaml.bool("csrfEnabled", env, "CSRFENABLED", true),
                 segment = buildSegmentConfig(yaml["segment"] as? Map<String, Any>, env),
