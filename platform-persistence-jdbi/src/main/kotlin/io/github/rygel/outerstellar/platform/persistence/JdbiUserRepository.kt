@@ -211,6 +211,15 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         }
     }
 
+    override fun countUsersSince(cutoff: LocalDateTime): Long =
+        jdbi.withHandle<Long, Exception> { handle ->
+            handle
+                .createQuery("SELECT COUNT(*) FROM plt_users WHERE created_at >= :cutoff")
+                .bind("cutoff", cutoff)
+                .mapTo(Long::class.java)
+                .one()
+        }
+
     private fun mapUser(rs: java.sql.ResultSet): User {
         val lastActivity = rs.getTimestamp("last_activity_at")
         return User(
