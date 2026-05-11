@@ -53,6 +53,8 @@ data class AppConfig(
     val segment: SegmentConfig = SegmentConfig(),
     val email: EmailConfig = EmailConfig(),
     val appBaseUrl: String = "http://localhost:8080",
+    val maxFailedLoginAttempts: Int = 10,
+    val lockoutDurationSeconds: Long = 900,
     val jwt: JwtConfig = JwtConfig(),
     val cspPolicy: String = DEFAULT_CSP_POLICY,
 ) {
@@ -109,6 +111,8 @@ data class AppConfig(
                 segment = buildSegmentConfig(yaml["segment"] as? Map<String, Any>, env),
                 email = buildEmailConfig(yaml["email"] as? Map<String, Any>, env),
                 appBaseUrl = yaml.str("appBaseUrl", env, "APPBASEURL", "http://localhost:8080"),
+                maxFailedLoginAttempts = yaml.int("maxFailedLoginAttempts", env, "MAX_FAILED_LOGIN_ATTEMPTS", 10),
+                lockoutDurationSeconds = yaml.long("lockoutDurationSeconds", env, "LOCKOUT_DURATION_SECONDS", 900),
                 jwt = buildJwtConfig(yaml["jwt"] as? Map<String, Any>, env),
                 cspPolicy = (yaml["cspPolicy"] as? String) ?: DEFAULT_CSP_POLICY,
             )

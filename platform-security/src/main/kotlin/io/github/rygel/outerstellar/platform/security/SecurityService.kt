@@ -339,4 +339,12 @@ class SecurityService(
 }
 
 private fun User.toSummary() =
-    UserSummary(id = id.toString(), username = username, email = email, role = role.name, enabled = enabled)
+    UserSummary(
+        id = id.toString(),
+        username = username,
+        email = email,
+        role = role.name,
+        enabled = enabled,
+        failedLoginAttempts = failedLoginAttempts,
+        lockedUntil = lockedUntil,
+    )

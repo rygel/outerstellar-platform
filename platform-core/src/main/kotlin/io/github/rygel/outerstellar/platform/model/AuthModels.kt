@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.model
 
+import java.time.Instant
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
@@ -12,7 +13,15 @@ import kotlinx.serialization.Serializable
 @Serializable data class ChangePasswordRequest(val currentPassword: String, val newPassword: String)
 
 @Serializable
-data class UserSummary(val id: String, val username: String, val email: String, val role: String, val enabled: Boolean)
+data class UserSummary(
+    val id: String,
+    val username: String,
+    val email: String,
+    val role: String,
+    val enabled: Boolean,
+    val failedLoginAttempts: Int = 0,
+    @Contextual val lockedUntil: Instant? = null,
+)
 
 @Serializable data class SetUserEnabledRequest(val enabled: Boolean)
 
