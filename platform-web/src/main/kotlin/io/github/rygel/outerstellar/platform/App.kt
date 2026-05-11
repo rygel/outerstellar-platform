@@ -527,6 +527,7 @@ private fun buildFilterChain(
                         textResolver = plugin?.textResolver,
                         adminNavItems = adminNavItems,
                     ),
+                    cookieSecure = config.sessionCookieSecure,
                 )
             )
 

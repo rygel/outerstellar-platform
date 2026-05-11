@@ -43,8 +43,10 @@ private const val DEFAULT_CSP_POLICY =
         "script-src 'self'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "font-src 'self'; " +
-        "connect-src 'self' ws: wss:; " +
-        "img-src 'self' data:;"
+        "connect-src 'self' wss:; " +
+        "img-src 'self' data:; " +
+        "base-uri 'self'; " +
+        "form-action 'self'"
 
 private fun isNonPagePath(path: String): Boolean =
     path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
@@ -116,6 +118,17 @@ private fun isStaticAsset(path: String): Boolean =
         path.endsWith(".png") ||
         path.endsWith(".svg") ||
         path.endsWith(".ico")
+
+private fun preferenceCookie(
+    value: String?,
+    name: String,
+    maxAge: Long,
+    secure: Boolean,
+    validator: (String) -> Boolean,
+): Cookie? =
+    value?.takeIf(validator)?.let {
+        Cookie(name, it, maxAge = maxAge, path = "/", sameSite = SameSite.Strict, secure = secure)
+    }
 
 private fun persistUserPreferences(
     user: User?,
@@ -250,6 +263,7 @@ object Filters {
         jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
         securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
         pluginOptions: PluginOptions = PluginOptions(),
+        cookieSecure: Boolean = true,
     ): Filter = Filter { next: HttpHandler ->
         { request ->
             val context =
@@ -278,25 +292,21 @@ object Filters {
             val cookieMaxAge = Duration.ofDays(COOKIE_MAX_AGE_DAYS).toSeconds()
 
             val langCookie =
-                request
-                    .query("lang")
-                    ?.takeIf { it in setOf("en", "fr") }
-                    ?.let { Cookie(WebContext.LANG_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+                preferenceCookie(request.query("lang"), WebContext.LANG_COOKIE, cookieMaxAge, cookieSecure) {
+                    it in setOf("en", "fr")
+                }
             val themeCookie =
-                request
-                    .query("theme")
-                    ?.takeIf { v -> ThemeCatalog.isValidTheme(v) }
-                    ?.let { Cookie(WebContext.THEME_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+                preferenceCookie(request.query("theme"), WebContext.THEME_COOKIE, cookieMaxAge, cookieSecure) { v ->
+                    ThemeCatalog.isValidTheme(v)
+                }
             val layoutCookie =
-                request
-                    .query("layout")
-                    ?.takeIf { it in setOf("nice", "cozy", "compact") }
-                    ?.let { Cookie(WebContext.LAYOUT_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+                preferenceCookie(request.query("layout"), WebContext.LAYOUT_COOKIE, cookieMaxAge, cookieSecure) {
+                    it in setOf("nice", "cozy", "compact")
+                }
             val shellCookie =
-                request
-                    .query("shell")
-                    ?.takeIf { it in setOf("sidebar", "topbar") }
-                    ?.let { Cookie(WebContext.SHELL_COOKIE, it, maxAge = cookieMaxAge, path = "/") }
+                preferenceCookie(request.query("shell"), WebContext.SHELL_COOKIE, cookieMaxAge, cookieSecure) {
+                    it in setOf("sidebar", "topbar")
+                }
 
             persistUserPreferences(contextUser, langCookie, themeCookie, layoutCookie, userRepository)
 
