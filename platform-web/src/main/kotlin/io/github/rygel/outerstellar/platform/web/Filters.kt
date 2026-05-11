@@ -481,7 +481,10 @@ object Filters {
         logger.error("Error handling request {}: {}", request.uri, e.message, e)
 
         return if (request.uri.path.startsWith("/api/")) {
-            jsonErrorResponse(status, e.message ?: "An unexpected error occurred", request)
+            val safeMessage =
+                if (e is OuterstellarException) e.message ?: "An unexpected error occurred"
+                else "An unexpected error occurred"
+            jsonErrorResponse(status, safeMessage, request)
         } else if (request.header("HX-Request") == "true") {
             val safeMessage = if (e is OuterstellarException) e.message ?: "Action failed" else "Action failed"
             Response(status).body(safeMessage)

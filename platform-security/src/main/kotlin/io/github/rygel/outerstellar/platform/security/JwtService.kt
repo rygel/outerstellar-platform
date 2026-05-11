@@ -15,6 +15,12 @@ private val logger = LoggerFactory.getLogger("outerstellar.JwtService")
 
 class JwtService(private val config: JwtConfig) {
 
+    init {
+        if (config.enabled && config.secret.isBlank()) {
+            logger.warn("JWT is enabled but secret is blank — JWT authentication will be disabled")
+        }
+    }
+
     /** True only when JWT is enabled and a secret is configured. */
     val isEnabled: Boolean
         get() = config.enabled && config.secret.isNotBlank()

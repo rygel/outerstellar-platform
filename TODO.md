@@ -20,9 +20,9 @@ Architecture, security, and maintainability improvements identified during code 
   Token is sent as `?token=$tokenValue` in the reset link, leaking via Referer header, browser history, and server logs. Should use POST-based submission.
   — `platform-security/.../security/PasswordResetService.kt:38`
 
-- [ ] **Session cookie `Secure` flag defaults to `false`**
-  The `sessionCookieSecure` config defaults to `false`, transmitting session cookies over unencrypted HTTP. Should default to `true` for production profiles.
-  — `platform-core/.../AppConfig.kt:49`
+- [x] ~~**Session cookie `Secure` flag defaults to `false`**~~
+  Fixed — both the data class default and YAML/env fallback now default to `true`.
+  — `platform-core/.../AppConfig.kt:51`
 
 ### Hardcoded Values
 
@@ -54,33 +54,27 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Security
 
-- [ ] **Invalidate all user sessions on password change**
-  When a user changes their password, existing sessions remain valid. An attacker who compromised a session can continue using it even after the password is changed.
-  — `platform-security/.../security/SecurityService.kt:109-123`
+- [x] ~~**Invalidate all user sessions on password change**~~
+  Fixed in PR #229 — `sessionRepository?.deleteByUserId()` called in `changePassword()`.
 
 - [ ] **Add dependency vulnerability scanning to CI**
   No OWASP Dependency-Check, Snyk, or Dependabot is configured. Dependency vulnerabilities go undetected.
   — CI pipeline, `.github/dependabot.yml` (missing)
 
-- [ ] **Persist authentication failures to audit table**
-  Failed login attempts are only logged via SLF4J, not persisted. This makes forensic analysis harder.
-  — `platform-security/.../security/SecurityService.kt:59-83`
+- [x] ~~**Persist authentication failures to audit table**~~
+  Fixed in PR #229 — `AUTHENTICATION_FAILED` entries for all failure paths.
 
-- [ ] **Add audit logging for API key operations**
-  `ApiKeyService` creates and deletes API keys without calling `audit()`.
-  — `platform-security/.../security/ApiKeyService.kt`
+- [x] ~~**Add audit logging for API key operations**~~
+  Fixed in PR #229 — `API_KEY_CREATED` and `API_KEY_DELETED` audit entries.
 
-- [ ] **Add SameSite/Secure flags to preference cookies**
-  `app_lang`, `app_theme`, `app_layout`, `app_shell` cookies are created without `SameSite`, `Secure`, or `HttpOnly` flags.
-  — `platform-web/.../web/Filters.kt:284-299`
+- [x] ~~**Add SameSite/Secure flags to preference cookies**~~
+  Fixed in PR #229 — `SameSite.Strict` + configurable `Secure` flag via `sessionCookieSecure`.
 
-- [ ] **CSP `connect-src` allows `ws:` (unencrypted WebSocket)**
-  Should be `wss:` only in production to match HSTS policy.
-  — `platform-web/.../web/Filters.kt:41-47`
+- [x] ~~**CSP `connect-src` allows `ws:` (unencrypted WebSocket)**~~
+  Fixed in PR #229 — removed `ws:`, only `wss:` remains.
 
-- [ ] **CSP missing `base-uri` and `form-action` directives**
-  Add `base-uri 'self'; form-action 'self'` for defense-in-depth against base-tag hijacking and form submission to external sites.
-  — `platform-web/.../web/Filters.kt:41-47`
+- [x] ~~**CSP missing `base-uri` and `form-action` directives**~~
+  Fixed in PR #229 — added `base-uri 'self'; form-action 'self'`.
 
 - [ ] **Login rate limiting is per-IP, not per-account**
   Attacker can brute-force a single account through IP rotation.
@@ -248,6 +242,16 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 ---
 
 ## Completed
+
+- [x] **Invalidate all user sessions on password change** (PR #229)
+- [x] **Persist authentication failures to audit table** (PR #229)
+- [x] **Add audit logging for API key operations** (PR #229)
+- [x] **Add SameSite/Secure flags to preference cookies** (PR #229)
+- [x] **Harden CSP: base-uri, form-action, remove ws:** (PR #229)
+- [x] **Session cookie `Secure` flag defaults to `true`**
+- [x] **Account lockout after failed logins** (PR #227)
+- [x] **HSTS header** (PR #225)
+- [x] **SSRF protection for IPv6, DNS rebinding** (PR #225)
 
 - [x] **Targeted cache invalidation in `MessageService`**
   — `platform-core/.../service/MessageService.kt` lines 129–130, 150–152, 197, 207–208, 240–242, 276–278
