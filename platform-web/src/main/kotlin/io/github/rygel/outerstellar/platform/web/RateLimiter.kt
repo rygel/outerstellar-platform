@@ -17,6 +17,8 @@ private const val DEFAULT_WINDOW_MS = 60_000L
 private const val RESET_MAX_REQUESTS = 5
 private const val RESET_WINDOW_MS = 900_000L // 15 minutes
 private const val MAX_BUCKETS = 10_000L
+private const val ACCOUNT_MAX_REQUESTS = 20
+private const val ACCOUNT_WINDOW_MS = 900_000L // 15 minutes
 
 class TokenBucket(private val maxRequests: Int, private val windowMs: Long) {
     private val count = AtomicInteger(0)
@@ -57,10 +59,16 @@ fun rateLimitFilter(
             "/auth/components/reset-confirm",
         ),
 ): Filter {
-    val buckets =
+    val ipBuckets =
         Caffeine.newBuilder()
             .maximumSize(MAX_BUCKETS)
             .expireAfterWrite(RESET_WINDOW_MS * 2, TimeUnit.MILLISECONDS)
+            .build<String, TokenBucket>()
+
+    val accountBuckets =
+        Caffeine.newBuilder()
+            .maximumSize(MAX_BUCKETS)
+            .expireAfterWrite(ACCOUNT_WINDOW_MS * 2, TimeUnit.MILLISECONDS)
             .build<String, TokenBucket>()
 
     return Filter { next: HttpHandler ->
@@ -76,18 +84,56 @@ fun rateLimitFilter(
                 val effectiveMax = override?.maxRequests ?: maxRequests
                 val effectiveWindow = override?.windowMs ?: windowMs
 
-                val key = "$clientIp:$path"
-                val bucket = buckets.get(key) { TokenBucket(effectiveMax, effectiveWindow) }
+                val ipKey = "$clientIp:$path"
+                val ipBucket = ipBuckets.get(ipKey) { TokenBucket(effectiveMax, effectiveWindow) }
 
-                if (bucket.tryConsume()) {
-                    next(request)
-                } else {
+                if (!ipBucket.tryConsume()) {
                     logger.warn("Rate limit exceeded for {} on {}", clientIp, path)
-                    Response(Status.TOO_MANY_REQUESTS).body("Too many requests. Please try again later.")
+                    return@Filter Response(Status.TOO_MANY_REQUESTS).body("Too many requests. Please try again later.")
                 }
+
+                val account = extractAccountIdentifier(request)
+                if (account != null) {
+                    val accountKey = "account:$account"
+                    val accountBucket =
+                        accountBuckets.get(accountKey) { TokenBucket(ACCOUNT_MAX_REQUESTS, ACCOUNT_WINDOW_MS) }
+
+                    if (!accountBucket.tryConsume()) {
+                        logger.warn("Per-account rate limit exceeded for account {} on {}", account, path)
+                        return@Filter Response(Status.TOO_MANY_REQUESTS)
+                            .body("Too many login attempts for this account. Please try again later.")
+                    }
+                }
+
+                next(request)
             } else {
                 next(request)
             }
         }
     }
+}
+
+private fun extractAccountIdentifier(request: org.http4k.core.Request): String? {
+    val contentType = request.header("content-type").orEmpty()
+    val body = request.bodyString()
+    if (body.isBlank()) return null
+
+    return if (contentType.contains("json")) {
+        extractJsonValue(body, "username") ?: extractJsonValue(body, "email")
+    } else if (contentType.contains("form")) {
+        val params =
+            body.split("&").associate {
+                val parts = it.split("=", limit = 2)
+                if (parts.size == 2) parts[0] to java.net.URLDecoder.decode(parts[1], "UTF-8") else null to null
+            }
+        params["email"]?.trim()?.lowercase() ?: params["username"]?.trim()?.lowercase()
+    } else {
+        null
+    }
+}
+
+private fun extractJsonValue(json: String, key: String): String? {
+    val pattern = "\"$key\"\\s*:\\s*\"([^\"]+)\""
+    val match = Regex(pattern).find(json)
+    return match?.groupValues?.get(1)?.trim()?.lowercase()
 }
