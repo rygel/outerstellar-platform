@@ -62,6 +62,12 @@ interface UserRepository {
 
     fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?)
 
+    fun incrementFailedLoginAttempts(userId: UUID): Int
+
+    fun resetFailedLoginAttempts(userId: UUID)
+
+    fun updateLockedUntil(userId: UUID, lockedUntil: Instant?)
+
     fun countUsersSince(cutoff: LocalDateTime): Long
 }
 

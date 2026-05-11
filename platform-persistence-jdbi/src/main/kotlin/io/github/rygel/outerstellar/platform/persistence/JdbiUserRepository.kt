@@ -3,6 +3,7 @@ package io.github.rygel.outerstellar.platform.persistence
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
@@ -207,6 +208,50 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
                 .bind("theme", theme)
                 .bind("layout", layout)
                 .bind("id", userId)
+                .execute()
+        }
+    }
+
+    override fun incrementFailedLoginAttempts(userId: UUID): Int {
+        return jdbi.withHandle<Int, Exception> { handle ->
+            handle
+                .createQuery(
+                    """
+                    UPDATE plt_users
+                    SET failed_login_attempts = failed_login_attempts + 1
+                    WHERE id = :id
+                    RETURNING failed_login_attempts
+                    """
+                        .trimIndent()
+                )
+                .bind("id", userId)
+                .mapTo(Int::class.java)
+                .one()
+        }
+    }
+
+    override fun resetFailedLoginAttempts(userId: UUID) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate(
+                    """
+                    UPDATE plt_users
+                    SET failed_login_attempts = 0, locked_until = NULL
+                    WHERE id = :id
+                    """
+                        .trimIndent()
+                )
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
+    override fun updateLockedUntil(userId: UUID, lockedUntil: Instant?) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate("UPDATE plt_users SET locked_until = :lockedUntil WHERE id = :id")
+                .bind("id", userId)
+                .bind("lockedUntil", lockedUntil)
                 .execute()
         }
     }

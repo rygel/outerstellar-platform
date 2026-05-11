@@ -4,6 +4,7 @@ import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_USERS
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.security.UserRole
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
@@ -128,6 +129,35 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             .set(PLT_USERS.LAYOUT, layout)
             .where(PLT_USERS.ID.eq(userId))
             .execute()
+    }
+
+    override fun incrementFailedLoginAttempts(userId: UUID): Int {
+        val field = PLT_USERS.field("failed_login_attempts", Int::class.java)!!
+        return dsl.update(PLT_USERS)
+            .set(field, field.plus(1))
+            .where(PLT_USERS.ID.eq(userId))
+            .returning(field)
+            .fetchOne()
+            ?.get(field) ?: 0
+    }
+
+    override fun resetFailedLoginAttempts(userId: UUID) {
+        dsl.update(PLT_USERS)
+            .set(PLT_USERS.field("failed_login_attempts", Int::class.java)!!, 0)
+            .setNull(PLT_USERS.field("locked_until")!!)
+            .where(PLT_USERS.ID.eq(userId))
+            .execute()
+    }
+
+    override fun updateLockedUntil(userId: UUID, lockedUntil: Instant?) {
+        if (lockedUntil != null) {
+            dsl.update(PLT_USERS)
+                .set(PLT_USERS.field("locked_until", Instant::class.java)!!, lockedUntil)
+                .where(PLT_USERS.ID.eq(userId))
+                .execute()
+        } else {
+            dsl.update(PLT_USERS).setNull(PLT_USERS.field("locked_until")!!).where(PLT_USERS.ID.eq(userId)).execute()
+        }
     }
 
     override fun countUsersSince(cutoff: LocalDateTime): Long {
