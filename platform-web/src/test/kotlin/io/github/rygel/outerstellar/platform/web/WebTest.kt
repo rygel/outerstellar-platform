@@ -59,6 +59,7 @@ abstract class WebTest protected constructor() {
                 jdbcPassword = container.password,
                 devDashboardEnabled = true,
                 csrfEnabled = false,
+                corsOrigins = "*",
             )
 
         val testDsl: DSLContext by lazy { DSL.using(dataSource, POSTGRES) }

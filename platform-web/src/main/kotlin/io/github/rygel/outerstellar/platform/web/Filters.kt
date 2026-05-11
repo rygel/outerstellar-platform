@@ -40,7 +40,7 @@ private const val LOG_ID_LENGTH = 8
 private const val STATIC_ASSET_MAX_AGE = 31536000L
 private const val DEFAULT_CSP_POLICY =
     "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline'; " +
+        "script-src 'self'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "font-src 'self'; " +
         "connect-src 'self' ws: wss:; " +
@@ -155,6 +155,7 @@ object Filters {
 
     fun cors(allowedOrigins: String): Filter = Filter { next: HttpHandler ->
         { request ->
+            if (allowedOrigins.isBlank()) return@Filter next(request)
             if (request.method == org.http4k.core.Method.OPTIONS) {
                 Response(Status.NO_CONTENT)
                     .header("Access-Control-Allow-Origin", allowedOrigins)
@@ -177,6 +178,7 @@ object Filters {
                 .header("X-Frame-Options", "DENY")
                 .header("Referrer-Policy", "strict-origin-when-cross-origin")
                 .header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+                .header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
                 .let { response ->
                     if (!request.uri.path.startsWith("/api/")) {
                         response.header("Content-Security-Policy", cspPolicy)
