@@ -162,21 +162,21 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 ### High Priority
 
-- [ ] **Add `<meta name="description">` per page**
-  No page description meta tag anywhere. Each page builds a description string but never emits it as `<meta>`. Primary SEO signal.
-  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`, `ShellView` in `ViewModels.kt`
+- [x] ~~**Add `<meta name="description">` per page**~~
+  Fixed — `pageDescription` field on `ShellView`, i18n key `web.page.description.{activeSection}` per page, rendered in `LayoutHead.kte` with safe fallback for missing keys.
+  — `platform-web/.../web/ViewModels.kt:46`, `platform-web/.../web/WebContext.kt:286`, `LayoutHead.kte:8`
 
-- [ ] **Add `<link rel="canonical">` per page**
-  Pagination, query-param, and theme/lang switches create duplicate content. Canonical tags prevent self-competing indexing. `ShellView` already has `currentPath`.
-  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+- [x] ~~**Add `<link rel="canonical">` per page**~~
+  Fixed — `canonicalUrl` field on `ShellView`, constructed from `appBaseUrl + currentPath`, rendered in `LayoutHead.kte`.
+  — `platform-web/.../web/WebContext.kt:288`, `LayoutHead.kte:11`
 
-- [ ] **Add `defer` to all `<script>` tags**
-  HTMX scripts in `<head>` are render-blocking. Should use `defer` — affects Core Web Vitals (LCP, FCP).
-  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte:11-12`, layout files line 77/114
+- [x] ~~**Add `defer` to all `<script>` tags**~~
+  Fixed — htmx scripts in `LayoutHead.kte` now use `defer` to avoid render-blocking. `platform.js` was already at end of `<body>`.
+  — `LayoutHead.kte:19-20`
 
-- [ ] **Add `<meta name="robots" content="noindex">` to admin/auth/error pages**
-  Admin routes, auth pages, error pages, and dev dashboard should carry `noindex, nofollow` to prevent indexing.
-  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+- [x] ~~**Add `<meta name="robots" content="noindex">` to admin/auth/error pages**~~
+  Fixed — `noIndex` field on `ShellView`, set via `NO_INDEX_SECTIONS` set in `WebContext.companion`, emitted in `LayoutHead.kte`.
+  — `platform-web/.../web/WebContext.kt:41-52`, `LayoutHead.kte:14`
 
 ### Medium Priority
 

@@ -24,6 +24,7 @@ class WebContext(
     private val jwtService: JwtService? = null,
     private val securityService: SecurityService? = null,
     private val pluginOptions: PluginOptions = PluginOptions(),
+    private val appBaseUrl: String = "",
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
@@ -37,6 +38,20 @@ class WebContext(
         const val SESSION_COOKIE = "app_session"
         const val JWT_COOKIE = "app_jwt"
         const val CSRF_COOKIE = "_csrf"
+
+        private val NO_INDEX_SECTIONS =
+            setOf(
+                "/auth",
+                "/auth/profile",
+                "/auth/api-keys",
+                "/errors",
+                "/admin/users",
+                "/admin/audit",
+                "/admin/dev",
+                "/admin/plugins",
+                "/settings",
+                "/notifications",
+            )
 
         /** Stable cache-buster computed once at class load — survives the JVM lifetime. */
         val assetVersion: String = System.currentTimeMillis().toString()
@@ -268,6 +283,13 @@ class WebContext(
             csrfToken = csrfToken,
             notificationsUrl = if (user != null) url("/notifications") else null,
             textResolver = textResolver,
+            pageDescription =
+                i18n
+                    .translate("web.page.description.$activeSection")
+                    .takeIf { !it.startsWith("web.page.description.") }
+                    .orEmpty(),
+            canonicalUrl = if (appBaseUrl.isNotBlank()) "$appBaseUrl$currentPath" else "",
+            noIndex = activeSection in NO_INDEX_SECTIONS,
         )
     }
 }

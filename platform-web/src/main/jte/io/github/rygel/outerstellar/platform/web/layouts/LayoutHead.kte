@@ -6,8 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="${shell.csrfToken}">
     <title>${shell.pageTitle} - ${shell.appTitle}</title>
+    @if(shell.pageDescription.isNotBlank())
+    <meta name="description" content="${shell.pageDescription}">
+    @endif
+    @if(shell.canonicalUrl.isNotBlank())
+    <link rel="canonical" href="${shell.canonicalUrl}">
+    @endif
+    @if(shell.noIndex)
+    <meta name="robots" content="noindex, nofollow">
+    @endif
     <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="/site.css?v=${shell.version}">
-    <script src="/vendor/htmx.min.js"></script>
-    <script src="/vendor/htmx-ext-ws.js"></script>
+    <script defer src="/vendor/htmx.min.js"></script>
+    <script defer src="/vendor/htmx-ext-ws.js"></script>
 </head>

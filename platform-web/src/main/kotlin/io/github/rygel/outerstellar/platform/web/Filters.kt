@@ -264,6 +264,7 @@ object Filters {
         securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
         pluginOptions: PluginOptions = PluginOptions(),
         cookieSecure: Boolean = true,
+        appBaseUrl: String = "",
     ): Filter = Filter { next: HttpHandler ->
         { request ->
             val context =
@@ -275,6 +276,7 @@ object Filters {
                     jwtService,
                     securityService,
                     pluginOptions,
+                    appBaseUrl,
                 )
             val contextUser =
                 try {
