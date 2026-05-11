@@ -41,6 +41,11 @@ class AdminPageFactory(
                                 toggleEnabledUrl = ctx.url("/admin/users/${u.id}/toggle-enabled"),
                                 toggleRoleUrl = ctx.url("/admin/users/${u.id}/toggle-role"),
                                 isSelf = u.id == currentUserId,
+                                isLocked =
+                                    u.lockedUntil != null &&
+                                        (u.lockedUntil as java.time.Instant).isAfter(java.time.Instant.now()),
+                                unlockUrl = ctx.url("/admin/users/${u.id}/unlock"),
+                                failedLoginAttempts = u.failedLoginAttempts,
                             )
                         },
                     currentPage = currentPage,
@@ -58,6 +63,7 @@ class AdminPageFactory(
                     actionDemote = i18n.translate("web.admin.users.action.demote"),
                     actionPromote = i18n.translate("web.admin.users.action.promote"),
                     selfLabel = i18n.translate("web.admin.users.self"),
+                    actionUnlock = i18n.translate("web.admin.users.action.unlock"),
                     previousLabel = i18n.translate("web.admin.pagination.previous"),
                     nextLabel = i18n.translate("web.admin.pagination.next"),
                 ),

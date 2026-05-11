@@ -241,6 +241,9 @@ data class UserAdminRow(
     val toggleEnabledUrl: String,
     val toggleRoleUrl: String,
     val isSelf: Boolean,
+    val isLocked: Boolean = false,
+    val unlockUrl: String = "",
+    val failedLoginAttempts: Int = 0,
 )
 
 data class UserAdminPage(
@@ -262,6 +265,7 @@ data class UserAdminPage(
     val actionDemote: String = "Demote",
     val actionPromote: String = "Promote",
     val selfLabel: String = "you",
+    val actionUnlock: String = "Unlock",
     val previousLabel: String = "Previous",
     val nextLabel: String = "Next",
 ) : ViewModel {
