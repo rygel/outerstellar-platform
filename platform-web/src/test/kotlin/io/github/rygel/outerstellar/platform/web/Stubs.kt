@@ -62,8 +62,9 @@ class StubTransactionManager : io.github.rygel.outerstellar.platform.persistence
 class InMemoryOAuthRepository : OAuthRepository {
     private val connections = mutableListOf<OAuthConnection>()
 
-    override fun findByProviderSubject(provider: String, subject: String): OAuthConnection? =
-        connections.find { it.provider == provider && it.subject == subject }
+    override fun findByProviderSubject(provider: String, subject: String): OAuthConnection? = connections.find {
+        it.provider == provider && it.subject == subject
+    }
 
     override fun save(connection: OAuthConnection) {
         connections.removeAll { it.provider == connection.provider && it.subject == connection.subject }

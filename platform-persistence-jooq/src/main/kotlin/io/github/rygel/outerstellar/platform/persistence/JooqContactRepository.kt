@@ -286,37 +286,34 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
     ) {
         txDsl.deleteFrom(PLT_CONTACT_EMAILS).where(PLT_CONTACT_EMAILS.CONTACT_ID.eq(contactId)).execute()
         if (emails.isNotEmpty()) {
-            val emailInserts =
-                emails.map { email ->
-                    txDsl
-                        .insertInto(PLT_CONTACT_EMAILS)
-                        .set(PLT_CONTACT_EMAILS.CONTACT_ID, contactId)
-                        .set(PLT_CONTACT_EMAILS.EMAIL, email)
-                }
+            val emailInserts = emails.map { email ->
+                txDsl
+                    .insertInto(PLT_CONTACT_EMAILS)
+                    .set(PLT_CONTACT_EMAILS.CONTACT_ID, contactId)
+                    .set(PLT_CONTACT_EMAILS.EMAIL, email)
+            }
             txDsl.batch(emailInserts).execute()
         }
 
         txDsl.deleteFrom(PLT_CONTACT_PHONES).where(PLT_CONTACT_PHONES.CONTACT_ID.eq(contactId)).execute()
         if (phones.isNotEmpty()) {
-            val phoneInserts =
-                phones.map { phone ->
-                    txDsl
-                        .insertInto(PLT_CONTACT_PHONES)
-                        .set(PLT_CONTACT_PHONES.CONTACT_ID, contactId)
-                        .set(PLT_CONTACT_PHONES.PHONE, phone)
-                }
+            val phoneInserts = phones.map { phone ->
+                txDsl
+                    .insertInto(PLT_CONTACT_PHONES)
+                    .set(PLT_CONTACT_PHONES.CONTACT_ID, contactId)
+                    .set(PLT_CONTACT_PHONES.PHONE, phone)
+            }
             txDsl.batch(phoneInserts).execute()
         }
 
         txDsl.deleteFrom(PLT_CONTACT_SOCIALS).where(PLT_CONTACT_SOCIALS.CONTACT_ID.eq(contactId)).execute()
         if (socialMedia.isNotEmpty()) {
-            val socialInserts =
-                socialMedia.map { social ->
-                    txDsl
-                        .insertInto(PLT_CONTACT_SOCIALS)
-                        .set(PLT_CONTACT_SOCIALS.CONTACT_ID, contactId)
-                        .set(PLT_CONTACT_SOCIALS.SOCIAL_MEDIA, social)
-                }
+            val socialInserts = socialMedia.map { social ->
+                txDsl
+                    .insertInto(PLT_CONTACT_SOCIALS)
+                    .set(PLT_CONTACT_SOCIALS.CONTACT_ID, contactId)
+                    .set(PLT_CONTACT_SOCIALS.SOCIAL_MEDIA, social)
+            }
             txDsl.batch(socialInserts).execute()
         }
     }

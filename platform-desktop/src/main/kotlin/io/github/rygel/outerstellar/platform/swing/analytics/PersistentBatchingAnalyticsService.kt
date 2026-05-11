@@ -101,16 +101,15 @@ class PersistentBatchingAnalyticsService(
         }
 
         var malformedCount = 0
-        val events =
-            lines.mapNotNull { line ->
-                try {
-                    json.decodeFromString(JsonElement.serializer(), line) as? JsonObject
-                } catch (e: Exception) {
-                    logger.warn("Skipping malformed analytics line: {}", e.message)
-                    malformedCount++
-                    null
-                }
+        val events = lines.mapNotNull { line ->
+            try {
+                json.decodeFromString(JsonElement.serializer(), line) as? JsonObject
+            } catch (e: Exception) {
+                logger.warn("Skipping malformed analytics line: {}", e.message)
+                malformedCount++
+                null
             }
+        }
 
         if (malformedCount > 0) {
             if (events.isEmpty()) {
@@ -159,14 +158,11 @@ class PersistentBatchingAnalyticsService(
 
     private fun pruneOldEvents(events: List<JsonObject>) {
         val cutoff = Instant.now().minus(maxEventAgeDays, ChronoUnit.DAYS)
-        val kept =
-            events.filter { event ->
-                val ts =
-                    (event["timestamp"] as? JsonPrimitive)?.content?.let {
-                        runCatching { Instant.parse(it) }.getOrNull()
-                    }
-                ts == null || ts.isAfter(cutoff)
-            }
+        val kept = events.filter { event ->
+            val ts =
+                (event["timestamp"] as? JsonPrimitive)?.content?.let { runCatching { Instant.parse(it) }.getOrNull() }
+            ts == null || ts.isAfter(cutoff)
+        }
         val dropped = events.size - kept.size
         if (dropped > 0) {
             logger.info("Pruned {} analytics events older than {} days", dropped, maxEventAgeDays)

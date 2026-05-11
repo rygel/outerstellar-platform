@@ -32,50 +32,49 @@ class OAuthRoutes(
 
     private val logger = LoggerFactory.getLogger(OAuthRoutes::class.java)
 
-    override val routes =
-        providers.flatMap { (providerName, provider) ->
-            listOf(
-                "/auth/oauth/$providerName" meta
-                    {
-                        summary = "Initiate $providerName OAuth sign-in"
-                    } bindContract
-                    GET to
-                    { request: Request ->
-                        initiateOAuth(request, providerName, provider)
-                    },
-                "/auth/oauth/$providerName/callback" meta
-                    {
-                        summary = "$providerName OAuth callback (GET)"
-                    } bindContract
-                    GET to
-                    { request: Request ->
-                        handleCallback(request, providerName, provider)
-                    },
-                "/auth/oauth/$providerName/callback" meta
-                    {
-                        summary = "$providerName OAuth callback (POST — form_post mode)"
-                    } bindContract
-                    POST to
-                    { request: Request ->
-                        handleCallback(request, providerName, provider)
-                    },
-                "/auth/oauth/$providerName/not-configured" meta
-                    {
-                        summary = "$providerName not configured error page"
-                    } bindContract
-                    GET to
-                    { _: Request ->
-                        Response(Status.SERVICE_UNAVAILABLE)
-                            .header("content-type", "text/html; charset=utf-8")
-                            .body(
-                                "<h2>Sign in with $providerName is not yet configured.</h2>" +
-                                    "<p>The provider credentials have not been set up. " +
-                                    "Please contact the administrator.</p>" +
-                                    "<a href='/auth'>Back to sign in</a>"
-                            )
-                    },
-            )
-        }
+    override val routes = providers.flatMap { (providerName, provider) ->
+        listOf(
+            "/auth/oauth/$providerName" meta
+                {
+                    summary = "Initiate $providerName OAuth sign-in"
+                } bindContract
+                GET to
+                { request: Request ->
+                    initiateOAuth(request, providerName, provider)
+                },
+            "/auth/oauth/$providerName/callback" meta
+                {
+                    summary = "$providerName OAuth callback (GET)"
+                } bindContract
+                GET to
+                { request: Request ->
+                    handleCallback(request, providerName, provider)
+                },
+            "/auth/oauth/$providerName/callback" meta
+                {
+                    summary = "$providerName OAuth callback (POST — form_post mode)"
+                } bindContract
+                POST to
+                { request: Request ->
+                    handleCallback(request, providerName, provider)
+                },
+            "/auth/oauth/$providerName/not-configured" meta
+                {
+                    summary = "$providerName not configured error page"
+                } bindContract
+                GET to
+                { _: Request ->
+                    Response(Status.SERVICE_UNAVAILABLE)
+                        .header("content-type", "text/html; charset=utf-8")
+                        .body(
+                            "<h2>Sign in with $providerName is not yet configured.</h2>" +
+                                "<p>The provider credentials have not been set up. " +
+                                "Please contact the administrator.</p>" +
+                                "<a href='/auth'>Back to sign in</a>"
+                        )
+                },
+        )
+    }
 
     private fun initiateOAuth(request: Request, providerName: String, provider: OAuthProvider): Response {
         val state = java.util.UUID.randomUUID().toString()

@@ -27,14 +27,13 @@ class SyncWebSocket(private val securityService: SecurityService) :
                     ?.map { it.trim() }
                     ?.find { it.startsWith("${WebContext.SESSION_COOKIE}=") }
                     ?.substringAfter("=")
-            val user =
-                sessionCookie?.let { rawToken ->
-                    when (val lookup = securityService.lookupSession(rawToken)) {
-                        is SessionLookup.Active -> lookup.user
-                        SessionLookup.Expired -> null
-                        SessionLookup.NotFound -> null
-                    }
+            val user = sessionCookie?.let { rawToken ->
+                when (val lookup = securityService.lookupSession(rawToken)) {
+                    is SessionLookup.Active -> lookup.user
+                    SessionLookup.Expired -> null
+                    SessionLookup.NotFound -> null
                 }
+            }
             if (user == null) {
                 logger.warn("WebSocket connection rejected: no valid session")
                 ws.close(WsStatus(WS_AUTH_REQUIRED_STATUS, "Authentication required"))

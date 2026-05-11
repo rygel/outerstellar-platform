@@ -105,11 +105,10 @@ class MdcLoggingIntegrationTest : WebTest() {
         app(Request(GET, "/health").header("X-Request-Id", customId))
 
         // The request logging filter logs with MDC; find events where requestId was present
-        val eventsWithRequestId =
-            capturedEvents.filter { event ->
-                val mdc = event.mdcPropertyMap
-                mdc != null && mdc.containsKey("requestId")
-            }
+        val eventsWithRequestId = capturedEvents.filter { event ->
+            val mdc = event.mdcPropertyMap
+            mdc != null && mdc.containsKey("requestId")
+        }
         assertTrue(
             eventsWithRequestId.isNotEmpty(),
             "At least one log event should have MDC.requestId set during request processing",
@@ -195,11 +194,9 @@ class MdcLoggingIntegrationTest : WebTest() {
         app(Request(POST, "/api/v1/auth/login").header("X-Request-Id", customId))
 
         // The requestLogging filter emits an INFO log — find it
-        val requestLogEvents =
-            capturedEvents.filter { e ->
-                e.formattedMessage?.contains("POST") == true ||
-                    e.formattedMessage?.contains("/api/v1/auth/login") == true
-            }
+        val requestLogEvents = capturedEvents.filter { e ->
+            e.formattedMessage?.contains("POST") == true || e.formattedMessage?.contains("/api/v1/auth/login") == true
+        }
         assertTrue(requestLogEvents.isNotEmpty(), "Request logging filter should emit a log line")
     }
 }
