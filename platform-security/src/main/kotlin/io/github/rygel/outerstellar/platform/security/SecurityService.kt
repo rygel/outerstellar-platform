@@ -57,15 +57,18 @@ class SecurityService(
             userRepository.findByUsername(username)
                 ?: run {
                     logger.warn("Authentication failed: User $username not found")
+                    audit("AUTHENTICATION_FAILED", detail = "User not found", targetUsername = username)
                     return null
                 }
         if (!user.enabled) {
             logger.warn("Authentication failed: User $username is disabled")
+            audit("AUTHENTICATION_FAILED", actor = user, detail = "Account disabled")
             return null
         }
         val lockedUntil = user.lockedUntil
         if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
             logger.warn("Authentication failed: User $username is locked until $lockedUntil")
+            audit("AUTHENTICATION_FAILED", actor = user, detail = "Account locked until $lockedUntil")
             return null
         }
         if (passwordEncoder.matches(password, user.passwordHash)) {
@@ -77,6 +80,7 @@ class SecurityService(
         }
         val attempts = userRepository.incrementFailedLoginAttempts(user.id)
         logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
+        audit("AUTHENTICATION_FAILED", actor = user, detail = "Invalid password")
         if (attempts >= config.maxFailedLoginAttempts) {
             val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
             userRepository.updateLockedUntil(user.id, until)
@@ -118,6 +122,7 @@ class SecurityService(
 
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
+        sessionRepository?.deleteByUserId(userId)
         logger.info("Password changed for user {}", user.username)
         audit("PASSWORD_CHANGED", actor = user)
     }
@@ -181,13 +186,22 @@ class SecurityService(
 
     // Delegated to ApiKeyService
 
-    fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse = apiKeyService.createApiKey(userId, name)
+    fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse {
+        val result = apiKeyService.createApiKey(userId, name)
+        val user = userRepository.findById(userId)
+        audit("API_KEY_CREATED", actor = user, detail = "name=$name")
+        return result
+    }
 
     fun authenticateApiKey(rawKey: String): User? = apiKeyService.authenticateApiKey(rawKey)
 
     fun listApiKeys(userId: UUID): List<ApiKeySummary> = apiKeyService.listApiKeys(userId)
 
-    fun deleteApiKey(userId: UUID, keyId: Long) = apiKeyService.deleteApiKey(userId, keyId)
+    fun deleteApiKey(userId: UUID, keyId: Long) {
+        apiKeyService.deleteApiKey(userId, keyId)
+        val user = userRepository.findById(userId)
+        audit("API_KEY_DELETED", actor = user, detail = "keyId=$keyId")
+    }
 
     // Delegated to OAuthService
 
@@ -324,13 +338,19 @@ class SecurityService(
         return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 
-    private fun audit(action: String, actor: User? = null, target: User? = null, detail: String? = null) {
+    private fun audit(
+        action: String,
+        actor: User? = null,
+        target: User? = null,
+        detail: String? = null,
+        targetUsername: String? = null,
+    ) {
         auditRepository?.log(
             AuditEntry(
                 actorId = actor?.id?.toString(),
                 actorUsername = actor?.username,
                 targetId = target?.id?.toString(),
-                targetUsername = target?.username,
+                targetUsername = targetUsername ?: target?.username,
                 action = action,
                 detail = detail,
             )

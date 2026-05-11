@@ -180,6 +180,64 @@ class SecurityServiceTest {
         verify { userRepository.resetFailedLoginAttempts(testUser.id) }
     }
 
+    // ---- authentication failure audit ----
+
+    @Test
+    fun `authenticate audits AUTHENTICATION_FAILED when user not found`() {
+        every { userRepository.findByUsername("unknown") } returns null
+
+        service.authenticate("unknown", "anypass")
+
+        verify {
+            auditRepository.log(
+                match {
+                    it.action == "AUTHENTICATION_FAILED" &&
+                        it.detail == "User not found" &&
+                        it.targetUsername == "unknown"
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `authenticate audits AUTHENTICATION_FAILED when user disabled`() {
+        val disabledUser = testUser.copy(enabled = false)
+        every { userRepository.findByUsername("testuser") } returns disabledUser
+
+        service.authenticate("testuser", "anypass")
+
+        verify {
+            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Account disabled" })
+        }
+    }
+
+    @Test
+    fun `authenticate audits AUTHENTICATION_FAILED when account locked`() {
+        val lockedUser = testUser.copy(lockedUntil = Instant.now().plusSeconds(300))
+        every { userRepository.findByUsername("testuser") } returns lockedUser
+
+        service.authenticate("testuser", "correctpass")
+
+        verify {
+            auditRepository.log(
+                match { it.action == "AUTHENTICATION_FAILED" && it.detail?.startsWith("Account locked until") == true }
+            )
+        }
+    }
+
+    @Test
+    fun `authenticate audits AUTHENTICATION_FAILED when password wrong`() {
+        every { userRepository.findByUsername("testuser") } returns testUser
+        every { passwordEncoder.matches("wrongpass", testUser.passwordHash) } returns false
+        every { userRepository.incrementFailedLoginAttempts(testUser.id) } returns 1
+
+        service.authenticate("testuser", "wrongpass")
+
+        verify {
+            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Invalid password" })
+        }
+    }
+
     // ---- register ----
 
     @Test
@@ -225,6 +283,38 @@ class SecurityServiceTest {
 
     @Test
     fun `changePassword updates hash on success`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
+        every { passwordEncoder.encode("newpassword1") } returns "new_hash"
+
+        service.changePassword(testUser.id, "currentpass", "newpassword1")
+
+        val userSlot = slot<User>()
+        verify { userRepository.save(capture(userSlot)) }
+        assertEquals("new_hash", userSlot.captured.passwordHash)
+    }
+
+    @Test
+    fun `changePassword invalidates all sessions for the user`() {
+        val sessionRepository: SessionRepository = mockk(relaxed = true)
+        val serviceWithSessions =
+            SecurityService(
+                userRepository = userRepository,
+                passwordEncoder = passwordEncoder,
+                auditRepository = auditRepository,
+                sessionRepository = sessionRepository,
+            )
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
+        every { passwordEncoder.encode("newpassword1") } returns "new_hash"
+
+        serviceWithSessions.changePassword(testUser.id, "currentpass", "newpassword1")
+
+        verify { sessionRepository.deleteByUserId(testUser.id) }
+    }
+
+    @Test
+    fun `changePassword works without session repository`() {
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
         every { passwordEncoder.encode("newpassword1") } returns "new_hash"
@@ -363,6 +453,40 @@ class SecurityServiceTest {
         val result = service.authenticateApiKey("osk_nonexistent")
 
         assertNull(result)
+    }
+
+    @Test
+    fun `createApiKey logs API_KEY_CREATED to audit`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+
+        service.createApiKey(testUser.id, "my-audit-key")
+
+        verify {
+            auditRepository.log(
+                match {
+                    it.action == "API_KEY_CREATED" &&
+                        it.detail?.contains("my-audit-key") == true &&
+                        it.actorId == testUser.id.toString()
+                }
+            )
+        }
+    }
+
+    @Test
+    fun `deleteApiKey logs API_KEY_DELETED to audit`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+
+        service.deleteApiKey(testUser.id, 42L)
+
+        verify {
+            auditRepository.log(
+                match {
+                    it.action == "API_KEY_DELETED" &&
+                        it.detail?.contains("keyId=42") == true &&
+                        it.actorId == testUser.id.toString()
+                }
+            )
+        }
     }
 
     // ---- updateProfile ----

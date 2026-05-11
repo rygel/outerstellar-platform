@@ -54,33 +54,46 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Security
 
-- [ ] **CSP allows `'unsafe-inline'` on scripts and styles**
-  This defeats CSP's primary XSS mitigation. Use `'strict-dynamic'` or nonce-based CSP; remove `'unsafe-inline'` for styles.
-  — `platform-web/.../web/Filters.kt:43-44`
+- [ ] **Invalidate all user sessions on password change**
+  When a user changes their password, existing sessions remain valid. An attacker who compromised a session can continue using it even after the password is changed.
+  — `platform-security/.../security/SecurityService.kt:109-123`
 
-- [ ] **Missing HSTS header**
-  `Strict-Transport-Security` is not set, leaving users vulnerable to SSL-stripping.
-  — `platform-web/.../web/Filters.kt:173-188`
+- [ ] **Add dependency vulnerability scanning to CI**
+  No OWASP Dependency-Check, Snyk, or Dependabot is configured. Dependency vulnerabilities go undetected.
+  — CI pipeline, `.github/dependabot.yml` (missing)
 
-- [ ] **Weak password policy (length-only)**
-  Only requires 8+ characters. No complexity, common-password, or breach checks.
-  — `platform-security/.../security/SecurityService.kt:321`
+- [ ] **Persist authentication failures to audit table**
+  Failed login attempts are only logged via SLF4J, not persisted. This makes forensic analysis harder.
+  — `platform-security/.../security/SecurityService.kt:59-83`
 
-- [ ] **No account lockout after failed logins**
-  Unlimited password guesses per account. Only per-IP rate limiting exists.
-  — `platform-security/.../security/SecurityService.kt:56-77`
+- [ ] **Add audit logging for API key operations**
+  `ApiKeyService` creates and deletes API keys without calling `audit()`.
+  — `platform-security/.../security/ApiKeyService.kt`
 
-- [ ] **SSRF protection gaps: IPv6, DNS rebinding, 0.0.0.0**
-  The private host patterns miss IPv6 loopback (`::1`), link-local (`fe80::`), unique-local (`fd00::`), and DNS rebinding attacks.
-  — `platform-security/.../security/SecurityService.kt:209-218`
+- [ ] **Add SameSite/Secure flags to preference cookies**
+  `app_lang`, `app_theme`, `app_layout`, `app_shell` cookies are created without `SameSite`, `Secure`, or `HttpOnly` flags.
+  — `platform-web/.../web/Filters.kt:284-299`
+
+- [ ] **CSP `connect-src` allows `ws:` (unencrypted WebSocket)**
+  Should be `wss:` only in production to match HSTS policy.
+  — `platform-web/.../web/Filters.kt:41-47`
+
+- [ ] **CSP missing `base-uri` and `form-action` directives**
+  Add `base-uri 'self'; form-action 'self'` for defense-in-depth against base-tag hijacking and form submission to external sites.
+  — `platform-web/.../web/Filters.kt:41-47`
 
 - [ ] **Login rate limiting is per-IP, not per-account**
   Attacker can brute-force a single account through IP rotation.
   — `platform-web/.../web/RateLimiter.kt:79`
 
-- [ ] **WebSocket upgrade response missing security headers**
-  The `SyncWebSocket` handler doesn't apply CSP, HSTS, or other security headers to its upgrade response.
-  — `platform-web/.../web/SyncWebSocket.kt`
+- [x] ~~**No account lockout after failed logins**~~
+  Fixed in PR #227 — configurable failed attempts (default 10) with auto-unlock.
+
+- [x] ~~**Missing HSTS header**~~
+  Fixed in PR #225 — `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
+
+- [x] ~~**SSRF protection gaps: IPv6, DNS rebinding, 0.0.0.0**~~
+  Fixed in PR #225 — private host patterns now cover IPv6 loopback, link-local, unique-local, `.local`, `.internal`.
 
 ### Architecture
 
@@ -151,6 +164,86 @@ Architecture, security, and maintainability improvements identified during code 
 - [ ] **Outbox status strings (`"PENDING"`, `"PROCESSED"`, `"FAILED"`) scattered**
   Used as raw strings in `JooqOutboxRepository`, `MessageService`, and `DevDashboardRoutes`. Should be an enum or constants.
   — Multiple files
+
+---
+
+## SEO & fragments4k Integration
+
+Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO metadata, sitemap, and content management. The library provides `SeoMetadata`, Open Graph, Twitter Card, JSON-LD, canonical URLs, and `/robots.txt` out of the box via the `fragments-http4k` adapter.
+
+### High Priority
+
+- [ ] **Add `<meta name="description">` per page**
+  No page description meta tag anywhere. Each page builds a description string but never emits it as `<meta>`. Primary SEO signal.
+  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`, `ShellView` in `ViewModels.kt`
+
+- [ ] **Add `<link rel="canonical">` per page**
+  Pagination, query-param, and theme/lang switches create duplicate content. Canonical tags prevent self-competing indexing. `ShellView` already has `currentPath`.
+  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+
+- [ ] **Add `defer` to all `<script>` tags**
+  HTMX scripts in `<head>` are render-blocking. Should use `defer` — affects Core Web Vitals (LCP, FCP).
+  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte:11-12`, layout files line 77/114
+
+- [ ] **Add `<meta name="robots" content="noindex">` to admin/auth/error pages**
+  Admin routes, auth pages, error pages, and dev dashboard should carry `noindex, nofollow` to prevent indexing.
+  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+
+### Medium Priority
+
+- [ ] **Integrate `fragments-seo-core` for Open Graph + Twitter Card meta tags**
+  Use `SeoMetadata.fromFragment()` to generate `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `twitter:card`, etc. Extend `ShellView` with SEO fields and emit in `LayoutHead.kte`.
+  — Dependency: `io.github.rygel:fragments-seo-core`
+
+- [ ] **Add `hreflang` alternate links for i18n SEO**
+  App supports `en`/`fr` but no `<link rel="alternate" hreflang="...">` tags. Search engines cannot discover alternate language versions.
+  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+
+- [ ] **Add `<link rel="preload">` for CSS and icon font**
+  `site.css` and `remixicon.woff2` are render-critical resources that should be preloaded.
+  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+
+- [ ] **Fix heading hierarchy — pages missing `<h1>`**
+  `ProfilePage.kte`, `NotificationsPage.kte`, `PluginAdminDashboard.kte` start at `<h2>` without an `<h1>`.
+  — `platform-web/src/main/jte/.../ProfilePage.kte`, `NotificationsPage.kte`, `PluginAdminDashboard.kte`
+
+- [ ] **Add `/robots.txt` route**
+  No robots.txt exists. Should disallow `/api/`, `/admin/`, `/ws/`, `/auth/`, `/errors/`, `/components/` and allow `/`, `/contacts`, `/search`. Can be provided by `fragments-http4k` adapter or a static file.
+  — `platform-web/src/main/resources/static/` (missing)
+
+- [ ] **Integrate `fragments-sitemap-core` for XML sitemap generation**
+  Generate `/sitemap.xml` listing public pages (`/`, `/auth`, `/search`). Low priority since most pages require auth, but important for public content discovery.
+  — Dependency: `io.github.rygel:fragments-sitemap-core`
+
+### Low Priority
+
+- [ ] **Add `aria-hidden="true"` to decorative Remixicon `<i>` elements**
+  Screen readers may announce empty content for decorative icons across all templates.
+  — All `.kte` templates using `<i class="ri-...">`
+
+- [ ] **Add `aria-live="polite"` to HTMX dynamic regions**
+  `#auth-form-slot`, `#error-help-slot`, `#ws-updates` lack live region attributes for screen reader announcements.
+  — `AuthPage.kte`, `ErrorPage.kte`, layout templates
+
+- [ ] **Add skip-to-content link for keyboard navigation**
+  No skip navigation link exists. Add hidden link at top of layout templates.
+  — `TopbarLayout.kte`, `SidebarLayout.kte`
+
+- [ ] **Add `<meta name="theme-color">` for mobile browsers**
+  Should match the accent color of the current theme.
+  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+
+- [ ] **Add JSON-LD structured data (home page only)**
+  `WebSite` schema with `SearchAction` pointing to `/search?q=`. Low priority for an authenticated app.
+  — Can use `fragments-seo-core` `SeoMetadata` JSON-LD generation
+
+- [ ] **Add `loading="lazy"` to avatar image**
+  External Gravatar loads may affect LCP.
+  — `platform-web/src/main/jte/.../ProfilePage.kte:13`
+
+- [ ] **Add `font-display: swap` to Remix Icon font**
+  Prevents FOIT (Flash of Invisible Text).
+  — `platform-web/src/main/resources/static/` (remixicon.css)
 
 ---
 
