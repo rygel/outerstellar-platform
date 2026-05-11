@@ -53,39 +53,36 @@ class SecurityService(
     }
 
     fun authenticate(username: String, password: String): User? {
-        val user = userRepository.findByUsername(username)
-
-        return when {
-            user == null -> {
-                logger.warn("Authentication failed: User $username not found")
-                null
-            }
-            !user.enabled -> {
-                logger.warn("Authentication failed: User $username is disabled")
-                null
-            }
-            user.lockedUntil != null && user.lockedUntil.isAfter(Instant.now()) -> {
-                logger.warn("Authentication failed: User $username is locked until ${user.lockedUntil}")
-                null
-            }
-            passwordEncoder.matches(password, user.passwordHash) -> {
-                if (user.failedLoginAttempts > 0) {
-                    userRepository.resetFailedLoginAttempts(user.id)
+        val user =
+            userRepository.findByUsername(username)
+                ?: run {
+                    logger.warn("Authentication failed: User $username not found")
+                    return null
                 }
-                logger.info("Authentication successful for user $username")
-                user
-            }
-            else -> {
-                val attempts = userRepository.incrementFailedLoginAttempts(user.id)
-                logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
-                if (attempts >= config.maxFailedLoginAttempts) {
-                    val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
-                    userRepository.updateLockedUntil(user.id, until)
-                    logger.warn("User $username locked until $until after $attempts failed attempts")
-                }
-                null
-            }
+        if (!user.enabled) {
+            logger.warn("Authentication failed: User $username is disabled")
+            return null
         }
+        val lockedUntil = user.lockedUntil
+        if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
+            logger.warn("Authentication failed: User $username is locked until $lockedUntil")
+            return null
+        }
+        if (passwordEncoder.matches(password, user.passwordHash)) {
+            if (user.failedLoginAttempts > 0) {
+                userRepository.resetFailedLoginAttempts(user.id)
+            }
+            logger.info("Authentication successful for user $username")
+            return user
+        }
+        val attempts = userRepository.incrementFailedLoginAttempts(user.id)
+        logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
+        if (attempts >= config.maxFailedLoginAttempts) {
+            val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
+            userRepository.updateLockedUntil(user.id, until)
+            logger.warn("User $username locked until $until after $attempts failed attempts")
+        }
+        return null
     }
 
     fun register(username: String, password: String): User {
