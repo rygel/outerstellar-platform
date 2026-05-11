@@ -132,31 +132,27 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun incrementFailedLoginAttempts(userId: UUID): Int {
-        val field = PLT_USERS.field("failed_login_attempts", Int::class.java)!!
-        return dsl.update(PLT_USERS)
-            .set(field, field.plus(1))
-            .where(PLT_USERS.ID.eq(userId))
-            .returning(field)
+        return dsl.resultQuery(
+                "UPDATE plt_users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = ? RETURNING failed_login_attempts",
+                userId,
+            )
             .fetchOne()
-            ?.get(field) ?: 0
+            ?.get(0, Int::class.java) ?: 0
     }
 
     override fun resetFailedLoginAttempts(userId: UUID) {
-        dsl.update(PLT_USERS)
-            .set(PLT_USERS.field("failed_login_attempts", Int::class.java)!!, 0)
-            .setNull(PLT_USERS.field("locked_until")!!)
-            .where(PLT_USERS.ID.eq(userId))
-            .execute()
+        dsl.execute("UPDATE plt_users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?", userId)
     }
 
     override fun updateLockedUntil(userId: UUID, lockedUntil: Instant?) {
         if (lockedUntil != null) {
-            dsl.update(PLT_USERS)
-                .set(PLT_USERS.field("locked_until", Instant::class.java)!!, lockedUntil)
-                .where(PLT_USERS.ID.eq(userId))
-                .execute()
+            dsl.execute(
+                "UPDATE plt_users SET locked_until = ? WHERE id = ?",
+                lockedUntil.atZone(ZoneOffset.UTC).toOffsetDateTime(),
+                userId,
+            )
         } else {
-            dsl.update(PLT_USERS).setNull(PLT_USERS.field("locked_until")!!).where(PLT_USERS.ID.eq(userId)).execute()
+            dsl.execute("UPDATE plt_users SET locked_until = NULL WHERE id = ?", userId)
         }
     }
 

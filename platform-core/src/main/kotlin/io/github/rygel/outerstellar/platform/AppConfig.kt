@@ -12,6 +12,8 @@ private const val MIN_SESSION_TIMEOUT_MINUTES = 1
 private const val DEFAULT_JWT_EXPIRY_SECONDS = 86400L
 private const val MAX_HTTP_PORT = 65535
 private const val MIN_HTTP_PORT = 1
+private const val DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 10
+private const val DEFAULT_LOCKOUT_DURATION_SECONDS = 900L
 private const val DEFAULT_CSP_POLICY =
     "default-src 'self'; script-src 'self' 'unsafe-inline'; " +
         "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:;"
@@ -53,8 +55,8 @@ data class AppConfig(
     val segment: SegmentConfig = SegmentConfig(),
     val email: EmailConfig = EmailConfig(),
     val appBaseUrl: String = "http://localhost:8080",
-    val maxFailedLoginAttempts: Int = 10,
-    val lockoutDurationSeconds: Long = 900,
+    val maxFailedLoginAttempts: Int = DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
+    val lockoutDurationSeconds: Long = DEFAULT_LOCKOUT_DURATION_SECONDS,
     val jwt: JwtConfig = JwtConfig(),
     val cspPolicy: String = DEFAULT_CSP_POLICY,
 ) {
@@ -111,8 +113,20 @@ data class AppConfig(
                 segment = buildSegmentConfig(yaml["segment"] as? Map<String, Any>, env),
                 email = buildEmailConfig(yaml["email"] as? Map<String, Any>, env),
                 appBaseUrl = yaml.str("appBaseUrl", env, "APPBASEURL", "http://localhost:8080"),
-                maxFailedLoginAttempts = yaml.int("maxFailedLoginAttempts", env, "MAX_FAILED_LOGIN_ATTEMPTS", 10),
-                lockoutDurationSeconds = yaml.long("lockoutDurationSeconds", env, "LOCKOUT_DURATION_SECONDS", 900),
+                maxFailedLoginAttempts =
+                    yaml.int(
+                        "maxFailedLoginAttempts",
+                        env,
+                        "MAX_FAILED_LOGIN_ATTEMPTS",
+                        DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
+                    ),
+                lockoutDurationSeconds =
+                    yaml.long(
+                        "lockoutDurationSeconds",
+                        env,
+                        "LOCKOUT_DURATION_SECONDS",
+                        DEFAULT_LOCKOUT_DURATION_SECONDS,
+                    ),
                 jwt = buildJwtConfig(yaml["jwt"] as? Map<String, Any>, env),
                 cspPolicy = (yaml["cspPolicy"] as? String) ?: DEFAULT_CSP_POLICY,
             )

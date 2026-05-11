@@ -21,11 +21,8 @@ class SecurityService(
     private val apiKeyRepository: ApiKeyRepository? = null,
     private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
     private val oauthRepository: OAuthRepository? = null,
-    private val appBaseUrl: String = "http://localhost:8080",
+    private val config: SecurityConfig = SecurityConfig(),
     private val sessionRepository: SessionRepository? = null,
-    private val sessionTimeoutSeconds: Long = 1800L,
-    private val maxFailedLoginAttempts: Int = 10,
-    private val lockoutDurationSeconds: Long = 900,
     private val activityUpdater: AsyncActivityUpdater? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
@@ -38,7 +35,7 @@ class SecurityService(
             resetRepository = resetRepository,
             auditRepository = auditRepository,
             emailService = emailService,
-            appBaseUrl = appBaseUrl,
+            appBaseUrl = config.appBaseUrl,
         )
     }
 
@@ -81,8 +78,8 @@ class SecurityService(
             else -> {
                 val attempts = userRepository.incrementFailedLoginAttempts(user.id)
                 logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
-                if (attempts >= maxFailedLoginAttempts) {
-                    val until = Instant.now().plusSeconds(lockoutDurationSeconds)
+                if (attempts >= config.maxFailedLoginAttempts) {
+                    val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
                     userRepository.updateLockedUntil(user.id, until)
                     logger.warn("User $username locked until $until after $attempts failed attempts")
                 }
@@ -281,7 +278,7 @@ class SecurityService(
             Session(
                 tokenHash = tokenHash,
                 userId = userId,
-                expiresAt = Instant.now().plusSeconds(sessionTimeoutSeconds),
+                expiresAt = Instant.now().plusSeconds(config.sessionTimeoutSeconds),
             )
         repo.save(session)
         logger.info("Session created for user {}", userId)
@@ -296,7 +293,7 @@ class SecurityService(
             val user = userRepository.findById(activeSession.userId)
             if (user != null && user.enabled) {
                 // Extend session on activity
-                repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(sessionTimeoutSeconds))
+                repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(config.sessionTimeoutSeconds))
                 activityUpdater?.record(user.id) ?: userRepository.updateLastActivity(user.id)
                 return SessionLookup.Active(user)
             }
