@@ -24,6 +24,8 @@ class SecurityService(
     private val appBaseUrl: String = "http://localhost:8080",
     private val sessionRepository: SessionRepository? = null,
     private val sessionTimeoutSeconds: Long = 1800L,
+    private val maxFailedLoginAttempts: Int = 10,
+    private val lockoutDurationSeconds: Long = 900,
     private val activityUpdater: AsyncActivityUpdater? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
@@ -65,12 +67,25 @@ class SecurityService(
                 logger.warn("Authentication failed: User $username is disabled")
                 null
             }
+            user.lockedUntil != null && user.lockedUntil.isAfter(Instant.now()) -> {
+                logger.warn("Authentication failed: User $username is locked until ${user.lockedUntil}")
+                null
+            }
             passwordEncoder.matches(password, user.passwordHash) -> {
+                if (user.failedLoginAttempts > 0) {
+                    userRepository.resetFailedLoginAttempts(user.id)
+                }
                 logger.info("Authentication successful for user $username")
                 user
             }
             else -> {
-                logger.warn("Authentication failed: Invalid password for user $username")
+                val attempts = userRepository.incrementFailedLoginAttempts(user.id)
+                logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
+                if (attempts >= maxFailedLoginAttempts) {
+                    val until = Instant.now().plusSeconds(lockoutDurationSeconds)
+                    userRepository.updateLockedUntil(user.id, until)
+                    logger.warn("User $username locked until $until after $attempts failed attempts")
+                }
                 null
             }
         }
@@ -132,6 +147,17 @@ class SecurityService(
         val admin = userRepository.findById(adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
         audit(action, actor = admin, target = target)
+    }
+
+    fun unlockAccount(adminId: UUID, targetId: UUID) {
+        val admin = userRepository.findById(adminId) ?: throw UserNotFoundException(adminId.toString())
+        if (admin.role != UserRole.ADMIN) {
+            throw InsufficientPermissionException("Admin access required to unlock accounts")
+        }
+        val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
+        userRepository.resetFailedLoginAttempts(targetId)
+        logger.info("User {} unlocked by admin {}", target.username, admin.username)
+        audit("USER_UNLOCKED", actor = admin, target = target)
     }
 
     fun setUserRole(adminId: UUID, targetId: UUID, role: UserRole) {
