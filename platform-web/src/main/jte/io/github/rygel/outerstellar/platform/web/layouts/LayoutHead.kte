@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="${shell.csrfToken}">
+    <meta name="theme-color" content="#0f172a">
     <title>${shell.pageTitle} - ${shell.appTitle}</title>
     @if(shell.pageDescription.isNotBlank())
     <meta name="description" content="${shell.pageDescription}">
@@ -15,6 +16,14 @@
     @if(shell.noIndex)
     <meta name="robots" content="noindex, nofollow">
     @endif
+    @if(!shell.noIndex && shell.canonicalUrl.isNotBlank())
+        @for(locale in shell.supportedLocales)
+    <link rel="alternate" hreflang="${locale}" href="${shell.canonicalUrl}?lang=${locale}">
+        @endfor
+    <link rel="alternate" hreflang="x-default" href="${shell.canonicalUrl}?lang=en">
+    @endif
+    <link rel="preload" href="/site.css?v=${shell.version}" as="style">
+    <link rel="preload" href="/vendor/remixicon/remixicon.woff2" as="font" type="font/woff2" crossorigin>
     <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="/site.css?v=${shell.version}">
     <script defer src="/vendor/htmx.min.js"></script>

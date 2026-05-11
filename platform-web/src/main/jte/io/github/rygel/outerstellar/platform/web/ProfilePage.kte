@@ -7,11 +7,12 @@
 
         <%-- ── Section 1: Profile Info ─────────────────────────────────────── --%>
         <section class="card bg-base-200 border border-base-300">
-            <h2 style="margin-top:0;">${model.data.title}</h2>
+            <h1 style="margin-top:0;">${model.data.title}</h1>
 
             <div style="display:flex; align-items:center; gap:1.25rem; margin-bottom:1.25rem;">
                 <img src="${model.data.avatarUrl}"
                      alt="${model.data.avatarAlt}"
+                     loading="lazy"
                      style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:2px solid var(--color-border, #333);">
                 <div>
                     <div style="font-weight:600; font-size:1.05rem;">${model.data.username}</div>
