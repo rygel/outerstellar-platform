@@ -332,6 +332,12 @@ class SecurityService(
                 Regex("^172\\.(1[6-9]|2\\d|3[01])\\..*"),
                 Regex("^192\\.168\\..*"),
                 Regex("^0\\..*"),
+                Regex("^0\\.0\\.0\\.0$"),
+                Regex("^\\[::1]$"),
+                Regex("^\\[::]$"),
+                Regex("^\\[fe80:.*]$"),
+                Regex("^\\[fd00:.*]$"),
+                Regex("^\\[fc00:.*]$"),
                 Regex(".*\\.local$"),
                 Regex(".*\\.internal$"),
             )
