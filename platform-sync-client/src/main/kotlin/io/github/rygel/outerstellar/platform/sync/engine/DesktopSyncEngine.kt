@@ -176,49 +176,27 @@ class DesktopSyncEngine(
         }
     }
 
-    fun loadUsers() {
-        try {
+    fun loadUsers() =
+        runGuarded("loadUsers") {
             val users = syncService.listUsers()
             updateState { it.copy(adminUsers = users) }
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to load users", e)
-            fireError("loadUsers", e.message ?: "Unknown error")
         }
-    }
 
-    fun setUserEnabled(userId: String, enabled: Boolean): Result<Unit> {
-        return try {
+    fun setUserEnabled(userId: String, enabled: Boolean): Result<Unit> =
+        runGuardedResult("setUserEnabled") {
             syncService.setUserEnabled(userId, enabled)
             loadUsers()
             analytics.track(state.userName, "user_enabled_changed", mapOf("userId" to userId, "enabled" to enabled))
             Result.success(Unit)
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired()
-            Result.failure(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to set user enabled", e)
-            fireError("setUserEnabled", e.message ?: "Unknown error")
-            Result.failure(e)
         }
-    }
 
-    fun setUserRole(userId: String, role: String): Result<Unit> {
-        return try {
+    fun setUserRole(userId: String, role: String): Result<Unit> =
+        runGuardedResult("setUserRole") {
             syncService.setUserRole(userId, role)
             loadUsers()
             analytics.track(state.userName, "user_role_changed", mapOf("userId" to userId, "role" to role))
             Result.success(Unit)
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired()
-            Result.failure(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to set user role", e)
-            fireError("setUserRole", e.message ?: "Unknown error")
-            Result.failure(e)
         }
-    }
 
     fun requestPasswordReset(email: String): Result<Unit> {
         return try {
@@ -244,44 +222,26 @@ class DesktopSyncEngine(
         }
     }
 
-    fun loadNotifications() {
-        try {
+    fun loadNotifications() =
+        runGuarded("loadNotifications") {
             val notifications = syncService.listNotifications()
             updateState { it.copy(notifications = notifications) }
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to load notifications", e)
-            fireError("loadNotifications", e.message ?: "Unknown error")
         }
-    }
 
-    fun markNotificationRead(notificationId: String) {
-        try {
+    fun markNotificationRead(notificationId: String) =
+        runGuarded("markNotificationRead") {
             syncService.markNotificationRead(notificationId)
             loadNotifications()
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to mark notification read", e)
-            fireError("markNotificationRead", e.message ?: "Unknown error")
         }
-    }
 
-    fun markAllNotificationsRead() {
-        try {
+    fun markAllNotificationsRead() =
+        runGuarded("markAllNotificationsRead") {
             syncService.markAllNotificationsRead()
             loadNotifications()
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to mark all notifications read", e)
-            fireError("markAllNotificationsRead", e.message ?: "Unknown error")
         }
-    }
 
-    fun loadProfile() {
-        try {
+    fun loadProfile() =
+        runGuarded("loadProfile") {
             val profile = syncService.fetchProfile()
             updateState {
                 it.copy(
@@ -292,13 +252,7 @@ class DesktopSyncEngine(
                     pushNotificationsEnabled = profile.pushNotificationsEnabled,
                 )
             }
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to load profile", e)
-            fireError("loadProfile", e.message ?: "Unknown error")
         }
-    }
 
     fun updateProfile(email: String, username: String? = null, avatarUrl: String? = null): Result<Unit> {
         return try {
@@ -318,20 +272,12 @@ class DesktopSyncEngine(
         }
     }
 
-    fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Result<Unit> {
-        return try {
+    fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Result<Unit> =
+        runGuardedResult("updateNotificationPreferences") {
             syncService.updateNotificationPreferences(emailEnabled, pushEnabled)
             updateState { it.copy(emailNotificationsEnabled = emailEnabled, pushNotificationsEnabled = pushEnabled) }
             Result.success(Unit)
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired()
-            Result.failure(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to update notification preferences", e)
-            fireError("updateNotificationPreferences", e.message ?: "Unknown error")
-            Result.failure(e)
         }
-    }
 
     fun deleteAccount(): Result<Unit> {
         return try {
@@ -490,5 +436,29 @@ class DesktopSyncEngine(
         if (pulled > 0) parts.add("pulled $pulled")
         if (conflicts > 0) parts.add("$conflicts conflict(s)")
         return if (parts.isEmpty()) "Everything up to date" else "Synced: ${parts.joinToString(", ")}"
+    }
+
+    internal inline fun runGuarded(operation: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (e: SessionExpiredException) {
+            handleSessionExpired(e)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            logger.warn("Failed to {}", operation, e)
+            fireError(operation, e.message ?: "Unknown error")
+        }
+    }
+
+    internal inline fun runGuardedResult(operation: String, block: () -> Result<Unit>): Result<Unit> {
+        return try {
+            block()
+        } catch (e: SessionExpiredException) {
+            handleSessionExpired(e)
+            Result.failure(e)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            logger.warn("Failed to {}", operation, e)
+            fireError(operation, e.message ?: "Unknown error")
+            Result.failure(e)
+        }
     }
 }

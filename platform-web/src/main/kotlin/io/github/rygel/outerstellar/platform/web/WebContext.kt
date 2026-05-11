@@ -3,12 +3,12 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.I18nTextResolver
 import io.github.rygel.outerstellar.platform.TextResolver
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionLookup
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
-import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request

@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.rygel.outerstellar.platform.JwtConfig
+import io.github.rygel.outerstellar.platform.model.UserRole
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID

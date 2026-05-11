@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

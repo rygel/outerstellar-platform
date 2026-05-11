@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.web.WebTest
 import io.github.rygel.outerstellar.platform.web.testPassword

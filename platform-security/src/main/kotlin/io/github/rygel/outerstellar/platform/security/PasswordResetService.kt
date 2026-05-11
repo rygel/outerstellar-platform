@@ -15,7 +15,7 @@ class PasswordResetService(
     private val resetRepository: PasswordResetRepository? = null,
     private val auditRepository: AuditRepository? = null,
     private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
-    private val appBaseUrl: String = "http://localhost:8080",
+    private val appBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
 

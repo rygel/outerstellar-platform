@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.mockk.every
 import io.mockk.mockk

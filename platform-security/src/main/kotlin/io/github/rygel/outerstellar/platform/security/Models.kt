@@ -1,13 +1,9 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.model.UserRole
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
-
-enum class UserRole {
-    USER,
-    ADMIN,
-}
 
 data class User(
     val id: UUID,
@@ -84,7 +80,7 @@ interface PasswordResetRepository {
 data class DeviceToken(val id: Long, val userId: UUID, val platform: String, val token: String, val appBundle: String?)
 
 data class SecurityConfig(
-    val appBaseUrl: String = "http://localhost:8080",
+    val appBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
     val sessionTimeoutSeconds: Long = 1800L,
     val maxFailedLoginAttempts: Int = 10,
     val lockoutDurationSeconds: Long = 900,

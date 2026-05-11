@@ -4,10 +4,10 @@ import io.github.rygel.outerstellar.platform.model.InsufficientPermissionExcepti
 import io.github.rygel.outerstellar.platform.model.SetUserEnabledRequest
 import io.github.rygel.outerstellar.platform.model.SetUserRoleRequest
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract

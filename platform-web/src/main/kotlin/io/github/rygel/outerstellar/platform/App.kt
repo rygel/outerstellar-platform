@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform
 
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
@@ -12,7 +13,6 @@ import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionRealm
 import io.github.rygel.outerstellar.platform.security.UserRepository
-import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.web.AdminNavItem
 import io.github.rygel.outerstellar.platform.web.AuthApi

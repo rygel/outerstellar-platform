@@ -4,6 +4,11 @@ import java.time.Instant
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
+enum class UserRole {
+    USER,
+    ADMIN,
+}
+
 @Serializable data class LoginRequest(val username: String, val password: String)
 
 @Serializable data class RegisterRequest(val username: String, val password: String)
@@ -17,7 +22,7 @@ data class UserSummary(
     val id: String,
     val username: String,
     val email: String,
-    val role: String,
+    val role: UserRole,
     val enabled: Boolean,
     val failedLoginAttempts: Int = 0,
     @Contextual val lockedUntil: Instant? = null,

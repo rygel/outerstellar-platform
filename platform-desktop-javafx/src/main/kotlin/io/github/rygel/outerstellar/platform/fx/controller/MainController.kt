@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.sync.SyncService
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
@@ -116,7 +117,7 @@ class MainController : KoinComponent {
         navLoginBtn.isManaged = !loggedIn
         navLogoutBtn.isVisible = loggedIn
         navLogoutBtn.isManaged = loggedIn
-        navUsersBtn.isVisible = loggedIn && syncService.userRole == "ADMIN"
-        navUsersBtn.isManaged = loggedIn && syncService.userRole == "ADMIN"
+        navUsersBtn.isVisible = loggedIn && syncService.userRole == UserRole.ADMIN.name
+        navUsersBtn.isManaged = loggedIn && syncService.userRole == UserRole.ADMIN.name
     }
 }
