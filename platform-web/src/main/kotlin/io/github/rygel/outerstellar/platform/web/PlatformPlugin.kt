@@ -1,5 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
+import gg.jte.Content
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteLayoutRouterGenerated
+import gg.jte.html.OwaspHtmlTemplateOutput
+import gg.jte.output.StringOutput
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.TextResolver
@@ -55,6 +59,25 @@ data class PluginContext(
             logger.debug("Lens extraction failed for current user check: {}", e.message)
             null
         }
+
+    /**
+     * Renders [bodyHtml] wrapped inside the platform's standardized layout shell defined by [shell]. The [ShellView] is
+     * obtained from [WebContext.shell()].
+     *
+     * Usage:
+     * ```kotlin
+     * val shell = request.webContext.shell("Page Title", "/section")
+     * val html = context.renderShell(shell, "<div>...</div>")
+     * ```
+     *
+     * The [bodyHtml] is rendered as-is with no escaping — plugins are trusted to produce safe HTML.
+     */
+    fun renderShell(shell: ShellView, bodyHtml: String): String {
+        val output = StringOutput()
+        val content = Content { it.writeUnsafeContent(bodyHtml) }
+        JteLayoutRouterGenerated.render(OwaspHtmlTemplateOutput(output), null, shell, content)
+        return output.toString()
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(PluginContext::class.java)
