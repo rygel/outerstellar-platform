@@ -528,6 +528,7 @@ private fun buildFilterChain(
                         adminNavItems = adminNavItems,
                     ),
                     cookieSecure = config.sessionCookieSecure,
+                    appBaseUrl = config.appBaseUrl,
                 )
             )
 

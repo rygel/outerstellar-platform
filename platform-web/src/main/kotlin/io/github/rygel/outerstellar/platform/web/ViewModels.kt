@@ -42,6 +42,9 @@ data class ShellView(
     val toggleMenuLabel: String = "Toggle menu",
     val profileLabel: String = "Profile",
     val notificationBellTitle: String = "Notifications",
+    val pageDescription: String = "",
+    val canonicalUrl: String = "",
+    val noIndex: Boolean = false,
 ) {
     fun text(key: String, vararg args: Any?): String = textResolver?.resolve(key, *args) ?: key
 }
