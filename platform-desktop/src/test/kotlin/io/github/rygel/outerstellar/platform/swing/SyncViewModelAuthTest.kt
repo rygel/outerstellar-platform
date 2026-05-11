@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.model.SyncException
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
@@ -241,8 +242,8 @@ class SyncViewModelAuthTest {
     fun `loadUsers populates adminUsers list`() {
         val users =
             listOf(
-                UserSummary("1", "admin", "admin@test.com", "ADMIN", true),
-                UserSummary("2", "alice", "alice@test.com", "USER", true),
+                UserSummary("1", "admin", "admin@test.com", UserRole.ADMIN, true),
+                UserSummary("2", "alice", "alice@test.com", UserRole.USER, true),
             )
         every { syncService.listUsers() } returns users
 
@@ -260,7 +261,7 @@ class SyncViewModelAuthTest {
 
     @Test
     fun `toggleUserEnabled calls service and refreshes list`() {
-        val users = listOf(UserSummary("1", "alice", "alice@test.com", "USER", false))
+        val users = listOf(UserSummary("1", "alice", "alice@test.com", UserRole.USER, false))
         every { syncService.setUserEnabled("1", true) } just runs
         every { syncService.listUsers() } returns users
 

@@ -54,13 +54,14 @@ data class AppConfig(
     val csrfEnabled: Boolean = true,
     val segment: SegmentConfig = SegmentConfig(),
     val email: EmailConfig = EmailConfig(),
-    val appBaseUrl: String = "http://localhost:8080",
+    val appBaseUrl: String = DEFAULT_APP_BASE_URL,
     val maxFailedLoginAttempts: Int = DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
     val lockoutDurationSeconds: Long = DEFAULT_LOCKOUT_DURATION_SECONDS,
     val jwt: JwtConfig = JwtConfig(),
     val cspPolicy: String = DEFAULT_CSP_POLICY,
 ) {
     companion object {
+        const val DEFAULT_APP_BASE_URL = "http://localhost:8080"
         private val logger = LoggerFactory.getLogger(AppConfig::class.java)
 
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
@@ -112,7 +113,7 @@ data class AppConfig(
                 csrfEnabled = yaml.bool("csrfEnabled", env, "CSRFENABLED", true),
                 segment = buildSegmentConfig(yaml["segment"] as? Map<String, Any>, env),
                 email = buildEmailConfig(yaml["email"] as? Map<String, Any>, env),
-                appBaseUrl = yaml.str("appBaseUrl", env, "APPBASEURL", "http://localhost:8080"),
+                appBaseUrl = yaml.str("appBaseUrl", env, "APPBASEURL", DEFAULT_APP_BASE_URL),
                 maxFailedLoginAttempts =
                     yaml.int(
                         "maxFailedLoginAttempts",

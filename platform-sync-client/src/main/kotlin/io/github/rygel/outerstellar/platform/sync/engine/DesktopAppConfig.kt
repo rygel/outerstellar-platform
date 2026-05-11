@@ -4,7 +4,7 @@ import org.snakeyaml.engine.v2.api.Load
 import org.snakeyaml.engine.v2.api.LoadSettings
 
 data class DesktopAppConfig(
-    val serverBaseUrl: String = "http://localhost:8080",
+    val serverBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
     val jdbcUrl: String = "jdbc:postgresql://localhost:5432/outerstellar",
     val jdbcUser: String = "outerstellar",
     val jdbcPassword: String = "outerstellar",
@@ -47,7 +47,13 @@ data class DesktopAppConfig(
         private fun buildFromYaml(yaml: Map<String, Any>?, env: Map<String, String>): DesktopAppConfig {
             if (yaml == null) return DesktopAppConfig()
             return DesktopAppConfig(
-                serverBaseUrl = yaml.str("serverBaseUrl", env, "SERVER_BASE_URL", "http://localhost:8080"),
+                serverBaseUrl =
+                    yaml.str(
+                        "serverBaseUrl",
+                        env,
+                        "SERVER_BASE_URL",
+                        io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
+                    ),
                 jdbcUrl = yaml.str("jdbcUrl", env, "JDBC_URL", "jdbc:postgresql://localhost:5432/outerstellar"),
                 jdbcUser = yaml.str("jdbcUser", env, "JDBC_USER", "outerstellar"),
                 jdbcPassword = yaml.str("jdbcPassword", env, "JDBC_PASSWORD", "outerstellar"),

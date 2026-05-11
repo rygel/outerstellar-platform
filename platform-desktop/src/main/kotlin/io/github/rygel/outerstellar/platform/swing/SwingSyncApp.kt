@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.desktopModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.model.MessageSummary
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
 import io.github.rygel.outerstellar.platform.service.MessageService
@@ -638,12 +639,12 @@ class SyncWindow(
         registerItem.isEnabled = !viewModel.isLoggedIn
         changePasswordItem.isEnabled = viewModel.isLoggedIn
 
-        navUsersBtn.isEnabled = viewModel.isLoggedIn && viewModel.userRole == "ADMIN"
+        navUsersBtn.isEnabled = viewModel.isLoggedIn && viewModel.userRole == UserRole.ADMIN.name
         navProfileBtn.isEnabled = viewModel.isLoggedIn
 
         usersModel.rowCount = 0
         viewModel.adminUsers.forEach { user ->
-            usersModel.addRow(arrayOf(user.username, user.email, user.role, user.enabled.toString(), user.id))
+            usersModel.addRow(arrayOf(user.username, user.email, user.role.name, user.enabled.toString(), user.id))
         }
     }
 

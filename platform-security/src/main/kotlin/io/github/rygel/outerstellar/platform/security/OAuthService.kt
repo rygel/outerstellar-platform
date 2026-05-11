@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.security
 
 import io.github.rygel.outerstellar.platform.model.AuditEntry
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory

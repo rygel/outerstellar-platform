@@ -3,12 +3,12 @@ package io.github.rygel.outerstellar.platform.seed
 import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.infra.migrate
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
-import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.security.securityModule
 import java.util.UUID
 import javax.sql.DataSource

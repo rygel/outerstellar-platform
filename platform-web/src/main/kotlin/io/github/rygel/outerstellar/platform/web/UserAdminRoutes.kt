@@ -3,9 +3,9 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.export.CsvUtils
 import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -103,7 +103,7 @@ class UserAdminRoutes(
                         val users = securityService.listUsers()
                         val target = users.find { it.id == userId }
                         if (target != null) {
-                            val newRole = if (target.role == "ADMIN") UserRole.USER else UserRole.ADMIN
+                            val newRole = if (target.role == UserRole.ADMIN) UserRole.USER else UserRole.ADMIN
                             securityService.setUserRole(admin.id, UUID.fromString(userId), newRole)
                         }
                         renderer.render(pageFactory.buildUserAdminPage(ctx))
@@ -129,7 +129,7 @@ class UserAdminRoutes(
             val sb = StringBuilder()
             sb.appendLine(CsvUtils.toCsvRow(listOf("Username", "Email", "Role", "Enabled")))
             users.forEach { u ->
-                sb.appendLine(CsvUtils.toCsvRow(listOf(u.username, u.email, u.role, u.enabled.toString())))
+                sb.appendLine(CsvUtils.toCsvRow(listOf(u.username, u.email, u.role.name, u.enabled.toString())))
             }
             return sb.toString()
         }

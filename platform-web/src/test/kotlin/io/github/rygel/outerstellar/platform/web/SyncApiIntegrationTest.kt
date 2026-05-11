@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRole
 import io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushContactResponse

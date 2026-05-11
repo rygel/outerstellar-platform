@@ -6,10 +6,10 @@ import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.model.SetUserEnabledRequest
 import io.github.rygel.outerstellar.platform.model.SetUserRoleRequest
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -309,7 +309,7 @@ class UserManagementIntegrationTest : WebTest() {
 
         assertEquals("fieldcheck", user.username)
         assertEquals("fieldcheck", user.email)
-        assertEquals("USER", user.role)
+        assertEquals(UserRole.USER, user.role)
         assertTrue(user.enabled)
         assertTrue(user.id.isNotBlank())
     }

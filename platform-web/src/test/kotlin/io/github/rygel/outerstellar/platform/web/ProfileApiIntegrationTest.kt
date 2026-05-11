@@ -6,9 +6,9 @@ import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.model.UpdateNotificationPrefsRequest
 import io.github.rygel.outerstellar.platform.model.UpdateProfileRequest
 import io.github.rygel.outerstellar.platform.model.UserProfileResponse
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,10 +1,10 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.AuditEntry
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -201,8 +201,8 @@ class AdminExportIntegrationTest : WebTest() {
     fun `usersAsCsv produces one data row per user`() {
         val users =
             listOf(
-                UserSummary("1", "alice", "alice@test.com", "USER", true),
-                UserSummary("2", "bob", "bob@test.com", "ADMIN", true),
+                UserSummary("1", "alice", "alice@test.com", UserRole.USER, true),
+                UserSummary("2", "bob", "bob@test.com", UserRole.ADMIN, true),
             )
         val csv = UserAdminRoutes.usersAsCsv(users)
         val lines = csv.trim().lines()
@@ -212,14 +212,14 @@ class AdminExportIntegrationTest : WebTest() {
 
     @Test
     fun `usersAsCsv escapes username containing a comma`() {
-        val users = listOf(UserSummary("1", "last, first", "e@test.com", "USER", true))
+        val users = listOf(UserSummary("1", "last, first", "e@test.com", UserRole.USER, true))
         val csv = UserAdminRoutes.usersAsCsv(users)
         assertTrue(csv.contains("\"last, first\""), "Comma in username should be quoted, got: $csv")
     }
 
     @Test
     fun `usersAsCsv escapes username containing a double-quote`() {
-        val users = listOf(UserSummary("1", "say \"hello\"", "e@test.com", "USER", true))
+        val users = listOf(UserSummary("1", "say \"hello\"", "e@test.com", UserRole.USER, true))
         val csv = UserAdminRoutes.usersAsCsv(users)
         // CSV escaping: " → "" inside quoted field
         assertTrue(csv.contains("\"\""), "Double-quotes in value should be escaped")

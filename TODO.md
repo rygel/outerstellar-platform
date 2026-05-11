@@ -8,13 +8,11 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Security
 
-- [ ] **CORS defaults to `*` — restrict to specific origins**
-  The `corsOrigins` config defaults to `"*"`, allowing any external origin to make authenticated requests.
-  — `platform-core/.../AppConfig.kt:107`, `platform-web/.../web/Filters.kt:156-170`
+- [x] ~~**CORS defaults to `*` — restrict to specific origins**~~
+  Fixed in PR #230 — default changed from `"*"` to `""` (no CORS headers unless explicitly configured).
 
-- [ ] **Error messages leak internal details in API responses**
-  Unhandled exceptions include `e.message` in JSON error responses, which can leak SQL syntax, file paths, and stack traces.
-  — `platform-web/.../web/Filters.kt:472`
+- [x] ~~**Error messages leak internal details in API responses**~~
+  Fixed in PR #230 — non-`OuterstellarException` errors return generic message in API responses.
 
 - [ ] **Password reset token exposed in URL query parameter**
   Token is sent as `?token=$tokenValue` in the reset link, leaking via Referer header, browser history, and server logs. Should use POST-based submission.
@@ -40,9 +38,8 @@ Architecture, security, and maintainability improvements identified during code 
   Contains main window, all navigation, menu items, translations, and ~50 fields. Extract `SyncWindow` into its own class; split navigation and menu logic.
   — `platform-desktop/.../swing/SwingSyncApp.kt`
 
-- [ ] **Replace `sendAsync` in `SegmentAnalyticsService` with sync + background thread**
-  `client.sendAsync()` violates the project's synchronous-only architectural principle. Use `client.send()` in a daemon thread instead.
-  — `platform-core/.../analytics/SegmentAnalyticsService.kt:85`
+- [x] ~~**Replace `sendAsync` in `SegmentAnalyticsService` with sync + background thread**~~
+  Fixed in PR #230 — replaced with synchronous `client.send()` in a daemon thread.
 
 - [ ] **Reduce generic `catch (Exception)` boilerplate in `DesktopSyncEngine`**
   22 methods duplicate the same try/catch pattern. Extract a higher-order function like `runCatching(operation, onSessionExpired, onError)`.
@@ -95,9 +92,8 @@ Architecture, security, and maintainability improvements identified during code 
   The `app()` function assembles the entire HTTP handler chain directly. `PluginContext` is constructed 4 times redundantly. Extract into smaller assembly functions.
   — `platform-web/.../App.kt`
 
-- [ ] **Declare `platform-core` as explicit dependency in desktop modules**
-  Both `platform-desktop` and `platform-desktop-javafx` get `platform-core` only transitively through `platform-persistence-jooq`. A refactoring of that module's dependencies could silently break them.
-  — `platform-desktop/pom.xml`, `platform-desktop-javafx/pom.xml`
+- [x] ~~**Declare `platform-core` as explicit dependency in desktop modules**~~
+  Fixed in PR #230 — both `platform-desktop` and `platform-desktop-javafx` pom.xml now declare it explicitly.
 
 ### Hardcoded Values
 
@@ -115,9 +111,8 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Security
 
-- [ ] **JWT secret defaults to empty string with no startup validation**
-  If `enabled=true` is set without a non-empty `secret`, HMAC would use an empty key. Add a startup assertion.
-  — `platform-core/.../AppConfig.kt:26`, `platform-security/.../security/JwtService.kt`
+- [x] ~~**JWT secret defaults to empty string with no startup validation**~~
+  Fixed in PR #230 — added startup warning when JWT is enabled but secret is blank.
 
 - [ ] **Health endpoint is unauthenticated, leaks DB status**
   `/health` returns whether the database is UP or DOWN with no authentication.
@@ -273,4 +268,14 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 - [x] **Update dependency bumps** (http4k, opentelemetry, angus-mail, assertj-core, ktfmt)
 
-- [x] **Fix desktop `SyncViewModel.onSessionExpired()` race condition**
+- [x] **Fix desktop `SyncViewModel.onSessionExpired()` race condition** (PR #230)
+
+- [x] **CORS wildcard default dropped** (PR #230)
+
+- [x] **API error messages sanitized** (PR #230)
+
+- [x] **SegmentAnalyticsService async violation fixed** (PR #230)
+
+- [x] **JWT secret startup warning added** (PR #230)
+
+- [x] **platform-core declared as explicit dep in desktop modules** (PR #230)

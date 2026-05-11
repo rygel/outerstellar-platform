@@ -1,5 +1,7 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.model.UserRole
+
 /**
  * Wildcard permission following the `domain:action:instance` pattern.
  *

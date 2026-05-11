@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRole
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID

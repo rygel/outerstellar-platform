@@ -36,7 +36,7 @@ class AdminPageFactory(
                                 id = u.id,
                                 username = u.username,
                                 email = u.email,
-                                role = u.role,
+                                role = u.role.name,
                                 enabled = u.enabled,
                                 toggleEnabledUrl = ctx.url("/admin/users/${u.id}/toggle-enabled"),
                                 toggleRoleUrl = ctx.url("/admin/users/${u.id}/toggle-role"),

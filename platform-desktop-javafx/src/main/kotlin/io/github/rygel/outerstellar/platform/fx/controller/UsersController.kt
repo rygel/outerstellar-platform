@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import javafx.application.Platform
@@ -26,7 +27,7 @@ class UsersController : KoinComponent {
     fun initialize() {
         usernameColumn.setCellValueFactory { SimpleStringProperty(it.value.username) }
         emailColumn.setCellValueFactory { SimpleStringProperty(it.value.email) }
-        roleColumn.setCellValueFactory { SimpleStringProperty(it.value.role) }
+        roleColumn.setCellValueFactory { SimpleStringProperty(it.value.role.name) }
         enabledColumn.setCellValueFactory { SimpleStringProperty(it.value.enabled.toString()) }
         loadUsers()
     }
@@ -52,7 +53,7 @@ class UsersController : KoinComponent {
     @FXML
     fun onToggleRole() {
         val selected = usersTable.selectionModel.selectedItem ?: return
-        val newRole = if (selected.role == "ADMIN") "USER" else "ADMIN"
+        val newRole = if (selected.role == UserRole.ADMIN) UserRole.USER.name else UserRole.ADMIN.name
         Thread {
                 engine
                     .setUserRole(selected.id, newRole)

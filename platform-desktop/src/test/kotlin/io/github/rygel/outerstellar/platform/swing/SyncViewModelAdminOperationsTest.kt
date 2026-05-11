@@ -3,6 +3,7 @@ package io.github.rygel.outerstellar.platform.swing
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
@@ -46,7 +47,7 @@ class SyncViewModelAdminOperationsTest {
     }
 
     private fun stubUser(id: String = "user-1", role: String = "USER", enabled: Boolean = true) =
-        UserSummary(id = id, username = "bob", email = "bob@test.com", role = role, enabled = enabled)
+        UserSummary(id = id, username = "bob", email = "bob@test.com", role = UserRole.valueOf(role), enabled = enabled)
 
     // ── loadUsers ────────────────────────────────────────────────────────────
 
@@ -183,7 +184,7 @@ class SyncViewModelAdminOperationsTest {
         val vm = loginVm()
         assertTrue(awaitObserver(vm) { vm.toggleUserRole("user-1", currentRole = "USER") })
 
-        assertEquals("ADMIN", vm.adminUsers.first().role)
+        assertEquals(UserRole.ADMIN, vm.adminUsers.first().role)
     }
 
     @Test

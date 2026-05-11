@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.security
 
 import io.github.rygel.outerstellar.platform.JwtConfig
+import io.github.rygel.outerstellar.platform.model.UserRole
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

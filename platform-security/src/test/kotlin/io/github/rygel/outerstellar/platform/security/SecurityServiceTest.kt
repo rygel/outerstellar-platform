@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.security
 
 import io.github.rygel.outerstellar.platform.model.ApiKey
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository

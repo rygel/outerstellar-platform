@@ -327,7 +327,7 @@ class PerformanceBenchmarkTest : WebTest() {
                 username = "prodperfuser",
                 email = "prodperf@example.com",
                 passwordHash = prodEncoder.encode("prodpass123!"),
-                role = io.github.rygel.outerstellar.platform.security.UserRole.USER,
+                role = io.github.rygel.outerstellar.platform.model.UserRole.USER,
             )
         )
 

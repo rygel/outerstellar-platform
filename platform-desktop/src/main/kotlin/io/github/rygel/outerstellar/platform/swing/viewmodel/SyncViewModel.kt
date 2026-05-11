@@ -4,6 +4,7 @@ import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.ContactNotFoundException
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
@@ -324,7 +325,7 @@ class SyncViewModel(
     }
 
     fun toggleUserRole(userId: String, currentRole: String) {
-        val newRole = if (currentRole == "ADMIN") "USER" else "ADMIN"
+        val newRole = if (currentRole == UserRole.ADMIN.name) UserRole.USER.name else UserRole.ADMIN.name
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
                     engine.setUserRole(userId, newRole)

@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
@@ -389,7 +390,7 @@ private fun User.toSummary() =
         id = id.toString(),
         username = username,
         email = email,
-        role = role.name,
+        role = role,
         enabled = enabled,
         failedLoginAttempts = failedLoginAttempts,
         lockedUntil = lockedUntil,
