@@ -9,6 +9,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import java.time.Instant
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -100,6 +101,83 @@ class SecurityServiceTest {
         val result = service.authenticate("unknown", "anypass")
 
         assertNull(result)
+    }
+
+    // ---- lockout ----
+
+    @Test
+    fun `authenticate returns null for locked account`() {
+        val lockedUser = testUser.copy(lockedUntil = Instant.now().plusSeconds(300))
+        every { userRepository.findByUsername("testuser") } returns lockedUser
+
+        val result = service.authenticate("testuser", "correctpass")
+
+        assertNull(result, "Locked account should not authenticate")
+    }
+
+    @Test
+    fun `authenticate succeeds when lock has expired`() {
+        val unlockedUser = testUser.copy(lockedUntil = Instant.now().minusSeconds(60), failedLoginAttempts = 3)
+        every { userRepository.findByUsername("testuser") } returns unlockedUser
+        every { passwordEncoder.matches("correctpass", unlockedUser.passwordHash) } returns true
+
+        val result = service.authenticate("testuser", "correctpass")
+
+        assertNotNull(result, "Account with expired lock should authenticate")
+        verify { userRepository.resetFailedLoginAttempts(unlockedUser.id) }
+    }
+
+    @Test
+    fun `authenticate increments failed attempts on wrong password`() {
+        every { userRepository.findByUsername("testuser") } returns testUser
+        every { passwordEncoder.matches("wrong", testUser.passwordHash) } returns false
+        every { userRepository.incrementFailedLoginAttempts(testUser.id) } returns 1
+
+        val result = service.authenticate("testuser", "wrong")
+
+        assertNull(result)
+        verify { userRepository.incrementFailedLoginAttempts(testUser.id) }
+    }
+
+    @Test
+    fun `authenticate locks account after threshold exceeded`() {
+        every { userRepository.findByUsername("testuser") } returns testUser
+        every { passwordEncoder.matches("wrong", testUser.passwordHash) } returns false
+        every { userRepository.incrementFailedLoginAttempts(testUser.id) } returns 10
+
+        val result = service.authenticate("testuser", "wrong")
+
+        assertNull(result)
+        verify { userRepository.updateLockedUntil(eq(testUser.id), any()) }
+    }
+
+    @Test
+    fun `authenticate resets failed attempts on success`() {
+        val userWithAttempts = testUser.copy(failedLoginAttempts = 3)
+        every { userRepository.findByUsername("testuser") } returns userWithAttempts
+        every { passwordEncoder.matches("correctpass", userWithAttempts.passwordHash) } returns true
+
+        val result = service.authenticate("testuser", "correctpass")
+
+        assertNotNull(result)
+        verify { userRepository.resetFailedLoginAttempts(userWithAttempts.id) }
+    }
+
+    @Test
+    fun `unlockAccount throws for non-admin caller`() {
+        every { userRepository.findById(adminUser.id) } returns adminUser.copy(role = UserRole.USER)
+
+        assertThrows<InsufficientPermissionException> { service.unlockAccount(adminUser.id, testUser.id) }
+    }
+
+    @Test
+    fun `unlockAccount resets failed attempts for target user`() {
+        every { userRepository.findById(adminUser.id) } returns adminUser
+        every { userRepository.findById(testUser.id) } returns testUser
+
+        service.unlockAccount(adminUser.id, testUser.id)
+
+        verify { userRepository.resetFailedLoginAttempts(testUser.id) }
     }
 
     // ---- register ----

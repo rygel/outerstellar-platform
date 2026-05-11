@@ -16,6 +16,8 @@ data class User(
     val passwordHash: String,
     val role: UserRole,
     val enabled: Boolean = true,
+    val failedLoginAttempts: Int = 0,
+    val lockedUntil: Instant? = null,
     val lastActivityAt: Instant? = null,
     val avatarUrl: String? = null,
     val emailNotificationsEnabled: Boolean = true,
@@ -25,7 +27,15 @@ data class User(
     val layout: String? = null,
 )
 
-interface UserRepository {
+interface LockoutRepository {
+    fun incrementFailedLoginAttempts(userId: UUID): Int
+
+    fun resetFailedLoginAttempts(userId: UUID)
+
+    fun updateLockedUntil(userId: UUID, lockedUntil: Instant?)
+}
+
+interface UserRepository : LockoutRepository {
     fun findById(id: UUID): User?
 
     fun findByUsername(username: String): User?
@@ -72,6 +82,13 @@ interface PasswordResetRepository {
 }
 
 data class DeviceToken(val id: Long, val userId: UUID, val platform: String, val token: String, val appBundle: String?)
+
+data class SecurityConfig(
+    val appBaseUrl: String = "http://localhost:8080",
+    val sessionTimeoutSeconds: Long = 1800L,
+    val maxFailedLoginAttempts: Int = 10,
+    val lockoutDurationSeconds: Long = 900,
+)
 
 interface DeviceTokenRepository {
     /** Register or update a device token. Upserts by token value. */

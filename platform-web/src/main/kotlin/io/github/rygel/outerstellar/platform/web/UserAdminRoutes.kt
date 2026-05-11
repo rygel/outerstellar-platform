@@ -109,6 +109,19 @@ class UserAdminRoutes(
                         renderer.render(pageFactory.buildUserAdminPage(ctx))
                     }
                 },
+            "/admin/users" / userIdPath / "unlock" meta
+                {
+                    summary = "Unlock a locked user account"
+                } bindContract
+                POST to
+                { userId, _ ->
+                    { request: org.http4k.core.Request ->
+                        val ctx = request.webContext
+                        val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
+                        securityService.unlockAccount(admin.id, java.util.UUID.fromString(userId))
+                        renderer.render(pageFactory.buildUserAdminPage(ctx))
+                    }
+                },
         )
 
     companion object {

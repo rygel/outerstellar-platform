@@ -21,9 +21,8 @@ class SecurityService(
     private val apiKeyRepository: ApiKeyRepository? = null,
     private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
     private val oauthRepository: OAuthRepository? = null,
-    private val appBaseUrl: String = "http://localhost:8080",
+    private val config: SecurityConfig = SecurityConfig(),
     private val sessionRepository: SessionRepository? = null,
-    private val sessionTimeoutSeconds: Long = 1800L,
     private val activityUpdater: AsyncActivityUpdater? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
@@ -36,7 +35,7 @@ class SecurityService(
             resetRepository = resetRepository,
             auditRepository = auditRepository,
             emailService = emailService,
-            appBaseUrl = appBaseUrl,
+            appBaseUrl = config.appBaseUrl,
         )
     }
 
@@ -54,26 +53,36 @@ class SecurityService(
     }
 
     fun authenticate(username: String, password: String): User? {
-        val user = userRepository.findByUsername(username)
-
-        return when {
-            user == null -> {
-                logger.warn("Authentication failed: User $username not found")
-                null
-            }
-            !user.enabled -> {
-                logger.warn("Authentication failed: User $username is disabled")
-                null
-            }
-            passwordEncoder.matches(password, user.passwordHash) -> {
-                logger.info("Authentication successful for user $username")
-                user
-            }
-            else -> {
-                logger.warn("Authentication failed: Invalid password for user $username")
-                null
-            }
+        val user =
+            userRepository.findByUsername(username)
+                ?: run {
+                    logger.warn("Authentication failed: User $username not found")
+                    return null
+                }
+        if (!user.enabled) {
+            logger.warn("Authentication failed: User $username is disabled")
+            return null
         }
+        val lockedUntil = user.lockedUntil
+        if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
+            logger.warn("Authentication failed: User $username is locked until $lockedUntil")
+            return null
+        }
+        if (passwordEncoder.matches(password, user.passwordHash)) {
+            if (user.failedLoginAttempts > 0) {
+                userRepository.resetFailedLoginAttempts(user.id)
+            }
+            logger.info("Authentication successful for user $username")
+            return user
+        }
+        val attempts = userRepository.incrementFailedLoginAttempts(user.id)
+        logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
+        if (attempts >= config.maxFailedLoginAttempts) {
+            val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
+            userRepository.updateLockedUntil(user.id, until)
+            logger.warn("User $username locked until $until after $attempts failed attempts")
+        }
+        return null
     }
 
     fun register(username: String, password: String): User {
@@ -132,6 +141,17 @@ class SecurityService(
         val admin = userRepository.findById(adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
         audit(action, actor = admin, target = target)
+    }
+
+    fun unlockAccount(adminId: UUID, targetId: UUID) {
+        val admin = userRepository.findById(adminId) ?: throw UserNotFoundException(adminId.toString())
+        if (admin.role != UserRole.ADMIN) {
+            throw InsufficientPermissionException("Admin access required to unlock accounts")
+        }
+        val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
+        userRepository.resetFailedLoginAttempts(targetId)
+        logger.info("User {} unlocked by admin {}", target.username, admin.username)
+        audit("USER_UNLOCKED", actor = admin, target = target)
     }
 
     fun setUserRole(adminId: UUID, targetId: UUID, role: UserRole) {
@@ -255,7 +275,7 @@ class SecurityService(
             Session(
                 tokenHash = tokenHash,
                 userId = userId,
-                expiresAt = Instant.now().plusSeconds(sessionTimeoutSeconds),
+                expiresAt = Instant.now().plusSeconds(config.sessionTimeoutSeconds),
             )
         repo.save(session)
         logger.info("Session created for user {}", userId)
@@ -270,7 +290,7 @@ class SecurityService(
             val user = userRepository.findById(activeSession.userId)
             if (user != null && user.enabled) {
                 // Extend session on activity
-                repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(sessionTimeoutSeconds))
+                repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(config.sessionTimeoutSeconds))
                 activityUpdater?.record(user.id) ?: userRepository.updateLastActivity(user.id)
                 return SessionLookup.Active(user)
             }
@@ -345,4 +365,12 @@ class SecurityService(
 }
 
 private fun User.toSummary() =
-    UserSummary(id = id.toString(), username = username, email = email, role = role.name, enabled = enabled)
+    UserSummary(
+        id = id.toString(),
+        username = username,
+        email = email,
+        role = role.name,
+        enabled = enabled,
+        failedLoginAttempts = failedLoginAttempts,
+        lockedUntil = lockedUntil,
+    )

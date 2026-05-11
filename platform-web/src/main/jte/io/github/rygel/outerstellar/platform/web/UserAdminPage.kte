@@ -46,6 +46,13 @@
                                         @if(user.role == "ADMIN")${model.data.actionDemote}@else${model.data.actionPromote}@endif
                                     </button>
                                 </form>
+                                @if (user.isLocked)
+                                    <form method="post" action="${user.unlockUrl}" class="inline">
+                                        <button type="submit" class="btn btn-ghost btn-xs text-success">
+                                            ${model.data.actionUnlock}
+                                        </button>
+                                    </form>
+                                @endif
                             @else
                                 <span class="opacity-50" style="font-size: 0.8rem;">(${model.data.selfLabel})</span>
                             @endif
