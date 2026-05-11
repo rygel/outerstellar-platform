@@ -35,7 +35,7 @@ class PasswordResetService(
             )
         resetRepository?.save(resetToken)
         logger.info("Password reset token generated for user {}", user.username)
-        val resetLink = "$appBaseUrl/auth/reset?token=$tokenValue"
+        val resetLink = "$appBaseUrl/auth/reset/$tokenValue"
         emailService?.send(
             to = user.email,
             subject = "Password Reset Request",

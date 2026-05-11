@@ -14,9 +14,9 @@ Architecture, security, and maintainability improvements identified during code 
 - [x] ~~**Error messages leak internal details in API responses**~~
   Fixed in PR #230 — non-`OuterstellarException` errors return generic message in API responses.
 
-- [ ] **Password reset token exposed in URL query parameter**
-  Token is sent as `?token=$tokenValue` in the reset link, leaking via Referer header, browser history, and server logs. Should use POST-based submission.
-  — `platform-security/.../security/PasswordResetService.kt:38`
+- [x] ~~**Password reset token exposed in URL query parameter**~~
+  Fixed — changed from query param (`?token=X`) to path param (`/auth/reset/{token}`) to prevent Referer/log leakage.
+  — `platform-security/.../security/PasswordResetService.kt:38`, `platform-web/.../web/AuthRoutes.kt:193`
 
 - [x] ~~**Session cookie `Secure` flag defaults to `false`**~~
   Fixed — both the data class default and YAML/env fallback now default to `true`.
@@ -24,13 +24,13 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Hardcoded Values
 
-- [ ] **Seed data has hardcoded weak password `"password123"` in `src/main`**
-  Four development users (admin, alice, bob, carol) all use the same weak hardcoded password. Move to env-var override or test-only.
-  — `platform-seed/.../seed/SeedData.kt:67`
+- [x] ~~**Seed data has hardcoded weak password `"password123"` in `src/main`**~~
+  Fixed — reads from `SEED_USER_PASSWORD` env var with fallback to `"password123"` (warns when using default).
+  — `platform-seed/.../seed/SeedData.kt:49`
 
-- [ ] **Default JDBC password `"outerstellar"` has no production guard**
-  The default password is hardcoded in both YAML files (6 places) and Kotlin defaults. No startup assertion prevents deploying with defaults.
-  — `platform-core/.../AppConfig.kt:44-46`, all `application.yaml` files
+- [x] ~~**Default JDBC password `"outerstellar"` has no production guard**~~
+  Fixed — added `DEFAULT_JDBC_PASSWORD` constant, exposed `profile` on `AppConfig`, startup guard in `Main.kt` logs FATAL when default password is used with non-default profile.
+  — `platform-core/.../AppConfig.kt:48`, `platform-web/.../Main.kt:46`
 
 ### Architecture
 
@@ -42,8 +42,8 @@ Architecture, security, and maintainability improvements identified during code 
   Fixed in PR #230 — replaced with synchronous `client.send()` in a daemon thread.
 
 - [ ] **Reduce generic `catch (Exception)` boilerplate in `DesktopSyncEngine`**
-  22 methods duplicate the same try/catch pattern. Extract a higher-order function like `runCatching(operation, onSessionExpired, onError)`.
-  — `platform-sync-client/.../engine/DesktopSyncEngine.kt` (22 instances)
+  22 methods duplicate the same try/catch pattern. Extract a higher-order function like `runCatching(operation, onSessionExpired, onError)`. Partially done — 8 methods refactored via `runGuarded`/`runGuardedResult` in PR #231.
+  — `platform-sync-client/.../engine/DesktopSyncEngine.kt`
 
 ---
 
@@ -97,13 +97,13 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Hardcoded Values
 
-- [ ] **Replace `"ADMIN"` / `"USER"` string comparisons with `UserRole` enum**
-  Role checks use raw string comparisons in 5 production files. Use the `UserRole` enum for type safety.
-  — `UserAdminRoutes.kt:106`, `SyncViewModel.kt:328`, `SwingSyncApp.kt:641`, JavaFX controllers
+- [x] ~~**Replace `"ADMIN"` / `"USER"` string comparisons with `UserRole` enum**~~
+  Fixed in PR #231 — `UserRole` centralized in `platform-core`, all role checks use enum.
+  — `UserAdminRoutes.kt`, `SyncViewModel.kt`, `SwingSyncApp.kt`, JavaFX controllers
 
-- [ ] **Centralize `appBaseUrl = "http://localhost:8080"`**
-  Hardcoded in 4 separate production files. Should be injected from a single config source.
-  — `SecurityService.kt:24`, `PasswordResetService.kt:18`, `SecurityModule.kt:21`, `DesktopAppConfig.kt:7`
+- [x] ~~**Centralize `appBaseUrl = "http://localhost:8080"`**~~
+  Fixed in PR #231 — `AppConfig.DEFAULT_APP_BASE_URL` constant used across all modules.
+  — `AppConfig.kt:64`, `SecurityConfig`, `PasswordResetService.kt`, `DesktopAppConfig.kt`
 
 ---
 
@@ -279,3 +279,10 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [x] **JWT secret startup warning added** (PR #230)
 
 - [x] **platform-core declared as explicit dep in desktop modules** (PR #230)
+
+- [x] **UserRole enum centralized in platform-core** (PR #231)
+- [x] **appBaseUrl default consolidated as AppConfig.DEFAULT_APP_BASE_URL** (PR #231)
+- [x] **DesktopSyncEngine catch boilerplate extracted via runGuarded/runGuardedResult** (PR #231)
+- [x] **Password reset token: path param instead of query param** (PR #232)
+- [x] **Seed data password: env var override with dev fallback** (PR #232)
+- [x] **JDBC password production guard** (PR #232)

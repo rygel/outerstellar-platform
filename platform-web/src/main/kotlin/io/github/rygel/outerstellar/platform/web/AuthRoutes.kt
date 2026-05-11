@@ -30,6 +30,7 @@ class AuthRoutes(
     private val logger = LoggerFactory.getLogger(AuthRoutes::class.java)
     private val modePath = Path.string().of("mode")
     private val apiKeyIdPath = Path.long().of("id")
+    private val tokenPath = Path.string().of("token")
 
     override val routes =
         listOf(
@@ -190,15 +191,16 @@ class AuthRoutes(
                         }
                     }
                 },
-            "/auth/reset" meta
+            "/auth/reset" / tokenPath meta
                 {
                     summary = "Password reset page"
                 } bindContract
                 GET to
-                { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
-                    val token = request.query("token").orEmpty()
-                    renderer.render(pageFactory.buildResetPasswordPage(ctx, token))
+                { token ->
+                    { request: org.http4k.core.Request ->
+                        val ctx = request.webContext
+                        renderer.render(pageFactory.buildResetPasswordPage(ctx, token))
+                    }
                 },
             "/auth/components/reset-confirm" meta
                 {

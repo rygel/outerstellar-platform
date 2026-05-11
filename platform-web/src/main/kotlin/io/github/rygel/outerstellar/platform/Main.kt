@@ -43,6 +43,19 @@ fun main() {
 
     val main = MainComponent
 
+    if (
+        main.config.jdbcPassword == AppConfig.DEFAULT_JDBC_PASSWORD &&
+            main.config.profile != "default" &&
+            main.config.profile != "test"
+    ) {
+        logger.error(
+            "FATAL: JDBC_PASSWORD is still the default '{}' with profile '{}'. " +
+                "Set JDBC_PASSWORD to a secure value before deploying.",
+            AppConfig.DEFAULT_JDBC_PASSWORD,
+            main.config.profile,
+        )
+    }
+
     val adminPassword =
         System.getenv("ADMIN_PASSWORD")
             ?: java.util.UUID.randomUUID().toString().also {
