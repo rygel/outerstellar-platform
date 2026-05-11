@@ -48,6 +48,13 @@ fun main() {
 
 private fun seedUsers(repo: UserRepository) {
     val encoder = BCryptPasswordEncoder(logRounds = 10)
+    val seedPassword = System.getenv("SEED_USER_PASSWORD")
+    if (seedPassword.isNullOrBlank()) {
+        logger.warn(
+            "SEED_USER_PASSWORD env var not set — using insecure default. Set this for any non-local deployment."
+        )
+    }
+    val password = seedPassword?.takeIf { it.isNotBlank() } ?: "password123"
 
     val users =
         listOf(
@@ -64,7 +71,7 @@ private fun seedUsers(repo: UserRepository) {
                     id = UUID.randomUUID(),
                     username = username,
                     email = email,
-                    passwordHash = encoder.encode("password123"),
+                    passwordHash = encoder.encode(password),
                     role = role,
                 )
             )

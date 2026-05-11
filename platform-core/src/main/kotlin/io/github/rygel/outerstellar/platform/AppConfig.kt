@@ -45,7 +45,8 @@ data class AppConfig(
     val port: Int = DEFAULT_HTTP_PORT,
     val jdbcUrl: String = "jdbc:postgresql://localhost:5432/outerstellar",
     val jdbcUser: String = "outerstellar",
-    val jdbcPassword: String = "outerstellar",
+    val jdbcPassword: String = DEFAULT_JDBC_PASSWORD,
+    val profile: String = "default",
     val devDashboardEnabled: Boolean = false,
     val devMode: Boolean = false,
     val sessionCookieSecure: Boolean = true,
@@ -62,12 +63,13 @@ data class AppConfig(
 ) {
     companion object {
         const val DEFAULT_APP_BASE_URL = "http://localhost:8080"
+        const val DEFAULT_JDBC_PASSWORD = "outerstellar"
         private val logger = LoggerFactory.getLogger(AppConfig::class.java)
 
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
             val yamlData = loadYaml(profile)
-            return buildFromYaml(yamlData, environment)
+            return buildFromYaml(yamlData, environment, profile)
         }
 
         private fun loadYaml(profile: String): Map<String, Any>? {
@@ -88,7 +90,11 @@ data class AppConfig(
             }
         }
 
-        private fun buildFromYaml(yaml: Map<String, Any>?, env: Map<String, String>): AppConfig {
+        private fun buildFromYaml(
+            yaml: Map<String, Any>?,
+            env: Map<String, String>,
+            profile: String = "default",
+        ): AppConfig {
             if (yaml == null) return AppConfig()
             val port = yaml.int("port", env, "PORT", DEFAULT_HTTP_PORT).coerceIn(MIN_HTTP_PORT, MAX_HTTP_PORT)
             val timeout =
@@ -105,6 +111,7 @@ data class AppConfig(
                 jdbcUrl = jdbcUrl,
                 jdbcUser = yaml.str("jdbcUser", env, "JDBC_USER", "outerstellar"),
                 jdbcPassword = yaml.str("jdbcPassword", env, "JDBC_PASSWORD", "outerstellar"),
+                profile = profile,
                 devDashboardEnabled = yaml.bool("devDashboardEnabled", env, "DEV_DASHBOARD_ENABLED", false),
                 devMode = yaml.bool("devMode", env, "DEVMODE", false),
                 sessionCookieSecure = yaml.bool("sessionCookieSecure", env, "SESSIONCOOKIESECURE", true),
