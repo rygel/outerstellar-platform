@@ -53,8 +53,9 @@ fun main() {
         main.userRepository.seedAdminUser(main.passwordEncoder.encode(adminPassword))
     }
 
-    val outboxScheduler =
-        Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "outbox-processor").also { it.isDaemon = true } }
+    val outboxScheduler = Executors.newSingleThreadScheduledExecutor { r ->
+        Thread(r, "outbox-processor").also { it.isDaemon = true }
+    }
     outboxScheduler.scheduleWithFixedDelay(
         {
             main.outboxProcessor.processPending()
