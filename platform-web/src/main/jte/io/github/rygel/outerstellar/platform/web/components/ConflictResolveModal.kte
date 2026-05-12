@@ -7,7 +7,7 @@
         <header class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-bold">${model.modalTitle}</h2>
             <button class="btn btn-ghost btn-sm btn-square" onclick="document.getElementById('modal-container').remove()">
-                <i class="ri-close-line"></i>
+                <i aria-hidden="true" class="ri-close-line"></i>
             </button>
         </header>
 

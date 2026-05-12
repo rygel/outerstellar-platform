@@ -22,6 +22,7 @@
                     @endfor
                 </div>
                 <div id="auth-form-slot"
+                     aria-live="polite"
                      hx-get="${model.data.defaultFormUrl}"
                      hx-trigger="load"
                      hx-swap="innerHTML">

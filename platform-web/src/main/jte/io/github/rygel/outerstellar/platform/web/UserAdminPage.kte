@@ -29,9 +29,9 @@
                         <td><span class="badge">${user.role}</span></td>
                         <td class="text-center">
                             @if(user.enabled)
-                                <i class="ri-checkbox-circle-fill" style="color: var(--color-accent);"></i>
+                                <i aria-hidden="true" class="ri-checkbox-circle-fill" style="color: var(--color-accent);"></i>
                             @else
-                                <i class="ri-close-circle-fill" style="color: var(--text-danger, #ef4444);"></i>
+                                <i aria-hidden="true" class="ri-close-circle-fill" style="color: var(--text-danger, #ef4444);"></i>
                             @endif
                         </td>
                         <td class="text-center">

@@ -3,7 +3,7 @@
 
 <a href="${model.notificationsUrl}" class="btn btn-ghost btn-sm btn-square" title="${model.title}"
    style="text-decoration:none; font-size:1.1rem; position:relative;">
-    <i class="ri-notification-3-line"></i>
+    <i aria-hidden="true" class="ri-notification-3-line"></i>
     @if(model.unreadCount > 0)
         <span style="
             position:absolute; top:-4px; right:-4px;
