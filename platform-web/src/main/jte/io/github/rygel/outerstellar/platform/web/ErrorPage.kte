@@ -22,7 +22,7 @@
                 hx-swap="innerHTML">
             ${model.data.helpButtonLabel}
         </button>
-        <div id="error-help-slot" class="mt-4" style="display: none;">
+        <div id="error-help-slot" class="mt-4" style="display: none;" aria-live="polite">
             <!-- Content loaded via HTMX -->
         </div>
     </section>
