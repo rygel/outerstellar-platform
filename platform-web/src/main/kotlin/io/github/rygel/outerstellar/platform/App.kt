@@ -71,6 +71,18 @@ import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.App")
 
+private class OptionalServices(
+    val messageService: MessageService?,
+    val contactService: io.github.rygel.outerstellar.platform.service.ContactService?,
+    val outboxRepository: OutboxRepository?,
+    val cache: MessageCache?,
+    val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
+    val jwtService: io.github.rygel.outerstellar.platform.security.JwtService?,
+    val deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository?,
+    val syncWebSocket: SyncWebSocket?,
+    val plugin: PlatformPlugin?,
+)
+
 private class AppContext(
     val config: AppConfig,
     val securityService: SecurityService,
@@ -78,16 +90,35 @@ private class AppContext(
     val jteRenderer: TemplateRenderer,
     val pageFactory: WebPageFactory,
     val analytics: AnalyticsService,
-    val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
-    val jwtService: io.github.rygel.outerstellar.platform.security.JwtService?,
-    val messageService: MessageService?,
-    val contactService: io.github.rygel.outerstellar.platform.service.ContactService?,
-    val outboxRepository: OutboxRepository?,
-    val cache: MessageCache?,
-    val plugin: PlatformPlugin?,
-    val syncWebSocket: SyncWebSocket?,
-    val deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository?,
+    val services: OptionalServices,
 ) {
+    val messageService
+        get() = services.messageService
+
+    val contactService
+        get() = services.contactService
+
+    val outboxRepository
+        get() = services.outboxRepository
+
+    val cache
+        get() = services.cache
+
+    val notificationService
+        get() = services.notificationService
+
+    val jwtService
+        get() = services.jwtService
+
+    val deviceTokenRepository
+        get() = services.deviceTokenRepository
+
+    val syncWebSocket
+        get() = services.syncWebSocket
+
+    val plugin
+        get() = services.plugin
+
     val appLabel: String
         get() = plugin?.appLabel ?: "Outerstellar"
 
@@ -127,15 +158,18 @@ fun app(
             jteRenderer = jteRenderer,
             pageFactory = pageFactory,
             analytics = analytics,
-            notificationService = notificationService,
-            jwtService = jwtService,
-            messageService = messageService,
-            contactService = contactService,
-            outboxRepository = outboxRepository,
-            cache = cache,
-            plugin = plugin,
-            syncWebSocket = syncWebSocket,
-            deviceTokenRepository = deviceTokenRepository,
+            services =
+                OptionalServices(
+                    messageService = messageService,
+                    contactService = contactService,
+                    outboxRepository = outboxRepository,
+                    cache = cache,
+                    notificationService = notificationService,
+                    jwtService = jwtService,
+                    deviceTokenRepository = deviceTokenRepository,
+                    syncWebSocket = syncWebSocket,
+                    plugin = plugin,
+                ),
         )
     val httpHandler = assembleHttpHandler(ctx)
     val wsHandler = ctx.syncWebSocket?.let { websockets("/ws/sync" wsBind it.handler) }
@@ -197,116 +231,142 @@ private fun buildApiRoutes(
     bearerSecurity: org.http4k.security.Security,
     bearerAdminSecurity: org.http4k.security.Security,
 ): List<org.http4k.routing.RoutingHttpHandler> {
+    val securityService = ctx.securityService
+    val messageService = ctx.messageService
+    val contactService = ctx.contactService
+    val analytics = ctx.analytics
+    val deviceTokenRepository = ctx.deviceTokenRepository
+    val notificationService = ctx.notificationService
+    val appLabel = ctx.appLabel
+
     val apiRoutes = contract {
-        renderer = OpenApi3(ApiInfo("${ctx.appLabel} API", "v1.0"), KotlinxSerialization)
+        renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
-        routes += AuthApi(ctx.securityService).routes
+        routes += AuthApi(securityService).routes
     }
 
     val syncContract = contract {
         renderer = OpenApi3(ApiInfo("Sync", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/v1/sync/openapi.json"
         security = bearerSecurity
-        if (ctx.messageService != null || ctx.contactService != null) {
-            routes += SyncApi(ctx.messageService, ctx.contactService, ctx.analytics).routes
+        if (messageService != null || contactService != null) {
+            routes += SyncApi(messageService, contactService, analytics).routes
         }
-        routes += AuthApi(ctx.securityService).bearerRoutes
-        if (ctx.deviceTokenRepository != null) {
-            routes += DeviceRegistrationApi(ctx.deviceTokenRepository).routes
+        routes += AuthApi(securityService).bearerRoutes
+        if (deviceTokenRepository != null) {
+            routes += DeviceRegistrationApi(deviceTokenRepository).routes
         }
-        if (ctx.notificationService != null) {
-            routes += NotificationApi(ctx.notificationService).routes
+        if (notificationService != null) {
+            routes += NotificationApi(notificationService).routes
         }
     }
 
     val bearerAdminApiContract = contract {
-        renderer = OpenApi3(ApiInfo("${ctx.appLabel} Admin API", "v1.0"), KotlinxSerialization)
+        renderer = OpenApi3(ApiInfo("$appLabel Admin API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/v1/admin/api-openapi.json"
         security = bearerAdminSecurity
-        routes += UserAdminApi(ctx.securityService).routes
+        routes += UserAdminApi(securityService).routes
     }
 
     return listOf(bearerAdminApiContract, apiRoutes, syncContract)
 }
 
-private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandler = contract {
-    renderer = OpenApi3(ApiInfo("${ctx.appLabel} UI", "v1.0"), KotlinxSerialization)
-    descriptionPath = "/ui/openapi.json"
-    if (ctx.messageService != null && "/" !in ctx.excludedRoutes) {
-        routes += HomeRoutes(ctx.messageService, ctx.pageFactory, ctx.jteRenderer).routes
-    }
-    if (ctx.contactService != null && "/contacts" !in ctx.excludedRoutes) {
-        routes += ContactsRoutes(ctx.pageFactory, ctx.jteRenderer, ctx.contactService).routes
-    }
-    routes +=
-        AuthRoutes(ctx.pageFactory, ctx.jteRenderer, ctx.securityService, ctx.config.sessionCookieSecure, ctx.analytics)
-            .routes
-    routes +=
-        OAuthRoutes(
-                providers = mapOf("apple" to AppleOAuthProvider()),
-                securityService = ctx.securityService,
-                sessionCookieSecure = ctx.config.sessionCookieSecure,
-            )
-            .routes
-    routes += ErrorRoutes(ctx.pageFactory, ctx.jteRenderer).routes
-    routes += SearchRoutes(ctx.pageFactory, ctx.jteRenderer, emptyList()).routes
-    routes += SettingsRoutes(ctx.pageFactory, ctx.jteRenderer).routes
-    if (ctx.notificationService != null) {
-        routes += NotificationRoutes(ctx.pageFactory, ctx.jteRenderer, ctx.notificationService).routes
-    }
-    if (ctx.plugin != null) {
-        routes += ctx.plugin.routes(ctx.pluginContext())
-    }
-    routes +=
-        ("/logout" bindContract POST).to { request: org.http4k.core.Request ->
-            val rawToken = request.cookie(io.github.rygel.outerstellar.platform.web.WebContext.SESSION_COOKIE)?.value
-            if (rawToken != null) {
-                ctx.securityService.deleteSession(rawToken)
-            }
-            Response(Status.FOUND)
-                .header("location", request.webContext.url("/"))
-                .header(
-                    "Set-Cookie",
-                    io.github.rygel.outerstellar.platform.web.SessionCookie.clear(ctx.config.sessionCookieSecure),
-                )
+private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandler {
+    val messageService = ctx.messageService
+    val contactService = ctx.contactService
+    val notificationService = ctx.notificationService
+    val plugin = ctx.plugin
+    val excludedRoutes = ctx.excludedRoutes
+    val securityService = ctx.securityService
+    val sessionCookieSecure = ctx.config.sessionCookieSecure
+    val analytics = ctx.analytics
+    val pageFactory = ctx.pageFactory
+    val jteRenderer = ctx.jteRenderer
+    val appLabel = ctx.appLabel
+
+    return contract {
+        renderer = OpenApi3(ApiInfo("$appLabel UI", "v1.0"), KotlinxSerialization)
+        descriptionPath = "/ui/openapi.json"
+        if (messageService != null && "/" !in excludedRoutes) {
+            routes += HomeRoutes(messageService, pageFactory, jteRenderer).routes
         }
+        if (contactService != null && "/contacts" !in excludedRoutes) {
+            routes += ContactsRoutes(pageFactory, jteRenderer, contactService).routes
+        }
+        routes += AuthRoutes(pageFactory, jteRenderer, securityService, sessionCookieSecure, analytics).routes
+        routes +=
+            OAuthRoutes(
+                    providers = mapOf("apple" to AppleOAuthProvider()),
+                    securityService = securityService,
+                    sessionCookieSecure = sessionCookieSecure,
+                )
+                .routes
+        routes += ErrorRoutes(pageFactory, jteRenderer).routes
+        routes += SearchRoutes(pageFactory, jteRenderer, emptyList()).routes
+        routes += SettingsRoutes(pageFactory, jteRenderer).routes
+        if (notificationService != null) {
+            routes += NotificationRoutes(pageFactory, jteRenderer, notificationService).routes
+        }
+        if (plugin != null) {
+            routes += plugin.routes(ctx.pluginContext())
+        }
+        routes +=
+            ("/logout" bindContract POST).to { request: org.http4k.core.Request ->
+                val rawToken =
+                    request.cookie(io.github.rygel.outerstellar.platform.web.WebContext.SESSION_COOKIE)?.value
+                if (rawToken != null) {
+                    securityService.deleteSession(rawToken)
+                }
+                Response(Status.FOUND)
+                    .header("location", request.webContext.url("/"))
+                    .header(
+                        "Set-Cookie",
+                        io.github.rygel.outerstellar.platform.web.SessionCookie.clear(sessionCookieSecure),
+                    )
+            }
+    }
 }
 
-private fun buildComponentRoutes(ctx: AppContext): RoutingHttpHandler = contract {
-    renderer = OpenApi3(ApiInfo("${ctx.appLabel} Components", "v1.0"), KotlinxSerialization)
-    descriptionPath = "/components/openapi.json"
-    routes += ComponentRoutes(ctx.pageFactory, ctx.jteRenderer).routes
+private fun buildComponentRoutes(ctx: AppContext): RoutingHttpHandler {
+    val pageFactory = ctx.pageFactory
+    val jteRenderer = ctx.jteRenderer
+    val appLabel = ctx.appLabel
+    return contract {
+        renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), KotlinxSerialization)
+        descriptionPath = "/components/openapi.json"
+        routes += ComponentRoutes(pageFactory, jteRenderer).routes
+    }
 }
 
 private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandler {
+    val outboxRepository = ctx.outboxRepository
+    val cache = ctx.cache
+    val pageFactory = ctx.pageFactory
+    val jteRenderer = ctx.jteRenderer
+    val devDashboardEnabled = ctx.config.devDashboardEnabled
+    val securityService = ctx.securityService
+    val appLabel = ctx.appLabel
     val adminSecurity =
         object : org.http4k.security.Security {
             override val filter = Filter { next ->
                 SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
             }
         }
+    val plugin = ctx.plugin
     val pluginSections =
-        if (ctx.plugin != null) {
-            ctx.plugin.adminSections(ctx.pluginContext())
+        if (plugin != null) {
+            plugin.adminSections(ctx.pluginContext())
         } else {
             emptyList()
         }
     val adminContract = contract {
-        renderer = OpenApi3(ApiInfo("${ctx.appLabel} Admin", "v1.0"), KotlinxSerialization)
+        renderer = OpenApi3(ApiInfo("$appLabel Admin", "v1.0"), KotlinxSerialization)
         descriptionPath = "/admin/openapi.json"
         security = adminSecurity
-        if (ctx.outboxRepository != null && ctx.cache != null) {
-            routes +=
-                DevDashboardRoutes(
-                        ctx.outboxRepository,
-                        ctx.cache,
-                        ctx.pageFactory,
-                        ctx.jteRenderer,
-                        ctx.config.devDashboardEnabled,
-                    )
-                    .routes
+        if (outboxRepository != null && cache != null) {
+            routes += DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, devDashboardEnabled).routes
         }
-        routes += UserAdminRoutes(ctx.pageFactory, ctx.jteRenderer, ctx.securityService).routes
+        routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
         pluginSections.forEach { section -> routes += section.route }
     }
     return if (pluginSections.isNotEmpty()) {
@@ -408,9 +468,17 @@ private fun buildHealthResponse(userRepository: UserRepository): Response {
 }
 
 private fun buildFilterChain(ctx: AppContext): Filter {
+    val config = ctx.config
+    val userRepository = ctx.userRepository
+    val securityService = ctx.securityService
+    val jwtService = ctx.jwtService
+    val plugin = ctx.plugin
+    val pageFactory = ctx.pageFactory
+    val jteRenderer = ctx.jteRenderer
+    val analytics = ctx.analytics
     val adminNavItems =
-        if (ctx.plugin != null) {
-            ctx.plugin.adminSections(ctx.pluginContext()).map {
+        if (plugin != null) {
+            plugin.adminSections(ctx.pluginContext()).map {
                 AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon)
             }
         } else {
@@ -418,49 +486,42 @@ private fun buildFilterChain(ctx: AppContext): Filter {
         }
     var chain =
         Filters.correlationId
-            .then(Filters.cors(ctx.config.corsOrigins))
+            .then(Filters.cors(config.corsOrigins))
             .then(etagCachingFilter)
             .then(staticCacheControlFilter)
-            .then(Filters.securityHeaders(ctx.config.cspPolicy))
+            .then(Filters.securityHeaders(config.cspPolicy))
             .then(Filters.telemetry)
             .then(rateLimitFilter())
-            .then(Filters.csrfProtection(ctx.config.sessionCookieSecure, ctx.config.csrfEnabled))
-            .then(
-                Filters.devAutoLogin(
-                    ctx.config.devMode,
-                    ctx.userRepository,
-                    ctx.securityService,
-                    ctx.config.sessionCookieSecure,
-                )
-            )
+            .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
+            .then(Filters.devAutoLogin(config.devMode, userRepository, securityService, config.sessionCookieSecure))
             .then(
                 Filters.stateFilter(
-                    ctx.config.devDashboardEnabled,
-                    ctx.userRepository,
-                    ctx.config.version,
-                    ctx.jwtService,
-                    ctx.securityService,
+                    config.devDashboardEnabled,
+                    userRepository,
+                    config.version,
+                    jwtService,
+                    securityService,
                     PluginOptions(
-                        navItems = ctx.plugin?.navItems ?: emptyList(),
-                        textResolver = ctx.plugin?.textResolver,
+                        navItems = plugin?.navItems ?: emptyList(),
+                        textResolver = plugin?.textResolver,
                         adminNavItems = adminNavItems,
                     ),
-                    cookieSecure = ctx.config.sessionCookieSecure,
-                    appBaseUrl = ctx.config.appBaseUrl,
+                    cookieSecure = config.sessionCookieSecure,
+                    appBaseUrl = config.appBaseUrl,
                 )
             )
 
-    if (ctx.plugin != null) {
-        for (filter in ctx.plugin.filters(ctx.pluginContext())) {
+    if (plugin != null) {
+        for (filter in plugin.filters(ctx.pluginContext())) {
             chain = chain.then(filter)
         }
     }
 
     return chain
-        .then(analyticsPageViewFilter(ctx.analytics))
-        .then(Filters.sessionTimeout(ctx.config.sessionCookieSecure))
+        .then(analyticsPageViewFilter(analytics))
+        .then(Filters.sessionTimeout(config.sessionCookieSecure))
         .then(Filters.securityFilter)
         .then(Filters.requestLogging)
         .then(Filters.serverMetrics)
-        .then(Filters.globalErrorHandler(ctx.pageFactory, ctx.jteRenderer))
+        .then(Filters.globalErrorHandler(pageFactory, jteRenderer))
 }
