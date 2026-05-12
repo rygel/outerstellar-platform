@@ -447,6 +447,7 @@ private fun buildBaseApp(
     coreRoutes += "/health" bind GET to localhostOnly.then { buildHealthResponse(ctx.userRepository) }
     coreRoutes += "/metrics" bind GET to metricsHandler
     coreRoutes += "/robots.txt" bind GET to { buildRobotsTxtResponse() }
+    coreRoutes += "/sitemap.xml" bind GET to { buildSitemapResponse(ctx.config.appBaseUrl) }
 
     return routes(coreRoutes)
 }
@@ -474,6 +475,37 @@ private fun buildRobotsTxtResponse(): Response =
             """
                 .trimIndent() + "\n"
         )
+
+private fun buildSitemapResponse(appBaseUrl: String): Response {
+    val base = appBaseUrl.ifBlank { "http://localhost:8080" }
+    val today = java.time.LocalDate.now().toString()
+    return Response(Status.OK)
+        .header("content-type", "application/xml; charset=utf-8")
+        .body(
+            """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>${base}/</loc>
+        <lastmod>$today</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>${base}/auth</loc>
+        <lastmod>$today</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+    <url>
+        <loc>${base}/search</loc>
+        <lastmod>$today</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+</urlset>"""
+                .trimIndent() + "\n"
+        )
+}
 
 @Suppress("TooGenericExceptionCaught", "SwallowedException")
 private fun buildHealthResponse(userRepository: UserRepository): Response {
