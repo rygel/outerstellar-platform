@@ -8,9 +8,9 @@ class SeoMetadata(
     private val ogType: String = "website",
     private val twitterCard: String = "summary",
     private val locale: String = "en",
-    private val robots: String = "index, follow",
 ) {
     companion object {
+        @Suppress("UNUSED_PARAMETER")
         fun forPage(
             title: String,
             description: String,
@@ -25,7 +25,6 @@ class SeoMetadata(
                 canonicalUrl = canonicalUrl,
                 ogImage = ogImage,
                 locale = locale,
-                robots = robots,
             )
     }
 
