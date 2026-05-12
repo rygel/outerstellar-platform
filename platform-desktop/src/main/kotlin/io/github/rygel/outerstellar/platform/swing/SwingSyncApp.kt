@@ -7,7 +7,6 @@ import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.desktopModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.model.MessageSummary
-import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
 import io.github.rygel.outerstellar.platform.service.MessageService
@@ -354,58 +353,7 @@ class SyncWindow(
         )
     }
 
-    private val navMessagesBtn =
-        JButton(i18nService.translate("swing.nav.messages")).apply {
-            name = "navMessagesBtn"
-            icon = RemixIcon.get("communication/chat-3-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-        }
-
-    private val navContactsBtn =
-        JButton(i18nService.translate("swing.contact.nav")).apply {
-            name = "navContactsBtn"
-            icon = RemixIcon.get("user/user-3-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-        }
-
-    private val navUsersBtn =
-        JButton(i18nService.translate("swing.admin.users.nav")).apply {
-            name = "navUsersBtn"
-            icon = RemixIcon.get("user/group-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-            isEnabled = false
-        }
-
-    private val navNotificationsBtn =
-        JButton(i18nService.translate("swing.notifications.nav")).apply {
-            name = "navNotificationsBtn"
-            icon = RemixIcon.get("system/notification-3-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-            isEnabled = false
-        }
-
-    private val navProfileBtn =
-        JButton(i18nService.translate("swing.profile.nav")).apply {
-            name = "navProfileBtn"
-            icon = RemixIcon.get("user/account-circle-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-            isEnabled = false
-        }
+    private val nav = SyncWindowNav(i18nService)
 
     private val usersModel =
         DefaultTableModel(
@@ -432,11 +380,11 @@ class SyncWindow(
             viewModel,
             SyncTableComponents(messagesModel, messagesList, contactsModel, contactsTable, usersModel, usersTable),
             SyncNavComponents(
-                navMessagesBtn,
-                navContactsBtn,
-                navUsersBtn,
-                navNotificationsBtn,
-                navProfileBtn,
+                nav.navMessagesBtn,
+                nav.navContactsBtn,
+                nav.navUsersBtn,
+                nav.navNotificationsBtn,
+                nav.navProfileBtn,
                 syncButton,
                 createButton,
             ),
@@ -606,9 +554,7 @@ class SyncWindow(
         }
 
         menu.value.updateAuthState(viewModel.isLoggedIn)
-
-        navUsersBtn.isEnabled = viewModel.isLoggedIn && viewModel.userRole == UserRole.ADMIN.name
-        navProfileBtn.isEnabled = viewModel.isLoggedIn
+        nav.updateAuthState(viewModel.isLoggedIn, viewModel.userRole)
 
         usersModel.rowCount = 0
         viewModel.adminUsers.forEach { user ->
@@ -671,7 +617,7 @@ class SyncWindow(
         applyTranslations()
     }
 
-    private fun createProfileView(): JPanel = profilePanelCreator.createProfileView(navProfileBtn)
+    private fun createProfileView(): JPanel = profilePanelCreator.createProfileView(nav.navProfileBtn)
 
     private fun createMenuBar(): JMenuBar = menu.value.buildMenuBar()
 
