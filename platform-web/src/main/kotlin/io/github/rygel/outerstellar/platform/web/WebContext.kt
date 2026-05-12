@@ -39,6 +39,10 @@ class WebContext(
         const val JWT_COOKIE = "app_jwt"
         const val CSRF_COOKIE = "_csrf"
 
+        val SUPPORTED_LANGUAGES = setOf("en", "fr")
+        val SUPPORTED_LAYOUTS = listOf("nice", "cozy", "compact")
+        val SUPPORTED_SHELLS = listOf("sidebar", "topbar")
+
         private val NO_INDEX_SECTIONS =
             setOf(
                 "/auth",
@@ -77,12 +81,12 @@ class WebContext(
 
     val layout: String by lazy {
         val value = request.query("layout") ?: request.cookie(LAYOUT_COOKIE)?.value ?: user?.layout ?: "nice"
-        if (listOf("nice", "cozy", "compact").any { it == value }) value else "nice"
+        if (value in SUPPORTED_LAYOUTS) value else "nice"
     }
 
     val shellStyle: String by lazy {
         val value = request.query("shell") ?: request.cookie(SHELL_COOKIE)?.value ?: "sidebar"
-        if (listOf("sidebar", "topbar").any { it == value }) value else "sidebar"
+        if (value in SUPPORTED_SHELLS) value else "sidebar"
     }
 
     val user: User? by lazy {

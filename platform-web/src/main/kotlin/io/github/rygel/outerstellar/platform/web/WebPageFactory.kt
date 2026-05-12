@@ -434,8 +434,9 @@ open class WebPageFactory(
             selectId = "layout-selector",
             selectName = "layout",
             options =
-                listOf("nice" to "web.layout.nice", "cozy" to "web.layout.cozy", "compact" to "web.layout.compact")
-                    .map { (id, key) -> ShellOption(id, i18n.translate(key), id, id == ctx.layout) },
+                WebContext.SUPPORTED_LAYOUTS.map { id ->
+                    ShellOption(id, i18n.translate("web.layout.$id"), id, id == ctx.layout)
+                },
             hiddenFields =
                 listOf(
                     HiddenField("pagePath", pagePath),
