@@ -12,11 +12,17 @@ data class SyncMessage(
     val deleted: Boolean = false,
 ) {
     companion object {
+        const val MAX_AUTHOR_LENGTH = 100
+        const val MAX_CONTENT_LENGTH = 500
+
         fun validate(msg: SyncMessage): SyncMessage {
             val errors = mutableListOf<String>()
             if (msg.syncId.isBlank()) errors += "syncId must not be blank"
             if (msg.author.isBlank()) errors += "author must not be blank"
             if (msg.content.isBlank()) errors += "content must not be blank"
+            if (msg.author.length > MAX_AUTHOR_LENGTH) errors += "author cannot exceed $MAX_AUTHOR_LENGTH characters"
+            if (msg.content.length > MAX_CONTENT_LENGTH)
+                errors += "content cannot exceed $MAX_CONTENT_LENGTH characters"
             if (errors.isNotEmpty()) throw ValidationException(errors)
             return msg
         }
@@ -55,10 +61,34 @@ data class SyncContact(
     val deleted: Boolean = false,
 ) {
     companion object {
+        const val MAX_NAME_LENGTH = 200
+        const val MAX_COMPANY_LENGTH = 200
+        const val MAX_ADDRESS_LENGTH = 500
+        const val MAX_EMAIL_LENGTH = 255
+        const val MAX_PHONE_LENGTH = 50
+        const val MAX_SOCIAL_MEDIA_LENGTH = 255
+
         fun validate(contact: SyncContact): SyncContact {
             val errors = mutableListOf<String>()
             if (contact.syncId.isBlank()) errors += "syncId must not be blank"
             if (contact.name.isBlank()) errors += "name must not be blank"
+            if (contact.name.length > MAX_NAME_LENGTH) errors += "name cannot exceed $MAX_NAME_LENGTH characters"
+            if (contact.company.length > MAX_COMPANY_LENGTH)
+                errors += "company cannot exceed $MAX_COMPANY_LENGTH characters"
+            if (contact.companyAddress.length > MAX_ADDRESS_LENGTH)
+                errors += "companyAddress cannot exceed $MAX_ADDRESS_LENGTH characters"
+            if (contact.department.length > MAX_COMPANY_LENGTH)
+                errors += "department cannot exceed $MAX_COMPANY_LENGTH characters"
+            contact.emails.forEachIndexed { i, email ->
+                if (email.length > MAX_EMAIL_LENGTH) errors += "email[$i] cannot exceed $MAX_EMAIL_LENGTH characters"
+            }
+            contact.phones.forEachIndexed { i, phone ->
+                if (phone.length > MAX_PHONE_LENGTH) errors += "phone[$i] cannot exceed $MAX_PHONE_LENGTH characters"
+            }
+            contact.socialMedia.forEachIndexed { i, sm ->
+                if (sm.length > MAX_SOCIAL_MEDIA_LENGTH)
+                    errors += "socialMedia[$i] cannot exceed $MAX_SOCIAL_MEDIA_LENGTH characters"
+            }
             if (errors.isNotEmpty()) throw ValidationException(errors)
             return contact
         }
