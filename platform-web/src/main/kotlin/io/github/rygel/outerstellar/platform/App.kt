@@ -411,6 +411,31 @@ private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHan
     }
 }
 
+private val localhostOnly = Filter { next ->
+    { request ->
+        val source = request.source ?: return@Filter next(request)
+        val host = source.toString().substringBefore(":").substringAfter("/")
+        if (host.isPrivateIp()) {
+            next(request)
+        } else {
+            Response(Status.FORBIDDEN)
+        }
+    }
+}
+
+private fun String.isPrivateIp(): Boolean =
+    this == "127.0.0.1" ||
+        this == "::1" ||
+        this == "localhost" ||
+        startsWith("10.") ||
+        startsWith("192.168.") ||
+        startsWith("169.254.") ||
+        (startsWith("172.") && substringAfter("172.").substringBefore(".").toIntOrNull() in PRIVATE_172_RANGE)
+
+private const val PRIVATE_172_START = 16
+private const val PRIVATE_172_END = 31
+private val PRIVATE_172_RANGE = PRIVATE_172_START..PRIVATE_172_END
+
 private fun buildBaseApp(
     ctx: AppContext,
     adminContract: org.http4k.routing.RoutingHttpHandler,
@@ -430,7 +455,7 @@ private fun buildBaseApp(
     if ("/" !in ctx.excludedRoutes) {
         coreRoutes += "/" bind filteredAdminHandler
     }
-    coreRoutes += "/health" bind GET to { buildHealthResponse(ctx.userRepository) }
+    coreRoutes += "/health" bind GET to localhostOnly.then { buildHealthResponse(ctx.userRepository) }
     coreRoutes += "/metrics" bind GET to metricsHandler
     coreRoutes += "/robots.txt" bind GET to { buildRobotsTxtResponse() }
 

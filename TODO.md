@@ -114,9 +114,9 @@ Architecture, security, and maintainability improvements identified during code 
 - [x] ~~**JWT secret defaults to empty string with no startup validation**~~
   Fixed in PR #230 — added startup warning when JWT is enabled but secret is blank.
 
-- [ ] **Health endpoint is unauthenticated, leaks DB status**
-  `/health` returns whether the database is UP or DOWN with no authentication.
-  — `platform-web/.../App.kt:464-478`
+- [x] ~~**Health endpoint is unauthenticated, leaks DB status**~~
+  Fixed in PR #242 — `/health` now restricted to localhost only via a `localhostOnly` filter that checks `request.source`. Non-loopback connections receive `403 Forbidden`. No auth needed since it's internal-only.
+  — `platform-web/.../App.kt`
 
 - [x] ~~**No input size validation on contact/message content fields**~~
   Fixed in PR #240 — max length constants matching DB column sizes added to `MessageService`, `ContactService`, `SyncMessage`, `SyncContact`. Validation applied in all create/update paths with user-friendly error messages.
