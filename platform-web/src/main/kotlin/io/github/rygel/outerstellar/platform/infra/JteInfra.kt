@@ -34,7 +34,9 @@ fun createRenderer(): TemplateRenderer {
     val templateEngine =
         if (!isProduction) {
             val applicationClassLoader = Thread.currentThread().contextClassLoader
-            val projectDirectory = Path.of(System.getProperty("user.dir"))
+            val sourceDir =
+                System.getProperty("jte.sourceDir") ?: System.getenv("JTE_SOURCE_DIR") ?: System.getProperty("user.dir")
+            val projectDirectory = Path.of(sourceDir)
             val sourceTemplates = projectDirectory.resolve(Path.of("web", "src", "main", "jte"))
             val generatedTemplateClasses = projectDirectory.resolve(Path.of("web", "target", "jte-classes"))
 
