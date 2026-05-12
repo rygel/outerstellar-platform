@@ -11,3 +11,30 @@
     h2 { font-size: 1.125rem; margin-bottom: 0.5rem; }
     h3 { font-size: 0.95rem; margin-bottom: 0.5rem; }
 }
+
+@layer components {
+    .sidebar-overlay {
+        overscroll-behavior: contain;
+    }
+    .drawer-side {
+        overflow-y: auto;
+    }
+    .mobile-menu-toggle {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .nav-link {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+    input, button, select, textarea, a {
+        touch-action: manipulation;
+    }
+}
+
+@utility layout-cozy {
+    padding: 1.5rem;
+}
+@utility layout-compact {
+    padding: 0.75rem;
+}

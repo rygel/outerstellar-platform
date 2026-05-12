@@ -24,8 +24,9 @@
         <input id="topbar-mobile-menu" type="checkbox" class="hidden lg:hidden peer">
         <div class="hidden lg:flex items-stretch gap-0 flex-1 peer-checked:flex peer-checked:flex-col peer-checked:absolute peer-checked:top-14 peer-checked:left-0 peer-checked:right-0 peer-checked:bg-base-200 peer-checked:border-b peer-checked:border-base-300 peer-checked:z-50">
             @for(link in shell.navLinks)
-                <a class="flex items-center gap-2 px-4 h-14 text-sm whitespace-nowrap border-b-2 border-transparent transition-colors@if(link.active) !text-accent !border-accent@endif text-base-content/60 hover:text-base-content"
-                   href="${link.url}">
+                <a class="flex items-center gap-2 px-4 h-14 text-sm whitespace-nowrap border-b-2 border-transparent transition-colors nav-link@if(link.active) !text-accent !border-accent@endif text-base-content/60 hover:text-base-content"
+                   href="${link.url}"
+                   onclick="document.getElementById('topbar-mobile-menu').checked = false">
                     <i class="${link.icon}"></i>
                     ${link.label}
                 </a>
