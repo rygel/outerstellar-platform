@@ -184,21 +184,21 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Use `SeoMetadata.fromFragment()` to generate `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `twitter:card`, etc. Extend `ShellView` with SEO fields and emit in `LayoutHead.kte`.
   — Dependency: `io.github.rygel:fragments-seo-core`
 
-- [ ] **Add `hreflang` alternate links for i18n SEO**
-  App supports `en`/`fr` but no `<link rel="alternate" hreflang="...">` tags. Search engines cannot discover alternate language versions.
-  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+- [x] ~~**Add `hreflang` alternate links for i18n SEO**~~
+  Fixed in PR #236 — `<link rel="alternate" hreflang="en/fr/x-default">` emitted on non-noindex pages with canonical URL. `supportedLocales` and `appBaseUrl` added to `ShellView`.
+  — `LayoutHead.kte`, `ViewModels.kt`, `WebContext.kt`
 
-- [ ] **Add `<link rel="preload">` for CSS and icon font**
-  `site.css` and `remixicon.woff2` are render-critical resources that should be preloaded.
-  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+- [x] ~~**Add `<link rel="preload">` for CSS and icon font**~~
+  Fixed in PR #236 — `<link rel="preload">` for `site.css` (as=style) and `remixicon.woff2` (as=font, crossorigin).
+  — `LayoutHead.kte`
 
-- [ ] **Fix heading hierarchy — pages missing `<h1>`**
-  `ProfilePage.kte`, `NotificationsPage.kte`, `PluginAdminDashboard.kte` start at `<h2>` without an `<h1>`.
-  — `platform-web/src/main/jte/.../ProfilePage.kte`, `NotificationsPage.kte`, `PluginAdminDashboard.kte`
+- [x] ~~**Fix heading hierarchy — pages missing `<h1>`**~~
+  Fixed in PR #236 — changed `<h2>` to `<h1>` in ProfilePage, NotificationsPage, PluginAdminDashboard.
+  — `ProfilePage.kte`, `NotificationsPage.kte`, `PluginAdminDashboard.kte`
 
-- [ ] **Add `/robots.txt` route**
-  No robots.txt exists. Should disallow `/api/`, `/admin/`, `/ws/`, `/auth/`, `/errors/`, `/components/` and allow `/`, `/contacts`, `/search`. Can be provided by `fragments-http4k` adapter or a static file.
-  — `platform-web/src/main/resources/static/` (missing)
+- [x] ~~**Add `/robots.txt` route**~~
+  Fixed in PR #236 — dynamic route at `/robots.txt` disallows `/api/`, `/admin/`, `/ws/`, `/auth/`, `/errors/`, `/components/`, `/messages/`, `/notifications/`, `/settings/`.
+  — `App.kt:buildRobotsTxtResponse()`
 
 - [ ] **Integrate `fragments-sitemap-core` for XML sitemap generation**
   Generate `/sitemap.xml` listing public pages (`/`, `/auth`, `/search`). Low priority since most pages require auth, but important for public content discovery.
@@ -218,21 +218,21 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   No skip navigation link exists. Add hidden link at top of layout templates.
   — `TopbarLayout.kte`, `SidebarLayout.kte`
 
-- [ ] **Add `<meta name="theme-color">` for mobile browsers**
-  Should match the accent color of the current theme.
-  — `platform-web/src/main/jte/.../layouts/LayoutHead.kte`
+- [x] ~~**Add `<meta name="theme-color">` for mobile browsers**~~
+  Fixed in PR #236 — `<meta name="theme-color" content="#0f172a">` added to LayoutHead.
+  — `LayoutHead.kte`
 
 - [ ] **Add JSON-LD structured data (home page only)**
   `WebSite` schema with `SearchAction` pointing to `/search?q=`. Low priority for an authenticated app.
   — Can use `fragments-seo-core` `SeoMetadata` JSON-LD generation
 
-- [ ] **Add `loading="lazy"` to avatar image**
-  External Gravatar loads may affect LCP.
-  — `platform-web/src/main/jte/.../ProfilePage.kte:13`
+- [x] ~~**Add `loading="lazy"` to avatar image**~~
+  Fixed in PR #236 — `loading="lazy"` added to Gravatar `<img>` in ProfilePage.
+  — `ProfilePage.kte`
 
-- [ ] **Add `font-display: swap` to Remix Icon font**
-  Prevents FOIT (Flash of Invisible Text).
-  — `platform-web/src/main/resources/static/` (remixicon.css)
+- [x] ~~**Add `font-display: swap` to Remix Icon font**~~
+  Already present in `remixicon.css` — no change needed.
+  — `platform-web/src/main/resources/static/vendor/remixicon/remixicon.css:19`
 
 ---
 
@@ -286,3 +286,6 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [x] **Password reset token: path param instead of query param** (PR #232)
 - [x] **Seed data password: env var override with dev fallback** (PR #232)
 - [x] **JDBC password production guard** (PR #232)
+- [x] **Per-account rate limiting for brute-force protection** (PR #234)
+- [x] **Dependency vulnerability scanning (Dependabot + security scanning suite)**
+- [x] **SEO: hreflang, preload, robots.txt, heading hierarchy, theme-color, lazy avatar** (PR #236)
