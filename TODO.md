@@ -292,3 +292,39 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [x] **Accessibility: aria-hidden, aria-live, skip-to-content** (PR #238)
 - [x] **App.kt refactor: AppContext + OptionalServices extraction** (PR #239)
 - [x] **Input size validation for message and contact fields** (PR #240)
+
+---
+
+## Future
+
+### High Priority
+
+- [ ] **Configurable CSP policy via AppConfig**
+  Currently hardcoded in `DEFAULT_CSP_POLICY`. Add `cspPolicy` field that can be overridden via env/YAML. Keep default for security but allow deployments to customize.
+  — `platform-core/.../AppConfig.kt`
+
+- [ ] **TOTP two-factor authentication**
+  Mentioned in `architecture.md` as a future evolution. Add TOTP secret generation, verification, setup flow in settings, and enforcement during login.
+
+### Medium Priority
+
+- [ ] **Unified Settings page — `/settings` with tabs**
+  Consolidate Profile, Password, API Keys, Notifications, and Appearance into a single tabbed `/settings` page. Currently each is on its own separate route.
+
+- [ ] **Search SPI — `SearchProvider` interface**
+  Define a `SearchProvider` interface and aggregate results across plugins on `/search?q=`. Currently search uses a hardcoded empty list.
+  — `platform-web/.../web/SearchRoutes.kt`
+
+- [ ] **Export SPI — CSV/JSON export for any entity**
+  Generic export framework that can serialize lists of entities (messages, contacts, etc.) to CSV or JSON. Useful for admin dashboard and user data portability.
+
+- [ ] **Mobile responsive layout**
+  `SidebarLayout` and `TopbarLayout` are desktop-oriented. Add responsive breakpoints, hamburger navigation, touch-friendly controls.
+
+- [ ] **Jazzer fuzz tests for high-risk surfaces**
+  Add Jazzer (JVM fuzzing) tests for: CSP parsing, JWT validation, OAuth callback parsing, rate limiter token bucket math, input validation.
+
+### Low Priority
+
+- [ ] **JavaFX desktop module implementation**
+  Design spec exists and module is scaffolded (`platform-desktop-javafx`) but not implemented. Implement sync client UI using JavaFX as an alternative to Swing.
