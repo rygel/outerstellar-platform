@@ -286,7 +286,7 @@ class SyncWindow(
         JLabel().apply {
             name = "offlineBadge"
             isVisible = false
-            foreground = COLOR_DANGER
+            foreground = SyncDialogs.COLOR_DANGER
             font = font.deriveFont(Font.BOLD, 11f)
         }
     private val statusHintLabel = JLabel().apply { name = "statusHintLabel" }
@@ -399,10 +399,10 @@ class SyncWindow(
                 statusMetaLabel,
             ),
             appVersion,
-            COLOR_DANGER,
-            COLOR_SUCCESS,
+            SyncDialogs.COLOR_DANGER,
+            SyncDialogs.COLOR_SUCCESS,
             onNavigate = { mainLayout.show(mainCardPanel, it) },
-            onShowContactFormDialog = { showContactFormDialog(it) },
+            onShowContactFormDialog = { dialogs.showContactFormDialog(it) },
         )
 
     fun show() {
@@ -509,7 +509,7 @@ class SyncWindow(
                         if (index >= 0) {
                             val msg = messagesModel.getElementAt(index)
                             if (msg.hasConflict) {
-                                showConflictDialog(msg)
+                                dialogs.showConflictDialog(msg)
                             }
                         }
                     }
@@ -617,56 +617,12 @@ class SyncWindow(
         applyTranslations()
     }
 
-    private fun createProfileView(): JPanel = profilePanelCreator.createProfileView(nav.navProfileBtn)
-
-    private fun createMenuBar(): JMenuBar = menu.value.buildMenuBar()
-
-    private fun showLoginDialog() = dialogs.showLoginDialog()
-
-    private fun showConflictDialog(msg: MessageSummary) = dialogs.showConflictDialog(msg)
-
-    private fun createListManageButton(label: String, list: MutableList<String>): JButton =
-        dialogs.createListManageButton(label, list)
-
-    private fun showContactFormDialog(syncId: String?) = dialogs.showContactFormDialog(syncId)
-
-    private fun showListEditDialog(title: String, list: MutableList<String>) = dialogs.showListEditDialog(title, list)
-
-    private fun showSettingsDialog() = dialogs.showSettingsDialog()
-
-    private fun showRegisterDialog() = dialogs.showRegisterDialog()
-
-    private fun showChangePasswordDialog() = dialogs.showChangePasswordDialog()
-
-    private fun clearComposer() = dialogs.clearComposer(authorField, contentArea)
-
-    private fun showMenuPlaceholder(key: String) = dialogs.showMenuPlaceholder(key)
-
-    private fun showHelpDialog() = dialogs.showHelpDialog()
-
-    private fun showAboutDialog() = dialogs.showAboutDialog()
-
-    private fun showFeedbackDialog() = dialogs.showFeedbackDialog()
-
-    private fun showUpdateCheckDialog() = dialogs.showUpdateCheckDialog()
-
-    private fun showInfoDialog(title: String, message: String, icon: javax.swing.Icon?) =
-        dialogs.showInfoDialog(title, message, icon)
-
     internal fun buildInfoDialog(title: String, message: String, icon: javax.swing.Icon?): JDialog =
         dialogs.buildInfoDialog(title, message, icon)
 
-    private fun createThemedDialog(title: String, columns: String, rows: String): JDialog =
-        dialogs.createThemedDialog(title, columns, rows)
+    private fun createProfileView(): JPanel = profilePanelCreator.createProfileView(nav.navProfileBtn)
 
-    companion object {
-        private val COLOR_DANGER = SyncDialogs.COLOR_DANGER
-        private val COLOR_SUCCESS = SyncDialogs.COLOR_SUCCESS
-    }
-
-    private fun createActionRow(vararg buttons: JButton): JPanel = dialogs.createActionRow(*buttons)
-
-    private fun showDialog(dialog: JDialog) = dialogs.showDialog(dialog)
+    private fun createMenuBar(): JMenuBar = menu.value.buildMenuBar()
 
     private fun configureStatusBar() {
         statusBar.removeAll()
