@@ -400,6 +400,17 @@ private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHan
     }
 }
 
+private val localhostOnly = Filter { next ->
+    { request ->
+        val source = request.source
+        if (source == null || source.toString().contains("127.0.0.1") || source.toString().contains("::1")) {
+            next(request)
+        } else {
+            Response(Status.FORBIDDEN)
+        }
+    }
+}
+
 private fun buildBaseApp(
     ctx: AppContext,
     adminContract: org.http4k.routing.RoutingHttpHandler,
@@ -419,7 +430,7 @@ private fun buildBaseApp(
     if ("/" !in ctx.excludedRoutes) {
         coreRoutes += "/" bind filteredAdminHandler
     }
-    coreRoutes += "/health" bind GET to { buildHealthResponse(ctx.userRepository) }
+    coreRoutes += "/health" bind GET to localhostOnly.then { buildHealthResponse(ctx.userRepository) }
     coreRoutes += "/metrics" bind GET to metricsHandler
     coreRoutes += "/robots.txt" bind GET to { buildRobotsTxtResponse() }
 
