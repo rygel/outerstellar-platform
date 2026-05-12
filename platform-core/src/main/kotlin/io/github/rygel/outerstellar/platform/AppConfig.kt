@@ -40,6 +40,24 @@ data class EmailConfig(
     val startTls: Boolean = true,
 )
 
+data class AppleOAuthConfig(
+    val enabled: Boolean = false,
+    val teamId: String = "",
+    val clientId: String = "",
+    val keyId: String = "",
+    val privateKeyPem: String = "",
+)
+
+data class PushNotificationConfig(
+    val enabled: Boolean = false,
+    val provider: String = "console",
+    val fcmServiceAccountJson: String = "",
+    val apnsTeamId: String = "",
+    val apnsKeyId: String = "",
+    val apnsPrivateKeyPem: String = "",
+    val apnsBundleId: String = "",
+)
+
 data class AppConfig(
     val version: String = "dev",
     val port: Int = DEFAULT_HTTP_PORT,
@@ -60,6 +78,8 @@ data class AppConfig(
     val lockoutDurationSeconds: Long = DEFAULT_LOCKOUT_DURATION_SECONDS,
     val jwt: JwtConfig = JwtConfig(),
     val cspPolicy: String = DEFAULT_CSP_POLICY,
+    val appleOAuth: AppleOAuthConfig = AppleOAuthConfig(),
+    val pushNotifications: PushNotificationConfig = PushNotificationConfig(),
 ) {
     companion object {
         const val DEFAULT_APP_BASE_URL = "http://localhost:8080"
@@ -137,6 +157,8 @@ data class AppConfig(
                     ),
                 jwt = buildJwtConfig(yaml["jwt"] as? Map<String, Any>, env),
                 cspPolicy = (yaml["cspPolicy"] as? String) ?: DEFAULT_CSP_POLICY,
+                appleOAuth = buildAppleOAuthConfig(yaml["appleOAuth"] as? Map<String, Any>, env),
+                pushNotifications = buildPushNotificationConfig(yaml["pushNotifications"] as? Map<String, Any>, env),
             )
         }
 
@@ -168,6 +190,33 @@ data class AppConfig(
                 secret = yaml.str("secret", env, "JWT_SECRET", ""),
                 issuer = yaml.str("issuer", env, "JWT_ISSUER", "outerstellar"),
                 expirySeconds = yaml.long("expirySeconds", env, "JWT_EXPIRYSECONDS", DEFAULT_JWT_EXPIRY_SECONDS),
+            )
+        }
+
+        private fun buildAppleOAuthConfig(yaml: Map<String, Any>?, env: Map<String, String>): AppleOAuthConfig {
+            if (yaml == null) return AppleOAuthConfig()
+            return AppleOAuthConfig(
+                enabled = yaml.bool("enabled", env, "APPLE_OAUTH_ENABLED", false),
+                teamId = yaml.str("teamId", env, "APPLE_OAUTH_TEAMID", ""),
+                clientId = yaml.str("clientId", env, "APPLE_OAUTH_CLIENTID", ""),
+                keyId = yaml.str("keyId", env, "APPLE_OAUTH_KEYID", ""),
+                privateKeyPem = yaml.str("privateKeyPem", env, "APPLE_OAUTH_PRIVATEKEYPEM", ""),
+            )
+        }
+
+        private fun buildPushNotificationConfig(
+            yaml: Map<String, Any>?,
+            env: Map<String, String>,
+        ): PushNotificationConfig {
+            if (yaml == null) return PushNotificationConfig()
+            return PushNotificationConfig(
+                enabled = yaml.bool("enabled", env, "PUSH_ENABLED", false),
+                provider = yaml.str("provider", env, "PUSH_PROVIDER", "console"),
+                fcmServiceAccountJson = yaml.str("fcmServiceAccountJson", env, "PUSH_FCM_SERVICEACCOUNTJSON", ""),
+                apnsTeamId = yaml.str("apnsTeamId", env, "PUSH_APNS_TEAMID", ""),
+                apnsKeyId = yaml.str("apnsKeyId", env, "PUSH_APNS_KEYID", ""),
+                apnsPrivateKeyPem = yaml.str("apnsPrivateKeyPem", env, "PUSH_APNS_PRIVATEKEYPEM", ""),
+                apnsBundleId = yaml.str("apnsBundleId", env, "PUSH_APNS_BUNDLEID", ""),
             )
         }
     }

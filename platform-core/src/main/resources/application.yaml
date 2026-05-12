@@ -7,3 +7,19 @@ devMode: false
 sessionCookieSecure: true
 sessionTimeoutMinutes: 30
 corsOrigins: ""
+
+appleOAuth:
+  enabled: false
+  teamId: ""
+  clientId: ""
+  keyId: ""
+  privateKeyPem: ""
+
+pushNotifications:
+  enabled: false
+  provider: "console"
+  fcmServiceAccountJson: ""
+  apnsTeamId: ""
+  apnsKeyId: ""
+  apnsPrivateKeyPem: ""
+  apnsBundleId: ""

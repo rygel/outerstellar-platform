@@ -294,9 +294,20 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
             routes += ContactsRoutes(pageFactory, jteRenderer, contactService).routes
         }
         routes += AuthRoutes(pageFactory, jteRenderer, securityService, sessionCookieSecure, analytics).routes
+        val oauthProviders = mutableMapOf<String, io.github.rygel.outerstellar.platform.security.OAuthProvider>()
+        val appleConfig = ctx.config.appleOAuth
+        if (appleConfig.enabled && appleConfig.clientId.isNotBlank()) {
+            oauthProviders["apple"] =
+                AppleOAuthProvider(
+                    teamId = appleConfig.teamId,
+                    clientId = appleConfig.clientId,
+                    keyId = appleConfig.keyId,
+                    privateKeyPem = appleConfig.privateKeyPem,
+                )
+        }
         routes +=
             OAuthRoutes(
-                    providers = mapOf("apple" to AppleOAuthProvider()),
+                    providers = oauthProviders,
                     securityService = securityService,
                     sessionCookieSecure = sessionCookieSecure,
                 )
