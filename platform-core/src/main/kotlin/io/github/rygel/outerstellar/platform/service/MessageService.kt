@@ -14,6 +14,7 @@ import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxEntry
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.persistence.OutboxStatus
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.sync.SyncConflict
 import io.github.rygel.outerstellar.platform.sync.SyncMessage
@@ -109,7 +110,7 @@ class MessageService(
                             id = UUID.randomUUID(),
                             payloadType = "MESSAGE_CREATED",
                             payload = msg.syncId,
-                            status = "PENDING",
+                            status = OutboxStatus.PENDING,
                         )
                     )
                     msg
@@ -224,7 +225,7 @@ class MessageService(
                         id = UUID.randomUUID(),
                         payloadType = "MESSAGE_DELETED",
                         payload = syncId,
-                        status = "PENDING",
+                        status = OutboxStatus.PENDING,
                     )
                 )
             }
@@ -259,7 +260,7 @@ class MessageService(
                             id = UUID.randomUUID(),
                             payloadType = "MESSAGE_UPDATED",
                             payload = up.syncId,
-                            status = "PENDING",
+                            status = OutboxStatus.PENDING,
                         )
                     )
                     up

@@ -3,11 +3,17 @@ package io.github.rygel.outerstellar.platform.persistence
 import java.time.Instant
 import java.util.UUID
 
+enum class OutboxStatus {
+    PENDING,
+    PROCESSED,
+    FAILED,
+}
+
 data class OutboxEntry(
     val id: UUID,
     val payloadType: String,
     val payload: String,
-    val status: String,
+    val status: OutboxStatus,
     val createdAt: Instant = Instant.now(),
 )
 
@@ -20,7 +26,7 @@ interface OutboxRepository {
 
     fun markFailed(id: UUID, error: String)
 
-    fun getStats(): Map<String, Int>
+    fun getStats(): Map<OutboxStatus, Int>
 
     fun listFailed(): List<OutboxEntry>
 }
