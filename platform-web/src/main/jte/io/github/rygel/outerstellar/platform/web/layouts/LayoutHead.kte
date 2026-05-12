@@ -1,4 +1,5 @@
 @import io.github.rygel.outerstellar.platform.web.ShellView
+@import io.github.rygel.outerstellar.platform.service.SeoMetadata
 @param shell: ShellView
 
 <head>
@@ -21,6 +22,9 @@
     <link rel="alternate" hreflang="${locale}" href="${shell.canonicalUrl}?lang=${locale}">
         @endfor
     <link rel="alternate" hreflang="x-default" href="${shell.canonicalUrl}?lang=en">
+    @endif
+    @if(!shell.noIndex && shell.canonicalUrl.isNotBlank())
+    ${SeoMetadata.forPage(shell.pageTitle, shell.pageDescription, shell.canonicalUrl, shell.ogImage, shell.localeTag.substringBefore("-"), if (shell.noIndex) "noindex, nofollow" else "index, follow").generateAllMetaTags()}
     @endif
     <link rel="preload" href="/site.css?v=${shell.version}" as="style">
     <link rel="preload" href="/vendor/remixicon/remixicon.woff2" as="font" type="font/woff2" crossorigin>

@@ -47,6 +47,7 @@ data class ShellView(
     val noIndex: Boolean = false,
     val supportedLocales: List<String> = listOf("en"),
     val appBaseUrl: String = "",
+    val ogImage: String = "",
 ) {
     fun text(key: String, vararg args: Any?): String = textResolver?.resolve(key, *args) ?: key
 }
