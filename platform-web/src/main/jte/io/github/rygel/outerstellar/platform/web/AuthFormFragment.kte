@@ -52,7 +52,7 @@
         <div class="divider my-6">${model.oauthSeparator}</div>
         <a href="/auth/oauth/apple"
            class="btn btn-outline w-full gap-2">
-            <i class="ri-apple-fill text-lg"></i>
+            <i aria-hidden="true" class="ri-apple-fill text-lg"></i>
             ${model.signInWithApple}
         </a>
     @endif

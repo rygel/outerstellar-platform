@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTVerificationException
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.rygel.outerstellar.platform.JwtConfig
+import io.github.rygel.outerstellar.platform.model.UserRole
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -14,6 +15,12 @@ import org.slf4j.LoggerFactory
 private val logger = LoggerFactory.getLogger("outerstellar.JwtService")
 
 class JwtService(private val config: JwtConfig) {
+
+    init {
+        if (config.enabled && config.secret.isBlank()) {
+            logger.warn("JWT is enabled but secret is blank — JWT authentication will be disabled")
+        }
+    }
 
     /** True only when JWT is enabled and a secret is configured. */
     val isEnabled: Boolean

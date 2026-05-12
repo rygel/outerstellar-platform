@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -300,12 +300,12 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
 
     @Test
     fun `GET auth-reset returns 200`() {
-        assertEquals(Status.OK, app(Request(GET, "/auth/reset")).status)
+        assertEquals(Status.OK, app(Request(GET, "/auth/reset/some-token-value")).status)
     }
 
     @Test
     fun `GET auth-reset with token param renders the form`() {
-        val response = app(Request(GET, "/auth/reset?token=some-token-value"))
+        val response = app(Request(GET, "/auth/reset/some-token-value"))
         assertEquals(Status.OK, response.status)
         assertTrue(response.bodyString().isNotBlank())
     }

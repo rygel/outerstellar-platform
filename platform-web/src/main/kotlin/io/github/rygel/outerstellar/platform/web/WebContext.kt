@@ -3,12 +3,12 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.I18nTextResolver
 import io.github.rygel.outerstellar.platform.TextResolver
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionLookup
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
-import io.github.rygel.outerstellar.platform.security.UserRole
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
@@ -24,6 +24,7 @@ class WebContext(
     private val jwtService: JwtService? = null,
     private val securityService: SecurityService? = null,
     private val pluginOptions: PluginOptions = PluginOptions(),
+    private val appBaseUrl: String = "",
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
@@ -37,6 +38,24 @@ class WebContext(
         const val SESSION_COOKIE = "app_session"
         const val JWT_COOKIE = "app_jwt"
         const val CSRF_COOKIE = "_csrf"
+
+        val SUPPORTED_LANGUAGES = setOf("en", "fr")
+        val SUPPORTED_LAYOUTS = listOf("nice", "cozy", "compact")
+        val SUPPORTED_SHELLS = listOf("sidebar", "topbar")
+
+        private val NO_INDEX_SECTIONS =
+            setOf(
+                "/auth",
+                "/auth/profile",
+                "/auth/api-keys",
+                "/errors",
+                "/admin/users",
+                "/admin/audit",
+                "/admin/dev",
+                "/admin/plugins",
+                "/settings",
+                "/notifications",
+            )
 
         /** Stable cache-buster computed once at class load — survives the JVM lifetime. */
         val assetVersion: String = System.currentTimeMillis().toString()
@@ -62,12 +81,12 @@ class WebContext(
 
     val layout: String by lazy {
         val value = request.query("layout") ?: request.cookie(LAYOUT_COOKIE)?.value ?: user?.layout ?: "nice"
-        if (listOf("nice", "cozy", "compact").any { it == value }) value else "nice"
+        if (value in SUPPORTED_LAYOUTS) value else "nice"
     }
 
     val shellStyle: String by lazy {
         val value = request.query("shell") ?: request.cookie(SHELL_COOKIE)?.value ?: "sidebar"
-        if (listOf("sidebar", "topbar").any { it == value }) value else "sidebar"
+        if (value in SUPPORTED_SHELLS) value else "sidebar"
     }
 
     val user: User? by lazy {
@@ -268,6 +287,15 @@ class WebContext(
             csrfToken = csrfToken,
             notificationsUrl = if (user != null) url("/notifications") else null,
             textResolver = textResolver,
+            pageDescription =
+                i18n
+                    .translate("web.page.description.$activeSection")
+                    .takeIf { !it.startsWith("web.page.description.") }
+                    .orEmpty(),
+            canonicalUrl = if (appBaseUrl.isNotBlank()) "$appBaseUrl$currentPath" else "",
+            noIndex = activeSection in NO_INDEX_SECTIONS,
+            supportedLocales = listOf("en", "fr"),
+            appBaseUrl = appBaseUrl,
         )
     }
 }

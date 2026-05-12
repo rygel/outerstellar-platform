@@ -82,10 +82,18 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                     .header("Authorization", authHeader)
                     .POST(HttpRequest.BodyPublishers.ofString(json.encodeToString(JsonObject.serializer(), payload)))
                     .build()
-            client.sendAsync(request, HttpResponse.BodyHandlers.discarding()).exceptionally { e ->
-                logger.warn("Segment {} call failed: {}", endpoint, e.message)
-                null
-            }
+            Thread(
+                    {
+                        try {
+                            client.send(request, HttpResponse.BodyHandlers.discarding())
+                        } catch (e: Exception) {
+                            logger.warn("Segment {} call failed: {}", endpoint, e.message)
+                        }
+                    },
+                    "segment-analytics",
+                )
+                .also { it.isDaemon = true }
+                .start()
         } catch (e: IOException) {
             logger.warn("Segment analytics IO error on {}: {}", endpoint, e.message)
         }

@@ -3,6 +3,7 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.persistence.OutboxStatus
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
 import org.http4k.core.Method.GET
@@ -34,9 +35,9 @@ class DevDashboardRoutes(
                                 cacheStats = cache.getStats(),
                                 outboxStats =
                                     OutboxStatsViewModel(
-                                        pending = outboxStats["PENDING"] ?: 0,
-                                        processed = outboxStats["PROCESSED"] ?: 0,
-                                        failed = outboxStats["FAILED"] ?: 0,
+                                        pending = outboxStats[OutboxStatus.PENDING] ?: 0,
+                                        processed = outboxStats[OutboxStatus.PROCESSED] ?: 0,
+                                        failed = outboxStats[OutboxStatus.FAILED] ?: 0,
                                     ),
                                 telemetryStatus = "Enabled",
                             )

@@ -53,6 +53,22 @@ class AppConfigTest {
             val config = AppConfig.fromEnvironment(env)
             assert(config.port == 9091)
             assert(config.sessionTimeoutMinutes == 60)
+            @Test
+            fun `profile defaults to default when APP_PROFILE not set`() {
+                val config = AppConfig.fromEnvironment(emptyMap())
+                assert(config.profile == "default") { "Expected 'default' but was ${config.profile}" }
+            }
+
+            @Test
+            fun `profile is set from APP_PROFILE env var`() {
+                val config = AppConfig.fromEnvironment(mapOf("APP_PROFILE" to "prod"))
+                assert(config.profile == "prod") { "Expected 'prod' but was ${config.profile}" }
+            }
+
+            @Test
+            fun `DEFAULT_JDBC_PASSWORD constant matches data class default`() {
+                assert(AppConfig.DEFAULT_JDBC_PASSWORD == AppConfig().jdbcPassword)
+            }
         }
     }
 }

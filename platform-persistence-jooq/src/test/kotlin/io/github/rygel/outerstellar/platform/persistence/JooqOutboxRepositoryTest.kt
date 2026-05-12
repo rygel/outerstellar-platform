@@ -10,7 +10,7 @@ class JooqOutboxRepositoryTest : JooqTest() {
     private val repo by lazy { JooqOutboxRepository(dsl) }
 
     private fun entry(payloadType: String = "TestEvent", payload: String = "{}") =
-        OutboxEntry(id = UUID.randomUUID(), payloadType = payloadType, payload = payload, status = "PENDING")
+        OutboxEntry(id = UUID.randomUUID(), payloadType = payloadType, payload = payload, status = OutboxStatus.PENDING)
 
     @Test
     fun `save and listPending round-trips`() {
@@ -20,7 +20,7 @@ class JooqOutboxRepositoryTest : JooqTest() {
         assertEquals(1, pending.size)
         assertEquals("UserCreated", pending[0].payloadType)
         assertEquals("""{"id":"abc"}""", pending[0].payload)
-        assertEquals("PENDING", pending[0].status)
+        assertEquals(OutboxStatus.PENDING, pending[0].status)
     }
 
     @Test
@@ -59,7 +59,7 @@ class JooqOutboxRepositoryTest : JooqTest() {
         assertTrue(repo.listPending(10).isEmpty())
         val failed = repo.listFailed()
         assertEquals(1, failed.size)
-        assertEquals("FAILED", failed[0].status)
+        assertEquals(OutboxStatus.FAILED, failed[0].status)
     }
 
     @Test
@@ -70,8 +70,8 @@ class JooqOutboxRepositoryTest : JooqTest() {
         repo.save(e3)
         repo.markProcessed(e3.id)
         val stats = repo.getStats()
-        assertEquals(2, stats["PENDING"])
-        assertEquals(1, stats["PROCESSED"])
+        assertEquals(2, stats[OutboxStatus.PENDING])
+        assertEquals(1, stats[OutboxStatus.PROCESSED])
     }
 
     @Test

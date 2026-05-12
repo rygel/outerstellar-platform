@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.PagedResult
 import io.github.rygel.outerstellar.platform.model.PaginationMetadata
 import io.github.rygel.outerstellar.platform.model.StoredMessage
+import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.mockk.Runs
@@ -14,6 +15,7 @@ import io.mockk.mockk
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class MessageServiceTest {
@@ -88,5 +90,57 @@ class MessageServiceTest {
         serviceWithCache.createServerMessage("Alice", "hello")
 
         assertNull(cache.get("list:null:null:10:0"))
+    }
+
+    @Test
+    fun `createServerMessage rejects author exceeding max length`() {
+        val longAuthor = "a".repeat(MessageService.MAX_AUTHOR_LENGTH + 1)
+        val ex =
+            org.junit.jupiter.api.Assertions.assertThrows(ValidationException::class.java) {
+                service.createServerMessage(longAuthor, "content")
+            }
+        assertTrue(ex.errors.any { it.contains("Author") && it.contains("${MessageService.MAX_AUTHOR_LENGTH}") })
+    }
+
+    @Test
+    fun `createServerMessage rejects content exceeding max length`() {
+        val longContent = "c".repeat(MessageService.MAX_CONTENT_LENGTH + 1)
+        val ex =
+            org.junit.jupiter.api.Assertions.assertThrows(ValidationException::class.java) {
+                service.createServerMessage("Alice", longContent)
+            }
+        assertTrue(ex.errors.any { it.contains("Content") && it.contains("${MessageService.MAX_CONTENT_LENGTH}") })
+    }
+
+    @Test
+    fun `createLocalMessage rejects author exceeding max length`() {
+        val longAuthor = "a".repeat(MessageService.MAX_AUTHOR_LENGTH + 1)
+        org.junit.jupiter.api.Assertions.assertThrows(ValidationException::class.java) {
+            service.createLocalMessage(longAuthor, "content")
+        }
+    }
+
+    @Test
+    fun `createLocalMessage rejects content exceeding max length`() {
+        val longContent = "c".repeat(MessageService.MAX_CONTENT_LENGTH + 1)
+        org.junit.jupiter.api.Assertions.assertThrows(ValidationException::class.java) {
+            service.createLocalMessage("Alice", longContent)
+        }
+    }
+
+    @Test
+    fun `createServerMessage accepts author at max length`() {
+        val author = "a".repeat(MessageService.MAX_AUTHOR_LENGTH)
+        every { repository.createServerMessage(author, "content") } returns
+            StoredMessage("id", author, "content", 0L, false, false, 1L)
+        service.createServerMessage(author, "content")
+    }
+
+    @Test
+    fun `createServerMessage accepts content at max length`() {
+        val content = "c".repeat(MessageService.MAX_CONTENT_LENGTH)
+        every { repository.createServerMessage("Alice", content) } returns
+            StoredMessage("id", "Alice", content, 0L, false, false, 1L)
+        service.createServerMessage("Alice", content)
     }
 }

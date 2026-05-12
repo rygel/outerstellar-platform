@@ -29,9 +29,9 @@
                         <td><span class="badge">${user.role}</span></td>
                         <td class="text-center">
                             @if(user.enabled)
-                                <i class="ri-checkbox-circle-fill" style="color: var(--color-accent);"></i>
+                                <i aria-hidden="true" class="ri-checkbox-circle-fill" style="color: var(--color-accent);"></i>
                             @else
-                                <i class="ri-close-circle-fill" style="color: var(--text-danger, #ef4444);"></i>
+                                <i aria-hidden="true" class="ri-close-circle-fill" style="color: var(--text-danger, #ef4444);"></i>
                             @endif
                         </td>
                         <td class="text-center">
@@ -46,6 +46,13 @@
                                         @if(user.role == "ADMIN")${model.data.actionDemote}@else${model.data.actionPromote}@endif
                                     </button>
                                 </form>
+                                @if (user.isLocked)
+                                    <form method="post" action="${user.unlockUrl}" class="inline">
+                                        <button type="submit" class="btn btn-ghost btn-xs text-success">
+                                            ${model.data.actionUnlock}
+                                        </button>
+                                    </form>
+                                @endif
                             @else
                                 <span class="opacity-50" style="font-size: 0.8rem;">(${model.data.selfLabel})</span>
                             @endif

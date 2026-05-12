@@ -22,8 +22,6 @@ import java.awt.CardLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
-import java.awt.event.InputEvent
-import java.awt.event.KeyEvent
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.WindowAdapter
@@ -40,9 +38,7 @@ import javax.swing.JDialog
 import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JList
-import javax.swing.JMenu
 import javax.swing.JMenuBar
-import javax.swing.JMenuItem
 import javax.swing.JPanel
 import javax.swing.JSplitPane
 import javax.swing.JTable
@@ -50,7 +46,6 @@ import javax.swing.JTextArea
 import javax.swing.JTextField
 import javax.swing.JToolBar
 import javax.swing.JWindow
-import javax.swing.KeyStroke
 import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
 import javax.swing.UIManager
@@ -291,7 +286,7 @@ class SyncWindow(
         JLabel().apply {
             name = "offlineBadge"
             isVisible = false
-            foreground = COLOR_DANGER
+            foreground = SyncDialogs.COLOR_DANGER
             font = font.deriveFont(Font.BOLD, 11f)
         }
     private val statusHintLabel = JLabel().apply { name = "statusHintLabel" }
@@ -324,43 +319,6 @@ class SyncWindow(
             addActionListener { viewModel.createMessage {} }
         }
 
-    private val appMenu = JMenu(i18nService.translate("swing.menu.file")).apply { name = "appMenu" }
-    private val helpMenu = JMenu(i18nService.translate("swing.menu.help")).apply { name = "helpMenu" }
-    private val settingsItem =
-        JMenuItem(i18nService.translate("swing.menu.settings")).apply {
-            name = "settingsItem"
-            icon = RemixIcon.get("system/settings-3-line")
-        }
-    private val loginItem =
-        JMenuItem(i18nService.translate("swing.auth.login")).apply {
-            name = "loginItem"
-            icon = RemixIcon.get("system/lock-password-line")
-        }
-    private val logoutItem =
-        JMenuItem(i18nService.translate("swing.auth.logout.simple")).apply {
-            name = "logoutItem"
-            icon = RemixIcon.get("system/logout-box-r-line")
-        }
-    private val registerItem =
-        JMenuItem(i18nService.translate("swing.auth.register")).apply {
-            name = "registerItem"
-            icon = RemixIcon.get("system/user-add-line")
-        }
-    private val newItem = JMenuItem(i18nService.translate("swing.menu.file.new")).apply { name = "newItem" }
-    private val openItem = JMenuItem(i18nService.translate("swing.menu.file.open")).apply { name = "openItem" }
-    private val saveItem = JMenuItem(i18nService.translate("swing.menu.file.save")).apply { name = "saveItem" }
-    private val saveAsItem = JMenuItem(i18nService.translate("swing.menu.file.saveAs")).apply { name = "saveAsItem" }
-    private val exitItem = JMenuItem(i18nService.translate("swing.menu.file.exit")).apply { name = "exitItem" }
-    private val viewHelpItem = JMenuItem(i18nService.translate("swing.menu.help.view")).apply { name = "viewHelpItem" }
-    private val sendFeedbackItem =
-        JMenuItem(i18nService.translate("swing.menu.help.feedback")).apply { name = "sendFeedbackItem" }
-    private val checkUpdatesItem =
-        JMenuItem(i18nService.translate("swing.menu.help.updates")).apply { name = "checkUpdatesItem" }
-    private val aboutItem =
-        JMenuItem(i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))).apply {
-            name = "aboutItem"
-        }
-
     private val dialogs =
         SyncDialogs(
             frame,
@@ -376,65 +334,28 @@ class SyncWindow(
 
     private lateinit var sidebarPanel: JPanel
 
-    private val navMessagesBtn =
-        JButton(i18nService.translate("swing.nav.messages")).apply {
-            name = "navMessagesBtn"
-            icon = RemixIcon.get("communication/chat-3-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-        }
+    private val menu = lazy {
+        SyncWindowMenu(
+            viewModel = viewModel,
+            i18nService = i18nService,
+            frame = frame,
+            dialogs =
+                MenuDialogActions(
+                    showSettings = { dialogs.showSettingsDialog() },
+                    showLogin = { dialogs.showLoginDialog() },
+                    showRegister = { dialogs.showRegisterDialog() },
+                    showChangePassword = { dialogs.showChangePasswordDialog() },
+                    showHelp = { dialogs.showHelpDialog() },
+                    showFeedback = { dialogs.showFeedbackDialog() },
+                    showUpdateCheck = { dialogs.showUpdateCheckDialog() },
+                    showAbout = { dialogs.showAboutDialog() },
+                    clearComposer = { dialogs.clearComposer(authorField, contentArea) },
+                    showMenuPlaceholder = { dialogs.showMenuPlaceholder(it) },
+                ),
+        )
+    }
 
-    private val navContactsBtn =
-        JButton(i18nService.translate("swing.contact.nav")).apply {
-            name = "navContactsBtn"
-            icon = RemixIcon.get("user/user-3-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-        }
-
-    private val navUsersBtn =
-        JButton(i18nService.translate("swing.admin.users.nav")).apply {
-            name = "navUsersBtn"
-            icon = RemixIcon.get("user/group-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-            isEnabled = false
-        }
-
-    private val navNotificationsBtn =
-        JButton(i18nService.translate("swing.notifications.nav")).apply {
-            name = "navNotificationsBtn"
-            icon = RemixIcon.get("system/notification-3-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-            isEnabled = false
-        }
-
-    private val navProfileBtn =
-        JButton(i18nService.translate("swing.profile.nav")).apply {
-            name = "navProfileBtn"
-            icon = RemixIcon.get("user/account-circle-line", 32)
-            font = font.deriveFont(16f)
-            verticalTextPosition = SwingConstants.BOTTOM
-            horizontalTextPosition = SwingConstants.CENTER
-            putClientProperty("JButton.buttonType", "square")
-            isEnabled = false
-        }
-
-    private val changePasswordItem =
-        JMenuItem(i18nService.translate("swing.password.change")).apply {
-            name = "changePasswordItem"
-            icon = RemixIcon.get("system/lock-password-line")
-            isEnabled = false
-        }
+    private val nav = SyncWindowNav(i18nService)
 
     private val usersModel =
         DefaultTableModel(
@@ -461,11 +382,11 @@ class SyncWindow(
             viewModel,
             SyncTableComponents(messagesModel, messagesList, contactsModel, contactsTable, usersModel, usersTable),
             SyncNavComponents(
-                navMessagesBtn,
-                navContactsBtn,
-                navUsersBtn,
-                navNotificationsBtn,
-                navProfileBtn,
+                nav.navMessagesBtn,
+                nav.navContactsBtn,
+                nav.navUsersBtn,
+                nav.navNotificationsBtn,
+                nav.navProfileBtn,
                 syncButton,
                 createButton,
             ),
@@ -480,10 +401,10 @@ class SyncWindow(
                 statusMetaLabel,
             ),
             appVersion,
-            COLOR_DANGER,
-            COLOR_SUCCESS,
+            SyncDialogs.COLOR_DANGER,
+            SyncDialogs.COLOR_SUCCESS,
             onNavigate = { mainLayout.show(mainCardPanel, it) },
-            onShowContactFormDialog = { showContactFormDialog(it) },
+            onShowContactFormDialog = { dialogs.showContactFormDialog(it) },
         )
 
     fun show() {
@@ -501,6 +422,7 @@ class SyncWindow(
 
     fun refreshTranslations(newI18n: I18nService) {
         this.i18nService = newI18n
+        menu.value.updateI18n(newI18n)
         dialogs.updateI18n(newI18n)
         profilePanelCreator.updateI18n(newI18n)
         views.updateI18n(newI18n)
@@ -589,7 +511,7 @@ class SyncWindow(
                         if (index >= 0) {
                             val msg = messagesModel.getElementAt(index)
                             if (msg.hasConflict) {
-                                showConflictDialog(msg)
+                                dialogs.showConflictDialog(msg)
                             }
                         }
                     }
@@ -633,17 +555,12 @@ class SyncWindow(
             searchField.text = viewModel.searchQuery
         }
 
-        loginItem.isEnabled = !viewModel.isLoggedIn
-        logoutItem.isEnabled = viewModel.isLoggedIn
-        registerItem.isEnabled = !viewModel.isLoggedIn
-        changePasswordItem.isEnabled = viewModel.isLoggedIn
-
-        navUsersBtn.isEnabled = viewModel.isLoggedIn && viewModel.userRole == "ADMIN"
-        navProfileBtn.isEnabled = viewModel.isLoggedIn
+        menu.value.updateAuthState(viewModel.isLoggedIn)
+        nav.updateAuthState(viewModel.isLoggedIn, viewModel.userRole)
 
         usersModel.rowCount = 0
         viewModel.adminUsers.forEach { user ->
-            usersModel.addRow(arrayOf(user.username, user.email, user.role, user.enabled.toString(), user.id))
+            usersModel.addRow(arrayOf(user.username, user.email, user.role.name, user.enabled.toString(), user.id))
         }
     }
 
@@ -702,103 +619,12 @@ class SyncWindow(
         applyTranslations()
     }
 
-    private fun createProfileView(): JPanel = profilePanelCreator.createProfileView(navProfileBtn)
-
-    private fun createMenuBar(): JMenuBar {
-        val menuBar = JMenuBar()
-        settingsItem.addActionListener { showSettingsDialog() }
-        loginItem.addActionListener { showLoginDialog() }
-        logoutItem.addActionListener { viewModel.logout() }
-        registerItem.addActionListener { showRegisterDialog() }
-        changePasswordItem.addActionListener { showChangePasswordDialog() }
-        newItem.addActionListener { clearComposer() }
-        openItem.addActionListener { showMenuPlaceholder("swing.menu.file.open") }
-        saveItem.addActionListener { showMenuPlaceholder("swing.menu.file.save") }
-        saveAsItem.addActionListener { showMenuPlaceholder("swing.menu.file.saveAs") }
-        exitItem.addActionListener { frame.dispatchEvent(WindowEvent(frame, WindowEvent.WINDOW_CLOSING)) }
-        viewHelpItem.addActionListener { showHelpDialog() }
-        sendFeedbackItem.addActionListener { showFeedbackDialog() }
-        checkUpdatesItem.addActionListener { showUpdateCheckDialog() }
-        aboutItem.addActionListener { showAboutDialog() }
-
-        val menuMask = InputEvent.CTRL_DOWN_MASK
-        newItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_N, menuMask)
-        openItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_O, menuMask)
-        saveItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask)
-        saveAsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask or InputEvent.SHIFT_DOWN_MASK)
-        exitItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_F4, InputEvent.ALT_DOWN_MASK)
-
-        appMenu.add(newItem)
-        appMenu.add(openItem)
-        appMenu.add(saveItem)
-        appMenu.add(saveAsItem)
-        appMenu.addSeparator()
-        appMenu.add(loginItem)
-        appMenu.add(logoutItem)
-        appMenu.add(registerItem)
-        appMenu.add(changePasswordItem)
-        appMenu.addSeparator()
-        appMenu.add(settingsItem)
-        appMenu.addSeparator()
-        appMenu.add(exitItem)
-
-        helpMenu.add(viewHelpItem)
-        helpMenu.add(sendFeedbackItem)
-        helpMenu.add(checkUpdatesItem)
-        helpMenu.addSeparator()
-        helpMenu.add(aboutItem)
-
-        menuBar.add(appMenu)
-        menuBar.add(helpMenu)
-        return menuBar
-    }
-
-    private fun showLoginDialog() = dialogs.showLoginDialog()
-
-    private fun showConflictDialog(msg: MessageSummary) = dialogs.showConflictDialog(msg)
-
-    private fun createListManageButton(label: String, list: MutableList<String>): JButton =
-        dialogs.createListManageButton(label, list)
-
-    private fun showContactFormDialog(syncId: String?) = dialogs.showContactFormDialog(syncId)
-
-    private fun showListEditDialog(title: String, list: MutableList<String>) = dialogs.showListEditDialog(title, list)
-
-    private fun showSettingsDialog() = dialogs.showSettingsDialog()
-
-    private fun showRegisterDialog() = dialogs.showRegisterDialog()
-
-    private fun showChangePasswordDialog() = dialogs.showChangePasswordDialog()
-
-    private fun clearComposer() = dialogs.clearComposer(authorField, contentArea)
-
-    private fun showMenuPlaceholder(key: String) = dialogs.showMenuPlaceholder(key)
-
-    private fun showHelpDialog() = dialogs.showHelpDialog()
-
-    private fun showAboutDialog() = dialogs.showAboutDialog()
-
-    private fun showFeedbackDialog() = dialogs.showFeedbackDialog()
-
-    private fun showUpdateCheckDialog() = dialogs.showUpdateCheckDialog()
-
-    private fun showInfoDialog(title: String, message: String, icon: javax.swing.Icon?) =
-        dialogs.showInfoDialog(title, message, icon)
-
     internal fun buildInfoDialog(title: String, message: String, icon: javax.swing.Icon?): JDialog =
         dialogs.buildInfoDialog(title, message, icon)
 
-    private fun createThemedDialog(title: String, columns: String, rows: String): JDialog =
-        dialogs.createThemedDialog(title, columns, rows)
+    private fun createProfileView(): JPanel = profilePanelCreator.createProfileView(nav.navProfileBtn)
 
-    companion object {
-        private val COLOR_DANGER = SyncDialogs.COLOR_DANGER
-        private val COLOR_SUCCESS = SyncDialogs.COLOR_SUCCESS
-    }
-
-    private fun createActionRow(vararg buttons: JButton): JPanel = dialogs.createActionRow(*buttons)
-
-    private fun showDialog(dialog: JDialog) = dialogs.showDialog(dialog)
+    private fun createMenuBar(): JMenuBar = menu.value.buildMenuBar()
 
     private fun configureStatusBar() {
         statusBar.removeAll()
@@ -812,23 +638,8 @@ class SyncWindow(
     }
 
     private fun applyTranslations() {
+        menu.value.applyTranslations()
         frame.title = "${i18nService.translate("swing.app.title")} — v$appVersion"
-        appMenu.text = i18nService.translate("swing.menu.file")
-        helpMenu.text = i18nService.translate("swing.menu.help")
-        settingsItem.text = i18nService.translate("swing.menu.settings")
-        loginItem.text = i18nService.translate("swing.auth.login")
-        logoutItem.text = i18nService.translate("swing.auth.logout.simple")
-        registerItem.text = i18nService.translate("swing.auth.register")
-        newItem.text = i18nService.translate("swing.menu.file.new")
-        openItem.text = i18nService.translate("swing.menu.file.open")
-        saveItem.text = i18nService.translate("swing.menu.file.save")
-        saveAsItem.text = i18nService.translate("swing.menu.file.saveAs")
-        exitItem.text = i18nService.translate("swing.menu.file.exit")
-        viewHelpItem.text = i18nService.translate("swing.menu.help.view")
-        sendFeedbackItem.text = i18nService.translate("swing.menu.help.feedback")
-        checkUpdatesItem.text = i18nService.translate("swing.menu.help.updates")
-        aboutItem.text = i18nService.translate("swing.menu.help.about", i18nService.translate("swing.app.name"))
-        changePasswordItem.text = i18nService.translate("swing.password.change")
         if (statusLabel.text.isBlank()) {
             statusLabel.text = i18nService.translate("swing.status.ready")
             statusLabel.toolTipText = statusLabel.text

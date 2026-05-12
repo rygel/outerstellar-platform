@@ -51,6 +51,10 @@
         <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.AppKt"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    </Match>
+    <Match>
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH"/>
     </Match>

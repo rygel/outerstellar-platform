@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.security
 
 import io.github.rygel.outerstellar.platform.AppConfig
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val securityModule
@@ -18,9 +17,13 @@ val securityModule
                 getOrNull(),
                 getOrNull(),
                 getOrNull(),
-                getOrNull<String>(named("appBaseUrl")) ?: "http://localhost:8080",
+                SecurityConfig(
+                    appBaseUrl = get<AppConfig>().appBaseUrl,
+                    sessionTimeoutSeconds = get<AppConfig>().sessionTimeoutMinutes.toLong() * 60,
+                    maxFailedLoginAttempts = get<AppConfig>().maxFailedLoginAttempts,
+                    lockoutDurationSeconds = get<AppConfig>().lockoutDurationSeconds,
+                ),
                 getOrNull(),
-                get<io.github.rygel.outerstellar.platform.AppConfig>().sessionTimeoutMinutes.toLong() * 60,
                 get(),
             )
         }

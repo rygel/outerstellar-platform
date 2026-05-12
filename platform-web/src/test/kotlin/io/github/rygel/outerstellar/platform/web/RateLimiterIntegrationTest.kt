@@ -108,4 +108,85 @@ class RateLimiterIntegrationTest : WebTest() {
             assertTrue(response.status != Status.TOO_MANY_REQUESTS, "Health endpoint should never be rate limited")
         }
     }
+
+    @Test
+    fun `per-account rate limit triggers when same username is tried from many IPs`() {
+        val username = "target-user-${UUID.randomUUID()}"
+        repeat(20) { i ->
+            val ip = "10.99.0.${i + 1}"
+            app(
+                Request(POST, "/api/v1/auth/login")
+                    .header("content-type", "application/json")
+                    .header("X-Forwarded-For", ip)
+                    .body("""{"username":"$username","password":"wrong"}""")
+            )
+        }
+
+        val response =
+            app(
+                Request(POST, "/api/v1/auth/login")
+                    .header("content-type", "application/json")
+                    .header("X-Forwarded-For", "10.99.0.100")
+                    .body("""{"username":"$username","password":"wrong"}""")
+            )
+        assertEquals(
+            Status.TOO_MANY_REQUESTS,
+            response.status,
+            "21st request for same account from different IP should be rate limited",
+        )
+    }
+
+    @Test
+    fun `different usernames from same IP use separate account buckets`() {
+        val ip = "10.88.${(1..254).random()}.${(1..254).random()}"
+        val targetAccount = "target-${UUID.randomUUID()}"
+
+        repeat(9) { i ->
+            app(
+                Request(POST, "/api/v1/auth/login")
+                    .header("content-type", "application/json")
+                    .header("X-Forwarded-For", ip)
+                    .body("""{"username":"filler-$i","password":"wrong"}""")
+            )
+        }
+
+        val response =
+            app(
+                Request(POST, "/api/v1/auth/login")
+                    .header("content-type", "application/json")
+                    .header("X-Forwarded-For", ip)
+                    .body("""{"username":"$targetAccount","password":"wrong"}""")
+            )
+        assertTrue(
+            response.status != Status.TOO_MANY_REQUESTS,
+            "Different usernames should have separate account buckets (10 requests from one IP, all within per-IP limit), got: ${response.status}",
+        )
+    }
+
+    @Test
+    fun `per-account rate limit works with form-encoded email`() {
+        val email = "target-${UUID.randomUUID()}@test.com"
+        repeat(20) { i ->
+            val ip = "10.77.0.${i + 1}"
+            app(
+                Request(POST, "/auth/components/result")
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .header("X-Forwarded-For", ip)
+                    .body("mode=sign-in&email=${java.net.URLEncoder.encode(email, "UTF-8")}&password=wrong")
+            )
+        }
+
+        val response =
+            app(
+                Request(POST, "/auth/components/result")
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .header("X-Forwarded-For", "10.77.0.100")
+                    .body("mode=sign-in&email=${java.net.URLEncoder.encode(email, "UTF-8")}&password=wrong")
+            )
+        assertEquals(
+            Status.TOO_MANY_REQUESTS,
+            response.status,
+            "Per-account limit should apply to form-encoded email too",
+        )
+    }
 }

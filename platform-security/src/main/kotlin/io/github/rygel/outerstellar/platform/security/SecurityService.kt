@@ -5,10 +5,12 @@ import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
+import io.github.rygel.outerstellar.platform.service.UrlValidator
 import java.time.Instant
 import java.util.UUID
 import org.slf4j.LoggerFactory
@@ -21,9 +23,8 @@ class SecurityService(
     private val apiKeyRepository: ApiKeyRepository? = null,
     private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
     private val oauthRepository: OAuthRepository? = null,
-    private val appBaseUrl: String = "http://localhost:8080",
+    private val config: SecurityConfig = SecurityConfig(),
     private val sessionRepository: SessionRepository? = null,
-    private val sessionTimeoutSeconds: Long = 1800L,
     private val activityUpdater: AsyncActivityUpdater? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
@@ -36,7 +37,7 @@ class SecurityService(
             resetRepository = resetRepository,
             auditRepository = auditRepository,
             emailService = emailService,
-            appBaseUrl = appBaseUrl,
+            appBaseUrl = config.appBaseUrl,
         )
     }
 
@@ -54,26 +55,40 @@ class SecurityService(
     }
 
     fun authenticate(username: String, password: String): User? {
-        val user = userRepository.findByUsername(username)
-
-        return when {
-            user == null -> {
-                logger.warn("Authentication failed: User $username not found")
-                null
-            }
-            !user.enabled -> {
-                logger.warn("Authentication failed: User $username is disabled")
-                null
-            }
-            passwordEncoder.matches(password, user.passwordHash) -> {
-                logger.info("Authentication successful for user $username")
-                user
-            }
-            else -> {
-                logger.warn("Authentication failed: Invalid password for user $username")
-                null
-            }
+        val user =
+            userRepository.findByUsername(username)
+                ?: run {
+                    logger.warn("Authentication failed: User $username not found")
+                    audit("AUTHENTICATION_FAILED", detail = "User not found", targetUsername = username)
+                    return null
+                }
+        if (!user.enabled) {
+            logger.warn("Authentication failed: User $username is disabled")
+            audit("AUTHENTICATION_FAILED", actor = user, detail = "Account disabled")
+            return null
         }
+        val lockedUntil = user.lockedUntil
+        if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
+            logger.warn("Authentication failed: User $username is locked until $lockedUntil")
+            audit("AUTHENTICATION_FAILED", actor = user, detail = "Account locked until $lockedUntil")
+            return null
+        }
+        if (passwordEncoder.matches(password, user.passwordHash)) {
+            if (user.failedLoginAttempts > 0) {
+                userRepository.resetFailedLoginAttempts(user.id)
+            }
+            logger.info("Authentication successful for user $username")
+            return user
+        }
+        val attempts = userRepository.incrementFailedLoginAttempts(user.id)
+        logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
+        audit("AUTHENTICATION_FAILED", actor = user, detail = "Invalid password")
+        if (attempts >= config.maxFailedLoginAttempts) {
+            val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
+            userRepository.updateLockedUntil(user.id, until)
+            logger.warn("User $username locked until $until after $attempts failed attempts")
+        }
+        return null
     }
 
     fun register(username: String, password: String): User {
@@ -109,6 +124,7 @@ class SecurityService(
 
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
+        sessionRepository?.deleteByUserId(userId)
         logger.info("Password changed for user {}", user.username)
         audit("PASSWORD_CHANGED", actor = user)
     }
@@ -132,6 +148,17 @@ class SecurityService(
         val admin = userRepository.findById(adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
         audit(action, actor = admin, target = target)
+    }
+
+    fun unlockAccount(adminId: UUID, targetId: UUID) {
+        val admin = userRepository.findById(adminId) ?: throw UserNotFoundException(adminId.toString())
+        if (admin.role != UserRole.ADMIN) {
+            throw InsufficientPermissionException("Admin access required to unlock accounts")
+        }
+        val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
+        userRepository.resetFailedLoginAttempts(targetId)
+        logger.info("User {} unlocked by admin {}", target.username, admin.username)
+        audit("USER_UNLOCKED", actor = admin, target = target)
     }
 
     fun setUserRole(adminId: UUID, targetId: UUID, role: UserRole) {
@@ -161,13 +188,22 @@ class SecurityService(
 
     // Delegated to ApiKeyService
 
-    fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse = apiKeyService.createApiKey(userId, name)
+    fun createApiKey(userId: UUID, name: String): CreateApiKeyResponse {
+        val result = apiKeyService.createApiKey(userId, name)
+        val user = userRepository.findById(userId)
+        audit("API_KEY_CREATED", actor = user, detail = "name=$name")
+        return result
+    }
 
     fun authenticateApiKey(rawKey: String): User? = apiKeyService.authenticateApiKey(rawKey)
 
     fun listApiKeys(userId: UUID): List<ApiKeySummary> = apiKeyService.listApiKeys(userId)
 
-    fun deleteApiKey(userId: UUID, keyId: Long) = apiKeyService.deleteApiKey(userId, keyId)
+    fun deleteApiKey(userId: UUID, keyId: Long) {
+        apiKeyService.deleteApiKey(userId, keyId)
+        val user = userRepository.findById(userId)
+        audit("API_KEY_DELETED", actor = user, detail = "keyId=$keyId")
+    }
 
     // Delegated to OAuthService
 
@@ -200,22 +236,7 @@ class SecurityService(
         if (newAvatarUrl != user.avatarUrl) {
             val sanitizedUrl = newAvatarUrl?.takeIf { it.isNotBlank() }
             if (sanitizedUrl != null) {
-                if (!sanitizedUrl.startsWith("https://") && !sanitizedUrl.startsWith("http://")) {
-                    throw IllegalArgumentException("Avatar URL must use http or https scheme")
-                }
-                if (sanitizedUrl.length > MAX_URL_LENGTH) {
-                    throw IllegalArgumentException("Avatar URL exceeds maximum length of $MAX_URL_LENGTH characters")
-                }
-                val host =
-                    try {
-                        java.net.URI(sanitizedUrl).host?.lowercase()
-                    } catch (e: Exception) {
-                        logger.warn("Failed to parse avatar URL for SSRF check: {}", e.message)
-                        null
-                    }
-                if (host != null && PRIVATE_HOST_PATTERNS.any { it.matches(host) }) {
-                    throw IllegalArgumentException("Avatar URL must not point to private or internal addresses")
-                }
+                UrlValidator.validate(sanitizedUrl)
             }
             userRepository.updateAvatarUrl(userId, sanitizedUrl)
         }
@@ -255,7 +276,7 @@ class SecurityService(
             Session(
                 tokenHash = tokenHash,
                 userId = userId,
-                expiresAt = Instant.now().plusSeconds(sessionTimeoutSeconds),
+                expiresAt = Instant.now().plusSeconds(config.sessionTimeoutSeconds),
             )
         repo.save(session)
         logger.info("Session created for user {}", userId)
@@ -270,7 +291,7 @@ class SecurityService(
             val user = userRepository.findById(activeSession.userId)
             if (user != null && user.enabled) {
                 // Extend session on activity
-                repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(sessionTimeoutSeconds))
+                repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(config.sessionTimeoutSeconds))
                 activityUpdater?.record(user.id) ?: userRepository.updateLastActivity(user.id)
                 return SessionLookup.Active(user)
             }
@@ -304,13 +325,19 @@ class SecurityService(
         return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 
-    private fun audit(action: String, actor: User? = null, target: User? = null, detail: String? = null) {
+    private fun audit(
+        action: String,
+        actor: User? = null,
+        target: User? = null,
+        detail: String? = null,
+        targetUsername: String? = null,
+    ) {
         auditRepository?.log(
             AuditEntry(
                 actorId = actor?.id?.toString(),
                 actorUsername = actor?.username,
                 targetId = target?.id?.toString(),
-                targetUsername = target?.username,
+                targetUsername = targetUsername ?: target?.username,
                 action = action,
                 detail = detail,
             )
@@ -322,21 +349,17 @@ class SecurityService(
         private const val MAX_USERNAME_LENGTH = 50
         private const val SESSION_TOKEN_HEX_LENGTH = 48
         private const val MAX_PAGE_LIMIT = 1000
-        private const val MAX_URL_LENGTH = 2048
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
-        private val PRIVATE_HOST_PATTERNS =
-            listOf(
-                Regex("^localhost$"),
-                Regex("^127\\..*"),
-                Regex("^10\\..*"),
-                Regex("^172\\.(1[6-9]|2\\d|3[01])\\..*"),
-                Regex("^192\\.168\\..*"),
-                Regex("^0\\..*"),
-                Regex(".*\\.local$"),
-                Regex(".*\\.internal$"),
-            )
     }
 }
 
 private fun User.toSummary() =
-    UserSummary(id = id.toString(), username = username, email = email, role = role.name, enabled = enabled)
+    UserSummary(
+        id = id.toString(),
+        username = username,
+        email = email,
+        role = role,
+        enabled = enabled,
+        failedLoginAttempts = failedLoginAttempts,
+        lockedUntil = lockedUntil,
+    )

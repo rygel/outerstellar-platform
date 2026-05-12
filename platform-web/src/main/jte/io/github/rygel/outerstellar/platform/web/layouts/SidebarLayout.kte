@@ -8,6 +8,7 @@
 @template.io.github.rygel.outerstellar.platform.web.layouts.LayoutHead(shell = shell)
 <body hx-ext="ws" ws-connect="/ws/sync"
       data-toast-error="${shell.toastErrorLabel}" data-toast-success="${shell.toastSuccessLabel}">
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:bg-primary focus:text-primary-content focus:px-4 focus:py-2 focus:rounded">Skip to content</a>
 <div id="toast-container" class="fixed top-6 right-6 z-[9999] pointer-events-none w-80"></div>
 <div class="drawer lg:drawer-open">
     <input id="sidebar-drawer" type="checkbox" class="drawer-toggle">
@@ -15,7 +16,7 @@
         <header class="navbar bg-base-100 border-b border-base-300 sticky top-0 z-40 px-7 min-h-[84px]">
             <div class="flex-none lg:hidden">
                 <label for="sidebar-drawer" class="btn btn-ghost btn-square" aria-label="${shell.toggleMenuLabel}">
-                    <i class="ri-menu-line text-xl"></i>
+                    <i aria-hidden="true" class="ri-menu-line text-xl"></i>
                 </label>
             </div>
             <div class="flex flex-col">
@@ -36,11 +37,11 @@
                         <span class="text-sm font-bold">${shell.username}</span>
                         <div class="flex gap-2 items-center">
                             @if(shell.profileUrl != null)
-                                <a href="${shell.profileUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i class="ri-user-settings-line"></i> ${shell.profileLabel}</a>
+                                <a href="${shell.profileUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i aria-hidden="true" class="ri-user-settings-line"></i> ${shell.profileLabel}</a>
                                 <span class="opacity-30">|</span>
                             @endif
                             @if(shell.changePasswordUrl != null)
-                                <a href="${shell.changePasswordUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i class="ri-lock-password-line"></i> ${shell.changePasswordLabel}</a>
+                                <a href="${shell.changePasswordUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i aria-hidden="true" class="ri-lock-password-line"></i> ${shell.changePasswordLabel}</a>
                                 <span class="opacity-30">|</span>
                             @endif
                             <form method="post" action="${shell.logoutUrl}" class="inline">
@@ -50,14 +51,14 @@
                         </div>
                     </div>
                     <div class="w-9 h-9 bg-base-200 border border-base-300 rounded-full flex items-center justify-center text-xl opacity-80">
-                        <i class="ri-user-smile-line"></i>
+                        <i aria-hidden="true" class="ri-user-smile-line"></i>
                     </div>
                 </div>
             @endif
             </div>
         </header>
-        <main class="flex-1 p-6">
-            <div id="ws-updates" ws-subscribe></div>
+        <main id="main-content" class="flex-1 p-6">
+            <div id="ws-updates" ws-subscribe aria-live="polite"></div>
             ${content}
         </main>
         <footer class="flex items-center justify-between px-6 py-4 border-t border-base-content/5 bg-base-content/5 text-sm opacity-80">
@@ -78,14 +79,15 @@
         <aside class="menu bg-base-200 w-56 min-h-full border-r border-base-300 flex flex-col">
             <div class="p-4 border-b border-base-content/5">
                 <a href="/" class="flex items-center gap-2 text-xl font-extrabold text-accent uppercase tracking-wider">
-                    <i class="ri-planet-fill"></i>
+                    <i aria-hidden="true" class="ri-planet-fill"></i>
                     ${shell.appTitle}
                 </a>
             </div>
             <nav class="p-2 flex-1 flex flex-col gap-0.5">
                 @for (link in shell.navLinks)
-                    <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold@if (link.active) bg-primary text-primary-content shadow-lg shadow-primary/30@endif"
-                       href="${link.url}">
+                    <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link@if (link.active) bg-primary text-primary-content shadow-lg shadow-primary/30@endif"
+                       href="${link.url}"
+                       onclick="document.getElementById('sidebar-drawer').checked = false">
                         <i class="${link.icon} text-lg opacity-80 w-5 text-center"></i>
                         ${link.label}
                     </a>

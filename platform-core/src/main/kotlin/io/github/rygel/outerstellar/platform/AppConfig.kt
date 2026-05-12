@@ -12,6 +12,8 @@ private const val MIN_SESSION_TIMEOUT_MINUTES = 1
 private const val DEFAULT_JWT_EXPIRY_SECONDS = 86400L
 private const val MAX_HTTP_PORT = 65535
 private const val MIN_HTTP_PORT = 1
+private const val DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 10
+private const val DEFAULT_LOCKOUT_DURATION_SECONDS = 900L
 private const val DEFAULT_CSP_POLICY =
     "default-src 'self'; script-src 'self' 'unsafe-inline'; " +
         "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:;"
@@ -38,31 +40,56 @@ data class EmailConfig(
     val startTls: Boolean = true,
 )
 
+data class AppleOAuthConfig(
+    val enabled: Boolean = false,
+    val teamId: String = "",
+    val clientId: String = "",
+    val keyId: String = "",
+    val privateKeyPem: String = "",
+)
+
+data class PushNotificationConfig(
+    val enabled: Boolean = false,
+    val provider: String = "console",
+    val fcmServiceAccountJson: String = "",
+    val apnsTeamId: String = "",
+    val apnsKeyId: String = "",
+    val apnsPrivateKeyPem: String = "",
+    val apnsBundleId: String = "",
+)
+
 data class AppConfig(
     val version: String = "dev",
     val port: Int = DEFAULT_HTTP_PORT,
     val jdbcUrl: String = "jdbc:postgresql://localhost:5432/outerstellar",
     val jdbcUser: String = "outerstellar",
-    val jdbcPassword: String = "outerstellar",
+    val jdbcPassword: String = DEFAULT_JDBC_PASSWORD,
+    val profile: String = "default",
     val devDashboardEnabled: Boolean = false,
     val devMode: Boolean = false,
-    val sessionCookieSecure: Boolean = false,
+    val sessionCookieSecure: Boolean = true,
     val sessionTimeoutMinutes: Int = DEFAULT_SESSION_TIMEOUT_MINUTES,
-    val corsOrigins: String = "*",
+    val corsOrigins: String = "",
     val csrfEnabled: Boolean = true,
     val segment: SegmentConfig = SegmentConfig(),
     val email: EmailConfig = EmailConfig(),
-    val appBaseUrl: String = "http://localhost:8080",
+    val appBaseUrl: String = DEFAULT_APP_BASE_URL,
+    val maxFailedLoginAttempts: Int = DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
+    val lockoutDurationSeconds: Long = DEFAULT_LOCKOUT_DURATION_SECONDS,
     val jwt: JwtConfig = JwtConfig(),
     val cspPolicy: String = DEFAULT_CSP_POLICY,
+    val appleOAuth: AppleOAuthConfig = AppleOAuthConfig(),
+    val pushNotifications: PushNotificationConfig = PushNotificationConfig(),
 ) {
     companion object {
+        const val DEFAULT_APP_BASE_URL = "http://localhost:8080"
+        const val DEFAULT_JDBC_PASSWORD = "outerstellar"
         private val logger = LoggerFactory.getLogger(AppConfig::class.java)
 
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
             val profile = environment["APP_PROFILE"] ?: "default"
             val yamlData = loadYaml(profile)
-            return buildFromYaml(yamlData, environment)
+            return buildFromYaml(yamlData, environment, profile)
         }
 
         private fun loadYaml(profile: String): Map<String, Any>? {
@@ -83,7 +110,11 @@ data class AppConfig(
             }
         }
 
-        private fun buildFromYaml(yaml: Map<String, Any>?, env: Map<String, String>): AppConfig {
+        private fun buildFromYaml(
+            yaml: Map<String, Any>?,
+            env: Map<String, String>,
+            profile: String = "default",
+        ): AppConfig {
             if (yaml == null) return AppConfig()
             val port = yaml.int("port", env, "PORT", DEFAULT_HTTP_PORT).coerceIn(MIN_HTTP_PORT, MAX_HTTP_PORT)
             val timeout =
@@ -100,17 +131,34 @@ data class AppConfig(
                 jdbcUrl = jdbcUrl,
                 jdbcUser = yaml.str("jdbcUser", env, "JDBC_USER", "outerstellar"),
                 jdbcPassword = yaml.str("jdbcPassword", env, "JDBC_PASSWORD", "outerstellar"),
+                profile = profile,
                 devDashboardEnabled = yaml.bool("devDashboardEnabled", env, "DEV_DASHBOARD_ENABLED", false),
                 devMode = yaml.bool("devMode", env, "DEVMODE", false),
-                sessionCookieSecure = yaml.bool("sessionCookieSecure", env, "SESSIONCOOKIESECURE", false),
+                sessionCookieSecure = yaml.bool("sessionCookieSecure", env, "SESSIONCOOKIESECURE", true),
                 sessionTimeoutMinutes = timeout,
-                corsOrigins = yaml.str("corsOrigins", env, "CORSORIGINS", "*"),
+                corsOrigins = yaml.str("corsOrigins", env, "CORSORIGINS", ""),
                 csrfEnabled = yaml.bool("csrfEnabled", env, "CSRFENABLED", true),
                 segment = buildSegmentConfig(yaml["segment"] as? Map<String, Any>, env),
                 email = buildEmailConfig(yaml["email"] as? Map<String, Any>, env),
-                appBaseUrl = yaml.str("appBaseUrl", env, "APPBASEURL", "http://localhost:8080"),
+                appBaseUrl = yaml.str("appBaseUrl", env, "APPBASEURL", DEFAULT_APP_BASE_URL),
+                maxFailedLoginAttempts =
+                    yaml.int(
+                        "maxFailedLoginAttempts",
+                        env,
+                        "MAX_FAILED_LOGIN_ATTEMPTS",
+                        DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
+                    ),
+                lockoutDurationSeconds =
+                    yaml.long(
+                        "lockoutDurationSeconds",
+                        env,
+                        "LOCKOUT_DURATION_SECONDS",
+                        DEFAULT_LOCKOUT_DURATION_SECONDS,
+                    ),
                 jwt = buildJwtConfig(yaml["jwt"] as? Map<String, Any>, env),
-                cspPolicy = (yaml["cspPolicy"] as? String) ?: DEFAULT_CSP_POLICY,
+                cspPolicy = yaml.str("cspPolicy", env, "CSP_POLICY", DEFAULT_CSP_POLICY),
+                appleOAuth = buildAppleOAuthConfig(yaml["appleOAuth"] as? Map<String, Any>, env),
+                pushNotifications = buildPushNotificationConfig(yaml["pushNotifications"] as? Map<String, Any>, env),
             )
         }
 
@@ -142,6 +190,33 @@ data class AppConfig(
                 secret = yaml.str("secret", env, "JWT_SECRET", ""),
                 issuer = yaml.str("issuer", env, "JWT_ISSUER", "outerstellar"),
                 expirySeconds = yaml.long("expirySeconds", env, "JWT_EXPIRYSECONDS", DEFAULT_JWT_EXPIRY_SECONDS),
+            )
+        }
+
+        private fun buildAppleOAuthConfig(yaml: Map<String, Any>?, env: Map<String, String>): AppleOAuthConfig {
+            if (yaml == null) return AppleOAuthConfig()
+            return AppleOAuthConfig(
+                enabled = yaml.bool("enabled", env, "APPLE_OAUTH_ENABLED", false),
+                teamId = yaml.str("teamId", env, "APPLE_OAUTH_TEAMID", ""),
+                clientId = yaml.str("clientId", env, "APPLE_OAUTH_CLIENTID", ""),
+                keyId = yaml.str("keyId", env, "APPLE_OAUTH_KEYID", ""),
+                privateKeyPem = yaml.str("privateKeyPem", env, "APPLE_OAUTH_PRIVATEKEYPEM", ""),
+            )
+        }
+
+        private fun buildPushNotificationConfig(
+            yaml: Map<String, Any>?,
+            env: Map<String, String>,
+        ): PushNotificationConfig {
+            if (yaml == null) return PushNotificationConfig()
+            return PushNotificationConfig(
+                enabled = yaml.bool("enabled", env, "PUSH_ENABLED", false),
+                provider = yaml.str("provider", env, "PUSH_PROVIDER", "console"),
+                fcmServiceAccountJson = yaml.str("fcmServiceAccountJson", env, "PUSH_FCM_SERVICEACCOUNTJSON", ""),
+                apnsTeamId = yaml.str("apnsTeamId", env, "PUSH_APNS_TEAMID", ""),
+                apnsKeyId = yaml.str("apnsKeyId", env, "PUSH_APNS_KEYID", ""),
+                apnsPrivateKeyPem = yaml.str("apnsPrivateKeyPem", env, "PUSH_APNS_PRIVATEKEYPEM", ""),
+                apnsBundleId = yaml.str("apnsBundleId", env, "PUSH_APNS_BUNDLEID", ""),
             )
         }
     }

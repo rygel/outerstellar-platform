@@ -43,6 +43,19 @@ fun main() {
 
     val main = MainComponent
 
+    if (
+        main.config.jdbcPassword == AppConfig.DEFAULT_JDBC_PASSWORD &&
+            main.config.profile != "default" &&
+            main.config.profile != "test"
+    ) {
+        logger.error(
+            "FATAL: JDBC_PASSWORD is still the default '{}' with profile '{}'. " +
+                "Set JDBC_PASSWORD to a secure value before deploying.",
+            AppConfig.DEFAULT_JDBC_PASSWORD,
+            main.config.profile,
+        )
+    }
+
     val adminPassword =
         System.getenv("ADMIN_PASSWORD")
             ?: java.util.UUID.randomUUID().toString().also {
@@ -53,8 +66,9 @@ fun main() {
         main.userRepository.seedAdminUser(main.passwordEncoder.encode(adminPassword))
     }
 
-    val outboxScheduler =
-        Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "outbox-processor").also { it.isDaemon = true } }
+    val outboxScheduler = Executors.newSingleThreadScheduledExecutor { r ->
+        Thread(r, "outbox-processor").also { it.isDaemon = true }
+    }
     outboxScheduler.scheduleWithFixedDelay(
         {
             main.outboxProcessor.processPending()

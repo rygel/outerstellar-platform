@@ -14,6 +14,7 @@ import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxEntry
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.persistence.OutboxStatus
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.sync.SyncConflict
 import io.github.rygel.outerstellar.platform.sync.SyncMessage
@@ -38,6 +39,8 @@ class MessageService(
 
     companion object {
         private const val MAX_PAGE_LIMIT = 1000
+        const val MAX_AUTHOR_LENGTH = 100
+        const val MAX_CONTENT_LENGTH = 500
     }
 
     fun listMessages(
@@ -91,6 +94,8 @@ class MessageService(
         val errors = mutableListOf<String>()
         if (author.isBlank()) errors += "Author is required."
         if (content.isBlank()) errors += "Content is required."
+        if (author.length > MAX_AUTHOR_LENGTH) errors += "Author cannot exceed $MAX_AUTHOR_LENGTH characters."
+        if (content.length > MAX_CONTENT_LENGTH) errors += "Content cannot exceed $MAX_CONTENT_LENGTH characters."
         if (errors.isNotEmpty()) throw ValidationException(errors)
 
         val tm = transactionManager
@@ -105,7 +110,7 @@ class MessageService(
                             id = UUID.randomUUID(),
                             payloadType = "MESSAGE_CREATED",
                             payload = msg.syncId,
-                            status = "PENDING",
+                            status = OutboxStatus.PENDING,
                         )
                     )
                     msg
@@ -131,9 +136,13 @@ class MessageService(
     }
 
     fun createLocalMessage(author: String, content: String): StoredMessage {
+        val errors = mutableListOf<String>()
         if (author.isBlank() || content.isBlank()) {
-            throw ValidationException(listOf("Fields cannot be empty."))
+            errors += "Fields cannot be empty."
         }
+        if (author.length > MAX_AUTHOR_LENGTH) errors += "Author cannot exceed $MAX_AUTHOR_LENGTH characters."
+        if (content.length > MAX_CONTENT_LENGTH) errors += "Content cannot exceed $MAX_CONTENT_LENGTH characters."
+        if (errors.isNotEmpty()) throw ValidationException(errors)
 
         val message = repository.createLocalMessage(author, content)
         auditRepository?.log(
@@ -216,7 +225,7 @@ class MessageService(
                         id = UUID.randomUUID(),
                         payloadType = "MESSAGE_DELETED",
                         payload = syncId,
-                        status = "PENDING",
+                        status = OutboxStatus.PENDING,
                     )
                 )
             }
@@ -251,7 +260,7 @@ class MessageService(
                             id = UUID.randomUUID(),
                             payloadType = "MESSAGE_UPDATED",
                             payload = up.syncId,
-                            status = "PENDING",
+                            status = OutboxStatus.PENDING,
                         )
                     )
                     up

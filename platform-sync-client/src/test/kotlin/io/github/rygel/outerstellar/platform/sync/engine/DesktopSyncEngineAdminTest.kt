@@ -3,6 +3,7 @@
 package io.github.rygel.outerstellar.platform.sync.engine
 
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.mockk.every
 import io.mockk.verify
@@ -15,7 +16,7 @@ internal class DesktopSyncEngineAdminTest : DesktopSyncEngineTestBase() {
 
     @Test
     fun `loadUsers success updates state`() {
-        val users = listOf(UserSummary("1", "alice", "a@b.c", "USER", true))
+        val users = listOf(UserSummary("1", "alice", "a@b.c", UserRole.USER, true))
         every { syncService.listUsers() } returns users
 
         engine.loadUsers()

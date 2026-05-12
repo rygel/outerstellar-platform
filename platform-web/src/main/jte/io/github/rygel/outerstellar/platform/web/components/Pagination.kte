@@ -33,16 +33,16 @@
                         hx-get="${previousUrl}"
                         hx-target="${hxTarget}"
                         hx-push-url="true">
-                    <i class="ri-arrow-left-s-line"></i>
+                    <i aria-hidden="true" class="ri-arrow-left-s-line"></i>
                 </button>
             @else
                 <a href="${previousUrl}" class="join-item btn btn-sm" title="${previousLabel}">
-                    <i class="ri-arrow-left-s-line"></i>
+                    <i aria-hidden="true" class="ri-arrow-left-s-line"></i>
                 </a>
             @endif
         @else
             <button class="join-item btn btn-sm" disabled style="opacity: 0.3; cursor: not-allowed;">
-                <i class="ri-arrow-left-s-line"></i>
+                <i aria-hidden="true" class="ri-arrow-left-s-line"></i>
             </button>
         @endif
         @for(page in pages)
@@ -65,16 +65,16 @@
                         hx-get="${nextUrl}"
                         hx-target="${hxTarget}"
                         hx-push-url="true">
-                    <i class="ri-arrow-right-s-line"></i>
+                    <i aria-hidden="true" class="ri-arrow-right-s-line"></i>
                 </button>
             @else
                 <a href="${nextUrl}" class="join-item btn btn-sm" title="${nextLabel}">
-                    <i class="ri-arrow-right-s-line"></i>
+                    <i aria-hidden="true" class="ri-arrow-right-s-line"></i>
                 </a>
             @endif
         @else
             <button class="join-item btn btn-sm" disabled style="opacity: 0.3; cursor: not-allowed;">
-                <i class="ri-arrow-right-s-line"></i>
+                <i aria-hidden="true" class="ri-arrow-right-s-line"></i>
             </button>
         @endif
     </div>

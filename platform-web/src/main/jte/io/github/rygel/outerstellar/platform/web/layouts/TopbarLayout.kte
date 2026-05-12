@@ -8,23 +8,25 @@
 @template.io.github.rygel.outerstellar.platform.web.layouts.LayoutHead(shell = shell)
 <body hx-ext="ws" ws-connect="/ws/sync"
       data-toast-error="${shell.toastErrorLabel}" data-toast-success="${shell.toastSuccessLabel}">
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:bg-primary focus:text-primary-content focus:px-4 focus:py-2 focus:rounded">Skip to content</a>
 <div id="toast-container" class="fixed top-6 right-6 z-[9999] pointer-events-none w-80"></div>
 <div class="flex flex-col min-h-screen">
     <nav class="navbar bg-base-200 border-b border-base-300 px-6 h-14 shrink-0">
         <div class="flex-none lg:hidden">
             <label for="topbar-mobile-menu" class="btn btn-ghost btn-square" aria-label="${shell.toggleMenuLabel}">
-                <i class="ri-menu-line"></i>
+                <i aria-hidden="true" class="ri-menu-line"></i>
             </label>
         </div>
         <a href="/" class="flex items-center gap-2 font-bold text-lg text-accent mr-8 whitespace-nowrap">
-            <i class="ri-planet-fill"></i>
+            <i aria-hidden="true" class="ri-planet-fill"></i>
             ${shell.appTitle}
         </a>
         <input id="topbar-mobile-menu" type="checkbox" class="hidden lg:hidden peer">
         <div class="hidden lg:flex items-stretch gap-0 flex-1 peer-checked:flex peer-checked:flex-col peer-checked:absolute peer-checked:top-14 peer-checked:left-0 peer-checked:right-0 peer-checked:bg-base-200 peer-checked:border-b peer-checked:border-base-300 peer-checked:z-50">
             @for(link in shell.navLinks)
-                <a class="flex items-center gap-2 px-4 h-14 text-sm whitespace-nowrap border-b-2 border-transparent transition-colors@if(link.active) !text-accent !border-accent@endif text-base-content/60 hover:text-base-content"
-                   href="${link.url}">
+                <a class="flex items-center gap-2 px-4 h-14 text-sm whitespace-nowrap border-b-2 border-transparent transition-colors nav-link@if(link.active) !text-accent !border-accent@endif text-base-content/60 hover:text-base-content"
+                   href="${link.url}"
+                   onclick="document.getElementById('topbar-mobile-menu').checked = false">
                     <i class="${link.icon}"></i>
                     ${link.label}
                 </a>
@@ -42,10 +44,10 @@
                 <div class="flex items-center gap-2 text-sm">
                     <span class="opacity-70">${shell.username}</span>
                     @if(shell.profileUrl != null)
-                        <a href="${shell.profileUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i class="ri-user-settings-line"></i></a>
+                        <a href="${shell.profileUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i aria-hidden="true" class="ri-user-settings-line"></i></a>
                     @endif
                     @if(shell.changePasswordUrl != null)
-                        <a href="${shell.changePasswordUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i class="ri-lock-password-line"></i></a>
+                        <a href="${shell.changePasswordUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i aria-hidden="true" class="ri-lock-password-line"></i></a>
                     @endif
                     <form method="post" action="${shell.logoutUrl}" class="inline">
                         <input type="hidden" name="_csrf" value="${shell.csrfToken}">
@@ -56,8 +58,8 @@
         </div>
     </nav>
     <div class="flex-1 flex flex-col overflow-hidden">
-        <main class="flex-1 p-6 overflow-y-auto">
-            <div id="ws-updates" ws-subscribe></div>
+        <main id="main-content" class="flex-1 p-6 overflow-y-auto">
+            <div id="ws-updates" ws-subscribe aria-live="polite"></div>
             ${content}
         </main>
         <footer class="flex items-center px-6 py-3 text-xs text-base-content/60 border-t border-base-300 bg-base-200">

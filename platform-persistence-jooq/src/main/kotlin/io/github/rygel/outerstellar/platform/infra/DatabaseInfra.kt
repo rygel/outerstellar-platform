@@ -31,6 +31,7 @@ fun migratePlugin(dataSource: DataSource, location: String, historyTable: String
         .locations(location)
         .table(historyTable)
         .baselineOnMigrate(true)
+        .baselineVersion("0")
         .load()
         .migrate()
 }

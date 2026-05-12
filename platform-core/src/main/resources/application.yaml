@@ -4,6 +4,22 @@ jdbcUser: "outerstellar"
 jdbcPassword: "outerstellar"
 devDashboardEnabled: false
 devMode: false
-sessionCookieSecure: false
+sessionCookieSecure: true
 sessionTimeoutMinutes: 30
-corsOrigins: "*"
+corsOrigins: ""
+
+appleOAuth:
+  enabled: false
+  teamId: ""
+  clientId: ""
+  keyId: ""
+  privateKeyPem: ""
+
+pushNotifications:
+  enabled: false
+  provider: "console"
+  fcmServiceAccountJson: ""
+  apnsTeamId: ""
+  apnsKeyId: ""
+  apnsPrivateKeyPem: ""
+  apnsBundleId: ""

@@ -42,6 +42,12 @@ data class ShellView(
     val toggleMenuLabel: String = "Toggle menu",
     val profileLabel: String = "Profile",
     val notificationBellTitle: String = "Notifications",
+    val pageDescription: String = "",
+    val canonicalUrl: String = "",
+    val noIndex: Boolean = false,
+    val supportedLocales: List<String> = listOf("en"),
+    val appBaseUrl: String = "",
+    val ogImage: String = "",
 ) {
     fun text(key: String, vararg args: Any?): String = textResolver?.resolve(key, *args) ?: key
 }
@@ -241,6 +247,9 @@ data class UserAdminRow(
     val toggleEnabledUrl: String,
     val toggleRoleUrl: String,
     val isSelf: Boolean,
+    val isLocked: Boolean = false,
+    val unlockUrl: String = "",
+    val failedLoginAttempts: Int = 0,
 )
 
 data class UserAdminPage(
@@ -262,6 +271,7 @@ data class UserAdminPage(
     val actionDemote: String = "Demote",
     val actionPromote: String = "Promote",
     val selfLabel: String = "you",
+    val actionUnlock: String = "Unlock",
     val previousLabel: String = "Previous",
     val nextLabel: String = "Next",
 ) : ViewModel {

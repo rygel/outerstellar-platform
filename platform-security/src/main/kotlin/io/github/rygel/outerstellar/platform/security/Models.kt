@@ -1,13 +1,9 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.model.UserRole
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
-
-enum class UserRole {
-    USER,
-    ADMIN,
-}
 
 data class User(
     val id: UUID,
@@ -16,6 +12,8 @@ data class User(
     val passwordHash: String,
     val role: UserRole,
     val enabled: Boolean = true,
+    val failedLoginAttempts: Int = 0,
+    val lockedUntil: Instant? = null,
     val lastActivityAt: Instant? = null,
     val avatarUrl: String? = null,
     val emailNotificationsEnabled: Boolean = true,
@@ -25,7 +23,15 @@ data class User(
     val layout: String? = null,
 )
 
-interface UserRepository {
+interface LockoutRepository {
+    fun incrementFailedLoginAttempts(userId: UUID): Int
+
+    fun resetFailedLoginAttempts(userId: UUID)
+
+    fun updateLockedUntil(userId: UUID, lockedUntil: Instant?)
+}
+
+interface UserRepository : LockoutRepository {
     fun findById(id: UUID): User?
 
     fun findByUsername(username: String): User?
@@ -72,6 +78,13 @@ interface PasswordResetRepository {
 }
 
 data class DeviceToken(val id: Long, val userId: UUID, val platform: String, val token: String, val appBundle: String?)
+
+data class SecurityConfig(
+    val appBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
+    val sessionTimeoutSeconds: Long = 1800L,
+    val maxFailedLoginAttempts: Int = 10,
+    val lockoutDurationSeconds: Long = 900,
+)
 
 interface DeviceTokenRepository {
     /** Register or update a device token. Upserts by token value. */

@@ -6,14 +6,14 @@
     <div class="max-w-3xl mx-auto">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h2 class="mt-0">${model.data.title}</h2>
+                <h1 class="mt-0">${model.data.title}</h1>
                 <p class="opacity-60 text-sm mt-1">${model.data.description}</p>
             </div>
             @if(model.data.unreadCount > 0)
                 <form method="post" action="${model.data.markAllReadUrl}">
                     <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
                     <button type="submit" class="btn btn-ghost btn-sm">
-                        <i class="ri-check-double-line"></i> ${model.data.markAllReadLabel}
+                        <i aria-hidden="true" class="ri-check-double-line"></i> ${model.data.markAllReadLabel}
                     </button>
                 </form>
             @endif
@@ -21,7 +21,7 @@
 
         @if(model.data.notifications.isEmpty())
             <div class="card bg-base-100 text-center py-12">
-                <i class="ri-notification-off-line text-4xl opacity-30"></i>
+                <i aria-hidden="true" class="ri-notification-off-line text-4xl opacity-30"></i>
                 <p class="opacity-50 mt-3">${model.data.emptyLabel}</p>
             </div>
         @else
@@ -30,13 +30,13 @@
                     <div class="card@if(!n.read) bg-accent/10 border border-accent/30@else bg-base-200 border border-base-300@endif flex items-start gap-3 p-4">
                         <div class="pt-0.5 shrink-0">
                             @if(n.type == "success")
-                                <i class="ri-checkbox-circle-line text-success text-xl"></i>
+                                <i aria-hidden="true" class="ri-checkbox-circle-line text-success text-xl"></i>
                             @elseif(n.type == "warning")
-                                <i class="ri-alert-line text-warning text-xl"></i>
+                                <i aria-hidden="true" class="ri-alert-line text-warning text-xl"></i>
                             @elseif(n.type == "danger")
-                                <i class="ri-error-warning-line text-error text-xl"></i>
+                                <i aria-hidden="true" class="ri-error-warning-line text-error text-xl"></i>
                             @else
-                                <i class="ri-information-line text-accent text-xl"></i>
+                                <i aria-hidden="true" class="ri-information-line text-accent text-xl"></i>
                             @endif
                         </div>
                         <div class="flex-1 min-w-0">
@@ -53,7 +53,7 @@
                             <form method="post" action="${n.markReadUrl}" class="shrink-0">
                                 <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
                                 <button type="submit" class="btn btn-ghost btn-xs" title="${model.data.markReadLabel}">
-                                    <i class="ri-check-line"></i>
+                                    <i aria-hidden="true" class="ri-check-line"></i>
                                 </button>
                             </form>
                         @else
