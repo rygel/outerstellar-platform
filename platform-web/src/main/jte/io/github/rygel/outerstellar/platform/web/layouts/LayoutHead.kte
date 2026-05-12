@@ -1,5 +1,5 @@
 @import io.github.rygel.outerstellar.platform.web.ShellView
-@import io.github.rygel.outerstellar.platform.service.SeoMetadata
+@import io.github.rygel.fragments.SeoMetadata
 @param shell: ShellView
 
 <head>
