@@ -295,7 +295,7 @@ object Filters {
 
             val langCookie =
                 preferenceCookie(request.query("lang"), WebContext.LANG_COOKIE, cookieMaxAge, cookieSecure) {
-                    it in setOf("en", "fr")
+                    it in WebContext.SUPPORTED_LANGUAGES
                 }
             val themeCookie =
                 preferenceCookie(request.query("theme"), WebContext.THEME_COOKIE, cookieMaxAge, cookieSecure) { v ->
@@ -303,11 +303,11 @@ object Filters {
                 }
             val layoutCookie =
                 preferenceCookie(request.query("layout"), WebContext.LAYOUT_COOKIE, cookieMaxAge, cookieSecure) {
-                    it in setOf("nice", "cozy", "compact")
+                    it in WebContext.SUPPORTED_LAYOUTS
                 }
             val shellCookie =
                 preferenceCookie(request.query("shell"), WebContext.SHELL_COOKIE, cookieMaxAge, cookieSecure) {
-                    it in setOf("sidebar", "topbar")
+                    it in WebContext.SUPPORTED_SHELLS
                 }
 
             persistUserPreferences(contextUser, langCookie, themeCookie, layoutCookie, userRepository)
