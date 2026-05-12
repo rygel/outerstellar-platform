@@ -150,9 +150,9 @@ Architecture, security, and maintainability improvements identified during code 
   `setOf("en", "fr")`, `setOf("nice", "cozy", "compact")`, `setOf("sidebar", "topbar")` in `Filters.kt` should be configurable.
   — `platform-web/.../web/Filters.kt:281-296`
 
-- [ ] **Outbox status strings (`"PENDING"`, `"PROCESSED"`, `"FAILED"`) scattered**
-  Used as raw strings in `JooqOutboxRepository`, `MessageService`, and `DevDashboardRoutes`. Should be an enum or constants.
-  — Multiple files
+- [x] ~~**Outbox status strings (`"PENDING"`, `"PROCESSED"`, `"FAILED"`) scattered**~~
+  Fixed in PR #243 — extracted `OutboxStatus` enum in `OutboxRepository.kt`. All 19 usages across `MessageService`, `JooqOutboxRepository`, `JdbiOutboxRepository`, `DevDashboardRoutes`, and tests updated.
+  — `platform-core/.../persistence/OutboxRepository.kt`
 
 ---
 

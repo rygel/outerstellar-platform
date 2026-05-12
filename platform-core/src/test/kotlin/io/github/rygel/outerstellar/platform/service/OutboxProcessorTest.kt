@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.service
 
 import io.github.rygel.outerstellar.platform.persistence.OutboxEntry
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.persistence.OutboxStatus
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.mockk.every
 import io.mockk.mockk
@@ -15,7 +16,13 @@ class OutboxProcessorTest {
     private val outboxRepository = mockk<OutboxRepository>(relaxed = true)
 
     private fun entry(id: UUID = UUID.randomUUID()) =
-        OutboxEntry(id = id, payloadType = "test.Event", payload = "{}", status = "pending", createdAt = Instant.now())
+        OutboxEntry(
+            id = id,
+            payloadType = "test.Event",
+            payload = "{}",
+            status = OutboxStatus.PENDING,
+            createdAt = Instant.now(),
+        )
 
     @Test
     fun `processPending does nothing when no pending entries`() {
