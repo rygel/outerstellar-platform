@@ -456,9 +456,34 @@ private fun buildBaseApp(
     }
     coreRoutes += "/health" bind GET to { buildHealthResponse(userRepository) }
     coreRoutes += "/metrics" bind GET to metricsHandler
+    coreRoutes += "/robots.txt" bind GET to { buildRobotsTxtResponse() }
 
     return routes(coreRoutes)
 }
+
+private fun buildRobotsTxtResponse(): Response =
+    Response(Status.OK)
+        .header("content-type", "text/plain; charset=utf-8")
+        .body(
+            """
+            User-agent: *
+            Allow: /
+            Allow: /contacts
+            Allow: /search
+            Disallow: /api/
+            Disallow: /admin/
+            Disallow: /ws/
+            Disallow: /auth/
+            Disallow: /errors/
+            Disallow: /components/
+            Disallow: /messages/
+            Disallow: /notifications/
+            Disallow: /settings/
+
+            Sitemap: /sitemap.xml
+            """
+                .trimIndent() + "\n"
+        )
 
 @Suppress("TooGenericExceptionCaught", "SwallowedException")
 private fun buildHealthResponse(userRepository: UserRepository): Response {

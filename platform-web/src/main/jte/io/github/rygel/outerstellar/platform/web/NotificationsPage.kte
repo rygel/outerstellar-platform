@@ -6,7 +6,7 @@
     <div class="max-w-3xl mx-auto">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h2 class="mt-0">${model.data.title}</h2>
+                <h1 class="mt-0">${model.data.title}</h1>
                 <p class="opacity-60 text-sm mt-1">${model.data.description}</p>
             </div>
             @if(model.data.unreadCount > 0)

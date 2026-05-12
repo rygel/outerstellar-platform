@@ -290,6 +290,8 @@ class WebContext(
                     .orEmpty(),
             canonicalUrl = if (appBaseUrl.isNotBlank()) "$appBaseUrl$currentPath" else "",
             noIndex = activeSection in NO_INDEX_SECTIONS,
+            supportedLocales = listOf("en", "fr"),
+            appBaseUrl = appBaseUrl,
         )
     }
 }
