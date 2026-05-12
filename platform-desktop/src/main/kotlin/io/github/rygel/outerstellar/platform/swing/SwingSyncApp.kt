@@ -338,18 +338,20 @@ class SyncWindow(
         SyncWindowMenu(
             viewModel = viewModel,
             i18nService = i18nService,
-            appVersion = appVersion,
             frame = frame,
-            showSettings = { dialogs.showSettingsDialog() },
-            showLogin = { dialogs.showLoginDialog() },
-            showRegister = { dialogs.showRegisterDialog() },
-            showChangePassword = { dialogs.showChangePasswordDialog() },
-            showHelp = { dialogs.showHelpDialog() },
-            showFeedback = { dialogs.showFeedbackDialog() },
-            showUpdateCheck = { dialogs.showUpdateCheckDialog() },
-            showAbout = { dialogs.showAboutDialog() },
-            clearComposer = { dialogs.clearComposer(authorField, contentArea) },
-            showMenuPlaceholder = { dialogs.showMenuPlaceholder(it) },
+            dialogs =
+                MenuDialogActions(
+                    showSettings = { dialogs.showSettingsDialog() },
+                    showLogin = { dialogs.showLoginDialog() },
+                    showRegister = { dialogs.showRegisterDialog() },
+                    showChangePassword = { dialogs.showChangePasswordDialog() },
+                    showHelp = { dialogs.showHelpDialog() },
+                    showFeedback = { dialogs.showFeedbackDialog() },
+                    showUpdateCheck = { dialogs.showUpdateCheckDialog() },
+                    showAbout = { dialogs.showAboutDialog() },
+                    clearComposer = { dialogs.clearComposer(authorField, contentArea) },
+                    showMenuPlaceholder = { dialogs.showMenuPlaceholder(it) },
+                ),
         )
     }
 

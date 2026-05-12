@@ -72,7 +72,5 @@ class SyncWindowNav(private var i18nService: I18nService) {
         navProfileBtn.text = i18nService.translate("swing.profile.nav")
     }
 
-    fun updateI18n(newI18n: I18nService) {
-        // Translation refresh is handled by applyTranslations()
-    }
+    override fun toString(): String = "SyncWindowNav"
 }

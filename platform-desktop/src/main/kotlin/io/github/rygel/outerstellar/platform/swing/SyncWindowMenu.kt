@@ -10,21 +10,24 @@ import javax.swing.JMenuBar
 import javax.swing.JMenuItem
 import javax.swing.KeyStroke
 
-class SyncWindowMenu(
+internal class MenuDialogActions(
+    val showSettings: () -> Unit,
+    val showLogin: () -> Unit,
+    val showRegister: () -> Unit,
+    val showChangePassword: () -> Unit,
+    val showHelp: () -> Unit,
+    val showFeedback: () -> Unit,
+    val showUpdateCheck: () -> Unit,
+    val showAbout: () -> Unit,
+    val clearComposer: () -> Unit,
+    val showMenuPlaceholder: (String) -> Unit,
+)
+
+internal class SyncWindowMenu(
     private val viewModel: SyncViewModel,
     private var i18nService: I18nService,
-    private val appVersion: String,
     private val frame: javax.swing.JFrame,
-    private val showSettings: () -> Unit,
-    private val showLogin: () -> Unit,
-    private val showRegister: () -> Unit,
-    private val showChangePassword: () -> Unit,
-    private val showHelp: () -> Unit,
-    private val showFeedback: () -> Unit,
-    private val showUpdateCheck: () -> Unit,
-    private val showAbout: () -> Unit,
-    private val clearComposer: () -> Unit,
-    private val showMenuPlaceholder: (String) -> Unit,
+    private val dialogs: MenuDialogActions,
 ) {
 
     val appMenu: JMenu = JMenu(i18nService.translate("swing.menu.file")).apply { name = "appMenu" }
@@ -65,20 +68,20 @@ class SyncWindowMenu(
     private fun createMenuBar(): JMenuBar {
         val menuBar = JMenuBar()
 
-        settingsItem.addActionListener { showSettings() }
-        loginItem.addActionListener { showLogin() }
+        settingsItem.addActionListener { dialogs.showSettings() }
+        loginItem.addActionListener { dialogs.showLogin() }
         logoutItem.addActionListener { viewModel.logout() }
-        registerItem.addActionListener { showRegister() }
-        changePasswordItem.addActionListener { showChangePassword() }
-        newItem.addActionListener { clearComposer() }
-        openItem.addActionListener { showMenuPlaceholder("swing.menu.file.open") }
-        saveItem.addActionListener { showMenuPlaceholder("swing.menu.file.save") }
-        saveAsItem.addActionListener { showMenuPlaceholder("swing.menu.file.saveAs") }
+        registerItem.addActionListener { dialogs.showRegister() }
+        changePasswordItem.addActionListener { dialogs.showChangePassword() }
+        newItem.addActionListener { dialogs.clearComposer() }
+        openItem.addActionListener { dialogs.showMenuPlaceholder("swing.menu.file.open") }
+        saveItem.addActionListener { dialogs.showMenuPlaceholder("swing.menu.file.save") }
+        saveAsItem.addActionListener { dialogs.showMenuPlaceholder("swing.menu.file.saveAs") }
         exitItem.addActionListener { frame.dispatchEvent(WindowEvent(frame, WindowEvent.WINDOW_CLOSING)) }
-        viewHelpItem.addActionListener { showHelp() }
-        sendFeedbackItem.addActionListener { showFeedback() }
-        checkUpdatesItem.addActionListener { showUpdateCheck() }
-        aboutItem.addActionListener { showAbout() }
+        viewHelpItem.addActionListener { dialogs.showHelp() }
+        sendFeedbackItem.addActionListener { dialogs.showFeedback() }
+        checkUpdatesItem.addActionListener { dialogs.showUpdateCheck() }
+        aboutItem.addActionListener { dialogs.showAbout() }
 
         val menuMask = InputEvent.CTRL_DOWN_MASK
         newItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_N, menuMask)
