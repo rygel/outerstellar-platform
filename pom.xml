@@ -63,7 +63,6 @@
         <testcontainers.version>2.0.5</testcontainers.version>
         <jte.version>3.2.4</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
-        <fragments4k.version>0.6.5-SNAPSHOT</fragments4k.version>
         <junit.version>6.0.3</junit.version>
         <enforcer.version>3.6.2</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>

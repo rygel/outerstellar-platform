@@ -75,11 +75,6 @@
             <artifactId>outerstellar-i18n</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.rygel</groupId>
-            <artifactId>fragments-seo-core</artifactId>
-            <version>${fragments4k.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
