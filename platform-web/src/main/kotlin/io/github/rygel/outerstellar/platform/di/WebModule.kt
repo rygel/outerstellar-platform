@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.AppConfig
+import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.SegmentAnalyticsService
@@ -30,6 +31,9 @@ import org.http4k.template.TemplateRenderer
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
+/** Null-object for apps without a plugin — migrationLocation returns null so no plugin migrations run. */
+private object NoPluginMigrationSource : PluginMigrationSource
+
 val webModule
     get() = module {
         includes(adminWebModule)
@@ -46,6 +50,10 @@ val webModule
                 baseRenderer
             }
         }
+        // Bridge: PlatformPlugin extends PluginMigrationSource but Koin doesn't resolve parent types.
+        // Register explicitly so persistenceModule.getOrNull<PluginMigrationSource>() finds the plugin.
+        // Use a null-object (NoPluginMigrationSource) for apps without plugins.
+        single<PluginMigrationSource> { getOrNull<PlatformPlugin>() ?: NoPluginMigrationSource }
         single {
             WebPageFactory(
                 getOrNull(),
