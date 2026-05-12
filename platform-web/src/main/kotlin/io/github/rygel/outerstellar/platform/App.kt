@@ -402,41 +402,28 @@ private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHan
 
 private val localhostOnly = Filter { next ->
     { request ->
-        val source = request.source
-        if (source == null) {
+        val source = request.source ?: return@Filter next(request)
+        val host = source.toString().substringBefore(":").substringAfter("/")
+        if (host.isPrivateIp()) {
             next(request)
         } else {
-            val host = source.toString().substringBefore(":").substringAfter("/")
-            if (
-                host == "127.0.0.1" ||
-                    host == "::1" ||
-                    host == "localhost" ||
-                    host.startsWith("10.") ||
-                    host.startsWith("172.16.") ||
-                    host.startsWith("172.17.") ||
-                    host.startsWith("172.18.") ||
-                    host.startsWith("172.19.") ||
-                    host.startsWith("172.20.") ||
-                    host.startsWith("172.21.") ||
-                    host.startsWith("172.22.") ||
-                    host.startsWith("172.23.") ||
-                    host.startsWith("172.24.") ||
-                    host.startsWith("172.25.") ||
-                    host.startsWith("172.26.") ||
-                    host.startsWith("172.27.") ||
-                    host.startsWith("172.28.") ||
-                    host.startsWith("172.29.") ||
-                    host.startsWith("172.30.") ||
-                    host.startsWith("172.31.") ||
-                    host.startsWith("192.168.")
-            ) {
-                next(request)
-            } else {
-                Response(Status.FORBIDDEN)
-            }
+            Response(Status.FORBIDDEN)
         }
     }
 }
+
+private fun String.isPrivateIp(): Boolean =
+    this == "127.0.0.1" ||
+        this == "::1" ||
+        this == "localhost" ||
+        startsWith("10.") ||
+        startsWith("192.168.") ||
+        startsWith("169.254.") ||
+        (startsWith("172.") && substringAfter("172.").substringBefore(".").toIntOrNull() in PRIVATE_172_RANGE)
+
+private const val PRIVATE_172_START = 16
+private const val PRIVATE_172_END = 31
+private val PRIVATE_172_RANGE = PRIVATE_172_START..PRIVATE_172_END
 
 private fun buildBaseApp(
     ctx: AppContext,
