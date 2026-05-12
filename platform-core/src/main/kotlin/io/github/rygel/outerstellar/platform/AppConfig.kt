@@ -156,7 +156,7 @@ data class AppConfig(
                         DEFAULT_LOCKOUT_DURATION_SECONDS,
                     ),
                 jwt = buildJwtConfig(yaml["jwt"] as? Map<String, Any>, env),
-                cspPolicy = (yaml["cspPolicy"] as? String) ?: DEFAULT_CSP_POLICY,
+                cspPolicy = yaml.str("cspPolicy", env, "CSP_POLICY", DEFAULT_CSP_POLICY),
                 appleOAuth = buildAppleOAuthConfig(yaml["appleOAuth"] as? Map<String, Any>, env),
                 pushNotifications = buildPushNotificationConfig(yaml["pushNotifications"] as? Map<String, Any>, env),
             )
