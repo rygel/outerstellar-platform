@@ -472,6 +472,7 @@ class SyncWindow(
 
     fun refreshTranslations(newI18n: I18nService) {
         this.i18nService = newI18n
+        menu.value.updateI18n(newI18n)
         dialogs.updateI18n(newI18n)
         profilePanelCreator.updateI18n(newI18n)
         views.updateI18n(newI18n)

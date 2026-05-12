@@ -114,6 +114,10 @@ class SyncWindowMenu(
 
     fun buildMenuBar(): JMenuBar = menuBar
 
+    fun updateI18n(newI18n: I18nService) {
+        i18nService = newI18n
+    }
+
     fun updateAuthState(isLoggedIn: Boolean) {
         loginItem.isEnabled = !isLoggedIn
         logoutItem.isEnabled = isLoggedIn
