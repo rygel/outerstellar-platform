@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.AppConfig
+import io.github.rygel.outerstellar.platform.AppleOAuthConfig
 import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.createRenderer
@@ -60,6 +61,14 @@ abstract class WebTest protected constructor() {
                 devDashboardEnabled = true,
                 csrfEnabled = false,
                 corsOrigins = "*",
+                appleOAuth =
+                    AppleOAuthConfig(
+                        enabled = true,
+                        clientId = "test.client.id",
+                        teamId = "test.team",
+                        keyId = "test.key",
+                        privateKeyPem = "test.pem",
+                    ),
             )
 
         val testDsl: DSLContext by lazy { DSL.using(dataSource, POSTGRES) }

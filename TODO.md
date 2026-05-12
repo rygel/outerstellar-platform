@@ -136,9 +136,9 @@ Architecture, security, and maintainability improvements identified during code 
   Currently a concrete class; `SyncViewModel` and JavaFX controllers depend on it directly.
   — `platform-sync-client/.../engine/DesktopSyncEngine.kt`
 
-- [ ] **Dead scaffolding: `AppleOAuthProvider` and `PushNotificationService`**
-  Both contain TODO placeholders and are non-functional. Either wire to config or remove.
-  — `platform-security/.../security/AppleOAuthProvider.kt`, `platform-core/.../service/PushNotificationService.kt`
+- [x] ~~**Dead scaffolding: `AppleOAuthProvider` and `PushNotificationService`**~~
+  Fixed in PR #244 — wired to config. `AppleOAuthProvider` now reads from `AppConfig.appleOAuth` (teamId, clientId, keyId, privateKeyPem) and is only active when enabled. `PushNotificationService` registered in Koin with config-driven implementation selection (console/fcm/apns). Both are fully configurable via YAML/env vars.
+  — `AppConfig.kt`, `AppleOAuthProvider.kt`, `CoreModule.kt`, `App.kt`
 
 ### Hardcoded Values
 

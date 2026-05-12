@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.di
 
+import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
@@ -17,6 +18,7 @@ class KoinModuleTest : KoinTest {
         coreModule.verify(
             extraTypes =
                 listOf(
+                    AppConfig::class,
                     MessageRepository::class,
                     io.github.rygel.outerstellar.platform.persistence.ContactRepository::class,
                     OutboxRepository::class,
