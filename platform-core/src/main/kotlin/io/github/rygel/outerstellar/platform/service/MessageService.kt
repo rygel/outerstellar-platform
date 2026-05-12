@@ -38,6 +38,8 @@ class MessageService(
 
     companion object {
         private const val MAX_PAGE_LIMIT = 1000
+        const val MAX_AUTHOR_LENGTH = 100
+        const val MAX_CONTENT_LENGTH = 500
     }
 
     fun listMessages(
@@ -91,6 +93,8 @@ class MessageService(
         val errors = mutableListOf<String>()
         if (author.isBlank()) errors += "Author is required."
         if (content.isBlank()) errors += "Content is required."
+        if (author.length > MAX_AUTHOR_LENGTH) errors += "Author cannot exceed $MAX_AUTHOR_LENGTH characters."
+        if (content.length > MAX_CONTENT_LENGTH) errors += "Content cannot exceed $MAX_CONTENT_LENGTH characters."
         if (errors.isNotEmpty()) throw ValidationException(errors)
 
         val tm = transactionManager
@@ -131,9 +135,13 @@ class MessageService(
     }
 
     fun createLocalMessage(author: String, content: String): StoredMessage {
+        val errors = mutableListOf<String>()
         if (author.isBlank() || content.isBlank()) {
-            throw ValidationException(listOf("Fields cannot be empty."))
+            errors += "Fields cannot be empty."
         }
+        if (author.length > MAX_AUTHOR_LENGTH) errors += "Author cannot exceed $MAX_AUTHOR_LENGTH characters."
+        if (content.length > MAX_CONTENT_LENGTH) errors += "Content cannot exceed $MAX_CONTENT_LENGTH characters."
+        if (errors.isNotEmpty()) throw ValidationException(errors)
 
         val message = repository.createLocalMessage(author, content)
         auditRepository?.log(

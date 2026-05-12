@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.service
 
 import io.github.rygel.outerstellar.platform.model.ContactSummary
 import io.github.rygel.outerstellar.platform.model.StoredContact
+import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
 import io.github.rygel.outerstellar.platform.sync.SyncContact
 import io.github.rygel.outerstellar.platform.sync.SyncPushContactRequest
@@ -10,6 +11,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -253,5 +255,80 @@ class ContactServiceTest {
         assertEquals(0, response.appliedCount)
         assertTrue(response.conflicts.isEmpty())
         verify(exactly = 0) { eventPublisher.publishRefresh(any()) }
+    }
+
+    @Test
+    fun `createContact rejects name exceeding max length`() {
+        val longName = "n".repeat(ContactService.MAX_NAME_LENGTH + 1)
+        val ex =
+            assertFailsWith<ValidationException> {
+                service.createContact(longName, emptyList(), emptyList(), emptyList(), "", "", "")
+            }
+        assertTrue(ex.errors.any { it.contains("Name") && it.contains("${ContactService.MAX_NAME_LENGTH}") })
+    }
+
+    @Test
+    fun `createContact rejects company exceeding max length`() {
+        val longCompany = "c".repeat(ContactService.MAX_COMPANY_LENGTH + 1)
+        val ex =
+            assertFailsWith<ValidationException> {
+                service.createContact("Alice", emptyList(), emptyList(), emptyList(), longCompany, "", "")
+            }
+        assertTrue(ex.errors.any { it.contains("Company") && it.contains("${ContactService.MAX_COMPANY_LENGTH}") })
+    }
+
+    @Test
+    fun `createContact rejects department exceeding max length`() {
+        val longDept = "d".repeat(ContactService.MAX_COMPANY_LENGTH + 1)
+        val ex =
+            assertFailsWith<ValidationException> {
+                service.createContact("Alice", emptyList(), emptyList(), emptyList(), "", "", longDept)
+            }
+        assertTrue(ex.errors.any { it.contains("Department") && it.contains("${ContactService.MAX_COMPANY_LENGTH}") })
+    }
+
+    @Test
+    fun `createContact rejects companyAddress exceeding max length`() {
+        val longAddr = "a".repeat(ContactService.MAX_ADDRESS_LENGTH + 1)
+        val ex =
+            assertFailsWith<ValidationException> {
+                service.createContact("Alice", emptyList(), emptyList(), emptyList(), "", longAddr, "")
+            }
+        assertTrue(ex.errors.any { it.contains("Address") && it.contains("${ContactService.MAX_ADDRESS_LENGTH}") })
+    }
+
+    @Test
+    fun `createContact rejects email exceeding max length`() {
+        val longEmail = "e".repeat(ContactService.MAX_EMAIL_LENGTH + 1) + "@x.com"
+        val ex =
+            assertFailsWith<ValidationException> {
+                service.createContact("Alice", listOf(longEmail), emptyList(), emptyList(), "", "", "")
+            }
+        assertTrue(ex.errors.any { it.contains("Email") && it.contains("${ContactService.MAX_EMAIL_LENGTH}") })
+    }
+
+    @Test
+    fun `createContact rejects phone exceeding max length`() {
+        val longPhone = "1".repeat(ContactService.MAX_PHONE_LENGTH + 1)
+        val ex =
+            assertFailsWith<ValidationException> {
+                service.createContact("Alice", emptyList(), listOf(longPhone), emptyList(), "", "", "")
+            }
+        assertTrue(ex.errors.any { it.contains("Phone") && it.contains("${ContactService.MAX_PHONE_LENGTH}") })
+    }
+
+    @Test
+    fun `createContact accepts all fields at max length`() {
+        val contact = storedContact(name = "n".repeat(ContactService.MAX_NAME_LENGTH))
+        every { repository.createLocalContact(any(), any(), any(), any(), any(), any(), any()) } returns contact
+        service.createContact(
+            "n".repeat(ContactService.MAX_NAME_LENGTH),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            "",
+            "",
+            "",
+        )
     }
 }

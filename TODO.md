@@ -88,9 +88,9 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Architecture
 
-- [ ] **Refactor `App.kt` (534 lines, 15-parameter function)**
-  The `app()` function assembles the entire HTTP handler chain directly. `PluginContext` is constructed 4 times redundantly. Extract into smaller assembly functions.
-  — `platform-web/.../App.kt`
+- [x] ~~**Refactor `App.kt` (534 lines, 15-parameter function)**~~
+  Fixed in PR #239 — extracted `AppContext` (7 core params) + `OptionalServices` (9 nullable service deps) private classes; `PluginContext` duplication eliminated; `app()` public signature unchanged. SpotBugs `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` excluded for `AppKt` (Kotlin/http4c DSL false positive).
+  — `platform-web/.../App.kt`, `config/spotbugs-exclude.xml`
 
 - [x] ~~**Declare `platform-core` as explicit dependency in desktop modules**~~
   Fixed in PR #230 — both `platform-desktop` and `platform-desktop-javafx` pom.xml now declare it explicitly.
@@ -118,9 +118,9 @@ Architecture, security, and maintainability improvements identified during code 
   `/health` returns whether the database is UP or DOWN with no authentication.
   — `platform-web/.../App.kt:464-478`
 
-- [ ] **No input size validation on contact/message content fields**
-  Message content, author, and contact fields have no server-side maximum length limits.
-  — `platform-web/.../web/HomeRoutes.kt:66-67`, `ContactsRoutes.kt:60-67`
+- [x] ~~**No input size validation on contact/message content fields**~~
+  Fixed in PR #240 — max length constants matching DB column sizes added to `MessageService`, `ContactService`, `SyncMessage`, `SyncContact`. Validation applied in all create/update paths with user-friendly error messages.
+  — `platform-core/.../service/MessageService.kt`, `platform-core/.../service/ContactService.kt`, `platform-core/.../sync/SyncModels.kt`
 
 ### Architecture
 
@@ -206,16 +206,16 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 ### Low Priority
 
-- [ ] **Add `aria-hidden="true"` to decorative Remixicon `<i>` elements**
-  Screen readers may announce empty content for decorative icons across all templates.
+- [x] ~~**Add `aria-hidden="true"` to decorative Remixicon `<i>` elements**~~
+  Fixed in PR #238 — `aria-hidden="true"` added to all decorative icon elements across templates.
   — All `.kte` templates using `<i class="ri-...">`
 
-- [ ] **Add `aria-live="polite"` to HTMX dynamic regions**
-  `#auth-form-slot`, `#error-help-slot`, `#ws-updates` lack live region attributes for screen reader announcements.
+- [x] ~~**Add `aria-live="polite"` to HTMX dynamic regions**~~
+  Fixed in PR #238 — `aria-live="polite"` added to `#auth-form-slot`, `#error-help-slot`, `#ws-updates`.
   — `AuthPage.kte`, `ErrorPage.kte`, layout templates
 
-- [ ] **Add skip-to-content link for keyboard navigation**
-  No skip navigation link exists. Add hidden link at top of layout templates.
+- [x] ~~**Add skip-to-content link for keyboard navigation**~~
+  Fixed in PR #238 — hidden skip link added at top of `TopbarLayout.kte` and `SidebarLayout.kte`, targeting `#main-content`.
   — `TopbarLayout.kte`, `SidebarLayout.kte`
 
 - [x] ~~**Add `<meta name="theme-color">` for mobile browsers**~~
@@ -289,3 +289,6 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [x] **Per-account rate limiting for brute-force protection** (PR #234)
 - [x] **Dependency vulnerability scanning (Dependabot + security scanning suite)**
 - [x] **SEO: hreflang, preload, robots.txt, heading hierarchy, theme-color, lazy avatar** (PR #236)
+- [x] **Accessibility: aria-hidden, aria-live, skip-to-content** (PR #238)
+- [x] **App.kt refactor: AppContext + OptionalServices extraction** (PR #239)
+- [x] **Input size validation for message and contact fields** (PR #240)
