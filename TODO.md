@@ -54,9 +54,9 @@ Architecture, security, and maintainability improvements identified during code 
 - [x] ~~**Invalidate all user sessions on password change**~~
   Fixed in PR #229 — `sessionRepository?.deleteByUserId()` called in `changePassword()`.
 
-- [ ] **Add dependency vulnerability scanning to CI**
-  No OWASP Dependency-Check, Snyk, or Dependabot is configured. Dependency vulnerabilities go undetected.
-  — CI pipeline, `.github/dependabot.yml` (missing)
+- [x] ~~**Add dependency vulnerability scanning to CI**~~
+  Dependabot already configured with Maven, GitHub Actions, and npm ecosystems — grouped by domain (http4k, opentelemetry, persistence, test, build plugins, etc.).
+  — `.github/dependabot.yml`
 
 - [x] ~~**Persist authentication failures to audit table**~~
   Fixed in PR #229 — `AUTHENTICATION_FAILED` entries for all failure paths.
@@ -73,9 +73,9 @@ Architecture, security, and maintainability improvements identified during code 
 - [x] ~~**CSP missing `base-uri` and `form-action` directives**~~
   Fixed in PR #229 — added `base-uri 'self'; form-action 'self'`.
 
-- [ ] **Login rate limiting is per-IP, not per-account**
-  Attacker can brute-force a single account through IP rotation.
-  — `platform-web/.../web/RateLimiter.kt:79`
+- [x] ~~**Login rate limiting is per-IP, not per-account**~~
+  Fixed in PR #234 — added per-account token bucket (20 req / 15 min) alongside per-IP bucket. Extracts account identifier from JSON body (`username`/`email`) or form-encoded body.
+  — `platform-web/.../web/RateLimiter.kt`
 
 - [x] ~~**No account lockout after failed logins**~~
   Fixed in PR #227 — configurable failed attempts (default 10) with auto-unlock.

@@ -45,6 +45,8 @@ data class ShellView(
     val pageDescription: String = "",
     val canonicalUrl: String = "",
     val noIndex: Boolean = false,
+    val supportedLocales: List<String> = listOf("en"),
+    val appBaseUrl: String = "",
 ) {
     fun text(key: String, vararg args: Any?): String = textResolver?.resolve(key, *args) ?: key
 }
