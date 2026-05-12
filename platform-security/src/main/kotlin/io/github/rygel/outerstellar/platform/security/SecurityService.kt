@@ -10,6 +10,7 @@ import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
+import io.github.rygel.outerstellar.platform.service.UrlValidator
 import java.time.Instant
 import java.util.UUID
 import org.slf4j.LoggerFactory
@@ -235,22 +236,7 @@ class SecurityService(
         if (newAvatarUrl != user.avatarUrl) {
             val sanitizedUrl = newAvatarUrl?.takeIf { it.isNotBlank() }
             if (sanitizedUrl != null) {
-                if (!sanitizedUrl.startsWith("https://") && !sanitizedUrl.startsWith("http://")) {
-                    throw IllegalArgumentException("Avatar URL must use http or https scheme")
-                }
-                if (sanitizedUrl.length > MAX_URL_LENGTH) {
-                    throw IllegalArgumentException("Avatar URL exceeds maximum length of $MAX_URL_LENGTH characters")
-                }
-                val host =
-                    try {
-                        java.net.URI(sanitizedUrl).host?.lowercase()
-                    } catch (e: Exception) {
-                        logger.warn("Failed to parse avatar URL for SSRF check: {}", e.message)
-                        null
-                    }
-                if (host != null && PRIVATE_HOST_PATTERNS.any { it.matches(host) }) {
-                    throw IllegalArgumentException("Avatar URL must not point to private or internal addresses")
-                }
+                UrlValidator.validate(sanitizedUrl)
             }
             userRepository.updateAvatarUrl(userId, sanitizedUrl)
         }
@@ -363,25 +349,7 @@ class SecurityService(
         private const val MAX_USERNAME_LENGTH = 50
         private const val SESSION_TOKEN_HEX_LENGTH = 48
         private const val MAX_PAGE_LIMIT = 1000
-        private const val MAX_URL_LENGTH = 2048
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
-        private val PRIVATE_HOST_PATTERNS =
-            listOf(
-                Regex("^localhost$"),
-                Regex("^127\\..*"),
-                Regex("^10\\..*"),
-                Regex("^172\\.(1[6-9]|2\\d|3[01])\\..*"),
-                Regex("^192\\.168\\..*"),
-                Regex("^0\\..*"),
-                Regex("^0\\.0\\.0\\.0$"),
-                Regex("^\\[::1]$"),
-                Regex("^\\[::]$"),
-                Regex("^\\[fe80:.*]$"),
-                Regex("^\\[fd00:.*]$"),
-                Regex("^\\[fc00:.*]$"),
-                Regex(".*\\.local$"),
-                Regex(".*\\.internal$"),
-            )
     }
 }
 
