@@ -79,15 +79,19 @@ fun main() {
     val outboxScheduler = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "outbox-processor").also { it.isDaemon = true }
     }
-    outboxScheduler.scheduleWithFixedDelay(
-        {
-            main.outboxProcessor.processPending()
-            main.activityUpdater.flush()
-        },
-        OUTBOX_INTERVAL_SECONDS,
-        OUTBOX_INTERVAL_SECONDS,
-        TimeUnit.SECONDS,
-    )
+    val outboxTask =
+        object : Runnable {
+            override fun run() {
+                try {
+                    main.outboxProcessor.processPending()
+                    main.activityUpdater.flush()
+                } finally {
+                    val delay = maxOf(main.outboxProcessor.backoffMs, OUTBOX_INTERVAL_SECONDS * 1000L)
+                    outboxScheduler.schedule(this, delay, TimeUnit.MILLISECONDS)
+                }
+            }
+        }
+    outboxScheduler.schedule(outboxTask, 0, TimeUnit.MILLISECONDS)
     logger.info(elapsed(t0, "Background jobs started"))
 
     registerShutdownHook(main.outboxProcessor, main.activityUpdater, outboxScheduler, server)
