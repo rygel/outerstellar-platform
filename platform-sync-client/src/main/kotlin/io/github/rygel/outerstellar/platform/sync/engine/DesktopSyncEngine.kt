@@ -249,6 +249,7 @@ class DesktopSyncEngine(
         ) {
             syncService.updateProfile(email, username, avatarUrl)
             loadData()
+            loadProfile()
             analytics.track(state.userName, "profile_updated")
             notifier?.notifySuccess("Profile updated")
             Result.success(Unit)
