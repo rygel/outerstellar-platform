@@ -113,22 +113,22 @@ fun rateLimitFilter(
     }
 }
 
-private fun extractAccountIdentifier(request: org.http4k.core.Request): String? {
+internal fun extractAccountIdentifier(request: org.http4k.core.Request): String? {
     val contentType = request.header("content-type").orEmpty()
+    if (!contentType.contains("json") && !contentType.contains("form")) return null
+
     val body = request.bodyString()
     if (body.isBlank()) return null
 
     return if (contentType.contains("json")) {
         extractJsonValue(body, "username") ?: extractJsonValue(body, "email")
-    } else if (contentType.contains("form")) {
+    } else {
         val params =
             body.split("&").associate {
                 val parts = it.split("=", limit = 2)
                 if (parts.size == 2) parts[0] to java.net.URLDecoder.decode(parts[1], "UTF-8") else null to null
             }
         params["email"]?.trim()?.lowercase() ?: params["username"]?.trim()?.lowercase()
-    } else {
-        null
     }
 }
 
