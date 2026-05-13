@@ -459,3 +459,31 @@ runtime:
 | `lockoutDurationSeconds` | `LOCKOUT_DURATION_SECONDS` | 900 | Account lockout duration |
 | `cspPolicy` | `CSP_POLICY` | (default CSP string) | Content-Security-Policy header |
 | `version` | `VERSION` | `dev` | Application version label |
+
+---
+
+### JVM Tuning (items #17–18)
+
+For small deployments (<256 MB heap), use these JVM flags:
+
+```bash
+java -Xms64m -Xmx256m -XX:+UseContainerSupport -XX:+UseSerialGC -jar platform-web/target/platform-web-*.jar
+```
+
+- `-Xms64m` / `-Xmx256m` — small heap, no over-allocation
+- `-XX:+UseContainerSupport` — respect container memory limits (default in JDK 10+)
+- `-XX:+UseSerialGC` — single-threaded GC, best for heaps < 512 MB
+
+For standard deployments (256 MB–2 GB heap), the default G1GC is appropriate:
+
+```bash
+java -Xms256m -Xmx1g -jar platform-web/target/platform-web-*.jar
+```
+
+For large deployments (2 GB+ heap), enable parallel GC and preload:
+
+```bash
+java -Xms2g -Xmx4g -XX:+UseParallelGC -Djte.production=true -DJTE_PRELOAD_ENABLED=true -jar platform-web/target/platform-web-*.jar
+```
+
+> **JVM vs Native Image (item #17):** Native image (GraalVM) can reduce cold start time from ~3-5s to <1s and idle RSS from ~150 MB to ~50 MB. However, peak throughput is typically comparable or slightly lower than JVM due to the absence of JIT optimizations. The best deployment strategy is: use JVM for steady-state workloads (servers), use native-image for short-lived or auto-scaling workloads (serverless, batch jobs). Run your own benchmark with `APP_PROFILE=small` on both runtimes before choosing.
