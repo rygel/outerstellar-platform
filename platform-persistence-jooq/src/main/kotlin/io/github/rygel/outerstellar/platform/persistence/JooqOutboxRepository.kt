@@ -16,17 +16,24 @@ class JooqOutboxRepository(private val dsl: DSLContext) : OutboxRepository {
     }
 
     override fun listPending(limit: Int): List<OutboxEntry> {
-        return dsl.selectFrom(PLT_OUTBOX)
+        return dsl.select(
+                PLT_OUTBOX.ID,
+                PLT_OUTBOX.PAYLOAD_TYPE,
+                PLT_OUTBOX.PAYLOAD,
+                PLT_OUTBOX.STATUS,
+                PLT_OUTBOX.CREATED_AT,
+            )
+            .from(PLT_OUTBOX)
             .where(PLT_OUTBOX.STATUS.eq(OutboxStatus.PENDING.name))
             .orderBy(PLT_OUTBOX.CREATED_AT.asc())
             .limit(limit)
             .fetch { record ->
                 OutboxEntry(
-                    id = record.id!!,
-                    payloadType = record.payloadType!!,
-                    payload = record.payload!!,
-                    status = OutboxStatus.valueOf(record.status!!),
-                    createdAt = record.createdAt!!.toInstant(java.time.ZoneOffset.UTC),
+                    id = record.value1()!!,
+                    payloadType = record.value2()!!,
+                    payload = record.value3()!!,
+                    status = OutboxStatus.valueOf(record.value4()!!),
+                    createdAt = record.value5()!!.toInstant(java.time.ZoneOffset.UTC),
                 )
             }
     }
@@ -55,16 +62,23 @@ class JooqOutboxRepository(private val dsl: DSLContext) : OutboxRepository {
     }
 
     override fun listFailed(): List<OutboxEntry> {
-        return dsl.selectFrom(PLT_OUTBOX)
+        return dsl.select(
+                PLT_OUTBOX.ID,
+                PLT_OUTBOX.PAYLOAD_TYPE,
+                PLT_OUTBOX.PAYLOAD,
+                PLT_OUTBOX.STATUS,
+                PLT_OUTBOX.CREATED_AT,
+            )
+            .from(PLT_OUTBOX)
             .where(PLT_OUTBOX.STATUS.eq(OutboxStatus.FAILED.name))
             .orderBy(PLT_OUTBOX.CREATED_AT.desc())
             .fetch { record ->
                 OutboxEntry(
-                    id = record.id!!,
-                    payloadType = record.payloadType!!,
-                    payload = record.payload!!,
-                    status = OutboxStatus.valueOf(record.status!!),
-                    createdAt = record.createdAt!!.toInstant(java.time.ZoneOffset.UTC),
+                    id = record.value1()!!,
+                    payloadType = record.value2()!!,
+                    payload = record.value3()!!,
+                    status = OutboxStatus.valueOf(record.value4()!!),
+                    createdAt = record.value5()!!.toInstant(java.time.ZoneOffset.UTC),
                 )
             }
     }
