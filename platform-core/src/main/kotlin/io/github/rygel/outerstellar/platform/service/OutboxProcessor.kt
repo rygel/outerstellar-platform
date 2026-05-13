@@ -35,6 +35,8 @@ class OutboxProcessor(
             val empty = consecutiveEmptyPolls.get()
             if (empty == 0) return 0L
             val delay = BACKOFF_BASE_MS shl (empty.coerceAtMost(MAX_BACKOFF_SHIFT) - 1)
+            return delay.coerceAtMost(MAX_BACKOFF_MS)
+        }
 
     companion object {
         private const val BACKOFF_BASE_MS = 1000L
