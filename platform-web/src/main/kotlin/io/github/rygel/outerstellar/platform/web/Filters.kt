@@ -4,6 +4,7 @@ import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
 import io.github.rygel.outerstellar.platform.model.ValidationException
+import io.github.rygel.outerstellar.platform.persistence.QueryCount
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
@@ -208,14 +209,27 @@ object Filters {
             val response = next(request)
             val duration = System.currentTimeMillis() - start
             val requestId = request.header(REQUEST_ID_HEADER) ?: "-"
-            logger.info(
-                "[{}] {} {} -> {} ({}ms)",
-                requestId.take(LOG_ID_LENGTH),
-                request.method,
-                request.uri,
-                response.status,
-                duration,
-            )
+            val queries = QueryCount.drain()
+            if (queries > 0) {
+                logger.info(
+                    "[{}] {} {} -> {} ({}ms, {} DB queries)",
+                    requestId.take(LOG_ID_LENGTH),
+                    request.method,
+                    request.uri,
+                    response.status,
+                    duration,
+                    queries,
+                )
+            } else {
+                logger.info(
+                    "[{}] {} {} -> {} ({}ms)",
+                    requestId.take(LOG_ID_LENGTH),
+                    request.method,
+                    request.uri,
+                    response.status,
+                    duration,
+                )
+            }
             response
         }
     }
