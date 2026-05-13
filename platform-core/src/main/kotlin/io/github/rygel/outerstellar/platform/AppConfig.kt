@@ -222,6 +222,7 @@ data class AppConfig(
             )
         }
 
+        @Suppress("LongMethod")
         private fun buildRuntimeConfig(yaml: Map<String, Any>?, env: Map<String, String>): RuntimeConfig {
             if (yaml == null) return RuntimeConfig()
             return RuntimeConfig(

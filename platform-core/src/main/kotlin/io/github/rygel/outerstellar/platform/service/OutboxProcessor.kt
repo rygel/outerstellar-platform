@@ -34,9 +34,13 @@ class OutboxProcessor(
         get() {
             val empty = consecutiveEmptyPolls.get()
             if (empty == 0) return 0L
-            val delay = 1000L shl (empty.coerceAtMost(5) - 1)
-            return delay.coerceAtMost(30_000L)
-        }
+            val delay = BACKOFF_BASE_MS shl (empty.coerceAtMost(MAX_BACKOFF_SHIFT) - 1)
+
+    companion object {
+        private const val BACKOFF_BASE_MS = 1000L
+        private const val MAX_BACKOFF_SHIFT = 5
+        private const val MAX_BACKOFF_MS = 30_000L
+    }
 
     fun processPending(): Boolean {
         var batchSize: Int
