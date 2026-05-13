@@ -6,6 +6,7 @@ import gg.jte.output.StringOutput
 import gg.jte.resolve.DirectoryCodeResolver
 import gg.jte.resolve.ResourceCodeResolver
 import gg.jte.runtime.Template
+import io.github.rygel.outerstellar.platform.RuntimeConfig
 import java.nio.file.Files
 import java.nio.file.Path
 import org.http4k.core.ContentType
@@ -23,10 +24,11 @@ fun TemplateRenderer.render(viewModel: ViewModel, status: Status = Status.OK): R
         .header("content-type", ContentType.TEXT_HTML.toHeaderValue() + "; charset=utf-8")
         .body(this(viewModel))
 
-fun createRenderer(): TemplateRenderer {
+fun createRenderer(runtime: RuntimeConfig = RuntimeConfig()): TemplateRenderer {
     val isProduction = System.getProperty("jte.production") == "true" || System.getenv("JTE_PRODUCTION") == "true"
+    val doPreload = isProduction || runtime.jtePreloadEnabled
 
-    if (isProduction) {
+    if (doPreload) {
         logger.info("Production mode: JteClassRegistry has {} template classes", JteClassRegistry.allClasses.size)
         ensureTemplateClassesLoaded()
     }

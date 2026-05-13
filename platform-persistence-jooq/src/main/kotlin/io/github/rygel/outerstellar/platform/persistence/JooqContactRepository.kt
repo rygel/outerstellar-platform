@@ -68,13 +68,64 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
     }
 
     override fun listDirtyContacts(): List<StoredContact> =
-        dsl.select(allFields).from(PLT_CONTACTS).where(PLT_CONTACTS.DIRTY.eq(true)).fetch(::toStoredContact)
+        dsl.select(
+                PLT_CONTACTS.ID,
+                PLT_CONTACTS.SYNC_ID,
+                PLT_CONTACTS.NAME,
+                emailsField,
+                phonesField,
+                socialsField,
+                PLT_CONTACTS.COMPANY,
+                PLT_CONTACTS.COMPANY_ADDRESS,
+                PLT_CONTACTS.DEPARTMENT,
+                PLT_CONTACTS.UPDATED_AT_EPOCH_MS,
+                PLT_CONTACTS.DIRTY,
+                PLT_CONTACTS.DELETED,
+                PLT_CONTACTS.VERSION,
+                PLT_CONTACTS.SYNC_CONFLICT,
+            )
+            .from(PLT_CONTACTS)
+            .where(PLT_CONTACTS.DIRTY.eq(true))
+            .fetch(::toStoredContact)
 
     override fun findBySyncId(syncId: String): StoredContact? =
-        dsl.select(allFields).from(PLT_CONTACTS).where(PLT_CONTACTS.SYNC_ID.eq(syncId)).fetchOne(::toStoredContact)
+        dsl.select(
+                PLT_CONTACTS.ID,
+                PLT_CONTACTS.SYNC_ID,
+                PLT_CONTACTS.NAME,
+                emailsField,
+                phonesField,
+                socialsField,
+                PLT_CONTACTS.COMPANY,
+                PLT_CONTACTS.COMPANY_ADDRESS,
+                PLT_CONTACTS.DEPARTMENT,
+                PLT_CONTACTS.UPDATED_AT_EPOCH_MS,
+                PLT_CONTACTS.DIRTY,
+                PLT_CONTACTS.DELETED,
+                PLT_CONTACTS.VERSION,
+                PLT_CONTACTS.SYNC_CONFLICT,
+            )
+            .from(PLT_CONTACTS)
+            .where(PLT_CONTACTS.SYNC_ID.eq(syncId))
+            .fetchOne(::toStoredContact)
 
     override fun findChangesSince(updatedAtEpochMs: Long): List<StoredContact> =
-        dsl.select(allFields)
+        dsl.select(
+                PLT_CONTACTS.ID,
+                PLT_CONTACTS.SYNC_ID,
+                PLT_CONTACTS.NAME,
+                emailsField,
+                phonesField,
+                socialsField,
+                PLT_CONTACTS.COMPANY,
+                PLT_CONTACTS.COMPANY_ADDRESS,
+                PLT_CONTACTS.DEPARTMENT,
+                PLT_CONTACTS.UPDATED_AT_EPOCH_MS,
+                PLT_CONTACTS.DIRTY,
+                PLT_CONTACTS.DELETED,
+                PLT_CONTACTS.VERSION,
+                PLT_CONTACTS.SYNC_CONFLICT,
+            )
             .from(PLT_CONTACTS)
             .where(PLT_CONTACTS.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs))
             .fetch(::toStoredContact)

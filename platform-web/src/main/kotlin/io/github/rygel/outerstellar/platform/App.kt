@@ -439,17 +439,24 @@ private fun buildBaseApp(
         Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
             .then { Response(Status.OK).body(io.github.rygel.outerstellar.platform.web.Metrics.registry.scrape()) }
 
-    val coreRoutes = mutableListOf(static(ResourceLoader.Classpath("static")), uiRoutes, componentRoutes)
-    coreRoutes.addAll(apiRoutes)
-    if ("/" !in ctx.excludedRoutes) {
-        coreRoutes += "/" bind filteredAdminHandler
-    }
-    coreRoutes += "/health" bind GET to localhostOnly.then { buildHealthResponse(ctx.userRepository) }
-    coreRoutes += "/metrics" bind GET to metricsHandler
-    coreRoutes += "/robots.txt" bind GET to { buildRobotsTxtResponse() }
-    coreRoutes += "/sitemap.xml" bind GET to { buildSitemapResponse(ctx.config.appBaseUrl) }
+    // Unfiltered routes — no user resolution, no CSRF, no rate limiting
+    val unfiltered =
+        mutableListOf(
+            static(ResourceLoader.Classpath("static")),
+            "/health" bind GET to localhostOnly.then { buildHealthResponse(ctx.userRepository) },
+            "/metrics" bind GET to metricsHandler,
+            "/robots.txt" bind GET to { buildRobotsTxtResponse() },
+            "/sitemap.xml" bind GET to { buildSitemapResponse(ctx.config.appBaseUrl) },
+        )
 
-    return routes(coreRoutes)
+    // Filtered routes — user session, CSRF, rate limiting, state
+    val appRoutes = mutableListOf(uiRoutes, componentRoutes)
+    appRoutes.addAll(apiRoutes)
+    if ("/" !in ctx.excludedRoutes) {
+        appRoutes += "/" bind filteredAdminHandler
+    }
+
+    return routes(unfiltered + buildFilterChain(ctx).then(routes(appRoutes)))
 }
 
 private fun buildRobotsTxtResponse(): Response =

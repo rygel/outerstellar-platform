@@ -41,7 +41,7 @@ val webModule
         single(named("serverBaseUrl")) { "http://localhost:${get<AppConfig>().port}" }
         single(named("appBaseUrl")) { get<AppConfig>().appBaseUrl }
         single<TemplateRenderer> {
-            val baseRenderer = createRenderer()
+            val baseRenderer = createRenderer(get<AppConfig>().runtime)
             val plugin = getOrNull<PlatformPlugin>()
             val overrides = plugin?.templateOverrides()
             if (plugin != null && overrides != null && overrides.isNotEmpty()) {

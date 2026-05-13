@@ -1203,5 +1203,24 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>migrate</id>
+            <properties>
+                <skipTests>true</skipTests>
+                <exec.skip>false</exec.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <configuration>
+                            <mainClass>io.github.rygel.outerstellar.platform.persistence.MigratorKt</mainClass>
+                            <classpathScope>compile</classpathScope>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

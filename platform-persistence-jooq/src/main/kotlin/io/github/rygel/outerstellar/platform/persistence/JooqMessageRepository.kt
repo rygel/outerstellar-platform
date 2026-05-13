@@ -79,7 +79,17 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
     }
 
     override fun listDirtyMessages(): List<StoredMessage> =
-        dsl.select(PLT_MESSAGES.fields().toList())
+        dsl.select(
+                PLT_MESSAGES.ID,
+                PLT_MESSAGES.SYNC_ID,
+                PLT_MESSAGES.AUTHOR,
+                PLT_MESSAGES.CONTENT,
+                PLT_MESSAGES.UPDATED_AT_EPOCH_MS,
+                PLT_MESSAGES.DIRTY,
+                PLT_MESSAGES.DELETED,
+                PLT_MESSAGES.VERSION,
+                PLT_MESSAGES.SYNC_CONFLICT,
+            )
             .from(PLT_MESSAGES)
             .where(PLT_MESSAGES.DIRTY.eq(true).and(PLT_MESSAGES.DELETED_AT.isNull))
             .fetch(::toStoredMessage)
@@ -91,13 +101,33 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
             .fetchOne(0, Long::class.java) ?: 0L
 
     override fun findBySyncId(syncId: String): StoredMessage? =
-        dsl.select(PLT_MESSAGES.fields().toList())
+        dsl.select(
+                PLT_MESSAGES.ID,
+                PLT_MESSAGES.SYNC_ID,
+                PLT_MESSAGES.AUTHOR,
+                PLT_MESSAGES.CONTENT,
+                PLT_MESSAGES.UPDATED_AT_EPOCH_MS,
+                PLT_MESSAGES.DIRTY,
+                PLT_MESSAGES.DELETED,
+                PLT_MESSAGES.VERSION,
+                PLT_MESSAGES.SYNC_CONFLICT,
+            )
             .from(PLT_MESSAGES)
             .where(PLT_MESSAGES.SYNC_ID.eq(syncId))
             .fetchOne(::toStoredMessage)
 
     override fun findChangesSince(since: Long): List<StoredMessage> =
-        dsl.select(PLT_MESSAGES.fields().toList())
+        dsl.select(
+                PLT_MESSAGES.ID,
+                PLT_MESSAGES.SYNC_ID,
+                PLT_MESSAGES.AUTHOR,
+                PLT_MESSAGES.CONTENT,
+                PLT_MESSAGES.UPDATED_AT_EPOCH_MS,
+                PLT_MESSAGES.DIRTY,
+                PLT_MESSAGES.DELETED,
+                PLT_MESSAGES.VERSION,
+                PLT_MESSAGES.SYNC_CONFLICT,
+            )
             .from(PLT_MESSAGES)
             .where(PLT_MESSAGES.UPDATED_AT_EPOCH_MS.gt(since).and(PLT_MESSAGES.DELETED_AT.isNull))
             .fetch(::toStoredMessage)

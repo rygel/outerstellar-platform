@@ -38,16 +38,24 @@ import org.koin.dsl.module
  * Persistence module backed by jOOQ with generated type-safe SQL for PostgreSQL. Wire this into your Koin app in place
  * of the JDBI module — never include both `platform-persistence-jooq` and `platform-persistence-jdbi` at runtime.
  */
+class CountingExecuteListener : org.jooq.impl.DefaultExecuteListener() {
+    override fun executeStart(ctx: org.jooq.ExecuteContext) {
+        io.github.rygel.outerstellar.platform.persistence.QueryCount.increment()
+    }
+}
+
 val persistenceModule
     get() = module {
         single<DataSource> {
             val config = get<io.github.rygel.outerstellar.platform.AppConfig>()
-            val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
+            val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword, config.runtime)
             try {
-                migrate(ds)
-                getOrNull<PluginMigrationSource>()?.let { plugin ->
-                    plugin.migrationLocation?.let { location ->
-                        migratePlugin(ds, location, plugin.migrationHistoryTable)
+                if (config.runtime.flywayEnabled) {
+                    migrate(ds)
+                    getOrNull<PluginMigrationSource>()?.let { plugin ->
+                        plugin.migrationLocation?.let { location ->
+                            migratePlugin(ds, location, plugin.migrationHistoryTable)
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -61,7 +69,11 @@ val persistenceModule
         }
 
         single<DSLContext> {
-            DSL.using(get<DataSource>(), POSTGRES).also {
+            val config = org.jooq.impl.DefaultConfiguration()
+            config.set(get<DataSource>())
+            config.set(org.jooq.SQLDialect.POSTGRES)
+            config.set(CountingExecuteListener())
+            DSL.using(config).also {
                 if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
                     Metrics.globalRegistry.gauge("database.connections.active", 1)
                 }

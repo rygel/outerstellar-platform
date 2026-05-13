@@ -19,7 +19,7 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
             val (whereClause, bindings) = buildFilterClause(query, includeDeleted)
             val sql =
                 """
-                SELECT * FROM plt_contacts
+                                SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_contacts
                 WHERE $whereClause
                 ORDER BY name ASC
                 LIMIT :limit OFFSET :offset
@@ -53,7 +53,9 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         jdbi.withHandle<List<StoredContact>, Exception> { handle ->
             val contacts =
                 handle
-                    .createQuery("SELECT * FROM plt_contacts WHERE dirty = true")
+                    .createQuery(
+                        "                SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_contacts WHERE dirty = true"
+                    )
                     .map { rs, _ -> readContactRow(rs) }
                     .list()
             val contactIds = contacts.map { it.id }
@@ -69,7 +71,9 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     private fun findBySyncId(handle: Handle, syncId: String): StoredContact? {
         val contact =
             handle
-                .createQuery("SELECT * FROM plt_contacts WHERE sync_id = :syncId")
+                .createQuery(
+                    "                SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_contacts WHERE sync_id = :syncId"
+                )
                 .bind("syncId", syncId)
                 .map { rs, _ -> readContactRow(rs) }
                 .findOne()
@@ -84,7 +88,9 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         jdbi.withHandle<List<StoredContact>, Exception> { handle ->
             val contacts =
                 handle
-                    .createQuery("SELECT * FROM plt_contacts WHERE updated_at_epoch_ms > :since")
+                    .createQuery(
+                        "                SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_contacts WHERE updated_at_epoch_ms > :since"
+                    )
                     .bind("since", updatedAtEpochMs)
                     .map { rs, _ -> readContactRow(rs) }
                     .list()

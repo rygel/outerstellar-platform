@@ -1,0 +1,16 @@
+# Small profile: minimal resource footprint
+# Use for: development, single-user deployments, low-memory containers (<256MB heap)
+runtime:
+  hikariMaximumPoolSize: 4
+  hikariMinimumIdle: 1
+  hikariIdleTimeoutMs: 300000
+  hikariMaxLifetimeMs: 1800000
+  flywayEnabled: true
+  jtePreloadEnabled: false
+  cacheMessageMaxSize: 100
+  cacheMessageExpireMinutes: 30
+  cacheGravatarMaxSize: 1000
+  rateLimitIpCapacity: 20
+  rateLimitIpRefillPerMinute: 10
+  rateLimitAccountCapacity: 30
+  rateLimitAccountWindowMs: 900000

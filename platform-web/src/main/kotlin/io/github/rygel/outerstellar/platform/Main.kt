@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform
 import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.di.webModule
-import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
 import io.github.rygel.outerstellar.platform.security.PasswordEncoder
 import io.github.rygel.outerstellar.platform.security.UserRepository
@@ -18,31 +17,38 @@ import org.http4k.server.Netty
 import org.http4k.server.asServer
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
+import org.koin.core.component.inject
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
 
+private const val MILLIS_PER_SECOND = 1000L
 private const val OUTBOX_INTERVAL_SECONDS = 30L
 private const val SHUTDOWN_TIMEOUT_SECONDS = 5L
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.Main")
 
+private fun elapsed(from: Long, phase: String) = "Startup — $phase: ${System.currentTimeMillis() - from}ms"
+
 object MainComponent : KoinComponent {
-    val config: AppConfig = get()
-    val repository: MessageRepository = get()
-    val contactRepository: io.github.rygel.outerstellar.platform.persistence.ContactRepository = get()
-    val userRepository: UserRepository = get()
-    val passwordEncoder: PasswordEncoder = get()
-    val outboxProcessor: OutboxProcessor = get()
-    val activityUpdater: AsyncActivityUpdater = get()
-    val app: PolyHandler = get(named("webServer"))
+    val config: AppConfig by inject()
+    val userRepository: UserRepository by inject()
+    val passwordEncoder: PasswordEncoder by inject()
+    val outboxProcessor: OutboxProcessor by inject()
+    val activityUpdater: AsyncActivityUpdater by inject()
+    val app: PolyHandler by inject(named("webServer"))
 }
 
 fun main() {
+    val t0 = System.currentTimeMillis()
+
     startKoin { modules(configModule, persistenceModule, coreModule, webModule, securityModule) }
+    logger.info(elapsed(t0, "Koin modules loaded"))
 
     val main = MainComponent
 
+    // Phase 1: Validate configuration (resolves config only)
+    logger.info(elapsed(t0, "Config resolved"))
     if (
         main.config.jdbcPassword == AppConfig.DEFAULT_JDBC_PASSWORD &&
             main.config.profile != "default" &&
@@ -56,6 +62,11 @@ fun main() {
         )
     }
 
+    // Phase 2: Start server (resolves app handler, DataSource, Flyway)
+    val server = main.app.asServer(Netty(main.config.port)).start()
+    logger.info(elapsed(t0, "Server ready on :${server.port()}"))
+
+    // Phase 3: Background initialization (user seeding, outbox, analytics flush)
     val adminPassword =
         System.getenv("ADMIN_PASSWORD")
             ?: java.util.UUID.randomUUID().toString().also {
@@ -69,29 +80,36 @@ fun main() {
     val outboxScheduler = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "outbox-processor").also { it.isDaemon = true }
     }
-    outboxScheduler.scheduleWithFixedDelay(
-        {
-            main.outboxProcessor.processPending()
-            main.activityUpdater.flush()
-        },
-        OUTBOX_INTERVAL_SECONDS,
-        OUTBOX_INTERVAL_SECONDS,
-        TimeUnit.SECONDS,
-    )
-    val server = main.app.asServer(Netty(main.config.port)).start()
-    logger.info("Outerstellar platform running on http://localhost:{}", server.port())
+    val outboxTask =
+        object : Runnable {
+            override fun run() {
+                try {
+                    main.outboxProcessor.processPending()
+                    main.activityUpdater.flush()
+                } finally {
+                    val delay = maxOf(main.outboxProcessor.backoffMs, OUTBOX_INTERVAL_SECONDS * MILLIS_PER_SECOND)
+                    outboxScheduler.schedule(this, delay, TimeUnit.MILLISECONDS)
+                }
+            }
+        }
+    outboxScheduler.schedule(outboxTask, 0, TimeUnit.MILLISECONDS)
+    logger.info(elapsed(t0, "Background jobs started"))
 
-    registerShutdownHook(main, outboxScheduler, server)
+    registerShutdownHook(main.activityUpdater, outboxScheduler, server)
 }
 
-private fun registerShutdownHook(main: MainComponent, outboxScheduler: ScheduledExecutorService, server: Http4kServer) {
+private fun registerShutdownHook(
+    activityUpdater: AsyncActivityUpdater,
+    outboxScheduler: ScheduledExecutorService,
+    server: Http4kServer,
+) {
     Runtime.getRuntime()
         .addShutdownHook(
             Thread(
                 {
                     logger.info("Graceful shutdown initiated")
                     logger.info("Flushing pending activity updates...")
-                    main.activityUpdater.flush()
+                    activityUpdater.flush()
                     logger.info("Stopping outbox scheduler...")
                     outboxScheduler.shutdown()
                     try {

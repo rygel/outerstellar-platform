@@ -2,21 +2,30 @@ package io.github.rygel.outerstellar.platform.infra
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.github.rygel.outerstellar.platform.RuntimeConfig
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
 
 fun createDataSource(jdbcUrl: String, jdbcUser: String, jdbcPassword: String): HikariDataSource =
+    createDataSource(jdbcUrl, jdbcUser, jdbcPassword, RuntimeConfig())
+
+fun createDataSource(
+    jdbcUrl: String,
+    jdbcUser: String,
+    jdbcPassword: String,
+    runtime: RuntimeConfig,
+): HikariDataSource =
     HikariDataSource(
         HikariConfig().apply {
             this.jdbcUrl = jdbcUrl
             username = jdbcUser
             password = jdbcPassword
-            maximumPoolSize = 20
-            minimumIdle = 2
-            idleTimeout = 300_000
-            maxLifetime = 1_800_000
-            connectionTimeout = 10_000
-            leakDetectionThreshold = 60_000
+            maximumPoolSize = runtime.hikariMaximumPoolSize
+            minimumIdle = runtime.hikariMinimumIdle
+            idleTimeout = runtime.hikariIdleTimeoutMs
+            maxLifetime = runtime.hikariMaxLifetimeMs
+            connectionTimeout = runtime.hikariConnectionTimeoutMs
+            leakDetectionThreshold = runtime.hikariLeakDetectionThresholdMs
             poolName = "outerstellar-pool"
         }
     )
