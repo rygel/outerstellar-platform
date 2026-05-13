@@ -1,11 +1,27 @@
 package io.github.rygel.outerstellar.platform.web
 
-class SidebarFactory {
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
+import java.util.concurrent.TimeUnit
 
-    fun buildThemeSelector(ctx: WebContext): SidebarSelector {
+class SidebarFactory {
+    private val selectorCache: Cache<String, SidebarSelector> =
+        Caffeine.newBuilder().maximumSize(500).expireAfterWrite(5, TimeUnit.MINUTES).build()
+
+    private fun cacheKey(type: String, ctx: WebContext): String = "$type:${ctx.lang}:${ctx.theme}:${ctx.layout}"
+
+    fun buildThemeSelector(ctx: WebContext): SidebarSelector =
+        selectorCache.get(cacheKey("theme", ctx)) { buildThemeSelectorInner(ctx) }
+
+    fun buildLanguageSelector(ctx: WebContext): SidebarSelector =
+        selectorCache.get(cacheKey("lang", ctx)) { buildLanguageSelectorInner(ctx) }
+
+    fun buildLayoutSelector(ctx: WebContext): SidebarSelector =
+        selectorCache.get(cacheKey("layout", ctx)) { buildLayoutSelectorInner(ctx) }
+
+    private fun buildThemeSelectorInner(ctx: WebContext): SidebarSelector {
         val i18n = ctx.i18n
         val pagePath = ctx.request.query("pagePath").orEmpty()
-
         return SidebarSelector(
             heading = i18n.translate("web.sidebar.themes"),
             label = i18n.translate("web.sidebar.theme.label"),
@@ -25,10 +41,9 @@ class SidebarFactory {
         )
     }
 
-    fun buildLanguageSelector(ctx: WebContext): SidebarSelector {
+    private fun buildLanguageSelectorInner(ctx: WebContext): SidebarSelector {
         val i18n = ctx.i18n
         val pagePath = ctx.request.query("pagePath").orEmpty()
-
         return SidebarSelector(
             heading = i18n.translate("web.sidebar.language"),
             label = i18n.translate("web.sidebar.language.label"),
@@ -48,10 +63,9 @@ class SidebarFactory {
         )
     }
 
-    fun buildLayoutSelector(ctx: WebContext): SidebarSelector {
+    private fun buildLayoutSelectorInner(ctx: WebContext): SidebarSelector {
         val i18n = ctx.i18n
         val pagePath = ctx.request.query("pagePath").orEmpty()
-
         return SidebarSelector(
             heading = i18n.translate("web.sidebar.layout"),
             label = i18n.translate("web.sidebar.layout.label"),
