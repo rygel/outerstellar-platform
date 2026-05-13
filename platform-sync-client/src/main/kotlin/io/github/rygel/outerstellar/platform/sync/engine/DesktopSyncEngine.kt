@@ -53,8 +53,14 @@ class DesktopSyncEngine(
         listeners.forEach { it.onStateChanged(newState) }
     }
 
-    fun login(username: String, password: String): Result<Unit> {
-        return try {
+    fun login(username: String, password: String): Result<Unit> =
+        runGuardedResult(
+            "login",
+            onError = { e ->
+                updateState { it.copy(status = "Login failed: ${e.message}") }
+                notifier?.notifyFailure("Login failed: ${e.message}")
+            },
+        ) {
             val auth = syncService.login(username, password)
             updateState {
                 it.copy(isLoggedIn = true, userName = auth.username, userRole = auth.role, status = "Logged in")
@@ -65,19 +71,16 @@ class DesktopSyncEngine(
             loadData()
             notifier?.notifySuccess("Logged in as ${auth.username}")
             Result.success(Unit)
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired()
-            Result.failure(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Login failed", e)
-            updateState { it.copy(status = "Login failed: ${e.message}") }
-            notifier?.notifyFailure("Login failed: ${e.message}")
-            Result.failure(e)
         }
-    }
 
-    fun register(username: String, password: String): Result<Unit> {
-        return try {
+    fun register(username: String, password: String): Result<Unit> =
+        runGuardedResult(
+            "register",
+            onError = { e ->
+                updateState { it.copy(status = "Registration failed: ${e.message}") }
+                notifier?.notifyFailure("Registration failed: ${e.message}")
+            },
+        ) {
             val auth = syncService.register(username, password)
             updateState {
                 it.copy(isLoggedIn = true, userName = auth.username, userRole = auth.role, status = "Registered")
@@ -88,16 +91,7 @@ class DesktopSyncEngine(
             loadData()
             notifier?.notifySuccess("Registered as ${auth.username}")
             Result.success(Unit)
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired()
-            Result.failure(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Registration failed", e)
-            updateState { it.copy(status = "Registration failed: ${e.message}") }
-            notifier?.notifyFailure("Registration failed: ${e.message}")
-            Result.failure(e)
         }
-    }
 
     fun logout() {
         stopAutoSync()
@@ -159,42 +153,14 @@ class DesktopSyncEngine(
         }
     }
 
-    fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
-        return try {
+    fun changePassword(currentPassword: String, newPassword: String): Result<Unit> =
+        runGuardedResult(
+            "changePassword",
+            onError = { e -> notifier?.notifyFailure("Password change failed: ${e.message}") },
+        ) {
             syncService.changePassword(currentPassword, newPassword)
             analytics.track(state.userName, "password_changed")
             notifier?.notifySuccess("Password changed")
-            Result.success(Unit)
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired()
-            Result.failure(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Password change failed", e)
-            notifier?.notifyFailure("Password change failed: ${e.message}")
-            fireError("changePassword", e.message ?: "Unknown error")
-            Result.failure(e)
-        }
-    }
-
-    fun loadUsers() =
-        runGuarded("loadUsers") {
-            val users = syncService.listUsers()
-            updateState { it.copy(adminUsers = users) }
-        }
-
-    fun setUserEnabled(userId: String, enabled: Boolean): Result<Unit> =
-        runGuardedResult("setUserEnabled") {
-            syncService.setUserEnabled(userId, enabled)
-            loadUsers()
-            analytics.track(state.userName, "user_enabled_changed", mapOf("userId" to userId, "enabled" to enabled))
-            Result.success(Unit)
-        }
-
-    fun setUserRole(userId: String, role: String): Result<Unit> =
-        runGuardedResult("setUserRole") {
-            syncService.setUserRole(userId, role)
-            loadUsers()
-            analytics.track(state.userName, "user_role_changed", mapOf("userId" to userId, "role" to role))
             Result.success(Unit)
         }
 
@@ -221,6 +187,28 @@ class DesktopSyncEngine(
             Result.failure(e)
         }
     }
+
+    fun loadUsers() =
+        runGuarded("loadUsers") {
+            val users = syncService.listUsers()
+            updateState { it.copy(adminUsers = users) }
+        }
+
+    fun setUserEnabled(userId: String, enabled: Boolean): Result<Unit> =
+        runGuardedResult("setUserEnabled") {
+            syncService.setUserEnabled(userId, enabled)
+            loadUsers()
+            analytics.track(state.userName, "user_enabled_changed", mapOf("userId" to userId, "enabled" to enabled))
+            Result.success(Unit)
+        }
+
+    fun setUserRole(userId: String, role: String): Result<Unit> =
+        runGuardedResult("setUserRole") {
+            syncService.setUserRole(userId, role)
+            loadUsers()
+            analytics.track(state.userName, "user_role_changed", mapOf("userId" to userId, "role" to role))
+            Result.success(Unit)
+        }
 
     fun loadNotifications() =
         runGuarded("loadNotifications") {
@@ -254,33 +242,23 @@ class DesktopSyncEngine(
             }
         }
 
-    fun updateProfile(email: String, username: String? = null, avatarUrl: String? = null): Result<Unit> {
-        return try {
+    fun updateProfile(email: String, username: String? = null, avatarUrl: String? = null): Result<Unit> =
+        runGuardedResult(
+            "updateProfile",
+            onError = { e -> notifier?.notifyFailure("Profile update failed: ${e.message}") },
+        ) {
             syncService.updateProfile(email, username, avatarUrl)
-            loadProfile()
+            loadData()
             analytics.track(state.userName, "profile_updated")
             notifier?.notifySuccess("Profile updated")
             Result.success(Unit)
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired()
-            Result.failure(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to update profile", e)
-            notifier?.notifyFailure("Profile update failed: ${e.message}")
-            fireError("updateProfile", e.message ?: "Unknown error")
-            Result.failure(e)
-        }
-    }
-
-    fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Result<Unit> =
-        runGuardedResult("updateNotificationPreferences") {
-            syncService.updateNotificationPreferences(emailEnabled, pushEnabled)
-            updateState { it.copy(emailNotificationsEnabled = emailEnabled, pushNotificationsEnabled = pushEnabled) }
-            Result.success(Unit)
         }
 
-    fun deleteAccount(): Result<Unit> {
-        return try {
+    fun deleteAccount(): Result<Unit> =
+        runGuardedResult(
+            "deleteAccount",
+            onError = { e -> notifier?.notifyFailure("Account deletion failed: ${e.message}") },
+        ) {
             val username = state.userName
             syncService.deleteAccount()
             stopAutoSync()
@@ -289,38 +267,27 @@ class DesktopSyncEngine(
             updateState { EngineState(isOnline = it.isOnline, status = "Account deleted") }
             notifier?.notifySuccess("Account deleted")
             Result.success(Unit)
-        } catch (e: SessionExpiredException) {
-            handleSessionExpired()
-            Result.failure(e)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to delete account", e)
-            notifier?.notifyFailure("Account deletion failed: ${e.message}")
-            fireError("deleteAccount", e.message ?: "Unknown error")
-            Result.failure(e)
         }
-    }
 
-    fun createLocalMessage(author: String, content: String): Result<Unit> {
-        return try {
+    fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Result<Unit> =
+        runGuardedResult("updateNotificationPreferences") {
+            syncService.updateNotificationPreferences(emailEnabled, pushEnabled)
+            updateState { it.copy(emailNotificationsEnabled = emailEnabled, pushNotificationsEnabled = pushEnabled) }
+            Result.success(Unit)
+        }
+
+    fun createLocalMessage(author: String, content: String): Result<Unit> =
+        runGuardedResult("createLocalMessage") {
             messageService.createLocalMessage(author, content)
             loadMessages()
             Result.success(Unit)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to create local message", e)
-            fireError("createLocalMessage", e.message ?: "Unknown error")
-            Result.failure(e)
         }
-    }
 
-    fun resolveConflict(syncId: String, strategy: ConflictStrategy) {
-        try {
+    fun resolveConflict(syncId: String, strategy: ConflictStrategy) =
+        runGuarded("resolveConflict") {
             messageService.resolveConflict(syncId, strategy)
             loadMessages()
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            logger.warn("Failed to resolve conflict", e)
-            fireError("resolveConflict", e.message ?: "Unknown error")
         }
-    }
 
     fun createContact(
         name: String,
@@ -438,18 +405,27 @@ class DesktopSyncEngine(
         return if (parts.isEmpty()) "Everything up to date" else "Synced: ${parts.joinToString(", ")}"
     }
 
-    internal inline fun runGuarded(operation: String, block: () -> Unit) {
+    internal inline fun runGuarded(
+        operation: String,
+        crossinline onError: (Exception) -> Unit = {},
+        block: () -> Unit,
+    ) {
         try {
             block()
         } catch (e: SessionExpiredException) {
             handleSessionExpired(e)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.warn("Failed to {}", operation, e)
+            onError(e)
             fireError(operation, e.message ?: "Unknown error")
         }
     }
 
-    internal inline fun runGuardedResult(operation: String, block: () -> Result<Unit>): Result<Unit> {
+    internal inline fun runGuardedResult(
+        operation: String,
+        crossinline onError: (Exception) -> Unit = {},
+        block: () -> Result<Unit>,
+    ): Result<Unit> {
         return try {
             block()
         } catch (e: SessionExpiredException) {
@@ -458,6 +434,7 @@ class DesktopSyncEngine(
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.warn("Failed to {}", operation, e)
             fireError(operation, e.message ?: "Unknown error")
+            onError(e)
             Result.failure(e)
         }
     }
