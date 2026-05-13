@@ -80,6 +80,7 @@ data class AppConfig(
     val cspPolicy: String = DEFAULT_CSP_POLICY,
     val appleOAuth: AppleOAuthConfig = AppleOAuthConfig(),
     val pushNotifications: PushNotificationConfig = PushNotificationConfig(),
+    val runtime: RuntimeConfig = RuntimeConfig(),
 ) {
     companion object {
         const val DEFAULT_APP_BASE_URL = "http://localhost:8080"
@@ -159,6 +160,7 @@ data class AppConfig(
                 cspPolicy = yaml.str("cspPolicy", env, "CSP_POLICY", DEFAULT_CSP_POLICY),
                 appleOAuth = buildAppleOAuthConfig(yaml["appleOAuth"] as? Map<String, Any>, env),
                 pushNotifications = buildPushNotificationConfig(yaml["pushNotifications"] as? Map<String, Any>, env),
+                runtime = buildRuntimeConfig(yaml["runtime"] as? Map<String, Any>, env),
             )
         }
 
@@ -217,6 +219,91 @@ data class AppConfig(
                 apnsKeyId = yaml.str("apnsKeyId", env, "PUSH_APNS_KEYID", ""),
                 apnsPrivateKeyPem = yaml.str("apnsPrivateKeyPem", env, "PUSH_APNS_PRIVATEKEYPEM", ""),
                 apnsBundleId = yaml.str("apnsBundleId", env, "PUSH_APNS_BUNDLEID", ""),
+            )
+        }
+
+        private fun buildRuntimeConfig(yaml: Map<String, Any>?, env: Map<String, String>): RuntimeConfig {
+            if (yaml == null) return RuntimeConfig()
+            return RuntimeConfig(
+                hikariMaximumPoolSize =
+                    yaml.int(
+                        "hikariMaximumPoolSize",
+                        env,
+                        "HIKARI_MAX_POOL_SIZE",
+                        RuntimeConfig().hikariMaximumPoolSize,
+                    ),
+                hikariMinimumIdle =
+                    yaml.int("hikariMinimumIdle", env, "HIKARI_MIN_IDLE", RuntimeConfig().hikariMinimumIdle),
+                hikariIdleTimeoutMs =
+                    yaml.long(
+                        "hikariIdleTimeoutMs",
+                        env,
+                        "HIKARI_IDLE_TIMEOUT_MS",
+                        RuntimeConfig().hikariIdleTimeoutMs,
+                    ),
+                hikariMaxLifetimeMs =
+                    yaml.long(
+                        "hikariMaxLifetimeMs",
+                        env,
+                        "HIKARI_MAX_LIFETIME_MS",
+                        RuntimeConfig().hikariMaxLifetimeMs,
+                    ),
+                hikariConnectionTimeoutMs =
+                    yaml.long(
+                        "hikariConnectionTimeoutMs",
+                        env,
+                        "HIKARI_CONNECTION_TIMEOUT_MS",
+                        RuntimeConfig().hikariConnectionTimeoutMs,
+                    ),
+                hikariLeakDetectionThresholdMs =
+                    yaml.long(
+                        "hikariLeakDetectionThresholdMs",
+                        env,
+                        "HIKARI_LEAK_DETECTION_THRESHOLD_MS",
+                        RuntimeConfig().hikariLeakDetectionThresholdMs,
+                    ),
+                flywayEnabled = yaml.bool("flywayEnabled", env, "FLYWAY_ENABLED", RuntimeConfig().flywayEnabled),
+                jtePreloadEnabled =
+                    yaml.bool("jtePreloadEnabled", env, "JTE_PRELOAD_ENABLED", RuntimeConfig().jtePreloadEnabled),
+                cacheMessageMaxSize =
+                    yaml.int("cacheMessageMaxSize", env, "CACHE_MESSAGE_MAX_SIZE", RuntimeConfig().cacheMessageMaxSize),
+                cacheMessageExpireMinutes =
+                    yaml.int(
+                        "cacheMessageExpireMinutes",
+                        env,
+                        "CACHE_MESSAGE_EXPIRE_MINUTES",
+                        RuntimeConfig().cacheMessageExpireMinutes,
+                    ),
+                cacheGravatarMaxSize =
+                    yaml.long(
+                        "cacheGravatarMaxSize",
+                        env,
+                        "CACHE_GRAVATAR_MAX_SIZE",
+                        RuntimeConfig().cacheGravatarMaxSize,
+                    ),
+                rateLimitIpCapacity =
+                    yaml.int("rateLimitIpCapacity", env, "RATE_LIMIT_IP_CAPACITY", RuntimeConfig().rateLimitIpCapacity),
+                rateLimitIpRefillPerMinute =
+                    yaml.int(
+                        "rateLimitIpRefillPerMinute",
+                        env,
+                        "RATE_LIMIT_IP_REFILL_PER_MINUTE",
+                        RuntimeConfig().rateLimitIpRefillPerMinute,
+                    ),
+                rateLimitAccountCapacity =
+                    yaml.int(
+                        "rateLimitAccountCapacity",
+                        env,
+                        "RATE_LIMIT_ACCOUNT_CAPACITY",
+                        RuntimeConfig().rateLimitAccountCapacity,
+                    ),
+                rateLimitAccountWindowMs =
+                    yaml.long(
+                        "rateLimitAccountWindowMs",
+                        env,
+                        "RATE_LIMIT_ACCOUNT_WINDOW_MS",
+                        RuntimeConfig().rateLimitAccountWindowMs,
+                    ),
             )
         }
     }

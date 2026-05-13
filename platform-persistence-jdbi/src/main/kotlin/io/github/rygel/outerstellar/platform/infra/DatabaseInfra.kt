@@ -2,26 +2,30 @@ package io.github.rygel.outerstellar.platform.infra
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.github.rygel.outerstellar.platform.RuntimeConfig
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
 
-private const val DEFAULT_POOL_IDLE_TIMEOUT_MS = 300_000L
-private const val DEFAULT_CONNECTION_MAX_LIFETIME_MS = 1_800_000L
-private const val DEFAULT_LEAK_DETECTION_THRESHOLD_MS = 60_000L
-private const val DEFAULT_CONNECTION_TIMEOUT_MS = 10_000L
-
 fun createDataSource(jdbcUrl: String, jdbcUser: String, jdbcPassword: String): HikariDataSource =
+    createDataSource(jdbcUrl, jdbcUser, jdbcPassword, RuntimeConfig())
+
+fun createDataSource(
+    jdbcUrl: String,
+    jdbcUser: String,
+    jdbcPassword: String,
+    runtime: RuntimeConfig,
+): HikariDataSource =
     HikariDataSource(
         HikariConfig().apply {
             this.jdbcUrl = jdbcUrl
             username = jdbcUser
             password = jdbcPassword
-            maximumPoolSize = 10
-            minimumIdle = 1
-            idleTimeout = DEFAULT_POOL_IDLE_TIMEOUT_MS
-            maxLifetime = DEFAULT_CONNECTION_MAX_LIFETIME_MS
-            connectionTimeout = DEFAULT_CONNECTION_TIMEOUT_MS
-            leakDetectionThreshold = DEFAULT_LEAK_DETECTION_THRESHOLD_MS
+            maximumPoolSize = runtime.hikariMaximumPoolSize
+            minimumIdle = runtime.hikariMinimumIdle
+            idleTimeout = runtime.hikariIdleTimeoutMs
+            maxLifetime = runtime.hikariMaxLifetimeMs
+            connectionTimeout = runtime.hikariConnectionTimeoutMs
+            leakDetectionThreshold = runtime.hikariLeakDetectionThresholdMs
             poolName = "outerstellar-jdbi-pool"
         }
     )

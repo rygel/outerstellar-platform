@@ -388,3 +388,74 @@ mvn spotless:check checkstyle:check pmd:check spotbugs:check detekt:check
 | `scripts/stop-web.ps1` | Kill web dev stack |
 | `scripts/start-swing.ps1` | Start Swing desktop client |
 | `generate-jooq.ps1` | Regenerate jOOQ sources |
+
+---
+
+## Configuration Reference
+
+All configuration is read from `application.yaml` (or `application-{profile}.yaml`) and may be overridden by environment variables.
+
+### Runtime Sizing (runtime section)
+
+| YAML Key | Env Var | Default | Description |
+|---|---|---|---|
+| `runtime.hikariMaximumPoolSize` | `HIKARI_MAX_POOL_SIZE` | 20 | HikariCP maximum connections |
+| `runtime.hikariMinimumIdle` | `HIKARI_MIN_IDLE` | 2 | HikariCP minimum idle connections |
+| `runtime.hikariIdleTimeoutMs` | `HIKARI_IDLE_TIMEOUT_MS` | 300000 | Max idle time before pool removes connection |
+| `runtime.hikariMaxLifetimeMs` | `HIKARI_MAX_LIFETIME_MS` | 1800000 | Max lifetime of a connection in the pool |
+| `runtime.hikariConnectionTimeoutMs` | `HIKARI_CONNECTION_TIMEOUT_MS` | 10000 | Max wait for a connection from the pool |
+| `runtime.hikariLeakDetectionThresholdMs` | `HIKARI_LEAK_DETECTION_THRESHOLD_MS` | 60000 | Leak detection threshold |
+| `runtime.flywayEnabled` | `FLYWAY_ENABLED` | true | Run Flyway migrations on startup. Set `false` when running migrations externally. |
+| `runtime.jtePreloadEnabled` | `JTE_PRELOAD_ENABLED` | false | Preload JTE template classes at startup. Reduces first-request latency. |
+| `runtime.cacheMessageMaxSize` | `CACHE_MESSAGE_MAX_SIZE` | 1000 | Max entries in message cache |
+| `runtime.cacheMessageExpireMinutes` | `CACHE_MESSAGE_EXPIRE_MINUTES` | 10 | Message cache entry TTL |
+| `runtime.cacheGravatarMaxSize` | `CACHE_GRAVATAR_MAX_SIZE` | 10000 | Max entries in gravatar cache |
+| `runtime.rateLimitIpCapacity` | `RATE_LIMIT_IP_CAPACITY` | 10 | Per-IP token bucket capacity |
+| `runtime.rateLimitIpRefillPerMinute` | `RATE_LIMIT_IP_REFILL_PER_MINUTE` | 10 | Per-IP token refill rate (tokens/minute) |
+| `runtime.rateLimitAccountCapacity` | `RATE_LIMIT_ACCOUNT_CAPACITY` | 20 | Per-account token bucket capacity |
+| `runtime.rateLimitAccountWindowMs` | `RATE_LIMIT_ACCOUNT_WINDOW_MS` | 900000 | Per-account token refill window (ms) |
+
+### Example: Small Profile
+
+```yaml
+runtime:
+  hikariMaximumPoolSize: 4
+  hikariMinimumIdle: 1
+  flywayEnabled: false
+  jtePreloadEnabled: false
+  cacheMessageMaxSize: 100
+  rateLimitIpCapacity: 20
+```
+
+### Example: Large Profile
+
+```yaml
+runtime:
+  hikariMaximumPoolSize: 50
+  hikariMinimumIdle: 5
+  flywayEnabled: true
+  jtePreloadEnabled: true
+  cacheMessageMaxSize: 10000
+  cacheMessageExpireMinutes: 30
+```
+
+### Core Configuration
+
+| YAML Key | Env Var | Default | Description |
+|---|---|---|---|
+| `port` | `PORT` | 8080 | HTTP server port |
+| `jdbcUrl` | `JDBC_URL` | `jdbc:postgresql://localhost:5432/outerstellar` | Database JDBC URL |
+| `jdbcUser` | `JDBC_USER` | `outerstellar` | Database user |
+| `jdbcPassword` | `JDBC_PASSWORD` | `outerstellar` | Database password |
+| `profile` | `APP_PROFILE` | `default` | Active configuration profile |
+| `devDashboardEnabled` | `DEV_DASHBOARD_ENABLED` | false | Enable `/admin/dev` dashboard |
+| `devMode` | `DEVMODE` | false | Enable dev auto-login |
+| `sessionCookieSecure` | `SESSIONCOOKIESECURE` | true | Set Secure flag on session cookie |
+| `sessionTimeoutMinutes` | `SESSIONTIMEOUTMINUTES` | 30 | Session idle timeout |
+| `corsOrigins` | `CORSORIGINS` | "" | Allowed CORS origins (comma-separated) |
+| `csrfEnabled` | `CSRFENABLED` | true | Enable CSRF protection |
+| `appBaseUrl` | `APPBASEURL` | http://localhost:8080 | External URL for canonical links |
+| `maxFailedLoginAttempts` | `MAX_FAILED_LOGIN_ATTEMPTS` | 10 | Account lockout threshold |
+| `lockoutDurationSeconds` | `LOCKOUT_DURATION_SECONDS` | 900 | Account lockout duration |
+| `cspPolicy` | `CSP_POLICY` | (default CSP string) | Content-Security-Policy header |
+| `version` | `VERSION` | `dev` | Application version label |

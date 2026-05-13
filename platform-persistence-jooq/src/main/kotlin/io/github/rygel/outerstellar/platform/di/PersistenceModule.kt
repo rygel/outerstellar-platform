@@ -42,12 +42,14 @@ val persistenceModule
     get() = module {
         single<DataSource> {
             val config = get<io.github.rygel.outerstellar.platform.AppConfig>()
-            val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
+            val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword, config.runtime)
             try {
-                migrate(ds)
-                getOrNull<PluginMigrationSource>()?.let { plugin ->
-                    plugin.migrationLocation?.let { location ->
-                        migratePlugin(ds, location, plugin.migrationHistoryTable)
+                if (config.runtime.flywayEnabled) {
+                    migrate(ds)
+                    getOrNull<PluginMigrationSource>()?.let { plugin ->
+                        plugin.migrationLocation?.let { location ->
+                            migratePlugin(ds, location, plugin.migrationHistoryTable)
+                        }
                     }
                 }
             } catch (e: Exception) {
