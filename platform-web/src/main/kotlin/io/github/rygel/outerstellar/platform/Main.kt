@@ -27,6 +27,8 @@ private const val SHUTDOWN_TIMEOUT_SECONDS = 5L
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.Main")
 
+private fun elapsed(from: Long, phase: String) = "Startup — $phase: ${System.currentTimeMillis() - from}ms"
+
 object MainComponent : KoinComponent {
     val config: AppConfig by inject()
     val userRepository: UserRepository by inject()
@@ -37,11 +39,15 @@ object MainComponent : KoinComponent {
 }
 
 fun main() {
+    val t0 = System.currentTimeMillis()
+
     startKoin { modules(configModule, persistenceModule, coreModule, webModule, securityModule) }
+    logger.info(elapsed(t0, "Koin modules loaded"))
 
     val main = MainComponent
 
     // Phase 1: Validate configuration (resolves config only)
+    logger.info(elapsed(t0, "Config resolved"))
     if (
         main.config.jdbcPassword == AppConfig.DEFAULT_JDBC_PASSWORD &&
             main.config.profile != "default" &&
@@ -55,9 +61,9 @@ fun main() {
         )
     }
 
-    // Phase 2: Start server (resolves app handler and its transitive dependencies)
+    // Phase 2: Start server (resolves app handler, DataSource, Flyway)
     val server = main.app.asServer(Netty(main.config.port)).start()
-    logger.info("Outerstellar platform running on http://localhost:{}", server.port())
+    logger.info(elapsed(t0, "Server ready on :${server.port()}"))
 
     // Phase 3: Background initialization (user seeding, outbox, analytics flush)
     val adminPassword =
@@ -82,6 +88,7 @@ fun main() {
         OUTBOX_INTERVAL_SECONDS,
         TimeUnit.SECONDS,
     )
+    logger.info(elapsed(t0, "Background jobs started"))
 
     registerShutdownHook(main.outboxProcessor, main.activityUpdater, outboxScheduler, server)
 }
