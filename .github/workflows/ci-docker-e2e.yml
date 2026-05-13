@@ -2,13 +2,13 @@ name: Docker E2E
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, sync/**]
     paths:
       - 'docker/**'
       - 'platform-web/**'
       - 'pom.xml'
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, sync/**]
     paths:
       - 'docker/**'
       - 'platform-web/**'
