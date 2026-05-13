@@ -22,6 +22,7 @@ import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
 
+private const val MILLIS_PER_SECOND = 1000L
 private const val OUTBOX_INTERVAL_SECONDS = 30L
 private const val SHUTDOWN_TIMEOUT_SECONDS = 5L
 
@@ -86,7 +87,7 @@ fun main() {
                     main.outboxProcessor.processPending()
                     main.activityUpdater.flush()
                 } finally {
-                    val delay = maxOf(main.outboxProcessor.backoffMs, OUTBOX_INTERVAL_SECONDS * 1000L)
+                    val delay = maxOf(main.outboxProcessor.backoffMs, OUTBOX_INTERVAL_SECONDS * MILLIS_PER_SECOND)
                     outboxScheduler.schedule(this, delay, TimeUnit.MILLISECONDS)
                 }
             }
@@ -94,11 +95,10 @@ fun main() {
     outboxScheduler.schedule(outboxTask, 0, TimeUnit.MILLISECONDS)
     logger.info(elapsed(t0, "Background jobs started"))
 
-    registerShutdownHook(main.outboxProcessor, main.activityUpdater, outboxScheduler, server)
+    registerShutdownHook(main.activityUpdater, outboxScheduler, server)
 }
 
 private fun registerShutdownHook(
-    outboxProcessor: OutboxProcessor,
     activityUpdater: AsyncActivityUpdater,
     outboxScheduler: ScheduledExecutorService,
     server: Http4kServer,
