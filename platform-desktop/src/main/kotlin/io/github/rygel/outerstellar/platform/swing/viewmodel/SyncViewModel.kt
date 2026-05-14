@@ -8,15 +8,15 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.github.rygel.outerstellar.platform.sync.engine.EngineListener
 import io.github.rygel.outerstellar.platform.sync.engine.EngineState
+import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.swing.SwingWorker
 
 @Suppress("TooManyFunctions")
 class SyncViewModel(
-    private val engine: DesktopSyncEngine,
+    private val engine: SyncEngine,
     private var i18nService: I18nService,
     private val contactService: ContactService? = null,
 ) {
