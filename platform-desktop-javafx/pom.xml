@@ -21,10 +21,6 @@
     <dependencies>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-desktop</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.rygel</groupId>
             <artifactId>outerstellar-platform-persistence-jooq</artifactId>
         </dependency>
         <dependency>
