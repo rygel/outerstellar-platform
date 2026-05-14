@@ -55,8 +55,6 @@ class FxSyncViewModel(private val engine: SyncEngine) {
                     status.set("Session expired")
                 }
             }
-
-            override fun onError(operation: String, message: String) {}
         }
 
     init {
@@ -173,6 +171,7 @@ class FxSyncViewModel(private val engine: SyncEngine) {
         engine.shutdown()
     }
 
+    @Suppress("UnusedParameter")
     private fun <T> task(operation: String, block: () -> T): Task<T> {
         return object : Task<T>() {
             override fun call(): T = block()

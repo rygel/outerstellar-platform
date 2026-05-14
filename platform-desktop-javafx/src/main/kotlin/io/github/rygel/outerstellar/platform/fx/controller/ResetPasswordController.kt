@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
-import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import javafx.fxml.FXML
 import javafx.scene.control.Button
 import javafx.scene.control.TextField
@@ -17,21 +16,6 @@ class ResetPasswordController : KoinComponent {
     @FXML private lateinit var sendButton: Button
 
     @FXML fun initialize() {}
-
-    @FXML
-    fun onSend() {
-        val email = emailField.text
-        if (email.isBlank()) return
-        sendButton.isDisable = true
-        viewModel.requestPasswordReset(email).apply {
-            setOnSucceeded {
-                sendButton.isDisable = false
-                (sendButton.scene.window as Stage).close()
-            }
-            setOnFailed { sendButton.isDisable = false }
-            runInBackground()
-        }
-    }
 
     @FXML
     fun onCancel() {
