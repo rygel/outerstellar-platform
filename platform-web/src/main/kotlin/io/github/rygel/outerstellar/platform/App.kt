@@ -313,7 +313,12 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
                 )
                 .routes
         routes += ErrorRoutes(pageFactory, jteRenderer).routes
-        routes += SearchRoutes(pageFactory, jteRenderer, emptyList()).routes
+        val searchProviders =
+            listOfNotNull(
+                ctx.messageService?.let { io.github.rygel.outerstellar.platform.search.MessageSearchProvider(it) },
+                ctx.contactService?.let { io.github.rygel.outerstellar.platform.search.ContactSearchProvider(it) },
+            )
+        routes += SearchRoutes(pageFactory, jteRenderer, searchProviders).routes
         routes += SettingsRoutes(pageFactory, jteRenderer).routes
         if (notificationService != null) {
             routes += NotificationRoutes(pageFactory, jteRenderer, notificationService).routes
