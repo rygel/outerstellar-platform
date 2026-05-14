@@ -82,4 +82,8 @@
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>
         <Bug pattern="BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"/>
     </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+    </Match>
 </FindBugsFilter>
