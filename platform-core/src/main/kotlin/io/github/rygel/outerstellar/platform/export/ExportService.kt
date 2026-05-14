@@ -6,6 +6,8 @@ interface ExportProvider {
 
     fun exportCsv(): String
 
+    fun exportJson(): String
+
     fun headers(): List<String>
 }
 
