@@ -22,6 +22,7 @@ import io.github.rygel.outerstellar.platform.web.ContactsRoutes
 import io.github.rygel.outerstellar.platform.web.DevDashboardRoutes
 import io.github.rygel.outerstellar.platform.web.DeviceRegistrationApi
 import io.github.rygel.outerstellar.platform.web.ErrorRoutes
+import io.github.rygel.outerstellar.platform.web.ExportRoutes
 import io.github.rygel.outerstellar.platform.web.Filters
 import io.github.rygel.outerstellar.platform.web.HomeRoutes
 import io.github.rygel.outerstellar.platform.web.NotificationApi
@@ -258,6 +259,14 @@ private fun buildApiRoutes(
         }
         if (notificationService != null) {
             routes += NotificationApi(notificationService).routes
+        }
+        val exportProviders =
+            listOfNotNull(
+                messageService?.let { io.github.rygel.outerstellar.platform.export.MessageExportProvider(it) },
+                contactService?.let { io.github.rygel.outerstellar.platform.export.ContactExportProvider(it) },
+            )
+        if (exportProviders.isNotEmpty()) {
+            routes += ExportRoutes(exportProviders).routes
         }
     }
 
