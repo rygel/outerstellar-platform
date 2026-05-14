@@ -34,15 +34,15 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Architecture
 
-- [ ] **Refactor `SwingSyncApp.kt` God class (856 lines)**
-  Contains main window, all navigation, menu items, translations, and ~50 fields. Extract `SyncWindow` into its own class; split navigation and menu logic.
+- [x] ~~**Refactor `SwingSyncApp.kt` God class (856 lines)**~~
+  Fixed in PR #254 — extracted `SyncWindowMenu`, `SyncWindowNav`, removed dead dialog delegation. Now ~530 lines.
   — `platform-desktop/.../swing/SwingSyncApp.kt`
 
 - [x] ~~**Replace `sendAsync` in `SegmentAnalyticsService` with sync + background thread**~~
-  Fixed in PR #230 — replaced with synchronous `client.send()` in a daemon thread.
+  Fixed in PR #230.
 
-- [ ] **Reduce generic `catch (Exception)` boilerplate in `DesktopSyncEngine`**
-  22 methods duplicate the same try/catch pattern. Extract a higher-order function like `runCatching(operation, onSessionExpired, onError)`. Partially done — 8 methods refactored via `runGuarded`/`runGuardedResult` in PR #231.
+- [x] ~~**Reduce generic `catch (Exception)` boilerplate in `DesktopSyncEngine`**~~
+  Fixed in PR #263 — 7 of 13 methods refactored via enhanced `runGuarded`/`runGuardedResult` with optional `onError` callbacks.
   — `platform-sync-client/.../engine/DesktopSyncEngine.kt`
 
 ---
@@ -124,12 +124,12 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Architecture
 
-- [ ] **Extract SSRF validation from `SecurityService.updateProfile()` into a separate `UrlValidator`**
-  The avatar URL SSRF checks are inlined in `SecurityService`. This logic is duplicated in principle and should be a reusable validator.
-  — `platform-security/.../security/SecurityService.kt:196-220`
+- [x] ~~**Extract SSRF validation from `SecurityService.updateProfile()` into a separate `UrlValidator`**~~
+  Fixed in PR #250.
+  — `platform-core/.../service/UrlValidator.kt`
 
-- [ ] **Split `WebPageFactory.kt` (582 lines) into domain-specific factories**
-  Annotated `@Suppress("TooManyFunctions")` with ~20 builder methods. Extract contact, admin, settings pages.
+- [x] ~~**Split `WebPageFactory.kt` (582 lines) into domain-specific factories**~~
+  Fixed in PR #252 — 10 domain factories, 136-line delegating class.
   — `platform-web/.../web/WebPageFactory.kt`
 
 - [ ] **Add `DesktopSyncEngine` interface for testability**
@@ -142,13 +142,13 @@ Architecture, security, and maintainability improvements identified during code 
 
 ### Hardcoded Values
 
-- [ ] **Hardcoded JTE development paths in `JteInfra.kt`**
-  Assumes working directory is project root with `web/` subdirectory — breaks in production deployments.
-  — `platform-web/.../infra/JteInfra.kt:37-39`
+- [x] ~~**Hardcoded JTE development paths in `JteInfra.kt`**~~
+  Fixed in PR #251 — `JTE_SOURCE_DIR` env var.
+  — `platform-web/.../infra/JteInfra.kt`
 
-- [ ] **Supported languages/layouts/shells are inline sets**
-  `setOf("en", "fr")`, `setOf("nice", "cozy", "compact")`, `setOf("sidebar", "topbar")` in `Filters.kt` should be configurable.
-  — `platform-web/.../web/Filters.kt:281-296`
+- [x] ~~**Supported languages/layouts/shells are inline sets**~~
+  Fixed in PR #251 — centralized into `WebContext` constants.
+  — `platform-web/.../web/WebContext.kt`
 
 - [x] ~~**Outbox status strings (`"PENDING"`, `"PROCESSED"`, `"FAILED"`) scattered**~~
   Fixed in PR #243 — extracted `OutboxStatus` enum in `OutboxRepository.kt`. All 19 usages across `MessageService`, `JooqOutboxRepository`, `JdbiOutboxRepository`, `DevDashboardRoutes`, and tests updated.
@@ -180,9 +180,8 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 ### Medium Priority
 
-- [ ] **Integrate `fragments-seo-core` for Open Graph + Twitter Card meta tags**
-  Use `SeoMetadata.fromFragment()` to generate `og:title`, `og:description`, `og:image`, `og:url`, `og:type`, `twitter:card`, etc. Extend `ShellView` with SEO fields and emit in `LayoutHead.kte`.
-  — Dependency: `io.github.rygel:fragments-seo-core`
+- [x] ~~**Integrate `fragments-seo-core` for Open Graph + Twitter Card meta tags**~~
+  Fixed in PR #259 — uses `fragments-seo-core:0.6.5` `SeoMetadata.forPage()` + `generateAllMetaTags()`.
 
 - [x] ~~**Add `hreflang` alternate links for i18n SEO**~~
   Fixed in PR #236 — `<link rel="alternate" hreflang="en/fr/x-default">` emitted on non-noindex pages with canonical URL. `supportedLocales` and `appBaseUrl` added to `ShellView`.
@@ -200,9 +199,8 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Fixed in PR #236 — dynamic route at `/robots.txt` disallows `/api/`, `/admin/`, `/ws/`, `/auth/`, `/errors/`, `/components/`, `/messages/`, `/notifications/`, `/settings/`.
   — `App.kt:buildRobotsTxtResponse()`
 
-- [ ] **Integrate `fragments-sitemap-core` for XML sitemap generation**
-  Generate `/sitemap.xml` listing public pages (`/`, `/auth`, `/search`). Low priority since most pages require auth, but important for public content discovery.
-  — Dependency: `io.github.rygel:fragments-sitemap-core`
+- [x] ~~**Integrate `fragments-sitemap-core` for XML sitemap generation**~~
+  Fixed in PR #255 — inline `/sitemap.xml` route in `App.kt`.
 
 ### Low Priority
 
@@ -222,9 +220,8 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Fixed in PR #236 — `<meta name="theme-color" content="#0f172a">` added to LayoutHead.
   — `LayoutHead.kte`
 
-- [ ] **Add JSON-LD structured data (home page only)**
-  `WebSite` schema with `SearchAction` pointing to `/search?q=`. Low priority for an authenticated app.
-  — Can use `fragments-seo-core` `SeoMetadata` JSON-LD generation
+- [x] ~~**Add JSON-LD structured data (home page only)**~~
+  Fixed in PR #253 — `fragments-seo-core` generates `WebSite` JSON-LD on all non-noindex pages.
 
 - [x] ~~**Add `loading="lazy"` to avatar image**~~
   Fixed in PR #236 — `loading="lazy"` added to Gravatar `<img>` in ProfilePage.
@@ -299,7 +296,7 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 ### High Priority
 
-- [ ] **Configurable CSP policy via AppConfig**
+- [x] ~~**Configurable CSP policy via AppConfig**~~
   Currently hardcoded in `DEFAULT_CSP_POLICY`. Add `cspPolicy` field that can be overridden via env/YAML. Keep default for security but allow deployments to customize.
   — `platform-core/.../AppConfig.kt`
 
@@ -318,7 +315,7 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [ ] **Export SPI — CSV/JSON export for any entity**
   Generic export framework that can serialize lists of entities (messages, contacts, etc.) to CSV or JSON. Useful for admin dashboard and user data portability.
 
-- [ ] **Mobile responsive layout**
+- [x] ~~**Mobile responsive layout**~~
   `SidebarLayout` and `TopbarLayout` are desktop-oriented. Add responsive breakpoints, hamburger navigation, touch-friendly controls.
 
 - [ ] **Jazzer fuzz tests for high-risk surfaces**
