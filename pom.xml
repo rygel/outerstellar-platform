@@ -195,6 +195,11 @@
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
+                <artifactId>outerstellar-platform-desktop</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-persistence-jooq</artifactId>
                 <version>${project.version}</version>
             </dependency>

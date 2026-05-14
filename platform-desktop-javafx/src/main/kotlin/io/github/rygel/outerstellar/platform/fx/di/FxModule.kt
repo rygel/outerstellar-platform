@@ -8,11 +8,17 @@ import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.fx.app.FxAppConfig
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
+import io.github.rygel.outerstellar.platform.fx.service.FxTrayNotifier
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
 import io.github.rygel.outerstellar.platform.service.SyncProvider
+import io.github.rygel.outerstellar.platform.swing.analytics.PersistentBatchingAnalyticsService
 import io.github.rygel.outerstellar.platform.sync.SyncService
 import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.EngineNotifier
+import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
+import java.nio.file.Path
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -30,8 +36,20 @@ val fxModule
             SyncService(baseUrl = get<FxAppConfig>().serverBaseUrl, repository = get(), transactionManager = get())
         }
         single<SyncProvider> { get<SyncService>() }
-        single<AnalyticsService> { NoOpAnalyticsService() }
-        single { DesktopSyncEngine(get(), get(), getOrNull(), get(), getOrNull(), getOrNull()) }
+        single<AnalyticsService> {
+            val cfg = get<FxAppConfig>()
+            if (cfg.analyticsEnabled && cfg.segmentWriteKey.isNotBlank())
+                PersistentBatchingAnalyticsService(
+                    writeKey = cfg.segmentWriteKey,
+                    dataDir = Path.of("./data"),
+                    maxFileSizeBytes = cfg.analyticsMaxFileSizeKb * 1024,
+                    maxEventAgeDays = cfg.analyticsMaxEventAgeDays,
+                )
+            else NoOpAnalyticsService()
+        }
+        single<EngineNotifier> { FxTrayNotifier }
+        single<SyncEngine> { DesktopSyncEngine(get(), get(), getOrNull(), get(), getOrNull(), getOrNull()) }
+        single { FxSyncViewModel(get()) }
     }
 
 internal fun fxRuntimeModules(): List<Module> = listOf(fxModule, persistenceModule, coreModule)
