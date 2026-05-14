@@ -76,7 +76,7 @@ internal class DesktopSyncEngineListenerTest : DesktopSyncEngineTestBase() {
 
         engine.shutdown()
 
-        assertTrue(engine.listeners.isEmpty())
+        assertTrue((engine as DesktopSyncEngine).listeners.isEmpty())
         verify { connectivityChecker.stop() }
     }
 

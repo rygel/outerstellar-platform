@@ -8,11 +8,15 @@ import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.fx.app.FxAppConfig
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
+import io.github.rygel.outerstellar.platform.fx.service.FxTrayNotifier
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
 import io.github.rygel.outerstellar.platform.service.SyncProvider
 import io.github.rygel.outerstellar.platform.sync.SyncService
 import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.EngineNotifier
+import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -31,7 +35,9 @@ val fxModule
         }
         single<SyncProvider> { get<SyncService>() }
         single<AnalyticsService> { NoOpAnalyticsService() }
-        single { DesktopSyncEngine(get(), get(), getOrNull(), get(), getOrNull(), getOrNull()) }
+        single<EngineNotifier> { FxTrayNotifier }
+        single<SyncEngine> { DesktopSyncEngine(get(), get(), getOrNull(), get(), getOrNull(), getOrNull()) }
+        single { FxSyncViewModel(get()) }
     }
 
 internal fun fxRuntimeModules(): List<Module> = listOf(fxModule, persistenceModule, coreModule)

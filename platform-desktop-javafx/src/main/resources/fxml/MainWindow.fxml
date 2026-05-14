@@ -6,10 +6,41 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.SeparatorMenuItem?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="io.github.rygel.outerstellar.platform.fx.controller.MainController"
             prefWidth="1200" prefHeight="800">
+
+    <top>
+        <MenuBar>
+            <Menu text="File">
+                <MenuItem text="New Message" accelerator="Ctrl+N" onAction="#onNewMessage"/>
+                <MenuItem text="New Contact" accelerator="Ctrl+O" onAction="#onNewContact"/>
+                <SeparatorMenuItem/>
+                <MenuItem text="Sync" accelerator="F5" onAction="#onSync"/>
+                <MenuItem text="Sync All" accelerator="Shift+F5" onAction="#onSyncAll"/>
+                <SeparatorMenuItem/>
+                <MenuItem text="Exit" accelerator="Alt+F4" onAction="#onExit"/>
+            </Menu>
+            <Menu text="Edit">
+                <MenuItem text="Preferences" accelerator="Ctrl+," onAction="#onPreferences"/>
+            </Menu>
+            <Menu text="Tools">
+                <MenuItem text="Change Password" onAction="#onChangePassword"/>
+                <MenuItem text="Settings" onAction="#onSettings"/>
+            </Menu>
+            <Menu text="Help">
+                <MenuItem text="Help" accelerator="F1" onAction="#onHelp"/>
+                <MenuItem text="Check for Updates" onAction="#onCheckUpdates"/>
+                <SeparatorMenuItem/>
+                <MenuItem text="About" onAction="#onAbout"/>
+            </Menu>
+        </MenuBar>
+    </top>
 
     <left>
         <VBox fx:id="sidebar" styleClass="sidebar" prefWidth="200" spacing="4" style="-fx-padding: 12;">

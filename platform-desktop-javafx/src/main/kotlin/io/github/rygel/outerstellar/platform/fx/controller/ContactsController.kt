@@ -1,8 +1,10 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
+import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.ContactSummary
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
@@ -18,7 +20,7 @@ import org.slf4j.LoggerFactory
 class ContactsController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(ContactsController::class.java)
-    private val engine: DesktopSyncEngine by inject()
+    private val viewModel: FxSyncViewModel by inject()
     private val themeManager: FxThemeManager by inject()
 
     @FXML private lateinit var contactsTable: TableView<ContactSummary>
@@ -28,6 +30,7 @@ class ContactsController : KoinComponent {
 
     @FXML
     fun initialize() {
+        contactsTable.itemsProperty().bind(SimpleObjectProperty(viewModel.contacts))
         nameColumn.setCellValueFactory { SimpleStringProperty(it.value.name) }
         emailColumn.setCellValueFactory { SimpleStringProperty(it.value.emails.joinToString(", ")) }
         companyColumn.setCellValueFactory { SimpleStringProperty(it.value.company) }
@@ -48,12 +51,7 @@ class ContactsController : KoinComponent {
     }
 
     private fun loadContacts() {
-        try {
-            engine.loadContacts()
-            contactsTable.items.setAll(engine.state.contacts)
-        } catch (e: Exception) {
-            logger.warn("Load contacts failed: {}", e.message)
-        }
+        viewModel.loadContacts().runInBackground()
     }
 
     private fun showContactFormDialog(syncId: String?) {
