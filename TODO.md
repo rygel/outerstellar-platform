@@ -305,15 +305,14 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 ### Medium Priority
 
-- [ ] **Unified Settings page — `/settings` with tabs**
-  Consolidate Profile, Password, API Keys, Notifications, and Appearance into a single tabbed `/settings` page. Currently each is on its own separate route.
+- [x] ~~**Unified Settings page — `/settings` with tabs**~~
+  Done in WebPageFactory split (PR #252) — `SettingsPageFactory` with 5 tabs.
 
-- [ ] **Search SPI — `SearchProvider` interface**
-  Define a `SearchProvider` interface and aggregate results across plugins on `/search?q=`. Currently search uses a hardcoded empty list.
-  — `platform-web/.../web/SearchRoutes.kt`
+- [x] ~~**Search SPI — `SearchProvider` interface**~~
+  Fixed in PR #264 — message and contact search providers wired in App.kt.
 
-- [ ] **Export SPI — CSV/JSON export for any entity**
-  Generic export framework that can serialize lists of entities (messages, contacts, etc.) to CSV or JSON. Useful for admin dashboard and user data portability.
+- [x] ~~**Export SPI — CSV/JSON export for any entity**~~
+  Fixed in PR #265 — `MessageExportProvider` and `ContactExportProvider` at `/api/v1/export/{entity}/csv`.
 
 - [x] ~~**Mobile responsive layout**~~
   `SidebarLayout` and `TopbarLayout` are desktop-oriented. Add responsive breakpoints, hamburger navigation, touch-friendly controls.
