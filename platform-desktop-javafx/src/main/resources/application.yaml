@@ -1,0 +1,6 @@
+serverBaseUrl: "http://localhost:8080"
+jdbcUrl: "jdbc:postgresql://localhost:5432/outerstellar"
+jdbcUser: "outerstellar"
+jdbcPassword: "outerstellar"
+devMode: false
+analyticsEnabled: false
