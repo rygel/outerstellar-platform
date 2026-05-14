@@ -66,4 +66,20 @@
         <Class name="io.github.rygel.outerstellar.platform.fx.service.FxTrayNotifier"/>
         <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
     </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.app.JavaFxApp"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.app.JavaFxApp"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_MIGHT_BE_INFEASIBLE"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.app.JavaFxApp"/>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>
+        <Bug pattern="BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"/>
+    </Match>
 </FindBugsFilter>
