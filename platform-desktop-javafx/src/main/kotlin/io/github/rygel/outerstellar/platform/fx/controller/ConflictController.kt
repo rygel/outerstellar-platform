@@ -1,8 +1,9 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
+import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.MessageSummary
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import javafx.fxml.FXML
 import javafx.scene.control.Label
 import javafx.scene.control.TextArea
@@ -12,7 +13,7 @@ import org.koin.core.component.inject
 
 class ConflictController : KoinComponent {
 
-    private val engine: DesktopSyncEngine by inject()
+    private val viewModel: FxSyncViewModel by inject()
 
     @FXML private lateinit var localAuthorLabel: Label
     @FXML private lateinit var localContent: TextArea
@@ -31,17 +32,29 @@ class ConflictController : KoinComponent {
     @FXML
     fun onKeepMine() {
         val id = syncId ?: return
-        engine.resolveConflict(id, ConflictStrategy.MINE)
-        conflictStrategy = ConflictStrategy.MINE
-        close()
+        viewModel
+            .resolveConflict(id, ConflictStrategy.MINE)
+            .also { task ->
+                task.setOnSucceeded {
+                    conflictStrategy = ConflictStrategy.MINE
+                    close()
+                }
+            }
+            .runInBackground()
     }
 
     @FXML
     fun onAcceptServer() {
         val id = syncId ?: return
-        engine.resolveConflict(id, ConflictStrategy.SERVER)
-        conflictStrategy = ConflictStrategy.SERVER
-        close()
+        viewModel
+            .resolveConflict(id, ConflictStrategy.SERVER)
+            .also { task ->
+                task.setOnSucceeded {
+                    conflictStrategy = ConflictStrategy.SERVER
+                    close()
+                }
+            }
+            .runInBackground()
     }
 
     private fun close() {
