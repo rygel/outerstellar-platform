@@ -12,21 +12,18 @@ class MessageSearchProvider(private val messageService: MessageService?) : Searc
 
     override fun search(query: String, limit: Int): List<SearchResult> {
         if (query.isBlank() || messageService == null) return emptyList()
-        return messageService.listMessages(
-            query = query,
-            limit = limit.coerceIn(1, MAX_SEARCH_LIMIT),
-            offset = 0,
-        ).items.map { msg ->
-            SearchResult(
-                id = msg.syncId,
-                title = msg.author,
-                subtitle = msg.content.take(MAX_PREVIEW_LENGTH),
-                url = "/",
-                type = "message",
-                score = if (msg.content.contains(query, ignoreCase = true)) 1.0 else 0.8,
-            )
-        }
-    }
-}
+        return messageService
+            .listMessages(query = query, limit = limit.coerceIn(1, MAX_SEARCH_LIMIT), offset = 0)
+            .items
+            .map { msg ->
+                SearchResult(
+                    id = msg.syncId,
+                    title = msg.author,
+                    subtitle = msg.content.take(MAX_PREVIEW_LENGTH),
+                    url = "/",
+                    type = "message",
+                    score = if (msg.content.contains(query, ignoreCase = true)) 1.0 else 0.8,
+                )
+            }
     }
 }
