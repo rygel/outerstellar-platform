@@ -159,7 +159,6 @@ class SyncViewModel(
         userAvatarUrl = s.userAvatarUrl
         emailNotificationsEnabled = s.emailNotificationsEnabled
         pushNotificationsEnabled = s.pushNotificationsEnabled
-        if (s.status.isNotBlank()) status = s.status
     }
 
     fun createMessage(onValidationError: (String) -> Unit) {
