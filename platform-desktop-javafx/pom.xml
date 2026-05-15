@@ -13,7 +13,7 @@
     <name>Platform Desktop JavaFX</name>
 
     <properties>
-        <javafx.version>21</javafx.version>
+        <javafx.version>26.0.1</javafx.version>
         <atlantafx.version>2.1.0</atlantafx.version>
         <testfx.version>4.0.18</testfx.version>
     </properties>
