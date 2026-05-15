@@ -130,6 +130,7 @@ class SyncViewModel(
     }
 
     private fun notifyObservers() {
+        syncFromEngine()
         observers.forEach { it() }
     }
 
@@ -141,6 +142,24 @@ class SyncViewModel(
 
     fun loadMessages() {
         engine.loadMessages()
+    }
+
+    private fun syncFromEngine() {
+        val s = engine.state
+        isOnline = s.isOnline
+        messages = s.messages
+        contacts = s.contacts
+        isSyncing = s.isSyncing
+        userName = s.userName
+        isLoggedIn = s.isLoggedIn
+        userRole = s.userRole
+        adminUsers = s.adminUsers
+        notifications = s.notifications
+        userEmail = s.userEmail
+        userAvatarUrl = s.userAvatarUrl
+        emailNotificationsEnabled = s.emailNotificationsEnabled
+        pushNotificationsEnabled = s.pushNotificationsEnabled
+        if (s.status.isNotBlank()) status = s.status
     }
 
     fun createMessage(onValidationError: (String) -> Unit) {
