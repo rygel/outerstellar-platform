@@ -68,7 +68,7 @@
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
         <spotbugs.version>4.9.8.3</spotbugs.version>
-        <spotless.version>3.4.0</spotless.version>
+        <spotless.version>3.5.0</spotless.version>
         <ktfmt.version>0.62</ktfmt.version>
         <jacoco.version>0.8.14</jacoco.version>
         <extra-enforcer-rules.version>1.12.0</extra-enforcer-rules.version>
