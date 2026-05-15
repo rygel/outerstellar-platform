@@ -1,4 +1,15 @@
-### Outerstellar Platform Project
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-21-%23ED8B00?logo=openjdk" alt="Java 21">
+  <img src="https://img.shields.io/badge/Kotlin-2.3-%237F52FF?logo=kotlin" alt="Kotlin">
+  <img src="https://img.shields.io/github/actions/workflow/status/rygel/outerstellar-platform/.github/workflows/ci.yml?branch=develop&label=CI&logo=github" alt="CI">
+  <img src="https://img.shields.io/github/actions/workflow/status/rygel/outerstellar-platform/.github/workflows/ci.yml?branch=develop&label=quality&logo=github" alt="Quality">
+  <img src="https://img.shields.io/github/license/rygel/outerstellar-platform" alt="License">
+  <img src="https://img.shields.io/github/v/release/rygel/outerstellar-platform?include_prereleases&logo=github" alt="Release">
+  <img src="https://img.shields.io/badge/PostgreSQL-16-%234169E1?logo=postgresql" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/GraalVM-native-brightgreen?logo=graalvm" alt="GraalVM">
+</p>
+
+# Outerstellar Platform
 
 A modern, full-stack Kotlin application designed as a platform template for building robust and scalable systems. This project showcases a clean, multi-module architecture with a focus on reliability, performance, and observability.
 

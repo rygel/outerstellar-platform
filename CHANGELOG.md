@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.6.2] – 2026-05-14
+
+### Added
+- JavaFX desktop module with full Swing parity: `FxSyncViewModel`, observable properties, `Task`-based threading, menu bar with keyboard shortcuts, connectivity checker, tray notifications, splash screen, deep link handler, status bar, unread badge, conflict markers, password reset flow, feedback dialog, update checker
+- `SyncEngine` interface extracted from `DesktopSyncEngine` for testability
+
+### Changed
+- All 9 engine-consuming JavaFX controllers refactored to use `FxSyncViewModel`
+- `DesktopSyncEngine` now implements `SyncEngine` interface
+- `FxTrayNotifier` converted to Kotlin `object` implementing `EngineNotifier`
+
+### Fixed
+- SpotBugs/Detekt violations in JavaFX module: 11 SpotBugs bugs + 4 Detekt issues resolved via exclusions and code fixes
+- E2E tests for MainWindow now properly mock `SyncEngine` and `FxSyncViewModel`
+
+---
+
 ## [Unreleased]
 
 ---
