@@ -15,6 +15,7 @@ import io.github.rygel.outerstellar.platform.model.UpdateProfileRequest
 import io.github.rygel.outerstellar.platform.model.UserProfileResponse
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
+import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import org.http4k.contract.ContractRoute
@@ -196,9 +197,10 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 POST to
                 { request ->
                     val login = loginRequestLens(request)
-                    val user = securityService.authenticate(login.username, login.password)
+                    val authResult = securityService.authenticate(login.username, login.password)
 
-                    if (user != null) {
+                    if (authResult is AuthResult.Authenticated) {
+                        val user = authResult.user
                         val sessionToken = securityService.createSession(user.id)
                         Response(Status.OK)
                             .with(
@@ -209,6 +211,8 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                                         role = user.role.name,
                                     )
                             )
+                    } else if (authResult is AuthResult.TotpRequired) {
+                        Response(Status.UNAUTHORIZED).body("TOTP required")
                     } else {
                         Response(Status.UNAUTHORIZED).body("Invalid credentials")
                     }

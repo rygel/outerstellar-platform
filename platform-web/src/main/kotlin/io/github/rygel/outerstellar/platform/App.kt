@@ -37,6 +37,7 @@ import io.github.rygel.outerstellar.platform.web.SearchRoutes
 import io.github.rygel.outerstellar.platform.web.SettingsRoutes
 import io.github.rygel.outerstellar.platform.web.SyncApi
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
+import io.github.rygel.outerstellar.platform.web.TOTPRoutes
 import io.github.rygel.outerstellar.platform.web.UserAdminApi
 import io.github.rygel.outerstellar.platform.web.UserAdminRoutes
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
@@ -209,7 +210,8 @@ private fun buildBearerSecurityPair(
                     is AuthResult.Authenticated -> next(req.with(SecurityRules.USER_KEY of finalResult.user))
                     is AuthResult.Expired ->
                         Response(Status.UNAUTHORIZED).header("X-Session-Expired", "true").body("Session expired")
-                    is AuthResult.Skipped -> Response(Status.UNAUTHORIZED).body("API token required")
+                    is AuthResult.Skipped,
+                    is AuthResult.TotpRequired -> Response(Status.UNAUTHORIZED).body("API token required")
                 }
             }
         }
@@ -464,7 +466,8 @@ private fun buildBaseApp(
         )
 
     // Filtered routes — user session, CSRF, rate limiting, state
-    val appRoutes = mutableListOf(uiRoutes, componentRoutes)
+    val totpRoutes = TOTPRoutes(ctx.securityService, ctx.jteRenderer, ctx.config.sessionCookieSecure)
+    val appRoutes = mutableListOf(uiRoutes, componentRoutes, totpRoutes.routes)
     appRoutes.addAll(apiRoutes)
     if ("/" !in ctx.excludedRoutes) {
         appRoutes += "/" bind filteredAdminHandler

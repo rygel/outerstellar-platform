@@ -129,6 +129,8 @@ data class AuthFormFragment(
 
 data class AuthResultFragment(val title: String, val message: String, val toneClass: String) : ViewModel
 
+data class TotpChallengeForm(val partialToken: String, val error: String? = null) : ViewModel
+
 data class ErrorPage(
     val statusCode: Int,
     val heading: String,

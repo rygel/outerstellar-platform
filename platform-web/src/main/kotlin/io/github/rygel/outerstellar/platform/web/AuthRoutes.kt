@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
+import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -65,8 +66,12 @@ class AuthRoutes(
 
                     if (mode == "sign-in") {
                         val ctx = request.webContext
-                        val user = securityService.authenticate(email, password)
-                        if (user != null) {
+                        val authResult = securityService.authenticate(email, password)
+                        if (authResult is AuthResult.TotpRequired) {
+                            return@to renderer.render(TotpChallengeForm(authResult.token))
+                        }
+                        if (authResult is AuthResult.Authenticated) {
+                            val user = authResult.user
                             analytics.identify(
                                 user.id.toString(),
                                 mapOf("username" to user.username, "role" to user.role.name),
