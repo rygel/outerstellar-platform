@@ -326,6 +326,7 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
                     providers = oauthProviders,
                     securityService = securityService,
                     sessionCookieSecure = sessionCookieSecure,
+                    appBaseUrl = ctx.config.appBaseUrl,
                 )
                 .routes
         routes += ErrorRoutes(pageFactory, jteRenderer).routes

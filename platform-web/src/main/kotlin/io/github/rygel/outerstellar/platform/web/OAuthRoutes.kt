@@ -28,6 +28,7 @@ class OAuthRoutes(
     private val providers: Map<String, OAuthProvider>,
     private val securityService: SecurityService,
     private val sessionCookieSecure: Boolean = false,
+    private val appBaseUrl: String = "http://localhost:8080",
 ) : ServerRoutes {
 
     private val logger = LoggerFactory.getLogger(OAuthRoutes::class.java)
@@ -78,7 +79,7 @@ class OAuthRoutes(
 
     private fun initiateOAuth(request: Request, providerName: String, provider: OAuthProvider): Response {
         val state = java.util.UUID.randomUUID().toString()
-        val redirectUri = "${request.uri.scheme}://${request.uri.authority}/auth/oauth/$providerName/callback"
+        val redirectUri = "$appBaseUrl/auth/oauth/$providerName/callback"
 
         val stateCookie =
             Cookie(
@@ -120,7 +121,7 @@ class OAuthRoutes(
         val validated =
             validateCallback(request, providerName) ?: return badCallbackResponse("Invalid callback parameters")
 
-        val redirectUri = "${request.uri.scheme}://${request.uri.authority}/auth/oauth/$providerName/callback"
+        val redirectUri = "$appBaseUrl/auth/oauth/$providerName/callback"
 
         return try {
             val userInfo = provider.exchangeCode(validated.code, validated.state, redirectUri)
