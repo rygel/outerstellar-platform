@@ -40,8 +40,8 @@ class OAuthRoutes(
                     summary = "Initiate $providerName OAuth sign-in"
                 } bindContract
                 GET to
-                { request: Request ->
-                    initiateOAuth(request, providerName, provider)
+                { _: Request ->
+                    initiateOAuth(providerName, provider)
                 },
             "/auth/oauth/$providerName/callback" meta
                 {
@@ -77,7 +77,7 @@ class OAuthRoutes(
         )
     }
 
-    private fun initiateOAuth(request: Request, providerName: String, provider: OAuthProvider): Response {
+    private fun initiateOAuth(providerName: String, provider: OAuthProvider): Response {
         val state = java.util.UUID.randomUUID().toString()
         val redirectUri = "$appBaseUrl/auth/oauth/$providerName/callback"
 
