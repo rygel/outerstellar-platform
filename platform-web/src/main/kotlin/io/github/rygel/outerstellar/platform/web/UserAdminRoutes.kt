@@ -61,8 +61,7 @@ class UserAdminRoutes(
                     { request: org.http4k.core.Request ->
                         val ctx = request.webContext
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
-                        val users = securityService.listUsers()
-                        val target = users.find { it.id == userId }
+                        val target = securityService.findUserSummary(UUID.fromString(userId))
                         if (target != null) {
                             securityService.setUserEnabled(admin.id, UUID.fromString(userId), !target.enabled)
                         }
@@ -100,8 +99,7 @@ class UserAdminRoutes(
                     { request: org.http4k.core.Request ->
                         val ctx = request.webContext
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
-                        val users = securityService.listUsers()
-                        val target = users.find { it.id == userId }
+                        val target = securityService.findUserSummary(UUID.fromString(userId))
                         if (target != null) {
                             val newRole = if (target.role == UserRole.ADMIN) UserRole.USER else UserRole.ADMIN
                             securityService.setUserRole(admin.id, UUID.fromString(userId), newRole)

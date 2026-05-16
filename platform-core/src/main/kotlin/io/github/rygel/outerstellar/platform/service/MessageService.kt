@@ -130,7 +130,7 @@ class MessageService(
             )
         )
         cache.put("entity:${message.syncId}", message)
-        cache.invalidateByPrefix("list:")
+        cache.invalidateNamespace("list")
         eventPublisher.publishRefresh("message-list-panel")
         return message
     }
@@ -156,7 +156,7 @@ class MessageService(
             )
         )
         cache.put("entity:${message.syncId}", message)
-        cache.invalidateByPrefix("list:")
+        cache.invalidateNamespace("list")
         eventPublisher.publishRefresh("message-list-panel")
         return message
     }
@@ -199,7 +199,7 @@ class MessageService(
         }
 
         if (appliedCount > 0 || conflicts.isNotEmpty()) {
-            cache.invalidateByPrefix("list:")
+            cache.invalidateNamespace("list")
             eventPublisher.publishRefresh("message-list-panel")
         }
 
@@ -209,7 +209,7 @@ class MessageService(
     fun restore(syncId: String) {
         repository.restore(syncId)
         cache.invalidate("entity:$syncId")
-        cache.invalidateByPrefix("list:")
+        cache.invalidateNamespace("list")
         eventPublisher.publishRefresh("message-list-panel")
     }
 
@@ -243,7 +243,7 @@ class MessageService(
             )
         )
         cache.invalidate("entity:$syncId")
-        cache.invalidateByPrefix("list:")
+        cache.invalidateNamespace("list")
         eventPublisher.publishRefresh("message-list-panel")
     }
 
@@ -279,7 +279,7 @@ class MessageService(
             )
         )
         cache.put("entity:${updated.syncId}", updated)
-        cache.invalidateByPrefix("list:")
+        cache.invalidateNamespace("list")
         eventPublisher.publishRefresh("message-list-panel")
         return updated
     }
@@ -310,7 +310,7 @@ class MessageService(
 
         repository.resolveConflict(syncId, resolved)
         cache.invalidate("entity:$syncId")
-        cache.invalidateByPrefix("list:")
+        cache.invalidateNamespace("list")
         eventPublisher.publishRefresh("message-list-panel")
     }
 }

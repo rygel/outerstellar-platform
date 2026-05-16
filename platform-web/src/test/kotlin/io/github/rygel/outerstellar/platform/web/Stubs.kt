@@ -48,7 +48,7 @@ class StubMessageCache : MessageCache {
         // Stub implementation
     }
 
-    override fun invalidateByPrefix(prefix: String) {
+    override fun invalidateNamespace(namespace: String) {
         // test stub — no-op
     }
 
