@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.security.PasswordResetService
 import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
@@ -49,11 +50,16 @@ class PasswordResetFlowIntegrationTest : WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    /** Fetch the most recent reset token from the DB. */
-    private fun fetchResetToken(): String? =
-        testDsl
-            .fetchOne("SELECT token FROM plt_password_reset_tokens WHERE used = false ORDER BY created_at DESC LIMIT 1")
-            ?.get(0, String::class.java)
+    private val resetService by lazy {
+        PasswordResetService(
+            userRepository,
+            encoder,
+            resetRepository = passwordResetRepository,
+            auditRepository = auditRepository,
+        )
+    }
+
+    private fun requestRawToken(email: String): String? = resetService.requestPasswordReset(email)
 
     @Test
     fun `POST reset-request with valid email returns 200`() {
@@ -96,23 +102,14 @@ class PasswordResetFlowIntegrationTest : WebTest() {
 
     @Test
     fun `POST reset-confirm with valid token changes password and returns 200`() {
-        // Step 1: Request reset — token is stored in DB
-        app(
-            Request(POST, "/api/v1/auth/reset-request")
-                .header("content-type", "application/json")
-                .body("""{"email":"${testUser.email}"}""")
-        )
+        val rawToken = requestRawToken(testUser.email)
+        assertNotNull(rawToken, "Token should be generated after reset request")
 
-        // Step 2: Retrieve token from DB
-        val token = fetchResetToken()
-        assertNotNull(token, "Token should be stored in DB after reset request")
-
-        // Step 3: Confirm reset
         val response =
             app(
                 Request(POST, "/api/v1/auth/reset-confirm")
                     .header("content-type", "application/json")
-                    .body("""{"token":"$token","newPassword":"newSecurePass99"}""")
+                    .body("""{"token":"$rawToken","newPassword":"newSecurePass99"}""")
             )
 
         assertEquals(Status.OK, response.status)
@@ -132,20 +129,13 @@ class PasswordResetFlowIntegrationTest : WebTest() {
 
     @Test
     fun `after successful reset user can authenticate with new password`() {
-        // Request reset
-        app(
-            Request(POST, "/api/v1/auth/reset-request")
-                .header("content-type", "application/json")
-                .body("""{"email":"${testUser.email}"}""")
-        )
-        val token = fetchResetToken()
-        assertNotNull(token)
+        val rawToken = requestRawToken(testUser.email)
+        assertNotNull(rawToken)
 
-        // Confirm reset with new password
         app(
             Request(POST, "/api/v1/auth/reset-confirm")
                 .header("content-type", "application/json")
-                .body("""{"token":"$token","newPassword":"brandnewpass123"}""")
+                .body("""{"token":"$rawToken","newPassword":"brandnewpass123"}""")
         )
 
         // Try logging in with new password
@@ -160,20 +150,13 @@ class PasswordResetFlowIntegrationTest : WebTest() {
 
     @Test
     fun `after successful reset old password no longer works`() {
-        // Request reset
-        app(
-            Request(POST, "/api/v1/auth/reset-request")
-                .header("content-type", "application/json")
-                .body("""{"email":"${testUser.email}"}""")
-        )
-        val token = fetchResetToken()
-        assertNotNull(token)
+        val rawToken = requestRawToken(testUser.email)
+        assertNotNull(rawToken)
 
-        // Confirm reset
         app(
             Request(POST, "/api/v1/auth/reset-confirm")
                 .header("content-type", "application/json")
-                .body("""{"token":"$token","newPassword":"brandnewpass123"}""")
+                .body("""{"token":"$rawToken","newPassword":"brandnewpass123"}""")
         )
 
         // Try logging in with OLD password
@@ -188,19 +171,14 @@ class PasswordResetFlowIntegrationTest : WebTest() {
 
     @Test
     fun `POST reset-confirm with weak new password returns 400`() {
-        app(
-            Request(POST, "/api/v1/auth/reset-request")
-                .header("content-type", "application/json")
-                .body("""{"email":"${testUser.email}"}""")
-        )
-        val token = fetchResetToken()
-        assertNotNull(token)
+        val rawToken = requestRawToken(testUser.email)
+        assertNotNull(rawToken)
 
         val response =
             app(
                 Request(POST, "/api/v1/auth/reset-confirm")
                     .header("content-type", "application/json")
-                    .body("""{"token":"$token","newPassword":"short"}""")
+                    .body("""{"token":"$rawToken","newPassword":"short"}""")
             )
 
         assertTrue(response.status.code >= 400, "Weak password should be rejected, got: ${response.status}")
