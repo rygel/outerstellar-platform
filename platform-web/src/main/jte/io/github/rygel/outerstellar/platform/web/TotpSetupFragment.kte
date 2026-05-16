@@ -1,0 +1,49 @@
+@import io.github.rygel.outerstellar.platform.web.TotpSetupFragment
+@param model: TotpSetupFragment
+
+<div id="totp-setup">
+    @if (model.totpEnabled)
+        <div class="alert alert-success mb-4">
+            <span>Two-factor authentication is enabled.</span>
+        </div>
+        <form hx-post="/auth/components/totp-disable" hx-target="#totp-setup" hx-swap="outerHTML">
+            <label class="form-control w-full">
+                <span class="label-text">Enter your password to disable</span>
+                <input type="password" name="password" class="input input-bordered w-full" required/>
+            </label>
+            <button class="btn btn-error mt-3" type="submit">Disable Two-Factor Auth</button>
+        </form>
+        @if (model.totpRemainingBackupCodes > 0)
+            <p class="text-sm mt-4">${model.totpRemainingBackupCodes} backup codes remaining</p>
+        @endif
+    @else
+        <p class="mb-4">Scan the QR code below with your authenticator app, then enter the 6-digit code.</p>
+        @if (model.totpQrDataUri != null)
+            <img src="${model.totpQrDataUri}" alt="TOTP QR Code" class="mb-4"/>
+            <p class="text-xs mb-4">Or enter this key manually: <code>${model.totpSecret}</code></p>
+            <form hx-post="/auth/components/totp-verify-setup" hx-target="#totp-setup" hx-swap="outerHTML">
+                <input type="hidden" name="secret" value="${model.totpSecret}"/>
+                <label class="form-control w-full">
+                    <span class="label-text">Authentication Code</span>
+                    <input type="text" name="code" class="input input-bordered w-full" placeholder="000000" maxlength="6" pattern="[0-9]{6}" required/>
+                </label>
+                <button class="btn btn-primary mt-3" type="submit">Verify and Enable</button>
+            </form>
+        @else
+            <button class="btn btn-primary" hx-post="/auth/components/totp-setup" hx-target="#totp-setup" hx-swap="outerHTML">
+                Enable Two-Factor Auth
+            </button>
+        @endif
+        @if (model.totpBackupCodes != null)
+            <div class="alert alert-warning mt-4">
+                <strong>Backup Codes</strong>
+                <p class="text-sm">Save these codes in a safe place. Each code can be used once.</p>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    @for(code in model.totpBackupCodes)
+                        <code class="block p-1 bg-base-300 rounded text-center">${code}</code>
+                    @endfor
+                </div>
+            </div>
+        @endif
+    @endif
+</div>

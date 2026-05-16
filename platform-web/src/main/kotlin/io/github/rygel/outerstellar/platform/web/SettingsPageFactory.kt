@@ -5,7 +5,7 @@ class SettingsPageFactory {
     fun buildSettingsPage(ctx: WebContext, activeTab: String = "profile"): Page<SettingsPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.settings.title"), "/settings")
-        val validTabs = listOf("profile", "password", "api-keys", "notifications", "appearance")
+        val validTabs = listOf("profile", "password", "security", "api-keys", "notifications", "appearance")
         val normalizedTab = if (activeTab in validTabs) activeTab else "profile"
         val tabs =
             listOf(
@@ -20,6 +20,12 @@ class SettingsPageFactory {
                     i18n.translate("web.settings.tab.password"),
                     ctx.url("/settings?tab=password"),
                     normalizedTab == "password",
+                ),
+                SettingsTab(
+                    "security",
+                    i18n.translate("web.settings.tab.security"),
+                    ctx.url("/settings?tab=security"),
+                    normalizedTab == "security",
                 ),
                 SettingsTab(
                     "api-keys",

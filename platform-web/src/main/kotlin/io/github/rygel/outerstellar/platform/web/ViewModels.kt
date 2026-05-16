@@ -129,6 +129,16 @@ data class AuthFormFragment(
 
 data class AuthResultFragment(val title: String, val message: String, val toneClass: String) : ViewModel
 
+data class TotpChallengeForm(val partialToken: String, val error: String? = null) : ViewModel
+
+data class TotpSetupFragment(
+    val totpEnabled: Boolean = false,
+    val totpQrDataUri: String? = null,
+    val totpSecret: String? = null,
+    val totpBackupCodes: List<String>? = null,
+    val totpRemainingBackupCodes: Int = 0,
+) : ViewModel
+
 data class ErrorPage(
     val statusCode: Int,
     val heading: String,
@@ -479,6 +489,11 @@ data class SettingsPage(
     val apiKeysDescription: String = "",
     val notificationsDescription: String = "",
     val appearanceDescription: String = "",
+    val totpEnabled: Boolean = false,
+    val totpQrDataUri: String? = null,
+    val totpSecret: String? = null,
+    val totpBackupCodes: List<String>? = null,
+    val totpRemainingBackupCodes: Int = 0,
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/SettingsPage"
 }

@@ -19,6 +19,7 @@ import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.pl
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteResetPasswordPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSearchPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSettingsPageGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTotpChallengeFormGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTrashPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteUserAdminPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteConflictResolveModalGenerated
@@ -65,6 +66,7 @@ object JteClassRegistry {
             JteChangePasswordFormGenerated::class.java,
             JteErrorHelpFragmentGenerated::class.java,
             JteFooterStatusFragmentGenerated::class.java,
+            JteTotpChallengeFormGenerated::class.java,
         )
 
     private val componentClasses =

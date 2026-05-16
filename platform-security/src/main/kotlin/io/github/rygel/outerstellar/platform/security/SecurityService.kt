@@ -4,6 +4,7 @@ import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
+import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
@@ -11,9 +12,14 @@ import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsExceptio
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.service.UrlValidator
+import java.security.SecureRandom
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
+
+data class PartialAuth(val userId: UUID, val createdAt: Instant, var attemptCount: Int = 0)
 
 class SecurityService(
     private val userRepository: UserRepository,
@@ -26,9 +32,12 @@ class SecurityService(
     private val config: SecurityConfig = SecurityConfig(),
     private val sessionRepository: SessionRepository? = null,
     private val activityUpdater: AsyncActivityUpdater? = null,
+    private val totpService: TOTPService = TOTPService(),
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
-    private val secureRandom = java.security.SecureRandom()
+    private val secureRandom = SecureRandom()
+    private val partialAuthStore = ConcurrentHashMap<String, PartialAuth>()
+    private val random = SecureRandom()
 
     private val passwordResetService by lazy {
         PasswordResetService(
@@ -54,7 +63,7 @@ class SecurityService(
         )
     }
 
-    fun authenticate(username: String, password: String): User? {
+    fun authenticate(username: String, password: String): AuthResult? {
         val user =
             userRepository.findByUsername(username)
                 ?: run {
@@ -78,7 +87,10 @@ class SecurityService(
                 userRepository.resetFailedLoginAttempts(user.id)
             }
             logger.info("Authentication successful for user $username")
-            return user
+            if (user.totpEnabled) {
+                return AuthResult.TotpRequired(generatePartialAuthToken(user.id))
+            }
+            return AuthResult.Authenticated(user)
         }
         val attempts = userRepository.incrementFailedLoginAttempts(user.id)
         logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
@@ -312,6 +324,59 @@ class SecurityService(
     fun deleteSession(rawToken: String) {
         val repo = sessionRepository ?: return
         repo.deleteByTokenHash(hashToken(rawToken))
+    }
+
+    private fun generatePartialAuthToken(userId: UUID): String {
+        val bytes = ByteArray(32)
+        random.nextBytes(bytes)
+        val token = "pt_" + bytes.joinToString("") { "%02x".format(it) }
+        partialAuthStore[token] = PartialAuth(userId = userId, createdAt = Instant.now())
+        return token
+    }
+
+    fun verifyTotp(partialToken: String, code: String): TotpVerifyResponse {
+        val partial = partialAuthStore[partialToken] ?: return TotpVerifyResponse("expired")
+        if (Duration.between(partial.createdAt, Instant.now()).toMinutes() >= 5) {
+            partialAuthStore.remove(partialToken)
+            return TotpVerifyResponse("expired")
+        }
+        if (partial.attemptCount >= 5) {
+            partialAuthStore.remove(partialToken)
+            return TotpVerifyResponse("expired")
+        }
+        partial.attemptCount++
+
+        val user = userRepository.findById(partial.userId) ?: return TotpVerifyResponse("expired")
+        val secret = user.totpSecret ?: return TotpVerifyResponse("expired")
+
+        if (totpService.verifyCode(secret, code)) {
+            partialAuthStore.remove(partialToken)
+            val token = createSession(user.id)
+            return TotpVerifyResponse("success", token = token, username = user.username, role = user.role.name)
+        }
+
+        val backupCodes = user.totpBackupCodes
+        if (backupCodes != null) {
+            val updatedCodes = totpService.verifyBackupCode(code, backupCodes)
+            if (updatedCodes != null) {
+                userRepository.updateTotpSecret(user.id, user.totpSecret, updatedCodes.ifEmpty { null })
+                partialAuthStore.remove(partialToken)
+                val token = createSession(user.id)
+                return TotpVerifyResponse("success", token = token, username = user.username, role = user.role.name)
+            }
+        }
+
+        return TotpVerifyResponse("invalid_code")
+    }
+
+    fun enableTotp(userId: UUID, secret: String, backupCodes: String) {
+        userRepository.updateTotpSecret(userId, secret, backupCodes)
+        userRepository.enableTotp(userId)
+    }
+
+    fun disableTotp(userId: UUID) {
+        userRepository.updateTotpSecret(userId, null, null)
+        userRepository.disableTotp(userId)
     }
 
     private fun generateRandomHex(length: Int): String {

@@ -27,6 +27,7 @@ class SecurityServiceTest {
     private lateinit var auditRepository: AuditRepository
     private lateinit var apiKeyRepository: ApiKeyRepository
     private lateinit var service: SecurityService
+    private val totpService = TOTPService()
 
     private val testUser =
         User(
@@ -58,6 +59,7 @@ class SecurityServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 apiKeyRepository = apiKeyRepository,
+                totpService = totpService,
             )
     }
 
@@ -70,9 +72,9 @@ class SecurityServiceTest {
 
         val result = service.authenticate("testuser", "correctpass")
 
-        assertNotNull(result)
-        assertEquals(testUser.id, result.id)
-        assertEquals("testuser", result.username)
+        assertTrue(result is AuthResult.Authenticated)
+        assertEquals(testUser.id, result.user.id)
+        assertEquals("testuser", result.user.username)
     }
 
     @Test
@@ -124,7 +126,7 @@ class SecurityServiceTest {
 
         val result = service.authenticate("testuser", "correctpass")
 
-        assertNotNull(result, "Account with expired lock should authenticate")
+        assertTrue(result is AuthResult.Authenticated, "Account with expired lock should authenticate")
         verify { userRepository.resetFailedLoginAttempts(unlockedUser.id) }
     }
 
@@ -160,7 +162,7 @@ class SecurityServiceTest {
 
         val result = service.authenticate("testuser", "correctpass")
 
-        assertNotNull(result)
+        assertTrue(result is AuthResult.Authenticated)
         verify { userRepository.resetFailedLoginAttempts(userWithAttempts.id) }
     }
 
@@ -304,6 +306,7 @@ class SecurityServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 sessionRepository = sessionRepository,
+                totpService = totpService,
             )
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true

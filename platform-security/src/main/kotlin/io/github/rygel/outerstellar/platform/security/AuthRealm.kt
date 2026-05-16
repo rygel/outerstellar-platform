@@ -10,6 +10,9 @@ sealed class AuthResult {
 
     /** This realm does not recognise the token — try the next realm. */
     data object Skipped : AuthResult()
+
+    /** Password was valid but TOTP verification is required. */
+    data class TotpRequired(val token: String) : AuthResult()
 }
 
 /**
