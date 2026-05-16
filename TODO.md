@@ -386,12 +386,12 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Fixed in PR #277 — removed inner `buildFilterChain()` call; filters applied once to all routes.
   — `platform-web/.../App.kt`
 
-- [ ] **Restrict dynamic ETag hashing**
-  `etagCachingFilter` buffers and hashes full non-JSON responses with `readBytes()`. Limit this to small/static text responses, precompute static asset ETags, or skip dynamic HTML.
+- [x] ~~**Restrict dynamic ETag hashing**~~
+  Fixed — `etagCachingFilter` now only hashes cacheable content types (CSS, JS, fonts, images). Dynamic HTML is never buffered/hashed.
   — `platform-web/.../web/Filters.kt`
 
-- [ ] **Resolve session state once per request**
-  `WebContext.user` and `WebContext.sessionExpired` can each call `SecurityService.lookupSession(rawToken)`. Cache a single `SessionLookup` lazy value and derive both properties from it.
+- [x] ~~**Resolve session state once per request**~~
+  Fixed — `WebContext` now caches a single `sessionLookup` lazy value; both `user` and `sessionExpired` derive from it.
   — `platform-web/.../web/WebContext.kt`
 
 - [ ] **Batch sync push upserts**
@@ -402,25 +402,25 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Sync pull uses unbounded `findChangesSince()`, and desktop push loads all dirty messages at once. Add page/batch limits with continuation cursors or repeated batch sync until drained.
   — `platform-core/.../service/MessageService.kt`, `platform-core/.../service/ContactService.kt`, `platform-sync-client/.../sync/SyncService.kt`
 
-- [ ] **Avoid loading all users for admin row actions**
-  Admin enable/role actions call `securityService.listUsers()` and then search in memory. Add a `findUserSummary(id)` or use `findById` for the target row.
+- [x] ~~**Avoid loading all users for admin row actions**~~
+  Fixed — admin toggle routes now use `SecurityService.findUserSummary(id)` instead of `listUsers()` + `.find()`.
   — `platform-web/.../web/UserAdminRoutes.kt`, `platform-security/.../security/SecurityService.kt`
 
 - [ ] **Stream or page CSV exports**
   Export routes build full CSV responses in memory; audit export requests `Int.MAX_VALUE`. Stream rows, page through repositories, or cap/export asynchronously for large datasets.
   — `platform-web/.../web/ExportRoutes.kt`, `platform-web/.../web/UserAdminRoutes.kt`, `platform-web/.../export/*ExportProvider.kt`
 
-- [ ] **Wire runtime cache settings into `CaffeineMessageCache`**
-  `RuntimeConfig.cacheMessageMaxSize` and `cacheMessageExpireMinutes` are parsed but the cache still uses hardcoded defaults. Pass runtime config into the cache constructor.
-  — `platform-core/.../RuntimeConfig.kt`, `platform-core/.../persistence/CaffeineMessageCache.kt`, `platform-web/.../di/WebModule.kt`
+- [x] ~~**Wire runtime cache settings into `CaffeineMessageCache`**~~
+  Fixed — cache now accepts `maxSize`/`ttlMinutes` from `RuntimeConfig` via WebModule DI wiring.
+  — `platform-core/.../persistence/CaffeineMessageCache.kt`, `platform-web/.../di/WebModule.kt`
 
-- [ ] **Replace prefix-scan message cache invalidation**
-  `CaffeineMessageCache.invalidateByPrefix()` scans all cache keys on every message mutation. Split list/entity caches, use generation-versioned list keys, or another O(1) invalidation scheme.
+- [x] ~~**Replace prefix-scan message cache invalidation**~~
+  Fixed — replaced O(N) `invalidateByPrefix` key scan with generation-counter-based invalidation (O(1) via `ConcurrentHashMap<String, AtomicLong>`).
   — `platform-core/.../persistence/CaffeineMessageCache.kt`, `platform-core/.../service/MessageService.kt`
 
-- [ ] **Add text-search indexes for `%LIKE%` search paths**
-  Message/contact search uses case-insensitive contains queries without trigram/full-text indexes. Add PostgreSQL `pg_trgm` GIN indexes or full-text search for these paths.
-  — `platform-persistence-jooq/src/main/resources/db/migration/`, `platform-persistence-jooq/.../JooqMessageRepository.kt`, `platform-persistence-jdbi/.../JdbiMessageRepository.kt`
+- [x] ~~**Add text-search indexes for `%LIKE%` search paths**~~
+  Fixed — added `pg_trgm` GIN indexes on `plt_messages.content`, `plt_contacts.name`, `plt_contacts.company` via V10 migration.
+  — `platform-persistence-jooq/src/main/resources/db/migration/V10__add_trgm_search_indexes.sql`
 
 - [ ] **Reduce paired list/count pagination queries**
   Message and contact page builders run a list query plus an exact count query for each paginated view. For larger tables and filtered searches, consider seek pagination, approximate counts, cached counts, or only counting when totals are visible/needed.
@@ -430,13 +430,13 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Search currently asks each provider for up to the full page limit, merges all results, sorts in memory, then truncates. As providers grow, use provider-side ranking/limits or a central indexed search provider to avoid extra query and sort work.
   — `platform-web/.../web/SearchRoutes.kt`, `platform-web/.../web/SearchPageFactory.kt`, `platform-web/.../search/*SearchProvider.kt`
 
-- [ ] **Use a bounded executor for Segment analytics**
-  `SegmentAnalyticsService` starts one daemon thread per event. Replace with a bounded single-thread executor or persistent batching.
+- [x] ~~**Use a bounded executor for Segment analytics**~~
+  Fixed — replaced per-event `Thread()` with a bounded `ThreadPoolExecutor` (single thread, queue of 100, drop policy).
   — `platform-core/.../analytics/SegmentAnalyticsService.kt`
 
-- [ ] **Precompute JTE template class lookup**
-  Precompiled template rendering scans `JteClassRegistry.allClasses` on each render. Build a `Map<String, Class<*>>` once; consider caching template wrappers if safe.
-  — `platform-web/.../infra/JteClassRegistry.kt`, `platform-web/.../infra/JteInfra.kt`
+- [x] ~~**Precompute JTE template class lookup**~~
+  Fixed — `JteClassRegistry` now builds a `Map<String, Class<*>>` at init for O(1) lookup instead of O(N) linear scan per render.
+  — `platform-web/.../infra/JteClassRegistry.kt`
 
 - [ ] **Debounce desktop search reloads**
   `DesktopSyncEngine.setSearchQuery()` reloads both messages and contacts immediately on every query change. Debounce input and only load the active data set where possible.
