@@ -23,13 +23,13 @@ class JdbiPasswordResetRepository(private val jdbi: Jdbi) : PasswordResetReposit
         }
     }
 
-    override fun findByToken(token: String): PasswordResetToken? {
+    override fun findByTokenHash(tokenHash: String): PasswordResetToken? {
         return jdbi.withHandle<PasswordResetToken?, Exception> { handle ->
             handle
                 .createQuery(
                     "SELECT id, user_id, token, expires_at, used FROM plt_password_reset_tokens WHERE token = :token"
                 )
-                .bind("token", token)
+                .bind("token", tokenHash)
                 .map { rs, _ ->
                     PasswordResetToken(
                         id = rs.getLong("id"),
@@ -44,11 +44,11 @@ class JdbiPasswordResetRepository(private val jdbi: Jdbi) : PasswordResetReposit
         }
     }
 
-    override fun markUsed(token: String) {
+    override fun markUsedByHash(tokenHash: String) {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_password_reset_tokens SET used = true WHERE token = :token")
-                .bind("token", token)
+                .bind("token", tokenHash)
                 .execute()
         }
     }
