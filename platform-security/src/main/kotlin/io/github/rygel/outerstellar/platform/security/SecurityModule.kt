@@ -29,4 +29,5 @@ val securityModule
         }
         single<PermissionResolver> { RoleBasedPermissionResolver() }
         single<List<AuthRealm>> { listOf(SessionRealm(get()), ApiKeyRealm(get())) }
+        single { TOTPService() }
     }
