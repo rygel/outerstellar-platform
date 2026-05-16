@@ -582,7 +582,11 @@ private fun buildFilterChain(ctx: AppContext): Filter {
             .then(staticCacheControlFilter)
             .then(Filters.securityHeaders(config.cspPolicy))
             .then(Filters.telemetry)
-            .then(rateLimitFilter())
+            .then(
+                rateLimitFilter(
+                    trustedProxies = ctx.config.trustedProxies.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                )
+            )
             .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
             .then(Filters.devAutoLogin(config.devMode, userRepository, securityService, config.sessionCookieSecure))
             .then(
