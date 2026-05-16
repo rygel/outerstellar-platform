@@ -39,6 +39,11 @@ class JdbiDeviceTokenRepository(private val jdbi: Jdbi) : DeviceTokenRepository 
         }
     }
 
+    override fun deleteByTokenAndUserId(token: String, userId: UUID): Boolean =
+        jdbi.withHandle<Boolean, Exception> { handle ->
+            handle.execute("DELETE FROM plt_device_tokens WHERE token = ? AND user_id = ?", token, userId) > 0
+        }
+
     override fun findByUserId(userId: UUID): List<DeviceToken> =
         jdbi.withHandle<List<DeviceToken>, Exception> { handle ->
             handle

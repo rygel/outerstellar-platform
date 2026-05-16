@@ -90,7 +90,14 @@ class DeviceRegistrationApi(private val deviceTokenRepository: DeviceTokenReposi
                             request.query("token")
                         } ?: return@to Response(Status.BAD_REQUEST).body("token is required")
 
-                    deviceTokenRepository.delete(token)
+                    val deleted = deviceTokenRepository.deleteByTokenAndUserId(token, user.id)
+                    if (!deleted) {
+                        logger.warn(
+                            "Device token deregistration denied: token not found or not owned by user={}",
+                            user.username,
+                        )
+                        return@to Response(Status.FORBIDDEN).body("Token not found or not owned by this user")
+                    }
                     logger.info("Device token deregistered for user={}", user.username)
 
                     Response(Status.NO_CONTENT)

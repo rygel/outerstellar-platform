@@ -104,6 +104,8 @@ interface DeviceTokenRepository {
     /** Remove a specific device token (e.g. when user logs out on that device). */
     fun delete(token: String)
 
+    fun deleteByTokenAndUserId(token: String, userId: java.util.UUID): Boolean
+
     /** Find all active tokens for a user (for sending push notifications). */
     fun findByUserId(userId: UUID): List<DeviceToken>
 
