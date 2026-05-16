@@ -4,11 +4,10 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.web.WebTest
 import io.github.rygel.outerstellar.platform.web.testPassword
+import io.mockk.mockk
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -22,7 +21,14 @@ class SecurityIntegrationTest : WebTest() {
     fun setupTest() {
         userRepository = JooqUserRepository(testDsl)
         passwordEncoder = BCryptPasswordEncoder(logRounds = 4) // Fast for tests
-        securityService = SecurityService(userRepository, passwordEncoder)
+        securityService =
+            SecurityService(
+                userRepository = userRepository,
+                passwordEncoder = passwordEncoder,
+                config = SecurityConfig(),
+                totpService = TOTPService(),
+                analytics = mockk(relaxed = true),
+            )
     }
 
     @AfterEach
@@ -47,11 +53,12 @@ class SecurityIntegrationTest : WebTest() {
         userRepository.save(newUser)
 
         // 2. Authenticate
-        val authenticatedUser = securityService.authenticate(username, password)
+        val result = securityService.authenticate(username, password)
 
-        assertNotNull(authenticatedUser)
-        assertEquals(username, authenticatedUser?.username)
-        assertEquals(UserRole.USER, authenticatedUser?.role)
+        assertTrue(result is AuthResult.Authenticated, "Should authenticate successfully")
+        val auth = result as AuthResult.Authenticated
+        assertEquals(username, auth.user.username)
+        assertEquals(UserRole.USER, auth.user.role)
     }
 
     @Test
@@ -71,12 +78,12 @@ class SecurityIntegrationTest : WebTest() {
 
         val result = securityService.authenticate(username, "wrongpassword")
 
-        assertNull(result)
+        assertTrue(result is AuthResult.AuthenticationFailed, "Should fail authentication")
     }
 
     @Test
     fun `should fail authentication for non-existent user`() {
         val result = securityService.authenticate("ghost", "anypassword")
-        assertNull(result)
+        assertTrue(result is AuthResult.AuthenticationFailed, "Should fail for non-existent user")
     }
 }

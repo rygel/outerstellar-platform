@@ -32,7 +32,7 @@ class SecurityService(
     private val config: SecurityConfig = SecurityConfig(),
     private val sessionRepository: SessionRepository? = null,
     private val activityUpdater: AsyncActivityUpdater? = null,
-    private val totpService: TOTPService,
+    private val totpService: TOTPService = TOTPService(),
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
     private val secureRandom = SecureRandom()
