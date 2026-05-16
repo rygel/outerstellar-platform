@@ -105,7 +105,7 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                         logger.warn("Segment {} call failed: {}", endpoint, e.message)
                     }
                 }
-            } catch (e: java.util.concurrent.RejectedExecutionException) {
+            } catch (_: java.util.concurrent.RejectedExecutionException) {
                 logger.warn("Segment analytics event dropped: queue full")
             }
         } catch (e: IOException) {
