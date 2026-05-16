@@ -12,6 +12,7 @@ import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionRealm
+import io.github.rygel.outerstellar.platform.security.TOTPService
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.web.AdminNavItem
@@ -37,6 +38,7 @@ import io.github.rygel.outerstellar.platform.web.SearchRoutes
 import io.github.rygel.outerstellar.platform.web.SettingsRoutes
 import io.github.rygel.outerstellar.platform.web.SyncApi
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
+import io.github.rygel.outerstellar.platform.web.TOTPApiRoutes
 import io.github.rygel.outerstellar.platform.web.TOTPRoutes
 import io.github.rygel.outerstellar.platform.web.UserAdminApi
 import io.github.rygel.outerstellar.platform.web.UserAdminRoutes
@@ -93,6 +95,7 @@ private class AppContext(
     val pageFactory: WebPageFactory,
     val analytics: AnalyticsService,
     val services: OptionalServices,
+    val totpService: TOTPService? = null,
 ) {
     val messageService
         get() = services.messageService
@@ -150,6 +153,7 @@ fun app(
     @Suppress("UNUSED_PARAMETER")
     activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater? = null,
     syncWebSocket: SyncWebSocket? = null,
+    totpService: TOTPService? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
     val ctx =
@@ -160,6 +164,7 @@ fun app(
             jteRenderer = jteRenderer,
             pageFactory = pageFactory,
             analytics = analytics,
+            totpService = totpService,
             services =
                 OptionalServices(
                     messageService = messageService,
@@ -467,7 +472,9 @@ private fun buildBaseApp(
 
     // Filtered routes — user session, CSRF, rate limiting, state
     val totpRoutes = TOTPRoutes(ctx.securityService, ctx.jteRenderer, ctx.config.sessionCookieSecure)
+    val totpApiRoutes = ctx.totpService?.let { TOTPApiRoutes(ctx.securityService, it) }
     val appRoutes = mutableListOf(uiRoutes, componentRoutes, totpRoutes.routes)
+    totpApiRoutes?.let { appRoutes += it.routes }
     appRoutes.addAll(apiRoutes)
     if ("/" !in ctx.excludedRoutes) {
         appRoutes += "/" bind filteredAdminHandler
