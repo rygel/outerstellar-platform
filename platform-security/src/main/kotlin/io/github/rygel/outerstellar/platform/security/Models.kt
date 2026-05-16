@@ -76,6 +76,8 @@ interface UserRepository : LockoutRepository {
     fun updateTotpSecret(userId: UUID, secret: String?, backupCodes: String?)
 
     fun enableTotp(userId: UUID)
+
+    fun disableTotp(userId: UUID)
 }
 
 interface PasswordResetRepository {

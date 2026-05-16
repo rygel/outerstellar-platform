@@ -375,6 +375,7 @@ class SecurityService(
 
     fun disableTotp(userId: UUID) {
         userRepository.updateTotpSecret(userId, null, null)
+        userRepository.disableTotp(userId)
     }
 
     private fun generateRandomHex(length: Int): String {

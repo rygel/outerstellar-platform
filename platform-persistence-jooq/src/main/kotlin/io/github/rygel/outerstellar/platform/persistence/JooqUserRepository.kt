@@ -191,4 +191,8 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     override fun enableTotp(userId: UUID) {
         dsl.execute("UPDATE plt_users SET totp_enabled = TRUE WHERE id = ?", userId)
     }
+
+    override fun disableTotp(userId: UUID) {
+        dsl.execute("UPDATE plt_users SET totp_enabled = FALSE WHERE id = ?", userId)
+    }
 }

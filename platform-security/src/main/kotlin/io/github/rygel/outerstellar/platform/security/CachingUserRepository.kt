@@ -82,4 +82,9 @@ class CachingUserRepository(private val delegate: UserRepository, maximumSize: L
         delegate.enableTotp(userId)
         cache.invalidate(userId)
     }
+
+    override fun disableTotp(userId: UUID) {
+        delegate.disableTotp(userId)
+        cache.invalidate(userId)
+    }
 }

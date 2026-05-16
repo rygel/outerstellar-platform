@@ -27,6 +27,12 @@
                 ${model.data.apiKeysDescription}
             @elseif(model.data.activeTab == "notifications")
                 ${model.data.notificationsDescription}
+            @elseif(model.data.activeTab == "security")
+                <div id="totp-setup" hx-trigger="load" hx-get="/auth/components/totp-setup-status" hx-target="#totp-setup" hx-swap="outerHTML">
+                    <div class="flex justify-center">
+                        <span class="loading loading-spinner"></span>
+                    </div>
+                </div>
             @elseif(model.data.activeTab == "appearance")
                 ${model.data.appearanceDescription}
             @endif

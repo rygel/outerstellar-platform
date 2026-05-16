@@ -471,7 +471,8 @@ private fun buildBaseApp(
         )
 
     // Filtered routes — user session, CSRF, rate limiting, state
-    val totpRoutes = TOTPRoutes(ctx.securityService, ctx.jteRenderer, ctx.config.sessionCookieSecure)
+    val totpService = ctx.totpService ?: throw IllegalStateException("TOTP service required for TOTP routes")
+    val totpRoutes = TOTPRoutes(ctx.securityService, ctx.jteRenderer, ctx.config.sessionCookieSecure, totpService)
     val totpApiRoutes = ctx.totpService?.let { TOTPApiRoutes(ctx.securityService, it) }
     val appRoutes = mutableListOf(uiRoutes, componentRoutes, totpRoutes.routes)
     totpApiRoutes?.let { appRoutes += it.routes }

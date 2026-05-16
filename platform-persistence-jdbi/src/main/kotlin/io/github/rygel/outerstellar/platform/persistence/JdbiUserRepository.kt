@@ -301,6 +301,12 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         }
     }
 
+    override fun disableTotp(userId: UUID) {
+        jdbi.useHandle<Exception> { handle ->
+            handle.createUpdate("UPDATE plt_users SET totp_enabled = FALSE WHERE id = :id").bind("id", userId).execute()
+        }
+    }
+
     private fun mapUser(rs: java.sql.ResultSet): User {
         val lastActivity = rs.getTimestamp("last_activity_at")
         return User(
