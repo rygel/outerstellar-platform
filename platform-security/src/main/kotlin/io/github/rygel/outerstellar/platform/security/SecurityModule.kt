@@ -25,6 +25,7 @@ val securityModule
                 ),
                 getOrNull(),
                 get(),
+                get(),
             )
         }
         single<PermissionResolver> { RoleBasedPermissionResolver() }
