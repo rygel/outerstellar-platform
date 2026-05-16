@@ -42,19 +42,19 @@
 ### Data & Queries
 - [ ] Batch sync push upserts (bulk prefetch by sync_id, batched INSERT ON CONFLICT)
 - [ ] Bound sync pull and dirty push batches (page/batch limits with continuation cursors)
-- [ ] Add text-search indexes for `%LIKE%` search paths (PostgreSQL pg_trgm GIN or full-text)
+- [x] Add text-search indexes for `%LIKE%` search paths (PostgreSQL pg_trgm GIN or full-text)
 - [ ] Reduce paired list/count pagination queries (seek pagination, approximate/cached counts)
-- [ ] Avoid loading all users for admin row actions (add findUserSummary by id)
+- [x] Avoid loading all users for admin row actions (add findUserSummary by id)
 - [ ] Stream or page CSV exports (currently builds full response in memory)
 - [ ] Push search ranking and limits closer to providers (avoid extra query and sort work)
 
 ### Caching & Rendering
-- [ ] Wire runtime cache settings into `CaffeineMessageCache` (uses hardcoded defaults)
-- [ ] Replace prefix-scan message cache invalidation (O(1) scheme instead of key scan)
-- [ ] Restrict dynamic ETag hashing (limit to small/static text, skip dynamic HTML)
-- [ ] Precompute JTE template class lookup (build Map once instead of scanning on each render)
-- [ ] Resolve session state once per request (cache single lookup for user + sessionExpired)
-- [ ] Use bounded executor for Segment analytics (currently one daemon thread per event)
+- [x] Wire runtime cache settings into `CaffeineMessageCache` (uses hardcoded defaults)
+- [x] Replace prefix-scan message cache invalidation (O(1) scheme instead of key scan)
+- [x] Restrict dynamic ETag hashing (limit to small/static text, skip dynamic HTML)
+- [x] Precompute JTE template class lookup (build Map once instead of scanning on each render)
+- [x] Resolve session state once per request (cache single lookup for user + sessionExpired)
+- [x] Use bounded executor for Segment analytics (currently one daemon thread per event)
 - [ ] Debounce desktop search reloads (currently reloads on every query change)
 
 ## Architecture

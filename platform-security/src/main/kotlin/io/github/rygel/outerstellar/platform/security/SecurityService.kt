@@ -150,6 +150,8 @@ class SecurityService(
 
     fun countUsers(): Long = userRepository.countAll()
 
+    fun findUserSummary(id: UUID): UserSummary? = userRepository.findById(id)?.toSummary()
+
     fun setUserEnabled(adminId: UUID, targetId: UUID, enabled: Boolean) {
         if (adminId == targetId) {
             throw InsufficientPermissionException("Cannot change your own enabled status")

@@ -89,27 +89,24 @@ class WebContext(
         if (value in SUPPORTED_SHELLS) value else "sidebar"
     }
 
-    val user: User? by lazy {
-        request.cookie(SESSION_COOKIE)?.value?.let { rawToken ->
-            when (val lookup = securityService?.lookupSession(rawToken)) {
-                is SessionLookup.Active -> lookup.user
-                SessionLookup.Expired -> null
-                SessionLookup.NotFound -> null
-                null -> null
-            }
-        }
-            ?: request.cookie(JWT_COOKIE)?.value?.let { token ->
-                jwtService?.extractClaims(token)?.let { (userId, _) ->
-                    userRepository?.findById(userId)?.takeIf { it.enabled }
-                }
-            }
+    private val sessionLookup: SessionLookup? by lazy {
+        request.cookie(SESSION_COOKIE)?.value?.let { rawToken -> securityService?.lookupSession(rawToken) }
     }
 
-    val sessionExpired: Boolean by lazy {
-        request.cookie(SESSION_COOKIE)?.value?.let { rawToken ->
-            securityService?.lookupSession(rawToken) is SessionLookup.Expired
-        } ?: false
+    val user: User? by lazy {
+        val lookup = sessionLookup
+        when (lookup) {
+            is SessionLookup.Active -> lookup.user
+            else ->
+                request.cookie(JWT_COOKIE)?.value?.let { token ->
+                    jwtService?.extractClaims(token)?.let { (userId, _) ->
+                        userRepository?.findById(userId)?.takeIf { it.enabled }
+                    }
+                }
+        }
     }
+
+    val sessionExpired: Boolean by lazy { sessionLookup is SessionLookup.Expired }
 
     val i18n: I18nService by lazy { cachedI18n(lang) }
 

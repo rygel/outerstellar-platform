@@ -64,7 +64,13 @@ val webModule
                 getOrNull(),
             )
         }
-        single<MessageCache> { io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache() }
+        single<MessageCache> {
+            val runtime = get<AppConfig>().runtime
+            io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache(
+                maxSize = runtime.cacheMessageMaxSize.toLong(),
+                ttlMinutes = runtime.cacheMessageExpireMinutes.toLong(),
+            )
+        }
         single<AnalyticsService> {
             val cfg = get<AppConfig>().segment
             if (cfg.enabled && cfg.writeKey.isNotBlank()) {

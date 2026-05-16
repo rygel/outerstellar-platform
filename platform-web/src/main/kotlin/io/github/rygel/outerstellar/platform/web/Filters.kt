@@ -53,16 +53,19 @@ private fun isNonPagePath(path: String): Boolean =
     path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
 
 /**
- * Adds ETag headers based on response body hash and returns 304 Not Modified when matched. Skips JSON responses — their
- * content is dynamic and not cache-worthy at the ETag level.
+ * Adds ETag headers based on response body hash and returns 304 Not Modified when matched. Only processes cacheable
+ * static assets (CSS, JS, fonts, images). Dynamic HTML is never buffered or hashed.
  */
 val etagCachingFilter: Filter = Filter { next: HttpHandler ->
     { request ->
         val response = next(request)
         val contentType = response.header("content-type") ?: ""
-        if (
-            response.status == Status.OK && response.header("ETag") == null && !contentType.contains("application/json")
-        ) {
+        val isCacheable =
+            contentType.contains("text/css") ||
+                contentType.contains("javascript") ||
+                contentType.contains("font/") ||
+                contentType.contains("image/")
+        if (response.status == Status.OK && response.header("ETag") == null && isCacheable) {
             val digest = MessageDigest.getInstance("SHA-256")
             val bytes = response.body.stream.readBytes()
             digest.update(bytes)
