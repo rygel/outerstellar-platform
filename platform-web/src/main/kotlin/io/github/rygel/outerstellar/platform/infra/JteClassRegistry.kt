@@ -91,6 +91,8 @@ object JteClassRegistry {
 
     val allClasses: List<Class<*>> = pageClasses + fragmentClasses + componentClasses + layoutClasses
 
+    private val classMap: Map<String, Class<*>> = allClasses.associateBy { it.name }
+
     init {
         logger.info("Initializing {} JTE template classes", allClasses.size)
         for (cls in allClasses) {
@@ -114,6 +116,6 @@ object JteClassRegistry {
             } else {
                 "gg.jte.generated.precompiled.outerstellar.$packagePath.$className"
             }
-        return allClasses.find { it.name == fullName }
+        return classMap[fullName]
     }
 }
