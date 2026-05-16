@@ -15,8 +15,9 @@ private const val MIN_HTTP_PORT = 1
 private const val DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 10
 private const val DEFAULT_LOCKOUT_DURATION_SECONDS = 900L
 private const val DEFAULT_CSP_POLICY =
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; " +
-        "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:;"
+    "default-src 'self'; script-src 'self'; " +
+        "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' wss:; img-src 'self' data:; " +
+        "base-uri 'self'; form-action 'self'"
 
 val configModule
     get() = module { single { AppConfig.fromEnvironment() } }
@@ -78,6 +79,7 @@ data class AppConfig(
     val lockoutDurationSeconds: Long = DEFAULT_LOCKOUT_DURATION_SECONDS,
     val jwt: JwtConfig = JwtConfig(),
     val cspPolicy: String = DEFAULT_CSP_POLICY,
+    val trustedProxies: String = "",
     val appleOAuth: AppleOAuthConfig = AppleOAuthConfig(),
     val pushNotifications: PushNotificationConfig = PushNotificationConfig(),
     val runtime: RuntimeConfig = RuntimeConfig(),
@@ -158,6 +160,7 @@ data class AppConfig(
                     ),
                 jwt = buildJwtConfig(yaml["jwt"] as? Map<String, Any>, env),
                 cspPolicy = yaml.str("cspPolicy", env, "CSP_POLICY", DEFAULT_CSP_POLICY),
+                trustedProxies = yaml.str("trustedProxies", env, "TRUSTED_PROXIES", ""),
                 appleOAuth = buildAppleOAuthConfig(yaml["appleOAuth"] as? Map<String, Any>, env),
                 pushNotifications = buildPushNotificationConfig(yaml["pushNotifications"] as? Map<String, Any>, env),
                 runtime = buildRuntimeConfig(yaml["runtime"] as? Map<String, Any>, env),

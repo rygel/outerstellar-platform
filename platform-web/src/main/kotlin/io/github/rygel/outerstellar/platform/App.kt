@@ -326,6 +326,7 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
                     providers = oauthProviders,
                     securityService = securityService,
                     sessionCookieSecure = sessionCookieSecure,
+                    appBaseUrl = ctx.config.appBaseUrl,
                 )
                 .routes
         routes += ErrorRoutes(pageFactory, jteRenderer).routes
@@ -482,7 +483,7 @@ private fun buildBaseApp(
         appRoutes += "/" bind filteredAdminHandler
     }
 
-    return routes(unfiltered + buildFilterChain(ctx).then(routes(appRoutes)))
+    return routes(unfiltered + appRoutes)
 }
 
 private fun buildRobotsTxtResponse(): Response =
@@ -581,7 +582,11 @@ private fun buildFilterChain(ctx: AppContext): Filter {
             .then(staticCacheControlFilter)
             .then(Filters.securityHeaders(config.cspPolicy))
             .then(Filters.telemetry)
-            .then(rateLimitFilter())
+            .then(
+                rateLimitFilter(
+                    trustedProxies = ctx.config.trustedProxies.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                )
+            )
             .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
             .then(Filters.devAutoLogin(config.devMode, userRepository, securityService, config.sessionCookieSecure))
             .then(

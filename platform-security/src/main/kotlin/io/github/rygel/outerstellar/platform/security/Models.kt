@@ -83,9 +83,9 @@ interface UserRepository : LockoutRepository {
 interface PasswordResetRepository {
     fun save(token: io.github.rygel.outerstellar.platform.model.PasswordResetToken)
 
-    fun findByToken(token: String): io.github.rygel.outerstellar.platform.model.PasswordResetToken?
+    fun findByTokenHash(tokenHash: String): io.github.rygel.outerstellar.platform.model.PasswordResetToken?
 
-    fun markUsed(token: String)
+    fun markUsedByHash(tokenHash: String)
 }
 
 data class DeviceToken(val id: Long, val userId: UUID, val platform: String, val token: String, val appBundle: String?)
@@ -103,6 +103,8 @@ interface DeviceTokenRepository {
 
     /** Remove a specific device token (e.g. when user logs out on that device). */
     fun delete(token: String)
+
+    fun deleteByTokenAndUserId(token: String, userId: java.util.UUID): Boolean
 
     /** Find all active tokens for a user (for sending push notifications). */
     fun findByUserId(userId: UUID): List<DeviceToken>

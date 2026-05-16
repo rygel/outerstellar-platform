@@ -127,6 +127,15 @@ class InMemoryDeviceTokenRepository : DeviceTokenRepository {
         tokens.remove(token)
     }
 
+    override fun deleteByTokenAndUserId(token: String, userId: UUID): Boolean {
+        val existing = tokens[token]
+        return if (existing != null && existing.userId == userId) {
+            tokens.remove(token) != null
+        } else {
+            false
+        }
+    }
+
     override fun findByUserId(userId: UUID): List<DeviceToken> = tokens.values.filter { it.userId == userId }
 
     override fun deleteAllForUser(userId: UUID) {
