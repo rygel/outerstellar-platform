@@ -54,6 +54,34 @@ Architecture, security, and maintainability improvements identified during code 
 - [x] ~~**Invalidate all user sessions on password change**~~
   Fixed in PR #229 — `sessionRepository?.deleteByUserId()` called in `changePassword()`.
 
+- [x] ~~**Harden password reset tokens**~~
+  Replaced with UUID v7 (SecureRandom, time-ordered, 122-bit randomness). Fixed in PR #277.
+  — `platform-security/.../security/PasswordResetService.kt`
+
+- [x] ~~**Use configured `appBaseUrl` for OAuth redirect URIs**~~
+  Fixed in PR #277 — OAuth redirect URIs now use `AppConfig.appBaseUrl` instead of request headers.
+  — `platform-web/.../web/OAuthRoutes.kt`
+
+- [x] ~~**Trust forwarded IP headers only from configured proxies**~~
+  Fixed in PR #277 — `X-Forwarded-For` only read when source IP matches `AppConfig.trustedProxies`.
+  — `platform-web/.../web/RateLimiter.kt`
+
+- [x] ~~**Scope device-token deregistration to authenticated user**~~
+  Fixed in PR #277 — DELETE now requires token ownership (token + user_id match).
+  — `platform-web/.../web/DeviceRegistrationApi.kt`, `platform-persistence-jooq/.../JooqDeviceTokenRepository.kt`, `platform-persistence-jdbi/.../JdbiDeviceTokenRepository.kt`
+
+- [x] ~~**Neutralize formula injection in CSV exports**~~
+  Fixed in PR #277 — `CsvUtils.escapeCsv()` prefixes `=`, `+`, `-`, `@`, tab, CR with `'`.
+  — `platform-core/.../export/ExportService.kt`, `platform-web/.../export/*ExportProvider.kt`, `platform-web/.../web/UserAdminRoutes.kt`
+
+- [x] ~~**Remove `unsafe-inline` from script CSP**~~
+  Fixed in PR #277 — `script-src` no longer includes `'unsafe-inline'`.
+  — `platform-core/.../AppConfig.kt`, `platform-web/.../web/Filters.kt`, `platform-web/src/main/jte/...`
+
+- [x] ~~**Apply the web filter chain only once**~~
+  Fixed in PR #277 — removed inner `buildFilterChain()` call; filters applied once to all routes.
+  — `platform-web/.../App.kt`
+
 - [x] ~~**Add dependency vulnerability scanning to CI**~~
   Dependabot already configured with Maven, GitHub Actions, and npm ecosystems — grouped by domain (http4k, opentelemetry, persistence, test, build plugins, etc.).
   — `.github/dependabot.yml`
@@ -293,6 +321,126 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 ---
 
 ## Future
+
+### Usability and Missing Features
+
+- [ ] **Implement web message edit and delete actions**
+  The message list renders edit/delete controls, but `HomeRoutes` does not expose matching edit, update, or delete handlers. Wire the existing `MessageService.updateMessage()` and `deleteMessage()` paths into routes and HTMX fragments.
+  — `platform-web/src/main/jte/.../components/MessageList.kte`, `platform-web/.../web/HomeRoutes.kt`, `platform-core/.../service/MessageService.kt`
+
+- [ ] **Return an HTMX-safe response from message creation**
+  The home composer posts with `hx-target="#message-list-container"`, but the route returns a redirect to `/`. Return the refreshed message-list fragment or retarget the form so HTMX does not swap a full page into the list container.
+  — `platform-web/src/main/jte/.../HomePage.kte`, `platform-web/.../web/HomeRoutes.kt`
+
+- [ ] **Finish the unified `/settings` tabs**
+  The `/settings` page currently shows descriptive placeholder text for Profile, Password, API Keys, Notifications, and Appearance; only Security loads the TOTP fragment. Embed or route to the existing working forms and retire duplicate account links.
+  — `platform-web/.../web/SettingsPageFactory.kt`, `platform-web/src/main/jte/.../SettingsPage.kte`
+
+- [ ] **Add contact trash and restore flow**
+  Contacts are soft-deleted and the repository supports `restore()`, but the service/routes/UI only expose delete. Add a deleted-contacts view, restore action, and clear user messaging around soft deletion.
+  — `platform-core/.../persistence/ContactRepository.kt`, `platform-core/.../service/ContactService.kt`, `platform-web/.../web/ContactsRoutes.kt`
+
+- [ ] **Preserve contact list state during create/update/delete**
+  Contact create/update re-render the default first page, pagination URLs drop `q`, and the modal closes after any response. Preserve query/limit/offset, keep the modal open on validation errors, and return targeted list/form fragments.
+  — `platform-web/.../web/ContactsRoutes.kt`, `platform-web/.../web/ContactsPageFactory.kt`, `platform-web/src/main/jte/.../components/ContactForm.kte`
+
+- [ ] **Bring desktop message/contact actions to parity with web/domain services**
+  Desktop exposes message creation and contact create/edit, but not message edit/delete or contact delete/restore. Extend `SyncEngine`, `DesktopSyncEngine`, `SyncViewModel`, and Swing views for the missing lifecycle actions.
+  — `platform-sync-client/.../engine/SyncEngine.kt`, `platform-sync-client/.../engine/DesktopSyncEngine.kt`, `platform-desktop/.../swing/SyncViews.kt`
+
+- [ ] **Clean up primary navigation discoverability**
+  Default nav still exposes `Auth` and a demo-like `Errors` page, while Search and unified Settings are not primary nav items. Adjust nav based on login state and make production features easier to find.
+  — `platform-web/.../web/WebContext.kt`
+
+- [ ] **Expose JSON export routes and UI entry points**
+  `ExportProvider.exportJson()` is implemented by providers, but `ExportRoutes` only exposes CSV and there is no obvious web entry point for user/admin exports. Add JSON endpoints and discoverable export actions where appropriate.
+  — `platform-core/.../export/ExportService.kt`, `platform-web/.../web/ExportRoutes.kt`, `platform-web/.../export/*ExportProvider.kt`
+
+- [ ] **Make search discoverable and more useful**
+  Search routes and providers exist, but the shell has no search nav/global search box. Add search discoverability, result highlighting, type filters/grouping, and entity-specific quick actions.
+  — `platform-web/.../App.kt`, `platform-web/.../web/WebContext.kt`, `platform-web/src/main/jte/.../SearchPage.kte`
+
+- [ ] **Complete TOTP setup UX**
+  TOTP setup uses hardcoded English labels/errors, raw text responses, and lacks backup-code regeneration/copy/download affordances. Localize the flow, return styled fragments/status codes, and improve backup-code management.
+  — `platform-web/.../web/TOTPRoutes.kt`, `platform-web/src/main/jte/.../TotpSetupFragment.kte`, `platform-web/src/main/jte/.../TotpChallengeForm.kte`
+
+- [ ] **Hide or finish Sign in with Apple**
+  `AppleOAuthProvider.exchangeCode()` still throws `not yet implemented`. Do not present Apple sign-in as production-ready until the token exchange and ID-token validation flow are implemented.
+  — `platform-security/.../security/AppleOAuthProvider.kt`, `platform-web/.../web/OAuthRoutes.kt`
+
+- [ ] **Expand admin user-management workflows**
+  Admin UI supports toggle enabled, toggle role, unlock, and export, but lacks create user, edit user, force password reset, explicit role selection, and confirmations for role/enable changes.
+  — `platform-web/.../web/UserAdminRoutes.kt`, `platform-web/src/main/jte/.../UserAdminPage.kte`, `platform-web/.../web/UserAdminApi.kt`
+
+- [ ] **Localize remaining desktop user-facing strings**
+  Swing still has hardcoded text in conflict resolution, contact dialogs, list management, theme preview, spell-check dialogs, and generic action failures. Move these to i18n keys and keep runtime language switching intact.
+  — `platform-desktop/.../swing/SyncDialogs.kt`, `platform-desktop/.../swing/SyncViews.kt`, `platform-desktop/.../swing/components/SpellCheckingTextArea.kt`, `platform-desktop/.../swing/components/SpellCheckingTextField.kt`
+
+- [ ] **Improve accessibility labels for icon-only controls**
+  Several icon-only links/buttons rely on `title` or have no accessible label, especially notification/profile/password actions in the topbar and message/contact action icons. Add `aria-label` or visible text where appropriate.
+  — `platform-web/src/main/jte/.../layouts/TopbarLayout.kte`, `platform-web/src/main/jte/.../components/NotificationBell.kte`, `platform-web/src/main/jte/.../components/MessageList.kte`, `platform-web/src/main/jte/.../ContactsPage.kte`
+
+### Performance
+
+- [x] ~~**Apply the web filter chain only once**~~
+  Fixed in PR #277 — removed inner `buildFilterChain()` call; filters applied once to all routes.
+  — `platform-web/.../App.kt`
+
+- [ ] **Restrict dynamic ETag hashing**
+  `etagCachingFilter` buffers and hashes full non-JSON responses with `readBytes()`. Limit this to small/static text responses, precompute static asset ETags, or skip dynamic HTML.
+  — `platform-web/.../web/Filters.kt`
+
+- [ ] **Resolve session state once per request**
+  `WebContext.user` and `WebContext.sessionExpired` can each call `SecurityService.lookupSession(rawToken)`. Cache a single `SessionLookup` lazy value and derive both properties from it.
+  — `platform-web/.../web/WebContext.kt`
+
+- [ ] **Batch sync push upserts**
+  Message/contact sync push performs per-item read/update/read cycles. Add bulk prefetch by `sync_id` and batched `INSERT ... ON CONFLICT DO UPDATE ... RETURNING` or repository bulk upsert methods.
+  — `platform-core/.../service/MessageService.kt`, `platform-core/.../service/ContactService.kt`, `platform-persistence-jooq/.../*Repository.kt`, `platform-persistence-jdbi/.../*Repository.kt`
+
+- [ ] **Bound sync pull and dirty push batches**
+  Sync pull uses unbounded `findChangesSince()`, and desktop push loads all dirty messages at once. Add page/batch limits with continuation cursors or repeated batch sync until drained.
+  — `platform-core/.../service/MessageService.kt`, `platform-core/.../service/ContactService.kt`, `platform-sync-client/.../sync/SyncService.kt`
+
+- [ ] **Avoid loading all users for admin row actions**
+  Admin enable/role actions call `securityService.listUsers()` and then search in memory. Add a `findUserSummary(id)` or use `findById` for the target row.
+  — `platform-web/.../web/UserAdminRoutes.kt`, `platform-security/.../security/SecurityService.kt`
+
+- [ ] **Stream or page CSV exports**
+  Export routes build full CSV responses in memory; audit export requests `Int.MAX_VALUE`. Stream rows, page through repositories, or cap/export asynchronously for large datasets.
+  — `platform-web/.../web/ExportRoutes.kt`, `platform-web/.../web/UserAdminRoutes.kt`, `platform-web/.../export/*ExportProvider.kt`
+
+- [ ] **Wire runtime cache settings into `CaffeineMessageCache`**
+  `RuntimeConfig.cacheMessageMaxSize` and `cacheMessageExpireMinutes` are parsed but the cache still uses hardcoded defaults. Pass runtime config into the cache constructor.
+  — `platform-core/.../RuntimeConfig.kt`, `platform-core/.../persistence/CaffeineMessageCache.kt`, `platform-web/.../di/WebModule.kt`
+
+- [ ] **Replace prefix-scan message cache invalidation**
+  `CaffeineMessageCache.invalidateByPrefix()` scans all cache keys on every message mutation. Split list/entity caches, use generation-versioned list keys, or another O(1) invalidation scheme.
+  — `platform-core/.../persistence/CaffeineMessageCache.kt`, `platform-core/.../service/MessageService.kt`
+
+- [ ] **Add text-search indexes for `%LIKE%` search paths**
+  Message/contact search uses case-insensitive contains queries without trigram/full-text indexes. Add PostgreSQL `pg_trgm` GIN indexes or full-text search for these paths.
+  — `platform-persistence-jooq/src/main/resources/db/migration/`, `platform-persistence-jooq/.../JooqMessageRepository.kt`, `platform-persistence-jdbi/.../JdbiMessageRepository.kt`
+
+- [ ] **Reduce paired list/count pagination queries**
+  Message and contact page builders run a list query plus an exact count query for each paginated view. For larger tables and filtered searches, consider seek pagination, approximate counts, cached counts, or only counting when totals are visible/needed.
+  — `platform-core/.../service/MessageService.kt`, `platform-web/.../web/ContactsPageFactory.kt`, `platform-core/.../service/ContactService.kt`
+
+- [ ] **Push search ranking and limits closer to providers**
+  Search currently asks each provider for up to the full page limit, merges all results, sorts in memory, then truncates. As providers grow, use provider-side ranking/limits or a central indexed search provider to avoid extra query and sort work.
+  — `platform-web/.../web/SearchRoutes.kt`, `platform-web/.../web/SearchPageFactory.kt`, `platform-web/.../search/*SearchProvider.kt`
+
+- [ ] **Use a bounded executor for Segment analytics**
+  `SegmentAnalyticsService` starts one daemon thread per event. Replace with a bounded single-thread executor or persistent batching.
+  — `platform-core/.../analytics/SegmentAnalyticsService.kt`
+
+- [ ] **Precompute JTE template class lookup**
+  Precompiled template rendering scans `JteClassRegistry.allClasses` on each render. Build a `Map<String, Class<*>>` once; consider caching template wrappers if safe.
+  — `platform-web/.../infra/JteClassRegistry.kt`, `platform-web/.../infra/JteInfra.kt`
+
+- [ ] **Debounce desktop search reloads**
+  `DesktopSyncEngine.setSearchQuery()` reloads both messages and contacts immediately on every query change. Debounce input and only load the active data set where possible.
+  — `platform-sync-client/.../engine/DesktopSyncEngine.kt`
 
 ### High Priority
 
