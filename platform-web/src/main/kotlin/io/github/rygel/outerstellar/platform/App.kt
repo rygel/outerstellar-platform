@@ -482,7 +482,7 @@ private fun buildBaseApp(
         appRoutes += "/" bind filteredAdminHandler
     }
 
-    return routes(unfiltered + buildFilterChain(ctx).then(routes(appRoutes)))
+    return routes(unfiltered + appRoutes)
 }
 
 private fun buildRobotsTxtResponse(): Response =
