@@ -4,10 +4,11 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.web.WebTest
 import io.github.rygel.outerstellar.platform.web.testPassword
-import io.mockk.mockk
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -26,8 +27,6 @@ class SecurityIntegrationTest : WebTest() {
                 userRepository = userRepository,
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
-                totpService = TOTPService(),
-                analytics = mockk(relaxed = true),
             )
     }
 
@@ -78,12 +77,12 @@ class SecurityIntegrationTest : WebTest() {
 
         val result = securityService.authenticate(username, "wrongpassword")
 
-        assertTrue(result is AuthResult.AuthenticationFailed, "Should fail authentication")
+        assertNull(result)
     }
 
     @Test
     fun `should fail authentication for non-existent user`() {
         val result = securityService.authenticate("ghost", "anypassword")
-        assertTrue(result is AuthResult.AuthenticationFailed, "Should fail for non-existent user")
+        assertNull(result)
     }
 }

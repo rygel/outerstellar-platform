@@ -91,7 +91,7 @@
         <caffeine.version>3.2.4</caffeine.version>
         <opentelemetry.version>1.62.0</opentelemetry.version>
         <totp.version>1.7.1</totp.version>
-        <zxing.version>3.5.3</zxing.version>
+        <zxing.version>3.5.4</zxing.version>
 
         <jackson.version>2.21.3</jackson.version>
         <slf4j.version>2.0.18</slf4j.version>
