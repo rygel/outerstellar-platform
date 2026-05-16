@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.persistence
 import io.github.rygel.outerstellar.platform.model.PasswordResetToken
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.User
-import java.security.MessageDigest
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.Test
@@ -17,9 +16,6 @@ class JooqPasswordResetRepositoryTest : JooqTest() {
 
     private val repo by lazy { JooqPasswordResetRepository(dsl) }
     private val userRepo by lazy { JooqUserRepository(dsl) }
-
-    private fun sha256(input: String): String =
-        MessageDigest.getInstance("SHA-256").digest(input.toByteArray()).joinToString("") { "%02x".format(it) }
 
     private fun createUser(): UUID {
         val id = UUID.randomUUID()
@@ -36,38 +32,33 @@ class JooqPasswordResetRepositoryTest : JooqTest() {
     }
 
     private fun token(userId: UUID, rawToken: String = UUID.randomUUID().toString()) =
-        PasswordResetToken(
-            userId = userId,
-            token = sha256(rawToken),
-            expiresAt = Instant.now().plusSeconds(3600),
-            used = false,
-        )
+        PasswordResetToken(userId = userId, token = rawToken, expiresAt = Instant.now().plusSeconds(3600), used = false)
 
     @Test
-    fun `save and findByTokenHash round-trips`() {
+    fun `save and findByToken round-trips`() {
         val userId = createUser()
         val t = token(userId, "reset-abc")
         repo.save(t)
-        val found = repo.findByTokenHash(sha256("reset-abc"))!!
+        val found = repo.findByToken("reset-abc")!!
         assertEquals(userId, found.userId)
-        assertEquals(sha256("reset-abc"), found.token)
+        assertEquals("reset-abc", found.token)
         assertFalse(found.used)
         assertNotNull(found.expiresAt)
     }
 
     @Test
-    fun `findByTokenHash returns null for unknown token`() {
-        assertNull(repo.findByTokenHash(sha256("nonexistent")))
+    fun `findByToken returns null for unknown token`() {
+        assertNull(repo.findByToken("nonexistent"))
     }
 
     @Test
-    fun `markUsedByHash sets used flag`() {
+    fun `markUsed sets used flag`() {
         val userId = createUser()
         val t = token(userId, "mark-used-token")
         repo.save(t)
-        assertFalse(repo.findByTokenHash(sha256("mark-used-token"))!!.used)
-        repo.markUsedByHash(sha256("mark-used-token"))
-        assertTrue(repo.findByTokenHash(sha256("mark-used-token"))!!.used)
+        assertFalse(repo.findByToken("mark-used-token")!!.used)
+        repo.markUsed("mark-used-token")
+        assertTrue(repo.findByToken("mark-used-token")!!.used)
     }
 
     @Test
@@ -75,7 +66,7 @@ class JooqPasswordResetRepositoryTest : JooqTest() {
         val userId = createUser()
         repo.save(token(userId, "token-1"))
         repo.save(token(userId, "token-2"))
-        assertNotNull(repo.findByTokenHash(sha256("token-1")))
-        assertNotNull(repo.findByTokenHash(sha256("token-2")))
+        assertNotNull(repo.findByToken("token-1"))
+        assertNotNull(repo.findByToken("token-2"))
     }
 }
