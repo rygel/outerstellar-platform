@@ -471,11 +471,12 @@ private fun buildBaseApp(
         )
 
     // Filtered routes — user session, CSRF, rate limiting, state
-    val totpService = requireNotNull(ctx.totpService) { "TOTP service required for TOTP routes" }
-    val totpRoutes = TOTPRoutes(ctx.securityService, ctx.jteRenderer, ctx.config.sessionCookieSecure, totpService)
-    val totpApiRoutes = TOTPApiRoutes(ctx.securityService, totpService)
-    val appRoutes = mutableListOf(uiRoutes, componentRoutes, totpRoutes.routes)
-    appRoutes += totpApiRoutes.routes
+    val appRoutes = mutableListOf(uiRoutes, componentRoutes)
+    ctx.totpService?.let { totpService ->
+        appRoutes +=
+            TOTPRoutes(ctx.securityService, ctx.jteRenderer, ctx.config.sessionCookieSecure, totpService).routes
+        appRoutes += TOTPApiRoutes(ctx.securityService, totpService).routes
+    }
     appRoutes.addAll(apiRoutes)
     if ("/" !in ctx.excludedRoutes) {
         appRoutes += "/" bind filteredAdminHandler
