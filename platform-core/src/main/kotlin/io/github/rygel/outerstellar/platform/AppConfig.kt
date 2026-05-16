@@ -15,8 +15,9 @@ private const val MIN_HTTP_PORT = 1
 private const val DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 10
 private const val DEFAULT_LOCKOUT_DURATION_SECONDS = 900L
 private const val DEFAULT_CSP_POLICY =
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; " +
-        "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data:;"
+    "default-src 'self'; script-src 'self'; " +
+        "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' wss:; img-src 'self' data:; " +
+        "base-uri 'self'; form-action 'self'"
 
 val configModule
     get() = module { single { AppConfig.fromEnvironment() } }
