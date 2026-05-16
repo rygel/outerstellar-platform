@@ -45,4 +45,59 @@ class CsvUtilsTest {
         val row = CsvUtils.toCsvRow(listOf("hello", "world,foo", "line\nbreak"))
         assertEquals("hello,\"world,foo\",\"line\nbreak\"", row)
     }
+
+    @Test
+    fun `escapeCsv prefixes equals sign`() {
+        assertEquals("'=1+1", CsvUtils.escapeCsv("=1+1"))
+    }
+
+    @Test
+    fun `escapeCsv prefixes plus sign`() {
+        assertEquals("'+cmd| /C calc", CsvUtils.escapeCsv("+cmd| /C calc"))
+    }
+
+    @Test
+    fun `escapeCsv prefixes minus sign`() {
+        assertEquals("'-formula", CsvUtils.escapeCsv("-formula"))
+    }
+
+    @Test
+    fun `escapeCsv prefixes at sign`() {
+        assertEquals("'@SUM(A1:A10)", CsvUtils.escapeCsv("@SUM(A1:A10)"))
+    }
+
+    @Test
+    fun `escapeCsv prefixes tab`() {
+        assertEquals("'\thello", CsvUtils.escapeCsv("\thello"))
+    }
+
+    @Test
+    fun `escapeCsv prefixes carriage return`() {
+        assertEquals("'\rhello", CsvUtils.escapeCsv("\rhello"))
+    }
+
+    @Test
+    fun `escapeCsv does not prefix safe values`() {
+        assertEquals("hello world", CsvUtils.escapeCsv("hello world"))
+    }
+
+    @Test
+    fun `escapeCsv does not prefix value starting with space`() {
+        assertEquals(" hello", CsvUtils.escapeCsv(" hello"))
+    }
+
+    @Test
+    fun `escapeCsv still quotes values with commas`() {
+        assertEquals("\"hello,world\"", CsvUtils.escapeCsv("hello,world"))
+    }
+
+    @Test
+    fun `escapeCsv still quotes values with double quotes`() {
+        assertEquals("\"he said \"\"hi\"\"\"", CsvUtils.escapeCsv("he said \"hi\""))
+    }
+
+    @Test
+    fun `escapeCsv prefixes AND quotes formula with comma`() {
+        assertEquals("\"'=1+1,2\"", CsvUtils.escapeCsv("=1+1,2"))
+    }
 }
