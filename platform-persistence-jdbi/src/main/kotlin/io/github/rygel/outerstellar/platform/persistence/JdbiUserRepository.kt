@@ -265,6 +265,42 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
                 .one()
         }
 
+    override fun findTotpSecretByUserId(userId: UUID): Triple<String?, Boolean, String?>? {
+        return jdbi.withHandle<Triple<String?, Boolean, String?>?, Exception> { handle ->
+            handle
+                .createQuery("SELECT totp_secret, totp_enabled, totp_backup_codes FROM plt_users WHERE id = :id")
+                .bind("id", userId)
+                .map { rs, _ ->
+                    Triple(
+                        rs.getString("totp_secret"),
+                        rs.getBoolean("totp_enabled"),
+                        rs.getString("totp_backup_codes"),
+                    )
+                }
+                .findOne()
+                .orElse(null)
+        }
+    }
+
+    override fun updateTotpSecret(userId: UUID, secret: String?, backupCodes: String?) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate(
+                    "UPDATE plt_users SET totp_secret = :secret, totp_backup_codes = :backupCodes WHERE id = :id"
+                )
+                .bind("secret", secret)
+                .bind("backupCodes", backupCodes)
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
+    override fun enableTotp(userId: UUID) {
+        jdbi.useHandle<Exception> { handle ->
+            handle.createUpdate("UPDATE plt_users SET totp_enabled = TRUE WHERE id = :id").bind("id", userId).execute()
+        }
+    }
+
     private fun mapUser(rs: java.sql.ResultSet): User {
         val lastActivity = rs.getTimestamp("last_activity_at")
         return User(
