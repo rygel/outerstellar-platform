@@ -50,16 +50,16 @@ class MessageCacheTest {
     @Test
     fun `write operations invalidate cache and use entity cache`() {
         val msg = service.createServerMessage("author", "content")
-        verify { cache.invalidateByPrefix("list:") }
+        verify { cache.invalidateNamespace("list") }
         verify { cache.put("entity:${msg.syncId}", msg) }
 
         val localMsg = service.createLocalMessage("author", "content")
-        verify(exactly = 2) { cache.invalidateByPrefix("list:") }
+        verify(exactly = 2) { cache.invalidateNamespace("list") }
         verify { cache.put("entity:${localMsg.syncId}", localMsg) }
 
         service.processPushRequest(SyncPushRequest(emptyList()))
         // SyncPushRequest with empty list appliedCount is 0, no invalidation
-        verify(exactly = 2) { cache.invalidateByPrefix("list:") }
+        verify(exactly = 2) { cache.invalidateNamespace("list") }
     }
 
     @Test
