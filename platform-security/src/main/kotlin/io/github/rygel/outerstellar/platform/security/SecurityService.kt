@@ -355,8 +355,9 @@ class SecurityService(
             return TotpVerifyResponse("success", token = token, username = user.username, role = user.role.name)
         }
 
-        if (user.totpBackupCodes != null) {
-            val updatedCodes = totpService.verifyBackupCode(code, user.totpBackupCodes)
+        val backupCodes = user.totpBackupCodes
+        if (backupCodes != null) {
+            val updatedCodes = totpService.verifyBackupCode(code, backupCodes)
             if (updatedCodes != null) {
                 userRepository.updateTotpSecret(user.id, user.totpSecret, updatedCodes.ifEmpty { null })
                 partialAuthStore.remove(partialToken)
