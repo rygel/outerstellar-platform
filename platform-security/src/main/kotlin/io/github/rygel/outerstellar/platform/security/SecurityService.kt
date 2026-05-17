@@ -184,7 +184,7 @@ class SecurityService(
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateRole(targetId, role)
-        logger.info("User {} role set to {} by admin {}", target.username, role, adminId)
+        logger.info("User {} role set to {} by admin {}", sanitize(target.username), role, adminId)
         val admin = userRepository.findById(adminId)
         audit("USER_ROLE_CHANGED", actor = admin, target = target, detail = "from ${target.role} to $role")
     }
@@ -258,7 +258,7 @@ class SecurityService(
             userRepository.updateAvatarUrl(userId, sanitizedUrl)
         }
         userRepository.save(user.copy(email = newEmail))
-        logger.info("Profile updated for user {}", user.username)
+        logger.info("Profile updated for user {}", sanitize(user.username))
     }
 
     fun deleteAccount(userId: UUID) {
@@ -270,14 +270,14 @@ class SecurityService(
             }
         }
         userRepository.deleteById(userId)
-        logger.info("Account deleted for user {}", user.username)
+        logger.info("Account deleted for user {}", sanitize(user.username))
         audit("ACCOUNT_DELETED", actor = user)
     }
 
     fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         userRepository.updateNotificationPreferences(userId, emailEnabled, pushEnabled)
-        logger.info("Notification preferences updated for user {}", user.username)
+        logger.info("Notification preferences updated for user {}", sanitize(user.username))
         audit("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
     }
 

@@ -21,10 +21,12 @@ class PasswordResetService(
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
 
+    private fun sanitize(value: String): String = value.take(80).replace('\n', ' ').replace('\r', ' ')
+
     fun requestPasswordReset(email: String): String? {
         val user = userRepository.findByEmail(email)
         if (user == null) {
-            logger.info("Password reset requested for unknown email {}", email)
+            logger.info("Password reset requested for unknown email {}", sanitize(email))
             return null
         }
 
