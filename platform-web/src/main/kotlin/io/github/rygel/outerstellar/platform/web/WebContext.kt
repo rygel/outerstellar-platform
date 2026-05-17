@@ -130,32 +130,38 @@ class WebContext(
                     .toMutableList()
             } else {
                 mutableListOf(
-                    ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
-                    ShellLink(
-                        i18n.translate("web.nav.contacts"),
-                        url("/contacts"),
-                        "ri-user-3-line",
-                        activeSection == "/contacts",
-                    ),
-                    ShellLink(
-                        i18n.translate("web.nav.trash"),
-                        url("/messages/trash"),
-                        "ri-delete-bin-7-line",
-                        activeSection == "/messages/trash",
-                    ),
-                    ShellLink(
-                        i18n.translate("web.nav.auth"),
-                        url("/auth"),
-                        "ri-shield-keyhole-line",
-                        activeSection == "/auth",
-                    ),
-                    ShellLink(
-                        i18n.translate("web.nav.errors"),
-                        url("/errors/not-found"),
-                        "ri-error-warning-line",
-                        activeSection == "/errors",
-                    ),
-                )
+                        ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
+                        ShellLink(
+                            i18n.translate("web.nav.search"),
+                            url("/search"),
+                            "ri-search-line",
+                            activeSection == "/search",
+                        ),
+                        ShellLink(
+                            i18n.translate("web.nav.contacts"),
+                            url("/contacts"),
+                            "ri-user-3-line",
+                            activeSection == "/contacts",
+                        ),
+                        ShellLink(
+                            i18n.translate("web.nav.trash"),
+                            url("/messages/trash"),
+                            "ri-delete-bin-7-line",
+                            activeSection == "/messages/trash",
+                        ),
+                    )
+                    .also { links ->
+                        if (user != null) {
+                            links.add(
+                                ShellLink(
+                                    i18n.translate("web.nav.settings"),
+                                    url("/settings"),
+                                    "ri-settings-3-line",
+                                    activeSection == "/settings",
+                                )
+                            )
+                        }
+                    }
             }
 
         appendAdminLinks(links, activeSection)
