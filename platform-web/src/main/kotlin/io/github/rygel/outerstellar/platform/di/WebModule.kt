@@ -56,12 +56,14 @@ val webModule
         // Use a null-object (NoPluginMigrationSource) for apps without plugins.
         single<PluginMigrationSource> { getOrNull<PlatformPlugin>() ?: NoPluginMigrationSource }
         single {
+            val config = get<AppConfig>()
             WebPageFactory(
                 getOrNull(),
                 getOrNull<MessageService>(),
                 getOrNull<ContactService>(),
                 getOrNull(),
                 getOrNull(),
+                appleOAuthEnabled = config.appleOAuth.enabled,
             )
         }
         single<MessageCache> {
