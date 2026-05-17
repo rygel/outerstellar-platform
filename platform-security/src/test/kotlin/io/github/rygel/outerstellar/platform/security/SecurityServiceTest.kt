@@ -260,6 +260,27 @@ class SecurityServiceTest {
     }
 
     @Test
+    fun `register throws on long password`() {
+        every { userRepository.findByUsername("newuser") } returns null
+
+        assertThrows<WeakPasswordException> { service.register("newuser", "A".repeat(129)) }
+    }
+
+    @Test
+    fun `register trims whitespace before validation`() {
+        every { userRepository.findByUsername("newuser") } returns null
+        every { passwordEncoder.encode("validpassword") } returns "encoded_hash"
+
+        val result = service.register("newuser", "  validpassword  ")
+
+        assertEquals("newuser", result.username)
+        assertEquals(UserRole.USER, result.role)
+        val userSlot = slot<User>()
+        verify { userRepository.save(capture(userSlot)) }
+        assertEquals("encoded_hash", userSlot.captured.passwordHash)
+    }
+
+    @Test
     fun `register creates user with encoded password`() {
         every { userRepository.findByUsername("newuser") } returns null
         every { passwordEncoder.encode("validpassword") } returns "encoded_hash"
@@ -336,6 +357,14 @@ class SecurityServiceTest {
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
 
         assertThrows<WeakPasswordException> { service.changePassword(testUser.id, "currentpass", "short") }
+    }
+
+    @Test
+    fun `changePassword throws on long new password`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
+
+        assertThrows<WeakPasswordException> { service.changePassword(testUser.id, "currentpass", "A".repeat(129)) }
     }
 
     // ---- setUserEnabled ----
@@ -566,8 +595,9 @@ class SecurityServiceTest {
     @Test
     fun `deleteAccount removes the user`() {
         every { userRepository.findById(testUser.id) } returns testUser
+        every { passwordEncoder.matches("correctpass", testUser.passwordHash) } returns true
 
-        service.deleteAccount(testUser.id)
+        service.deleteAccount(testUser.id, "correctpass")
 
         verify { userRepository.deleteById(testUser.id) }
     }
@@ -575,10 +605,22 @@ class SecurityServiceTest {
     @Test
     fun `deleteAccount blocks deleting the only admin`() {
         every { userRepository.findById(adminUser.id) } returns adminUser
+        every { passwordEncoder.matches("correctpass", adminUser.passwordHash) } returns true
         every { userRepository.countByRole(UserRole.ADMIN) } returns 1L
 
         assertThrows<io.github.rygel.outerstellar.platform.model.InsufficientPermissionException> {
-            service.deleteAccount(adminUser.id)
+            service.deleteAccount(adminUser.id, "correctpass")
+        }
+        verify(exactly = 0) { userRepository.deleteById(any()) }
+    }
+
+    @Test
+    fun `deleteAccount rejects wrong password`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { passwordEncoder.matches("wrongpass", testUser.passwordHash) } returns false
+
+        assertThrows<io.github.rygel.outerstellar.platform.model.WeakPasswordException> {
+            service.deleteAccount(testUser.id, "wrongpass")
         }
         verify(exactly = 0) { userRepository.deleteById(any()) }
     }
@@ -586,9 +628,10 @@ class SecurityServiceTest {
     @Test
     fun `deleteAccount allows admin deletion when another admin exists`() {
         every { userRepository.findById(adminUser.id) } returns adminUser
+        every { passwordEncoder.matches("correctpass", adminUser.passwordHash) } returns true
         every { userRepository.countByRole(UserRole.ADMIN) } returns 2L
 
-        service.deleteAccount(adminUser.id)
+        service.deleteAccount(adminUser.id, "correctpass")
 
         verify { userRepository.deleteById(adminUser.id) }
     }
