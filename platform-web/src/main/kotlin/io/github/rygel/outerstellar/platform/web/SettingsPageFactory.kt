@@ -56,109 +56,160 @@ class SettingsPageFactory(
     }
 
     fun buildSettingsFragment(ctx: WebContext, tab: String): SettingsTabContent {
+        val normalizedTab = normalizeTab(tab)
+        val csrfToken = ctx.csrfToken.orEmpty()
+        return when (normalizedTab) {
+            "password" -> buildPasswordTab(ctx, csrfToken)
+            "api-keys" -> buildApiKeysTab(ctx, csrfToken)
+            "notifications" -> buildNotificationsTab(ctx, csrfToken)
+            "appearance" -> buildAppearanceTab(ctx, csrfToken)
+            else -> buildProfileTab(ctx, csrfToken)
+        }
+    }
+
+    private fun buildProfileTab(ctx: WebContext, csrfToken: String): SettingsTabContent {
         val i18n = ctx.i18n
-        val validTabs = listOf("profile", "password", "security", "api-keys", "notifications", "appearance")
-        val normalizedTab = if (tab in validTabs) tab else "profile"
-        val user = ctx.user
-        val csrfToken = ctx.csrfToken
+        val data = ctx.user?.let { adminPageFactory?.buildProfilePage(ctx)?.data }
+        return profileForm(csrfToken, data, i18n, ctx)
+            .let { profileLabels(it, data, i18n) }
+            .let { profileNotifications(it, data, i18n) }
+            .let { profileDangerZone(it, data, i18n) }
+    }
 
-        val profileData =
-            if (normalizedTab == "profile" && user != null) {
-                val profilePage = adminPageFactory?.buildProfilePage(ctx)
-                profilePage?.data
-            } else null
-
-        val passwordForm =
-            if (normalizedTab == "password") {
-                authPageFactory?.buildChangePasswordForm(ctx)
-            } else null
-
-        val apiKeysData =
-            if (normalizedTab == "api-keys" && user != null) {
-                val apiKeysPage = adminPageFactory?.buildApiKeysPage(ctx)
-                apiKeysPage?.data
-            } else null
-
-        val notifData =
-            if (normalizedTab == "notifications" && user != null) {
-                val notifPage = adminPageFactory?.buildNotificationsPage(ctx)
-                notifPage?.data
-            } else null
-
-        val profileEmailNotificationsEnabled = profileData?.emailNotificationsEnabled ?: false
-        val profilePushNotificationsEnabled = profileData?.pushNotificationsEnabled ?: false
-
-        return SettingsTabContent(
-            activeTab = normalizedTab,
+    private fun profileForm(
+        csrfToken: String,
+        data: ProfilePage?,
+        i18n: io.github.rygel.outerstellar.i18n.I18nService,
+        ctx: WebContext,
+    ): SettingsTabContent =
+        SettingsTabContent(
+            activeTab = "profile",
             csrfToken = csrfToken,
-            // Profile
-            profileUsername = profileData?.username ?: "",
-            profileEmail = profileData?.email ?: "",
-            profileAvatarUrl = profileData?.avatarUrl ?: "",
-            profileAvatarAlt = profileData?.avatarAlt ?: "Avatar",
-            profileSubmitUrl = profileData?.submitUrl ?: "",
-            profileUsernameLabel = profileData?.usernameLabel ?: "",
-            profileUsernamePlaceholder = profileData?.usernamePlaceholder ?: "",
-            profileEmailLabel = profileData?.emailLabel ?: "",
-            profileEmailPlaceholder = profileData?.emailPlaceholder ?: "",
-            profileAvatarLabel = profileData?.avatarLabel ?: "",
-            profileAvatarPlaceholder = profileData?.avatarPlaceholder ?: "",
-            profileSubmitLabel = profileData?.submitLabel ?: "",
-            profileGravatarHint = profileData?.gravatarHint ?: "",
-            profileNotifPrefsUrl = profileData?.notificationPrefsUrl ?: "",
-            profileNotifPrefsLabel = profileData?.notificationPrefsLabel ?: "",
-            profileEmailNotifLabel = profileData?.emailNotifLabel ?: "",
-            profilePushNotifLabel = profileData?.pushNotifLabel ?: "",
-            profileSavePrefsLabel = profileData?.savePrefsLabel ?: "",
-            profileEmailNotificationsEnabled = profileEmailNotificationsEnabled,
-            profilePushNotificationsEnabled = profilePushNotificationsEnabled,
-            profileDangerZoneLabel = profileData?.dangerZoneLabel ?: "",
-            profileDeleteAccountUrl = profileData?.deleteAccountUrl ?: "",
-            profileDeleteAccountLabel = profileData?.deleteAccountLabel ?: "",
-            profileDeleteAccountDescription = profileData?.deleteAccountDescription ?: "",
-            profileDeleteAccountConfirmLabel = profileData?.deleteAccountConfirmLabel ?: "",
-            profileDeleteAccountCancelLabel = profileData?.deleteAccountCancelLabel ?: "",
-            // Password
-            passwordTitle = passwordForm?.title ?: "",
-            passwordCurrentPasswordLabel = passwordForm?.currentPasswordLabel ?: "",
-            passwordNewPasswordLabel = passwordForm?.newPasswordLabel ?: "",
-            passwordConfirmPasswordLabel = passwordForm?.confirmPasswordLabel ?: "",
-            passwordSubmitLabel = passwordForm?.submitLabel ?: "",
-            passwordSubmitUrl = passwordForm?.submitUrl ?: "",
-            passwordCurrentPasswordPlaceholder = passwordForm?.currentPasswordPlaceholder ?: "",
-            passwordNewPasswordPlaceholder = passwordForm?.newPasswordPlaceholder ?: "",
-            passwordConfirmPasswordPlaceholder = passwordForm?.confirmPasswordPlaceholder ?: "",
-            // API Keys
-            apiKeys = apiKeysData?.keys ?: emptyList(),
-            apiKeysCreateUrl = apiKeysData?.createUrl ?: "",
-            apiKeysNewKey = apiKeysData?.newKey,
-            apiKeysNewKeyName = apiKeysData?.newKeyName,
-            apiKeysCreateLabel = apiKeysData?.createLabel ?: "",
-            apiKeysKeyNameLabel = apiKeysData?.keyNameLabel ?: "",
-            apiKeysKeyNamePlaceholder = apiKeysData?.keyNamePlaceholder ?: "",
-            apiKeysYourKeysHeading = apiKeysData?.yourKeysHeading ?: "",
-            apiKeysEmptyLabel = apiKeysData?.emptyLabel ?: "",
-            apiKeysHeaderPrefix = apiKeysData?.headerPrefix ?: "",
-            apiKeysHeaderName = apiKeysData?.headerName ?: "",
-            apiKeysHeaderCreated = apiKeysData?.headerCreated ?: "",
-            apiKeysHeaderLastUsed = apiKeysData?.headerLastUsed ?: "",
-            apiKeysHeaderActions = apiKeysData?.headerActions ?: "",
-            apiKeysNeverLabel = apiKeysData?.neverLabel ?: "",
-            apiKeysDeleteConfirm = apiKeysData?.deleteConfirm ?: "",
-            apiKeysDeleteLabel = apiKeysData?.deleteLabel ?: "",
-            // Notifications
-            notifications = notifData?.notifications ?: emptyList(),
-            notifUnreadCount = notifData?.unreadCount ?: 0,
-            notifMarkAllReadUrl = notifData?.markAllReadUrl ?: "",
-            notifMarkAllReadLabel = notifData?.markAllReadLabel ?: "",
-            notifMarkReadLabel = notifData?.markReadLabel ?: "",
-            notifReadLabel = notifData?.readLabel ?: "",
-            notifNewLabel = notifData?.newLabel ?: "",
-            notifEmptyLabel = notifData?.emptyLabel ?: "",
-            // Appearance
-            themeSelector = if (normalizedTab == "appearance") sidebarFactory?.buildThemeSelector(ctx) else null,
-            languageSelector = if (normalizedTab == "appearance") sidebarFactory?.buildLanguageSelector(ctx) else null,
-            layoutSelector = if (normalizedTab == "appearance") sidebarFactory?.buildLayoutSelector(ctx) else null,
+            profileUsername = data?.username ?: ctx.user?.username ?: "",
+            profileEmail = data?.email ?: ctx.user?.email ?: "",
+            profileAvatarUrl = data?.avatarUrl ?: "",
+            profileAvatarAlt = data?.avatarAlt ?: "Avatar",
+            profileSubmitUrl = data?.submitUrl ?: ctx.url("/auth/components/profile-update"),
+        )
+
+    private fun profileLabels(
+        base: SettingsTabContent,
+        data: ProfilePage?,
+        i18n: io.github.rygel.outerstellar.i18n.I18nService,
+    ): SettingsTabContent =
+        base.copy(
+            profileUsernameLabel = data?.usernameLabel ?: i18n.translate("web.profile.username"),
+            profileUsernamePlaceholder =
+                data?.usernamePlaceholder ?: i18n.translate("web.profile.username.placeholder"),
+            profileEmailLabel = data?.emailLabel ?: i18n.translate("web.profile.email"),
+            profileEmailPlaceholder = data?.emailPlaceholder ?: i18n.translate("web.profile.email.placeholder"),
+            profileAvatarLabel = data?.avatarLabel ?: i18n.translate("web.profile.avatar"),
+            profileAvatarPlaceholder = data?.avatarPlaceholder ?: i18n.translate("web.profile.avatar.placeholder"),
+            profileSubmitLabel = data?.submitLabel ?: i18n.translate("web.profile.save"),
+            profileGravatarHint = data?.gravatarHint ?: i18n.translate("web.profile.gravatar.hint"),
+        )
+
+    private fun profileNotifications(
+        base: SettingsTabContent,
+        data: ProfilePage?,
+        i18n: io.github.rygel.outerstellar.i18n.I18nService,
+    ): SettingsTabContent =
+        base.copy(
+            profileNotifPrefsUrl = data?.notificationPrefsUrl ?: "",
+            profileNotifPrefsLabel = data?.notificationPrefsLabel ?: i18n.translate("web.profile.notifications"),
+            profileEmailNotifLabel = data?.emailNotifLabel ?: i18n.translate("web.profile.emailNotifications"),
+            profilePushNotifLabel = data?.pushNotifLabel ?: i18n.translate("web.profile.pushNotifications"),
+            profileSavePrefsLabel = data?.savePrefsLabel ?: i18n.translate("web.profile.savePreferences"),
+            profileEmailNotificationsEnabled = data?.emailNotificationsEnabled ?: false,
+            profilePushNotificationsEnabled = data?.pushNotificationsEnabled ?: false,
+        )
+
+    private fun profileDangerZone(
+        base: SettingsTabContent,
+        data: ProfilePage?,
+        i18n: io.github.rygel.outerstellar.i18n.I18nService,
+    ): SettingsTabContent =
+        base.copy(
+            profileDangerZoneLabel = data?.dangerZoneLabel ?: i18n.translate("web.profile.dangerZone"),
+            profileDeleteAccountUrl = data?.deleteAccountUrl ?: "",
+            profileDeleteAccountLabel = data?.deleteAccountLabel ?: i18n.translate("web.profile.deleteAccount"),
+            profileDeleteAccountDescription =
+                data?.deleteAccountDescription ?: i18n.translate("web.profile.deleteAccount.description"),
+            profileDeleteAccountConfirmLabel =
+                data?.deleteAccountConfirmLabel ?: i18n.translate("web.profile.deleteAccount.confirm"),
+            profileDeleteAccountCancelLabel =
+                data?.deleteAccountCancelLabel ?: i18n.translate("web.profile.deleteAccount.cancel"),
+        )
+
+    private fun buildPasswordTab(ctx: WebContext, csrfToken: String): SettingsTabContent {
+        val form = authPageFactory?.buildChangePasswordForm(ctx)
+        return SettingsTabContent(
+            activeTab = "password",
+            csrfToken = csrfToken,
+            passwordTitle = form?.title ?: ctx.i18n.translate("web.password.title"),
+            passwordCurrentPasswordLabel = form?.currentPasswordLabel ?: ctx.i18n.translate("web.password.current"),
+            passwordNewPasswordLabel = form?.newPasswordLabel ?: ctx.i18n.translate("web.password.new"),
+            passwordConfirmPasswordLabel = form?.confirmPasswordLabel ?: ctx.i18n.translate("web.password.confirm"),
+            passwordSubmitLabel = form?.submitLabel ?: ctx.i18n.translate("web.password.submit"),
+            passwordSubmitUrl = form?.submitUrl ?: ctx.url("/auth/components/change-password"),
+            passwordCurrentPasswordPlaceholder = form?.currentPasswordPlaceholder ?: "",
+            passwordNewPasswordPlaceholder = form?.newPasswordPlaceholder ?: "",
+            passwordConfirmPasswordPlaceholder = form?.confirmPasswordPlaceholder ?: "",
         )
     }
+
+    private fun buildApiKeysTab(ctx: WebContext, csrfToken: String): SettingsTabContent {
+        val data = ctx.user?.let { adminPageFactory?.buildApiKeysPage(ctx)?.data }
+        return SettingsTabContent(
+            activeTab = "api-keys",
+            csrfToken = csrfToken,
+            apiKeysCreateLabel = data?.createLabel ?: ctx.i18n.translate("web.apiKeys.create"),
+            apiKeysKeyNameLabel = data?.keyNameLabel ?: ctx.i18n.translate("web.apiKeys.keyName"),
+            apiKeysKeyNamePlaceholder =
+                data?.keyNamePlaceholder ?: ctx.i18n.translate("web.apiKeys.keyName.placeholder"),
+            apiKeysYourKeysHeading = data?.yourKeysHeading ?: ctx.i18n.translate("web.apiKeys.yourKeys"),
+            apiKeysEmptyLabel = data?.emptyLabel ?: ctx.i18n.translate("web.apiKeys.empty"),
+            apiKeysHeaderPrefix = data?.headerPrefix ?: ctx.i18n.translate("web.apiKeys.header.prefix"),
+            apiKeysHeaderName = data?.headerName ?: ctx.i18n.translate("web.apiKeys.header.name"),
+            apiKeysHeaderCreated = data?.headerCreated ?: ctx.i18n.translate("web.apiKeys.header.created"),
+            apiKeysHeaderLastUsed = data?.headerLastUsed ?: ctx.i18n.translate("web.apiKeys.header.lastUsed"),
+            apiKeysHeaderActions = data?.headerActions ?: ctx.i18n.translate("web.apiKeys.header.actions"),
+            apiKeysNeverLabel = data?.neverLabel ?: ctx.i18n.translate("web.apiKeys.never"),
+            apiKeysDeleteConfirm = data?.deleteConfirm ?: ctx.i18n.translate("web.apiKeys.delete.confirm"),
+            apiKeysDeleteLabel = data?.deleteLabel ?: ctx.i18n.translate("web.apiKeys.delete"),
+            apiKeysCreateUrl = data?.createUrl ?: ctx.url("/auth/api-keys/create"),
+            apiKeys = data?.keys ?: emptyList(),
+            apiKeysNewKey = data?.newKey,
+            apiKeysNewKeyName = data?.newKeyName,
+        )
+    }
+
+    private fun buildNotificationsTab(ctx: WebContext, csrfToken: String): SettingsTabContent {
+        val data = ctx.user?.let { adminPageFactory?.buildNotificationsPage(ctx)?.data }
+        return SettingsTabContent(
+            activeTab = "notifications",
+            csrfToken = csrfToken,
+            notifications = data?.notifications ?: emptyList(),
+            notifUnreadCount = data?.unreadCount ?: 0,
+            notifMarkAllReadUrl = data?.markAllReadUrl ?: ctx.url("/notifications/read-all"),
+            notifMarkAllReadLabel = data?.markAllReadLabel ?: ctx.i18n.translate("web.notifications.markAllRead"),
+            notifMarkReadLabel = data?.markReadLabel ?: ctx.i18n.translate("web.notifications.markRead"),
+            notifReadLabel = data?.readLabel ?: ctx.i18n.translate("web.notifications.read"),
+            notifNewLabel = data?.newLabel ?: ctx.i18n.translate("web.notifications.new"),
+            notifEmptyLabel = data?.emptyLabel ?: ctx.i18n.translate("web.notifications.empty"),
+        )
+    }
+
+    private fun buildAppearanceTab(ctx: WebContext, csrfToken: String): SettingsTabContent =
+        SettingsTabContent(
+            activeTab = "appearance",
+            csrfToken = csrfToken,
+            themeSelector = sidebarFactory?.buildThemeSelector(ctx),
+            languageSelector = sidebarFactory?.buildLanguageSelector(ctx),
+            layoutSelector = sidebarFactory?.buildLayoutSelector(ctx),
+        )
+
+    private fun normalizeTab(tab: String): String =
+        if (tab in listOf("profile", "password", "security", "api-keys", "notifications", "appearance")) tab
+        else "profile"
 }
