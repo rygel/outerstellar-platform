@@ -39,12 +39,15 @@ class SecurityService(
     private val partialAuthStore = ConcurrentHashMap<String, PartialAuth>()
     private val random = SecureRandom()
 
+    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
+
     private val passwordResetService by lazy {
         PasswordResetService(
             userRepository = userRepository,
             passwordEncoder = passwordEncoder,
             resetRepository = resetRepository,
             auditRepository = auditRepository,
+            sessionRepository = sessionRepository,
             emailService = emailService,
             appBaseUrl = config.appBaseUrl,
         )
@@ -67,18 +70,18 @@ class SecurityService(
         val user =
             userRepository.findByUsername(username)
                 ?: run {
-                    logger.warn("Authentication failed: User $username not found")
-                    audit("AUTHENTICATION_FAILED", detail = "User not found", targetUsername = username)
+                    logger.warn("Authentication failed: User ${sanitize(username)} not found")
+                    audit("AUTHENTICATION_FAILED", detail = "User not found", targetUsername = sanitize(username))
                     return null
                 }
         if (!user.enabled) {
-            logger.warn("Authentication failed: User $username is disabled")
+            logger.warn("Authentication failed: User ${sanitize(username)} is disabled")
             audit("AUTHENTICATION_FAILED", actor = user, detail = "Account disabled")
             return null
         }
         val lockedUntil = user.lockedUntil
         if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
-            logger.warn("Authentication failed: User $username is locked until $lockedUntil")
+            logger.warn("Authentication failed: User ${sanitize(username)} is locked until $lockedUntil")
             audit("AUTHENTICATION_FAILED", actor = user, detail = "Account locked until $lockedUntil")
             return null
         }
@@ -86,19 +89,19 @@ class SecurityService(
             if (user.failedLoginAttempts > 0) {
                 userRepository.resetFailedLoginAttempts(user.id)
             }
-            logger.info("Authentication successful for user $username")
+            logger.info("Authentication successful for user ${sanitize(username)}")
             if (user.totpEnabled) {
                 return AuthResult.TotpRequired(generatePartialAuthToken(user.id))
             }
             return AuthResult.Authenticated(user)
         }
         val attempts = userRepository.incrementFailedLoginAttempts(user.id)
-        logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
+        logger.warn("Authentication failed: Invalid password for user ${sanitize(username)} (attempt $attempts)")
         audit("AUTHENTICATION_FAILED", actor = user, detail = "Invalid password")
         if (attempts >= config.maxFailedLoginAttempts) {
             val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
             userRepository.updateLockedUntil(user.id, until)
-            logger.warn("User $username locked until $until after $attempts failed attempts")
+            logger.warn("User ${sanitize(username)} locked until $until after $attempts failed attempts")
         }
         return null
     }
@@ -119,7 +122,7 @@ class SecurityService(
                 role = UserRole.USER,
             )
         userRepository.save(created)
-        logger.info("Registration successful for user {}", username)
+        logger.info("Registration successful for user {}", sanitize(username))
         audit("USER_REGISTERED", actor = created)
         return created
     }
@@ -137,7 +140,7 @@ class SecurityService(
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
         sessionRepository?.deleteByUserId(userId)
-        logger.info("Password changed for user {}", user.username)
+        logger.info("Password changed for user {}", sanitize(user.username))
         audit("PASSWORD_CHANGED", actor = user)
     }
 
@@ -158,7 +161,7 @@ class SecurityService(
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateEnabled(targetId, enabled)
-        logger.info("User {} enabled set to {} by admin {}", target.username, enabled, adminId)
+        logger.info("User {} enabled set to {} by admin {}", sanitize(target.username), enabled, adminId)
         val admin = userRepository.findById(adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
         audit(action, actor = admin, target = target)
@@ -171,7 +174,7 @@ class SecurityService(
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.resetFailedLoginAttempts(targetId)
-        logger.info("User {} unlocked by admin {}", target.username, admin.username)
+        logger.info("User {} unlocked by admin {}", sanitize(target.username), sanitize(admin.username))
         audit("USER_UNLOCKED", actor = admin, target = target)
     }
 
@@ -181,7 +184,7 @@ class SecurityService(
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateRole(targetId, role)
-        logger.info("User {} role set to {} by admin {}", target.username, role, adminId)
+        logger.info("User {} role set to {} by admin {}", sanitize(target.username), role, adminId)
         val admin = userRepository.findById(adminId)
         audit("USER_ROLE_CHANGED", actor = admin, target = target, detail = "from ${target.role} to $role")
     }
@@ -255,7 +258,7 @@ class SecurityService(
             userRepository.updateAvatarUrl(userId, sanitizedUrl)
         }
         userRepository.save(user.copy(email = newEmail))
-        logger.info("Profile updated for user {}", user.username)
+        logger.info("Profile updated for user {}", sanitize(user.username))
     }
 
     fun deleteAccount(userId: UUID) {
@@ -267,14 +270,14 @@ class SecurityService(
             }
         }
         userRepository.deleteById(userId)
-        logger.info("Account deleted for user {}", user.username)
+        logger.info("Account deleted for user {}", sanitize(user.username))
         audit("ACCOUNT_DELETED", actor = user)
     }
 
     fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         userRepository.updateNotificationPreferences(userId, emailEnabled, pushEnabled)
-        logger.info("Notification preferences updated for user {}", user.username)
+        logger.info("Notification preferences updated for user {}", sanitize(user.username))
         audit("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
     }
 
@@ -416,6 +419,7 @@ class SecurityService(
         private const val MAX_USERNAME_LENGTH = 50
         private const val SESSION_TOKEN_HEX_LENGTH = 48
         private const val MAX_PAGE_LIMIT = 1000
+        private const val MAX_LOG_ID_LENGTH = 80
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }
