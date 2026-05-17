@@ -6,24 +6,51 @@ class ContactExportProvider(private val contactService: ContactService?) : Expor
     override val entityType: String = "contact"
     override val displayName: String = "Contacts"
 
-    private val contacts
-        get() = contactService?.listContacts(limit = 1000) ?: emptyList()
-
     override fun headers(): List<String> = listOf("Name", "Emails", "Phones", "Company", "Department")
 
     override fun exportCsv(): String = buildString {
         appendLine(CsvUtils.toCsvRow(headers()))
-        contacts.forEach { c ->
-            appendLine(
-                CsvUtils.toCsvRow(
-                    listOf(c.name, c.emails.joinToString("; "), c.phones.joinToString("; "), c.company, c.department)
+        if (contactService == null) return@buildString
+        var offset = 0
+        val pageSize = 500
+        do {
+            val page = contactService.listContacts(limit = pageSize, offset = offset)
+            page.forEach { c ->
+                appendLine(
+                    CsvUtils.toCsvRow(
+                        listOf(
+                            c.name,
+                            c.emails.joinToString("; "),
+                            c.phones.joinToString("; "),
+                            c.company,
+                            c.department,
+                        )
+                    )
                 )
-            )
-        }
+            }
+            offset += pageSize
+        } while (page.size == pageSize)
     }
 
-    override fun exportJson(): String =
-        contacts.joinToString(",\n", "[\n", "\n]") { c ->
-            """  {"name":"${c.name}","emails":["${c.emails.joinToString("\",\"")}"],"company":"${c.company}","department":"${c.department}"}"""
+    override fun exportJson(): String = buildString {
+        appendLine("[")
+        if (contactService == null) {
+            appendLine("]")
+            return@buildString
         }
+        val allItems = mutableListOf<String>()
+        var offset = 0
+        val pageSize = 500
+        do {
+            val page = contactService.listContacts(limit = pageSize, offset = offset)
+            page.forEach { c ->
+                allItems.add(
+                    """  {"name":"${c.name}","emails":["${c.emails.joinToString("\",\"")}"],"company":"${c.company}","department":"${c.department}"}"""
+                )
+            }
+            offset += pageSize
+        } while (page.size == pageSize)
+        appendLine(allItems.joinToString(",\n"))
+        appendLine("]")
+    }
 }
