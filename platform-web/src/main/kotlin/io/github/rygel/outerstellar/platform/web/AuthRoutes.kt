@@ -68,7 +68,17 @@ class AuthRoutes(
                         val ctx = request.webContext
                         val authResult = securityService.authenticate(email, password)
                         if (authResult is AuthResult.TotpRequired) {
-                            return@to renderer.render(TotpChallengeForm(authResult.token))
+                            val totpCtx = request.webContext
+                            return@to renderer.render(
+                                TotpChallengeForm(
+                                    partialToken = authResult.token,
+                                    title = totpCtx.i18n.translate("web.totp.title"),
+                                    description = totpCtx.i18n.translate("web.totp.enterCode"),
+                                    codeLabel = totpCtx.i18n.translate("web.totp.codeLabel"),
+                                    verifyLabel = totpCtx.i18n.translate("web.totp.verifyCode"),
+                                    backLinkLabel = totpCtx.i18n.translate("web.totp.backLink"),
+                                )
+                            )
                         }
                         if (authResult is AuthResult.Authenticated) {
                             val user = authResult.user

@@ -23,6 +23,7 @@ class TOTPRoutes(
             "/auth/components/totp-verify" bind
                 POST to
                 { request ->
+                    val ctx = WebContext.KEY(request)
                     val partialToken = request.form("partialToken") ?: return@to Response(OK).body("Missing token")
                     val code = request.form("code") ?: return@to Response(OK).body("Missing code")
 
@@ -35,11 +36,49 @@ class TOTPRoutes(
                                 .header("HX-Redirect", "/")
                         }
                         "invalid_code" ->
-                            Response(OK).body(renderer(TotpChallengeForm(partialToken, "Invalid code. Try again.")))
+                            Response(OK)
+                                .body(
+                                    renderer(
+                                        TotpChallengeForm(
+                                            partialToken = partialToken,
+                                            title = ctx.i18n.translate("web.totp.title"),
+                                            description = ctx.i18n.translate("web.totp.enterCode"),
+                                            codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
+                                            verifyLabel = ctx.i18n.translate("web.totp.verifyCode"),
+                                            backLinkLabel = ctx.i18n.translate("web.totp.backLink"),
+                                            error = ctx.i18n.translate("web.totp.invalidCode"),
+                                        )
+                                    )
+                                )
+                        "expired" ->
+                            Response(OK)
+                                .body(
+                                    renderer(
+                                        TotpChallengeForm(
+                                            partialToken = partialToken,
+                                            title = ctx.i18n.translate("web.totp.title"),
+                                            description = ctx.i18n.translate("web.totp.enterCode"),
+                                            codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
+                                            verifyLabel = ctx.i18n.translate("web.totp.verifyCode"),
+                                            backLinkLabel = ctx.i18n.translate("web.totp.backLink"),
+                                            error = ctx.i18n.translate("web.totp.sessionExpired"),
+                                        )
+                                    )
+                                )
                         else ->
                             Response(OK)
                                 .body(
-                                    renderer(TotpChallengeForm(partialToken, "Session expired. Please log in again."))
+                                    renderer(
+                                        TotpChallengeForm(
+                                            partialToken = partialToken,
+                                            title = ctx.i18n.translate("web.totp.title"),
+                                            description = ctx.i18n.translate("web.totp.enterCode"),
+                                            codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
+                                            verifyLabel = ctx.i18n.translate("web.totp.verifyCode"),
+                                            backLinkLabel = ctx.i18n.translate("web.totp.backLink"),
+                                            error = ctx.i18n.translate("web.totp.sessionExpired"),
+                                        )
+                                    )
                                 )
                     }
                 },
@@ -52,7 +91,23 @@ class TOTPRoutes(
                     Response(OK)
                         .body(
                             renderer(
-                                TotpSetupFragment(totpEnabled = user.totpEnabled, totpRemainingBackupCodes = remaining)
+                                TotpSetupFragment(
+                                    totpEnabled = user.totpEnabled,
+                                    totpRemainingBackupCodes = remaining,
+                                    enabledLabel = ctx.i18n.translate("web.totp.enabled"),
+                                    disableLabel = ctx.i18n.translate("web.totp.disable"),
+                                    passwordLabel = ctx.i18n.translate("web.totp.passwordLabel"),
+                                    backupCodesLabel = ctx.i18n.translate("web.totp.backupCodes"),
+                                    backupCodesHint = ctx.i18n.translate("web.totp.backupCodes.hint"),
+                                    backupCodesRemainingLabel = ctx.i18n.translate("web.totp.backupCodes.remaining"),
+                                    copyLabel = ctx.i18n.translate("web.totp.backupCodes.copy"),
+                                    downloadLabel = ctx.i18n.translate("web.totp.backupCodes.download"),
+                                    disabledLabel = ctx.i18n.translate("web.totp.scanQr"),
+                                    manualKeyLabel = ctx.i18n.translate("web.totp.manualKey"),
+                                    codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
+                                    setupLabel = ctx.i18n.translate("web.totp.enable"),
+                                    verifyLabel = ctx.i18n.translate("web.totp.verifyAndEnable"),
+                                )
                             )
                         )
                 },
@@ -63,7 +118,19 @@ class TOTPRoutes(
                     val user = ctx.user ?: return@to Response(OK).body("Not authenticated")
                     val secret = totpService.generateSecret()
                     val qrDataUri = totpService.generateQrDataUri(secret, user.email)
-                    Response(OK).body(renderer(TotpSetupFragment(totpQrDataUri = qrDataUri, totpSecret = secret)))
+                    Response(OK)
+                        .body(
+                            renderer(
+                                TotpSetupFragment(
+                                    totpQrDataUri = qrDataUri,
+                                    totpSecret = secret,
+                                    disabledLabel = ctx.i18n.translate("web.totp.scanQr"),
+                                    manualKeyLabel = ctx.i18n.translate("web.totp.manualKey"),
+                                    codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
+                                    verifyLabel = ctx.i18n.translate("web.totp.verifyAndEnable"),
+                                )
+                            )
+                        )
                 },
             "/auth/components/totp-verify-setup" bind
                 POST to
@@ -76,7 +143,18 @@ class TOTPRoutes(
                     if (!totpService.verifyCode(secret, code)) {
                         val qrDataUri = totpService.generateQrDataUri(secret, user.email)
                         return@to Response(OK)
-                            .body(renderer(TotpSetupFragment(totpQrDataUri = qrDataUri, totpSecret = secret)))
+                            .body(
+                                renderer(
+                                    TotpSetupFragment(
+                                        totpQrDataUri = qrDataUri,
+                                        totpSecret = secret,
+                                        disabledLabel = ctx.i18n.translate("web.totp.scanQr"),
+                                        manualKeyLabel = ctx.i18n.translate("web.totp.manualKey"),
+                                        codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
+                                        verifyLabel = ctx.i18n.translate("web.totp.verifyAndEnable"),
+                                    )
+                                )
+                            )
                     }
                     val (rawCodes, hashedCodes) = totpService.generateBackupCodes()
                     securityService.enableTotp(user.id, secret, hashedCodes)
@@ -87,6 +165,14 @@ class TOTPRoutes(
                                     totpEnabled = true,
                                     totpBackupCodes = rawCodes,
                                     totpRemainingBackupCodes = rawCodes.size,
+                                    enabledLabel = ctx.i18n.translate("web.totp.enabled"),
+                                    disableLabel = ctx.i18n.translate("web.totp.disable"),
+                                    passwordLabel = ctx.i18n.translate("web.totp.passwordLabel"),
+                                    backupCodesLabel = ctx.i18n.translate("web.totp.backupCodes"),
+                                    backupCodesHint = ctx.i18n.translate("web.totp.backupCodes.hint"),
+                                    backupCodesRemainingLabel = ctx.i18n.translate("web.totp.backupCodes.remaining"),
+                                    copyLabel = ctx.i18n.translate("web.totp.backupCodes.copy"),
+                                    downloadLabel = ctx.i18n.translate("web.totp.backupCodes.download"),
                                 )
                             )
                         )
@@ -100,10 +186,35 @@ class TOTPRoutes(
                     val authResult = securityService.authenticate(user.username, password)
                     if (authResult !is AuthResult.Authenticated) {
                         return@to Response(OK)
-                            .body("""<div id="totp-setup" class="alert alert-error">Incorrect password</div>""")
+                            .body(
+                                renderer(
+                                    TotpSetupFragment(
+                                        totpEnabled = true,
+                                        enabledLabel = ctx.i18n.translate("web.totp.enabled"),
+                                        disableLabel = ctx.i18n.translate("web.totp.disable"),
+                                        passwordLabel = ctx.i18n.translate("web.totp.passwordLabel"),
+                                        backupCodesLabel = ctx.i18n.translate("web.totp.backupCodes"),
+                                        backupCodesHint = ctx.i18n.translate("web.totp.backupCodes.hint"),
+                                        backupCodesRemainingLabel =
+                                            ctx.i18n.translate("web.totp.backupCodes.remaining"),
+                                        copyLabel = ctx.i18n.translate("web.totp.backupCodes.copy"),
+                                        downloadLabel = ctx.i18n.translate("web.totp.backupCodes.download"),
+                                        totpRemainingBackupCodes = countBackupCodes(user.totpBackupCodes),
+                                    )
+                                )
+                            )
                     }
                     securityService.disableTotp(user.id)
-                    Response(OK).body(renderer(TotpSetupFragment(totpEnabled = false)))
+                    Response(OK)
+                        .body(
+                            renderer(
+                                TotpSetupFragment(
+                                    totpEnabled = false,
+                                    disabledLabel = ctx.i18n.translate("web.totp.scanQr"),
+                                    setupLabel = ctx.i18n.translate("web.totp.enable"),
+                                )
+                            )
+                        )
                 },
         )
 }

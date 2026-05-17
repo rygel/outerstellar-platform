@@ -2,20 +2,20 @@
 @param model: TotpChallengeForm
 
 <div id="auth-form-slot" class="card-body">
-    <h2 class="card-title">Two-Factor Authentication</h2>
+    <h2 class="card-title">${model.title}</h2>
     @if (model.error != null)
         <div class="alert alert-error">${model.error}</div>
     @endif
-    <p class="text-sm opacity-70">Enter the 6-digit code from your authenticator app.</p>
+    <p class="text-sm opacity-70">${model.description}</p>
     <form hx-post="/auth/components/totp-verify" hx-target="#auth-form-slot" hx-swap="outerHTML">
         <input type="hidden" name="partialToken" value="${model.partialToken}"/>
         <label class="form-control w-full">
-            <span class="label-text">Authentication Code</span>
+            <span class="label-text">${model.codeLabel}</span>
             <input type="text" name="code" class="input input-bordered w-full" placeholder="000000" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required/>
         </label>
-        <button class="btn btn-primary mt-4 w-full" type="submit">Verify</button>
+        <button class="btn btn-primary mt-4 w-full" type="submit">${model.verifyLabel}</button>
     </form>
     <p class="text-xs opacity-50 text-center mt-2">
-        <a href="/auth" class="link">Back to login</a>
+        <a href="/auth" class="link">${model.backLinkLabel}</a>
     </p>
 </div>
