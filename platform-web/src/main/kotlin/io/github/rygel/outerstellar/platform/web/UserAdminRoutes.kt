@@ -7,6 +7,9 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -71,27 +74,27 @@ class UserAdminRoutes(
                 } bindContract
                 GET to
                 { _: org.http4k.core.Request ->
-                    val allUsers = mutableListOf<String>()
+                    val allUsers = mutableListOf<UserExportRow>()
                     var offset = 0
                     val pageSize = 100
                     do {
                         val page = securityService.listUsers(pageSize, offset)
                         page.forEach { u ->
                             allUsers.add(
-                                """  {"username":"${u.username}","email":"${u.email}","role":"${u.role.name}","enabled":${u.enabled}}"""
+                                UserExportRow(
+                                    username = u.username,
+                                    email = u.email,
+                                    role = u.role.name,
+                                    enabled = u.enabled,
+                                )
                             )
                         }
                         offset += pageSize
                     } while (page.size == pageSize)
-                    val json = buildString {
-                        appendLine("[")
-                        appendLine(allUsers.joinToString(",\n"))
-                        appendLine("]")
-                    }
                     Response(Status.OK)
                         .header("Content-Type", "application/json; charset=utf-8")
                         .header("Content-Disposition", "attachment; filename=\"users.json\"")
-                        .body(json)
+                        .body(Json.encodeToString(allUsers))
                 },
             "/admin/users" / userIdPath / "toggle-enabled" meta
                 {
@@ -160,7 +163,7 @@ class UserAdminRoutes(
                 } bindContract
                 GET to
                 { _: org.http4k.core.Request ->
-                    val allEntries = mutableListOf<String>()
+                    val allEntries = mutableListOf<AuditExportRow>()
                     var offset = 0
                     val pageSize = 500
                     val maxRows = MAX_AUDIT_EXPORT_ROWS
@@ -168,25 +171,23 @@ class UserAdminRoutes(
                     do {
                         val page = securityService.getAuditLog(pageSize, offset)
                         page.forEach { e ->
-                            val actor = e.actorUsername ?: ""
-                            val target = e.targetUsername ?: ""
-                            val detail = e.detail ?: ""
                             allEntries.add(
-                                """  {"timestamp":"${e.createdAt}","actor":"$actor","action":"${e.action}","target":"$target","detail":"$detail"}"""
+                                AuditExportRow(
+                                    timestamp = e.createdAt.toString(),
+                                    actor = e.actorUsername ?: "",
+                                    action = e.action,
+                                    target = e.targetUsername ?: "",
+                                    detail = e.detail ?: "",
+                                )
                             )
                         }
                         totalRows += page.size
                         offset += pageSize
                     } while (page.size == pageSize && totalRows < maxRows)
-                    val json = buildString {
-                        appendLine("[")
-                        appendLine(allEntries.joinToString(",\n"))
-                        appendLine("]")
-                    }
                     Response(Status.OK)
                         .header("Content-Type", "application/json; charset=utf-8")
                         .header("Content-Disposition", "attachment; filename=\"audit.json\"")
-                        .body(json)
+                        .body(Json.encodeToString(allEntries))
                 },
             "/admin/users" / userIdPath / "toggle-role" meta
                 {
@@ -219,6 +220,18 @@ class UserAdminRoutes(
                     }
                 },
         )
+
+    @Serializable
+    data class UserExportRow(val username: String, val email: String, val role: String, val enabled: Boolean)
+
+    @Serializable
+    data class AuditExportRow(
+        val timestamp: String,
+        val actor: String,
+        val action: String,
+        val target: String,
+        val detail: String,
+    )
 
     companion object {
         fun usersAsCsv(users: List<UserSummary>): String {

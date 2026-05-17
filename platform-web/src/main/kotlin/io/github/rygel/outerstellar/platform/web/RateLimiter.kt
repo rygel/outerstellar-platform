@@ -2,8 +2,6 @@ package io.github.rygel.outerstellar.platform.web
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Response
@@ -21,17 +19,21 @@ private const val ACCOUNT_MAX_REQUESTS = 20
 private const val ACCOUNT_WINDOW_MS = 900_000L // 15 minutes
 
 class TokenBucket(private val maxRequests: Int, private val windowMs: Long) {
-    private val count = AtomicInteger(0)
-    private val windowStart = AtomicLong(System.currentTimeMillis())
+    private var count = 0
+    private var windowStart = System.currentTimeMillis()
 
-    fun tryConsume(): Boolean {
+    fun tryConsume(): Boolean = synchronized(this) {
         val now = System.currentTimeMillis()
-        if (now - windowStart.get() > windowMs) {
-            windowStart.set(now)
-            count.set(1)
-            return true
+        if (now - windowStart > windowMs) {
+            windowStart = now
+            count = 1
+            true
+        } else if (count < maxRequests) {
+            count++
+            true
+        } else {
+            false
         }
-        return count.incrementAndGet() <= maxRequests
     }
 }
 
@@ -84,6 +86,8 @@ fun rateLimitFilter(
                             ?: sourceAddress
                     } else if (sourceAddress != null) {
                         sourceAddress
+                    } else if (trustedProxies.isNotEmpty()) {
+                        "unknown"
                     } else {
                         request.header("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
                             ?: request.header("X-Real-IP")
