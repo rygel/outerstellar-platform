@@ -272,6 +272,14 @@ class SecurityService(
         audit("ACCOUNT_DELETED", actor = user)
     }
 
+    fun deleteAccount(userId: UUID, currentPassword: String) {
+        val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
+        if (!passwordEncoder.matches(currentPassword, user.passwordHash)) {
+            throw WeakPasswordException("Current password is incorrect")
+        }
+        deleteAccount(userId)
+    }
+
     fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         userRepository.updateNotificationPreferences(userId, emailEnabled, pushEnabled)
