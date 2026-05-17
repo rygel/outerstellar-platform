@@ -33,6 +33,10 @@ class ContactService(
         return repository.listContacts(query, limit, offset)
     }
 
+    fun searchContacts(query: String, limit: Int = 20): List<ContactSummary> {
+        return repository.listContacts(query, limit.coerceIn(1, MAX_PAGE_LIMIT), 0)
+    }
+
     fun countContacts(query: String? = null): Long {
         return repository.countContacts(query)
     }

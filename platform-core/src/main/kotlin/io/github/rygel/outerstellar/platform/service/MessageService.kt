@@ -63,6 +63,10 @@ class MessageService(
         } as PagedResult<MessageSummary>
     }
 
+    fun searchMessages(query: String, limit: Int = 20): List<MessageSummary> {
+        return repository.listMessages(query, null, limit.coerceIn(1, MAX_PAGE_LIMIT), 0)
+    }
+
     fun listDeletedMessages(
         query: String? = null,
         year: Int? = null,
