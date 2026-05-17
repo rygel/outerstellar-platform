@@ -15,6 +15,7 @@ class PasswordResetService(
     private val passwordEncoder: PasswordEncoder,
     private val resetRepository: PasswordResetRepository? = null,
     private val auditRepository: AuditRepository? = null,
+    private val sessionRepository: SessionRepository? = null,
     private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
     private val appBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
 ) {
@@ -67,6 +68,7 @@ class PasswordResetService(
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
         resetRepository.markUsed(token)
+        sessionRepository?.deleteByUserId(user.id)
         logger.info("Password reset completed for user {}", sanitize(user.username))
         audit("PASSWORD_RESET_COMPLETED", actor = user)
     }

@@ -473,3 +473,54 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 - [ ] **JavaFX desktop module implementation**
   Design spec exists and module is scaffolded (`platform-desktop-javafx`) but not implemented. Implement sync client UI using JavaFX as an alternative to Swing.
+
+## Security Review - 2026-05-17
+
+- [ ] **Hash password reset tokens at rest**
+  Password reset tokens are generated as UUIDv7 values and stored/looked up directly. Replace them with 256-bit `SecureRandom` tokens, store only a keyed hash or SHA-256 hash, and make lookup/use atomic.
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt`
+  - `platform-persistence-jooq/src/main/kotlin/io/github/rygel/outerstellar/platform/persistence/JooqPasswordResetRepository.kt`
+  - `platform-persistence-jdbi/src/main/kotlin/io/github/rygel/outerstellar/platform/persistence/JdbiPasswordResetRepository.kt`
+
+- [ ] **Revoke active sessions after password reset**
+  Normal password change deletes sessions, but password reset completes without invalidating existing sessions. Revoke existing sessions, and consider revoking API keys or requiring explicit recovery after reset.
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt`
+
+- [ ] **Serialize JSON exports with structured JSON APIs**
+  Admin, audit, message, and contact JSON exports concatenate user-controlled fields into JSON strings. Replace manual string building with `kotlinx.serialization` or `KotlinxSerialization.asJsonObject`.
+  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/UserAdminRoutes.kt`
+  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/export/MessageExportProvider.kt`
+  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/export/ContactExportProvider.kt`
+
+- [ ] **Fix OAuth callback CSRF exemption**
+  CSRF currently exempts `/oauth/`, while registered OAuth routes are under `/auth/oauth/...`. Exempt only provider callback routes such as `/auth/oauth/{provider}/callback`, and keep OAuth state validation strict.
+  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/Filters.kt`
+  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/OAuthRoutes.kt`
+
+- [ ] **Finish or gate Apple OAuth before enabling it**
+  Apple OAuth can construct a real authorization URL, but code exchange still throws. Implement client-secret generation, token exchange, `id_token` signature validation, issuer/audience checks, and nonce/state handling before allowing production enablement.
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/AppleOAuthProvider.kt`
+  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt`
+
+- [ ] **Require step-up authentication for account deletion**
+  Account deletion only requires an active session or bearer token. Require current password, recent TOTP, or another recent-auth proof before deleting an account.
+  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/AuthRoutes.kt`
+  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/AuthApi.kt`
+
+- [ ] **Harden rate limiting under proxies and concurrency**
+  If `request.source` is unavailable, rate limiting trusts forwarded headers even without a trusted proxy match. Token bucket reset/consume is also non-atomic. Only honor forwarded headers from configured proxies and make bucket accounting atomic.
+  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/RateLimiter.kt`
+
+- [ ] **Strengthen password policy**
+  Registration, change-password, and reset-password flows only enforce minimum length. Add max length, normalization, breached-password checks, and optional strength scoring.
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt`
+
+- [ ] **Make TOTP partial-auth attempts atomic and expiring**
+  Partial TOTP auth state is mutable in memory and abandoned tokens are not cleaned up. Move to an expiring cache and update attempt counters atomically.
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
+
+- [ ] **Sanitize authentication identifiers in logs and audit details**
+  Failed login logs include raw user-supplied usernames. Sanitize, truncate, or hash identifiers before logging to reduce privacy exposure and log-forging risk.
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`

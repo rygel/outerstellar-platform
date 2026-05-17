@@ -47,6 +47,7 @@ class SecurityService(
             passwordEncoder = passwordEncoder,
             resetRepository = resetRepository,
             auditRepository = auditRepository,
+            sessionRepository = sessionRepository,
             emailService = emailService,
             appBaseUrl = config.appBaseUrl,
         )
