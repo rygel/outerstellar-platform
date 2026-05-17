@@ -15,15 +15,18 @@ class PasswordResetService(
     private val passwordEncoder: PasswordEncoder,
     private val resetRepository: PasswordResetRepository? = null,
     private val auditRepository: AuditRepository? = null,
+    private val sessionRepository: SessionRepository? = null,
     private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
     private val appBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
 
+    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
+
     fun requestPasswordReset(email: String): String? {
         val user = userRepository.findByEmail(email)
         if (user == null) {
-            logger.info("Password reset requested for unknown email {}", email)
+            logger.info("Password reset requested for unknown email {}", sanitize(email))
             return null
         }
 
@@ -65,6 +68,7 @@ class PasswordResetService(
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
         resetRepository.markUsed(token)
+        sessionRepository?.deleteByUserId(user.id)
         logger.info("Password reset completed for user {}", user.username)
         audit("PASSWORD_RESET_COMPLETED", actor = user)
     }
@@ -84,6 +88,7 @@ class PasswordResetService(
 
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
+        private const val MAX_LOG_ID_LENGTH = 80
         private const val RESET_TOKEN_TTL_SECONDS = 3600L
         private const val UUID_V7_VERSION = 0x7000L
         private const val UUID_V7_VARIANT_MASK = 0x0FFFL
