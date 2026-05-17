@@ -10,15 +10,25 @@ class MigrationTest {
 
     @Test
     fun `migrations are applied correctly`() {
-        val container =
-            PostgreSQLContainer<Nothing>("postgres:18").apply {
-                withDatabaseName("outerstellar")
-                withUsername("outerstellar")
-                withPassword("outerstellar")
-                start()
-            }
+        val jdbcUrl = System.getenv("TEST_JDBC_URL")
+        val jdbcUser = System.getenv("TEST_JDBC_USER") ?: "outerstellar"
+        val jdbcPassword = System.getenv("TEST_JDBC_PASSWORD") ?: "outerstellar"
 
-        val dataSource = createDataSource(container.jdbcUrl, container.username, container.password)
+        val container =
+            if (jdbcUrl == null) {
+                PostgreSQLContainer<Nothing>("postgres:18").apply {
+                    withDatabaseName("outerstellar")
+                    withUsername("outerstellar")
+                    withPassword("outerstellar")
+                    start()
+                }
+            } else null
+
+        val url = jdbcUrl ?: container!!.jdbcUrl
+        val user = if (jdbcUrl != null) jdbcUser else container!!.username
+        val password = if (jdbcUrl != null) jdbcPassword else container!!.password
+
+        val dataSource = createDataSource(url, user, password)
 
         migrate(dataSource)
 
@@ -30,6 +40,6 @@ class MigrationTest {
             assertTrue(rsSync.next(), "sync_id column should exist in plt_messages table")
         }
 
-        container.stop()
+        container?.stop()
     }
 }
