@@ -97,6 +97,9 @@ open class WebPageFactory(
     fun buildSettingsPage(ctx: WebContext, activeTab: String = "profile"): Page<SettingsPage> =
         settingsPageFactory.buildSettingsPage(ctx, activeTab)
 
+    fun buildSettingsFragment(ctx: WebContext, tab: String): SettingsTabContent =
+        settingsPageFactory.buildSettingsFragment(ctx, tab)
+
     fun buildSearchPage(
         ctx: WebContext,
         query: String,
@@ -119,7 +122,7 @@ open class WebPageFactory(
     private val authPageFactory by lazy { AuthPageFactory(appleOAuthEnabled) }
     private val errorPageFactory by lazy { ErrorPageFactory() }
     private val sidebarFactory by lazy { SidebarFactory() }
-    private val settingsPageFactory by lazy { SettingsPageFactory() }
+    private val settingsPageFactory by lazy { SettingsPageFactory(adminPageFactory, authPageFactory, sidebarFactory) }
     private val searchPageFactory by lazy { SearchPageFactory() }
     private val devDashboardPageFactory by lazy { DevDashboardPageFactory() }
     private val contactsFactory by lazy { ContactsPageFactory(contactService) }

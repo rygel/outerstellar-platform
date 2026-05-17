@@ -526,22 +526,83 @@ data class SearchPage(
 
 data class SettingsTab(val key: String, val label: String, val url: String, val active: Boolean)
 
-data class SettingsPage(
-    val title: String,
-    val tabs: List<SettingsTab>,
-    val activeTab: String,
-    val profileDescription: String = "",
-    val passwordDescription: String = "",
-    val apiKeysDescription: String = "",
-    val notificationsDescription: String = "",
-    val appearanceDescription: String = "",
-    val totpEnabled: Boolean = false,
-    val totpQrDataUri: String? = null,
-    val totpSecret: String? = null,
-    val totpBackupCodes: List<String>? = null,
-    val totpRemainingBackupCodes: Int = 0,
-) : ViewModel {
+data class SettingsPage(val title: String, val tabs: List<SettingsTab>, val activeTab: String) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/SettingsPage"
+}
+
+data class SettingsTabContent(
+    val activeTab: String,
+    val csrfToken: String = "",
+    // Profile tab
+    val profileUsername: String = "",
+    val profileEmail: String = "",
+    val profileAvatarUrl: String = "",
+    val profileAvatarAlt: String = "",
+    val profileSubmitUrl: String = "",
+    val profileUsernameLabel: String = "",
+    val profileUsernamePlaceholder: String = "",
+    val profileEmailLabel: String = "",
+    val profileEmailPlaceholder: String = "",
+    val profileAvatarLabel: String = "",
+    val profileAvatarPlaceholder: String = "",
+    val profileSubmitLabel: String = "",
+    val profileGravatarHint: String = "",
+    val profileNotifPrefsUrl: String = "",
+    val profileNotifPrefsLabel: String = "",
+    val profileEmailNotifLabel: String = "",
+    val profilePushNotifLabel: String = "",
+    val profileSavePrefsLabel: String = "",
+    val profileEmailNotificationsEnabled: Boolean = false,
+    val profilePushNotificationsEnabled: Boolean = false,
+    val profileDangerZoneLabel: String = "",
+    val profileDeleteAccountUrl: String = "",
+    val profileDeleteAccountLabel: String = "",
+    val profileDeleteAccountDescription: String = "",
+    val profileDeleteAccountConfirmLabel: String = "",
+    val profileDeleteAccountCancelLabel: String = "",
+    // Password tab
+    val passwordTitle: String = "",
+    val passwordCurrentPasswordLabel: String = "",
+    val passwordNewPasswordLabel: String = "",
+    val passwordConfirmPasswordLabel: String = "",
+    val passwordSubmitLabel: String = "",
+    val passwordSubmitUrl: String = "",
+    val passwordCurrentPasswordPlaceholder: String = "",
+    val passwordNewPasswordPlaceholder: String = "",
+    val passwordConfirmPasswordPlaceholder: String = "",
+    // API Keys tab
+    val apiKeys: List<io.github.rygel.outerstellar.platform.model.ApiKeySummary> = emptyList(),
+    val apiKeysCreateUrl: String = "",
+    val apiKeysNewKey: String? = null,
+    val apiKeysNewKeyName: String? = null,
+    val apiKeysCreateLabel: String = "",
+    val apiKeysKeyNameLabel: String = "",
+    val apiKeysKeyNamePlaceholder: String = "",
+    val apiKeysYourKeysHeading: String = "",
+    val apiKeysEmptyLabel: String = "",
+    val apiKeysHeaderPrefix: String = "",
+    val apiKeysHeaderName: String = "",
+    val apiKeysHeaderCreated: String = "",
+    val apiKeysHeaderLastUsed: String = "",
+    val apiKeysHeaderActions: String = "",
+    val apiKeysNeverLabel: String = "",
+    val apiKeysDeleteConfirm: String = "",
+    val apiKeysDeleteLabel: String = "",
+    // Notifications tab
+    val notifications: List<NotificationViewModel> = emptyList(),
+    val notifUnreadCount: Int = 0,
+    val notifMarkAllReadUrl: String = "",
+    val notifMarkAllReadLabel: String = "",
+    val notifMarkReadLabel: String = "",
+    val notifReadLabel: String = "",
+    val notifNewLabel: String = "",
+    val notifEmptyLabel: String = "",
+    // Appearance tab
+    val themeSelector: SidebarSelector? = null,
+    val languageSelector: SidebarSelector? = null,
+    val layoutSelector: SidebarSelector? = null,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/SettingsTabContent"
 }
 
 data class ContactsPage(
