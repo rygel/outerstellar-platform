@@ -57,7 +57,6 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: 'maven'
           server-id: github-rygel
           server-username: GITHUB_ACTOR
           server-password: GH_PACKAGES_TOKEN

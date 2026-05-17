@@ -65,7 +65,7 @@ jobs:
           -Denforcer.skip=true
 
       - name: Cache build output for downstream jobs
-        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.0
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             platform-core/target/
@@ -113,7 +113,7 @@ jobs:
           server-password: GH_PACKAGES_TOKEN
 
       - name: Restore build output
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.0
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             platform-core/target/
@@ -175,7 +175,7 @@ jobs:
           server-password: GH_PACKAGES_TOKEN
 
       - name: Restore build output
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.0
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             platform-core/target/
@@ -234,7 +234,7 @@ jobs:
           server-password: GH_PACKAGES_TOKEN
 
       - name: Restore build output
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.0
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             platform-core/target/
@@ -307,7 +307,7 @@ jobs:
           server-password: GH_PACKAGES_TOKEN
 
       - name: Restore build output
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.0
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             platform-core/target/
@@ -389,7 +389,7 @@ jobs:
           server-password: GH_PACKAGES_TOKEN
 
       - name: Cache NVD database
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.0
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.m2/repository/org/owasp/dependency-check-data
           key: nvd-${{ github.run_id }}
