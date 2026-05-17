@@ -47,7 +47,11 @@ class SearchRoutes(
                         if (query.isBlank()) {
                             emptyList()
                         } else {
-                            providers.flatMap { it.search(query, limit) }.sortedByDescending { it.score }.take(limit)
+                            val providerLimit = (kotlin.math.ceil(limit.toDouble() / providers.size)).toInt()
+                            providers
+                                .flatMap { it.search(query, providerLimit) }
+                                .sortedByDescending { it.score }
+                                .take(limit)
                         }
                     val json =
                         KotlinxSerialization.asJsonObject(

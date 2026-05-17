@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.ContactSummary
+import io.github.rygel.outerstellar.platform.model.PagedQueryResult
 import io.github.rygel.outerstellar.platform.model.StoredContact
 import io.github.rygel.outerstellar.platform.sync.SyncContact
 
@@ -15,11 +16,18 @@ interface ContactRepository {
 
     fun countContacts(query: String? = null, includeDeleted: Boolean = false): Long
 
-    fun listDirtyContacts(): List<StoredContact>
+    fun listContactsWithTotal(
+        query: String? = null,
+        limit: Int = 100,
+        offset: Int = 0,
+        includeDeleted: Boolean = false,
+    ): PagedQueryResult<ContactSummary>
+
+    fun listDirtyContacts(limit: Int = 500): List<StoredContact>
 
     fun findBySyncId(syncId: String): StoredContact?
 
-    fun findChangesSince(updatedAtEpochMs: Long): List<StoredContact>
+    fun findChangesSince(updatedAtEpochMs: Long, limit: Int = 500): List<StoredContact>
 
     @Suppress("LongParameterList")
     fun createServerContact(
@@ -44,6 +52,8 @@ interface ContactRepository {
     ): StoredContact
 
     fun upsertSyncedContact(contact: SyncContact, dirty: Boolean): StoredContact
+
+    fun batchUpsertSyncedContacts(contacts: List<SyncContact>, dirty: Boolean): List<StoredContact>
 
     fun markClean(syncIds: Collection<String>)
 

@@ -14,8 +14,9 @@ class SearchPageFactory {
             if (query.isBlank()) {
                 emptyList()
             } else {
+                val providerLimit = (kotlin.math.ceil(limit.toDouble() / providers.size)).toInt()
                 providers
-                    .flatMap { it.search(query, limit) }
+                    .flatMap { it.search(query, providerLimit) }
                     .sortedByDescending { it.score }
                     .take(limit)
                     .map { r ->
