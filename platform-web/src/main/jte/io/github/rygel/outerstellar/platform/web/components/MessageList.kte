@@ -43,11 +43,14 @@
                                 </button>
                             </form>
                         @else
-                            <button class="btn btn-ghost btn-sm btn-square" title="${model.editTitle}" aria-label="${model.editTitle}">
+                            <button class="btn btn-ghost btn-sm btn-square" title="${model.editTitle}" aria-label="${model.editTitle}"
+                                    hx-get="/messages/${msg.syncId}/edit"
+                                    hx-target="closest article"
+                                    hx-swap="outerHTML">
                                 <i aria-hidden="true" class="ri-edit-line"></i>
                             </button>
                             <button class="btn btn-ghost btn-sm btn-square text-error" title="${model.deleteTitle}" aria-label="${model.deleteTitle}"
-                                    hx-delete="/messages/${msg.syncId}"
+                                    hx-post="/messages/${msg.syncId}/delete"
                                     hx-confirm="${model.deleteConfirm}"
                                     hx-target="closest article"
                                     hx-swap="outerHTML">

@@ -1,0 +1,46 @@
+@import io.github.rygel.outerstellar.platform.web.ContactTrashListViewModel
+@param model: ContactTrashListViewModel
+
+<div id="contact-trash-list-container" class="flex flex-col gap-3 mt-4" hx-get="${model.refreshUrl}" hx-trigger="refresh from:body" hx-swap="outerHTML">
+    @if(model.contacts.isEmpty())
+        <p class="card bg-base-100 text-center py-8 opacity-60">${model.emptyMessage}</p>
+    @else
+        @for(contact in model.contacts)
+            <article class="card bg-base-200 border border-base-300 hover:-translate-y-1 transition-transform">
+                <header class="flex items-center justify-between pb-3 border-b border-base-content/5">
+                    <div class="flex items-center gap-3">
+                        <span class="font-semibold">${contact.name}</span>
+                        <span class="text-xs opacity-50">${contact.company} &middot; ${contact.department}</span>
+                    </div>
+                </header>
+                <div class="py-3">
+                    <div class="flex gap-4">
+                        <i aria-hidden="true" class="ri-mail-line"></i>
+                        <div>
+                            @for(email in contact.emails)
+                                <div>${email}</div>
+                            @endfor
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <i aria-hidden="true" class="ri-phone-line"></i>
+                        <div>
+                            @for(phone in contact.phones)
+                                <div>${phone}</div>
+                            @endfor
+                        </div>
+                    </div>
+                </div>
+                <footer class="flex items-center justify-end pt-3 border-t border-base-content/5">
+                    <div class="flex gap-3 justify-end">
+                        <form hx-post="${contact.restoreUrl}" hx-target="#contact-trash-list-container" hx-swap="outerHTML">
+                            <button type="submit" class="btn btn-ghost btn-sm btn-square" title="${model.restoreTitle}" aria-label="${model.restoreTitle}">
+                                <i aria-hidden="true" class="ri-restart-line"></i>
+                            </button>
+                        </form>
+                    </div>
+                </footer>
+            </article>
+        @endfor
+    @endif
+</div>
