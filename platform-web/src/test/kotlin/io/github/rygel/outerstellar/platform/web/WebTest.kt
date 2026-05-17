@@ -132,7 +132,14 @@ abstract class WebTest protected constructor() {
                         transactionManager = txManager,
                         auditRepository = auditRepository,
                     )
-            val pageFactory = WebPageFactory(messageRepository, messageService, resolvedContactService, securityService)
+            val pageFactory =
+                WebPageFactory(
+                    messageRepository,
+                    messageService,
+                    resolvedContactService,
+                    securityService,
+                    appleOAuthEnabled = true,
+                )
 
             return app(
                     messageService,

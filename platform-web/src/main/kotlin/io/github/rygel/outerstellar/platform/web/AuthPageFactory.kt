@@ -1,6 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
-class AuthPageFactory {
+class AuthPageFactory(private val appleOAuthEnabled: Boolean = false) {
 
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
@@ -70,6 +70,7 @@ class AuthPageFactory {
             includeRememberField = normalizedMode == "sign-in",
             oauthSeparator = i18n.translate("web.auth.oauth.separator"),
             signInWithApple = i18n.translate("web.auth.signin.apple"),
+            showAppleOAuth = appleOAuthEnabled,
         )
     }
 

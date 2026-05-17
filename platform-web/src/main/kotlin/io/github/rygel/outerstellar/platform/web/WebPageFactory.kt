@@ -28,6 +28,7 @@ open class WebPageFactory(
     private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? = null,
     private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
     private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
+    private val appleOAuthEnabled: Boolean = false,
 ) {
     fun buildContactsPage(
         ctx: WebContext,
@@ -109,7 +110,7 @@ open class WebPageFactory(
 
     // Delegated factory methods - kept for backward compatibility
     private val adminPageFactory by lazy { AdminPageFactory(securityService, notificationService) }
-    private val authPageFactory by lazy { AuthPageFactory() }
+    private val authPageFactory by lazy { AuthPageFactory(appleOAuthEnabled) }
     private val errorPageFactory by lazy { ErrorPageFactory() }
     private val sidebarFactory by lazy { SidebarFactory() }
     private val settingsPageFactory by lazy { SettingsPageFactory() }

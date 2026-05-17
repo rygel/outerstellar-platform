@@ -9,12 +9,12 @@
 - [ ] Add contact trash and restore flow (soft-delete exists, no UI)
 - [ ] Preserve contact list state during create/update/delete (query/offset/pagination)
 - [ ] Bring desktop message/contact actions to parity with web/domain services
-- [ ] Expose JSON export routes and UI entry points (only CSV exposed currently)
+- [x] Expose JSON export routes and UI entry points (only CSV exposed currently)
 - [ ] Make search discoverable — global search box, type filters, result highlighting
 - [ ] Complete TOTP setup UX (localize, styled fragments, backup-code management)
-- [ ] Hide or finish Sign in with Apple (AppleOAuthProvider.exchangeCode throws "not yet implemented")
+- [x] Hide or finish Sign in with Apple (AppleOAuthProvider.exchangeCode throws "not yet implemented")
 - [ ] Expand admin user-management workflows (create user, edit, force password reset, confirmations)
-- [ ] Clean up primary navigation (hide Auth/Errors from default nav, surface Search/Settings)
+- [x] Clean up primary navigation (hide Auth/Errors from default nav, surface Search/Settings)
 - [ ] JavaFX desktop module implementation (scaffolded but not implemented)
 
 ### Search & Export SPI
@@ -40,13 +40,13 @@
 ## Performance
 
 ### Data & Queries
-- [ ] Batch sync push upserts (bulk prefetch by sync_id, batched INSERT ON CONFLICT)
-- [ ] Bound sync pull and dirty push batches (page/batch limits with continuation cursors)
+- [x] Batch sync push upserts (bulk prefetch by sync_id, batched INSERT ON CONFLICT)
+- [x] Bound sync pull and dirty push batches (page/batch limits with continuation cursors)
 - [x] Add text-search indexes for `%LIKE%` search paths (PostgreSQL pg_trgm GIN or full-text)
-- [ ] Reduce paired list/count pagination queries (seek pagination, approximate/cached counts)
+- [x] Reduce paired list/count pagination queries (seek pagination, approximate/cached counts)
 - [x] Avoid loading all users for admin row actions (add findUserSummary by id)
-- [ ] Stream or page CSV exports (currently builds full response in memory)
-- [ ] Push search ranking and limits closer to providers (avoid extra query and sort work)
+- [x] Stream or page CSV exports (currently builds full response in memory)
+- [x] Push search ranking and limits closer to providers (avoid extra query and sort work)
 
 ### Caching & Rendering
 - [x] Wire runtime cache settings into `CaffeineMessageCache` (uses hardcoded defaults)
@@ -55,12 +55,12 @@
 - [x] Precompute JTE template class lookup (build Map once instead of scanning on each render)
 - [x] Resolve session state once per request (cache single lookup for user + sessionExpired)
 - [x] Use bounded executor for Segment analytics (currently one daemon thread per event)
-- [ ] Debounce desktop search reloads (currently reloads on every query change)
+- [x] Debounce desktop search reloads (currently reloads on every query change)
 
 ## Architecture
 
-- [ ] Add `DesktopSyncEngine` interface for testability (SyncViewModel depends on concrete class)
-- [ ] Configurable CSP policy via AppConfig (currently hardcoded in Filters.kt)
+- [x] Add `DesktopSyncEngine` interface for testability (SyncViewModel depends on concrete class)
+- [x] Configurable CSP policy via AppConfig (currently hardcoded in Filters.kt)
 - [x] Layout engine performance (cache selectors via SidebarFactory, cache nav links, Set-based theme lookup)
 
 ## Quality
