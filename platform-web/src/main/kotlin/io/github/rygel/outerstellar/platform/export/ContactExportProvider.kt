@@ -1,6 +1,9 @@
 package io.github.rygel.outerstellar.platform.export
 
 import io.github.rygel.outerstellar.platform.service.ContactService
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class ContactExportProvider(private val contactService: ContactService?) : ExportProvider {
     override val entityType: String = "contact"
@@ -32,25 +35,23 @@ class ContactExportProvider(private val contactService: ContactService?) : Expor
         } while (page.size == pageSize)
     }
 
-    override fun exportJson(): String = buildString {
-        appendLine("[")
-        if (contactService == null) {
-            appendLine("]")
-            return@buildString
-        }
-        val allItems = mutableListOf<String>()
+    override fun exportJson(): String {
+        if (contactService == null) return "[]"
+        val allItems = mutableListOf<ContactExportRow>()
         var offset = 0
         val pageSize = 500
         do {
             val page = contactService.listContacts(limit = pageSize, offset = offset)
             page.forEach { c ->
                 allItems.add(
-                    """  {"name":"${c.name}","emails":["${c.emails.joinToString("\",\"")}"],"company":"${c.company}","department":"${c.department}"}"""
+                    ContactExportRow(name = c.name, emails = c.emails, company = c.company, department = c.department)
                 )
             }
             offset += pageSize
         } while (page.size == pageSize)
-        appendLine(allItems.joinToString(",\n"))
-        appendLine("]")
+        return Json.encodeToString(allItems)
     }
+
+    @Serializable
+    data class ContactExportRow(val name: String, val emails: List<String>, val company: String, val department: String)
 }
