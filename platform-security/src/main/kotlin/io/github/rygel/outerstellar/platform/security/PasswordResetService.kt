@@ -21,7 +21,7 @@ class PasswordResetService(
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
 
-    private fun sanitize(value: String): String = value.take(80).replace('\n', ' ').replace('\r', ' ')
+    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
 
     fun requestPasswordReset(email: String): String? {
         val user = userRepository.findByEmail(email)
@@ -88,6 +88,7 @@ class PasswordResetService(
 
     companion object {
         private const val MIN_PASSWORD_LENGTH = 8
+        private const val MAX_LOG_ID_LENGTH = 80
         private const val RESET_TOKEN_TTL_SECONDS = 3600L
         private const val UUID_V7_VERSION = 0x7000L
         private const val UUID_V7_VARIANT_MASK = 0x0FFFL
