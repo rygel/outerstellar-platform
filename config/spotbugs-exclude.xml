@@ -54,6 +54,10 @@
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.export.ContactExportProvider$ContactExportRow"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
     <Match>
