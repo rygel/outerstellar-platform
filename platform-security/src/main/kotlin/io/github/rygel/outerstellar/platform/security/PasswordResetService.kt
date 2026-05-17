@@ -20,10 +20,12 @@ class PasswordResetService(
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
 
+    private fun sanitize(value: String): String = value.take(80).replace('\n', ' ').replace('\r', ' ')
+
     fun requestPasswordReset(email: String): String? {
         val user = userRepository.findByEmail(email)
         if (user == null) {
-            logger.info("Password reset requested for unknown email {}", email)
+            logger.info("Password reset requested for unknown email {}", sanitize(email))
             return null
         }
 
@@ -35,7 +37,7 @@ class PasswordResetService(
                 expiresAt = Instant.now().plusSeconds(RESET_TOKEN_TTL_SECONDS),
             )
         resetRepository?.save(resetToken)
-        logger.info("Password reset token generated for user {}", user.username)
+        logger.info("Password reset token generated for user {}", sanitize(user.username))
         val resetLink = "$appBaseUrl/auth/reset/$tokenValue"
         emailService?.send(
             to = user.email,
@@ -65,7 +67,7 @@ class PasswordResetService(
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
         resetRepository.markUsed(token)
-        logger.info("Password reset completed for user {}", user.username)
+        logger.info("Password reset completed for user {}", sanitize(user.username))
         audit("PASSWORD_RESET_COMPLETED", actor = user)
     }
 
