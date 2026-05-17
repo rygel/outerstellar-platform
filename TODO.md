@@ -441,26 +441,9 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [x] ~~**Revoke active sessions after password reset**~~
   Fixed in PR #296 — `sessionRepository?.deleteByUserId()` called after password reset, matching the existing `changePassword()` pattern.
 
-- [ ] **Serialize JSON exports with structured JSON APIs**
-  Admin, audit, message, and contact JSON exports concatenate user-controlled fields into JSON strings. Replace manual string building with `kotlinx.serialization` or `KotlinxSerialization.asJsonObject`.
-  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/UserAdminRoutes.kt`
-  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/export/MessageExportProvider.kt`
-  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/export/ContactExportProvider.kt`
-
-- [x] ~~**Fix OAuth callback CSRF exemption**~~
-  Fixed in PR #297 — CSRF exemption narrowed from `/oauth/` to `/auth/oauth/`.
-
-- [x] ~~**Finish or gate Apple OAuth before enabling it**~~
-  Fixed in PR #286 — Apple OAuth button hidden when provider not configured; authorization URL returns stub when `clientId` is blank.
-
-- [x] ~~**Require step-up authentication for account deletion**~~
-  Fixed — account deletion now requires current password verification.
-
-- [ ] **Harden rate limiting under proxies and concurrency**
-  If `request.source` is unavailable, rate limiting trusts forwarded headers even without a trusted proxy match. Token bucket reset/consume is also non-atomic. Only honor forwarded headers from configured proxies and make bucket accounting atomic.
-  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/RateLimiter.kt`
-
-- [ ] **Strengthen password policy**
+- [x] ~~**Serialize JSON exports with structured JSON APIs**~~
+- [x] ~~**Harden rate limiting under proxies and concurrency**~~
+- [x] ~~**Strengthen password policy**~~
   Registration, change-password, and reset-password flows only enforce minimum length. Add max length, normalization, breached-password checks, and optional strength scoring.
   - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
   - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt`

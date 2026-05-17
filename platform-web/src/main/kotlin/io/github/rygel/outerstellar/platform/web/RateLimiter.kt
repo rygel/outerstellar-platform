@@ -22,19 +22,20 @@ class TokenBucket(private val maxRequests: Int, private val windowMs: Long) {
     private var count = 0
     private var windowStart = System.currentTimeMillis()
 
-    fun tryConsume(): Boolean = synchronized(this) {
-        val now = System.currentTimeMillis()
-        if (now - windowStart > windowMs) {
-            windowStart = now
-            count = 1
-            true
-        } else if (count < maxRequests) {
-            count++
-            true
-        } else {
-            false
+    fun tryConsume(): Boolean =
+        synchronized(this) {
+            val now = System.currentTimeMillis()
+            if (now - windowStart > windowMs) {
+                windowStart = now
+                count = 1
+                true
+            } else if (count < maxRequests) {
+                count++
+                true
+            } else {
+                false
+            }
         }
-    }
 }
 
 /** Per-path rate limit configuration. */

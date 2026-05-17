@@ -10,7 +10,6 @@ import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
-
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -128,28 +127,21 @@ class RateLimiterIntegrationTest : WebTest() {
     @Test
     fun `spoofed X-Forwarded-For is ignored when trusted proxies are configured`() {
         val handler: HttpHandler = { Response(Status.OK) }
-        val neverTrusted = rateLimitFilter(
-            trustedProxies = listOf("10.0.0.1", "10.0.0.2"),
-            pathPrefixes = listOf("/api/v1/auth/login"),
-            maxRequests = 3,
-            windowMs = 60000L,
-        ).then(handler)
+        val neverTrusted =
+            rateLimitFilter(
+                    trustedProxies = listOf("10.0.0.1", "10.0.0.2"),
+                    pathPrefixes = listOf("/api/v1/auth/login"),
+                    maxRequests = 3,
+                    windowMs = 60000L,
+                )
+                .then(handler)
 
         repeat(3) { i ->
-            val response = neverTrusted(
-                Request(POST, "/api/v1/auth/login")
-                    .header("X-Forwarded-For", "1.2.3.$i")
-            )
-            assertTrue(
-                response.status != Status.TOO_MANY_REQUESTS,
-                "Request $i should not be blocked yet",
-            )
+            val response = neverTrusted(Request(POST, "/api/v1/auth/login").header("X-Forwarded-For", "1.2.3.$i"))
+            assertTrue(response.status != Status.TOO_MANY_REQUESTS, "Request $i should not be blocked yet")
         }
 
-        val blockedResponse = neverTrusted(
-            Request(POST, "/api/v1/auth/login")
-                .header("X-Forwarded-For", "9.9.9.9")
-        )
+        val blockedResponse = neverTrusted(Request(POST, "/api/v1/auth/login").header("X-Forwarded-For", "9.9.9.9"))
         assertEquals(
             Status.TOO_MANY_REQUESTS,
             blockedResponse.status,
