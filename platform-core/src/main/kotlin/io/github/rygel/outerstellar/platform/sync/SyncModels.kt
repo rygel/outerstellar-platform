@@ -43,7 +43,12 @@ data class SyncPushRequest(val messages: List<SyncMessage> = emptyList()) {
 
 @Serializable data class SyncPushResponse(val appliedCount: Int = 0, val conflicts: List<SyncConflict> = emptyList())
 
-@Serializable data class SyncPullResponse(val messages: List<SyncMessage> = emptyList(), val serverTimestamp: Long = 0)
+@Serializable
+data class SyncPullResponse(
+    val messages: List<SyncMessage> = emptyList(),
+    val serverTimestamp: Long = 0,
+    val hasMore: Boolean = false,
+)
 
 data class SyncStats(val pushedCount: Int = 0, val pulledCount: Int = 0, val conflictCount: Int = 0)
 
@@ -112,4 +117,8 @@ data class SyncContactConflict(val syncId: String, val reason: String, val serve
 data class SyncPushContactResponse(val appliedCount: Int = 0, val conflicts: List<SyncContactConflict> = emptyList())
 
 @Serializable
-data class SyncPullContactResponse(val contacts: List<SyncContact> = emptyList(), val serverTimestamp: Long = 0)
+data class SyncPullContactResponse(
+    val contacts: List<SyncContact> = emptyList(),
+    val serverTimestamp: Long = 0,
+    val hasMore: Boolean = false,
+)

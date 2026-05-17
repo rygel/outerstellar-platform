@@ -20,6 +20,7 @@ import org.http4k.template.TemplateRenderer
 
 private const val DEFAULT_PAGE_LIMIT = 20
 private const val MAX_PAGE_LIMIT = 100
+private const val MAX_AUDIT_EXPORT_ROWS = 10_000
 
 class UserAdminRoutes(
     private val pageFactory: WebPageFactory,
@@ -46,11 +47,23 @@ class UserAdminRoutes(
                 } bindContract
                 GET to
                 { _: org.http4k.core.Request ->
-                    val users = securityService.listUsers()
+                    val sb = StringBuilder()
+                    sb.appendLine(CsvUtils.toCsvRow(listOf("Username", "Email", "Role", "Enabled")))
+                    var offset = 0
+                    val pageSize = 100
+                    do {
+                        val page = securityService.listUsers(pageSize, offset)
+                        page.forEach { u ->
+                            sb.appendLine(
+                                CsvUtils.toCsvRow(listOf(u.username, u.email, u.role.name, u.enabled.toString()))
+                            )
+                        }
+                        offset += pageSize
+                    } while (page.size == pageSize)
                     Response(Status.OK)
                         .header("Content-Type", "text/csv; charset=utf-8")
                         .header("Content-Disposition", "attachment; filename=\"users.csv\"")
-                        .body(usersAsCsv(users))
+                        .body(sb.toString())
                 },
             "/admin/users" / userIdPath / "toggle-enabled" meta
                 {
@@ -84,11 +97,34 @@ class UserAdminRoutes(
                 } bindContract
                 GET to
                 { _: org.http4k.core.Request ->
-                    val entries = securityService.getAuditLog(limit = Int.MAX_VALUE)
+                    val sb = StringBuilder()
+                    sb.appendLine(CsvUtils.toCsvRow(listOf("Timestamp", "Actor", "Action", "Target", "Detail")))
+                    var offset = 0
+                    val pageSize = 500
+                    val maxRows = MAX_AUDIT_EXPORT_ROWS
+                    var totalRows = 0
+                    do {
+                        val page = securityService.getAuditLog(pageSize, offset)
+                        page.forEach { e ->
+                            sb.appendLine(
+                                CsvUtils.toCsvRow(
+                                    listOf(
+                                        e.createdAt.toString(),
+                                        e.actorUsername ?: "",
+                                        e.action,
+                                        e.targetUsername ?: "",
+                                        e.detail ?: "",
+                                    )
+                                )
+                            )
+                        }
+                        totalRows += page.size
+                        offset += pageSize
+                    } while (page.size == pageSize && totalRows < maxRows)
                     Response(Status.OK)
                         .header("Content-Type", "text/csv; charset=utf-8")
                         .header("Content-Disposition", "attachment; filename=\"audit.csv\"")
-                        .body(auditAsCsv(entries))
+                        .body(sb.toString())
                 },
             "/admin/users" / userIdPath / "toggle-role" meta
                 {

@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.OptimisticLockException
+import io.github.rygel.outerstellar.platform.model.PagedQueryResult
 import io.github.rygel.outerstellar.platform.model.StoredMessage
 import io.github.rygel.outerstellar.platform.sync.SyncMessage
 import java.time.ZoneOffset
@@ -49,12 +50,48 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         }
     }
 
-    override fun listDirtyMessages(): List<StoredMessage> =
+    override fun listMessagesWithTotal(
+        query: String?,
+        year: Int?,
+        limit: Int,
+        offset: Int,
+        includeDeleted: Boolean,
+    ): PagedQueryResult<MessageSummary> {
+        return jdbi.withHandle<PagedQueryResult<MessageSummary>, Exception> { handle ->
+            val (whereClause, bindings) = buildFilterClause(query, year, includeDeleted)
+            val sql =
+                """
+                SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict,
+                       COUNT(*) OVER() AS total_count
+                FROM plt_messages
+                WHERE $whereClause
+                ORDER BY updated_at_epoch_ms DESC, id DESC
+                LIMIT :limit OFFSET :offset
+                """
+            val q = handle.createQuery(sql)
+            bindings(q)
+            val rows =
+                q.bind("limit", limit)
+                    .bind("offset", offset)
+                    .map { rs, _ ->
+                        val totalCount = rs.getLong("total_count")
+                        val msg = mapMessage(rs)
+                        msg to totalCount
+                    }
+                    .list()
+            val totalCount = rows.firstOrNull()?.second ?: 0L
+            val items = rows.map { it.first }.map(StoredMessage::toSummary)
+            PagedQueryResult(items = items, totalItems = totalCount)
+        }
+    }
+
+    override fun listDirtyMessages(limit: Int): List<StoredMessage> =
         jdbi.withHandle<List<StoredMessage>, Exception> { handle ->
             handle
                 .createQuery(
-                    "SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages WHERE dirty = true AND deleted_at IS NULL"
+                    "SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages WHERE dirty = true AND deleted_at IS NULL LIMIT :limit"
                 )
+                .bind("limit", limit)
                 .map { rs, _ -> mapMessage(rs) }
                 .list()
         }
@@ -80,16 +117,18 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             .findOne()
             .orElse(null)
 
-    override fun findChangesSince(since: Long): List<StoredMessage> =
+    override fun findChangesSince(since: Long, limit: Int): List<StoredMessage> =
         jdbi.withHandle<List<StoredMessage>, Exception> { handle ->
             handle
                 .createQuery(
                     """
                     SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages
                     WHERE updated_at_epoch_ms > :since AND deleted_at IS NULL
+                    LIMIT :limit
                     """
                 )
                 .bind("since", since)
+                .bind("limit", limit)
                 .map { rs, _ -> mapMessage(rs) }
                 .list()
         }
@@ -139,6 +178,49 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             }
         }
         return requireNotNull(findBySyncId(message.syncId))
+    }
+
+    override fun batchUpsertSyncedMessages(messages: List<SyncMessage>, dirty: Boolean): List<StoredMessage> {
+        if (messages.isEmpty()) return emptyList()
+
+        jdbi.useHandle<Exception> { handle ->
+            val batch =
+                handle.prepareBatch(
+                    """
+                INSERT INTO plt_messages (sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version)
+                VALUES (:syncId, :author, :content, :updatedAtEpochMs, :dirty, :deleted, 1)
+                ON CONFLICT (sync_id) DO UPDATE SET
+                    author = EXCLUDED.author,
+                    content = EXCLUDED.content,
+                    updated_at_epoch_ms = EXCLUDED.updated_at_epoch_ms,
+                    dirty = EXCLUDED.dirty,
+                    deleted = EXCLUDED.deleted,
+                    version = plt_messages.version + 1
+                """
+                )
+            messages.forEach { msg ->
+                batch
+                    .bind("syncId", msg.syncId)
+                    .bind("author", msg.author)
+                    .bind("content", msg.content)
+                    .bind("updatedAtEpochMs", msg.updatedAtEpochMs)
+                    .bind("dirty", dirty)
+                    .bind("deleted", msg.deleted)
+                    .add()
+            }
+            batch.execute()
+        }
+
+        return jdbi.withHandle<List<StoredMessage>, Exception> { handle ->
+            val ids = messages.map { it.syncId }
+            handle
+                .createQuery(
+                    "SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages WHERE sync_id IN (<ids>)"
+                )
+                .bindList("ids", ids)
+                .map { rs, _ -> mapMessage(rs) }
+                .list()
+        }
     }
 
     override fun markClean(syncIds: Collection<String>) {

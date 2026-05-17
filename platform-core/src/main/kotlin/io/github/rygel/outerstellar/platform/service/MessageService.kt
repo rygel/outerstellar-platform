@@ -39,6 +39,7 @@ class MessageService(
 
     companion object {
         private const val MAX_PAGE_LIMIT = 1000
+        private const val DEFAULT_SYNC_BATCH_SIZE = 500
         const val MAX_AUTHOR_LENGTH = 100
         const val MAX_CONTENT_LENGTH = 500
     }
@@ -54,13 +55,21 @@ class MessageService(
 
         @Suppress("UNCHECKED_CAST")
         return cache.getOrPut(cacheKey) {
-            val items = repository.listMessages(query, year, limit, offset)
-            val total = repository.countMessages(query, year)
+            val result = repository.listMessagesWithTotal(query, year, limit, offset)
             PagedResult(
-                items = items,
-                metadata = PaginationMetadata(currentPage = (offset / limit) + 1, pageSize = limit, totalItems = total),
+                items = result.items,
+                metadata =
+                    PaginationMetadata(
+                        currentPage = (offset / limit) + 1,
+                        pageSize = limit,
+                        totalItems = result.totalItems,
+                    ),
             )
         } as PagedResult<MessageSummary>
+    }
+
+    fun searchMessages(query: String, limit: Int = 20): List<MessageSummary> {
+        return repository.listMessages(query, null, limit.coerceIn(1, MAX_PAGE_LIMIT), 0)
     }
 
     fun listDeletedMessages(
@@ -69,12 +78,11 @@ class MessageService(
         limit: Int = 100,
         offset: Int = 0,
     ): PagedResult<MessageSummary> {
-        val items = repository.listMessages(query, year, limit, offset, includeDeleted = true)
-        val total = repository.countMessages(query, year, includeDeleted = true)
-
+        val result = repository.listMessagesWithTotal(query, year, limit, offset, includeDeleted = true)
         return PagedResult(
-            items = items,
-            metadata = PaginationMetadata(currentPage = (offset / limit) + 1, pageSize = limit, totalItems = total),
+            items = result.items,
+            metadata =
+                PaginationMetadata(currentPage = (offset / limit) + 1, pageSize = limit, totalItems = result.totalItems),
         )
     }
 
@@ -88,7 +96,8 @@ class MessageService(
         return message
     }
 
-    fun listDirtyMessages(): List<StoredMessage> = repository.listDirtyMessages()
+    fun listDirtyMessages(limit: Int = DEFAULT_SYNC_BATCH_SIZE): List<StoredMessage> =
+        repository.listDirtyMessages(limit)
 
     fun createServerMessage(author: String, content: String): StoredMessage {
         val errors = mutableListOf<String>()
@@ -161,16 +170,18 @@ class MessageService(
         return message
     }
 
-    fun getChangesSince(since: Long): SyncPullResponse {
-        val changes = repository.findChangesSince(since).map { it.toSyncMessage() }
-        return SyncPullResponse(messages = changes, serverTimestamp = System.currentTimeMillis())
+    fun getChangesSince(since: Long, limit: Int = DEFAULT_SYNC_BATCH_SIZE): SyncPullResponse {
+        val changes = repository.findChangesSince(since, limit + 1).map { it.toSyncMessage() }
+        val hasMore = changes.size > limit
+        val results = if (hasMore) changes.dropLast(1) else changes
+        return SyncPullResponse(messages = results, serverTimestamp = System.currentTimeMillis(), hasMore = hasMore)
     }
 
     fun processPushRequest(request: SyncPushRequest): SyncPushResponse {
         SyncPushRequest.validate(request)
 
         val conflicts = mutableListOf<SyncConflict>()
-        var appliedCount = 0
+        val toApply = mutableListOf<SyncMessage>()
 
         request.messages.forEach { incoming ->
             val current =
@@ -182,9 +193,7 @@ class MessageService(
                 }
             when {
                 current == null || incoming.updatedAtEpochMs >= current.updatedAtEpochMs -> {
-                    val updated = repository.upsertSyncedMessage(incoming, dirty = false)
-                    cache.put("entity:${updated.syncId}", updated)
-                    appliedCount++
+                    toApply.add(incoming)
                 }
                 else -> {
                     repository.markConflict(incoming.syncId, incoming)
@@ -198,12 +207,19 @@ class MessageService(
             }
         }
 
-        if (appliedCount > 0 || conflicts.isNotEmpty()) {
+        val applied =
+            if (toApply.isNotEmpty()) {
+                val upserted = repository.batchUpsertSyncedMessages(toApply, dirty = false)
+                upserted.forEach { cache.put("entity:${it.syncId}", it) }
+                upserted.size
+            } else 0
+
+        if (applied > 0 || conflicts.isNotEmpty()) {
             cache.invalidateNamespace("list")
             eventPublisher.publishRefresh("message-list-panel")
         }
 
-        return SyncPushResponse(appliedCount = appliedCount, conflicts = conflicts)
+        return SyncPushResponse(appliedCount = applied, conflicts = conflicts)
     }
 
     fun restore(syncId: String) {

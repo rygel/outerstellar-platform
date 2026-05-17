@@ -19,6 +19,7 @@ class ContactService(
 
     companion object {
         private const val MAX_PAGE_LIMIT = 1000
+        private const val DEFAULT_SYNC_BATCH_SIZE = 500
         const val MAX_NAME_LENGTH = 200
         const val MAX_COMPANY_LENGTH = 200
         const val MAX_ADDRESS_LENGTH = 500
@@ -31,6 +32,10 @@ class ContactService(
         val limit = limit.coerceIn(1, MAX_PAGE_LIMIT)
         logger.debug("Listing contacts query='{}' limit={} offset={}", query, limit, offset)
         return repository.listContacts(query, limit, offset)
+    }
+
+    fun searchContacts(query: String, limit: Int = 20): List<ContactSummary> {
+        return repository.listContacts(query, limit.coerceIn(1, MAX_PAGE_LIMIT), 0)
     }
 
     fun countContacts(query: String? = null): Long {
@@ -141,47 +146,56 @@ class ContactService(
         eventPublisher.publishRefresh("contact-list-panel")
     }
 
-    fun getChangesSince(updatedAtEpochMs: Long): io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse {
-        val changes = repository.findChangesSince(updatedAtEpochMs)
+    fun getChangesSince(
+        updatedAtEpochMs: Long,
+        limit: Int = DEFAULT_SYNC_BATCH_SIZE,
+    ): io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse {
+        val changes = repository.findChangesSince(updatedAtEpochMs, limit + 1)
+        val hasMore = changes.size > limit
+        val results = if (hasMore) changes.dropLast(1) else changes
         val serverTimestamp = System.currentTimeMillis()
         return io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse(
-            contacts = changes.map { it.toSyncContact() },
+            contacts = results.map { it.toSyncContact() },
             serverTimestamp = serverTimestamp,
+            hasMore = hasMore,
         )
     }
 
     fun processPushRequest(
         request: io.github.rygel.outerstellar.platform.sync.SyncPushContactRequest
     ): io.github.rygel.outerstellar.platform.sync.SyncPushContactResponse {
-        var applied = 0
         val conflicts = mutableListOf<io.github.rygel.outerstellar.platform.sync.SyncContactConflict>()
+        val toApply = mutableListOf<io.github.rygel.outerstellar.platform.sync.SyncContact>()
+
+        request.contacts.forEach { pushedContact ->
+            val existing = repository.findBySyncId(pushedContact.syncId)
+            if (existing != null && existing.updatedAtEpochMs > pushedContact.updatedAtEpochMs) {
+                conflicts.add(
+                    io.github.rygel.outerstellar.platform.sync.SyncContactConflict(
+                        syncId = pushedContact.syncId,
+                        reason = "Server has newer version",
+                        serverContact = existing.toSyncContact(),
+                    )
+                )
+            } else {
+                toApply.add(pushedContact)
+            }
+        }
 
         val process = {
-            request.contacts.forEach { pushedContact ->
-                val existing = repository.findBySyncId(pushedContact.syncId)
-                if (existing != null && existing.updatedAtEpochMs > pushedContact.updatedAtEpochMs) {
-                    conflicts.add(
-                        io.github.rygel.outerstellar.platform.sync.SyncContactConflict(
-                            syncId = pushedContact.syncId,
-                            reason = "Server has newer version",
-                            serverContact = existing.toSyncContact(),
-                        )
-                    )
-                } else {
-                    repository.upsertSyncedContact(pushedContact, false)
-                    applied++
-                }
+            if (toApply.isNotEmpty()) {
+                repository.batchUpsertSyncedContacts(toApply, false)
             }
         }
 
         transactionManager?.inTransaction(process) ?: process()
 
-        if (applied > 0 || conflicts.isNotEmpty()) {
+        if (toApply.isNotEmpty() || conflicts.isNotEmpty()) {
             eventPublisher.publishRefresh("contact-list-panel")
         }
 
         return io.github.rygel.outerstellar.platform.sync.SyncPushContactResponse(
-            appliedCount = applied,
+            appliedCount = toApply.size,
             conflicts = conflicts,
         )
     }

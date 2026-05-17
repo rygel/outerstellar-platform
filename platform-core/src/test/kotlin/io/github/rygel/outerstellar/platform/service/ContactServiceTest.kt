@@ -172,7 +172,7 @@ class ContactServiceTest {
     @Test
     fun `getChangesSince returns contacts mapped to sync format`() {
         val contact = storedContact(syncId = "sync-1", updatedAtEpochMs = 500L)
-        every { repository.findChangesSince(300L) } returns listOf(contact)
+        every { repository.findChangesSince(300L, any()) } returns listOf(contact)
 
         val response = service.getChangesSince(300L)
 
@@ -200,7 +200,7 @@ class ContactServiceTest {
 
         assertEquals(1, response.appliedCount)
         assertTrue(response.conflicts.isEmpty())
-        verify { repository.upsertSyncedContact(pushed, false) }
+        verify { repository.batchUpsertSyncedContacts(listOf(pushed), false) }
     }
 
     @Test

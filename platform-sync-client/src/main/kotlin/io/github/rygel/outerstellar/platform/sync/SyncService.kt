@@ -228,24 +228,34 @@ class SyncService(
 
     override fun sync(): SyncStats {
         val lastSync = repository.getLastSyncEpochMs()
-        val pullRequest = Request(GET, "$baseUrl/api/v1/sync?since=$lastSync")
-        val authenticatedPullRequest =
-            apiToken?.let { pullRequest.header("Authorization", "Bearer $it") } ?: pullRequest
 
-        val pullResponse = client(authenticatedPullRequest)
-        if (pullResponse.status != Status.OK) {
-            throw SyncException("Pull failed: ${pullResponse.status}")
+        val allPulled = mutableListOf<SyncMessage>()
+        var pullHasMore = true
+        var pullSince = lastSync
+        var latestTimestamp = 0L
+
+        while (pullHasMore) {
+            val pullRequest = Request(GET, "$baseUrl/api/v1/sync?since=$pullSince")
+            val authenticatedPullRequest =
+                apiToken?.let { pullRequest.header("Authorization", "Bearer $it") } ?: pullRequest
+            val pullResponse = client(authenticatedPullRequest)
+            if (pullResponse.status != Status.OK) {
+                throw SyncException("Pull failed: ${pullResponse.status}")
+            }
+            val pullBody = pullResponseLens(pullResponse)
+            allPulled.addAll(pullBody.messages)
+            pullHasMore = pullBody.hasMore
+            latestTimestamp = pullBody.serverTimestamp
+            if (pullBody.messages.isNotEmpty()) {
+                pullSince = pullBody.messages.maxOf { it.updatedAtEpochMs }
+            }
         }
-
-        val pullBody = pullResponseLens(pullResponse)
 
         val dirtyMessages = repository.listDirtyMessages()
         val pushRequestData = SyncPushRequest(dirtyMessages.map { it.toSyncMessage() })
 
         val httpRequest = Request(POST, "$baseUrl/api/v1/sync").with(pushRequestLens of pushRequestData)
-
         val authPushRequest = apiToken?.let { httpRequest.header("Authorization", "Bearer $it") } ?: httpRequest
-
         val pushResponse = client(authPushRequest)
         if (pushResponse.status != Status.OK) {
             throw SyncException("Push failed: ${pushResponse.status}")
@@ -254,16 +264,16 @@ class SyncService(
         val pushBody = pushResponseLens(pushResponse)
 
         transactionManager.inTransaction {
-            pullBody.messages.forEach { repository.upsertSyncedMessage(it, false) }
+            allPulled.forEach { repository.upsertSyncedMessage(it, false) }
             pushBody.conflicts.forEach { conflict ->
                 conflict.serverMessage?.let { repository.upsertSyncedMessage(it, false) }
             }
-            repository.setLastSyncEpochMs(pullBody.serverTimestamp)
+            repository.setLastSyncEpochMs(latestTimestamp)
         }
 
         return SyncStats(
             pushedCount = pushBody.appliedCount,
-            pulledCount = pullBody.messages.size,
+            pulledCount = allPulled.size,
             conflictCount = pushBody.conflicts.size,
         )
     }
