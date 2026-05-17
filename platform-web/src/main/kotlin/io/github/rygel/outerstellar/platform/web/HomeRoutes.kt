@@ -66,7 +66,7 @@ class HomeRoutes(
                     val author = request.form("author").orEmpty()
                     val content = request.form("content").orEmpty()
                     messageService.createServerMessage(author, content)
-                    Response(Status.FOUND).header("location", request.webContext.url("/"))
+                    renderer.render(pageFactory.buildMessageList(request.webContext))
                 },
             "/messages/restore" / syncIdPath meta
                 {
