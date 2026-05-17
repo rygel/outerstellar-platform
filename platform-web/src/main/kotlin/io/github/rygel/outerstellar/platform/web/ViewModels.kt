@@ -125,6 +125,7 @@ data class AuthFormFragment(
     val includeRememberField: Boolean,
     val oauthSeparator: String = "or continue with",
     val signInWithApple: String = "Sign in with Apple",
+    val showAppleOAuth: Boolean = false,
 ) : ViewModel
 
 data class AuthResultFragment(val title: String, val message: String, val toneClass: String) : ViewModel
