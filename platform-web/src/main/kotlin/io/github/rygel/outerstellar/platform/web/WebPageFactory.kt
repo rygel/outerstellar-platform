@@ -102,7 +102,8 @@ open class WebPageFactory(
         query: String,
         providers: List<io.github.rygel.outerstellar.platform.search.SearchProvider>,
         limit: Int = 20,
-    ): Page<SearchPage> = searchPageFactory.buildSearchPage(ctx, query, providers, limit)
+        typeFilter: String = "",
+    ): Page<SearchPage> = searchPageFactory.buildSearchPage(ctx, query, providers, limit, typeFilter)
 
     fun buildDevDashboardPage(
         ctx: WebContext,

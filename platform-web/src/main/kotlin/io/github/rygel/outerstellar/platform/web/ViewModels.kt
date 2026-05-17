@@ -42,6 +42,8 @@ data class ShellView(
     val toggleMenuLabel: String = "Toggle menu",
     val profileLabel: String = "Profile",
     val notificationBellTitle: String = "Notifications",
+    val searchPlaceholder: String = "Search...",
+    val searchLabel: String = "Search",
     val pageDescription: String = "",
     val canonicalUrl: String = "",
     val noIndex: Boolean = false,
@@ -507,6 +509,8 @@ data class SearchResultViewModel(
     val type: String,
 )
 
+data class SearchTypeFilter(val key: String, val label: String, val url: String, val active: Boolean)
+
 data class SearchPage(
     val title: String,
     val query: String,
@@ -514,6 +518,8 @@ data class SearchPage(
     val emptyLabel: String,
     val searchPlaceholder: String,
     val searchLabel: String,
+    val typeFilter: String = "",
+    val typeFilters: List<SearchTypeFilter> = emptyList(),
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/SearchPage"
 }
@@ -548,6 +554,9 @@ data class ContactsPage(
     val previousUrl: String = "",
     val nextUrl: String = "",
     val totalCount: Long = 0,
+    val currentQuery: String = "",
+    val currentOffset: Int = 0,
+    val currentLimit: Int = 12,
     val createLabel: String = "Create Contact",
     val editTitle: String = "Edit contact",
     val deleteTitle: String = "Delete contact",
