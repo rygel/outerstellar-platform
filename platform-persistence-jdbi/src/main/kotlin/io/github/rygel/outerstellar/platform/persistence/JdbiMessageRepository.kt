@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.OptimisticLockException
+import io.github.rygel.outerstellar.platform.model.PagedQueryResult
 import io.github.rygel.outerstellar.platform.model.StoredMessage
 import io.github.rygel.outerstellar.platform.sync.SyncMessage
 import java.time.ZoneOffset
@@ -46,6 +47,41 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             val q = handle.createQuery("SELECT COUNT(*) FROM plt_messages WHERE $whereClause")
             bindings(q)
             q.mapTo(Long::class.java).one()
+        }
+    }
+
+    override fun listMessagesWithTotal(
+        query: String?,
+        year: Int?,
+        limit: Int,
+        offset: Int,
+        includeDeleted: Boolean,
+    ): PagedQueryResult<MessageSummary> {
+        return jdbi.withHandle<PagedQueryResult<MessageSummary>, Exception> { handle ->
+            val (whereClause, bindings) = buildFilterClause(query, year, includeDeleted)
+            val sql =
+                """
+                SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict,
+                       COUNT(*) OVER() AS total_count
+                FROM plt_messages
+                WHERE $whereClause
+                ORDER BY updated_at_epoch_ms DESC, id DESC
+                LIMIT :limit OFFSET :offset
+                """
+            val q = handle.createQuery(sql)
+            bindings(q)
+            val rows =
+                q.bind("limit", limit)
+                    .bind("offset", offset)
+                    .map { rs, _ ->
+                        val totalCount = rs.getLong("total_count")
+                        val msg = mapMessage(rs)
+                        msg to totalCount
+                    }
+                    .list()
+            val totalCount = rows.firstOrNull()?.second ?: 0L
+            val items = rows.map { it.first }.map(StoredMessage::toSummary)
+            PagedQueryResult(items = items, totalItems = totalCount)
         }
     }
 

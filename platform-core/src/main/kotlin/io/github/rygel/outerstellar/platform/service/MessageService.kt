@@ -55,11 +55,15 @@ class MessageService(
 
         @Suppress("UNCHECKED_CAST")
         return cache.getOrPut(cacheKey) {
-            val items = repository.listMessages(query, year, limit, offset)
-            val total = repository.countMessages(query, year)
+            val result = repository.listMessagesWithTotal(query, year, limit, offset)
             PagedResult(
-                items = items,
-                metadata = PaginationMetadata(currentPage = (offset / limit) + 1, pageSize = limit, totalItems = total),
+                items = result.items,
+                metadata =
+                    PaginationMetadata(
+                        currentPage = (offset / limit) + 1,
+                        pageSize = limit,
+                        totalItems = result.totalItems,
+                    ),
             )
         } as PagedResult<MessageSummary>
     }
@@ -74,12 +78,11 @@ class MessageService(
         limit: Int = 100,
         offset: Int = 0,
     ): PagedResult<MessageSummary> {
-        val items = repository.listMessages(query, year, limit, offset, includeDeleted = true)
-        val total = repository.countMessages(query, year, includeDeleted = true)
-
+        val result = repository.listMessagesWithTotal(query, year, limit, offset, includeDeleted = true)
         return PagedResult(
-            items = items,
-            metadata = PaginationMetadata(currentPage = (offset / limit) + 1, pageSize = limit, totalItems = total),
+            items = result.items,
+            metadata =
+                PaginationMetadata(currentPage = (offset / limit) + 1, pageSize = limit, totalItems = result.totalItems),
         )
     }
 

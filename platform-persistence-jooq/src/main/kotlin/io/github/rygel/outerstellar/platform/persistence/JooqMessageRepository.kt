@@ -4,6 +4,7 @@ import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_MESSAGES
 import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_SYNC_STATE
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.OptimisticLockException
+import io.github.rygel.outerstellar.platform.model.PagedQueryResult
 import io.github.rygel.outerstellar.platform.model.StoredMessage
 import io.github.rygel.outerstellar.platform.sync.SyncMessage
 import java.time.LocalDateTime
@@ -76,6 +77,40 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
 
     fun countDeletedMessages(query: String?, year: Int?): Long {
         return countMessages(query, year, true)
+    }
+
+    override fun listMessagesWithTotal(
+        query: String?,
+        year: Int?,
+        limit: Int,
+        offset: Int,
+        includeDeleted: Boolean,
+    ): PagedQueryResult<MessageSummary> {
+        val conditions = getFilterConditions(query, year, includeDeleted)
+        val countField = org.jooq.impl.DSL.count().over()
+        val results =
+            dsl.select(
+                    PLT_MESSAGES.ID,
+                    PLT_MESSAGES.SYNC_ID,
+                    PLT_MESSAGES.AUTHOR,
+                    PLT_MESSAGES.CONTENT,
+                    PLT_MESSAGES.UPDATED_AT_EPOCH_MS,
+                    PLT_MESSAGES.DIRTY,
+                    PLT_MESSAGES.DELETED,
+                    PLT_MESSAGES.VERSION,
+                    PLT_MESSAGES.SYNC_CONFLICT,
+                    countField,
+                )
+                .from(PLT_MESSAGES)
+                .where(conditions)
+                .orderBy(PLT_MESSAGES.UPDATED_AT_EPOCH_MS.desc(), PLT_MESSAGES.ID.desc())
+                .limit(limit)
+                .offset(offset)
+                .fetch()
+
+        val totalCount = results.firstOrNull()?.getValue(countField)?.toLong() ?: 0L
+        val items = results.map(::toStoredMessage).map(StoredMessage::toSummary)
+        return PagedQueryResult(items = items, totalItems = totalCount)
     }
 
     override fun listDirtyMessages(limit: Int): List<StoredMessage> =

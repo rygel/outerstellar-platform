@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.ContactSummary
 import io.github.rygel.outerstellar.platform.model.OptimisticLockException
+import io.github.rygel.outerstellar.platform.model.PagedQueryResult
 import io.github.rygel.outerstellar.platform.model.StoredContact
 import io.github.rygel.outerstellar.platform.sync.SyncContact
 import java.util.UUID
@@ -46,6 +47,47 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
             val q = handle.createQuery("SELECT COUNT(*) FROM plt_contacts WHERE $whereClause")
             bindings(q)
             q.mapTo(Long::class.java).one()
+        }
+    }
+
+    override fun listContactsWithTotal(
+        query: String?,
+        limit: Int,
+        offset: Int,
+        includeDeleted: Boolean,
+    ): PagedQueryResult<ContactSummary> {
+        return jdbi.withHandle<PagedQueryResult<ContactSummary>, Exception> { handle ->
+            val (whereClause, bindings) = buildFilterClause(query, includeDeleted)
+            val sql =
+                """
+                SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms,
+                       dirty, deleted, version, sync_conflict, COUNT(*) OVER() AS total_count
+                FROM plt_contacts
+                WHERE $whereClause
+                ORDER BY name ASC
+                LIMIT :limit OFFSET :offset
+                """
+            val q = handle.createQuery(sql)
+            bindings(q)
+            val rows =
+                q.bind("limit", limit)
+                    .bind("offset", offset)
+                    .map { rs, _ ->
+                        val totalCount = rs.getLong("total_count")
+                        val contactRow = readContactRow(rs)
+                        contactRow to totalCount
+                    }
+                    .list()
+            val totalCount = rows.firstOrNull()?.second ?: 0L
+            val contactRows = rows.map { it.first }
+            val contactIds = contactRows.map { it.id }
+            val emailsByContact = loadEmailsForContacts(handle, contactIds)
+            val phonesByContact = loadPhonesForContacts(handle, contactIds)
+            val socialsByContact = loadSocialsForContacts(handle, contactIds)
+            val items = contactRows.map {
+                mapContact(it, emailsByContact, phonesByContact, socialsByContact).toSummary()
+            }
+            PagedQueryResult(items = items, totalItems = totalCount)
         }
     }
 

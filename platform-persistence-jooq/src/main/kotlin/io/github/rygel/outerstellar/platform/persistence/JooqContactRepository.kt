@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_CONTACT_
 import io.github.rygel.outerstellar.platform.jooq.tables.references.PLT_SYNC_STATE
 import io.github.rygel.outerstellar.platform.model.ContactSummary
 import io.github.rygel.outerstellar.platform.model.OptimisticLockException
+import io.github.rygel.outerstellar.platform.model.PagedQueryResult
 import io.github.rygel.outerstellar.platform.model.StoredContact
 import io.github.rygel.outerstellar.platform.sync.SyncContact
 import java.util.UUID
@@ -65,6 +66,44 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
 
     override fun countContacts(query: String?, includeDeleted: Boolean): Long {
         return dsl.fetchCount(PLT_CONTACTS, getFilterConditions(query, includeDeleted)).toLong()
+    }
+
+    override fun listContactsWithTotal(
+        query: String?,
+        limit: Int,
+        offset: Int,
+        includeDeleted: Boolean,
+    ): PagedQueryResult<ContactSummary> {
+        val conditions = getFilterConditions(query, includeDeleted)
+        val countField = org.jooq.impl.DSL.count().over()
+        val results =
+            dsl.select(
+                    PLT_CONTACTS.ID,
+                    PLT_CONTACTS.SYNC_ID,
+                    PLT_CONTACTS.NAME,
+                    emailsField,
+                    phonesField,
+                    socialsField,
+                    PLT_CONTACTS.COMPANY,
+                    PLT_CONTACTS.COMPANY_ADDRESS,
+                    PLT_CONTACTS.DEPARTMENT,
+                    PLT_CONTACTS.UPDATED_AT_EPOCH_MS,
+                    PLT_CONTACTS.DIRTY,
+                    PLT_CONTACTS.DELETED,
+                    PLT_CONTACTS.VERSION,
+                    PLT_CONTACTS.SYNC_CONFLICT,
+                    countField,
+                )
+                .from(PLT_CONTACTS)
+                .where(conditions)
+                .orderBy(PLT_CONTACTS.NAME.asc())
+                .limit(limit)
+                .offset(offset)
+                .fetch()
+
+        val totalCount = results.firstOrNull()?.getValue(countField)?.toLong() ?: 0L
+        val items = results.map(::toStoredContact).map(StoredContact::toSummary)
+        return PagedQueryResult(items = items, totalItems = totalCount)
     }
 
     override fun listDirtyContacts(limit: Int): List<StoredContact> =

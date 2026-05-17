@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.MessageSummary
+import io.github.rygel.outerstellar.platform.model.PagedQueryResult
 import io.github.rygel.outerstellar.platform.model.StoredMessage
 import io.github.rygel.outerstellar.platform.sync.SyncMessage
 
@@ -15,6 +16,14 @@ interface MessageRepository {
     ): List<MessageSummary>
 
     fun countMessages(query: String? = null, year: Int? = null, includeDeleted: Boolean = false): Long
+
+    fun listMessagesWithTotal(
+        query: String? = null,
+        year: Int? = null,
+        limit: Int = 100,
+        offset: Int = 0,
+        includeDeleted: Boolean = false,
+    ): PagedQueryResult<MessageSummary>
 
     fun listDirtyMessages(limit: Int = 500): List<StoredMessage>
 

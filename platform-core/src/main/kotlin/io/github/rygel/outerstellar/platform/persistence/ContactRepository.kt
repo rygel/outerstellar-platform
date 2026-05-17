@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.ContactSummary
+import io.github.rygel.outerstellar.platform.model.PagedQueryResult
 import io.github.rygel.outerstellar.platform.model.StoredContact
 import io.github.rygel.outerstellar.platform.sync.SyncContact
 
@@ -14,6 +15,13 @@ interface ContactRepository {
     ): List<ContactSummary>
 
     fun countContacts(query: String? = null, includeDeleted: Boolean = false): Long
+
+    fun listContactsWithTotal(
+        query: String? = null,
+        limit: Int = 100,
+        offset: Int = 0,
+        includeDeleted: Boolean = false,
+    ): PagedQueryResult<ContactSummary>
 
     fun listDirtyContacts(limit: Int = 500): List<StoredContact>
 
