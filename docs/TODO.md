@@ -61,7 +61,7 @@
 
 - [ ] Add `DesktopSyncEngine` interface for testability (SyncViewModel depends on concrete class)
 - [ ] Configurable CSP policy via AppConfig (currently hardcoded in Filters.kt)
-- [ ] Layout engine performance (cache ThemeCatalog CSS, nav link caching)
+- [x] Layout engine performance (cache selectors via SidebarFactory, cache nav links, Set-based theme lookup)
 
 ## Quality
 
