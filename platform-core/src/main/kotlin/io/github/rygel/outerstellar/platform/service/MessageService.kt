@@ -181,7 +181,7 @@ class MessageService(
         SyncPushRequest.validate(request)
 
         val conflicts = mutableListOf<SyncConflict>()
-        var appliedCount = 0
+        val toApply = mutableListOf<SyncMessage>()
 
         request.messages.forEach { incoming ->
             val current =
@@ -193,9 +193,7 @@ class MessageService(
                 }
             when {
                 current == null || incoming.updatedAtEpochMs >= current.updatedAtEpochMs -> {
-                    val updated = repository.upsertSyncedMessage(incoming, dirty = false)
-                    cache.put("entity:${updated.syncId}", updated)
-                    appliedCount++
+                    toApply.add(incoming)
                 }
                 else -> {
                     repository.markConflict(incoming.syncId, incoming)
@@ -209,12 +207,19 @@ class MessageService(
             }
         }
 
-        if (appliedCount > 0 || conflicts.isNotEmpty()) {
+        val applied =
+            if (toApply.isNotEmpty()) {
+                val upserted = repository.batchUpsertSyncedMessages(toApply, dirty = false)
+                upserted.forEach { cache.put("entity:${it.syncId}", it) }
+                upserted.size
+            } else 0
+
+        if (applied > 0 || conflicts.isNotEmpty()) {
             cache.invalidateNamespace("list")
             eventPublisher.publishRefresh("message-list-panel")
         }
 
-        return SyncPushResponse(appliedCount = appliedCount, conflicts = conflicts)
+        return SyncPushResponse(appliedCount = applied, conflicts = conflicts)
     }
 
     fun restore(syncId: String) {

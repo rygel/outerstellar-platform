@@ -53,6 +53,8 @@ interface ContactRepository {
 
     fun upsertSyncedContact(contact: SyncContact, dirty: Boolean): StoredContact
 
+    fun batchUpsertSyncedContacts(contacts: List<SyncContact>, dirty: Boolean): List<StoredContact>
+
     fun markClean(syncIds: Collection<String>)
 
     fun getLastSyncEpochMs(): Long

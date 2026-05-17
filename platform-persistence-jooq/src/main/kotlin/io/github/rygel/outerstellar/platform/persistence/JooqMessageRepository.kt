@@ -202,6 +202,62 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
         return requireNotNull(findBySyncId(message.syncId))
     }
 
+    override fun batchUpsertSyncedMessages(messages: List<SyncMessage>, dirty: Boolean): List<StoredMessage> {
+        if (messages.isEmpty()) return emptyList()
+
+        val existingMap =
+            dsl.select(PLT_MESSAGES.SYNC_ID, PLT_MESSAGES.VERSION)
+                .from(PLT_MESSAGES)
+                .where(PLT_MESSAGES.SYNC_ID.`in`(messages.map { it.syncId }))
+                .fetch()
+                .associate { it.get(PLT_MESSAGES.SYNC_ID) to (it.get(PLT_MESSAGES.VERSION) ?: 1L) }
+
+        val (toInsert, toUpdate) = messages.partition { it.syncId !in existingMap }
+
+        if (toInsert.isNotEmpty()) {
+            val insertSteps = toInsert.map { msg ->
+                dsl.insertInto(PLT_MESSAGES)
+                    .set(PLT_MESSAGES.SYNC_ID, msg.syncId)
+                    .set(PLT_MESSAGES.AUTHOR, msg.author)
+                    .set(PLT_MESSAGES.CONTENT, msg.content)
+                    .set(PLT_MESSAGES.UPDATED_AT_EPOCH_MS, msg.updatedAtEpochMs)
+                    .set(PLT_MESSAGES.DIRTY, dirty)
+                    .set(PLT_MESSAGES.DELETED, msg.deleted)
+                    .set(PLT_MESSAGES.VERSION, 1L)
+            }
+            dsl.batch(insertSteps).execute()
+        }
+
+        if (toUpdate.isNotEmpty()) {
+            val updateSteps = toUpdate.map { msg ->
+                dsl.update(PLT_MESSAGES)
+                    .set(PLT_MESSAGES.AUTHOR, msg.author)
+                    .set(PLT_MESSAGES.CONTENT, msg.content)
+                    .set(PLT_MESSAGES.UPDATED_AT_EPOCH_MS, msg.updatedAtEpochMs)
+                    .set(PLT_MESSAGES.DIRTY, dirty)
+                    .set(PLT_MESSAGES.DELETED, msg.deleted)
+                    .set(PLT_MESSAGES.VERSION, (existingMap[msg.syncId] ?: 1L) + 1)
+                    .where(PLT_MESSAGES.SYNC_ID.eq(msg.syncId))
+            }
+            dsl.batch(updateSteps).execute()
+        }
+
+        return dsl.select(
+                PLT_MESSAGES.ID,
+                PLT_MESSAGES.SYNC_ID,
+                PLT_MESSAGES.AUTHOR,
+                PLT_MESSAGES.CONTENT,
+                PLT_MESSAGES.UPDATED_AT_EPOCH_MS,
+                PLT_MESSAGES.DIRTY,
+                PLT_MESSAGES.DELETED,
+                PLT_MESSAGES.VERSION,
+                PLT_MESSAGES.SYNC_CONFLICT,
+            )
+            .from(PLT_MESSAGES)
+            .where(PLT_MESSAGES.SYNC_ID.`in`(messages.map { it.syncId }))
+            .fetch(::toStoredMessage)
+    }
+
     override fun markClean(syncIds: Collection<String>) {
         if (syncIds.isEmpty()) {
             return

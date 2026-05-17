@@ -37,6 +37,8 @@ interface MessageRepository {
 
     fun upsertSyncedMessage(message: SyncMessage, dirty: Boolean): StoredMessage
 
+    fun batchUpsertSyncedMessages(messages: List<SyncMessage>, dirty: Boolean): List<StoredMessage>
+
     fun findChangesSince(since: Long, limit: Int = 500): List<StoredMessage>
 
     fun getLastSyncEpochMs(): Long

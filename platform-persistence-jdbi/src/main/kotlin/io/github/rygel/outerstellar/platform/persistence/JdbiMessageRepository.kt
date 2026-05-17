@@ -180,6 +180,49 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         return requireNotNull(findBySyncId(message.syncId))
     }
 
+    override fun batchUpsertSyncedMessages(messages: List<SyncMessage>, dirty: Boolean): List<StoredMessage> {
+        if (messages.isEmpty()) return emptyList()
+
+        jdbi.useHandle<Exception> { handle ->
+            val batch =
+                handle.prepareBatch(
+                    """
+                INSERT INTO plt_messages (sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version)
+                VALUES (:syncId, :author, :content, :updatedAtEpochMs, :dirty, :deleted, 1)
+                ON CONFLICT (sync_id) DO UPDATE SET
+                    author = EXCLUDED.author,
+                    content = EXCLUDED.content,
+                    updated_at_epoch_ms = EXCLUDED.updated_at_epoch_ms,
+                    dirty = EXCLUDED.dirty,
+                    deleted = EXCLUDED.deleted,
+                    version = plt_messages.version + 1
+                """
+                )
+            messages.forEach { msg ->
+                batch
+                    .bind("syncId", msg.syncId)
+                    .bind("author", msg.author)
+                    .bind("content", msg.content)
+                    .bind("updatedAtEpochMs", msg.updatedAtEpochMs)
+                    .bind("dirty", dirty)
+                    .bind("deleted", msg.deleted)
+                    .add()
+            }
+            batch.execute()
+        }
+
+        return jdbi.withHandle<List<StoredMessage>, Exception> { handle ->
+            val ids = messages.map { it.syncId }
+            handle
+                .createQuery(
+                    "SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages WHERE sync_id IN (<ids>)"
+                )
+                .bindList("ids", ids)
+                .map { rs, _ -> mapMessage(rs) }
+                .list()
+        }
+    }
+
     override fun markClean(syncIds: Collection<String>) {
         if (syncIds.isEmpty()) return
         jdbi.useHandle<Exception> { handle ->

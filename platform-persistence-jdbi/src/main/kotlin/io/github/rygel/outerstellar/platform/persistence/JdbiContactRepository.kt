@@ -223,6 +223,64 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         return requireNotNull(findBySyncId(contact.syncId))
     }
 
+    override fun batchUpsertSyncedContacts(contacts: List<SyncContact>, dirty: Boolean): List<StoredContact> {
+        if (contacts.isEmpty()) return emptyList()
+
+        jdbi.useTransaction<Exception> { handle ->
+            val batch =
+                handle.prepareBatch(
+                    """
+                INSERT INTO plt_contacts (sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version)
+                VALUES (:syncId, :name, :company, :companyAddress, :department, :updatedAtEpochMs, :dirty, :deleted, 1)
+                ON CONFLICT (sync_id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    company = EXCLUDED.company,
+                    company_address = EXCLUDED.company_address,
+                    department = EXCLUDED.department,
+                    updated_at_epoch_ms = EXCLUDED.updated_at_epoch_ms,
+                    dirty = EXCLUDED.dirty,
+                    deleted = EXCLUDED.deleted,
+                    version = plt_contacts.version + 1
+                """
+                )
+            contacts.forEach { c ->
+                batch
+                    .bind("syncId", c.syncId)
+                    .bind("name", c.name)
+                    .bind("company", c.company)
+                    .bind("companyAddress", c.companyAddress)
+                    .bind("department", c.department)
+                    .bind("updatedAtEpochMs", c.updatedAtEpochMs)
+                    .bind("dirty", dirty)
+                    .bind("deleted", c.deleted)
+                    .add()
+            }
+            batch.execute()
+
+            for (c in contacts) {
+                val contactId = getContactId(handle, c.syncId) ?: continue
+                insertCollections(handle, contactId, c.emails, c.phones, c.socialMedia)
+            }
+        }
+
+        return jdbi.withHandle<List<StoredContact>, Exception> { handle ->
+            handle
+                .createQuery(
+                    "SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_contacts WHERE sync_id IN (<ids>)"
+                )
+                .bindList("ids", contacts.map { it.syncId })
+                .map { rs, _ -> readContactRow(rs) }
+                .list()
+                .let { rows ->
+                    val ids = rows.map { it.id }
+                    val emailsByContact = loadEmailsForContacts(handle, ids)
+                    val phonesByContact = loadPhonesForContacts(handle, ids)
+                    val socialsByContact = loadSocialsForContacts(handle, ids)
+                    rows.map { mapContact(it, emailsByContact, phonesByContact, socialsByContact) }
+                }
+        }
+    }
+
     override fun markClean(syncIds: Collection<String>) {
         if (syncIds.isEmpty()) return
         jdbi.useHandle<Exception> { handle ->

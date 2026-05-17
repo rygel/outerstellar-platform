@@ -237,6 +237,97 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
         return requireNotNull(findBySyncId(contact.syncId))
     }
 
+    override fun batchUpsertSyncedContacts(contacts: List<SyncContact>, dirty: Boolean): List<StoredContact> {
+        if (contacts.isEmpty()) return emptyList()
+
+        val existingMap =
+            dsl.select(PLT_CONTACTS.SYNC_ID, PLT_CONTACTS.VERSION)
+                .from(PLT_CONTACTS)
+                .where(PLT_CONTACTS.SYNC_ID.`in`(contacts.map { it.syncId }))
+                .fetch()
+                .associate { it.get(PLT_CONTACTS.SYNC_ID) to (it.get(PLT_CONTACTS.VERSION) ?: 1L) }
+
+        val (toInsert, toUpdate) = contacts.partition { it.syncId !in existingMap }
+
+        dsl.transaction { config ->
+            val txDsl = using(config)
+
+            if (toInsert.isNotEmpty()) {
+                val insertSteps = toInsert.map { contact ->
+                    txDsl
+                        .insertInto(PLT_CONTACTS)
+                        .set(PLT_CONTACTS.SYNC_ID, contact.syncId)
+                        .set(PLT_CONTACTS.NAME, contact.name)
+                        .set(PLT_CONTACTS.COMPANY, contact.company)
+                        .set(PLT_CONTACTS.COMPANY_ADDRESS, contact.companyAddress)
+                        .set(PLT_CONTACTS.DEPARTMENT, contact.department)
+                        .set(PLT_CONTACTS.UPDATED_AT_EPOCH_MS, contact.updatedAtEpochMs)
+                        .set(PLT_CONTACTS.DIRTY, dirty)
+                        .set(PLT_CONTACTS.DELETED, contact.deleted)
+                        .set(PLT_CONTACTS.VERSION, 1L)
+                }
+                txDsl.batch(insertSteps).execute()
+
+                for (contact in toInsert) {
+                    val contactId =
+                        txDsl
+                            .select(PLT_CONTACTS.ID)
+                            .from(PLT_CONTACTS)
+                            .where(PLT_CONTACTS.SYNC_ID.eq(contact.syncId))
+                            .fetchOne(PLT_CONTACTS.ID) ?: continue
+                    insertCollections(txDsl, contactId, contact.emails, contact.phones, contact.socialMedia)
+                }
+            }
+
+            if (toUpdate.isNotEmpty()) {
+                val updateSteps = toUpdate.map { contact ->
+                    txDsl
+                        .update(PLT_CONTACTS)
+                        .set(PLT_CONTACTS.NAME, contact.name)
+                        .set(PLT_CONTACTS.COMPANY, contact.company)
+                        .set(PLT_CONTACTS.COMPANY_ADDRESS, contact.companyAddress)
+                        .set(PLT_CONTACTS.DEPARTMENT, contact.department)
+                        .set(PLT_CONTACTS.UPDATED_AT_EPOCH_MS, contact.updatedAtEpochMs)
+                        .set(PLT_CONTACTS.DIRTY, dirty)
+                        .set(PLT_CONTACTS.DELETED, contact.deleted)
+                        .set(PLT_CONTACTS.VERSION, (existingMap[contact.syncId] ?: 1L) + 1)
+                        .where(PLT_CONTACTS.SYNC_ID.eq(contact.syncId))
+                }
+                txDsl.batch(updateSteps).execute()
+
+                for (contact in toUpdate) {
+                    val contactId =
+                        txDsl
+                            .select(PLT_CONTACTS.ID)
+                            .from(PLT_CONTACTS)
+                            .where(PLT_CONTACTS.SYNC_ID.eq(contact.syncId))
+                            .fetchOne(PLT_CONTACTS.ID) ?: continue
+                    insertCollections(txDsl, contactId, contact.emails, contact.phones, contact.socialMedia)
+                }
+            }
+        }
+
+        return dsl.select(
+                PLT_CONTACTS.ID,
+                PLT_CONTACTS.SYNC_ID,
+                PLT_CONTACTS.NAME,
+                emailsField,
+                phonesField,
+                socialsField,
+                PLT_CONTACTS.COMPANY,
+                PLT_CONTACTS.COMPANY_ADDRESS,
+                PLT_CONTACTS.DEPARTMENT,
+                PLT_CONTACTS.UPDATED_AT_EPOCH_MS,
+                PLT_CONTACTS.DIRTY,
+                PLT_CONTACTS.DELETED,
+                PLT_CONTACTS.VERSION,
+                PLT_CONTACTS.SYNC_CONFLICT,
+            )
+            .from(PLT_CONTACTS)
+            .where(PLT_CONTACTS.SYNC_ID.`in`(contacts.map { it.syncId }))
+            .fetch(::toStoredContact)
+    }
+
     override fun markClean(syncIds: Collection<String>) {
         if (syncIds.isEmpty()) return
         dsl.update(PLT_CONTACTS).set(PLT_CONTACTS.DIRTY, false).where(PLT_CONTACTS.SYNC_ID.`in`(syncIds)).execute()

@@ -200,7 +200,7 @@ class ContactServiceTest {
 
         assertEquals(1, response.appliedCount)
         assertTrue(response.conflicts.isEmpty())
-        verify { repository.upsertSyncedContact(pushed, false) }
+        verify { repository.batchUpsertSyncedContacts(listOf(pushed), false) }
     }
 
     @Test
