@@ -65,8 +65,8 @@
 
 ## Quality
 
-- [ ] Review EI_EXPOSE_REP global SpotBugs exclusion
-- [ ] Add PostgreSQL integration test profile to CI (`-Ptest-postgres` with Podman)
+- [x] Review EI_EXPOSE_REP global SpotBugs exclusion
+- [x] Add PostgreSQL integration test profile to CI (`-Ptest-postgres` with Podman)
 - [ ] Split SwingSyncApp.kt into smaller components
 - [ ] Localize remaining desktop user-facing strings (conflict resolution, contact dialogs, spell-check, theme preview)
 - [ ] Improve accessibility labels for icon-only controls (aria-label on notification/profile/action icons)
