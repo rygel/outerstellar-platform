@@ -157,7 +157,15 @@ data class AuthFormFragment(
 
 data class AuthResultFragment(val title: String, val message: String, val toneClass: String) : ViewModel
 
-data class TotpChallengeForm(val partialToken: String, val error: String? = null) : ViewModel
+data class TotpChallengeForm(
+    val partialToken: String,
+    val title: String = "Two-Factor Authentication",
+    val description: String = "Enter the 6-digit code from your authenticator app.",
+    val codeLabel: String = "Authentication Code",
+    val verifyLabel: String = "Verify",
+    val backLinkLabel: String = "Back to login",
+    val error: String? = null,
+) : ViewModel
 
 data class TotpSetupFragment(
     val totpEnabled: Boolean = false,
@@ -165,6 +173,19 @@ data class TotpSetupFragment(
     val totpSecret: String? = null,
     val totpBackupCodes: List<String>? = null,
     val totpRemainingBackupCodes: Int = 0,
+    val enabledLabel: String = "Two-factor authentication is enabled.",
+    val passwordLabel: String = "Enter your password to disable",
+    val disableLabel: String = "Disable Two-Factor Auth",
+    val backupCodesLabel: String = "Backup Codes",
+    val backupCodesHint: String = "Save these codes in a safe place. Each code can be used once.",
+    val backupCodesRemainingLabel: String = "%s backup codes remaining",
+    val copyLabel: String = "Copy Codes",
+    val downloadLabel: String = "Download Codes",
+    val disabledLabel: String = "Scan the QR code below with your authenticator app, then enter the 6-digit code.",
+    val manualKeyLabel: String = "Or enter this key manually:",
+    val codeLabel: String = "Authentication Code",
+    val setupLabel: String = "Enable Two-Factor Auth",
+    val verifyLabel: String = "Verify and Enable",
 ) : ViewModel
 
 data class ErrorPage(
