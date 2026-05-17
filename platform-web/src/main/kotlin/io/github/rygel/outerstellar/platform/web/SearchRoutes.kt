@@ -32,7 +32,8 @@ class SearchRoutes(
                     val query = request.query("q").orEmpty()
                     val limit =
                         request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_SEARCH_LIMIT) ?: DEFAULT_SEARCH_LIMIT
-                    renderer.render(pageFactory.buildSearchPage(ctx, query, providers, limit))
+                    val type = request.query("type").orEmpty()
+                    renderer.render(pageFactory.buildSearchPage(ctx, query, providers, limit, type))
                 },
             "/api/v1/search" meta
                 {

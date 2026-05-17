@@ -249,6 +249,8 @@ class WebContext(
             changePasswordLabel = i18n.translate("web.layout.change.password"),
             signOutLabel = i18n.translate("web.layout.sign.out"),
             csrfToken = csrfToken,
+            searchPlaceholder = i18n.translate("web.search.placeholder"),
+            searchLabel = i18n.translate("web.search.label"),
             notificationsUrl = if (user != null) url("/notifications") else null,
             textResolver = textResolver,
             pageDescription =

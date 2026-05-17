@@ -74,7 +74,7 @@
                         </button>
                         <button class="btn btn-ghost btn-sm btn-square text-error" title="${model.data.deleteTitle}" aria-label="${model.data.deleteTitle}"
                                 hx-post="${contact.deleteUrl}"
-                                hx-target="#contact-${contact.syncId}"
+                                hx-target="#contact-list-container"
                                 hx-swap="outerHTML"
                                 hx-confirm="${model.data.deleteConfirmLabel}">
                             <i aria-hidden="true" class="ri-delete-bin-line"></i>
