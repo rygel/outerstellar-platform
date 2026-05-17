@@ -20,7 +20,7 @@ class WebFuzzTest {
             JwtService(
                 JwtConfig(
                     enabled = true,
-                    secret = "outerstellar-jazzer-fuzz-secret-2024",
+                    secret = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
                     issuer = "outerstellar-fuzz",
                     expirySeconds = 3600L,
                 )
@@ -28,54 +28,60 @@ class WebFuzzTest {
     }
 
     @FuzzTest
-    fun cspPolicyFuzz(data: String) {
-        Filters.securityHeaders(cspPolicy = data)
+    fun cspPolicyFuzz(data: String?) {
+        val input = data ?: return
+        Filters.securityHeaders(cspPolicy = input)
             .then { request -> Response(Status.OK).body("ok") }
             .invoke(Request(Method.GET, "/"))
     }
 
     @FuzzTest
-    fun jwtValidationFuzz(data: String) {
-        jwtService.extractClaims(data)
+    fun jwtValidationFuzz(data: String?) {
+        val input = data ?: return
+        jwtService.extractClaims(input)
     }
 
     @FuzzTest
-    fun oauthCallbackParsingFuzz(data: String) {
-        val get = Request(Method.GET, "/auth/oauth/test/callback?code=$data&state=$data")
+    fun oauthCallbackParsingFuzz(data: String?) {
+        val input = data ?: return
+        val get = Request(Method.GET, "/auth/oauth/test/callback?code=$input&state=fuzzstate")
         get.query("code")
         get.query("state")
         val post =
             Request(Method.POST, "/auth/oauth/test/callback")
-                .body(data)
+                .body(input)
                 .header("content-type", "application/x-www-form-urlencoded")
         post.bodyString()
     }
 
     @FuzzTest
-    fun rateLimiterFuzz(data: String) {
+    fun rateLimiterFuzz(data: String?) {
+        val input = data ?: return
         val jsonRequest =
             Request(Method.POST, "/api/v1/auth/login")
-                .body("""{"username":"$data","email":"$data"}""")
+                .body("""{"username":"$input","email":"$input"}""")
                 .header("content-type", "application/json")
         extractAccountIdentifier(jsonRequest)
         val formRequest =
             Request(Method.POST, "/api/v1/auth/login")
-                .body("username=$data&email=$data")
+                .body("username=$input&email=$input")
                 .header("content-type", "application/x-www-form-urlencoded")
         extractAccountIdentifier(formRequest)
     }
 
     @FuzzTest
-    fun tokenBucketFuzz(data: String) {
-        val maxRequests = (data.hashCode() and 0x7FFFFFFF) % 100 + 1
-        val windowMs = ((data.hashCode() / 100) and 0x7FFFFFFF).toLong() % 86400000 + 1
+    fun tokenBucketFuzz(data: String?) {
+        val input = data ?: return
+        val maxRequests = (input.hashCode() and 0x7FFFFFFF) % 100 + 1
+        val windowMs = ((input.hashCode() / 100) and 0x7FFFFFFF).toLong() % 86400000 + 1
         TokenBucket(maxRequests, windowMs).tryConsume()
     }
 
     @FuzzTest
-    fun inputValidationFuzz(data: String) {
+    fun inputValidationFuzz(data: String?) {
+        val input = data ?: return
         try {
-            UrlValidator.validate(data)
+            UrlValidator.validate(input)
         } catch (_: IllegalArgumentException) {}
     }
 }
