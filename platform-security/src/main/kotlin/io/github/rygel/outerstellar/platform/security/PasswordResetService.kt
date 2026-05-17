@@ -38,7 +38,7 @@ class PasswordResetService(
                 expiresAt = Instant.now().plusSeconds(RESET_TOKEN_TTL_SECONDS),
             )
         resetRepository?.save(resetToken)
-        logger.info("Password reset token generated for user {}", user.username)
+        logger.info("Password reset token generated for user {}", sanitize(user.username))
         val resetLink = "$appBaseUrl/auth/reset/$tokenValue"
         emailService?.send(
             to = user.email,
@@ -69,7 +69,7 @@ class PasswordResetService(
         userRepository.save(updated)
         resetRepository.markUsed(token)
         sessionRepository?.deleteByUserId(user.id)
-        logger.info("Password reset completed for user {}", user.username)
+        logger.info("Password reset completed for user {}", sanitize(user.username))
         audit("PASSWORD_RESET_COMPLETED", actor = user)
     }
 

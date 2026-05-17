@@ -96,12 +96,12 @@ class SecurityService(
             return AuthResult.Authenticated(user)
         }
         val attempts = userRepository.incrementFailedLoginAttempts(user.id)
-        logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
+        logger.warn("Authentication failed: Invalid password for user ${sanitize(username)} (attempt $attempts)")
         audit("AUTHENTICATION_FAILED", actor = user, detail = "Invalid password")
         if (attempts >= config.maxFailedLoginAttempts) {
             val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
             userRepository.updateLockedUntil(user.id, until)
-            logger.warn("User $username locked until $until after $attempts failed attempts")
+            logger.warn("User ${sanitize(username)} locked until $until after $attempts failed attempts")
         }
         return null
     }
@@ -122,7 +122,7 @@ class SecurityService(
                 role = UserRole.USER,
             )
         userRepository.save(created)
-        logger.info("Registration successful for user {}", username)
+        logger.info("Registration successful for user {}", sanitize(username))
         audit("USER_REGISTERED", actor = created)
         return created
     }
@@ -140,7 +140,7 @@ class SecurityService(
         val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
         sessionRepository?.deleteByUserId(userId)
-        logger.info("Password changed for user {}", user.username)
+        logger.info("Password changed for user {}", sanitize(user.username))
         audit("PASSWORD_CHANGED", actor = user)
     }
 
@@ -161,7 +161,7 @@ class SecurityService(
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateEnabled(targetId, enabled)
-        logger.info("User {} enabled set to {} by admin {}", target.username, enabled, adminId)
+        logger.info("User {} enabled set to {} by admin {}", sanitize(target.username), enabled, adminId)
         val admin = userRepository.findById(adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
         audit(action, actor = admin, target = target)
@@ -174,7 +174,7 @@ class SecurityService(
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.resetFailedLoginAttempts(targetId)
-        logger.info("User {} unlocked by admin {}", target.username, admin.username)
+        logger.info("User {} unlocked by admin {}", sanitize(target.username), sanitize(admin.username))
         audit("USER_UNLOCKED", actor = admin, target = target)
     }
 
@@ -420,7 +420,7 @@ class SecurityService(
         private const val SESSION_TOKEN_HEX_LENGTH = 48
         private const val MAX_PAGE_LIMIT = 1000
         private const val MAX_LOG_ID_LENGTH = 80
-    private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+        private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }
 
