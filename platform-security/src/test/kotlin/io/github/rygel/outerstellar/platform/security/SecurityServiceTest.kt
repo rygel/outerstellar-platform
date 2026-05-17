@@ -260,6 +260,27 @@ class SecurityServiceTest {
     }
 
     @Test
+    fun `register throws on long password`() {
+        every { userRepository.findByUsername("newuser") } returns null
+
+        assertThrows<WeakPasswordException> { service.register("newuser", "A".repeat(129)) }
+    }
+
+    @Test
+    fun `register trims whitespace before validation`() {
+        every { userRepository.findByUsername("newuser") } returns null
+        every { passwordEncoder.encode("validpassword") } returns "encoded_hash"
+
+        val result = service.register("newuser", "  validpassword  ")
+
+        assertEquals("newuser", result.username)
+        assertEquals(UserRole.USER, result.role)
+        val userSlot = slot<User>()
+        verify { userRepository.save(capture(userSlot)) }
+        assertEquals("encoded_hash", userSlot.captured.passwordHash)
+    }
+
+    @Test
     fun `register creates user with encoded password`() {
         every { userRepository.findByUsername("newuser") } returns null
         every { passwordEncoder.encode("validpassword") } returns "encoded_hash"
@@ -336,6 +357,14 @@ class SecurityServiceTest {
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
 
         assertThrows<WeakPasswordException> { service.changePassword(testUser.id, "currentpass", "short") }
+    }
+
+    @Test
+    fun `changePassword throws on long new password`() {
+        every { userRepository.findById(testUser.id) } returns testUser
+        every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
+
+        assertThrows<WeakPasswordException> { service.changePassword(testUser.id, "currentpass", "A".repeat(129)) }
     }
 
     // ---- setUserEnabled ----

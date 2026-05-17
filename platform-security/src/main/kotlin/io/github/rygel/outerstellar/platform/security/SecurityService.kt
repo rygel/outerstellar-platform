@@ -108,9 +108,8 @@ class SecurityService(
 
     fun register(username: String, password: String): User {
         require(username.isNotBlank()) { "Username is required" }
-        if (password.length < MIN_PASSWORD_LENGTH) {
-            throw WeakPasswordException("Password must be at least $MIN_PASSWORD_LENGTH characters")
-        }
+        val normalized = password.trim()
+        validatePassword(normalized)?.let { throw WeakPasswordException(it) }
         if (userRepository.findByUsername(username) != null) throw UsernameAlreadyExistsException(username)
 
         val created =
@@ -118,7 +117,7 @@ class SecurityService(
                 id = UUID.randomUUID(),
                 username = username,
                 email = username,
-                passwordHash = passwordEncoder.encode(password),
+                passwordHash = passwordEncoder.encode(normalized),
                 role = UserRole.USER,
             )
         userRepository.save(created)
@@ -133,11 +132,10 @@ class SecurityService(
         if (!passwordEncoder.matches(currentPassword, user.passwordHash)) {
             throw WeakPasswordException("Current password is incorrect")
         }
-        if (newPassword.length < MIN_PASSWORD_LENGTH) {
-            throw WeakPasswordException("New password must be at least $MIN_PASSWORD_LENGTH characters")
-        }
+        val normalized = newPassword.trim()
+        validatePassword(normalized)?.let { throw WeakPasswordException(it) }
 
-        val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
+        val updated = user.copy(passwordHash = passwordEncoder.encode(normalized))
         userRepository.save(updated)
         sessionRepository?.deleteByUserId(userId)
         logger.info("Password changed for user {}", sanitize(user.username))
@@ -415,7 +413,6 @@ class SecurityService(
     }
 
     companion object {
-        private const val MIN_PASSWORD_LENGTH = 8
         private const val MAX_USERNAME_LENGTH = 50
         private const val SESSION_TOKEN_HEX_LENGTH = 48
         private const val MAX_PAGE_LIMIT = 1000

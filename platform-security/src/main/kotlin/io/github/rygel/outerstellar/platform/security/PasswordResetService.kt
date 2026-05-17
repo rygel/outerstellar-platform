@@ -58,14 +58,13 @@ class PasswordResetService(
         if (resetToken.expiresAt.isBefore(Instant.now())) {
             throw IllegalArgumentException("Reset token has expired")
         }
-        if (newPassword.length < MIN_PASSWORD_LENGTH) {
-            throw WeakPasswordException("New password must be at least $MIN_PASSWORD_LENGTH characters")
-        }
+        val normalized = newPassword.trim()
+        validatePassword(normalized)?.let { throw WeakPasswordException(it) }
 
         val user =
             userRepository.findById(resetToken.userId) ?: throw UserNotFoundException(resetToken.userId.toString())
 
-        val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
+        val updated = user.copy(passwordHash = passwordEncoder.encode(normalized))
         userRepository.save(updated)
         resetRepository.markUsed(token)
         sessionRepository?.deleteByUserId(user.id)
@@ -87,7 +86,6 @@ class PasswordResetService(
     }
 
     companion object {
-        private const val MIN_PASSWORD_LENGTH = 8
         private const val MAX_LOG_ID_LENGTH = 80
         private const val RESET_TOKEN_TTL_SECONDS = 3600L
         private const val UUID_V7_VERSION = 0x7000L
