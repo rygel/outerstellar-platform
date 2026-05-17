@@ -8,6 +8,7 @@ import org.http4k.contract.div
 import org.http4k.contract.meta
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
+import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.body.form
@@ -100,6 +101,41 @@ class HomeRoutes(
                         val strategy = ConflictStrategy.fromString(request.form("strategy") ?: "server")
                         messageService.resolveConflict(syncId, strategy)
                         Response(Status.OK).header("HX-Trigger", "refresh")
+                    }
+                },
+            "/messages" / syncIdPath / "delete" meta
+                {
+                    summary = "Delete a message"
+                } bindContract
+                POST to
+                { syncId: String, _ ->
+                    { _: Request ->
+                        messageService.deleteMessage(syncId)
+                        Response(Status.OK)
+                    }
+                },
+            "/messages" / syncIdPath / "edit" meta
+                {
+                    summary = "Show message edit form"
+                } bindContract
+                GET to
+                { syncId: String, _ ->
+                    { request: Request ->
+                        renderer.render(pageFactory.buildMessageEditForm(request.webContext, syncId))
+                    }
+                },
+            "/messages" / syncIdPath / "update" meta
+                {
+                    summary = "Update a message"
+                } bindContract
+                POST to
+                { syncId: String, _ ->
+                    { request: Request ->
+                        val msg = messageService.findBySyncId(syncId)
+                        val author = request.form("author").orEmpty()
+                        val content = request.form("content").orEmpty()
+                        messageService.updateMessage(msg!!.copy(author = author, content = content))
+                        renderer.render(pageFactory.buildMessageList(request.webContext))
                     }
                 },
             "/components/footer-status" meta
