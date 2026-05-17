@@ -28,18 +28,29 @@ class ContactService(
         const val MAX_SOCIAL_MEDIA_LENGTH = 255
     }
 
-    fun listContacts(query: String? = null, limit: Int = 100, offset: Int = 0): List<ContactSummary> {
+    fun listContacts(
+        query: String? = null,
+        limit: Int = 100,
+        offset: Int = 0,
+        includeDeleted: Boolean = false,
+    ): List<ContactSummary> {
         val limit = limit.coerceIn(1, MAX_PAGE_LIMIT)
-        logger.debug("Listing contacts query='{}' limit={} offset={}", query, limit, offset)
-        return repository.listContacts(query, limit, offset)
+        logger.debug(
+            "Listing contacts query='{}' limit={} offset={} includeDeleted={}",
+            query,
+            limit,
+            offset,
+            includeDeleted,
+        )
+        return repository.listContacts(query, limit, offset, includeDeleted)
     }
 
     fun searchContacts(query: String, limit: Int = 20): List<ContactSummary> {
         return repository.listContacts(query, limit.coerceIn(1, MAX_PAGE_LIMIT), 0)
     }
 
-    fun countContacts(query: String? = null): Long {
-        return repository.countContacts(query)
+    fun countContacts(query: String? = null, includeDeleted: Boolean = false): Long {
+        return repository.countContacts(query, includeDeleted)
     }
 
     fun getContactBySyncId(syncId: String): StoredContact? {
@@ -140,6 +151,22 @@ class ContactService(
                 targetId = syncId,
                 targetUsername = null,
                 action = "CONTACT_DELETED",
+                detail = null,
+            )
+        )
+        eventPublisher.publishRefresh("contact-list-panel")
+    }
+
+    fun restoreContact(syncId: String) {
+        logger.info("Restoring contact syncId={}", syncId)
+        repository.restore(syncId)
+        auditRepository?.log(
+            AuditEntry(
+                actorId = null,
+                actorUsername = null,
+                targetId = syncId,
+                targetUsername = null,
+                action = "CONTACT_RESTORED",
                 detail = null,
             )
         )

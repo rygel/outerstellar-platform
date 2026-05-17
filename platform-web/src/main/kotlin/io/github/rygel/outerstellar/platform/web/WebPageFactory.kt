@@ -59,6 +59,8 @@ open class WebPageFactory(
 
     fun buildTrashPage(ctx: WebContext): Page<TrashPage> = homeFactory.buildTrashPage(ctx)
 
+    fun buildContactTrashList(ctx: WebContext): ContactTrashListViewModel = contactsFactory.buildTrashContactList(ctx)
+
     fun buildMessageEditForm(ctx: WebContext, syncId: String): MessageEditFormFragment =
         homeFactory.buildMessageEditForm(ctx, syncId)
 
@@ -120,7 +122,7 @@ open class WebPageFactory(
     private val searchPageFactory by lazy { SearchPageFactory() }
     private val devDashboardPageFactory by lazy { DevDashboardPageFactory() }
     private val contactsFactory by lazy { ContactsPageFactory(contactService) }
-    private val homeFactory by lazy { HomePageFactory(messageService) }
+    private val homeFactory by lazy { HomePageFactory(messageService, contactService) }
     private val infraFactory by lazy { InfraPageFactory(repository) }
 
     fun buildUserAdminPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<UserAdminPage> =

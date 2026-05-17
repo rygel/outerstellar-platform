@@ -73,7 +73,32 @@ data class HomePage(
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/HomePage"
 }
 
-data class TrashPage(val title: String, val description: String, val messageList: MessageListViewModel) : ViewModel {
+data class ContactTrashItemViewModel(
+    val syncId: String,
+    val name: String,
+    val emails: List<String>,
+    val phones: List<String>,
+    val company: String,
+    val department: String,
+    val restoreUrl: String,
+)
+
+data class ContactTrashListViewModel(
+    val contacts: List<ContactTrashItemViewModel>,
+    val emptyMessage: String,
+    val refreshUrl: String,
+    val title: String = "Deleted Contacts",
+    val restoreTitle: String = "Restore contact",
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/ContactTrashList"
+}
+
+data class TrashPage(
+    val title: String,
+    val description: String,
+    val messageList: MessageListViewModel,
+    val contactList: ContactTrashListViewModel? = null,
+) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/TrashPage"
 }
 

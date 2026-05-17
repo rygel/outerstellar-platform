@@ -1,6 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
-class HomePageFactory(private val messageService: io.github.rygel.outerstellar.platform.service.MessageService?) {
+class HomePageFactory(
+    private val messageService: io.github.rygel.outerstellar.platform.service.MessageService?,
+    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? = null,
+) {
     private val messageListComponent = messageService?.let { MessageListComponent(it) }
 
     private fun requireList() = checkNotNull(messageListComponent) { "MessageService is required for home page" }
@@ -80,6 +83,27 @@ class HomePageFactory(private val messageService: io.github.rygel.outerstellar.p
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.trash.title"), "/messages/trash")
         val messageList = buildMessageList(ctx, isTrash = true)
+        val contactList = contactService?.let {
+            val dbContacts = it.listContacts(limit = 100, offset = 0, includeDeleted = true)
+            ContactTrashListViewModel(
+                contacts =
+                    dbContacts.map { c ->
+                        ContactTrashItemViewModel(
+                            syncId = c.syncId,
+                            name = c.name,
+                            emails = c.emails,
+                            phones = c.phones,
+                            company = c.company,
+                            department = c.department,
+                            restoreUrl = ctx.url("/contacts/${c.syncId}/restore"),
+                        )
+                    },
+                emptyMessage = i18n.translate("web.trash.contacts.empty"),
+                refreshUrl = ctx.url("/contacts/trash/list"),
+                title = i18n.translate("web.trash.contacts"),
+                restoreTitle = i18n.translate("web.contacts.restore"),
+            )
+        }
 
         return Page(
             shell = shell,
@@ -88,6 +112,7 @@ class HomePageFactory(private val messageService: io.github.rygel.outerstellar.p
                     title = i18n.translate("web.trash.title"),
                     description = i18n.translate("web.trash.description"),
                     messageList = messageList,
+                    contactList = contactList,
                 ),
         )
     }
