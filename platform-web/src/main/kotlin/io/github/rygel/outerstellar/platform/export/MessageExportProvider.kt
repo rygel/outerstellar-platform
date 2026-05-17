@@ -2,6 +2,9 @@ package io.github.rygel.outerstellar.platform.export
 
 import io.github.rygel.outerstellar.platform.service.MessageService
 import java.time.Instant
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class MessageExportProvider(private val messageService: MessageService?) : ExportProvider {
     override val entityType: String = "message"
@@ -24,25 +27,28 @@ class MessageExportProvider(private val messageService: MessageService?) : Expor
         } while (page.items.size == pageSize)
     }
 
-    override fun exportJson(): String = buildString {
-        appendLine("[")
-        if (messageService == null) {
-            appendLine("]")
-            return@buildString
-        }
-        val allItems = mutableListOf<String>()
+    override fun exportJson(): String {
+        if (messageService == null) return "[]"
+        val allItems = mutableListOf<MessageExportRow>()
         var offset = 0
         val pageSize = 500
         do {
             val page = messageService.listMessages(limit = pageSize, offset = offset)
             page.items.forEach { msg ->
                 allItems.add(
-                    """  {"author":"${msg.author}","content":"${msg.content}","updated":${msg.updatedAtEpochMs},"dirty":${msg.dirty}}"""
+                    MessageExportRow(
+                        author = msg.author,
+                        content = msg.content,
+                        updated = msg.updatedAtEpochMs,
+                        dirty = msg.dirty,
+                    )
                 )
             }
             offset += pageSize
         } while (page.items.size == pageSize)
-        appendLine(allItems.joinToString(",\n"))
-        appendLine("]")
+        return Json.encodeToString(allItems)
     }
+
+    @Serializable
+    data class MessageExportRow(val author: String, val content: String, val updated: Long, val dirty: Boolean)
 }
