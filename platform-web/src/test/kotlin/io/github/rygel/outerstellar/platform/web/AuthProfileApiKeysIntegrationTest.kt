@@ -200,7 +200,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                 Request(POST, "/auth/account/delete")
                     .cookie(sessionCookie())
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(formBody())
+                    .body(formBody("currentPassword" to "correct-password"))
             )
         assertEquals(Status.FOUND, response.status)
         assertTrue(response.header("location").orEmpty().contains("deleted=true"))
@@ -213,7 +213,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
             app(
                 Request(POST, "/auth/account/delete")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(formBody())
+                    .body(formBody("currentPassword" to "correct-password"))
             )
         assertEquals(Status.UNAUTHORIZED, response.status)
     }
@@ -237,7 +237,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                 Request(POST, "/auth/account/delete")
                     .cookie(adminCookie)
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(formBody())
+                    .body(formBody("currentPassword" to "admin123"))
             )
         assertEquals(Status.OK, response.status)
         assertNotNull(userRepository.findById(adminUser.id))

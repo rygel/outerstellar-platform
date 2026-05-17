@@ -355,7 +355,11 @@ class AuthRoutes(
                         Response(Status.UNAUTHORIZED).body("Not logged in")
                     } else {
                         try {
-                            securityService.deleteAccount(user.id)
+                            val currentPassword = request.form("currentPassword").orEmpty()
+                            if (currentPassword.isBlank()) {
+                                return@to Response(Status.BAD_REQUEST).body("Current password is required")
+                            }
+                            securityService.deleteAccount(user.id, currentPassword)
                             Response(Status.FOUND)
                                 .header("location", ctx.url("/auth?deleted=true"))
                                 .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
