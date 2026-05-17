@@ -38,15 +38,15 @@
                     <div class="flex gap-3 justify-end">
                         @if(model.isTrash)
                             <form hx-post="/messages/restore/${msg.syncId}" hx-target="#message-list-container" hx-swap="outerHTML">
-                                <button type="submit" class="btn btn-ghost btn-sm btn-square" title="${model.restoreTitle}">
+                                <button type="submit" class="btn btn-ghost btn-sm btn-square" title="${model.restoreTitle}" aria-label="${model.restoreTitle}">
                                     <i aria-hidden="true" class="ri-restart-line"></i>
                                 </button>
                             </form>
                         @else
-                            <button class="btn btn-ghost btn-sm btn-square" title="${model.editTitle}">
+                            <button class="btn btn-ghost btn-sm btn-square" title="${model.editTitle}" aria-label="${model.editTitle}">
                                 <i aria-hidden="true" class="ri-edit-line"></i>
                             </button>
-                            <button class="btn btn-ghost btn-sm btn-square text-error" title="${model.deleteTitle}"
+                            <button class="btn btn-ghost btn-sm btn-square text-error" title="${model.deleteTitle}" aria-label="${model.deleteTitle}"
                                     hx-delete="/messages/${msg.syncId}"
                                     hx-confirm="${model.deleteConfirm}"
                                     hx-target="closest article"

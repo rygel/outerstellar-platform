@@ -66,13 +66,13 @@
                     </div>
 
                     <div class="flex justify-end gap-2 mt-6">
-                        <button class="btn btn-ghost btn-sm btn-square" title="${model.data.editTitle}"
+                        <button class="btn btn-ghost btn-sm btn-square" title="${model.data.editTitle}" aria-label="${model.data.editTitle}"
                                 hx-get="${contact.editUrl}"
                                 hx-target="body"
                                 hx-swap="beforeend">
                             <i aria-hidden="true" class="ri-edit-line"></i>
                         </button>
-                        <button class="btn btn-ghost btn-sm btn-square text-error" title="${model.data.deleteTitle}"
+                        <button class="btn btn-ghost btn-sm btn-square text-error" title="${model.data.deleteTitle}" aria-label="${model.data.deleteTitle}"
                                 hx-post="${contact.deleteUrl}"
                                 hx-target="#contact-${contact.syncId}"
                                 hx-swap="outerHTML"
