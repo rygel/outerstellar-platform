@@ -6,6 +6,8 @@ import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory
 
+private const val MAX_LOG_ID_LENGTH = 80
+
 class OAuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
@@ -14,7 +16,7 @@ class OAuthService(
 ) {
     private val logger = LoggerFactory.getLogger(OAuthService::class.java)
 
-    private fun sanitize(value: String): String = value.take(80).replace('\n', ' ').replace('\r', ' ')
+    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
 
     /**
      * Find an existing user linked to an OAuth provider identity, or create a new one.

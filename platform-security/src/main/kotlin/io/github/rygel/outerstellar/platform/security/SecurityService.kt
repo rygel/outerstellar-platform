@@ -39,7 +39,7 @@ class SecurityService(
     private val partialAuthStore = ConcurrentHashMap<String, PartialAuth>()
     private val random = SecureRandom()
 
-    private fun sanitize(value: String): String = value.take(80).replace('\n', ' ').replace('\r', ' ')
+    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
 
     private val passwordResetService by lazy {
         PasswordResetService(
@@ -418,6 +418,7 @@ class SecurityService(
         private const val MAX_USERNAME_LENGTH = 50
         private const val SESSION_TOKEN_HEX_LENGTH = 48
         private const val MAX_PAGE_LIMIT = 1000
+        private const val MAX_LOG_ID_LENGTH = 80
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }
