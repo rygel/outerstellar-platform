@@ -13,15 +13,25 @@ class PersistencePatternsTest {
 
     @Test
     fun `should verify soft delete fields are present`() {
-        val container =
-            PostgreSQLContainer<Nothing>("postgres:18").apply {
-                withDatabaseName("outerstellar")
-                withUsername("outerstellar")
-                withPassword("outerstellar")
-                start()
-            }
+        val jdbcUrl = System.getenv("TEST_JDBC_URL")
+        val jdbcUser = System.getenv("TEST_JDBC_USER") ?: "outerstellar"
+        val jdbcPassword = System.getenv("TEST_JDBC_PASSWORD") ?: "outerstellar"
 
-        val dataSource = createDataSource(container.jdbcUrl, container.username, container.password)
+        val container =
+            if (jdbcUrl == null) {
+                PostgreSQLContainer<Nothing>("postgres:18").apply {
+                    withDatabaseName("outerstellar")
+                    withUsername("outerstellar")
+                    withPassword("outerstellar")
+                    start()
+                }
+            } else null
+
+        val url = jdbcUrl ?: container!!.jdbcUrl
+        val user = if (jdbcUrl != null) jdbcUser else container!!.username
+        val password = if (jdbcUrl != null) jdbcPassword else container!!.password
+
+        val dataSource = createDataSource(url, user, password)
         migrate(dataSource)
 
         val dsl: DSLContext = DSL.using(dataSource, POSTGRES)
@@ -32,6 +42,6 @@ class PersistencePatternsTest {
         val outboxMeta = dsl.meta().getTables("plt_outbox").firstOrNull()
         assertNotNull(outboxMeta?.field("processed_at"), "plt_outbox table should have processed_at field")
 
-        container.stop()
+        container?.stop()
     }
 }

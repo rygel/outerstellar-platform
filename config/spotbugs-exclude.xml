@@ -22,6 +22,35 @@
         <Bug pattern="MS_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.model(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.sync(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.service.PushNotification"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.security.SecurityRules"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.web(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.infra(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.seed.SeedComponent"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx(\..*)?"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>

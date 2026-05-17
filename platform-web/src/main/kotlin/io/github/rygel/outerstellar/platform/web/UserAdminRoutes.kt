@@ -65,6 +65,34 @@ class UserAdminRoutes(
                         .header("Content-Disposition", "attachment; filename=\"users.csv\"")
                         .body(sb.toString())
                 },
+            "/admin/users/export/json" meta
+                {
+                    summary = "Export users as JSON"
+                } bindContract
+                GET to
+                { _: org.http4k.core.Request ->
+                    val allUsers = mutableListOf<String>()
+                    var offset = 0
+                    val pageSize = 100
+                    do {
+                        val page = securityService.listUsers(pageSize, offset)
+                        page.forEach { u ->
+                            allUsers.add(
+                                """  {"username":"${u.username}","email":"${u.email}","role":"${u.role.name}","enabled":${u.enabled}}"""
+                            )
+                        }
+                        offset += pageSize
+                    } while (page.size == pageSize)
+                    val json = buildString {
+                        appendLine("[")
+                        appendLine(allUsers.joinToString(",\n"))
+                        appendLine("]")
+                    }
+                    Response(Status.OK)
+                        .header("Content-Type", "application/json; charset=utf-8")
+                        .header("Content-Disposition", "attachment; filename=\"users.json\"")
+                        .body(json)
+                },
             "/admin/users" / userIdPath / "toggle-enabled" meta
                 {
                     summary = "Toggle user enabled status"
@@ -125,6 +153,40 @@ class UserAdminRoutes(
                         .header("Content-Type", "text/csv; charset=utf-8")
                         .header("Content-Disposition", "attachment; filename=\"audit.csv\"")
                         .body(sb.toString())
+                },
+            "/admin/audit/export/json" meta
+                {
+                    summary = "Export audit log as JSON"
+                } bindContract
+                GET to
+                { _: org.http4k.core.Request ->
+                    val allEntries = mutableListOf<String>()
+                    var offset = 0
+                    val pageSize = 500
+                    val maxRows = MAX_AUDIT_EXPORT_ROWS
+                    var totalRows = 0
+                    do {
+                        val page = securityService.getAuditLog(pageSize, offset)
+                        page.forEach { e ->
+                            val actor = e.actorUsername ?: ""
+                            val target = e.targetUsername ?: ""
+                            val detail = e.detail ?: ""
+                            allEntries.add(
+                                """  {"timestamp":"${e.createdAt}","actor":"$actor","action":"${e.action}","target":"$target","detail":"$detail"}"""
+                            )
+                        }
+                        totalRows += page.size
+                        offset += pageSize
+                    } while (page.size == pageSize && totalRows < maxRows)
+                    val json = buildString {
+                        appendLine("[")
+                        appendLine(allEntries.joinToString(",\n"))
+                        appendLine("]")
+                    }
+                    Response(Status.OK)
+                        .header("Content-Type", "application/json; charset=utf-8")
+                        .header("Content-Disposition", "attachment; filename=\"audit.json\"")
+                        .body(json)
                 },
             "/admin/users" / userIdPath / "toggle-role" meta
                 {

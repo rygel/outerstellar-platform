@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.model
 
 object ThemeCatalog {
-    fun allThemeIds(): List<String> =
+    private val themeIds: List<String> =
         listOf(
             "dark",
             "light",
@@ -37,5 +37,9 @@ object ThemeCatalog {
             "sunset",
         )
 
-    fun isValidTheme(themeId: String): Boolean = allThemeIds().contains(themeId)
+    private val themeIdSet: Set<String> = themeIds.toSet()
+
+    fun allThemeIds(): List<String> = themeIds
+
+    fun isValidTheme(themeId: String): Boolean = themeId in themeIdSet
 }

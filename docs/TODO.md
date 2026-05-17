@@ -61,12 +61,12 @@
 
 - [ ] Add `DesktopSyncEngine` interface for testability (SyncViewModel depends on concrete class)
 - [ ] Configurable CSP policy via AppConfig (currently hardcoded in Filters.kt)
-- [ ] Layout engine performance (cache ThemeCatalog CSS, nav link caching)
+- [x] Layout engine performance (cache selectors via SidebarFactory, cache nav links, Set-based theme lookup)
 
 ## Quality
 
-- [ ] Review EI_EXPOSE_REP global SpotBugs exclusion
-- [ ] Add PostgreSQL integration test profile to CI (`-Ptest-postgres` with Podman)
+- [x] Review EI_EXPOSE_REP global SpotBugs exclusion
+- [x] Add PostgreSQL integration test profile to CI (`-Ptest-postgres` with Podman)
 - [ ] Split SwingSyncApp.kt into smaller components
 - [ ] Localize remaining desktop user-facing strings (conflict resolution, contact dialogs, spell-check, theme preview)
 - [ ] Improve accessibility labels for icon-only controls (aria-label on notification/profile/action icons)
