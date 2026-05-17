@@ -195,6 +195,84 @@ class AdminExportIntegrationTest : WebTest() {
         assertEquals(Status.FORBIDDEN, response.status)
     }
 
+    // ---- GET /admin/users/export/json ----
+
+    @Test
+    fun `GET admin-users-export-json returns 200 with application-json content type`() {
+        val response = app(Request(GET, "/admin/users/export/json").cookie(adminSession()))
+        assertEquals(Status.OK, response.status)
+        val contentType = response.header("Content-Type").orEmpty()
+        assertTrue(contentType.contains("application/json"), "Export should return application/json, got: $contentType")
+    }
+
+    @Test
+    fun `GET admin-users-export-json returns Content-Disposition attachment with filename`() {
+        val response = app(Request(GET, "/admin/users/export/json").cookie(adminSession()))
+        val disposition = response.header("Content-Disposition").orEmpty()
+        assertTrue(disposition.contains("attachment"), "Export should be an attachment, got: $disposition")
+        assertTrue(disposition.contains("users.json"), "Export filename should be users.json, got: $disposition")
+    }
+
+    @Test
+    fun `GET admin-users-export-json body is valid JSON array`() {
+        val response = app(Request(GET, "/admin/users/export/json").cookie(adminSession()))
+        val body = response.bodyString().trim()
+        assertTrue(body.startsWith("["), "JSON export should start with [")
+        assertTrue(body.endsWith("]"), "JSON export should end with ]")
+    }
+
+    @Test
+    fun `GET admin-users-export-json body contains seeded users`() {
+        val body = app(Request(GET, "/admin/users/export/json").cookie(adminSession())).bodyString()
+        assertTrue(body.contains(adminUser.username), "JSON should contain admin username")
+        assertTrue(body.contains(regularUser.username), "JSON should contain regular username")
+    }
+
+    @Test
+    fun `GET admin-users-export-json as non-admin returns 403`() {
+        val response = app(Request(GET, "/admin/users/export/json").cookie(userSession()))
+        assertEquals(Status.FORBIDDEN, response.status)
+    }
+
+    @Test
+    fun `GET admin-users-export-json unauthenticated redirects to auth`() {
+        val response = app(Request(GET, "/admin/users/export/json"))
+        assertEquals(Status.FOUND, response.status)
+        assertTrue(response.header("location").orEmpty().contains("/auth"))
+    }
+
+    // ---- GET /admin/audit/export/json ----
+
+    @Test
+    fun `GET admin-audit-export-json returns 200 with application-json`() {
+        val response = app(Request(GET, "/admin/audit/export/json").cookie(adminSession()))
+        assertEquals(Status.OK, response.status)
+        val contentType = response.header("Content-Type").orEmpty()
+        assertTrue(contentType.contains("application/json"), "Audit export should be JSON, got: $contentType")
+    }
+
+    @Test
+    fun `GET admin-audit-export-json returns Content-Disposition attachment with filename`() {
+        val response = app(Request(GET, "/admin/audit/export/json").cookie(adminSession()))
+        val disposition = response.header("Content-Disposition").orEmpty()
+        assertTrue(disposition.contains("attachment"), "Export should be an attachment, got: $disposition")
+        assertTrue(disposition.contains("audit.json"), "Export filename should be audit.json, got: $disposition")
+    }
+
+    @Test
+    fun `GET admin-audit-export-json body is valid JSON array`() {
+        val response = app(Request(GET, "/admin/audit/export/json").cookie(adminSession()))
+        val body = response.bodyString().trim()
+        assertTrue(body.startsWith("["), "JSON export should start with [")
+        assertTrue(body.endsWith("]"), "JSON export should end with ]")
+    }
+
+    @Test
+    fun `GET admin-audit-export-json as non-admin returns 403`() {
+        val response = app(Request(GET, "/admin/audit/export/json").cookie(userSession()))
+        assertEquals(Status.FORBIDDEN, response.status)
+    }
+
     // ---- usersAsCsv unit tests ----
 
     @Test
