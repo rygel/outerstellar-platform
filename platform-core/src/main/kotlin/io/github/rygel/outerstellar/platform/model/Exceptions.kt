@@ -26,8 +26,10 @@ class DuplicateMessageException(syncId: String) :
 class SyncConflictException(syncId: String, val reason: String) :
     OuterstellarException("Sync conflict for message $syncId: $reason")
 
-class ValidationException(val errors: List<String>) :
-    OuterstellarException("Validation failed: ${errors.joinToString(", ")}")
+class ValidationException(errors: List<String>) :
+    OuterstellarException("Validation failed: ${errors.joinToString(", ")}") {
+    val errors: List<String> = errors.toList()
+}
 
 class OptimisticLockException(entityType: String, syncId: String) :
     OuterstellarException("$entityType with sync ID $syncId was modified by another process.")
