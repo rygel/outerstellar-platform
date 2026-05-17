@@ -8,7 +8,7 @@
     <form hx-post="${model.submitUrl}"
           hx-target="#contact-list-container"
           hx-swap="outerHTML"
-          hx-include="#contact-list-state input"
+          hx-vals='js:{q: new URLSearchParams(window.location.search).get("q") || "", limit: new URLSearchParams(window.location.search).get("limit") || "12", offset: new URLSearchParams(window.location.search).get("offset") || "0"}'
           hx-on::after-request="document.getElementById('contact-form-modal').remove()"
           class="flex flex-col gap-4 mt-4">
         <div class="flex flex-col gap-1.5">

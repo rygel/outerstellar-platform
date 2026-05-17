@@ -48,9 +48,6 @@ class ContactsPageFactory(private val contactService: io.github.rygel.outerstell
                 ContactsPage(
                     title = "Contacts Directory",
                     description = "A list of all your contacts.",
-                    currentQuery = query ?: "",
-                    currentOffset = offset,
-                    currentLimit = limit,
                     contacts =
                         dbContacts.map {
                             ContactViewModel(
