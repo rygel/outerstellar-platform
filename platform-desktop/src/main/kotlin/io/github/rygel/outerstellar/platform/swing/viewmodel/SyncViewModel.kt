@@ -13,6 +13,7 @@ import io.github.rygel.outerstellar.platform.sync.engine.EngineState
 import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.swing.SwingWorker
+import javax.swing.Timer
 
 @Suppress("TooManyFunctions")
 class SyncViewModel(
@@ -85,9 +86,18 @@ class SyncViewModel(
     var content: String = ""
     var searchQuery: String = ""
         set(value) {
+            if (field == value) return
             field = value
-            loadMessages()
+            searchDebounceTimer?.stop()
+            searchDebounceTimer =
+                Timer(300) { loadMessages() }
+                    .apply {
+                        isRepeats = false
+                        start()
+                    }
         }
+
+    private var searchDebounceTimer: Timer? = null
 
     val connectivityChecker: ConnectivityChecker? = null
 
