@@ -19,6 +19,11 @@
     )
 
     <div id="contact-list-container">
+        <div id="contact-list-state" class="hidden">
+            <input type="hidden" name="q" value="${model.data.currentQuery}" />
+            <input type="hidden" name="offset" value="${model.data.currentOffset}" />
+            <input type="hidden" name="limit" value="${model.data.currentLimit}" />
+        </div>
         <div class="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
             @for (contact in model.data.contacts)
                 <div id="contact-${contact.syncId}" class="card bg-base-200 border border-base-300 h-full">
@@ -74,8 +79,9 @@
                         </button>
                         <button class="btn btn-ghost btn-sm btn-square text-error" title="${model.data.deleteTitle}" aria-label="${model.data.deleteTitle}"
                                 hx-post="${contact.deleteUrl}"
-                                hx-target="#contact-${contact.syncId}"
+                                hx-target="#contact-list-container"
                                 hx-swap="outerHTML"
+                                hx-include="#contact-list-state input"
                                 hx-confirm="${model.data.deleteConfirmLabel}">
                             <i aria-hidden="true" class="ri-delete-bin-line"></i>
                         </button>
