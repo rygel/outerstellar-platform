@@ -49,13 +49,14 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         }
     }
 
-    override fun listDirtyContacts(): List<StoredContact> =
+    override fun listDirtyContacts(limit: Int): List<StoredContact> =
         jdbi.withHandle<List<StoredContact>, Exception> { handle ->
             val contacts =
                 handle
                     .createQuery(
-                        "                SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_contacts WHERE dirty = true"
+                        "                SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_contacts WHERE dirty = true LIMIT :limit"
                     )
+                    .bind("limit", limit)
                     .map { rs, _ -> readContactRow(rs) }
                     .list()
             val contactIds = contacts.map { it.id }
@@ -84,14 +85,15 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         return mapContact(contact, emailsByContact, phonesByContact, socialsByContact)
     }
 
-    override fun findChangesSince(updatedAtEpochMs: Long): List<StoredContact> =
+    override fun findChangesSince(updatedAtEpochMs: Long, limit: Int): List<StoredContact> =
         jdbi.withHandle<List<StoredContact>, Exception> { handle ->
             val contacts =
                 handle
                     .createQuery(
-                        "                SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_contacts WHERE updated_at_epoch_ms > :since"
+                        "                SELECT id, sync_id, name, company, company_address, department, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_contacts WHERE updated_at_epoch_ms > :since LIMIT :limit"
                     )
                     .bind("since", updatedAtEpochMs)
+                    .bind("limit", limit)
                     .map { rs, _ -> readContactRow(rs) }
                     .list()
             val contactIds = contacts.map { it.id }

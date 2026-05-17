@@ -39,6 +39,7 @@ class MessageService(
 
     companion object {
         private const val MAX_PAGE_LIMIT = 1000
+        private const val DEFAULT_SYNC_BATCH_SIZE = 500
         const val MAX_AUTHOR_LENGTH = 100
         const val MAX_CONTENT_LENGTH = 500
     }
@@ -92,7 +93,8 @@ class MessageService(
         return message
     }
 
-    fun listDirtyMessages(): List<StoredMessage> = repository.listDirtyMessages()
+    fun listDirtyMessages(limit: Int = DEFAULT_SYNC_BATCH_SIZE): List<StoredMessage> =
+        repository.listDirtyMessages(limit)
 
     fun createServerMessage(author: String, content: String): StoredMessage {
         val errors = mutableListOf<String>()
@@ -165,9 +167,11 @@ class MessageService(
         return message
     }
 
-    fun getChangesSince(since: Long): SyncPullResponse {
-        val changes = repository.findChangesSince(since).map { it.toSyncMessage() }
-        return SyncPullResponse(messages = changes, serverTimestamp = System.currentTimeMillis())
+    fun getChangesSince(since: Long, limit: Int = DEFAULT_SYNC_BATCH_SIZE): SyncPullResponse {
+        val changes = repository.findChangesSince(since, limit + 1).map { it.toSyncMessage() }
+        val hasMore = changes.size > limit
+        val results = if (hasMore) changes.dropLast(1) else changes
+        return SyncPullResponse(messages = results, serverTimestamp = System.currentTimeMillis(), hasMore = hasMore)
     }
 
     fun processPushRequest(request: SyncPushRequest): SyncPushResponse {

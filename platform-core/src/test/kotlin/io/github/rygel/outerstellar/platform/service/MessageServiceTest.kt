@@ -39,7 +39,7 @@ class MessageServiceTest {
     fun `listDirtyMessages returns dirty items from repository`() {
         val msg = StoredMessage("id-1", "author", "content", 1000L, true, false, 1L)
         val items = listOf(msg)
-        every { repository.listDirtyMessages() } returns items
+        every { repository.listDirtyMessages(any()) } returns items
 
         val result = service.listDirtyMessages()
         assertEquals(items, result)

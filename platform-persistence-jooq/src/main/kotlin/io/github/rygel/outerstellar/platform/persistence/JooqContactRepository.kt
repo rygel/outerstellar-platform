@@ -67,7 +67,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
         return dsl.fetchCount(PLT_CONTACTS, getFilterConditions(query, includeDeleted)).toLong()
     }
 
-    override fun listDirtyContacts(): List<StoredContact> =
+    override fun listDirtyContacts(limit: Int): List<StoredContact> =
         dsl.select(
                 PLT_CONTACTS.ID,
                 PLT_CONTACTS.SYNC_ID,
@@ -86,6 +86,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
             )
             .from(PLT_CONTACTS)
             .where(PLT_CONTACTS.DIRTY.eq(true))
+            .limit(limit)
             .fetch(::toStoredContact)
 
     override fun findBySyncId(syncId: String): StoredContact? =
@@ -109,7 +110,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
             .where(PLT_CONTACTS.SYNC_ID.eq(syncId))
             .fetchOne(::toStoredContact)
 
-    override fun findChangesSince(updatedAtEpochMs: Long): List<StoredContact> =
+    override fun findChangesSince(updatedAtEpochMs: Long, limit: Int): List<StoredContact> =
         dsl.select(
                 PLT_CONTACTS.ID,
                 PLT_CONTACTS.SYNC_ID,
@@ -128,6 +129,7 @@ class JooqContactRepository(private val dsl: DSLContext) : ContactRepository {
             )
             .from(PLT_CONTACTS)
             .where(PLT_CONTACTS.UPDATED_AT_EPOCH_MS.gt(updatedAtEpochMs))
+            .limit(limit)
             .fetch(::toStoredContact)
 
     override fun createServerContact(

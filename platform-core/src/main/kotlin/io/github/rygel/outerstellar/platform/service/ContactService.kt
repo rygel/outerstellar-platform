@@ -19,6 +19,7 @@ class ContactService(
 
     companion object {
         private const val MAX_PAGE_LIMIT = 1000
+        private const val DEFAULT_SYNC_BATCH_SIZE = 500
         const val MAX_NAME_LENGTH = 200
         const val MAX_COMPANY_LENGTH = 200
         const val MAX_ADDRESS_LENGTH = 500
@@ -145,12 +146,18 @@ class ContactService(
         eventPublisher.publishRefresh("contact-list-panel")
     }
 
-    fun getChangesSince(updatedAtEpochMs: Long): io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse {
-        val changes = repository.findChangesSince(updatedAtEpochMs)
+    fun getChangesSince(
+        updatedAtEpochMs: Long,
+        limit: Int = DEFAULT_SYNC_BATCH_SIZE,
+    ): io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse {
+        val changes = repository.findChangesSince(updatedAtEpochMs, limit + 1)
+        val hasMore = changes.size > limit
+        val results = if (hasMore) changes.dropLast(1) else changes
         val serverTimestamp = System.currentTimeMillis()
         return io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse(
-            contacts = changes.map { it.toSyncContact() },
+            contacts = results.map { it.toSyncContact() },
             serverTimestamp = serverTimestamp,
+            hasMore = hasMore,
         )
     }
 

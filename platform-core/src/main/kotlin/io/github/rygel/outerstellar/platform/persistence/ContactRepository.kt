@@ -15,11 +15,11 @@ interface ContactRepository {
 
     fun countContacts(query: String? = null, includeDeleted: Boolean = false): Long
 
-    fun listDirtyContacts(): List<StoredContact>
+    fun listDirtyContacts(limit: Int = 500): List<StoredContact>
 
     fun findBySyncId(syncId: String): StoredContact?
 
-    fun findChangesSince(updatedAtEpochMs: Long): List<StoredContact>
+    fun findChangesSince(updatedAtEpochMs: Long, limit: Int = 500): List<StoredContact>
 
     @Suppress("LongParameterList")
     fun createServerContact(

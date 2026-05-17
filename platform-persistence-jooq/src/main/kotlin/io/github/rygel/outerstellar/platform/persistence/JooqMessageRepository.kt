@@ -78,7 +78,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
         return countMessages(query, year, true)
     }
 
-    override fun listDirtyMessages(): List<StoredMessage> =
+    override fun listDirtyMessages(limit: Int): List<StoredMessage> =
         dsl.select(
                 PLT_MESSAGES.ID,
                 PLT_MESSAGES.SYNC_ID,
@@ -92,6 +92,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
             )
             .from(PLT_MESSAGES)
             .where(PLT_MESSAGES.DIRTY.eq(true).and(PLT_MESSAGES.DELETED_AT.isNull))
+            .limit(limit)
             .fetch(::toStoredMessage)
 
     override fun countDirtyMessages(): Long =
@@ -116,7 +117,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
             .where(PLT_MESSAGES.SYNC_ID.eq(syncId))
             .fetchOne(::toStoredMessage)
 
-    override fun findChangesSince(since: Long): List<StoredMessage> =
+    override fun findChangesSince(since: Long, limit: Int): List<StoredMessage> =
         dsl.select(
                 PLT_MESSAGES.ID,
                 PLT_MESSAGES.SYNC_ID,
@@ -130,6 +131,7 @@ class JooqMessageRepository(private val dsl: DSLContext) : MessageRepository {
             )
             .from(PLT_MESSAGES)
             .where(PLT_MESSAGES.UPDATED_AT_EPOCH_MS.gt(since).and(PLT_MESSAGES.DELETED_AT.isNull))
+            .limit(limit)
             .fetch(::toStoredMessage)
 
     override fun createServerMessage(author: String, content: String): StoredMessage =

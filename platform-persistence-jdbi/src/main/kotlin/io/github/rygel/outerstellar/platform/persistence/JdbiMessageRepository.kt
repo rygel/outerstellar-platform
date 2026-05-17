@@ -49,12 +49,13 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         }
     }
 
-    override fun listDirtyMessages(): List<StoredMessage> =
+    override fun listDirtyMessages(limit: Int): List<StoredMessage> =
         jdbi.withHandle<List<StoredMessage>, Exception> { handle ->
             handle
                 .createQuery(
-                    "SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages WHERE dirty = true AND deleted_at IS NULL"
+                    "SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages WHERE dirty = true AND deleted_at IS NULL LIMIT :limit"
                 )
+                .bind("limit", limit)
                 .map { rs, _ -> mapMessage(rs) }
                 .list()
         }
@@ -80,16 +81,18 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
             .findOne()
             .orElse(null)
 
-    override fun findChangesSince(since: Long): List<StoredMessage> =
+    override fun findChangesSince(since: Long, limit: Int): List<StoredMessage> =
         jdbi.withHandle<List<StoredMessage>, Exception> { handle ->
             handle
                 .createQuery(
                     """
                     SELECT sync_id, author, content, updated_at_epoch_ms, dirty, deleted, version, sync_conflict FROM plt_messages
                     WHERE updated_at_epoch_ms > :since AND deleted_at IS NULL
+                    LIMIT :limit
                     """
                 )
                 .bind("since", since)
+                .bind("limit", limit)
                 .map { rs, _ -> mapMessage(rs) }
                 .list()
         }

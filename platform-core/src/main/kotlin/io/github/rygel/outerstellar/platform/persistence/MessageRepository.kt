@@ -16,7 +16,7 @@ interface MessageRepository {
 
     fun countMessages(query: String? = null, year: Int? = null, includeDeleted: Boolean = false): Long
 
-    fun listDirtyMessages(): List<StoredMessage>
+    fun listDirtyMessages(limit: Int = 500): List<StoredMessage>
 
     fun countDirtyMessages(): Long
 
@@ -28,7 +28,7 @@ interface MessageRepository {
 
     fun upsertSyncedMessage(message: SyncMessage, dirty: Boolean): StoredMessage
 
-    fun findChangesSince(since: Long): List<StoredMessage>
+    fun findChangesSince(since: Long, limit: Int = 500): List<StoredMessage>
 
     fun getLastSyncEpochMs(): Long
 
