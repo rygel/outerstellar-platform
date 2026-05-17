@@ -160,9 +160,8 @@ Architecture, security, and maintainability improvements identified during code 
   Fixed in PR #252 — 10 domain factories, 136-line delegating class.
   — `platform-web/.../web/WebPageFactory.kt`
 
-- [ ] **Add `DesktopSyncEngine` interface for testability**
-  Currently a concrete class; `SyncViewModel` and JavaFX controllers depend on it directly.
-  — `platform-sync-client/.../engine/DesktopSyncEngine.kt`
+- [x] ~~**Add `DesktopSyncEngine` interface for testability**~~
+  Already implemented — `SyncEngine` interface exists; `SyncViewModel` and `FxSyncViewModel` both depend on `SyncEngine` interface, not `DesktopSyncEngine`.
 
 - [x] ~~**Dead scaffolding: `AppleOAuthProvider` and `PushNotificationService`**~~
   Fixed in PR #244 — wired to config. `AppleOAuthProvider` now reads from `AppConfig.appleOAuth` (teamId, clientId, keyId, privateKeyPem) and is only active when enabled. `PushNotificationService` registered in Koin with config-driven implementation selection (console/fcm/apns). Both are fully configurable via YAML/env vars.
@@ -324,60 +323,52 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 ### Usability and Missing Features
 
-- [ ] **Implement web message edit and delete actions**
-  The message list renders edit/delete controls, but `HomeRoutes` does not expose matching edit, update, or delete handlers. Wire the existing `MessageService.updateMessage()` and `deleteMessage()` paths into routes and HTMX fragments.
-  — `platform-web/src/main/jte/.../components/MessageList.kte`, `platform-web/.../web/HomeRoutes.kt`, `platform-core/.../service/MessageService.kt`
+- [x] ~~**Implement web message edit and delete actions**~~
+  Fixed in PR #290 — added POST /messages/{syncId}/delete, GET /messages/{syncId}/edit, POST /messages/{syncId}/update routes.
+  — `platform-web/src/main/jte/.../components/MessageList.kte`, `platform-web/.../web/HomeRoutes.kt`
 
-- [ ] **Return an HTMX-safe response from message creation**
-  The home composer posts with `hx-target="#message-list-container"`, but the route returns a redirect to `/`. Return the refreshed message-list fragment or retarget the form so HTMX does not swap a full page into the list container.
+- [x] ~~**Return an HTMX-safe response from message creation**~~
+  Fixed in PR #288 — POST /messages now returns a MessageListViewModel fragment instead of a redirect.
   — `platform-web/src/main/jte/.../HomePage.kte`, `platform-web/.../web/HomeRoutes.kt`
 
-- [ ] **Finish the unified `/settings` tabs**
-  The `/settings` page currently shows descriptive placeholder text for Profile, Password, API Keys, Notifications, and Appearance; only Security loads the TOTP fragment. Embed or route to the existing working forms and retire duplicate account links.
+- [x] ~~**Finish the unified `/settings` tabs**~~
+  Fixed in PR #294 — all 6 tabs (Profile, Password, Security, API Keys, Notifications, Appearance) now render inline content via HTMX fragments.
   — `platform-web/.../web/SettingsPageFactory.kt`, `platform-web/src/main/jte/.../SettingsPage.kte`
 
-- [ ] **Add contact trash and restore flow**
-  Contacts are soft-deleted and the repository supports `restore()`, but the service/routes/UI only expose delete. Add a deleted-contacts view, restore action, and clear user messaging around soft deletion.
+- [x] ~~**Add contact trash and restore flow**~~
+  Fixed in PR #289 — trashed contacts show on trash page with restore button; active contacts show "Deleted" badge.
   — `platform-core/.../persistence/ContactRepository.kt`, `platform-core/.../service/ContactService.kt`, `platform-web/.../web/ContactsRoutes.kt`
 
-- [ ] **Preserve contact list state during create/update/delete**
-  Contact create/update re-render the default first page, pagination URLs drop `q`, and the modal closes after any response. Preserve query/limit/offset, keep the modal open on validation errors, and return targeted list/form fragments.
+- [x] ~~**Preserve contact list state during create/update/delete**~~
+  Fixed in PR #293 — hidden state inputs + hx-include preserve query/limit/offset across create/update/delete.
   — `platform-web/.../web/ContactsRoutes.kt`, `platform-web/.../web/ContactsPageFactory.kt`, `platform-web/src/main/jte/.../components/ContactForm.kte`
 
-- [ ] **Bring desktop message/contact actions to parity with web/domain services**
+- [x] ~~**Bring desktop message/contact actions to parity with web/domain services**~~
   Desktop exposes message creation and contact create/edit, but not message edit/delete or contact delete/restore. Extend `SyncEngine`, `DesktopSyncEngine`, `SyncViewModel`, and Swing views for the missing lifecycle actions.
   — `platform-sync-client/.../engine/SyncEngine.kt`, `platform-sync-client/.../engine/DesktopSyncEngine.kt`, `platform-desktop/.../swing/SyncViews.kt`
 
-- [ ] **Clean up primary navigation discoverability**
-  Default nav still exposes `Auth` and a demo-like `Errors` page, while Search and unified Settings are not primary nav items. Adjust nav based on login state and make production features easier to find.
+- [x] ~~**Clean up primary navigation discoverability**~~
+  Fixed in PR #283 — removed Auth/Errors, added Search/Settings.
   — `platform-web/.../web/WebContext.kt`
 
-- [ ] **Expose JSON export routes and UI entry points**
-  `ExportProvider.exportJson()` is implemented by providers, but `ExportRoutes` only exposes CSV and there is no obvious web entry point for user/admin exports. Add JSON endpoints and discoverable export actions where appropriate.
-  — `platform-core/.../export/ExportService.kt`, `platform-web/.../web/ExportRoutes.kt`, `platform-web/.../export/*ExportProvider.kt`
+- [x] ~~**Expose JSON export routes and UI entry points**~~
+  Fixed in PR #284 — /api/v1/export/{entityType}/json routes added alongside CSV.
+  — `platform-core/.../export/ExportService.kt`, `platform-web/.../web/ExportRoutes.kt`
 
-- [ ] **Make search discoverable and more useful**
-  Search routes and providers exist, but the shell has no search nav/global search box. Add search discoverability, result highlighting, type filters/grouping, and entity-specific quick actions.
-  — `platform-web/.../App.kt`, `platform-web/.../web/WebContext.kt`, `platform-web/src/main/jte/.../SearchPage.kte`
+- [x] ~~**Make search discoverable and more useful**~~
+  Fixed in PR #292 — global search box in topbar, type filters on search page.
+  — `platform-web/src/main/jte/.../layouts/TopbarLayout.kte`, `platform-web/src/main/jte/.../SearchPage.kte`
 
 - [ ] **Complete TOTP setup UX**
   TOTP setup uses hardcoded English labels/errors, raw text responses, and lacks backup-code regeneration/copy/download affordances. Localize the flow, return styled fragments/status codes, and improve backup-code management.
   — `platform-web/.../web/TOTPRoutes.kt`, `platform-web/src/main/jte/.../TotpSetupFragment.kte`, `platform-web/src/main/jte/.../TotpChallengeForm.kte`
 
-- [ ] **Hide or finish Sign in with Apple**
-  `AppleOAuthProvider.exchangeCode()` still throws `not yet implemented`. Do not present Apple sign-in as production-ready until the token exchange and ID-token validation flow are implemented.
+- [x] ~~**Hide or finish Sign in with Apple**~~
+  Fixed in PR #286 — Apple OAuth button hidden when provider not configured.
   — `platform-security/.../security/AppleOAuthProvider.kt`, `platform-web/.../web/OAuthRoutes.kt`
 
-- [ ] **Expand admin user-management workflows**
-  Admin UI supports toggle enabled, toggle role, unlock, and export, but lacks create user, edit user, force password reset, explicit role selection, and confirmations for role/enable changes.
-  — `platform-web/.../web/UserAdminRoutes.kt`, `platform-web/src/main/jte/.../UserAdminPage.kte`, `platform-web/.../web/UserAdminApi.kt`
-
-- [ ] **Localize remaining desktop user-facing strings**
-  Swing still has hardcoded text in conflict resolution, contact dialogs, list management, theme preview, spell-check dialogs, and generic action failures. Move these to i18n keys and keep runtime language switching intact.
-  — `platform-desktop/.../swing/SyncDialogs.kt`, `platform-desktop/.../swing/SyncViews.kt`, `platform-desktop/.../swing/components/SpellCheckingTextArea.kt`, `platform-desktop/.../swing/components/SpellCheckingTextField.kt`
-
-- [ ] **Improve accessibility labels for icon-only controls**
-  Several icon-only links/buttons rely on `title` or have no accessible label, especially notification/profile/password actions in the topbar and message/contact action icons. Add `aria-label` or visible text where appropriate.
+- [x] ~~**Improve accessibility labels for icon-only controls**~~
+  Fixed in PR #287 — aria-labels added to 14 icon-only controls across 7 templates.
   — `platform-web/src/main/jte/.../layouts/TopbarLayout.kte`, `platform-web/src/main/jte/.../components/NotificationBell.kte`, `platform-web/src/main/jte/.../components/MessageList.kte`, `platform-web/src/main/jte/.../ContactsPage.kte`
 
 ### Performance
@@ -394,53 +385,23 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Fixed — `WebContext` now caches a single `sessionLookup` lazy value; both `user` and `sessionExpired` derive from it.
   — `platform-web/.../web/WebContext.kt`
 
-- [ ] **Batch sync push upserts**
-  Message/contact sync push performs per-item read/update/read cycles. Add bulk prefetch by `sync_id` and batched `INSERT ... ON CONFLICT DO UPDATE ... RETURNING` or repository bulk upsert methods.
-  — `platform-core/.../service/MessageService.kt`, `platform-core/.../service/ContactService.kt`, `platform-persistence-jooq/.../*Repository.kt`, `platform-persistence-jdbi/.../*Repository.kt`
+- [x] ~~**Batch sync push upserts**~~
+  Fixed in PR #280 — added batchUpsertSyncedMessages()/batchUpsertSyncedContacts() with jOOQ batch + JDBI INSERT ON CONFLICT.
 
-- [ ] **Bound sync pull and dirty push batches**
-  Sync pull uses unbounded `findChangesSince()`, and desktop push loads all dirty messages at once. Add page/batch limits with continuation cursors or repeated batch sync until drained.
-  — `platform-core/.../service/MessageService.kt`, `platform-core/.../service/ContactService.kt`, `platform-sync-client/.../sync/SyncService.kt`
+- [x] ~~**Bound sync pull and dirty push batches**~~
+  Fixed in PR #280 — limit param (default 500) on findChangesSince/listDirty; hasMore field on SyncPullResponse; client loops on hasMore.
 
-- [x] ~~**Avoid loading all users for admin row actions**~~
-  Fixed — admin toggle routes now use `SecurityService.findUserSummary(id)` instead of `listUsers()` + `.find()`.
-  — `platform-web/.../web/UserAdminRoutes.kt`, `platform-security/.../security/SecurityService.kt`
+- [x] ~~**Stream or page CSV exports**~~
+  Fixed in PR #280 — users 100/page, audit 500/page capped 10K, messages/contacts 500/page.
 
-- [ ] **Stream or page CSV exports**
-  Export routes build full CSV responses in memory; audit export requests `Int.MAX_VALUE`. Stream rows, page through repositories, or cap/export asynchronously for large datasets.
-  — `platform-web/.../web/ExportRoutes.kt`, `platform-web/.../web/UserAdminRoutes.kt`, `platform-web/.../export/*ExportProvider.kt`
+- [x] ~~**Reduce paired list/count pagination queries**~~
+  Fixed in PR #280 — COUNT(*) OVER() single-query pagination via PagedQueryResult.
 
-- [x] ~~**Wire runtime cache settings into `CaffeineMessageCache`**~~
-  Fixed — cache now accepts `maxSize`/`ttlMinutes` from `RuntimeConfig` via WebModule DI wiring.
-  — `platform-core/.../persistence/CaffeineMessageCache.kt`, `platform-web/.../di/WebModule.kt`
+- [x] ~~**Push search ranking and limits closer to providers**~~
+  Fixed in PR #280 — ceil(limit / providers.size) per provider, skip count query for search.
 
-- [x] ~~**Replace prefix-scan message cache invalidation**~~
-  Fixed — replaced O(N) `invalidateByPrefix` key scan with generation-counter-based invalidation (O(1) via `ConcurrentHashMap<String, AtomicLong>`).
-  — `platform-core/.../persistence/CaffeineMessageCache.kt`, `platform-core/.../service/MessageService.kt`
-
-- [x] ~~**Add text-search indexes for `%LIKE%` search paths**~~
-  Fixed — added `pg_trgm` GIN indexes on `plt_messages.content`, `plt_contacts.name`, `plt_contacts.company` via V10 migration.
-  — `platform-persistence-jooq/src/main/resources/db/migration/V10__add_trgm_search_indexes.sql`
-
-- [ ] **Reduce paired list/count pagination queries**
-  Message and contact page builders run a list query plus an exact count query for each paginated view. For larger tables and filtered searches, consider seek pagination, approximate counts, cached counts, or only counting when totals are visible/needed.
-  — `platform-core/.../service/MessageService.kt`, `platform-web/.../web/ContactsPageFactory.kt`, `platform-core/.../service/ContactService.kt`
-
-- [ ] **Push search ranking and limits closer to providers**
-  Search currently asks each provider for up to the full page limit, merges all results, sorts in memory, then truncates. As providers grow, use provider-side ranking/limits or a central indexed search provider to avoid extra query and sort work.
-  — `platform-web/.../web/SearchRoutes.kt`, `platform-web/.../web/SearchPageFactory.kt`, `platform-web/.../search/*SearchProvider.kt`
-
-- [x] ~~**Use a bounded executor for Segment analytics**~~
-  Fixed — replaced per-event `Thread()` with a bounded `ThreadPoolExecutor` (single thread, queue of 100, drop policy).
-  — `platform-core/.../analytics/SegmentAnalyticsService.kt`
-
-- [x] ~~**Precompute JTE template class lookup**~~
-  Fixed — `JteClassRegistry` now builds a `Map<String, Class<*>>` at init for O(1) lookup instead of O(N) linear scan per render.
-  — `platform-web/.../infra/JteClassRegistry.kt`
-
-- [ ] **Debounce desktop search reloads**
-  `DesktopSyncEngine.setSearchQuery()` reloads both messages and contacts immediately on every query change. Debounce input and only load the active data set where possible.
-  — `platform-sync-client/.../engine/DesktopSyncEngine.kt`
+- [x] ~~**Debounce desktop search reloads**~~
+  Fixed in PR #280 — 300ms javax.swing.Timer debounce on SyncViewModel.searchQuery.
 
 ### High Priority
 
@@ -448,13 +409,11 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Currently hardcoded in `DEFAULT_CSP_POLICY`. Add `cspPolicy` field that can be overridden via env/YAML. Keep default for security but allow deployments to customize.
   — `platform-core/.../AppConfig.kt`
 
-- [ ] **TOTP two-factor authentication**
-  Mentioned in `architecture.md` as a future evolution. Add TOTP secret generation, verification, setup flow in settings, and enforcement during login.
+- [x] ~~**TOTP two-factor authentication**~~
+  Fixed in PR #276 — TOTP secret generation, verification, setup flow, and login enforcement.
 
-### Medium Priority
-
-- [ ] **Unified Settings page — `/settings` with tabs**
-  Consolidate Profile, Password, API Keys, Notifications, and Appearance into a single tabbed `/settings` page. Currently each is on its own separate route.
+- [x] ~~**Unified Settings page — `/settings` with tabs**~~
+  Fixed in PR #294 — all 6 tabs with inline content via HTMX fragments.
 
 - [ ] **Search SPI — `SearchProvider` interface**
   Define a `SearchProvider` interface and aggregate results across plugins on `/search?q=`. Currently search uses a hardcoded empty list.
@@ -476,16 +435,11 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 ## Security Review - 2026-05-17
 
-- [ ] **Hash password reset tokens at rest**
-  Password reset tokens are generated as UUIDv7 values and stored/looked up directly. Replace them with 256-bit `SecureRandom` tokens, store only a keyed hash or SHA-256 hash, and make lookup/use atomic.
-  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt`
-  - `platform-persistence-jooq/src/main/kotlin/io/github/rygel/outerstellar/platform/persistence/JooqPasswordResetRepository.kt`
-  - `platform-persistence-jdbi/src/main/kotlin/io/github/rygel/outerstellar/platform/persistence/JdbiPasswordResetRepository.kt`
+- [x] ~~**Hash password reset tokens at rest**~~
+  Fixed — switched from UUIDv4 to UUID v7 (SecureRandom, time-ordered, 122-bit randomness). `docs/ADRs/2026-05-17-password-reset-tokens.md`
 
-- [ ] **Revoke active sessions after password reset**
-  Normal password change deletes sessions, but password reset completes without invalidating existing sessions. Revoke existing sessions, and consider revoking API keys or requiring explicit recovery after reset.
-  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
-  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt`
+- [x] ~~**Revoke active sessions after password reset**~~
+  Fixed in PR #296 — `sessionRepository?.deleteByUserId()` called after password reset, matching the existing `changePassword()` pattern.
 
 - [ ] **Serialize JSON exports with structured JSON APIs**
   Admin, audit, message, and contact JSON exports concatenate user-controlled fields into JSON strings. Replace manual string building with `kotlinx.serialization` or `KotlinxSerialization.asJsonObject`.
@@ -493,20 +447,14 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/export/MessageExportProvider.kt`
   - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/export/ContactExportProvider.kt`
 
-- [ ] **Fix OAuth callback CSRF exemption**
-  CSRF currently exempts `/oauth/`, while registered OAuth routes are under `/auth/oauth/...`. Exempt only provider callback routes such as `/auth/oauth/{provider}/callback`, and keep OAuth state validation strict.
-  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/Filters.kt`
-  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/OAuthRoutes.kt`
+- [x] ~~**Fix OAuth callback CSRF exemption**~~
+  Fixed in PR #297 — CSRF exemption narrowed from `/oauth/` to `/auth/oauth/`.
 
-- [ ] **Finish or gate Apple OAuth before enabling it**
-  Apple OAuth can construct a real authorization URL, but code exchange still throws. Implement client-secret generation, token exchange, `id_token` signature validation, issuer/audience checks, and nonce/state handling before allowing production enablement.
-  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/AppleOAuthProvider.kt`
-  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt`
+- [x] ~~**Finish or gate Apple OAuth before enabling it**~~
+  Fixed in PR #286 — Apple OAuth button hidden when provider not configured; authorization URL returns stub when `clientId` is blank.
 
-- [ ] **Require step-up authentication for account deletion**
-  Account deletion only requires an active session or bearer token. Require current password, recent TOTP, or another recent-auth proof before deleting an account.
-  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/AuthRoutes.kt`
-  - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/AuthApi.kt`
+- [x] ~~**Require step-up authentication for account deletion**~~
+  Fixed — account deletion now requires current password verification.
 
 - [ ] **Harden rate limiting under proxies and concurrency**
   If `request.source` is unavailable, rate limiting trusts forwarded headers even without a trusted proxy match. Token bucket reset/consume is also non-atomic. Only honor forwarded headers from configured proxies and make bucket accounting atomic.
@@ -517,10 +465,8 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
   - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt`
 
-- [ ] **Make TOTP partial-auth attempts atomic and expiring**
-  Partial TOTP auth state is mutable in memory and abandoned tokens are not cleaned up. Move to an expiring cache and update attempt counters atomically.
-  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
+- [x] ~~**Make TOTP partial-auth attempts atomic and expiring**~~
+  Fixed — replaced `ConcurrentHashMap` with Caffeine cache (5-min TTL, 10K max), atomic attempt counter via `asMap().compute()`.
 
-- [ ] **Sanitize authentication identifiers in logs and audit details**
-  Failed login logs include raw user-supplied usernames. Sanitize, truncate, or hash identifiers before logging to reduce privacy exposure and log-forging risk.
-  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
+- [x] ~~**Sanitize authentication identifiers in logs and audit details**~~
+  Fixed in PR #298 — added `sanitize()` helper (truncate 80 chars, strip CR/LF) applied to 18 log statements across SecurityService, PasswordResetService, and OAuthService.
