@@ -21,7 +21,18 @@ class ExportRoutes(private val providers: List<ExportProvider>) : ServerRoutes {
                         .header("Content-Type", "text/csv; charset=utf-8")
                         .header("Content-Disposition", "attachment; filename=\"${provider.entityType}.csv\"")
                         .body(provider.exportCsv())
-                }
+                },
+            "/api/v1/export/${provider.entityType}/json" meta
+                {
+                    summary = "Export ${provider.displayName} as JSON"
+                } bindContract
+                GET to
+                { _: org.http4k.core.Request ->
+                    Response(Status.OK)
+                        .header("Content-Type", "application/json; charset=utf-8")
+                        .header("Content-Disposition", "attachment; filename=\"${provider.entityType}.json\"")
+                        .body(provider.exportJson())
+                },
         )
     }
 }
