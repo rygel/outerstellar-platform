@@ -44,10 +44,10 @@
                 <div class="flex items-center gap-2 text-sm">
                     <span class="opacity-70">${shell.username}</span>
                     @if(shell.profileUrl != null)
-                        <a href="${shell.profileUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i aria-hidden="true" class="ri-user-settings-line"></i></a>
+                        <a href="${shell.profileUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline" aria-label="${shell.profileLabel}"><i aria-hidden="true" class="ri-user-settings-line"></i></a>
                     @endif
                     @if(shell.changePasswordUrl != null)
-                        <a href="${shell.changePasswordUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i aria-hidden="true" class="ri-lock-password-line"></i></a>
+                        <a href="${shell.changePasswordUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline" aria-label="${shell.changePasswordLabel}"><i aria-hidden="true" class="ri-lock-password-line"></i></a>
                     @endif
                     <form method="post" action="${shell.logoutUrl}" class="inline">
                         <input type="hidden" name="_csrf" value="${shell.csrfToken}">

@@ -29,14 +29,14 @@
     <div class="join">
         @if(hasPrevious)
             @if(hxTarget.isNotEmpty())
-                <button class="join-item btn btn-sm" title="${previousLabel}"
+                <button class="join-item btn btn-sm" title="${previousLabel}" aria-label="${previousLabel}"
                         hx-get="${previousUrl}"
                         hx-target="${hxTarget}"
                         hx-push-url="true">
                     <i aria-hidden="true" class="ri-arrow-left-s-line"></i>
                 </button>
             @else
-                <a href="${previousUrl}" class="join-item btn btn-sm" title="${previousLabel}">
+                <a href="${previousUrl}" class="join-item btn btn-sm" title="${previousLabel}" aria-label="${previousLabel}">
                     <i aria-hidden="true" class="ri-arrow-left-s-line"></i>
                 </a>
             @endif
@@ -61,14 +61,14 @@
         @endfor
         @if(hasNext)
             @if(hxTarget.isNotEmpty())
-                <button class="join-item btn btn-sm" title="${nextLabel}"
+                <button class="join-item btn btn-sm" title="${nextLabel}" aria-label="${nextLabel}"
                         hx-get="${nextUrl}"
                         hx-target="${hxTarget}"
                         hx-push-url="true">
                     <i aria-hidden="true" class="ri-arrow-right-s-line"></i>
                 </button>
             @else
-                <a href="${nextUrl}" class="join-item btn btn-sm" title="${nextLabel}">
+                <a href="${nextUrl}" class="join-item btn btn-sm" title="${nextLabel}" aria-label="${nextLabel}">
                     <i aria-hidden="true" class="ri-arrow-right-s-line"></i>
                 </a>
             @endif
