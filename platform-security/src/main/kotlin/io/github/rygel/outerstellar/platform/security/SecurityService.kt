@@ -39,12 +39,15 @@ class SecurityService(
     private val partialAuthStore = ConcurrentHashMap<String, PartialAuth>()
     private val random = SecureRandom()
 
+    private fun sanitize(value: String): String = value.take(80).replace('\n', ' ').replace('\r', ' ')
+
     private val passwordResetService by lazy {
         PasswordResetService(
             userRepository = userRepository,
             passwordEncoder = passwordEncoder,
             resetRepository = resetRepository,
             auditRepository = auditRepository,
+            sessionRepository = sessionRepository,
             emailService = emailService,
             appBaseUrl = config.appBaseUrl,
         )
@@ -67,18 +70,18 @@ class SecurityService(
         val user =
             userRepository.findByUsername(username)
                 ?: run {
-                    logger.warn("Authentication failed: User $username not found")
-                    audit("AUTHENTICATION_FAILED", detail = "User not found", targetUsername = username)
+                    logger.warn("Authentication failed: User ${sanitize(username)} not found")
+                    audit("AUTHENTICATION_FAILED", detail = "User not found", targetUsername = sanitize(username))
                     return null
                 }
         if (!user.enabled) {
-            logger.warn("Authentication failed: User $username is disabled")
+            logger.warn("Authentication failed: User ${sanitize(username)} is disabled")
             audit("AUTHENTICATION_FAILED", actor = user, detail = "Account disabled")
             return null
         }
         val lockedUntil = user.lockedUntil
         if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
-            logger.warn("Authentication failed: User $username is locked until $lockedUntil")
+            logger.warn("Authentication failed: User ${sanitize(username)} is locked until $lockedUntil")
             audit("AUTHENTICATION_FAILED", actor = user, detail = "Account locked until $lockedUntil")
             return null
         }
@@ -86,7 +89,7 @@ class SecurityService(
             if (user.failedLoginAttempts > 0) {
                 userRepository.resetFailedLoginAttempts(user.id)
             }
-            logger.info("Authentication successful for user $username")
+            logger.info("Authentication successful for user ${sanitize(username)}")
             if (user.totpEnabled) {
                 return AuthResult.TotpRequired(generatePartialAuthToken(user.id))
             }
