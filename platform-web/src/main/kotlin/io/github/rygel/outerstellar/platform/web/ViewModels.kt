@@ -201,6 +201,20 @@ data class ModalViewModel(
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/Modal"
 }
 
+data class MessageEditFormFragment(
+    val syncId: String,
+    val author: String,
+    val content: String,
+    val submitUrl: String,
+    val titleLabel: String = "Edit message",
+    val authorLabel: String = "Author",
+    val contentLabel: String = "Content",
+    val saveLabel: String = "Save",
+    val cancelLabel: String = "Cancel",
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/MessageEdit"
+}
+
 data class ConflictResolveViewModel(
     val syncId: String,
     val myAuthor: String,

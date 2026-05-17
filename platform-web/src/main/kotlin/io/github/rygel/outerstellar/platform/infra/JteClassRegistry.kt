@@ -24,6 +24,7 @@ import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.pl
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteUserAdminPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteConflictResolveModalGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteContactFormGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteMessageEditGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteMessageListGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalOverlayGenerated
@@ -73,6 +74,7 @@ object JteClassRegistry {
         listOf(
             JteConflictResolveModalGenerated::class.java,
             JteContactFormGenerated::class.java,
+            JteMessageEditGenerated::class.java,
             JteMessageListGenerated::class.java,
             JteModalGenerated::class.java,
             JteModalOverlayGenerated::class.java,

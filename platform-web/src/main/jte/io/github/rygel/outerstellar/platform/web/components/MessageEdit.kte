@@ -1,0 +1,20 @@
+@import io.github.rygel.outerstellar.platform.web.MessageEditFormFragment
+@param model: MessageEditFormFragment
+
+<article class="card bg-base-200 border border-base-300 border-accent">
+    <form hx-post="${model.submitUrl}" hx-target="#message-list-container" hx-swap="outerHTML" class="p-4 flex flex-col gap-3">
+        <h3 class="text-lg font-bold">${model.titleLabel}</h3>
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.authorLabel}</label>
+            <input type="text" name="author" value="${model.author}" class="input input-bordered w-full" required />
+        </div>
+        <div class="flex flex-col gap-1.5">
+            <label class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.contentLabel}</label>
+            <textarea name="content" class="textarea textarea-bordered w-full" style="min-height: 100px;" required>${model.content}</textarea>
+        </div>
+        <footer class="flex items-center justify-end gap-3 pt-3 border-t border-base-content/5">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="htmx.trigger('#message-list-container', 'refresh')">${model.cancelLabel}</button>
+            <button type="submit" class="btn btn-primary btn-sm">${model.saveLabel}</button>
+        </footer>
+    </form>
+</article>

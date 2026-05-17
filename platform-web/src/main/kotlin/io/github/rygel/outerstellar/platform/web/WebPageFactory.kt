@@ -59,6 +59,9 @@ open class WebPageFactory(
 
     fun buildTrashPage(ctx: WebContext): Page<TrashPage> = homeFactory.buildTrashPage(ctx)
 
+    fun buildMessageEditForm(ctx: WebContext, syncId: String): MessageEditFormFragment =
+        homeFactory.buildMessageEditForm(ctx, syncId)
+
     fun buildFooterStatus(ctx: WebContext): FooterStatusFragment = infraFactory.buildFooterStatus(ctx)
 
     fun buildConflictResolveModal(ctx: WebContext, syncId: String): ConflictResolveViewModel =

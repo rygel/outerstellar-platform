@@ -58,6 +58,24 @@ class HomePageFactory(private val messageService: io.github.rygel.outerstellar.p
         isTrash: Boolean = false,
     ): MessageListViewModel = requireList().build(ctx, query, limit, offset, year, isTrash)
 
+    fun buildMessageEditForm(ctx: WebContext, syncId: String): MessageEditFormFragment {
+        val msg =
+            messageService?.findBySyncId(syncId)
+                ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(syncId)
+        val i18n = ctx.i18n
+        return MessageEditFormFragment(
+            syncId = msg.syncId,
+            author = msg.author,
+            content = msg.content,
+            submitUrl = ctx.url("/messages/$syncId/update"),
+            titleLabel = i18n.translate("web.messages.edit"),
+            authorLabel = i18n.translate("web.home.composer.author"),
+            contentLabel = i18n.translate("web.home.composer.content"),
+            saveLabel = i18n.translate("web.messages.save"),
+            cancelLabel = i18n.translate("web.messages.cancel"),
+        )
+    }
+
     fun buildTrashPage(ctx: WebContext): Page<TrashPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.trash.title"), "/messages/trash")
