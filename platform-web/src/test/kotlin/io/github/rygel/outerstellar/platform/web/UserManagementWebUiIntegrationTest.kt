@@ -71,7 +71,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
     private fun seedAdmin(): AdminInfo {
         val adminId = UUID.randomUUID()
-        val password = "adminpass123"
+        val password = "Adm1nP@ss!"
         userRepository.save(
             User(
                 id = adminId,

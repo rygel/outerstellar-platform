@@ -44,4 +44,6 @@ class UserNotFoundException(userId: String) : OuterstellarException("User with I
 
 class InsufficientPermissionException(message: String) : OuterstellarException(message)
 
+class RegistrationDisabledException(message: String = "Registration is disabled") : OuterstellarException(message)
+
 class SessionExpiredException(message: String = "Session has expired") : OuterstellarException(message)

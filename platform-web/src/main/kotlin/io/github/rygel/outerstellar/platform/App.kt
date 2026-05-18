@@ -250,7 +250,7 @@ private fun buildApiRoutes(
     val apiRoutes = contract {
         renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
-        routes += AuthApi(securityService).routes
+        routes += AuthApi(securityService, ctx.config).routes
     }
 
     val syncContract = contract {
@@ -260,7 +260,7 @@ private fun buildApiRoutes(
         if (messageService != null || contactService != null) {
             routes += SyncApi(messageService, contactService, analytics).routes
         }
-        routes += AuthApi(securityService).bearerRoutes
+        routes += AuthApi(securityService, ctx.config).bearerRoutes
         if (deviceTokenRepository != null) {
             routes += DeviceRegistrationApi(deviceTokenRepository).routes
         }
@@ -309,7 +309,8 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
         if (contactService != null && "/contacts" !in excludedRoutes) {
             routes += ContactsRoutes(pageFactory, jteRenderer, contactService).routes
         }
-        routes += AuthRoutes(pageFactory, jteRenderer, securityService, sessionCookieSecure, analytics).routes
+        routes +=
+            AuthRoutes(pageFactory, jteRenderer, securityService, sessionCookieSecure, analytics, ctx.config).routes
         val oauthProviders = mutableMapOf<String, io.github.rygel.outerstellar.platform.security.OAuthProvider>()
         val appleConfig = ctx.config.appleOAuth
         if (appleConfig.enabled && appleConfig.clientId.isNotBlank()) {

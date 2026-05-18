@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.infra.render
@@ -27,6 +28,7 @@ class AuthRoutes(
     private val securityService: SecurityService,
     private val sessionCookieSecure: Boolean,
     private val analytics: AnalyticsService = NoOpAnalyticsService(),
+    private val appConfig: AppConfig,
 ) : ServerRoutes {
     private val logger = LoggerFactory.getLogger(AuthRoutes::class.java)
     private val modePath = Path.string().of("mode")
@@ -102,34 +104,44 @@ class AuthRoutes(
                         }
                     } else if (mode == "register") {
                         val ctx = request.webContext
-                        try {
-                            securityService.register(email, password)
-                            val target = ctx.url("/auth?registered=true")
-                            Response(Status.FOUND).header("location", target)
-                        } catch (e: UsernameAlreadyExistsException) {
+                        if (!appConfig.registrationEnabled) {
                             renderer.render(
                                 AuthResultFragment(
                                     title = ctx.i18n.translate("web.auth.result.error.title"),
-                                    message = e.message ?: "Registration failed",
+                                    message = "Registration is currently disabled",
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
-                        } catch (e: WeakPasswordException) {
-                            renderer.render(
-                                AuthResultFragment(
-                                    title = ctx.i18n.translate("web.auth.result.error.title"),
-                                    message = e.message ?: "Registration failed",
-                                    toneClass = "bg-error/10 border-error/30 text-error",
+                        } else {
+                            try {
+                                securityService.register(email, password)
+                                val target = ctx.url("/auth?registered=true")
+                                Response(Status.FOUND).header("location", target)
+                            } catch (e: UsernameAlreadyExistsException) {
+                                renderer.render(
+                                    AuthResultFragment(
+                                        title = ctx.i18n.translate("web.auth.result.error.title"),
+                                        message = e.message ?: "Registration failed",
+                                        toneClass = "bg-error/10 border-error/30 text-error",
+                                    )
                                 )
-                            )
-                        } catch (e: IllegalArgumentException) {
-                            renderer.render(
-                                AuthResultFragment(
-                                    title = ctx.i18n.translate("web.auth.result.error.title"),
-                                    message = e.message ?: "Registration failed",
-                                    toneClass = "bg-error/10 border-error/30 text-error",
+                            } catch (e: WeakPasswordException) {
+                                renderer.render(
+                                    AuthResultFragment(
+                                        title = ctx.i18n.translate("web.auth.result.error.title"),
+                                        message = e.message ?: "Registration failed",
+                                        toneClass = "bg-error/10 border-error/30 text-error",
+                                    )
                                 )
-                            )
+                            } catch (e: IllegalArgumentException) {
+                                renderer.render(
+                                    AuthResultFragment(
+                                        title = ctx.i18n.translate("web.auth.result.error.title"),
+                                        message = e.message ?: "Registration failed",
+                                        toneClass = "bg-error/10 border-error/30 text-error",
+                                    )
+                                )
+                            }
                         }
                     } else if (mode == "recover") {
                         val ctx = request.webContext

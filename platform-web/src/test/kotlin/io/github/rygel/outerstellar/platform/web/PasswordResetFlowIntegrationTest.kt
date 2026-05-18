@@ -41,7 +41,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "resetflowuser",
                 email = "resetflow@test.com",
-                passwordHash = encoder.encode("oldpassword"),
+                passwordHash = encoder.encode("0ldP@ssw0rd!"),
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
@@ -122,7 +122,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
             app(
                 Request(POST, "/api/v1/auth/reset-confirm")
                     .header("content-type", "application/json")
-                    .body("""{"token":"$rawToken","newPassword":"newSecurePass99"}""")
+                    .body("""{"token":"$rawToken","newPassword":"N3wS3cur3P@ss!"}""")
             )
 
         assertEquals(Status.OK, response.status)
@@ -148,7 +148,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
         app(
             Request(POST, "/api/v1/auth/reset-confirm")
                 .header("content-type", "application/json")
-                .body("""{"token":"$rawToken","newPassword":"brandnewpass123"}""")
+                .body("""{"token":"$rawToken","newPassword":"Br@ndN3wP@ss1!"}""")
         )
 
         // Try logging in with new password
@@ -156,7 +156,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
             app(
                 Request(POST, "/api/v1/auth/login")
                     .header("content-type", "application/json")
-                    .body("""{"username":"${testUser.username}","password":"brandnewpass123"}""")
+                    .body("""{"username":"${testUser.username}","password":"Br@ndN3wP@ss1!"}""")
             )
         assertEquals(Status.OK, loginResponse.status, "New password should work for login")
     }
@@ -169,7 +169,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
         app(
             Request(POST, "/api/v1/auth/reset-confirm")
                 .header("content-type", "application/json")
-                .body("""{"token":"$rawToken","newPassword":"brandnewpass123"}""")
+                .body("""{"token":"$rawToken","newPassword":"Br@ndN3wP@ss1!"}""")
         )
 
         // Try logging in with OLD password
@@ -177,7 +177,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
             app(
                 Request(POST, "/api/v1/auth/login")
                     .header("content-type", "application/json")
-                    .body("""{"username":"${testUser.username}","password":"oldpassword"}""")
+                    .body("""{"username":"${testUser.username}","password":"0ldP@ssw0rd!"}""")
             )
         assertEquals(Status.UNAUTHORIZED, loginResponse.status, "Old password should be rejected")
     }

@@ -14,6 +14,8 @@ private const val MAX_HTTP_PORT = 65535
 private const val MIN_HTTP_PORT = 1
 private const val DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 10
 private const val DEFAULT_LOCKOUT_DURATION_SECONDS = 900L
+private const val DEFAULT_REGISTRATION_ENABLED = true
+private const val DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES = 1440
 private const val DEFAULT_CSP_POLICY =
     "default-src 'self'; script-src 'self'; " +
         "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' wss:; img-src 'self' data:; " +
@@ -77,6 +79,8 @@ data class AppConfig(
     val appBaseUrl: String = DEFAULT_APP_BASE_URL,
     val maxFailedLoginAttempts: Int = DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
     val lockoutDurationSeconds: Long = DEFAULT_LOCKOUT_DURATION_SECONDS,
+    val registrationEnabled: Boolean = DEFAULT_REGISTRATION_ENABLED,
+    val sessionAbsoluteTimeoutMinutes: Int = DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES,
     val jwt: JwtConfig = JwtConfig(),
     val cspPolicy: String = DEFAULT_CSP_POLICY,
     val trustedProxies: String = "",
@@ -157,6 +161,15 @@ data class AppConfig(
                         env,
                         "LOCKOUT_DURATION_SECONDS",
                         DEFAULT_LOCKOUT_DURATION_SECONDS,
+                    ),
+                registrationEnabled =
+                    yaml.bool("registrationEnabled", env, "REGISTRATION_ENABLED", DEFAULT_REGISTRATION_ENABLED),
+                sessionAbsoluteTimeoutMinutes =
+                    yaml.int(
+                        "sessionAbsoluteTimeoutMinutes",
+                        env,
+                        "SESSION_ABSOLUTE_TIMEOUT_MINUTES",
+                        DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES,
                     ),
                 jwt = buildJwtConfig(yaml["jwt"] as? Map<String, Any>, env),
                 cspPolicy = yaml.str("cspPolicy", env, "CSP_POLICY", DEFAULT_CSP_POLICY),
