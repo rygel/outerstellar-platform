@@ -23,6 +23,7 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
     private val passwordField = PasswordField()
     private val confirmPassField = PasswordField()
     private val actionButton = Button("Sign In")
+    private val cancelButton = Button("Cancel")
     private val toggleLink = Hyperlink("Don't have an account? Register")
     private var isRegisterMode = false
 
@@ -61,6 +62,11 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
                     actionButton.apply {
                         prefWidth = 250.0
                         setOnAction { onAction() }
+                    },
+                    cancelButton.apply {
+                        prefWidth = 250.0
+                        isVisible = onCancel != null
+                        setOnAction { onCancel?.invoke() }
                     },
                     toggleLink.apply { setOnAction { toggleMode() } },
                 )
