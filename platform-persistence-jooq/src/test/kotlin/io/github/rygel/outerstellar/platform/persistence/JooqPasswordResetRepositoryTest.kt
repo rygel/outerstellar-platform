@@ -31,13 +31,8 @@ class JooqPasswordResetRepositoryTest : JooqTest() {
         return id
     }
 
-    private fun token(userId: UUID, tokenValue: String = UUID.randomUUID().toString()) =
-        PasswordResetToken(
-            userId = userId,
-            token = tokenValue,
-            expiresAt = Instant.now().plusSeconds(3600),
-            used = false,
-        )
+    private fun token(userId: UUID, rawToken: String = UUID.randomUUID().toString()) =
+        PasswordResetToken(userId = userId, token = rawToken, expiresAt = Instant.now().plusSeconds(3600), used = false)
 
     @Test
     fun `save and findByToken round-trips`() {

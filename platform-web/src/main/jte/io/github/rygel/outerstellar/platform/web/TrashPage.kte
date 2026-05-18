@@ -10,5 +10,15 @@
         </div>
     </section>
 
-    @template.io.github.rygel.outerstellar.platform.web.components.MessageList(model = model.data.messageList)
+    <section class="mb-8">
+        <h2 class="text-lg font-semibold mb-2">Messages</h2>
+        @template.io.github.rygel.outerstellar.platform.web.components.MessageList(model = model.data.messageList)
+    </section>
+
+    @if(model.data.contactList != null)
+        <section>
+            <h2 class="text-lg font-semibold mb-2">${model.data.contactList.title}</h2>
+            @template.io.github.rygel.outerstellar.platform.web.components.ContactTrashList(model = model.data.contactList)
+        </section>
+    @endif
 `)

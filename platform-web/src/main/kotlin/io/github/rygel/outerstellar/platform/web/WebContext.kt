@@ -1,5 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.I18nTextResolver
 import io.github.rygel.outerstellar.platform.TextResolver
@@ -11,6 +13,7 @@ import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestKey
@@ -25,6 +28,7 @@ class WebContext(
     private val securityService: SecurityService? = null,
     private val pluginOptions: PluginOptions = PluginOptions(),
     private val appBaseUrl: String = "",
+    private val sidebarFactory: SidebarFactory = SidebarFactory(),
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
@@ -63,6 +67,9 @@ class WebContext(
         /** Cached I18nService per locale to avoid re-parsing .properties on every request. */
         private val i18nCache = ConcurrentHashMap<String, I18nService>()
 
+        private val navLinkCache: Cache<String, List<ShellLink>> =
+            Caffeine.newBuilder().maximumSize(500).expireAfterWrite(5, TimeUnit.MINUTES).build()
+
         fun cachedI18n(lang: String): I18nService =
             i18nCache.computeIfAbsent(lang) { I18nService.create("messages").also { it.setLocale(Locale.of(lang)) } }
     }
@@ -89,27 +96,24 @@ class WebContext(
         if (value in SUPPORTED_SHELLS) value else "sidebar"
     }
 
-    val user: User? by lazy {
-        request.cookie(SESSION_COOKIE)?.value?.let { rawToken ->
-            when (val lookup = securityService?.lookupSession(rawToken)) {
-                is SessionLookup.Active -> lookup.user
-                SessionLookup.Expired -> null
-                SessionLookup.NotFound -> null
-                null -> null
-            }
-        }
-            ?: request.cookie(JWT_COOKIE)?.value?.let { token ->
-                jwtService?.extractClaims(token)?.let { (userId, _) ->
-                    userRepository?.findById(userId)?.takeIf { it.enabled }
-                }
-            }
+    private val sessionLookup: SessionLookup? by lazy {
+        request.cookie(SESSION_COOKIE)?.value?.let { rawToken -> securityService?.lookupSession(rawToken) }
     }
 
-    val sessionExpired: Boolean by lazy {
-        request.cookie(SESSION_COOKIE)?.value?.let { rawToken ->
-            securityService?.lookupSession(rawToken) is SessionLookup.Expired
-        } ?: false
+    val user: User? by lazy {
+        val lookup = sessionLookup
+        when (lookup) {
+            is SessionLookup.Active -> lookup.user
+            else ->
+                request.cookie(JWT_COOKIE)?.value?.let { token ->
+                    jwtService?.extractClaims(token)?.let { (userId, _) ->
+                        userRepository?.findById(userId)?.takeIf { it.enabled }
+                    }
+                }
+        }
     }
+
+    val sessionExpired: Boolean by lazy { sessionLookup is SessionLookup.Expired }
 
     val i18n: I18nService by lazy { cachedI18n(lang) }
 
@@ -123,6 +127,14 @@ class WebContext(
         "${url(path)}?pagePath=${if (pagePath.isBlank()) "/" else pagePath}"
 
     private fun buildNavLinks(activeSection: String): List<ShellLink> {
+        val role = user?.role?.name ?: "ANONYMOUS"
+        val pluginKey = if (pluginOptions.navItems.isNotEmpty()) pluginOptions.navItems.hashCode() else 0
+        val cacheKey = "$lang:$role:$activeSection:$devDashboardEnabled:$pluginKey"
+        return navLinkCache.get(cacheKey) { buildNavLinksUncached(activeSection) }
+    }
+
+    @Suppress("LongMethod")
+    private fun buildNavLinksUncached(activeSection: String): List<ShellLink> {
         val links: MutableList<ShellLink> =
             if (pluginOptions.navItems.isNotEmpty()) {
                 // Plugin replaces the default nav; admin links are still appended below.
@@ -133,32 +145,38 @@ class WebContext(
                     .toMutableList()
             } else {
                 mutableListOf(
-                    ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
-                    ShellLink(
-                        i18n.translate("web.nav.contacts"),
-                        url("/contacts"),
-                        "ri-user-3-line",
-                        activeSection == "/contacts",
-                    ),
-                    ShellLink(
-                        i18n.translate("web.nav.trash"),
-                        url("/messages/trash"),
-                        "ri-delete-bin-7-line",
-                        activeSection == "/messages/trash",
-                    ),
-                    ShellLink(
-                        i18n.translate("web.nav.auth"),
-                        url("/auth"),
-                        "ri-shield-keyhole-line",
-                        activeSection == "/auth",
-                    ),
-                    ShellLink(
-                        i18n.translate("web.nav.errors"),
-                        url("/errors/not-found"),
-                        "ri-error-warning-line",
-                        activeSection == "/errors",
-                    ),
-                )
+                        ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
+                        ShellLink(
+                            i18n.translate("web.nav.search"),
+                            url("/search"),
+                            "ri-search-line",
+                            activeSection == "/search",
+                        ),
+                        ShellLink(
+                            i18n.translate("web.nav.contacts"),
+                            url("/contacts"),
+                            "ri-user-3-line",
+                            activeSection == "/contacts",
+                        ),
+                        ShellLink(
+                            i18n.translate("web.nav.trash"),
+                            url("/messages/trash"),
+                            "ri-delete-bin-7-line",
+                            activeSection == "/messages/trash",
+                        ),
+                    )
+                    .also { links ->
+                        if (user != null) {
+                            links.add(
+                                ShellLink(
+                                    i18n.translate("web.nav.settings"),
+                                    url("/settings"),
+                                    "ri-settings-3-line",
+                                    activeSection == "/settings",
+                                )
+                            )
+                        }
+                    }
             }
 
         appendAdminLinks(links, activeSection)
@@ -214,63 +232,9 @@ class WebContext(
             layoutClass = layoutClass,
             layoutStyle = shellStyle,
             navLinks = navLinks,
-            themeSelector =
-                SidebarSelector(
-                    heading = i18n.translate("web.sidebar.themes"),
-                    label = i18n.translate("web.sidebar.theme.label"),
-                    selectId = "theme-selector",
-                    selectName = "theme",
-                    options =
-                        ThemeCatalog.allThemes.map { t ->
-                            ShellOption(id = t.id, label = t.label, url = t.id, active = t.id == theme)
-                        },
-                    hiddenFields =
-                        listOf(
-                            HiddenField("pagePath", currentPath),
-                            HiddenField("lang", lang),
-                            HiddenField("layout", layout),
-                        ),
-                    refreshUrl = "/components/navigation/page",
-                ),
-            languageSelector =
-                SidebarSelector(
-                    heading = i18n.translate("web.sidebar.language"),
-                    label = i18n.translate("web.sidebar.language.label"),
-                    selectId = "language-selector",
-                    selectName = "lang",
-                    options =
-                        listOf("en" to "web.language.english", "fr" to "web.language.french").map { (id, key) ->
-                            ShellOption(id, i18n.translate(key), id, id == lang)
-                        },
-                    hiddenFields =
-                        listOf(
-                            HiddenField("pagePath", currentPath),
-                            HiddenField("theme", theme),
-                            HiddenField("layout", layout),
-                        ),
-                    refreshUrl = "/components/navigation/page",
-                ),
-            layoutSelector =
-                SidebarSelector(
-                    heading = i18n.translate("web.sidebar.layout"),
-                    label = i18n.translate("web.sidebar.layout.label"),
-                    selectId = "layout-selector",
-                    selectName = "layout",
-                    options =
-                        listOf(
-                                "nice" to "web.layout.nice",
-                                "cozy" to "web.layout.cozy",
-                                "compact" to "web.layout.compact",
-                            )
-                            .map { (id, key) -> ShellOption(id, i18n.translate(key), id, id == layout) },
-                    hiddenFields =
-                        listOf(
-                            HiddenField("pagePath", currentPath),
-                            HiddenField("theme", theme),
-                            HiddenField("lang", lang),
-                        ),
-                    refreshUrl = "/components/navigation/page",
-                ),
+            themeSelector = sidebarFactory.buildThemeSelector(this),
+            languageSelector = sidebarFactory.buildLanguageSelector(this),
+            layoutSelector = sidebarFactory.buildLayoutSelector(this),
             footerCopy = i18n.translate("web.footer.copy"),
             footerVersion = i18n.translate("web.footer.version", appVersion),
             footerStatusUrl = url("/components/footer-status"),
@@ -285,6 +249,8 @@ class WebContext(
             changePasswordLabel = i18n.translate("web.layout.change.password"),
             signOutLabel = i18n.translate("web.layout.sign.out"),
             csrfToken = csrfToken,
+            searchPlaceholder = i18n.translate("web.search.placeholder"),
+            searchLabel = i18n.translate("web.search.label"),
             notificationsUrl = if (user != null) url("/notifications") else null,
             textResolver = textResolver,
             pageDescription =

@@ -1,11 +1,10 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
+import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.MessageSummary
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
-import javafx.application.Platform
-import javafx.collections.FXCollections
-import javafx.collections.ObservableList
+import javafx.beans.property.SimpleObjectProperty
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
 import javafx.scene.Scene
@@ -19,6 +18,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
+@Suppress("TooManyFunctions")
 class MessagesController : KoinComponent {
 
     private companion object {
@@ -26,7 +26,7 @@ class MessagesController : KoinComponent {
     }
 
     private val logger = LoggerFactory.getLogger(MessagesController::class.java)
-    private val engine: DesktopSyncEngine by inject()
+    private val viewModel: FxSyncViewModel by inject()
     private val themeManager: FxThemeManager by inject()
 
     @FXML private lateinit var searchField: TextField
@@ -34,10 +34,13 @@ class MessagesController : KoinComponent {
     @FXML private lateinit var authorField: TextField
     @FXML private lateinit var contentArea: TextArea
 
-    private val allMessages: ObservableList<MessageSummary> = FXCollections.observableArrayList()
-
     @FXML
     fun initialize() {
+        messagesList.itemsProperty().bind(SimpleObjectProperty(viewModel.messages))
+        searchField.textProperty().bindBidirectional(viewModel.searchQuery)
+        authorField.textProperty().bindBidirectional(viewModel.author)
+        contentArea.textProperty().bindBidirectional(viewModel.content)
+
         messagesList.setCellFactory {
             object : javafx.scene.control.ListCell<MessageSummary>() {
                 override fun updateItem(item: MessageSummary?, empty: Boolean) {
@@ -45,11 +48,20 @@ class MessagesController : KoinComponent {
                     if (empty || item == null) {
                         text = null
                         graphic = null
+                        style = null
                     } else {
-                        graphic =
+                        val label =
                             Label(
                                 "${item.author}: ${item.content.take(MESSAGE_PREVIEW_LENGTH)}${if (item.content.length > MESSAGE_PREVIEW_LENGTH) "..." else ""}"
                             )
+                        if (item.hasConflict) {
+                            label.style = "-fx-text-fill: red;"
+                            label.text = "[CONFLICT] ${label.text}"
+                        } else if (item.syncId.isBlank()) {
+                            label.style = "-fx-text-fill: gray; -fx-font-style: italic;"
+                            label.text = "(Local) ${label.text}"
+                        }
+                        graphic = label
                     }
                 }
             }
@@ -62,7 +74,7 @@ class MessagesController : KoinComponent {
                 }
             }
         }
-        searchField.textProperty().addListener { _, _, newValue -> filterMessages(newValue) }
+        searchField.textProperty().addListener { _, _, _ -> viewModel.loadMessages().runInBackground() }
         loadMessages()
     }
 
@@ -71,50 +83,36 @@ class MessagesController : KoinComponent {
         val author = authorField.text.trim()
         val content = contentArea.text.trim()
         if (author.isBlank() || content.isBlank()) return
-        Thread {
-                engine
-                    .createLocalMessage(author, content)
-                    .onSuccess {
-                        Platform.runLater {
+        viewModel
+            .createLocalMessage(author, content)
+            .also { task ->
+                task.setOnSucceeded {
+                    task.value
+                        .onSuccess {
                             authorField.clear()
                             contentArea.clear()
                             loadMessages()
                         }
-                    }
-                    .onFailure { logger.warn("Create message failed: {}", it.message) }
+                        .onFailure { logger.warn("Create message failed: {}", it.message) }
+                }
             }
-            .also { it.isDaemon = true }
-            .start()
+            .runInBackground()
     }
 
     @FXML
     fun onSync() {
-        Thread {
-                engine
-                    .sync()
-                    .onSuccess { Platform.runLater { loadMessages() } }
-                    .onFailure { logger.warn("Sync failed: {}", it.message) }
+        viewModel
+            .sync()
+            .also { task ->
+                task.setOnSucceeded {
+                    task.value.onSuccess { loadMessages() }.onFailure { logger.warn("Sync failed: {}", it.message) }
+                }
             }
-            .also { it.isDaemon = true }
-            .start()
+            .runInBackground()
     }
 
     private fun loadMessages() {
-        engine.loadMessages()
-        val items = engine.state.messages
-        allMessages.setAll(items)
-        messagesList.items.setAll(items)
-    }
-
-    private fun filterMessages(query: String?) {
-        if (query.isNullOrBlank()) {
-            messagesList.items.setAll(allMessages)
-        } else {
-            val lower = query.lowercase()
-            messagesList.items.setAll(
-                allMessages.filter { it.author.lowercase().contains(lower) || it.content.lowercase().contains(lower) }
-            )
-        }
+        viewModel.loadMessages().runInBackground()
     }
 
     private fun showConflictDialog(msg: MessageSummary) {

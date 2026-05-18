@@ -54,6 +54,34 @@ Architecture, security, and maintainability improvements identified during code 
 - [x] ~~**Invalidate all user sessions on password change**~~
   Fixed in PR #229 — `sessionRepository?.deleteByUserId()` called in `changePassword()`.
 
+- [x] ~~**Harden password reset tokens**~~
+  Replaced with UUID v7 (SecureRandom, time-ordered, 122-bit randomness). Fixed in PR #277.
+  — `platform-security/.../security/PasswordResetService.kt`
+
+- [x] ~~**Use configured `appBaseUrl` for OAuth redirect URIs**~~
+  Fixed in PR #277 — OAuth redirect URIs now use `AppConfig.appBaseUrl` instead of request headers.
+  — `platform-web/.../web/OAuthRoutes.kt`
+
+- [x] ~~**Trust forwarded IP headers only from configured proxies**~~
+  Fixed in PR #277 — `X-Forwarded-For` only read when source IP matches `AppConfig.trustedProxies`.
+  — `platform-web/.../web/RateLimiter.kt`
+
+- [x] ~~**Scope device-token deregistration to authenticated user**~~
+  Fixed in PR #277 — DELETE now requires token ownership (token + user_id match).
+  — `platform-web/.../web/DeviceRegistrationApi.kt`, `platform-persistence-jooq/.../JooqDeviceTokenRepository.kt`, `platform-persistence-jdbi/.../JdbiDeviceTokenRepository.kt`
+
+- [x] ~~**Neutralize formula injection in CSV exports**~~
+  Fixed in PR #277 — `CsvUtils.escapeCsv()` prefixes `=`, `+`, `-`, `@`, tab, CR with `'`.
+  — `platform-core/.../export/ExportService.kt`, `platform-web/.../export/*ExportProvider.kt`, `platform-web/.../web/UserAdminRoutes.kt`
+
+- [x] ~~**Remove `unsafe-inline` from script CSP**~~
+  Fixed in PR #277 — `script-src` no longer includes `'unsafe-inline'`.
+  — `platform-core/.../AppConfig.kt`, `platform-web/.../web/Filters.kt`, `platform-web/src/main/jte/...`
+
+- [x] ~~**Apply the web filter chain only once**~~
+  Fixed in PR #277 — removed inner `buildFilterChain()` call; filters applied once to all routes.
+  — `platform-web/.../App.kt`
+
 - [x] ~~**Add dependency vulnerability scanning to CI**~~
   Dependabot already configured with Maven, GitHub Actions, and npm ecosystems — grouped by domain (http4k, opentelemetry, persistence, test, build plugins, etc.).
   — `.github/dependabot.yml`
@@ -132,9 +160,8 @@ Architecture, security, and maintainability improvements identified during code 
   Fixed in PR #252 — 10 domain factories, 136-line delegating class.
   — `platform-web/.../web/WebPageFactory.kt`
 
-- [ ] **Add `DesktopSyncEngine` interface for testability**
-  Currently a concrete class; `SyncViewModel` and JavaFX controllers depend on it directly.
-  — `platform-sync-client/.../engine/DesktopSyncEngine.kt`
+- [x] ~~**Add `DesktopSyncEngine` interface for testability**~~
+  Already implemented — `SyncEngine` interface exists; `SyncViewModel` and `FxSyncViewModel` both depend on `SyncEngine` interface, not `DesktopSyncEngine`.
 
 - [x] ~~**Dead scaffolding: `AppleOAuthProvider` and `PushNotificationService`**~~
   Fixed in PR #244 — wired to config. `AppleOAuthProvider` now reads from `AppConfig.appleOAuth` (teamId, clientId, keyId, privateKeyPem) and is only active when enabled. `PushNotificationService` registered in Koin with config-driven implementation selection (console/fcm/apns). Both are fully configurable via YAML/env vars.
@@ -294,19 +321,99 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 ## Future
 
+### Usability and Missing Features
+
+- [x] ~~**Implement web message edit and delete actions**~~
+  Fixed in PR #290 — added POST /messages/{syncId}/delete, GET /messages/{syncId}/edit, POST /messages/{syncId}/update routes.
+  — `platform-web/src/main/jte/.../components/MessageList.kte`, `platform-web/.../web/HomeRoutes.kt`
+
+- [x] ~~**Return an HTMX-safe response from message creation**~~
+  Fixed in PR #288 — POST /messages now returns a MessageListViewModel fragment instead of a redirect.
+  — `platform-web/src/main/jte/.../HomePage.kte`, `platform-web/.../web/HomeRoutes.kt`
+
+- [x] ~~**Finish the unified `/settings` tabs**~~
+  Fixed in PR #294 — all 6 tabs (Profile, Password, Security, API Keys, Notifications, Appearance) now render inline content via HTMX fragments.
+  — `platform-web/.../web/SettingsPageFactory.kt`, `platform-web/src/main/jte/.../SettingsPage.kte`
+
+- [x] ~~**Add contact trash and restore flow**~~
+  Fixed in PR #289 — trashed contacts show on trash page with restore button; active contacts show "Deleted" badge.
+  — `platform-core/.../persistence/ContactRepository.kt`, `platform-core/.../service/ContactService.kt`, `platform-web/.../web/ContactsRoutes.kt`
+
+- [x] ~~**Preserve contact list state during create/update/delete**~~
+  Fixed in PR #293 — hidden state inputs + hx-include preserve query/limit/offset across create/update/delete.
+  — `platform-web/.../web/ContactsRoutes.kt`, `platform-web/.../web/ContactsPageFactory.kt`, `platform-web/src/main/jte/.../components/ContactForm.kte`
+
+- [x] ~~**Bring desktop message/contact actions to parity with web/domain services**~~
+  Desktop exposes message creation and contact create/edit, but not message edit/delete or contact delete/restore. Extend `SyncEngine`, `DesktopSyncEngine`, `SyncViewModel`, and Swing views for the missing lifecycle actions.
+  — `platform-sync-client/.../engine/SyncEngine.kt`, `platform-sync-client/.../engine/DesktopSyncEngine.kt`, `platform-desktop/.../swing/SyncViews.kt`
+
+- [x] ~~**Clean up primary navigation discoverability**~~
+  Fixed in PR #283 — removed Auth/Errors, added Search/Settings.
+  — `platform-web/.../web/WebContext.kt`
+
+- [x] ~~**Expose JSON export routes and UI entry points**~~
+  Fixed in PR #284 — /api/v1/export/{entityType}/json routes added alongside CSV.
+  — `platform-core/.../export/ExportService.kt`, `platform-web/.../web/ExportRoutes.kt`
+
+- [x] ~~**Make search discoverable and more useful**~~
+  Fixed in PR #292 — global search box in topbar, type filters on search page.
+  — `platform-web/src/main/jte/.../layouts/TopbarLayout.kte`, `platform-web/src/main/jte/.../SearchPage.kte`
+
+- [ ] **Complete TOTP setup UX**
+  TOTP setup uses hardcoded English labels/errors, raw text responses, and lacks backup-code regeneration/copy/download affordances. Localize the flow, return styled fragments/status codes, and improve backup-code management.
+  — `platform-web/.../web/TOTPRoutes.kt`, `platform-web/src/main/jte/.../TotpSetupFragment.kte`, `platform-web/src/main/jte/.../TotpChallengeForm.kte`
+
+- [x] ~~**Hide or finish Sign in with Apple**~~
+  Fixed in PR #286 — Apple OAuth button hidden when provider not configured.
+  — `platform-security/.../security/AppleOAuthProvider.kt`, `platform-web/.../web/OAuthRoutes.kt`
+
+- [x] ~~**Improve accessibility labels for icon-only controls**~~
+  Fixed in PR #287 — aria-labels added to 14 icon-only controls across 7 templates.
+  — `platform-web/src/main/jte/.../layouts/TopbarLayout.kte`, `platform-web/src/main/jte/.../components/NotificationBell.kte`, `platform-web/src/main/jte/.../components/MessageList.kte`, `platform-web/src/main/jte/.../ContactsPage.kte`
+
+### Performance
+
+- [x] ~~**Apply the web filter chain only once**~~
+  Fixed in PR #277 — removed inner `buildFilterChain()` call; filters applied once to all routes.
+  — `platform-web/.../App.kt`
+
+- [x] ~~**Restrict dynamic ETag hashing**~~
+  Fixed — `etagCachingFilter` now only hashes cacheable content types (CSS, JS, fonts, images). Dynamic HTML is never buffered/hashed.
+  — `platform-web/.../web/Filters.kt`
+
+- [x] ~~**Resolve session state once per request**~~
+  Fixed — `WebContext` now caches a single `sessionLookup` lazy value; both `user` and `sessionExpired` derive from it.
+  — `platform-web/.../web/WebContext.kt`
+
+- [x] ~~**Batch sync push upserts**~~
+  Fixed in PR #280 — added batchUpsertSyncedMessages()/batchUpsertSyncedContacts() with jOOQ batch + JDBI INSERT ON CONFLICT.
+
+- [x] ~~**Bound sync pull and dirty push batches**~~
+  Fixed in PR #280 — limit param (default 500) on findChangesSince/listDirty; hasMore field on SyncPullResponse; client loops on hasMore.
+
+- [x] ~~**Stream or page CSV exports**~~
+  Fixed in PR #280 — users 100/page, audit 500/page capped 10K, messages/contacts 500/page.
+
+- [x] ~~**Reduce paired list/count pagination queries**~~
+  Fixed in PR #280 — COUNT(*) OVER() single-query pagination via PagedQueryResult.
+
+- [x] ~~**Push search ranking and limits closer to providers**~~
+  Fixed in PR #280 — ceil(limit / providers.size) per provider, skip count query for search.
+
+- [x] ~~**Debounce desktop search reloads**~~
+  Fixed in PR #280 — 300ms javax.swing.Timer debounce on SyncViewModel.searchQuery.
+
 ### High Priority
 
 - [x] ~~**Configurable CSP policy via AppConfig**~~
   Currently hardcoded in `DEFAULT_CSP_POLICY`. Add `cspPolicy` field that can be overridden via env/YAML. Keep default for security but allow deployments to customize.
   — `platform-core/.../AppConfig.kt`
 
-- [ ] **TOTP two-factor authentication**
-  Mentioned in `architecture.md` as a future evolution. Add TOTP secret generation, verification, setup flow in settings, and enforcement during login.
+- [x] ~~**TOTP two-factor authentication**~~
+  Fixed in PR #276 — TOTP secret generation, verification, setup flow, and login enforcement.
 
-### Medium Priority
-
-- [ ] **Unified Settings page — `/settings` with tabs**
-  Consolidate Profile, Password, API Keys, Notifications, and Appearance into a single tabbed `/settings` page. Currently each is on its own separate route.
+- [x] ~~**Unified Settings page — `/settings` with tabs**~~
+  Fixed in PR #294 — all 6 tabs with inline content via HTMX fragments.
 
 - [ ] **Search SPI — `SearchProvider` interface**
   Define a `SearchProvider` interface and aggregate results across plugins on `/search?q=`. Currently search uses a hardcoded empty list.
@@ -325,3 +432,24 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 - [ ] **JavaFX desktop module implementation**
   Design spec exists and module is scaffolded (`platform-desktop-javafx`) but not implemented. Implement sync client UI using JavaFX as an alternative to Swing.
+
+## Security Review - 2026-05-17
+
+- [x] ~~**Hash password reset tokens at rest**~~
+  Fixed — switched from UUIDv4 to UUID v7 (SecureRandom, time-ordered, 122-bit randomness). `docs/ADRs/2026-05-17-password-reset-tokens.md`
+
+- [x] ~~**Revoke active sessions after password reset**~~
+  Fixed in PR #296 — `sessionRepository?.deleteByUserId()` called after password reset, matching the existing `changePassword()` pattern.
+
+- [x] ~~**Serialize JSON exports with structured JSON APIs**~~
+- [x] ~~**Harden rate limiting under proxies and concurrency**~~
+- [x] ~~**Strengthen password policy**~~
+  Registration, change-password, and reset-password flows only enforce minimum length. Add max length, normalization, breached-password checks, and optional strength scoring.
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
+  - `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt`
+
+- [x] ~~**Make TOTP partial-auth attempts atomic and expiring**~~
+  Fixed — replaced `ConcurrentHashMap` with Caffeine cache (5-min TTL, 10K max), atomic attempt counter via `asMap().compute()`.
+
+- [x] ~~**Sanitize authentication identifiers in logs and audit details**~~
+  Fixed in PR #298 — added `sanitize()` helper (truncate 80 chars, strip CR/LF) applied to 18 log statements across SecurityService, PasswordResetService, and OAuthService.

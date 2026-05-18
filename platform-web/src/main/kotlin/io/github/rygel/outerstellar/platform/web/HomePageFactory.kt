@@ -1,6 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
-class HomePageFactory(private val messageService: io.github.rygel.outerstellar.platform.service.MessageService?) {
+class HomePageFactory(
+    private val messageService: io.github.rygel.outerstellar.platform.service.MessageService?,
+    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? = null,
+) {
     private val messageListComponent = messageService?.let { MessageListComponent(it) }
 
     private fun requireList() = checkNotNull(messageListComponent) { "MessageService is required for home page" }
@@ -58,10 +61,49 @@ class HomePageFactory(private val messageService: io.github.rygel.outerstellar.p
         isTrash: Boolean = false,
     ): MessageListViewModel = requireList().build(ctx, query, limit, offset, year, isTrash)
 
+    fun buildMessageEditForm(ctx: WebContext, syncId: String): MessageEditFormFragment {
+        val msg =
+            messageService?.findBySyncId(syncId)
+                ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(syncId)
+        val i18n = ctx.i18n
+        return MessageEditFormFragment(
+            syncId = msg.syncId,
+            author = msg.author,
+            content = msg.content,
+            submitUrl = ctx.url("/messages/$syncId/update"),
+            titleLabel = i18n.translate("web.messages.edit"),
+            authorLabel = i18n.translate("web.home.composer.author"),
+            contentLabel = i18n.translate("web.home.composer.content"),
+            saveLabel = i18n.translate("web.messages.save"),
+            cancelLabel = i18n.translate("web.messages.cancel"),
+        )
+    }
+
     fun buildTrashPage(ctx: WebContext): Page<TrashPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.trash.title"), "/messages/trash")
         val messageList = buildMessageList(ctx, isTrash = true)
+        val contactList = contactService?.let {
+            val dbContacts = it.listContacts(limit = 100, offset = 0, includeDeleted = true)
+            ContactTrashListViewModel(
+                contacts =
+                    dbContacts.map { c ->
+                        ContactTrashItemViewModel(
+                            syncId = c.syncId,
+                            name = c.name,
+                            emails = c.emails,
+                            phones = c.phones,
+                            company = c.company,
+                            department = c.department,
+                            restoreUrl = ctx.url("/contacts/${c.syncId}/restore"),
+                        )
+                    },
+                emptyMessage = i18n.translate("web.trash.contacts.empty"),
+                refreshUrl = ctx.url("/contacts/trash/list"),
+                title = i18n.translate("web.trash.contacts"),
+                restoreTitle = i18n.translate("web.contacts.restore"),
+            )
+        }
 
         return Page(
             shell = shell,
@@ -70,6 +112,7 @@ class HomePageFactory(private val messageService: io.github.rygel.outerstellar.p
                     title = i18n.translate("web.trash.title"),
                     description = i18n.translate("web.trash.description"),
                     messageList = messageList,
+                    contactList = contactList,
                 ),
         )
     }

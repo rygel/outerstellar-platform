@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
-import javafx.application.Platform
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
+import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import javafx.fxml.FXML
 import javafx.scene.control.PasswordField
 import javafx.stage.Stage
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 class ChangePasswordController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(ChangePasswordController::class.java)
-    private val engine: DesktopSyncEngine by inject()
+    private val viewModel: FxSyncViewModel by inject()
 
     @FXML private lateinit var currentField: PasswordField
     @FXML private lateinit var newField: PasswordField
@@ -25,14 +25,14 @@ class ChangePasswordController : KoinComponent {
         val confirm = confirmField.text
         if (current.isBlank() || newPass.isBlank()) return
         if (newPass != confirm) return
-        Thread {
-                engine
-                    .changePassword(current, newPass)
-                    .onSuccess { Platform.runLater { close() } }
-                    .onFailure { logger.warn("Password change failed: {}", it.message) }
+        viewModel
+            .changePassword(current, newPass)
+            .also { task ->
+                task.setOnSucceeded {
+                    task.value.onSuccess { close() }.onFailure { logger.warn("Password change failed: {}", it.message) }
+                }
             }
-            .also { it.isDaemon = true }
-            .start()
+            .runInBackground()
     }
 
     @FXML

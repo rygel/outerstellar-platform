@@ -66,7 +66,12 @@ class ContactsRoutes(
                         companyAddress = params.findSingle("companyAddress").orEmpty(),
                         department = params.findSingle("department").orEmpty(),
                     )
-                    renderer.render(pageFactory.buildContactsPage(ctx))
+                    val query = params.findSingle("q")
+                    val limit =
+                        params.findSingle("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
+                            ?: DEFAULT_CONTACTS_LIMIT
+                    val offset = params.findSingle("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+                    renderer.render(pageFactory.buildContactsPage(ctx, query, limit, offset))
                 },
             "/contacts" / syncIdPath / "edit" meta
                 {
@@ -101,7 +106,12 @@ class ContactsRoutes(
                                 dirty = true,
                             )
                         )
-                        renderer.render(pageFactory.buildContactsPage(ctx))
+                        val query = params.findSingle("q")
+                        val limit =
+                            params.findSingle("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
+                                ?: DEFAULT_CONTACTS_LIMIT
+                        val offset = params.findSingle("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+                        renderer.render(pageFactory.buildContactsPage(ctx, query, limit, offset))
                     }
                 },
             "/contacts" / syncIdPath / "delete" meta
@@ -110,10 +120,36 @@ class ContactsRoutes(
                 } bindContract
                 POST to
                 { syncId: String, _ ->
-                    { _: Request ->
+                    { request: Request ->
+                        val ctx = request.webContext
                         contactService?.deleteContact(syncId)
-                        Response(Status.OK).body("")
+                        val params = request.bodyAsForm()
+                        val query = params.findSingle("q")
+                        val limit =
+                            params.findSingle("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
+                                ?: DEFAULT_CONTACTS_LIMIT
+                        val offset = params.findSingle("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+                        renderer.render(pageFactory.buildContactsPage(ctx, query, limit, offset))
                     }
+                },
+            "/contacts" / syncIdPath / "restore" meta
+                {
+                    summary = "Restore deleted contact"
+                } bindContract
+                POST to
+                { syncId: String, _ ->
+                    { _: Request ->
+                        contactService?.restoreContact(syncId)
+                        Response(Status.FOUND).header("location", "/messages/trash")
+                    }
+                },
+            "/contacts/trash/list" meta
+                {
+                    summary = "Contact trash list fragment (HTMX)"
+                } bindContract
+                GET to
+                { request: Request ->
+                    renderer.render(pageFactory.buildContactTrashList(request.webContext))
                 },
         )
 

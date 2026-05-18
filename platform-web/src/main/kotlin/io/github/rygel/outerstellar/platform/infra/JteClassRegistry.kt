@@ -19,10 +19,12 @@ import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.pl
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteResetPasswordPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSearchPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSettingsPageGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTotpChallengeFormGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTrashPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteUserAdminPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteConflictResolveModalGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteContactFormGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteMessageEditGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteMessageListGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalOverlayGenerated
@@ -65,12 +67,14 @@ object JteClassRegistry {
             JteChangePasswordFormGenerated::class.java,
             JteErrorHelpFragmentGenerated::class.java,
             JteFooterStatusFragmentGenerated::class.java,
+            JteTotpChallengeFormGenerated::class.java,
         )
 
     private val componentClasses =
         listOf(
             JteConflictResolveModalGenerated::class.java,
             JteContactFormGenerated::class.java,
+            JteMessageEditGenerated::class.java,
             JteMessageListGenerated::class.java,
             JteModalGenerated::class.java,
             JteModalOverlayGenerated::class.java,
@@ -88,6 +92,8 @@ object JteClassRegistry {
         )
 
     val allClasses: List<Class<*>> = pageClasses + fragmentClasses + componentClasses + layoutClasses
+
+    private val classMap: Map<String, Class<*>> = allClasses.associateBy { it.name }
 
     init {
         logger.info("Initializing {} JTE template classes", allClasses.size)
@@ -112,6 +118,6 @@ object JteClassRegistry {
             } else {
                 "gg.jte.generated.precompiled.outerstellar.$packagePath.$className"
             }
-        return allClasses.find { it.name == fullName }
+        return classMap[fullName]
     }
 }

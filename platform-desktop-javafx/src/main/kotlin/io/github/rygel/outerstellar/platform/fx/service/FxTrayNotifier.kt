@@ -1,11 +1,12 @@
 package io.github.rygel.outerstellar.platform.fx.service
 
+import io.github.rygel.outerstellar.platform.sync.engine.EngineNotifier
 import java.awt.SystemTray
 import java.awt.Toolkit
 import java.awt.TrayIcon
 import org.slf4j.LoggerFactory
 
-object FxTrayNotifier {
+object FxTrayNotifier : EngineNotifier {
     private val logger = LoggerFactory.getLogger(FxTrayNotifier::class.java)
     private var trayIcon: TrayIcon? = null
 
@@ -26,6 +27,14 @@ object FxTrayNotifier {
     fun notify(title: String, message: String) {
         trayIcon?.displayMessage(title, message, TrayIcon.MessageType.INFO)
             ?: logger.warn("Tray icon not initialized; cannot display notification: {} - {}", title, message)
+    }
+
+    override fun notifySuccess(message: String) {
+        notify("Outerstellar", message)
+    }
+
+    override fun notifyFailure(message: String) {
+        notify("Outerstellar", message)
     }
 
     fun dispose() {

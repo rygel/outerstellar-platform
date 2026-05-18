@@ -1,9 +1,12 @@
 package io.github.rygel.outerstellar.platform.security
 
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
+import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
@@ -11,9 +14,13 @@ import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsExceptio
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.service.UrlValidator
+import java.security.SecureRandom
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import org.slf4j.LoggerFactory
+
+data class PartialAuth(val userId: UUID, val attemptCount: Int = 0)
 
 class SecurityService(
     private val userRepository: UserRepository,
@@ -26,9 +33,15 @@ class SecurityService(
     private val config: SecurityConfig = SecurityConfig(),
     private val sessionRepository: SessionRepository? = null,
     private val activityUpdater: AsyncActivityUpdater? = null,
+    private val totpService: TOTPService = TOTPService(),
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
-    private val secureRandom = java.security.SecureRandom()
+    private val secureRandom = SecureRandom()
+    private val partialAuthStore: Cache<String, PartialAuth> =
+        Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.MINUTES).maximumSize(10_000).build()
+    private val random = SecureRandom()
+
+    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
 
     private val passwordResetService by lazy {
         PasswordResetService(
@@ -36,6 +49,7 @@ class SecurityService(
             passwordEncoder = passwordEncoder,
             resetRepository = resetRepository,
             auditRepository = auditRepository,
+            sessionRepository = sessionRepository,
             emailService = emailService,
             appBaseUrl = config.appBaseUrl,
         )
@@ -54,22 +68,22 @@ class SecurityService(
         )
     }
 
-    fun authenticate(username: String, password: String): User? {
+    fun authenticate(username: String, password: String): AuthResult? {
         val user =
             userRepository.findByUsername(username)
                 ?: run {
-                    logger.warn("Authentication failed: User $username not found")
-                    audit("AUTHENTICATION_FAILED", detail = "User not found", targetUsername = username)
+                    logger.warn("Authentication failed: User ${sanitize(username)} not found")
+                    audit("AUTHENTICATION_FAILED", detail = "User not found", targetUsername = sanitize(username))
                     return null
                 }
         if (!user.enabled) {
-            logger.warn("Authentication failed: User $username is disabled")
+            logger.warn("Authentication failed: User ${sanitize(username)} is disabled")
             audit("AUTHENTICATION_FAILED", actor = user, detail = "Account disabled")
             return null
         }
         val lockedUntil = user.lockedUntil
         if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
-            logger.warn("Authentication failed: User $username is locked until $lockedUntil")
+            logger.warn("Authentication failed: User ${sanitize(username)} is locked until $lockedUntil")
             audit("AUTHENTICATION_FAILED", actor = user, detail = "Account locked until $lockedUntil")
             return null
         }
@@ -77,25 +91,27 @@ class SecurityService(
             if (user.failedLoginAttempts > 0) {
                 userRepository.resetFailedLoginAttempts(user.id)
             }
-            logger.info("Authentication successful for user $username")
-            return user
+            logger.info("Authentication successful for user ${sanitize(username)}")
+            if (user.totpEnabled) {
+                return AuthResult.TotpRequired(generatePartialAuthToken(user.id))
+            }
+            return AuthResult.Authenticated(user)
         }
         val attempts = userRepository.incrementFailedLoginAttempts(user.id)
-        logger.warn("Authentication failed: Invalid password for user $username (attempt $attempts)")
+        logger.warn("Authentication failed: Invalid password for user ${sanitize(username)} (attempt $attempts)")
         audit("AUTHENTICATION_FAILED", actor = user, detail = "Invalid password")
         if (attempts >= config.maxFailedLoginAttempts) {
             val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
             userRepository.updateLockedUntil(user.id, until)
-            logger.warn("User $username locked until $until after $attempts failed attempts")
+            logger.warn("User ${sanitize(username)} locked until $until after $attempts failed attempts")
         }
         return null
     }
 
     fun register(username: String, password: String): User {
         require(username.isNotBlank()) { "Username is required" }
-        if (password.length < MIN_PASSWORD_LENGTH) {
-            throw WeakPasswordException("Password must be at least $MIN_PASSWORD_LENGTH characters")
-        }
+        val normalized = password.trim()
+        validatePassword(normalized)?.let { throw WeakPasswordException(it) }
         if (userRepository.findByUsername(username) != null) throw UsernameAlreadyExistsException(username)
 
         val created =
@@ -103,11 +119,11 @@ class SecurityService(
                 id = UUID.randomUUID(),
                 username = username,
                 email = username,
-                passwordHash = passwordEncoder.encode(password),
+                passwordHash = passwordEncoder.encode(normalized),
                 role = UserRole.USER,
             )
         userRepository.save(created)
-        logger.info("Registration successful for user {}", username)
+        logger.info("Registration successful for user {}", sanitize(username))
         audit("USER_REGISTERED", actor = created)
         return created
     }
@@ -118,14 +134,13 @@ class SecurityService(
         if (!passwordEncoder.matches(currentPassword, user.passwordHash)) {
             throw WeakPasswordException("Current password is incorrect")
         }
-        if (newPassword.length < MIN_PASSWORD_LENGTH) {
-            throw WeakPasswordException("New password must be at least $MIN_PASSWORD_LENGTH characters")
-        }
+        val normalized = newPassword.trim()
+        validatePassword(normalized)?.let { throw WeakPasswordException(it) }
 
-        val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
+        val updated = user.copy(passwordHash = passwordEncoder.encode(normalized))
         userRepository.save(updated)
         sessionRepository?.deleteByUserId(userId)
-        logger.info("Password changed for user {}", user.username)
+        logger.info("Password changed for user {}", sanitize(user.username))
         audit("PASSWORD_CHANGED", actor = user)
     }
 
@@ -138,13 +153,15 @@ class SecurityService(
 
     fun countUsers(): Long = userRepository.countAll()
 
+    fun findUserSummary(id: UUID): UserSummary? = userRepository.findById(id)?.toSummary()
+
     fun setUserEnabled(adminId: UUID, targetId: UUID, enabled: Boolean) {
         if (adminId == targetId) {
             throw InsufficientPermissionException("Cannot change your own enabled status")
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateEnabled(targetId, enabled)
-        logger.info("User {} enabled set to {} by admin {}", target.username, enabled, adminId)
+        logger.info("User {} enabled set to {} by admin {}", sanitize(target.username), enabled, adminId)
         val admin = userRepository.findById(adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
         audit(action, actor = admin, target = target)
@@ -157,7 +174,7 @@ class SecurityService(
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.resetFailedLoginAttempts(targetId)
-        logger.info("User {} unlocked by admin {}", target.username, admin.username)
+        logger.info("User {} unlocked by admin {}", sanitize(target.username), sanitize(admin.username))
         audit("USER_UNLOCKED", actor = admin, target = target)
     }
 
@@ -167,7 +184,7 @@ class SecurityService(
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateRole(targetId, role)
-        logger.info("User {} role set to {} by admin {}", target.username, role, adminId)
+        logger.info("User {} role set to {} by admin {}", sanitize(target.username), role, adminId)
         val admin = userRepository.findById(adminId)
         audit("USER_ROLE_CHANGED", actor = admin, target = target, detail = "from ${target.role} to $role")
     }
@@ -241,7 +258,7 @@ class SecurityService(
             userRepository.updateAvatarUrl(userId, sanitizedUrl)
         }
         userRepository.save(user.copy(email = newEmail))
-        logger.info("Profile updated for user {}", user.username)
+        logger.info("Profile updated for user {}", sanitize(user.username))
     }
 
     fun deleteAccount(userId: UUID) {
@@ -253,14 +270,22 @@ class SecurityService(
             }
         }
         userRepository.deleteById(userId)
-        logger.info("Account deleted for user {}", user.username)
+        logger.info("Account deleted for user {}", sanitize(user.username))
         audit("ACCOUNT_DELETED", actor = user)
+    }
+
+    fun deleteAccount(userId: UUID, currentPassword: String) {
+        val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
+        if (!passwordEncoder.matches(currentPassword, user.passwordHash)) {
+            throw WeakPasswordException("Current password is incorrect")
+        }
+        deleteAccount(userId)
     }
 
     fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         userRepository.updateNotificationPreferences(userId, emailEnabled, pushEnabled)
-        logger.info("Notification preferences updated for user {}", user.username)
+        logger.info("Notification preferences updated for user {}", sanitize(user.username))
         audit("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
     }
 
@@ -314,6 +339,54 @@ class SecurityService(
         repo.deleteByTokenHash(hashToken(rawToken))
     }
 
+    private fun generatePartialAuthToken(userId: UUID): String {
+        val bytes = ByteArray(32)
+        random.nextBytes(bytes)
+        val token = "pt_" + bytes.joinToString("") { "%02x".format(it) }
+        partialAuthStore.put(token, PartialAuth(userId = userId))
+        return token
+    }
+
+    fun verifyTotp(partialToken: String, code: String): TotpVerifyResponse {
+        val partial =
+            partialAuthStore.asMap().compute(partialToken) { _, existing ->
+                if (existing == null) return@compute null
+                if (existing.attemptCount >= 4) null else existing.copy(attemptCount = existing.attemptCount + 1)
+            } ?: return TotpVerifyResponse("expired")
+
+        val user = userRepository.findById(partial.userId) ?: return TotpVerifyResponse("expired")
+        val secret = user.totpSecret ?: return TotpVerifyResponse("expired")
+
+        if (totpService.verifyCode(secret, code)) {
+            partialAuthStore.invalidate(partialToken)
+            val token = createSession(user.id)
+            return TotpVerifyResponse("success", token = token, username = user.username, role = user.role.name)
+        }
+
+        val backupCodes = user.totpBackupCodes
+        if (backupCodes != null) {
+            val updatedCodes = totpService.verifyBackupCode(code, backupCodes)
+            if (updatedCodes != null) {
+                userRepository.updateTotpSecret(user.id, user.totpSecret, updatedCodes.ifEmpty { null })
+                partialAuthStore.invalidate(partialToken)
+                val token = createSession(user.id)
+                return TotpVerifyResponse("success", token = token, username = user.username, role = user.role.name)
+            }
+        }
+
+        return TotpVerifyResponse("invalid_code")
+    }
+
+    fun enableTotp(userId: UUID, secret: String, backupCodes: String) {
+        userRepository.updateTotpSecret(userId, secret, backupCodes)
+        userRepository.enableTotp(userId)
+    }
+
+    fun disableTotp(userId: UUID) {
+        userRepository.updateTotpSecret(userId, null, null)
+        userRepository.disableTotp(userId)
+    }
+
     private fun generateRandomHex(length: Int): String {
         val bytes = ByteArray(length / 2)
         secureRandom.nextBytes(bytes)
@@ -345,10 +418,10 @@ class SecurityService(
     }
 
     companion object {
-        private const val MIN_PASSWORD_LENGTH = 8
         private const val MAX_USERNAME_LENGTH = 50
         private const val SESSION_TOKEN_HEX_LENGTH = 48
         private const val MAX_PAGE_LIMIT = 1000
+        private const val MAX_LOG_ID_LENGTH = 80
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }

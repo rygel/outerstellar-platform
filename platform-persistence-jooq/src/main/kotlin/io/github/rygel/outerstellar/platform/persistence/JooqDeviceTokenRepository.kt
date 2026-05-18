@@ -54,6 +54,9 @@ class JooqDeviceTokenRepository(private val dsl: DSLContext) : DeviceTokenReposi
         dsl.deleteFrom(table).where(tokenField.eq(token)).execute()
     }
 
+    override fun deleteByTokenAndUserId(token: String, userId: UUID): Boolean =
+        dsl.deleteFrom(table).where(tokenField.eq(token)).and(userIdField.eq(userId)).execute() > 0
+
     override fun findByUserId(userId: UUID): List<DeviceToken> =
         dsl.select().from(table).where(userIdField.eq(userId)).orderBy(lastSeenField.desc()).fetch().map {
             mapRecord(it)

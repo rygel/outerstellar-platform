@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.MessageSummary
+import io.github.rygel.outerstellar.platform.model.PagedQueryResult
 import io.github.rygel.outerstellar.platform.model.StoredMessage
 import io.github.rygel.outerstellar.platform.sync.SyncMessage
 
@@ -16,7 +17,15 @@ interface MessageRepository {
 
     fun countMessages(query: String? = null, year: Int? = null, includeDeleted: Boolean = false): Long
 
-    fun listDirtyMessages(): List<StoredMessage>
+    fun listMessagesWithTotal(
+        query: String? = null,
+        year: Int? = null,
+        limit: Int = 100,
+        offset: Int = 0,
+        includeDeleted: Boolean = false,
+    ): PagedQueryResult<MessageSummary>
+
+    fun listDirtyMessages(limit: Int = 500): List<StoredMessage>
 
     fun countDirtyMessages(): Long
 
@@ -28,7 +37,9 @@ interface MessageRepository {
 
     fun upsertSyncedMessage(message: SyncMessage, dirty: Boolean): StoredMessage
 
-    fun findChangesSince(since: Long): List<StoredMessage>
+    fun batchUpsertSyncedMessages(messages: List<SyncMessage>, dirty: Boolean): List<StoredMessage>
+
+    fun findChangesSince(since: Long, limit: Int = 500): List<StoredMessage>
 
     fun getLastSyncEpochMs(): Long
 

@@ -53,16 +53,19 @@ private fun isNonPagePath(path: String): Boolean =
     path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
 
 /**
- * Adds ETag headers based on response body hash and returns 304 Not Modified when matched. Skips JSON responses — their
- * content is dynamic and not cache-worthy at the ETag level.
+ * Adds ETag headers based on response body hash and returns 304 Not Modified when matched. Only processes cacheable
+ * static assets (CSS, JS, fonts, images). Dynamic HTML is never buffered or hashed.
  */
 val etagCachingFilter: Filter = Filter { next: HttpHandler ->
     { request ->
         val response = next(request)
         val contentType = response.header("content-type") ?: ""
-        if (
-            response.status == Status.OK && response.header("ETag") == null && !contentType.contains("application/json")
-        ) {
+        val isCacheable =
+            contentType.contains("text/css") ||
+                contentType.contains("javascript") ||
+                contentType.contains("font/") ||
+                contentType.contains("image/")
+        if (response.status == Status.OK && response.header("ETag") == null && isCacheable) {
             val digest = MessageDigest.getInstance("SHA-256")
             val bytes = response.body.stream.readBytes()
             digest.update(bytes)
@@ -379,7 +382,7 @@ object Filters {
      * - Ensures every response carries a `_csrf` cookie with a random token.
      * - On unsafe methods (POST/PUT/DELETE/PATCH): rejects requests where the form field `_csrf` or header
      *   `X-CSRF-Token` does not match the cookie.
-     * - Exempts `/api/v1/` routes (Bearer-token auth) and `/oauth/` routes.
+     * - Exempts `/api/v1/` routes (Bearer-token auth) and `/auth/oauth/` routes.
      */
     fun csrfProtection(sessionCookieSecure: Boolean, enabled: Boolean = true): Filter = Filter { next ->
         { request ->
@@ -387,7 +390,7 @@ object Filters {
 
             val unsafeMethods = setOf(Method.POST, Method.PUT, Method.DELETE, Method.PATCH)
             val path = request.uri.path
-            val exempt = path.startsWith("/api/v1/") || path.startsWith("/oauth/")
+            val exempt = path.startsWith("/api/v1/") || path.startsWith("/auth/oauth/")
 
             if (request.method in unsafeMethods && !exempt) {
                 val cookieToken = request.cookie(WebContext.CSRF_COOKIE)?.value

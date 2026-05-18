@@ -28,6 +28,7 @@ open class WebPageFactory(
     private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? = null,
     private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
     private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
+    private val appleOAuthEnabled: Boolean = false,
 ) {
     fun buildContactsPage(
         ctx: WebContext,
@@ -57,6 +58,11 @@ open class WebPageFactory(
     ): MessageListViewModel = homeFactory.buildMessageList(ctx, query, limit, offset, year, isTrash)
 
     fun buildTrashPage(ctx: WebContext): Page<TrashPage> = homeFactory.buildTrashPage(ctx)
+
+    fun buildContactTrashList(ctx: WebContext): ContactTrashListViewModel = contactsFactory.buildTrashContactList(ctx)
+
+    fun buildMessageEditForm(ctx: WebContext, syncId: String): MessageEditFormFragment =
+        homeFactory.buildMessageEditForm(ctx, syncId)
 
     fun buildFooterStatus(ctx: WebContext): FooterStatusFragment = infraFactory.buildFooterStatus(ctx)
 
@@ -91,12 +97,16 @@ open class WebPageFactory(
     fun buildSettingsPage(ctx: WebContext, activeTab: String = "profile"): Page<SettingsPage> =
         settingsPageFactory.buildSettingsPage(ctx, activeTab)
 
+    fun buildSettingsFragment(ctx: WebContext, tab: String): SettingsTabContent =
+        settingsPageFactory.buildSettingsFragment(ctx, tab)
+
     fun buildSearchPage(
         ctx: WebContext,
         query: String,
         providers: List<io.github.rygel.outerstellar.platform.search.SearchProvider>,
         limit: Int = 20,
-    ): Page<SearchPage> = searchPageFactory.buildSearchPage(ctx, query, providers, limit)
+        typeFilter: String = "",
+    ): Page<SearchPage> = searchPageFactory.buildSearchPage(ctx, query, providers, limit, typeFilter)
 
     fun buildDevDashboardPage(
         ctx: WebContext,
@@ -109,14 +119,14 @@ open class WebPageFactory(
 
     // Delegated factory methods - kept for backward compatibility
     private val adminPageFactory by lazy { AdminPageFactory(securityService, notificationService) }
-    private val authPageFactory by lazy { AuthPageFactory() }
+    private val authPageFactory by lazy { AuthPageFactory(appleOAuthEnabled) }
     private val errorPageFactory by lazy { ErrorPageFactory() }
     private val sidebarFactory by lazy { SidebarFactory() }
-    private val settingsPageFactory by lazy { SettingsPageFactory() }
+    private val settingsPageFactory by lazy { SettingsPageFactory(adminPageFactory, authPageFactory, sidebarFactory) }
     private val searchPageFactory by lazy { SearchPageFactory() }
     private val devDashboardPageFactory by lazy { DevDashboardPageFactory() }
     private val contactsFactory by lazy { ContactsPageFactory(contactService) }
-    private val homeFactory by lazy { HomePageFactory(messageService) }
+    private val homeFactory by lazy { HomePageFactory(messageService, contactService) }
     private val infraFactory by lazy { InfraPageFactory(repository) }
 
     fun buildUserAdminPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<UserAdminPage> =

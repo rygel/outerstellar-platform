@@ -10,7 +10,8 @@
             @for(tab in model.data.tabs)
                 <a href="${tab.url}"
                    hx-get="${tab.url}"
-                   hx-target="body"
+                   hx-target="#settings-content"
+                   hx-swap="innerHTML"
                    hx-push-url="true"
                    class="tab ${if (tab.active) "tab-active" else ""}">
                     ${tab.label}
@@ -18,18 +19,11 @@
             @endfor
         </nav>
 
-        <section class="card bg-base-200 border border-base-300 p-6" id="settings-content">
-            @if(model.data.activeTab == "profile")
-                ${model.data.profileDescription}
-            @elseif(model.data.activeTab == "password")
-                ${model.data.passwordDescription}
-            @elseif(model.data.activeTab == "api-keys")
-                ${model.data.apiKeysDescription}
-            @elseif(model.data.activeTab == "notifications")
-                ${model.data.notificationsDescription}
-            @elseif(model.data.activeTab == "appearance")
-                ${model.data.appearanceDescription}
-            @endif
+        <section class="card bg-base-200 border border-base-300 p-6" id="settings-content"
+                 hx-trigger="load" hx-get="/settings?tab=${model.data.activeTab}" hx-swap="innerHTML">
+            <div class="flex justify-center">
+                <span class="loading loading-spinner"></span>
+            </div>
         </section>
     </div>
 `)

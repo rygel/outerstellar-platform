@@ -11,7 +11,7 @@ interface MessageCache {
 
     fun invalidateAll()
 
-    fun invalidateByPrefix(prefix: String) = invalidateAll()
+    fun invalidateNamespace(namespace: String) = invalidateAll()
 
     fun getStats(): Map<String, Any>
 }
@@ -30,6 +30,10 @@ object NoOpMessageCache : MessageCache {
     }
 
     override fun invalidateAll() {
+        // No-op
+    }
+
+    override fun invalidateNamespace(namespace: String) {
         // No-op
     }
 

@@ -23,11 +23,11 @@ class DesktopSyncEngine(
     private val analytics: AnalyticsService,
     private val connectivityChecker: ConnectivityChecker? = null,
     private val notifier: EngineNotifier? = null,
-) {
+) : SyncEngine {
     private val logger = LoggerFactory.getLogger(DesktopSyncEngine::class.java)
 
     private val _state = AtomicReference(EngineState())
-    val state: EngineState
+    override val state: EngineState
         get() = _state.get()
 
     val listeners = CopyOnWriteArrayList<EngineListener>()
@@ -40,11 +40,11 @@ class DesktopSyncEngine(
         connectivityChecker?.addObserver { online -> updateState { it.copy(isOnline = online) } }
     }
 
-    fun addListener(listener: EngineListener) {
+    override fun addListener(listener: EngineListener) {
         listeners.add(listener)
     }
 
-    fun removeListener(listener: EngineListener) {
+    override fun removeListener(listener: EngineListener) {
         listeners.remove(listener)
     }
 
@@ -53,7 +53,7 @@ class DesktopSyncEngine(
         listeners.forEach { it.onStateChanged(newState) }
     }
 
-    fun login(username: String, password: String): Result<Unit> =
+    override fun login(username: String, password: String): Result<Unit> =
         runGuardedResult(
             "login",
             onError = { e ->
@@ -73,7 +73,7 @@ class DesktopSyncEngine(
             Result.success(Unit)
         }
 
-    fun register(username: String, password: String): Result<Unit> =
+    override fun register(username: String, password: String): Result<Unit> =
         runGuardedResult(
             "register",
             onError = { e ->
@@ -93,7 +93,7 @@ class DesktopSyncEngine(
             Result.success(Unit)
         }
 
-    fun logout() {
+    override fun logout() {
         stopAutoSync()
         syncService.logout()
         updateState { EngineState(isOnline = it.isOnline, status = "Logged out") }
@@ -103,7 +103,7 @@ class DesktopSyncEngine(
         }
     }
 
-    fun sync(isAuto: Boolean = false): Result<Unit> {
+    override fun sync(isAuto: Boolean): Result<Unit> {
         if (!state.isLoggedIn) {
             return Result.failure(IllegalStateException("Not logged in"))
         }
@@ -153,7 +153,7 @@ class DesktopSyncEngine(
         }
     }
 
-    fun changePassword(currentPassword: String, newPassword: String): Result<Unit> =
+    override fun changePassword(currentPassword: String, newPassword: String): Result<Unit> =
         runGuardedResult(
             "changePassword",
             onError = { e -> notifier?.notifyFailure("Password change failed: ${e.message}") },
@@ -164,7 +164,7 @@ class DesktopSyncEngine(
             Result.success(Unit)
         }
 
-    fun requestPasswordReset(email: String): Result<Unit> {
+    override fun requestPasswordReset(email: String): Result<Unit> {
         return try {
             syncService.requestPasswordReset(email)
             notifier?.notifySuccess("Password reset email sent")
@@ -176,7 +176,7 @@ class DesktopSyncEngine(
         }
     }
 
-    fun resetPassword(token: String, newPassword: String): Result<Unit> {
+    override fun resetPassword(token: String, newPassword: String): Result<Unit> {
         return try {
             syncService.resetPassword(token, newPassword)
             notifier?.notifySuccess("Password has been reset")
@@ -188,13 +188,13 @@ class DesktopSyncEngine(
         }
     }
 
-    fun loadUsers() =
+    override fun loadUsers() =
         runGuarded("loadUsers") {
             val users = syncService.listUsers()
             updateState { it.copy(adminUsers = users) }
         }
 
-    fun setUserEnabled(userId: String, enabled: Boolean): Result<Unit> =
+    override fun setUserEnabled(userId: String, enabled: Boolean): Result<Unit> =
         runGuardedResult("setUserEnabled") {
             syncService.setUserEnabled(userId, enabled)
             loadUsers()
@@ -202,7 +202,7 @@ class DesktopSyncEngine(
             Result.success(Unit)
         }
 
-    fun setUserRole(userId: String, role: String): Result<Unit> =
+    override fun setUserRole(userId: String, role: String): Result<Unit> =
         runGuardedResult("setUserRole") {
             syncService.setUserRole(userId, role)
             loadUsers()
@@ -210,25 +210,25 @@ class DesktopSyncEngine(
             Result.success(Unit)
         }
 
-    fun loadNotifications() =
+    override fun loadNotifications() =
         runGuarded("loadNotifications") {
             val notifications = syncService.listNotifications()
             updateState { it.copy(notifications = notifications) }
         }
 
-    fun markNotificationRead(notificationId: String) =
+    override fun markNotificationRead(notificationId: String) =
         runGuarded("markNotificationRead") {
             syncService.markNotificationRead(notificationId)
             loadNotifications()
         }
 
-    fun markAllNotificationsRead() =
+    override fun markAllNotificationsRead() =
         runGuarded("markAllNotificationsRead") {
             syncService.markAllNotificationsRead()
             loadNotifications()
         }
 
-    fun loadProfile() =
+    override fun loadProfile() =
         runGuarded("loadProfile") {
             val profile = syncService.fetchProfile()
             updateState {
@@ -242,7 +242,7 @@ class DesktopSyncEngine(
             }
         }
 
-    fun updateProfile(email: String, username: String? = null, avatarUrl: String? = null): Result<Unit> =
+    override fun updateProfile(email: String, username: String?, avatarUrl: String?): Result<Unit> =
         runGuardedResult(
             "updateProfile",
             onError = { e -> notifier?.notifyFailure("Profile update failed: ${e.message}") },
@@ -255,7 +255,7 @@ class DesktopSyncEngine(
             Result.success(Unit)
         }
 
-    fun deleteAccount(): Result<Unit> =
+    override fun deleteAccount(): Result<Unit> =
         runGuardedResult(
             "deleteAccount",
             onError = { e -> notifier?.notifyFailure("Account deletion failed: ${e.message}") },
@@ -270,27 +270,27 @@ class DesktopSyncEngine(
             Result.success(Unit)
         }
 
-    fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Result<Unit> =
+    override fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Result<Unit> =
         runGuardedResult("updateNotificationPreferences") {
             syncService.updateNotificationPreferences(emailEnabled, pushEnabled)
             updateState { it.copy(emailNotificationsEnabled = emailEnabled, pushNotificationsEnabled = pushEnabled) }
             Result.success(Unit)
         }
 
-    fun createLocalMessage(author: String, content: String): Result<Unit> =
+    override fun createLocalMessage(author: String, content: String): Result<Unit> =
         runGuardedResult("createLocalMessage") {
             messageService.createLocalMessage(author, content)
             loadMessages()
             Result.success(Unit)
         }
 
-    fun resolveConflict(syncId: String, strategy: ConflictStrategy) =
+    override fun resolveConflict(syncId: String, strategy: ConflictStrategy) =
         runGuarded("resolveConflict") {
             messageService.resolveConflict(syncId, strategy)
             loadMessages()
         }
 
-    fun createContact(
+    override fun createContact(
         name: String,
         emails: List<String>,
         phones: List<String>,
@@ -315,17 +315,17 @@ class DesktopSyncEngine(
         }
     }
 
-    fun setSearchQuery(query: String) {
+    override fun setSearchQuery(query: String) {
         updateState { it.copy(searchQuery = query) }
         loadData()
     }
 
-    fun loadData() {
+    override fun loadData() {
         loadMessages()
         loadContacts()
     }
 
-    fun loadMessages() {
+    override fun loadMessages() {
         try {
             val query = state.searchQuery.ifBlank { null }
             val result = messageService.listMessages(query = query)
@@ -336,7 +336,7 @@ class DesktopSyncEngine(
         }
     }
 
-    fun loadContacts() {
+    override fun loadContacts() {
         val svc = contactService ?: return
         try {
             val query = state.searchQuery.ifBlank { null }
@@ -348,7 +348,7 @@ class DesktopSyncEngine(
         }
     }
 
-    fun startAutoSync() {
+    override fun startAutoSync() {
         stopAutoSync()
         autoSyncExecutor =
             Executors.newSingleThreadScheduledExecutor { runnable ->
@@ -364,20 +364,20 @@ class DesktopSyncEngine(
                 }
     }
 
-    fun stopAutoSync() {
+    override fun stopAutoSync() {
         autoSyncExecutor?.shutdownNow()
         autoSyncExecutor = null
     }
 
-    fun startConnectivityChecker() {
+    override fun startConnectivityChecker() {
         connectivityChecker?.start()
     }
 
-    fun stopConnectivityChecker() {
+    override fun stopConnectivityChecker() {
         connectivityChecker?.stop()
     }
 
-    fun shutdown() {
+    override fun shutdown() {
         stopAutoSync()
         stopConnectivityChecker()
         listeners.clear()

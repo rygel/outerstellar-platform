@@ -28,8 +28,8 @@ class MessageServiceTest {
         val items = listOf(summary)
         val paged = PagedResult(items, PaginationMetadata(1, 10, 1L))
 
-        every { repository.listMessages("test", null, 10, 0) } returns items
-        every { repository.countMessages("test", null) } returns 1L
+        every { repository.listMessagesWithTotal("test", null, 10, 0, false) } returns
+            io.github.rygel.outerstellar.platform.model.PagedQueryResult(items, 1L)
 
         val result = service.listMessages("test", limit = 10, offset = 0)
         assertEquals(paged, result)
@@ -39,7 +39,7 @@ class MessageServiceTest {
     fun `listDirtyMessages returns dirty items from repository`() {
         val msg = StoredMessage("id-1", "author", "content", 1000L, true, false, 1L)
         val items = listOf(msg)
-        every { repository.listDirtyMessages() } returns items
+        every { repository.listDirtyMessages(any()) } returns items
 
         val result = service.listDirtyMessages()
         assertEquals(items, result)

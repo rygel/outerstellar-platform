@@ -1,8 +1,9 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
+import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.NotificationSummary
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
-import javafx.application.Platform
+import javafx.beans.property.SimpleObjectProperty
 import javafx.fxml.FXML
 import javafx.scene.control.ListCell
 import javafx.scene.control.ListView
@@ -13,12 +14,13 @@ import org.slf4j.LoggerFactory
 class NotificationsController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(NotificationsController::class.java)
-    private val engine: DesktopSyncEngine by inject()
+    private val viewModel: FxSyncViewModel by inject()
 
     @FXML private lateinit var notificationsList: ListView<NotificationSummary>
 
     @FXML
     fun initialize() {
+        notificationsList.itemsProperty().bind(SimpleObjectProperty(viewModel.notifications))
         notificationsList.setCellFactory {
             object : ListCell<NotificationSummary>() {
                 override fun updateItem(item: NotificationSummary?, empty: Boolean) {
@@ -39,22 +41,18 @@ class NotificationsController : KoinComponent {
     @FXML
     fun onMarkRead() {
         val selected = notificationsList.selectionModel.selectedItem ?: return
-        Thread {
-                engine.markNotificationRead(selected.id)
-                Platform.runLater { loadNotifications() }
-            }
-            .also { it.isDaemon = true }
-            .start()
+        viewModel
+            .markNotificationRead(selected.id)
+            .also { task -> task.setOnSucceeded { loadNotifications() } }
+            .runInBackground()
     }
 
     @FXML
     fun onMarkAllRead() {
-        Thread {
-                engine.markAllNotificationsRead()
-                Platform.runLater { loadNotifications() }
-            }
-            .also { it.isDaemon = true }
-            .start()
+        viewModel
+            .markAllNotificationsRead()
+            .also { task -> task.setOnSucceeded { loadNotifications() } }
+            .runInBackground()
     }
 
     @FXML
@@ -63,11 +61,6 @@ class NotificationsController : KoinComponent {
     }
 
     private fun loadNotifications() {
-        Thread {
-                engine.loadNotifications()
-                Platform.runLater { notificationsList.items.setAll(engine.state.notifications) }
-            }
-            .also { it.isDaemon = true }
-            .start()
+        viewModel.loadNotifications().runInBackground()
     }
 }

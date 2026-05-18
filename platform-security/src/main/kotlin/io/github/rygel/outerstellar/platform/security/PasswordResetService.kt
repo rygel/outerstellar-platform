@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.model.PasswordResetToken
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
+import java.security.SecureRandom
 import java.time.Instant
 import java.util.UUID
 import org.slf4j.LoggerFactory
@@ -14,19 +15,22 @@ class PasswordResetService(
     private val passwordEncoder: PasswordEncoder,
     private val resetRepository: PasswordResetRepository? = null,
     private val auditRepository: AuditRepository? = null,
+    private val sessionRepository: SessionRepository? = null,
     private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
     private val appBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
 
+    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
+
     fun requestPasswordReset(email: String): String? {
         val user = userRepository.findByEmail(email)
         if (user == null) {
-            logger.info("Password reset requested for unknown email {}", email)
+            logger.info("Password reset requested for unknown email {}", sanitize(email))
             return null
         }
 
-        val tokenValue = UUID.randomUUID().toString()
+        val tokenValue = generateUuidV7().toString()
         val resetToken =
             PasswordResetToken(
                 userId = user.id,
@@ -34,7 +38,7 @@ class PasswordResetService(
                 expiresAt = Instant.now().plusSeconds(RESET_TOKEN_TTL_SECONDS),
             )
         resetRepository?.save(resetToken)
-        logger.info("Password reset token generated for user {}", user.username)
+        logger.info("Password reset token generated for user {}", sanitize(user.username))
         val resetLink = "$appBaseUrl/auth/reset/$tokenValue"
         emailService?.send(
             to = user.email,
@@ -54,17 +58,17 @@ class PasswordResetService(
         if (resetToken.expiresAt.isBefore(Instant.now())) {
             throw IllegalArgumentException("Reset token has expired")
         }
-        if (newPassword.length < MIN_PASSWORD_LENGTH) {
-            throw WeakPasswordException("New password must be at least $MIN_PASSWORD_LENGTH characters")
-        }
+        val normalized = newPassword.trim()
+        validatePassword(normalized)?.let { throw WeakPasswordException(it) }
 
         val user =
             userRepository.findById(resetToken.userId) ?: throw UserNotFoundException(resetToken.userId.toString())
 
-        val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
+        val updated = user.copy(passwordHash = passwordEncoder.encode(normalized))
         userRepository.save(updated)
         resetRepository.markUsed(token)
-        logger.info("Password reset completed for user {}", user.username)
+        sessionRepository?.deleteByUserId(user.id)
+        logger.info("Password reset completed for user {}", sanitize(user.username))
         audit("PASSWORD_RESET_COMPLETED", actor = user)
     }
 
@@ -82,7 +86,21 @@ class PasswordResetService(
     }
 
     companion object {
-        private const val MIN_PASSWORD_LENGTH = 8
+        private const val MAX_LOG_ID_LENGTH = 80
         private const val RESET_TOKEN_TTL_SECONDS = 3600L
+        private const val UUID_V7_VERSION = 0x7000L
+        private const val UUID_V7_VARIANT_MASK = 0x0FFFL
+        private const val UUID_V7_RANDOM_MASK = 0x3FFFFFFFFFFFFFFFL
+        private const val UUID_V7_VARIANT = 63
+        private val SECURE_RANDOM = SecureRandom()
+
+        private fun generateUuidV7(): UUID {
+            val timestamp = System.currentTimeMillis()
+            val randomA = SECURE_RANDOM.nextLong()
+            val randomB = SECURE_RANDOM.nextLong()
+            val msb = (timestamp shl 16) or UUID_V7_VERSION or (randomA and UUID_V7_VARIANT_MASK)
+            val lsb = (randomB and UUID_V7_RANDOM_MASK) or (1L shl UUID_V7_VARIANT)
+            return UUID(msb, lsb)
+        }
     }
 }

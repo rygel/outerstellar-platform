@@ -20,25 +20,65 @@ class MessageActionE2ETest : WebTest() {
         cleanup()
     }
 
+    private fun buildTestApp() =
+        buildApp(
+            securityService = mockk<SecurityService>(relaxed = true),
+            overrides =
+                TestOverrides(
+                    userRepository = mockk<UserRepository>(relaxed = true),
+                    contactService = mockk<ContactService>(relaxed = true),
+                ),
+        )
+
     @Test
     fun `can create a message via form`() {
-        val app =
-            buildApp(
-                securityService = mockk<SecurityService>(relaxed = true),
-                overrides =
-                    TestOverrides(
-                        userRepository = mockk<UserRepository>(relaxed = true),
-                        contactService = mockk<ContactService>(relaxed = true),
-                    ),
-            )
+        val app = buildTestApp()
 
         val response = app(Request(POST, "/messages").form("author", "Test Author").form("content", "Test Content"))
 
-        assertEquals(Status.FOUND, response.status)
+        assertEquals(Status.OK, response.status)
+        assertTrue(response.bodyString().contains("Test Author"))
+        assertTrue(response.bodyString().contains("Test Content"))
+    }
 
-        val redirectResponse = app(Request(GET, "/"))
-        assertEquals(Status.OK, redirectResponse.status)
-        assertTrue(redirectResponse.bodyString().contains("Test Author"))
-        assertTrue(redirectResponse.bodyString().contains("Test Content"))
+    @Test
+    fun `can delete a message`() {
+        val app = buildTestApp()
+        val msg = messageRepository.createLocalMessage("Author", "Content to delete")
+
+        val response = app(Request(POST, "/messages/${msg.syncId}/delete"))
+
+        assertEquals(Status.OK, response.status)
+    }
+
+    @Test
+    fun `can get edit form for a message`() {
+        val app = buildTestApp()
+        val msg = messageRepository.createLocalMessage("Edit Author", "Edit content")
+
+        val response = app(Request(GET, "/messages/${msg.syncId}/edit"))
+
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+        assertTrue(body.contains("Edit Author"), "Form should contain existing author")
+        assertTrue(body.contains("Edit content"), "Form should contain existing content")
+    }
+
+    @Test
+    fun `can update a message`() {
+        val app = buildTestApp()
+        val msg = messageRepository.createLocalMessage("Old Author", "Old content")
+
+        val response =
+            app(
+                Request(POST, "/messages/${msg.syncId}/update")
+                    .form("author", "New Author")
+                    .form("content", "New content")
+            )
+
+        assertEquals(Status.OK, response.status)
+        val body = response.bodyString()
+        assertTrue(body.contains("New Author"), "Updated list should show new author")
+        assertTrue(body.contains("New content"), "Updated list should show new content")
     }
 }

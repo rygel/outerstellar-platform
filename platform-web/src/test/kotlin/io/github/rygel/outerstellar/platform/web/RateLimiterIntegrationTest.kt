@@ -7,20 +7,12 @@ import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
+import org.http4k.core.Response
 import org.http4k.core.Status
+import org.http4k.core.then
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
-/**
- * Integration tests for the rate limiter (brute-force protection on auth endpoints).
- *
- * Covers:
- * - First 10 requests within the window succeed (no 429)
- * - The 11th request from the same IP to /api/v1/auth/login returns 429
- * - Different IPs are tracked independently (no cross-IP pollution)
- * - Rate limiter applies to /api/v1/auth/register as well
- * - Rate limit is not applied to unrelated endpoints
- */
 class RateLimiterIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
@@ -32,7 +24,6 @@ class RateLimiterIntegrationTest : WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    /** Sends a login POST with a specific IP via X-Forwarded-For and returns the response. */
     private fun loginRequest(ip: String) =
         app(
             Request(POST, "/api/v1/auth/login")
@@ -53,7 +44,6 @@ class RateLimiterIntegrationTest : WebTest() {
 
     @Test
     fun `eleven requests from same IP triggers 429 on login endpoint`() {
-        // Use a unique IP to avoid interference from other tests sharing this app instance
         val ip = "192.168.${(1..254).random()}.${(1..254).random()}"
 
         repeat(10) { loginRequest(ip) }
@@ -67,11 +57,9 @@ class RateLimiterIntegrationTest : WebTest() {
         val ip1 = "10.1.1.1"
         val ip2 = "10.2.2.2"
 
-        // Exhaust ip1's bucket
         repeat(10) { loginRequest(ip1) }
         assertEquals(Status.TOO_MANY_REQUESTS, loginRequest(ip1).status)
 
-        // ip2 should not be affected
         val ip2Response = loginRequest(ip2)
         assertTrue(
             ip2Response.status != Status.TOO_MANY_REQUESTS,
@@ -133,6 +121,31 @@ class RateLimiterIntegrationTest : WebTest() {
             Status.TOO_MANY_REQUESTS,
             response.status,
             "21st request for same account from different IP should be rate limited",
+        )
+    }
+
+    @Test
+    fun `spoofed X-Forwarded-For is ignored when trusted proxies are configured`() {
+        val handler: HttpHandler = { Response(Status.OK) }
+        val neverTrusted =
+            rateLimitFilter(
+                    trustedProxies = listOf("10.0.0.1", "10.0.0.2"),
+                    pathPrefixes = listOf("/api/v1/auth/login"),
+                    maxRequests = 3,
+                    windowMs = 60000L,
+                )
+                .then(handler)
+
+        repeat(3) { i ->
+            val response = neverTrusted(Request(POST, "/api/v1/auth/login").header("X-Forwarded-For", "1.2.3.$i"))
+            assertTrue(response.status != Status.TOO_MANY_REQUESTS, "Request $i should not be blocked yet")
+        }
+
+        val blockedResponse = neverTrusted(Request(POST, "/api/v1/auth/login").header("X-Forwarded-For", "9.9.9.9"))
+        assertEquals(
+            Status.TOO_MANY_REQUESTS,
+            blockedResponse.status,
+            "4th request with different spoofed IP should be blocked because all hit the 'unknown' bucket",
         )
     }
 

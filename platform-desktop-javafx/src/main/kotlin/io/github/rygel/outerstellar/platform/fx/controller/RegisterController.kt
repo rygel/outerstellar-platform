@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
-import javafx.application.Platform
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
+import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import javafx.fxml.FXML
 import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory
 class RegisterController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(RegisterController::class.java)
-    private val engine: DesktopSyncEngine by inject()
+    private val viewModel: FxSyncViewModel by inject()
 
     @FXML private lateinit var usernameField: TextField
     @FXML private lateinit var passwordField: PasswordField
@@ -26,14 +26,14 @@ class RegisterController : KoinComponent {
         val confirm = confirmField.text
         if (username.isBlank() || password.isBlank()) return
         if (password != confirm) return
-        Thread {
-                engine
-                    .register(username, password)
-                    .onSuccess { Platform.runLater { close() } }
-                    .onFailure { logger.warn("Registration failed: {}", it.message) }
+        viewModel
+            .register(username, password)
+            .also { task ->
+                task.setOnSucceeded {
+                    task.value.onSuccess { close() }.onFailure { logger.warn("Registration failed: {}", it.message) }
+                }
             }
-            .also { it.isDaemon = true }
-            .start()
+            .runInBackground()
     }
 
     @FXML

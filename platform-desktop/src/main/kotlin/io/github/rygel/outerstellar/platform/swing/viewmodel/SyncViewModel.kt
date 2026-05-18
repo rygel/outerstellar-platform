@@ -8,15 +8,16 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.github.rygel.outerstellar.platform.sync.engine.EngineListener
 import io.github.rygel.outerstellar.platform.sync.engine.EngineState
+import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.swing.SwingWorker
+import javax.swing.Timer
 
 @Suppress("TooManyFunctions")
 class SyncViewModel(
-    private val engine: DesktopSyncEngine,
+    private val engine: SyncEngine,
     private var i18nService: I18nService,
     private val contactService: ContactService? = null,
 ) {
@@ -85,9 +86,18 @@ class SyncViewModel(
     var content: String = ""
     var searchQuery: String = ""
         set(value) {
+            if (field == value) return
             field = value
-            loadMessages()
+            searchDebounceTimer?.stop()
+            searchDebounceTimer =
+                Timer(300) { loadMessages() }
+                    .apply {
+                        isRepeats = false
+                        start()
+                    }
         }
+
+    private var searchDebounceTimer: Timer? = null
 
     val connectivityChecker: ConnectivityChecker? = null
 
@@ -130,6 +140,7 @@ class SyncViewModel(
     }
 
     private fun notifyObservers() {
+        syncFromEngine()
         observers.forEach { it() }
     }
 
@@ -141,6 +152,23 @@ class SyncViewModel(
 
     fun loadMessages() {
         engine.loadMessages()
+    }
+
+    private fun syncFromEngine() {
+        val s = engine.state
+        isOnline = s.isOnline
+        messages = s.messages
+        contacts = s.contacts
+        isSyncing = s.isSyncing
+        userName = s.userName
+        isLoggedIn = s.isLoggedIn
+        userRole = s.userRole
+        adminUsers = s.adminUsers
+        notifications = s.notifications
+        userEmail = s.userEmail
+        userAvatarUrl = s.userAvatarUrl
+        emailNotificationsEnabled = s.emailNotificationsEnabled
+        pushNotificationsEnabled = s.pushNotificationsEnabled
     }
 
     fun createMessage(onValidationError: (String) -> Unit) {

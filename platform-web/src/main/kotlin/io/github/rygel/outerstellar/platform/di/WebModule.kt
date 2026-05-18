@@ -14,6 +14,7 @@ import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.TOTPService
 import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.EmailService
@@ -55,15 +56,23 @@ val webModule
         // Use a null-object (NoPluginMigrationSource) for apps without plugins.
         single<PluginMigrationSource> { getOrNull<PlatformPlugin>() ?: NoPluginMigrationSource }
         single {
+            val config = get<AppConfig>()
             WebPageFactory(
                 getOrNull(),
                 getOrNull<MessageService>(),
                 getOrNull<ContactService>(),
                 getOrNull(),
                 getOrNull(),
+                appleOAuthEnabled = config.appleOAuth.enabled,
             )
         }
-        single<MessageCache> { io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache() }
+        single<MessageCache> {
+            val runtime = get<AppConfig>().runtime
+            io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache(
+                maxSize = runtime.cacheMessageMaxSize.toLong(),
+                ttlMinutes = runtime.cacheMessageExpireMinutes.toLong(),
+            )
+        }
         single<AnalyticsService> {
             val cfg = get<AppConfig>().segment
             if (cfg.enabled && cfg.writeKey.isNotBlank()) {
@@ -112,6 +121,7 @@ val webModule
                 plugin = getOrNull<PlatformPlugin>(),
                 activityUpdater = getOrNull<AsyncActivityUpdater>(),
                 syncWebSocket = getOrNull<SyncWebSocket>(),
+                totpService = get<TOTPService>(),
             )
         }
     }

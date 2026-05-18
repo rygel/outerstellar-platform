@@ -30,13 +30,13 @@ class MessageCacheTest {
             {
                 cache.get(firstArg()) ?: secondArg<() -> Any>()().also { cache.put(firstArg(), it) }
             }
-        every { repository.listMessages(any(), any(), any(), any()) } returns items
-        every { repository.countMessages(any(), any()) } returns 1L
+        every { repository.listMessagesWithTotal(any(), any(), any(), any(), any()) } returns
+            io.github.rygel.outerstellar.platform.model.PagedQueryResult(items, 1L)
 
         // First call - cache miss
         val firstResult = service.listMessages("test")
         assertEquals(results, firstResult)
-        verify { repository.listMessages("test", null, 100, 0) }
+        verify { repository.listMessagesWithTotal("test", null, 100, 0, false) }
         verify { cache.put("list:test:null:100:0", results) }
 
         // Second call - cache hit
@@ -44,22 +44,22 @@ class MessageCacheTest {
         val secondResult = service.listMessages("test")
         assertEquals(results, secondResult)
         // Verify repository was not called again
-        verify(exactly = 1) { repository.listMessages(any(), any(), any(), any()) }
+        verify(exactly = 1) { repository.listMessagesWithTotal(any(), any(), any(), any(), any()) }
     }
 
     @Test
     fun `write operations invalidate cache and use entity cache`() {
         val msg = service.createServerMessage("author", "content")
-        verify { cache.invalidateByPrefix("list:") }
+        verify { cache.invalidateNamespace("list") }
         verify { cache.put("entity:${msg.syncId}", msg) }
 
         val localMsg = service.createLocalMessage("author", "content")
-        verify(exactly = 2) { cache.invalidateByPrefix("list:") }
+        verify(exactly = 2) { cache.invalidateNamespace("list") }
         verify { cache.put("entity:${localMsg.syncId}", localMsg) }
 
         service.processPushRequest(SyncPushRequest(emptyList()))
         // SyncPushRequest with empty list appliedCount is 0, no invalidation
-        verify(exactly = 2) { cache.invalidateByPrefix("list:") }
+        verify(exactly = 2) { cache.invalidateNamespace("list") }
     }
 
     @Test

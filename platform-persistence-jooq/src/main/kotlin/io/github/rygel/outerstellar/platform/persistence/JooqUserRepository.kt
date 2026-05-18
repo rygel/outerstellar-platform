@@ -163,4 +163,36 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
             .where(PLT_USERS.CREATED_AT.ge(cutoffOffset))
             .fetchOne(0, Long::class.java) ?: 0L
     }
+
+    override fun findTotpSecretByUserId(userId: UUID): Triple<String?, Boolean, String?>? {
+        return dsl.resultQuery(
+                "SELECT totp_secret, totp_enabled, totp_backup_codes FROM plt_users WHERE id = ?",
+                userId,
+            )
+            .fetchOne()
+            ?.let {
+                Triple(
+                    it.get(0, String::class.java),
+                    it.get(1, Boolean::class.java) ?: false,
+                    it.get(2, String::class.java),
+                )
+            }
+    }
+
+    override fun updateTotpSecret(userId: UUID, secret: String?, backupCodes: String?) {
+        dsl.execute(
+            "UPDATE plt_users SET totp_secret = ?, totp_backup_codes = ? WHERE id = ?",
+            secret,
+            backupCodes,
+            userId,
+        )
+    }
+
+    override fun enableTotp(userId: UUID) {
+        dsl.execute("UPDATE plt_users SET totp_enabled = TRUE WHERE id = ?", userId)
+    }
+
+    override fun disableTotp(userId: UUID) {
+        dsl.execute("UPDATE plt_users SET totp_enabled = FALSE WHERE id = ?", userId)
+    }
 }

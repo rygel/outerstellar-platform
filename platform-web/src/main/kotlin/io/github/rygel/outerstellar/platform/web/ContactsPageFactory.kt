@@ -2,6 +2,29 @@ package io.github.rygel.outerstellar.platform.web
 
 class ContactsPageFactory(private val contactService: io.github.rygel.outerstellar.platform.service.ContactService?) {
 
+    fun buildTrashContactList(ctx: WebContext): ContactTrashListViewModel {
+        val i18n = ctx.i18n
+        val dbContacts = contactService?.listContacts(limit = 100, offset = 0, includeDeleted = true) ?: emptyList()
+        return ContactTrashListViewModel(
+            contacts =
+                dbContacts.map {
+                    ContactTrashItemViewModel(
+                        syncId = it.syncId,
+                        name = it.name,
+                        emails = it.emails,
+                        phones = it.phones,
+                        company = it.company,
+                        department = it.department,
+                        restoreUrl = ctx.url("/contacts/${it.syncId}/restore"),
+                    )
+                },
+            emptyMessage = i18n.translate("web.trash.contacts.empty"),
+            refreshUrl = ctx.url("/contacts/trash/list"),
+            title = i18n.translate("web.trash.contacts"),
+            restoreTitle = i18n.translate("web.contacts.restore"),
+        )
+    }
+
     fun buildContactsPage(
         ctx: WebContext,
         query: String? = null,

@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
+import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -65,8 +66,22 @@ class AuthRoutes(
 
                     if (mode == "sign-in") {
                         val ctx = request.webContext
-                        val user = securityService.authenticate(email, password)
-                        if (user != null) {
+                        val authResult = securityService.authenticate(email, password)
+                        if (authResult is AuthResult.TotpRequired) {
+                            val totpCtx = request.webContext
+                            return@to renderer.render(
+                                TotpChallengeForm(
+                                    partialToken = authResult.token,
+                                    title = totpCtx.i18n.translate("web.totp.title"),
+                                    description = totpCtx.i18n.translate("web.totp.enterCode"),
+                                    codeLabel = totpCtx.i18n.translate("web.totp.codeLabel"),
+                                    verifyLabel = totpCtx.i18n.translate("web.totp.verifyCode"),
+                                    backLinkLabel = totpCtx.i18n.translate("web.totp.backLink"),
+                                )
+                            )
+                        }
+                        if (authResult is AuthResult.Authenticated) {
+                            val user = authResult.user
                             analytics.identify(
                                 user.id.toString(),
                                 mapOf("username" to user.username, "role" to user.role.name),
@@ -350,7 +365,11 @@ class AuthRoutes(
                         Response(Status.UNAUTHORIZED).body("Not logged in")
                     } else {
                         try {
-                            securityService.deleteAccount(user.id)
+                            val currentPassword = request.form("currentPassword").orEmpty()
+                            if (currentPassword.isBlank()) {
+                                return@to Response(Status.BAD_REQUEST).body("Current password is required")
+                            }
+                            securityService.deleteAccount(user.id, currentPassword)
                             Response(Status.FOUND)
                                 .header("location", ctx.url("/auth?deleted=true"))
                                 .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))

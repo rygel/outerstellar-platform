@@ -19,7 +19,7 @@ internal abstract class DesktopSyncEngineTestBase {
     protected lateinit var analytics: AnalyticsService
     protected lateinit var connectivityChecker: ConnectivityChecker
     protected lateinit var notifier: EngineNotifier
-    protected lateinit var engine: DesktopSyncEngine
+    protected lateinit var engine: SyncEngine
 
     protected var connectivityObserver: ((Boolean) -> Unit)? = null
 

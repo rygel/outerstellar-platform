@@ -8,6 +8,10 @@ import java.net.http.HttpResponse
 import java.time.Instant
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -21,6 +25,17 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
     private val client = HttpClient.newHttpClient()
     private val json = Json { encodeDefaults = true }
     private val authHeader = "Basic " + Base64.getEncoder().encodeToString("$writeKey:".toByteArray())
+    private val executor: ExecutorService =
+        ThreadPoolExecutor(
+            1,
+            1,
+            0L,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue(100),
+            { r -> Thread(r, "segment-analytics").also { it.isDaemon = true } },
+        ) { _, _ ->
+            logger.warn("Segment analytics queue full — dropping event")
+        }
 
     override fun identify(userId: String, traits: Map<String, Any>) {
         send(
@@ -82,18 +97,17 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                     .header("Authorization", authHeader)
                     .POST(HttpRequest.BodyPublishers.ofString(json.encodeToString(JsonObject.serializer(), payload)))
                     .build()
-            Thread(
-                    {
-                        try {
-                            client.send(request, HttpResponse.BodyHandlers.discarding())
-                        } catch (e: Exception) {
-                            logger.warn("Segment {} call failed: {}", endpoint, e.message)
-                        }
-                    },
-                    "segment-analytics",
-                )
-                .also { it.isDaemon = true }
-                .start()
+            try {
+                executor.execute {
+                    try {
+                        client.send(request, HttpResponse.BodyHandlers.discarding())
+                    } catch (e: Exception) {
+                        logger.warn("Segment {} call failed: {}", endpoint, e.message)
+                    }
+                }
+            } catch (_: java.util.concurrent.RejectedExecutionException) {
+                logger.warn("Segment analytics event dropped: queue full")
+            }
         } catch (e: IOException) {
             logger.warn("Segment analytics IO error on {}: {}", endpoint, e.message)
         }

@@ -2,8 +2,6 @@ package io.github.rygel.outerstellar.platform.web
 
 import com.github.benmanes.caffeine.cache.Caffeine
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Response
@@ -21,18 +19,23 @@ private const val ACCOUNT_MAX_REQUESTS = 20
 private const val ACCOUNT_WINDOW_MS = 900_000L // 15 minutes
 
 class TokenBucket(private val maxRequests: Int, private val windowMs: Long) {
-    private val count = AtomicInteger(0)
-    private val windowStart = AtomicLong(System.currentTimeMillis())
+    private var count = 0
+    private var windowStart = System.currentTimeMillis()
 
-    fun tryConsume(): Boolean {
-        val now = System.currentTimeMillis()
-        if (now - windowStart.get() > windowMs) {
-            windowStart.set(now)
-            count.set(1)
-            return true
+    fun tryConsume(): Boolean =
+        synchronized(this) {
+            val now = System.currentTimeMillis()
+            if (now - windowStart > windowMs) {
+                windowStart = now
+                count = 1
+                true
+            } else if (count < maxRequests) {
+                count++
+                true
+            } else {
+                false
+            }
         }
-        return count.incrementAndGet() <= maxRequests
-    }
 }
 
 /** Per-path rate limit configuration. */
@@ -58,6 +61,7 @@ fun rateLimitFilter(
             "/auth/components/result",
             "/auth/components/reset-confirm",
         ),
+    trustedProxies: List<String> = emptyList(),
 ): Filter {
     val ipBuckets =
         Caffeine.newBuilder()
@@ -75,10 +79,21 @@ fun rateLimitFilter(
         { request ->
             val path = request.uri.path
             if (pathPrefixes.any { path.startsWith(it) }) {
+                val sourceAddress = request.source?.address
                 val clientIp =
-                    request.header("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
-                        ?: request.header("X-Real-IP")
-                        ?: "unknown"
+                    if (trustedProxies.isNotEmpty() && sourceAddress != null && sourceAddress in trustedProxies) {
+                        request.header("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
+                            ?: request.header("X-Real-IP")
+                            ?: sourceAddress
+                    } else if (sourceAddress != null) {
+                        sourceAddress
+                    } else if (trustedProxies.isNotEmpty()) {
+                        "unknown"
+                    } else {
+                        request.header("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
+                            ?: request.header("X-Real-IP")
+                            ?: "unknown"
+                    }
 
                 val override = SENSITIVE_PATHS.entries.find { path.startsWith(it.key) }?.value
                 val effectiveMax = override?.maxRequests ?: maxRequests

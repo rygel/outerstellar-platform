@@ -3,10 +3,12 @@ package io.github.rygel.outerstellar.platform.fx.e2e
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.fx.app.FxAppConfig
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.model.PagedResult
 import io.github.rygel.outerstellar.platform.model.PaginationMetadata
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
 import io.mockk.every
 import io.mockk.mockk
 import java.util.Locale
@@ -51,6 +53,7 @@ class FxAppE2ETest {
                 PagedResult(emptyList(), PaginationMetadata(1, 100, 0))
 
             val syncService = mockk<SyncService>(relaxed = true)
+            val syncEngine = mockk<SyncEngine>(relaxed = true)
 
             val testModule = module {
                 single { FxAppConfig() }
@@ -64,6 +67,8 @@ class FxAppE2ETest {
                 single<io.github.rygel.outerstellar.platform.persistence.MessageCache> {
                     io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
                 }
+                single<SyncEngine> { syncEngine }
+                single { FxSyncViewModel(get()) }
             }
 
             GlobalContext.startKoin { modules(testModule) }

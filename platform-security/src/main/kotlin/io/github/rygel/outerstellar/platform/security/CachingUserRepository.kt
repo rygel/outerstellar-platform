@@ -69,4 +69,22 @@ class CachingUserRepository(private val delegate: UserRepository, maximumSize: L
         cache.invalidate(userId)
         delegate.updateLastActivity(userId)
     }
+
+    override fun findTotpSecretByUserId(userId: UUID): Triple<String?, Boolean, String?>? =
+        delegate.findTotpSecretByUserId(userId)
+
+    override fun updateTotpSecret(userId: UUID, secret: String?, backupCodes: String?) {
+        delegate.updateTotpSecret(userId, secret, backupCodes)
+        cache.invalidate(userId)
+    }
+
+    override fun enableTotp(userId: UUID) {
+        delegate.enableTotp(userId)
+        cache.invalidate(userId)
+    }
+
+    override fun disableTotp(userId: UUID) {
+        delegate.disableTotp(userId)
+        cache.invalidate(userId)
+    }
 }

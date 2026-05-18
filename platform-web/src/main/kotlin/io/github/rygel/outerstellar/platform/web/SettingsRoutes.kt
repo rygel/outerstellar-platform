@@ -24,7 +24,12 @@ class SettingsRoutes(private val pageFactory: WebPageFactory, private val render
                         Response(Status.FOUND).header("location", ctx.url("/auth"))
                     } else {
                         val tab = request.query("tab") ?: "profile"
-                        renderer.render(pageFactory.buildSettingsPage(ctx, tab))
+                        val isHtmx = request.header("HX-Request") == "true"
+                        if (isHtmx) {
+                            renderer.render(pageFactory.buildSettingsFragment(ctx, tab))
+                        } else {
+                            renderer.render(pageFactory.buildSettingsPage(ctx, tab))
+                        }
                     }
                 }
         )

@@ -21,6 +21,9 @@ data class User(
     val language: String? = null,
     val theme: String? = null,
     val layout: String? = null,
+    val totpSecret: String? = null,
+    val totpEnabled: Boolean = false,
+    val totpBackupCodes: String? = null,
 )
 
 interface LockoutRepository {
@@ -67,6 +70,14 @@ interface UserRepository : LockoutRepository {
     fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?)
 
     fun countUsersSince(cutoff: LocalDateTime): Long
+
+    fun findTotpSecretByUserId(userId: UUID): Triple<String?, Boolean, String?>?
+
+    fun updateTotpSecret(userId: UUID, secret: String?, backupCodes: String?)
+
+    fun enableTotp(userId: UUID)
+
+    fun disableTotp(userId: UUID)
 }
 
 interface PasswordResetRepository {
@@ -92,6 +103,8 @@ interface DeviceTokenRepository {
 
     /** Remove a specific device token (e.g. when user logs out on that device). */
     fun delete(token: String)
+
+    fun deleteByTokenAndUserId(token: String, userId: java.util.UUID): Boolean
 
     /** Find all active tokens for a user (for sending push notifications). */
     fun findByUserId(userId: UUID): List<DeviceToken>

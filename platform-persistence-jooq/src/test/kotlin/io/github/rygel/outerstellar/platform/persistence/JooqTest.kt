@@ -40,16 +40,29 @@ abstract class JooqTest {
     }
 
     companion object {
-        private val container =
+        private val externalJdbcUrl = System.getenv("TEST_JDBC_URL")
+        private val externalJdbcUser = System.getenv("TEST_JDBC_USER") ?: "outerstellar"
+        private val externalJdbcPassword = System.getenv("TEST_JDBC_PASSWORD") ?: "outerstellar"
+
+        private val container by lazy {
             PostgreSQLContainer<Nothing>("postgres:18").apply {
                 withDatabaseName("outerstellar")
                 withUsername("outerstellar")
                 withPassword("outerstellar")
                 start()
             }
+        }
+
+        private val jdbcUrl: String by lazy { externalJdbcUrl ?: container.jdbcUrl }
+
+        private val jdbcUser: String by lazy { if (externalJdbcUrl != null) externalJdbcUser else container.username }
+
+        private val jdbcPassword: String by lazy {
+            if (externalJdbcUrl != null) externalJdbcPassword else container.password
+        }
 
         private val sharedDataSource: DataSource by lazy {
-            createDataSource(container.jdbcUrl, container.username, container.password).also { migrate(it) }
+            createDataSource(jdbcUrl, jdbcUser, jdbcPassword).also { migrate(it) }
         }
 
         private val sharedDsl: DSLContext by lazy { DSL.using(sharedDataSource, POSTGRES) }
