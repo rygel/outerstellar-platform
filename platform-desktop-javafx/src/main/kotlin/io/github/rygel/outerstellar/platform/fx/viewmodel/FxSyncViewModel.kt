@@ -144,6 +144,20 @@ class FxSyncViewModel(private val engine: SyncEngine) {
             engine.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
         }
 
+    fun updateContact(
+        syncId: String,
+        name: String,
+        emails: List<String>,
+        phones: List<String>,
+        socialMedia: List<String>,
+        company: String,
+        companyAddress: String,
+        department: String,
+    ): Task<Result<Unit>> =
+        task("updateContact") {
+            engine.updateContact(syncId, name, emails, phones, socialMedia, company, companyAddress, department)
+        }
+
     fun loadData(): Task<Unit> = task("loadData") { engine.loadData() }
 
     fun loadMessages(): Task<Unit> = task("loadMessages") { engine.loadMessages() }

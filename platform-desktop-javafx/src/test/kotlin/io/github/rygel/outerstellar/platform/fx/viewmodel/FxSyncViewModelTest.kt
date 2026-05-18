@@ -193,6 +193,14 @@ class FxSyncViewModelTest {
     }
 
     @Test
+    fun `updateContact delegates to engine`() {
+        every { engine.updateContact(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            Result.success(Unit)
+        viewModel.updateContact("id", "n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d").run()
+        verify { engine.updateContact("id", "n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d") }
+    }
+
+    @Test
     fun `createContact delegates to engine`() {
         every { engine.createContact(any(), any(), any(), any(), any(), any(), any()) } returns Result.success(Unit)
         viewModel.createContact("n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d").run()
