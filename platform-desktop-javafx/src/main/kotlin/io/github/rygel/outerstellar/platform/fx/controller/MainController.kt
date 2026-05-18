@@ -33,6 +33,11 @@ class MainController(private val onLogout: () -> Unit) : KoinComponent {
     @FXML private lateinit var statusLabel: Label
     @FXML private lateinit var offlineBadge: Label
 
+    private val messagesController = MessagesController()
+    private var messagesView: Parent? = null
+    private val contactsController = ContactsController()
+    private var contactsView: Parent? = null
+
     fun createScene(): Scene {
         val loader = FXMLLoader(javaClass.getResource("/fxml/MainWindow.fxml"))
         loader.setController(this)
@@ -158,43 +163,32 @@ class MainController(private val onLogout: () -> Unit) : KoinComponent {
     }
 
     private fun showView(view: String) {
-        val fxml =
+        val content =
             when (view) {
-                "MESSAGES" -> "/fxml/MessagesView.fxml"
-                "CONTACTS" -> "/fxml/ContactsView.fxml"
+                "MESSAGES" -> messagesView ?: messagesController.createView().also { messagesView = it }
+                "CONTACTS" -> contactsView ?: contactsController.createView().also { contactsView = it }
                 else -> return
             }
-        try {
-            val loader = FXMLLoader(javaClass.getResource(fxml))
-            val content = loader.load<Parent>()
-            centerPane.children.setAll(content)
-        } catch (e: Exception) {
-            logger.warn("Show view {} failed: {}", view, e.message)
-            centerPane.children.clear()
-        }
+        centerPane.children.setAll(content)
     }
 
     private fun showLogin() {
-        try {
-            val loader = FXMLLoader(javaClass.getResource("/fxml/LoginDialog.fxml"))
-            val dialog = loader.load<Parent>()
-            val controller = loader.getController<LoginController>()
-            val stage =
-                Stage().apply {
-                    initModality(Modality.APPLICATION_MODAL)
-                    title = "Login"
-                    scene = Scene(dialog)
-                    showAndWait()
+        val controller =
+            LoginController(
+                onLoginSuccess = {
+                    navLoginBtn.isVisible = false
+                    navLoginBtn.isManaged = false
+                    navLogoutBtn.isVisible = true
+                    navLogoutBtn.isManaged = true
+                    showView("MESSAGES")
                 }
-            if (controller.loginSucceeded) {
-                navLoginBtn.isVisible = false
-                navLoginBtn.isManaged = false
-                navLogoutBtn.isVisible = true
-                navLogoutBtn.isManaged = true
-                showView("MESSAGES")
-            }
-        } catch (e: Exception) {
-            logger.warn("Show login failed: {}", e.message)
+            )
+        val loginScene = controller.createScene()
+        Stage().apply {
+            initModality(Modality.APPLICATION_MODAL)
+            title = "Login"
+            scene = loginScene
+            showAndWait()
         }
     }
 

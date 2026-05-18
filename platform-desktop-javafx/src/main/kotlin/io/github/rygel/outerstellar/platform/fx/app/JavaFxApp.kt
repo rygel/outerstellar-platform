@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.app
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.fx.controller.LoginController
 import io.github.rygel.outerstellar.platform.fx.controller.MainController
 import io.github.rygel.outerstellar.platform.fx.di.fxRuntimeModules
 import io.github.rygel.outerstellar.platform.fx.service.FxStateProvider
@@ -26,6 +27,10 @@ import org.koin.core.context.startKoin
 class JavaFxApp : Application(), KoinComponent {
 
     private lateinit var viewModel: FxSyncViewModel
+    private lateinit var connectivityChecker: HttpConnectivityChecker
+    private lateinit var i18nService: I18nService
+    private var savedState: FxWindowState? = null
+    private var locale: Locale = Locale.getDefault()
 
     override fun init() {
         startKoin { modules(fxRuntimeModules()) }
@@ -38,22 +43,49 @@ class JavaFxApp : Application(), KoinComponent {
         val config = get<FxAppConfig>()
         val themeManager = get<FxThemeManager>()
 
-        val connectivityChecker =
-            HttpConnectivityChecker(healthUrl = "${config.serverBaseUrl}/health").also { it.start() }
+        connectivityChecker = HttpConnectivityChecker(healthUrl = "${config.serverBaseUrl}/health").also { it.start() }
 
-        val savedState = FxStateProvider.loadState()
-        val locale = savedState?.language?.let { Locale.of(it) } ?: Locale.getDefault()
+        savedState = FxStateProvider.loadState()
+        locale = savedState?.language?.let { Locale.of(it) } ?: Locale.getDefault()
         Locale.setDefault(locale)
-        val i18nService: I18nService = get()
+        i18nService = get()
         i18nService.setLocale(locale)
 
+        savedState?.lastSearchQuery?.let { viewModel.searchQuery.set(it) }
+
+        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_URI)) {
+            Desktop.getDesktop().setOpenURIHandler { event -> handleDeepLink(event.uri) }
+        }
+
+        if (config.devMode && config.devUsername.isNotBlank() && config.devPassword.isNotBlank()) {
+            viewModel.login(config.devUsername, config.devPassword).runInBackground()
+            showMainWindow(primaryStage, themeManager, config)
+        } else {
+            showLogin(primaryStage, themeManager, config)
+        }
+
+        splash.close()
+        primaryStage.show()
+    }
+
+    private fun showLogin(primaryStage: Stage, themeManager: FxThemeManager, config: FxAppConfig) {
+        val loginController =
+            LoginController(
+                onLoginSuccess = { showMainWindow(primaryStage, themeManager, config) },
+                onCancel = { primaryStage.close() },
+            )
+        val scene = loginController.createScene()
+        themeManager.setScene(scene)
+        primaryStage.title = i18nService.translate("javafx.app.title", "Outerstellar")
+        primaryStage.scene = scene
+    }
+
+    private fun showMainWindow(primaryStage: Stage, themeManager: FxThemeManager, config: FxAppConfig) {
         val mainController =
             MainController(
                 onLogout = {
-                    connectivityChecker.stop()
-                    viewModel.stopAutoSync()
-                    viewModel.shutdown()
-                    primaryStage.close()
+                    primaryStage.scene = null
+                    showLogin(primaryStage, themeManager, config)
                 }
             )
         val scene = mainController.createScene()
@@ -61,16 +93,16 @@ class JavaFxApp : Application(), KoinComponent {
         themeManager.setScene(scene)
         savedState?.themeId?.let { themeManager.applyThemeByName(it) } ?: themeManager.applyThemeByName("DARK")
 
-        savedState?.lastSearchQuery?.let { viewModel.searchQuery.set(it) }
-
         primaryStage.title = i18nService.translate("javafx.app.title", "Outerstellar")
-        if (savedState != null) {
-            primaryStage.x = savedState.x
-            primaryStage.y = savedState.y
-            primaryStage.width = savedState.width
-            primaryStage.height = savedState.height
-            primaryStage.isMaximized = savedState.maximized
+        savedState?.let { state ->
+            primaryStage.x = state.x
+            primaryStage.y = state.y
+            primaryStage.width = state.width
+            primaryStage.height = state.height
+            primaryStage.isMaximized = state.maximized
         }
+        primaryStage.minWidth = 1000.0
+        primaryStage.minHeight = 750.0
 
         primaryStage.onCloseRequest = {
             viewModel.stopAutoSync()
@@ -90,17 +122,7 @@ class JavaFxApp : Application(), KoinComponent {
             )
         }
 
-        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_URI)) {
-            Desktop.getDesktop().setOpenURIHandler { event -> handleDeepLink(event.uri) }
-        }
-
-        if (config.devMode && config.devUsername.isNotBlank() && config.devPassword.isNotBlank()) {
-            viewModel.login(config.devUsername, config.devPassword).runInBackground()
-        }
-
         primaryStage.scene = scene
-        splash.close()
-        primaryStage.show()
     }
 
     private fun showSplash(primaryStage: Stage): Stage {

@@ -1,164 +1,121 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
-import io.github.rygel.outerstellar.platform.service.ContactService
-import javafx.application.Platform
-import javafx.collections.FXCollections
-import javafx.fxml.FXML
-import javafx.scene.control.ListView
+import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
+import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
+import javafx.geometry.Insets
+import javafx.geometry.Pos
+import javafx.scene.Scene
+import javafx.scene.control.Button
+import javafx.scene.control.Label
 import javafx.scene.control.TextField
+import javafx.scene.layout.HBox
+import javafx.scene.layout.VBox
+import javafx.stage.Modality
 import javafx.stage.Stage
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
-import org.slf4j.LoggerFactory
 
-class ContactFormController : KoinComponent {
+class ContactFormController(
+    private val syncId: String?,
+    private val viewModel: FxSyncViewModel,
+    private val themeManager: FxThemeManager,
+) {
+    fun showAndWait() {
+        val nameField = TextField().apply { promptText = "Name *" }
+        val emailsField = TextField().apply { promptText = "Emails (comma separated)" }
+        val phonesField = TextField().apply { promptText = "Phones (comma separated)" }
+        val socialField = TextField().apply { promptText = "Social Media (comma separated)" }
+        val companyField = TextField().apply { promptText = "Company" }
+        val addressField = TextField().apply { promptText = "Address" }
+        val departmentField = TextField().apply { promptText = "Department" }
 
-    private val logger = LoggerFactory.getLogger(ContactFormController::class.java)
-    private val contactService: ContactService by inject()
-
-    @FXML private lateinit var nameField: TextField
-    @FXML private lateinit var companyField: TextField
-    @FXML private lateinit var departmentField: TextField
-    @FXML private lateinit var addressField: TextField
-    @FXML private lateinit var emailList: ListView<String>
-    @FXML private lateinit var phoneList: ListView<String>
-    @FXML private lateinit var socialList: ListView<String>
-
-    var saved: Boolean = false
-        private set
-
-    private var syncId: String? = null
-
-    fun setSyncId(id: String?) {
-        syncId = id
-        if (id != null) {
-            loadContact(id)
-        }
-    }
-
-    @FXML
-    fun initialize() {
-        emailList.items = FXCollections.observableArrayList()
-        phoneList.items = FXCollections.observableArrayList()
-        socialList.items = FXCollections.observableArrayList()
-    }
-
-    @FXML
-    fun onAddEmail() {
-        val input = showInputDialog("Add Email")
-        if (input != null && input.isNotBlank()) {
-            emailList.items.add(input.trim())
-        }
-    }
-
-    @FXML
-    fun onRemoveEmail() {
-        val selected = emailList.selectionModel.selectedIndex
-        if (selected >= 0) emailList.items.removeAt(selected)
-    }
-
-    @FXML
-    fun onAddPhone() {
-        val input = showInputDialog("Add Phone")
-        if (input != null && input.isNotBlank()) {
-            phoneList.items.add(input.trim())
-        }
-    }
-
-    @FXML
-    fun onRemovePhone() {
-        val selected = phoneList.selectionModel.selectedIndex
-        if (selected >= 0) phoneList.items.removeAt(selected)
-    }
-
-    @FXML
-    fun onAddSocial() {
-        val input = showInputDialog("Add Social Media")
-        if (input != null && input.isNotBlank()) {
-            socialList.items.add(input.trim())
-        }
-    }
-
-    @FXML
-    fun onRemoveSocial() {
-        val selected = socialList.selectionModel.selectedIndex
-        if (selected >= 0) socialList.items.removeAt(selected)
-    }
-
-    @FXML
-    fun onSave() {
-        val name = nameField.text.trim()
-        if (name.isBlank()) return
-        val emails = emailList.items.toList()
-        val phones = phoneList.items.toList()
-        val socials = socialList.items.toList()
-        val company = companyField.text.trim()
-        val address = addressField.text.trim()
-        val department = departmentField.text.trim()
-
-        try {
-            val id = syncId
-            if (id != null) {
-                val existing = contactService.getContactBySyncId(id)
-                if (existing != null) {
-                    contactService.updateContact(
-                        existing.copy(
-                            name = name,
-                            emails = emails,
-                            phones = phones,
-                            socialMedia = socials,
-                            company = company,
-                            companyAddress = address,
-                            department = department,
-                        )
-                    )
-                }
-            } else {
-                contactService.createContact(name, emails, phones, socials, company, address, department)
+        val errorLabel =
+            Label().apply {
+                style = "-fx-text-fill: red;"
+                isVisible = false
             }
-            saved = true
-            close()
-        } catch (e: Exception) {
-            logger.warn("Save contact failed: {}", e.message)
+
+        if (syncId != null) {
+            val contact = viewModel.contacts.find { it.syncId == syncId }
+            if (contact != null) {
+                nameField.text = contact.name
+                emailsField.text = contact.emails.joinToString(", ")
+                phonesField.text = contact.phones.joinToString(", ")
+                socialField.text = contact.socialMedia.joinToString(", ")
+                companyField.text = contact.company
+                addressField.text = contact.companyAddress
+                departmentField.text = contact.department
+            }
         }
-    }
 
-    @FXML
-    fun onCancel() {
-        close()
-    }
+        val dialog =
+            Stage().apply {
+                initModality(Modality.APPLICATION_MODAL)
+                title = if (syncId != null) "Edit Contact" else "Create Contact"
+            }
 
-    private fun loadContact(id: String) {
-        Thread {
-                try {
-                    val contact = contactService.getContactBySyncId(id) ?: return@Thread
-                    Platform.runLater {
-                        nameField.text = contact.name
-                        companyField.text = contact.company
-                        departmentField.text = contact.department
-                        addressField.text = contact.companyAddress
-                        emailList.items.setAll(contact.emails)
-                        phoneList.items.setAll(contact.phones)
-                        socialList.items.setAll(contact.socialMedia)
+        val saveBtn =
+            Button("Save").apply {
+                setOnAction {
+                    val name = nameField.text.trim()
+                    if (name.isBlank()) {
+                        errorLabel.text = "Name is required"
+                        errorLabel.isVisible = true
+                        return@setOnAction
                     }
-                } catch (e: Exception) {
-                    logger.warn("Load contact failed: {}", e.message)
+                    errorLabel.isVisible = false
+
+                    val emails = emailsField.text.trim().split(",").map { it.trim() }.filter { it.isNotBlank() }
+                    val phones = phonesField.text.trim().split(",").map { it.trim() }.filter { it.isNotBlank() }
+                    val social = socialField.text.trim().split(",").map { it.trim() }.filter { it.isNotBlank() }
+                    val company = companyField.text.trim()
+                    val address = addressField.text.trim()
+                    val department = departmentField.text.trim()
+
+                    val task =
+                        if (syncId != null) {
+                            viewModel.updateContact(syncId, name, emails, phones, social, company, address, department)
+                        } else {
+                            viewModel.createContact(name, emails, phones, social, company, address, department)
+                        }
+
+                    task.setOnSucceeded {
+                        task.value
+                            .onSuccess { dialog.close() }
+                            .onFailure {
+                                errorLabel.text = it.message ?: "Save failed"
+                                errorLabel.isVisible = true
+                            }
+                    }
+                    task.setOnFailed { event ->
+                        errorLabel.text = event.source.exception.message ?: "Save failed"
+                        errorLabel.isVisible = true
+                    }
+                    task.runInBackground()
                 }
             }
-            .also { it.isDaemon = true }
-            .start()
-    }
 
-    private fun showInputDialog(title: String): String? {
-        val dialog = javafx.scene.control.TextInputDialog()
-        dialog.title = title
-        dialog.headerText = null
-        (nameField.scene.window as? Stage)?.let { dialog.initOwner(it) }
-        val result = dialog.showAndWait()
-        return result.orElse(null)
-    }
+        val cancelBtn = Button("Cancel").apply { setOnAction { dialog.close() } }
 
-    private fun close() {
-        (nameField.scene.window as? Stage)?.close()
+        val form =
+            VBox(8.0).apply {
+                padding = Insets(12.0)
+                children.addAll(
+                    nameField,
+                    emailsField,
+                    phonesField,
+                    socialField,
+                    companyField,
+                    addressField,
+                    departmentField,
+                    errorLabel,
+                    HBox(8.0).apply {
+                        children.addAll(saveBtn, cancelBtn)
+                        alignment = Pos.CENTER_RIGHT
+                    },
+                )
+            }
+
+        dialog.scene = Scene(form).also { themeManager.setScene(it) }
+        dialog.showAndWait()
     }
 }

@@ -430,7 +430,7 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 ### Low Priority
 
-- [ ] **JavaFX desktop module implementation**
+- [x] ~~**JavaFX desktop module implementation**~~
   Design spec exists and module is scaffolded (`platform-desktop-javafx`) but not implemented. Implement sync client UI using JavaFX as an alternative to Swing.
 
 ## Security Review - 2026-05-17
