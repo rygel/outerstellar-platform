@@ -25,19 +25,19 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
 
     fun createScene(): Scene {
         val root =
-            VBox(15.0).apply {
+            VBox(SPACING).apply {
                 alignment = Pos.CENTER
-                padding = Insets(40.0)
+                padding = Insets(PADDING)
                 children.addAll(
                     Label("Outerstellar").apply { style = "-fx-font-size: 24px; -fx-font-weight: bold;" },
                     Label("Sign in to your account").apply { style = "-fx-font-size: 14px;" },
                     usernameField.apply {
                         promptText = "Username"
-                        prefWidth = 250.0
+                        prefWidth = FIELD_WIDTH
                     },
                     passwordField.apply {
                         promptText = "Password"
-                        prefWidth = 250.0
+                        prefWidth = FIELD_WIDTH
                         onAction = { onLogin() }
                     },
                     errorLabel.apply {
@@ -45,17 +45,17 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
                         isVisible = false
                     },
                     loginButton.apply {
-                        prefWidth = 250.0
+                        prefWidth = FIELD_WIDTH
                         setOnAction { onLogin() }
                     },
                     cancelButton.apply {
-                        prefWidth = 250.0
+                        prefWidth = FIELD_WIDTH
                         isVisible = onCancel != null
                         setOnAction { onCancel?.invoke() }
                     },
                 )
             }
-        return Scene(root, 400.0, 350.0)
+        return Scene(root, SCENE_WIDTH, SCENE_HEIGHT)
     }
 
     private fun onLogin() {
@@ -85,5 +85,13 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
     private fun showError(message: String) {
         errorLabel.text = message
         errorLabel.isVisible = true
+    }
+
+    companion object {
+        private const val SPACING = 15.0
+        private const val PADDING = 40.0
+        private const val FIELD_WIDTH = 250.0
+        private const val SCENE_WIDTH = 400.0
+        private const val SCENE_HEIGHT = 350.0
     }
 }

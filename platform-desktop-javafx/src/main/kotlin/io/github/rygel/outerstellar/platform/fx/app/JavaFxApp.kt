@@ -34,8 +34,8 @@ class JavaFxApp : Application(), KoinComponent {
         val scene = loginController.createScene()
         themeManager.applyThemeByName("DARK")
         primaryStage.title = "Outerstellar - Login"
-        primaryStage.minWidth = 400.0
-        primaryStage.minHeight = 350.0
+        primaryStage.minWidth = LOGIN_MIN_WIDTH
+        primaryStage.minHeight = LOGIN_MIN_HEIGHT
         primaryStage.scene = scene
     }
 
@@ -44,8 +44,8 @@ class JavaFxApp : Application(), KoinComponent {
         val scene = mainController.createScene()
         themeManager.applyThemeByName("DARK")
         primaryStage.title = "Outerstellar"
-        primaryStage.minWidth = 800.0
-        primaryStage.minHeight = 600.0
+        primaryStage.minWidth = MAIN_MIN_WIDTH
+        primaryStage.minHeight = MAIN_MIN_HEIGHT
         primaryStage.scene = scene
     }
 
@@ -66,6 +66,11 @@ class JavaFxApp : Application(), KoinComponent {
     }
 
     companion object {
+        private const val LOGIN_MIN_WIDTH = 400.0
+        private const val LOGIN_MIN_HEIGHT = 350.0
+        private const val MAIN_MIN_WIDTH = 800.0
+        private const val MAIN_MIN_HEIGHT = 600.0
+
         @JvmStatic
         fun main(args: Array<String>) {
             Application.launch(JavaFxApp::class.java)

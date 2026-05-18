@@ -66,7 +66,7 @@ class MainController(private val onLogout: () -> Unit) : KoinComponent {
                 center = centerBox
             }
 
-        val scene = Scene(root, 800.0, 600.0)
+        val scene = Scene(root, SCENE_WIDTH, SCENE_HEIGHT)
 
         statusLabel.textProperty().bind(viewModel.status)
         onlineLabel.textProperty().bind(Bindings.`when`(viewModel.isOnline).then("Online").otherwise("Offline"))
@@ -76,5 +76,10 @@ class MainController(private val onLogout: () -> Unit) : KoinComponent {
         logoutButton.setOnAction { onLogout() }
 
         return scene
+    }
+
+    companion object {
+        private const val SCENE_WIDTH = 800.0
+        private const val SCENE_HEIGHT = 600.0
     }
 }
