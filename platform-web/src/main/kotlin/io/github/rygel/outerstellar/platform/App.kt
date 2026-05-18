@@ -267,6 +267,13 @@ private fun buildApiRoutes(
         if (notificationService != null) {
             routes += NotificationApi(notificationService).routes
         }
+    }
+
+    val bearerAdminApiContract = contract {
+        renderer = OpenApi3(ApiInfo("$appLabel Admin API", "v1.0"), KotlinxSerialization)
+        descriptionPath = "/api/v1/admin/api-openapi.json"
+        security = bearerAdminSecurity
+        routes += UserAdminApi(securityService).routes
         val exportProviders =
             listOfNotNull(
                 messageService?.let { io.github.rygel.outerstellar.platform.export.MessageExportProvider(it) },
@@ -275,13 +282,6 @@ private fun buildApiRoutes(
         if (exportProviders.isNotEmpty()) {
             routes += ExportRoutes(exportProviders).routes
         }
-    }
-
-    val bearerAdminApiContract = contract {
-        renderer = OpenApi3(ApiInfo("$appLabel Admin API", "v1.0"), KotlinxSerialization)
-        descriptionPath = "/api/v1/admin/api-openapi.json"
-        security = bearerAdminSecurity
-        routes += UserAdminApi(securityService).routes
     }
 
     return listOf(bearerAdminApiContract, apiRoutes, syncContract)
