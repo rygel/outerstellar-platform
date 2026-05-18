@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
+import kotlinx.serialization.json.Json
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -52,6 +53,18 @@ class UserAdminRoutes(
                         .header("Content-Disposition", "attachment; filename=\"users.csv\"")
                         .body(usersAsCsv(users))
                 },
+            "/admin/users/export/json" meta
+                {
+                    summary = "Export users as JSON"
+                } bindContract
+                GET to
+                { _: org.http4k.core.Request ->
+                    val users = securityService.listUsers()
+                    Response(Status.OK)
+                        .header("Content-Type", "application/json; charset=utf-8")
+                        .header("Content-Disposition", "attachment; filename=\"users.json\"")
+                        .body(usersAsJson(users))
+                },
             "/admin/users" / userIdPath / "toggle-enabled" meta
                 {
                     summary = "Toggle user enabled status"
@@ -91,6 +104,18 @@ class UserAdminRoutes(
                         .header("Content-Disposition", "attachment; filename=\"audit.csv\"")
                         .body(auditAsCsv(entries))
                 },
+            "/admin/audit/export/json" meta
+                {
+                    summary = "Export audit log as JSON"
+                } bindContract
+                GET to
+                { _: org.http4k.core.Request ->
+                    val entries = securityService.getAuditLog(limit = Int.MAX_VALUE)
+                    Response(Status.OK)
+                        .header("Content-Type", "application/json; charset=utf-8")
+                        .header("Content-Disposition", "attachment; filename=\"audit.json\"")
+                        .body(auditAsJson(entries))
+                },
             "/admin/users" / userIdPath / "toggle-role" meta
                 {
                     summary = "Toggle user role between USER and ADMIN"
@@ -125,6 +150,8 @@ class UserAdminRoutes(
         )
 
     companion object {
+        private val json = Json { prettyPrint = true }
+
         fun usersAsCsv(users: List<UserSummary>): String {
             val sb = StringBuilder()
             sb.appendLine(CsvUtils.toCsvRow(listOf("Username", "Email", "Role", "Enabled")))
@@ -133,6 +160,8 @@ class UserAdminRoutes(
             }
             return sb.toString()
         }
+
+        fun usersAsJson(users: List<UserSummary>): String = json.encodeToString(users)
 
         fun auditAsCsv(entries: List<io.github.rygel.outerstellar.platform.model.AuditEntry>): String {
             val sb = StringBuilder()
@@ -152,5 +181,8 @@ class UserAdminRoutes(
             }
             return sb.toString()
         }
+
+        fun auditAsJson(entries: List<io.github.rygel.outerstellar.platform.model.AuditEntry>): String =
+            json.encodeToString(entries)
     }
 }
