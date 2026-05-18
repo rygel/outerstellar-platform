@@ -11,12 +11,12 @@ import javafx.application.Platform
 import javafx.beans.binding.Bindings
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
-import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.Alert
 import javafx.scene.control.Button
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Label
+import javafx.scene.input.KeyCombination
 import javafx.scene.layout.StackPane
 import javafx.scene.layout.VBox
 import javafx.stage.Modality
@@ -32,12 +32,6 @@ class MainController : KoinComponent {
     private val syncService: SyncService by inject()
     private val themeManager: FxThemeManager by inject()
     private val viewModel: FxSyncViewModel by inject()
-    private val usersController = UsersController()
-    private var usersView: Parent? = null
-    private val profileController = ProfileController()
-    private var profileView: Parent? = null
-    private val notificationsController = NotificationsController()
-    private var notificationsView: Parent? = null
 
     @FXML private lateinit var sidebar: VBox
     @FXML private lateinit var centerPane: StackPane
@@ -52,6 +46,14 @@ class MainController : KoinComponent {
     @FXML private lateinit var navSettingsBtn: Button
     @FXML private lateinit var navLoginBtn: Button
     @FXML private lateinit var navLogoutBtn: Button
+
+    fun createScene(scene: Scene) {
+        scene.accelerators[KeyCombination.valueOf("Ctrl+N")] = Runnable { onNewMessage() }
+        scene.accelerators[KeyCombination.valueOf("Ctrl+O")] = Runnable { onNewContact() }
+        scene.accelerators[KeyCombination.valueOf("F5")] = Runnable { onSync() }
+        scene.accelerators[KeyCombination.valueOf("Ctrl+,")] = Runnable { onSettings() }
+        scene.accelerators[KeyCombination.valueOf("Ctrl+Q")] = Runnable { onExit() }
+    }
 
     @FXML
     fun initialize() {
@@ -76,17 +78,17 @@ class MainController : KoinComponent {
 
     @FXML
     fun onNavUsers() {
-        showView("USERS")
+        navigateTo("UsersView.fxml")
     }
 
     @FXML
     fun onNavNotifications() {
-        showView("NOTIFICATIONS")
+        navigateTo("NotificationsView.fxml")
     }
 
     @FXML
     fun onNavProfile() {
-        showView("PROFILE")
+        navigateTo("ProfileView.fxml")
     }
 
     @FXML
@@ -180,31 +182,6 @@ class MainController : KoinComponent {
         }
     }
 
-    private fun showView(viewName: String) {
-        try {
-            val view =
-                when (viewName) {
-                    "USERS" -> {
-                        if (usersView == null) {
-                            usersView = usersController.createView()
-                        }
-                        usersView!!
-                    }
-                    "PROFILE" -> {
-                        if (profileView == null) {
-                            profileView = profileController.createView()
-                        }
-                        profileView!!
-                    }
-                    else -> throw IllegalArgumentException("Unknown view: $viewName")
-                }
-            centerPane.children.setAll(view)
-        } catch (e: Exception) {
-            logger.warn("Show view {} failed: {}", viewName, e.message)
-            centerPane.children.clear()
-        }
-    }
-
     private fun updateAuthUi() {
         val loggedIn = syncService.userRole != null
         navLoginBtn.isVisible = !loggedIn
@@ -232,11 +209,7 @@ class MainController : KoinComponent {
     }
 
     private fun showSettingsDialog() {
-        try {
-            SettingsController().showAndWait()
-        } catch (e: Exception) {
-            logger.warn("Failed to open settings dialog: {}", e.message)
-        }
+        showDialog("SettingsDialog.fxml", "Settings")
     }
 
     private fun showCreateContactDialog() {
@@ -244,15 +217,18 @@ class MainController : KoinComponent {
     }
 
     private fun showChangePasswordDialog() {
-        showDialog("ChangePasswordDialog.fxml", "Change Password")
+        val owner = sidebar.scene?.window as? Stage ?: return
+        ChangePasswordController.show(owner)
     }
 
     private fun showHelpDialog() {
-        showDialog("HelpDialog.fxml", "Help")
+        val owner = sidebar.scene?.window as? Stage ?: return
+        HelpController.show(owner)
     }
 
     private fun showAboutDialog() {
-        showDialog("AboutDialog.fxml", "About")
+        val owner = sidebar.scene?.window as? Stage ?: return
+        AboutController.show(owner)
     }
 
     private fun checkForUpdate() {

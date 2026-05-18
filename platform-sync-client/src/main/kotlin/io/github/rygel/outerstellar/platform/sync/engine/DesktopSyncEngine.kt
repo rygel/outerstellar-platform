@@ -341,8 +341,6 @@ class DesktopSyncEngine(
                     socialMedia = socialMedia,
                     company = company,
                     companyAddress = companyAddress,
-                    department = department,
-                    dirty = true,
                 )
             svc.updateContact(updated)
             loadContacts()

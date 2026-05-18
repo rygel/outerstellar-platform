@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.app
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.fx.controller.MainController
 import io.github.rygel.outerstellar.platform.fx.di.fxRuntimeModules
 import io.github.rygel.outerstellar.platform.fx.service.FxStateProvider
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
@@ -53,6 +54,8 @@ class JavaFxApp : Application(), KoinComponent {
         val width = savedState?.width ?: DEFAULT_WIDTH
         val height = savedState?.height ?: DEFAULT_HEIGHT
         val scene = Scene(root, width, height)
+
+        loader.getController<MainController>().createScene(scene)
 
         themeManager.setScene(scene)
         savedState?.themeId?.let { themeManager.applyThemeByName(it) } ?: themeManager.applyThemeByName("DARK")
