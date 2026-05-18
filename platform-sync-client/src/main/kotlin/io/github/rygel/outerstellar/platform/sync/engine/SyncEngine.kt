@@ -59,6 +59,17 @@ interface SyncEngine {
         department: String,
     ): Result<Unit>
 
+    fun updateContact(
+        syncId: String,
+        name: String,
+        emails: List<String>,
+        phones: List<String>,
+        socialMedia: List<String>,
+        company: String,
+        companyAddress: String,
+        department: String,
+    ): Result<Unit>
+
     fun setSearchQuery(query: String)
 
     fun loadData()

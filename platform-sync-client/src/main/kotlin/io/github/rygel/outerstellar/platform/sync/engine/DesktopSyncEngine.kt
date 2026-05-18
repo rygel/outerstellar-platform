@@ -315,6 +315,46 @@ class DesktopSyncEngine(
         }
     }
 
+    override fun updateContact(
+        syncId: String,
+        name: String,
+        emails: List<String>,
+        phones: List<String>,
+        socialMedia: List<String>,
+        company: String,
+        companyAddress: String,
+        department: String,
+    ): Result<Unit> {
+        val svc = contactService
+        if (svc == null) {
+            return Result.failure(IllegalStateException("Contact service not available"))
+        }
+        return try {
+            val stored =
+                svc.getContactBySyncId(syncId)
+                    ?: return Result.failure(IllegalStateException("Contact not found: $syncId"))
+            val updated =
+                stored.copy(
+                    name = name,
+                    emails = emails,
+                    phones = phones,
+                    socialMedia = socialMedia,
+                    company = company,
+                    companyAddress = companyAddress,
+                    department = department,
+                    dirty = true,
+                )
+            svc.updateContact(updated)
+            loadContacts()
+            analytics.track(state.userName, "contact_updated", mapOf("name" to name))
+            Result.success(Unit)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            logger.warn("Failed to update contact", e)
+            fireError("updateContact", e.message ?: "Unknown error")
+            Result.failure(e)
+        }
+    }
+
     override fun setSearchQuery(query: String) {
         updateState { it.copy(searchQuery = query) }
         loadData()
