@@ -83,7 +83,7 @@ class UserManagementIntegrationTest : WebTest() {
 
     private fun seedAdmin(): AdminInfo {
         val adminId = UUID.randomUUID()
-        val password = "adminpass123"
+        val password = "Adm1nP@ss!"
         userRepository.save(
             User(
                 id = adminId,
@@ -104,45 +104,45 @@ class UserManagementIntegrationTest : WebTest() {
 
     @Test
     fun `change password via API succeeds with correct current password`() {
-        val auth = registerUser("pwduser", "oldpassword1")
+        val auth = registerUser("pwduser", "0ldP@ssw0rd1!")
 
         val response =
             app(
                 bearerRequest(PUT, "/api/v1/auth/password", auth.token)
-                    .with(changePasswordLens of ChangePasswordRequest("oldpassword1", "newpassword1"))
+                    .with(changePasswordLens of ChangePasswordRequest("0ldP@ssw0rd1!", "N3wP@ssw0rd1!"))
             )
         assertEquals(Status.OK, response.status)
 
         // Verify old password no longer works
         val failLogin =
-            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("pwduser", "oldpassword1")))
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("pwduser", "0ldP@ssw0rd1!")))
         assertEquals(Status.UNAUTHORIZED, failLogin.status)
 
         // Verify new password works
-        val successLogin = loginUser("pwduser", "newpassword1")
+        val successLogin = loginUser("pwduser", "N3wP@ssw0rd1!")
         assertTrue(successLogin.token.isNotBlank())
     }
 
     @Test
     fun `change password fails with wrong current password`() {
-        val auth = registerUser("pwduser2", "correctpass1")
+        val auth = registerUser("pwduser2", "C0rr3ctP@ss1!")
 
         val response =
             app(
                 bearerRequest(PUT, "/api/v1/auth/password", auth.token)
-                    .with(changePasswordLens of ChangePasswordRequest("wrongpassword", "newpassword1"))
+                    .with(changePasswordLens of ChangePasswordRequest("wrongpassword", "N3wP@ssw0rd1!"))
             )
         assertEquals(Status.BAD_REQUEST, response.status)
     }
 
     @Test
     fun `change password fails with too short new password`() {
-        val auth = registerUser("pwduser3", "correctpass1")
+        val auth = registerUser("pwduser3", "C0rr3ctP@ss1!")
 
         val response =
             app(
                 bearerRequest(PUT, "/api/v1/auth/password", auth.token)
-                    .with(changePasswordLens of ChangePasswordRequest("correctpass1", "short"))
+                    .with(changePasswordLens of ChangePasswordRequest("C0rr3ctP@ss1!", "short"))
             )
         assertEquals(Status.BAD_REQUEST, response.status)
     }
@@ -152,7 +152,7 @@ class UserManagementIntegrationTest : WebTest() {
         val response =
             app(
                 Request(PUT, "/api/v1/auth/password")
-                    .with(changePasswordLens of ChangePasswordRequest("anything", "newpassword1"))
+                    .with(changePasswordLens of ChangePasswordRequest("anything", "N3wP@ssw0rd1!"))
             )
         assertEquals(Status.UNAUTHORIZED, response.status)
     }

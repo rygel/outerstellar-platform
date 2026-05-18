@@ -263,7 +263,7 @@ class ProfileApiIntegrationTest : WebTest() {
     @Test
     fun `DELETE account returns 403 when user is the only admin`() {
         val adminId = UUID.randomUUID()
-        val password = "adminpass1"
+        val password = "Adm1nP@ss!"
         userRepository.save(
             User(
                 id = adminId,
@@ -296,7 +296,7 @@ class ProfileApiIntegrationTest : WebTest() {
                 id = id1,
                 username = "admin1",
                 email = "admin1@test.com",
-                passwordHash = enc.encode("adminpass1"),
+                passwordHash = enc.encode("Adm1nP@ss!"),
                 role = UserRole.ADMIN,
             )
         )
@@ -305,17 +305,17 @@ class ProfileApiIntegrationTest : WebTest() {
                 id = id2,
                 username = "admin2",
                 email = "admin2@test.com",
-                passwordHash = enc.encode("adminpass2"),
+                passwordHash = enc.encode("Adm2nP@ss!"),
                 role = UserRole.ADMIN,
             )
         )
-        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1", "adminpass1")))
+        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1", "Adm1nP@ss!")))
         val token1 = tokenLens(loginResp).token
 
         val response =
             app(
                 bearer(DELETE, "/api/v1/auth/account", token1)
-                    .with(deleteAccountLens of DeleteAccountRequest("adminpass1"))
+                    .with(deleteAccountLens of DeleteAccountRequest("Adm1nP@ss!"))
             )
 
         assertEquals(Status.OK, response.status)
