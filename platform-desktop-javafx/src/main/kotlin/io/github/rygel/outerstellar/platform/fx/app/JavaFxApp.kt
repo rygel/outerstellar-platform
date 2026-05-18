@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.app
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.fx.controller.MainController
 import io.github.rygel.outerstellar.platform.fx.di.fxRuntimeModules
 import io.github.rygel.outerstellar.platform.fx.service.FxStateProvider
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
@@ -13,7 +14,6 @@ import java.net.URI
 import java.util.Locale
 import javafx.application.Application
 import javafx.application.Platform
-import javafx.fxml.FXMLLoader
 import javafx.scene.Scene
 import javafx.scene.control.Label
 import javafx.scene.layout.VBox
@@ -47,12 +47,16 @@ class JavaFxApp : Application(), KoinComponent {
         val i18nService: I18nService = get()
         i18nService.setLocale(locale)
 
-        val loader = FXMLLoader(javaClass.getResource("/fxml/MainWindow.fxml"))
-        val root = loader.load<javafx.scene.Parent>()
-
-        val width = savedState?.width ?: DEFAULT_WIDTH
-        val height = savedState?.height ?: DEFAULT_HEIGHT
-        val scene = Scene(root, width, height)
+        val mainController =
+            MainController(
+                onLogout = {
+                    connectivityChecker.stop()
+                    viewModel.stopAutoSync()
+                    viewModel.shutdown()
+                    primaryStage.close()
+                }
+            )
+        val scene = mainController.createScene()
 
         themeManager.setScene(scene)
         savedState?.themeId?.let { themeManager.applyThemeByName(it) } ?: themeManager.applyThemeByName("DARK")
@@ -63,6 +67,8 @@ class JavaFxApp : Application(), KoinComponent {
         if (savedState != null) {
             primaryStage.x = savedState.x
             primaryStage.y = savedState.y
+            primaryStage.width = savedState.width
+            primaryStage.height = savedState.height
             primaryStage.isMaximized = savedState.maximized
         }
 
