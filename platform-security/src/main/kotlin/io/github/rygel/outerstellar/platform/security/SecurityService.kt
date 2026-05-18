@@ -323,9 +323,13 @@ class SecurityService(
         val tokenHash = hashToken(rawToken)
         val activeSession = repo.findByTokenHash(tokenHash)
         if (activeSession != null) {
+            val absoluteDeadline = activeSession.createdAt.plusSeconds(config.sessionAbsoluteTimeoutSeconds)
+            if (Instant.now().isAfter(absoluteDeadline)) {
+                repo.deleteByTokenHash(tokenHash)
+                return SessionLookup.Expired
+            }
             val user = userRepository.findById(activeSession.userId)
             if (user != null && user.enabled) {
-                // Extend session on activity
                 repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(config.sessionTimeoutSeconds))
                 activityUpdater?.record(user.id) ?: userRepository.updateLastActivity(user.id)
                 return SessionLookup.Active(user)

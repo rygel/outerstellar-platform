@@ -666,6 +666,74 @@ class SecurityServiceTest {
         verify { userRepository.deleteById(adminUser.id) }
     }
 
+    // ---- session absolute timeout ----
+
+    @Test
+    fun `lookupSession returns Expired when absolute timeout exceeded`() {
+        val sessionRepository: SessionRepository = mockk(relaxed = true)
+        val absoluteTimeoutService =
+            SecurityService(
+                userRepository = userRepository,
+                passwordEncoder = passwordEncoder,
+                auditRepository = auditRepository,
+                sessionRepository = sessionRepository,
+                config = SecurityConfig(sessionTimeoutSeconds = 3600, sessionAbsoluteTimeoutSeconds = 7200),
+                totpService = totpService,
+            )
+
+        val rawToken = "oss_abcdef1234567890abcdef1234567890abcdef1234567890"
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val tokenHash = digest.digest(rawToken.toByteArray()).joinToString("") { "%02x".format(it) }
+
+        val oldSession =
+            Session(
+                tokenHash = tokenHash,
+                userId = testUser.id,
+                createdAt = Instant.now().minusSeconds(7201),
+                expiresAt = Instant.now().plusSeconds(3600),
+            )
+
+        every { sessionRepository.findByTokenHash(tokenHash) } returns oldSession
+
+        val result = absoluteTimeoutService.lookupSession(rawToken)
+
+        assertTrue(result is SessionLookup.Expired)
+        verify { sessionRepository.deleteByTokenHash(tokenHash) }
+    }
+
+    @Test
+    fun `lookupSession returns Active when within absolute timeout`() {
+        val sessionRepository: SessionRepository = mockk(relaxed = true)
+        val absoluteTimeoutService =
+            SecurityService(
+                userRepository = userRepository,
+                passwordEncoder = passwordEncoder,
+                auditRepository = auditRepository,
+                sessionRepository = sessionRepository,
+                config = SecurityConfig(sessionTimeoutSeconds = 3600, sessionAbsoluteTimeoutSeconds = 7200),
+                totpService = totpService,
+            )
+
+        val rawToken = "oss_abcdef1234567890abcdef1234567890abcdef1234567890"
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val tokenHash = digest.digest(rawToken.toByteArray()).joinToString("") { "%02x".format(it) }
+
+        val activeSession =
+            Session(
+                tokenHash = tokenHash,
+                userId = testUser.id,
+                createdAt = Instant.now().minusSeconds(3600),
+                expiresAt = Instant.now().plusSeconds(3600),
+            )
+
+        every { sessionRepository.findByTokenHash(tokenHash) } returns activeSession
+        every { userRepository.findById(testUser.id) } returns testUser
+
+        val result = absoluteTimeoutService.lookupSession(rawToken)
+
+        assertTrue(result is SessionLookup.Active)
+    }
+
     // ---- updateNotificationPreferences ----
 
     @Test
