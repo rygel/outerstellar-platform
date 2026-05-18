@@ -239,11 +239,11 @@ class SyncViewModelProfileTest {
 
     @Test
     fun `deleteAccount clears session state on success`() {
-        every { syncService.deleteAccount() } returns Unit
+        every { syncService.deleteAccount("secret") } returns Unit
         every { syncService.logout() } returns Unit
         val vm = loginVm()
 
-        val (success, error) = awaitCallback { vm.deleteAccount(it) }
+        val (success, error) = awaitCallback { vm.deleteAccount("secret", it) }
 
         assertTrue(success)
         assertNull(error)
@@ -255,23 +255,23 @@ class SyncViewModelProfileTest {
 
     @Test
     fun `deleteAccount notifies observers`() {
-        every { syncService.deleteAccount() } returns Unit
+        every { syncService.deleteAccount("secret") } returns Unit
         every { syncService.logout() } returns Unit
         val vm = loginVm()
         val latch = CountDownLatch(1)
         vm.addObserver { latch.countDown() }
 
-        vm.deleteAccount { _, _ -> }
+        vm.deleteAccount("secret") { _, _ -> }
 
         assertTrue(latch.await(3, TimeUnit.SECONDS), "Observer not notified")
     }
 
     @Test
     fun `deleteAccount on SyncException propagates error and keeps session`() {
-        every { syncService.deleteAccount() } throws SyncException("Cannot delete only admin")
+        every { syncService.deleteAccount("secret") } throws SyncException("Cannot delete only admin")
         val vm = loginVm()
 
-        val (success, error) = awaitCallback { vm.deleteAccount(it) }
+        val (success, error) = awaitCallback { vm.deleteAccount("secret", it) }
 
         assertFalse(success)
         assertEquals("Cannot delete only admin", error)
@@ -280,10 +280,10 @@ class SyncViewModelProfileTest {
 
     @Test
     fun `deleteAccount on generic error keeps session`() {
-        every { syncService.deleteAccount() } throws RuntimeException("Unexpected failure")
+        every { syncService.deleteAccount("secret") } throws RuntimeException("Unexpected failure")
         val vm = loginVm()
 
-        val (success, error) = awaitCallback { vm.deleteAccount(it) }
+        val (success, error) = awaitCallback { vm.deleteAccount("secret", it) }
 
         assertFalse(success)
         assertEquals("Unexpected failure", error)

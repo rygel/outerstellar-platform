@@ -7,6 +7,7 @@ import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
+import org.http4k.core.RequestSource
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
@@ -53,17 +54,37 @@ class RateLimiterIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `different IPs are rate-limited independently`() {
-        val ip1 = "10.1.1.1"
-        val ip2 = "10.2.2.2"
+    fun `different client IPs behind trusted proxy are rate-limited independently`() {
+        val filter =
+            rateLimitFilter(
+                maxRequests = 2,
+                windowMs = 60_000L,
+                trustedProxies = listOf("10.0.0.1"),
+                pathPrefixes = listOf("/api/v1/auth/login"),
+            )
+        val handler = filter.then { Response(Status.OK) }
 
-        repeat(10) { loginRequest(ip1) }
-        assertEquals(Status.TOO_MANY_REQUESTS, loginRequest(ip1).status)
+        repeat(2) {
+            val req =
+                Request(POST, "/api/v1/auth/login")
+                    .source(RequestSource("10.0.0.1"))
+                    .header("X-Forwarded-For", "1.2.3.4")
+            assertEquals(Status.OK, handler(req).status)
+        }
 
-        val ip2Response = loginRequest(ip2)
+        val blocked =
+            Request(POST, "/api/v1/auth/login").source(RequestSource("10.0.0.1")).header("X-Forwarded-For", "1.2.3.4")
+        assertEquals(
+            Status.TOO_MANY_REQUESTS,
+            handler(blocked).status,
+            "3rd request from same client IP should be rate limited",
+        )
+
+        val differentIp =
+            Request(POST, "/api/v1/auth/login").source(RequestSource("10.0.0.1")).header("X-Forwarded-For", "5.6.7.8")
         assertTrue(
-            ip2Response.status != Status.TOO_MANY_REQUESTS,
-            "Different IP should not be rate limited, got: ${ip2Response.status}",
+            handler(differentIp).status != Status.TOO_MANY_REQUESTS,
+            "Different client IP behind trusted proxy should not be rate limited",
         )
     }
 
@@ -174,6 +195,28 @@ class RateLimiterIntegrationTest : WebTest() {
             response.status != Status.TOO_MANY_REQUESTS,
             "Different usernames should have separate account buckets (10 requests from one IP, all within per-IP limit), got: ${response.status}",
         )
+    }
+
+    @Test
+    fun `rate limiter ignores X-Forwarded-For when no trusted proxies configured`() {
+        val filter = rateLimitFilter(maxRequests = 2, windowMs = 60_000L, trustedProxies = emptyList())
+        val handler = filter.then { Response(Status.OK) }
+
+        for (i in 1..2) {
+            val req =
+                Request(POST, "/api/v1/auth/login")
+                    .header("X-Forwarded-For", "1.2.3.$i")
+                    .header("content-type", "application/json")
+                    .body("""{"username":"user$i"}""")
+            assertEquals(Status.OK, handler(req).status)
+        }
+
+        val spoofedReq =
+            Request(POST, "/api/v1/auth/login")
+                .header("X-Forwarded-For", "9.9.9.9")
+                .header("content-type", "application/json")
+                .body("""{"username":"spoofed"}""")
+        assertEquals(Status.TOO_MANY_REQUESTS, handler(spoofedReq).status)
     }
 
     @Test

@@ -167,9 +167,9 @@ class FxSyncViewModelTest {
 
     @Test
     fun `deleteAccount delegates to engine`() {
-        every { engine.deleteAccount() } returns Result.success(Unit)
-        viewModel.deleteAccount().run()
-        verify { engine.deleteAccount() }
+        every { engine.deleteAccount("secret") } returns Result.success(Unit)
+        viewModel.deleteAccount("secret").run()
+        verify { engine.deleteAccount("secret") }
     }
 
     @Test

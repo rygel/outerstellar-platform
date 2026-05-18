@@ -1,6 +1,10 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.service.MessageService
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -10,6 +14,8 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.body.form
+import org.http4k.core.cookie.Cookie
+import org.http4k.core.cookie.cookie
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -25,10 +31,31 @@ import org.junit.jupiter.api.BeforeEach
 class MessageRestoreIntegrationTest : WebTest() {
 
     private lateinit var messageService: MessageService
+    private lateinit var sessionCookie: Cookie
+    private lateinit var sec: SecurityService
 
     @BeforeEach
     fun setupTest() {
         cleanup()
+        sec =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        val user =
+            User(
+                id = UUID.randomUUID(),
+                username = "restoretest",
+                email = "restore@test.com",
+                passwordHash = encoder.encode("testpass1"),
+                role = UserRole.USER,
+            )
+        userRepository.save(user)
+        sessionCookie = Cookie(WebContext.SESSION_COOKIE, sec.createSession(user.id))
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()
@@ -37,7 +64,7 @@ class MessageRestoreIntegrationTest : WebTest() {
 
     @AfterEach fun teardown() = cleanup()
 
-    private fun buildTestApp() = buildApp()
+    private fun buildTestApp() = buildApp(securityService = sec)
 
     /** Creates a server message and returns its syncId. */
     private fun createAndSoftDelete(author: String, content: String): String {
@@ -52,7 +79,7 @@ class MessageRestoreIntegrationTest : WebTest() {
         val syncId = createAndSoftDelete("Restore Author", "Restore Content")
         val app = buildTestApp()
 
-        val response = app(Request(POST, "/messages/restore/$syncId"))
+        val response = app(Request(POST, "/messages/restore/$syncId").cookie(sessionCookie))
 
         assertEquals(Status.FOUND, response.status)
         assertTrue(response.header("location")?.contains("/messages/trash") == true)
@@ -64,12 +91,12 @@ class MessageRestoreIntegrationTest : WebTest() {
         val app = buildTestApp()
 
         // Verify it's in trash before restore
-        val trashBefore = app(Request(GET, "/messages/trash"))
+        val trashBefore = app(Request(GET, "/messages/trash").cookie(sessionCookie))
         assertTrue(trashBefore.bodyString().contains("Ghost Author"), "Should be in trash before restore")
 
-        app(Request(POST, "/messages/restore/$syncId"))
+        app(Request(POST, "/messages/restore/$syncId").cookie(sessionCookie))
 
-        val trashAfter = app(Request(GET, "/messages/trash"))
+        val trashAfter = app(Request(GET, "/messages/trash").cookie(sessionCookie))
         assertFalse(trashAfter.bodyString().contains("Ghost Author"), "Should be gone from trash after restore")
     }
 
@@ -79,19 +106,19 @@ class MessageRestoreIntegrationTest : WebTest() {
         val app = buildTestApp()
 
         // Confirm it's absent from home before restore
-        val homeBefore = app(Request(GET, "/"))
+        val homeBefore = app(Request(GET, "/").cookie(sessionCookie))
         assertFalse(homeBefore.bodyString().contains("Risen Author"), "Should not be on home page while deleted")
 
-        app(Request(POST, "/messages/restore/$syncId"))
+        app(Request(POST, "/messages/restore/$syncId").cookie(sessionCookie))
 
-        val homeAfter = app(Request(GET, "/"))
+        val homeAfter = app(Request(GET, "/").cookie(sessionCookie))
         assertTrue(homeAfter.bodyString().contains("Risen Author"), "Should reappear on home page after restore")
     }
 
     @Test
     fun `restoring unknown syncId is graceful`() {
         val app = buildTestApp()
-        val response = app(Request(POST, "/messages/restore/non-existent-sync-id"))
+        val response = app(Request(POST, "/messages/restore/non-existent-sync-id").cookie(sessionCookie))
         // Should redirect, not throw a 500
         assertEquals(Status.FOUND, response.status)
     }
@@ -101,7 +128,7 @@ class MessageRestoreIntegrationTest : WebTest() {
         val app = buildTestApp()
 
         // Create via form
-        app(Request(POST, "/messages").form("author", "FormUser").form("content", "FormContent"))
+        app(Request(POST, "/messages").form("author", "FormUser").form("content", "FormContent").cookie(sessionCookie))
 
         // Get syncId from repo
         val msg = messageRepository.listMessages(limit = 1, includeDeleted = false).first()
@@ -112,7 +139,7 @@ class MessageRestoreIntegrationTest : WebTest() {
         assertFalse(messageRepository.listMessages(limit = 10, includeDeleted = false).any { it.syncId == syncId })
 
         // Restore via HTTP
-        val restoreResponse = app(Request(POST, "/messages/restore/$syncId"))
+        val restoreResponse = app(Request(POST, "/messages/restore/$syncId").cookie(sessionCookie))
         assertEquals(Status.FOUND, restoreResponse.status)
 
         // Confirm restored

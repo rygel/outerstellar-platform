@@ -85,14 +85,8 @@ fun rateLimitFilter(
                         request.header("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
                             ?: request.header("X-Real-IP")
                             ?: sourceAddress
-                    } else if (sourceAddress != null) {
-                        sourceAddress
-                    } else if (trustedProxies.isNotEmpty()) {
-                        "unknown"
                     } else {
-                        request.header("X-Forwarded-For")?.split(",")?.firstOrNull()?.trim()
-                            ?: request.header("X-Real-IP")
-                            ?: "unknown"
+                        sourceAddress ?: "unknown"
                     }
 
                 val override = SENSITIVE_PATHS.entries.find { path.startsWith(it.key) }?.value

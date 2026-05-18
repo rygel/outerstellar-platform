@@ -375,9 +375,16 @@ class SecurityServiceTest {
     }
 
     @Test
-    fun `setUserEnabled updates target user`() {
+    fun `setUserEnabled rejects non-admin caller`() {
         every { userRepository.findById(testUser.id) } returns testUser
+
+        assertThrows<InsufficientPermissionException> { service.setUserEnabled(testUser.id, adminUser.id, false) }
+    }
+
+    @Test
+    fun `setUserEnabled updates target user`() {
         every { userRepository.findById(adminUser.id) } returns adminUser
+        every { userRepository.findById(testUser.id) } returns testUser
 
         service.setUserEnabled(adminUser.id, testUser.id, false)
 
@@ -392,9 +399,16 @@ class SecurityServiceTest {
     }
 
     @Test
-    fun `setUserRole updates target user role`() {
+    fun `setUserRole rejects non-admin caller`() {
         every { userRepository.findById(testUser.id) } returns testUser
+
+        assertThrows<InsufficientPermissionException> { service.setUserRole(testUser.id, adminUser.id, UserRole.ADMIN) }
+    }
+
+    @Test
+    fun `setUserRole updates target user role`() {
         every { userRepository.findById(adminUser.id) } returns adminUser
+        every { userRepository.findById(testUser.id) } returns testUser
 
         service.setUserRole(adminUser.id, testUser.id, UserRole.ADMIN)
 

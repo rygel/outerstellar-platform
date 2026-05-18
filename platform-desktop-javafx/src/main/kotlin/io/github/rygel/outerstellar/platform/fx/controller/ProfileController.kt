@@ -9,6 +9,7 @@ import javafx.scene.control.Button
 import javafx.scene.control.ButtonType
 import javafx.scene.control.CheckBox
 import javafx.scene.control.Label
+import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
 import org.koin.core.component.KoinComponent
@@ -99,15 +100,18 @@ class ProfileController : KoinComponent {
     private fun createDangerSection(): VBox {
         val deleteBtn = Button("Delete Account").apply { style = "-fx-text-fill: red" }
         deleteBtn.setOnAction {
-            val alert = Alert(Alert.AlertType.CONFIRMATION)
-            alert.title = "Delete Account"
-            alert.headerText = null
-            alert.contentText = "Are you sure you want to delete your account? This cannot be undone."
-            alert.buttonTypes.setAll(ButtonType.YES, ButtonType.NO)
-            val result = alert.showAndWait()
-            if (result.isPresent && result.get() == ButtonType.YES) {
+            val passwordField = PasswordField()
+            val passwordDialog = Alert(Alert.AlertType.CONFIRMATION)
+            passwordDialog.title = "Confirm Deletion"
+            passwordDialog.headerText = "Enter your current password to confirm account deletion."
+            passwordDialog.dialogPane.content = passwordField
+            passwordDialog.buttonTypes.setAll(ButtonType.OK, ButtonType.CANCEL)
+            val dialogResult = passwordDialog.showAndWait()
+            if (dialogResult.isPresent && dialogResult.get() == ButtonType.OK) {
+                val password = passwordField.text
+                if (password.isBlank()) return@setOnAction
                 viewModel
-                    .deleteAccount()
+                    .deleteAccount(password)
                     .also { task ->
                         task.setOnSucceeded {
                             task.value.onSuccess {}.onFailure { logger.warn("Delete account failed: {}", it.message) }

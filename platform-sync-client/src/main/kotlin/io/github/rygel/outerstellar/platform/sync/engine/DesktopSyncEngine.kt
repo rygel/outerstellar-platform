@@ -255,13 +255,13 @@ class DesktopSyncEngine(
             Result.success(Unit)
         }
 
-    override fun deleteAccount(): Result<Unit> =
+    override fun deleteAccount(currentPassword: String): Result<Unit> =
         runGuardedResult(
             "deleteAccount",
             onError = { e -> notifier?.notifyFailure("Account deletion failed: ${e.message}") },
         ) {
             val username = state.userName
-            syncService.deleteAccount()
+            syncService.deleteAccount(currentPassword)
             stopAutoSync()
             syncService.logout()
             analytics.track(username, "account_deleted")

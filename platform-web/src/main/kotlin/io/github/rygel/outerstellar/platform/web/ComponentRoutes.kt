@@ -68,11 +68,15 @@ class ComponentRoutes(private val pageFactory: WebPageFactory, private val rende
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
+                    val ctx = request.webContext
+                    if (ctx.user == null) {
+                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    }
                     val query = queryLens(request)
                     val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
                     val offset = offsetLens(request).coerceAtLeast(0)
                     val year = yearLens(request)
-                    renderer.render(pageFactory.buildMessageList(request.webContext, query, limit, offset, year))
+                    renderer.render(pageFactory.buildMessageList(ctx, query, limit, offset, year))
                 },
         )
 }

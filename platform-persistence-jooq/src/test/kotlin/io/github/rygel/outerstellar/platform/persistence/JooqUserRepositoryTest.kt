@@ -186,4 +186,38 @@ class JooqUserRepositoryTest : JooqTest() {
         assertTrue(partial.emailNotificationsEnabled)
         assertFalse(partial.pushNotificationsEnabled)
     }
+
+    @Test
+    fun `find methods hydrate lockout and TOTP fields`() {
+        val u = user("locktotp")
+        repo.save(u)
+        val lockedUntil = Instant.parse("2030-01-02T03:04:05Z")
+        dsl.execute(
+            """
+            UPDATE plt_users
+            SET failed_login_attempts = 4,
+                locked_until = ?,
+                totp_secret = ?,
+                totp_enabled = TRUE,
+                totp_backup_codes = ?
+            WHERE id = ?
+            """
+                .trimIndent(),
+            java.sql.Timestamp.from(lockedUntil),
+            "secret",
+            """["code1","code2"]""",
+            u.id,
+        )
+
+        val byId = repo.findById(u.id)!!
+        val byUsername = repo.findByUsername("locktotp")!!
+
+        listOf(byId, byUsername).forEach { found ->
+            assertEquals(4, found.failedLoginAttempts)
+            assertEquals(lockedUntil, found.lockedUntil)
+            assertEquals("secret", found.totpSecret)
+            assertTrue(found.totpEnabled)
+            assertEquals("""["code1","code2"]""", found.totpBackupCodes)
+        }
+    }
 }

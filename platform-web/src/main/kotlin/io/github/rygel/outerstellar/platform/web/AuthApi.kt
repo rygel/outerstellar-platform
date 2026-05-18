@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.ChangePasswordRequest
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyRequest
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
+import io.github.rygel.outerstellar.platform.model.DeleteAccountRequest
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.PasswordResetConfirm
@@ -31,6 +32,7 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
+import org.http4k.lens.LensFailure
 import org.http4k.lens.Path
 import org.http4k.lens.long
 
@@ -44,6 +46,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
     private val createApiKeyLens = Body.auto<CreateApiKeyRequest>().toLens()
     private val createApiKeyResponseLens = Body.auto<CreateApiKeyResponse>().toLens()
     private val apiKeySummaryListLens = Body.auto<List<ApiKeySummary>>().toLens()
+    private val deleteAccountLens = Body.auto<DeleteAccountRequest>().toLens()
     private val apiKeyIdPath = Path.long().of("id")
     private val updateProfileLens = Body.auto<UpdateProfileRequest>().toLens()
     private val userProfileResponseLens = Body.auto<UserProfileResponse>().toLens()
@@ -166,20 +169,39 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     securityService.updateNotificationPreferences(user.id, body.emailEnabled, body.pushEnabled)
                     Response(Status.OK).body("Preferences updated")
                 },
+            "/api/v1/auth/logout" meta
+                {
+                    summary = "Revoke the current bearer session"
+                    returning(Status.NO_CONTENT to "Logged out")
+                } bindContract
+                POST to
+                { request ->
+                    request.header("Authorization")?.removePrefix("Bearer ")?.let { token ->
+                        securityService.deleteSession(token)
+                    }
+                    Response(Status.NO_CONTENT)
+                },
             "/api/v1/auth/account" meta
                 {
                     summary = "Delete own account"
+                    receiving(deleteAccountLens)
                     returning(Status.OK to "Account deleted")
+                    returning(Status.BAD_REQUEST to "Current password is required")
                     returning(Status.FORBIDDEN to "Cannot delete the only admin")
                 } bindContract
                 DELETE to
                 { request ->
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
-                        securityService.deleteAccount(user.id)
+                        val body = deleteAccountLens(request)
+                        securityService.deleteAccount(user.id, body.currentPassword)
                         Response(Status.OK).body("Account deleted")
                     } catch (e: InsufficientPermissionException) {
                         Response(Status.FORBIDDEN).body(e.message ?: "Cannot delete the only admin")
+                    } catch (e: WeakPasswordException) {
+                        Response(Status.BAD_REQUEST).body(e.message ?: "Current password is incorrect")
+                    } catch (_: LensFailure) {
+                        Response(Status.BAD_REQUEST).body("Current password is required")
                     }
                 },
         )
