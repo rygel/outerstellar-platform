@@ -200,7 +200,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                         Response(Status.FORBIDDEN).body(e.message ?: "Cannot delete the only admin")
                     } catch (e: WeakPasswordException) {
                         Response(Status.BAD_REQUEST).body(e.message ?: "Current password is incorrect")
-                    } catch (e: LensFailure) {
+                    } catch (_: LensFailure) {
                         Response(Status.BAD_REQUEST).body("Current password is required")
                     }
                 },
