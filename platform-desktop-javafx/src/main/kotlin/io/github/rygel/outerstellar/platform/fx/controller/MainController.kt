@@ -208,5 +208,7 @@ class MainController(private val onLogout: () -> Unit) : KoinComponent {
         }
     }
 
-    private fun checkForUpdate() {}
+    private fun checkForUpdate() {
+        logger.debug("Update check not yet implemented")
+    }
 }

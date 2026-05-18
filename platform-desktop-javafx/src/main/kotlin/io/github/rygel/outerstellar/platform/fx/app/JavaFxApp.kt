@@ -101,8 +101,8 @@ class JavaFxApp : Application(), KoinComponent {
             primaryStage.height = state.height
             primaryStage.isMaximized = state.maximized
         }
-        primaryStage.minWidth = 1000.0
-        primaryStage.minHeight = 750.0
+        primaryStage.minWidth = MIN_WINDOW_WIDTH
+        primaryStage.minHeight = MIN_WINDOW_HEIGHT
 
         primaryStage.onCloseRequest = {
             viewModel.stopAutoSync()
@@ -155,6 +155,8 @@ class JavaFxApp : Application(), KoinComponent {
     companion object {
         private const val DEFAULT_WIDTH = 1200.0
         private const val DEFAULT_HEIGHT = 800.0
+        private const val MIN_WINDOW_WIDTH = 1000.0
+        private const val MIN_WINDOW_HEIGHT = 750.0
 
         @JvmStatic
         fun main(args: Array<String>) {

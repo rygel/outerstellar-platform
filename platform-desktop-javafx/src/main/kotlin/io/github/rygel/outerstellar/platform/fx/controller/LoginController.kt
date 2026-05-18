@@ -27,14 +27,22 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
     private val toggleLink = Hyperlink("Don't have an account? Register")
     private var isRegisterMode = false
 
+    private companion object {
+        const val VBOX_SPACING = 15.0
+        const val FORM_PADDING = 40.0
+        const val FIELD_PREF_WIDTH = 250.0
+        const val LOGIN_SCENE_WIDTH = 400.0
+        const val LOGIN_SCENE_HEIGHT = 420.0
+    }
+
     fun createScene(): Scene {
         confirmPassField.isVisible = false
         confirmPassField.isManaged = false
 
         val root =
-            VBox(15.0).apply {
+            VBox(VBOX_SPACING).apply {
                 alignment = Pos.CENTER
-                padding = Insets(40.0)
+                padding = Insets(FORM_PADDING)
                 children.addAll(
                     Label("Outerstellar").apply { style = "-fx-font-size: 24px; -fx-font-weight: bold;" },
                     Label("Sign in to your account").apply {
@@ -43,16 +51,16 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
                     },
                     usernameField.apply {
                         promptText = "Username"
-                        prefWidth = 250.0
+                        prefWidth = FIELD_PREF_WIDTH
                     },
                     passwordField.apply {
                         promptText = "Password"
-                        prefWidth = 250.0
+                        prefWidth = FIELD_PREF_WIDTH
                         onAction = { onAction() }
                     },
                     confirmPassField.apply {
                         promptText = "Confirm Password"
-                        prefWidth = 250.0
+                        prefWidth = FIELD_PREF_WIDTH
                         onAction = { onAction() }
                     },
                     errorLabel.apply {
@@ -60,18 +68,18 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
                         isVisible = false
                     },
                     actionButton.apply {
-                        prefWidth = 250.0
+                        prefWidth = FIELD_PREF_WIDTH
                         setOnAction { onAction() }
                     },
                     cancelButton.apply {
-                        prefWidth = 250.0
+                        prefWidth = FIELD_PREF_WIDTH
                         isVisible = onCancel != null
                         setOnAction { onCancel?.invoke() }
                     },
                     toggleLink.apply { setOnAction { toggleMode() } },
                 )
             }
-        return Scene(root, 400.0, 420.0)
+        return Scene(root, LOGIN_SCENE_WIDTH, LOGIN_SCENE_HEIGHT)
     }
 
     private fun toggleMode() {

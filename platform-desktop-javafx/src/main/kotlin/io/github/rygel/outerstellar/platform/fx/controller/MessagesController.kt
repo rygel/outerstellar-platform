@@ -26,6 +26,7 @@ class MessagesController : KoinComponent {
 
     private companion object {
         const val MESSAGE_PREVIEW_LENGTH = 80
+        const val CONTENT_AREA_PREF_HEIGHT = 80.0
     }
 
     private val logger = LoggerFactory.getLogger(MessagesController::class.java)
@@ -64,7 +65,7 @@ class MessagesController : KoinComponent {
                             alignment = Pos.CENTER_LEFT
                         },
                         contentArea.apply {
-                            prefHeight = 80.0
+                            prefHeight = CONTENT_AREA_PREF_HEIGHT
                             isWrapText = true
                         },
                         HBox(10.0).apply {
