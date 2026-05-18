@@ -21,6 +21,15 @@ class ProfileController : KoinComponent {
     private val viewModel: FxSyncViewModel by inject()
 
     fun createView(): Parent {
+        viewModel.loadProfile().runInBackground()
+
+        return VBox(15.0).apply {
+            padding = Insets(15.0)
+            children.addAll(createProfileSection(), createNotificationSection(), createDangerSection())
+        }
+    }
+
+    private fun createProfileSection(): VBox {
         val emailField = TextField().apply { textProperty().bindBidirectional(viewModel.userEmail) }
         val usernameField = TextField().apply { textProperty().bindBidirectional(viewModel.userName) }
         val avatarUrlField = TextField().apply { text = viewModel.userAvatarUrl.value ?: "" }
@@ -41,20 +50,21 @@ class ProfileController : KoinComponent {
                 .runInBackground()
         }
 
-        val profileSection =
-            VBox(5.0).apply {
-                children.addAll(
-                    Label("Profile Information").apply { style = "-fx-font-weight: bold" },
-                    Label("Email:"),
-                    emailField,
-                    Label("Username:"),
-                    usernameField,
-                    Label("Avatar URL:"),
-                    avatarUrlField,
-                    saveProfileBtn,
-                )
-            }
+        return VBox(5.0).apply {
+            children.addAll(
+                Label("Profile Information").apply { style = "-fx-font-weight: bold" },
+                Label("Email:"),
+                emailField,
+                Label("Username:"),
+                usernameField,
+                Label("Avatar URL:"),
+                avatarUrlField,
+                saveProfileBtn,
+            )
+        }
+    }
 
+    private fun createNotificationSection(): VBox {
         val emailNotifCheckbox =
             CheckBox("Email notifications").apply {
                 selectedProperty().bindBidirectional(viewModel.emailNotificationsEnabled)
@@ -76,16 +86,17 @@ class ProfileController : KoinComponent {
                 .runInBackground()
         }
 
-        val notificationSection =
-            VBox(5.0).apply {
-                children.addAll(
-                    Label("Notification Preferences").apply { style = "-fx-font-weight: bold" },
-                    emailNotifCheckbox,
-                    pushNotifCheckbox,
-                    savePrefsBtn,
-                )
-            }
+        return VBox(5.0).apply {
+            children.addAll(
+                Label("Notification Preferences").apply { style = "-fx-font-weight: bold" },
+                emailNotifCheckbox,
+                pushNotifCheckbox,
+                savePrefsBtn,
+            )
+        }
+    }
 
+    private fun createDangerSection(): VBox {
         val deleteBtn = Button("Delete Account").apply { style = "-fx-text-fill: red" }
         deleteBtn.setOnAction {
             val alert = Alert(Alert.AlertType.CONFIRMATION)
@@ -106,21 +117,13 @@ class ProfileController : KoinComponent {
             }
         }
 
-        val dangerSection =
-            VBox(5.0).apply {
-                style = "-fx-border-color: red; -fx-border-width: 2; -fx-border-radius: 5; -fx-padding: 10"
-                children.addAll(
-                    Label("Danger Zone").apply { style = "-fx-font-weight: bold" },
-                    Label("This action cannot be undone."),
-                    deleteBtn,
-                )
-            }
-
-        viewModel.loadProfile().runInBackground()
-
-        return VBox(15.0).apply {
-            padding = Insets(15.0)
-            children.addAll(profileSection, notificationSection, dangerSection)
+        return VBox(5.0).apply {
+            style = "-fx-border-color: red; -fx-border-width: 2; -fx-border-radius: 5; -fx-padding: 10"
+            children.addAll(
+                Label("Danger Zone").apply { style = "-fx-font-weight: bold" },
+                Label("This action cannot be undone."),
+                deleteBtn,
+            )
         }
     }
 }
