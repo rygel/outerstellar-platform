@@ -11,6 +11,7 @@ import javafx.application.Platform
 import javafx.beans.binding.Bindings
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
+import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.control.Alert
 import javafx.scene.control.Button
@@ -31,6 +32,12 @@ class MainController : KoinComponent {
     private val syncService: SyncService by inject()
     private val themeManager: FxThemeManager by inject()
     private val viewModel: FxSyncViewModel by inject()
+    private val usersController = UsersController()
+    private var usersView: Parent? = null
+    private val profileController = ProfileController()
+    private var profileView: Parent? = null
+    private val notificationsController = NotificationsController()
+    private var notificationsView: Parent? = null
 
     @FXML private lateinit var sidebar: VBox
     @FXML private lateinit var centerPane: StackPane
@@ -69,17 +76,17 @@ class MainController : KoinComponent {
 
     @FXML
     fun onNavUsers() {
-        navigateTo("UsersView.fxml")
+        showView("USERS")
     }
 
     @FXML
     fun onNavNotifications() {
-        navigateTo("NotificationsView.fxml")
+        showView("NOTIFICATIONS")
     }
 
     @FXML
     fun onNavProfile() {
-        navigateTo("ProfileView.fxml")
+        showView("PROFILE")
     }
 
     @FXML
@@ -173,6 +180,31 @@ class MainController : KoinComponent {
         }
     }
 
+    private fun showView(viewName: String) {
+        try {
+            val view =
+                when (viewName) {
+                    "USERS" -> {
+                        if (usersView == null) {
+                            usersView = usersController.createView()
+                        }
+                        usersView!!
+                    }
+                    "PROFILE" -> {
+                        if (profileView == null) {
+                            profileView = profileController.createView()
+                        }
+                        profileView!!
+                    }
+                    else -> throw IllegalArgumentException("Unknown view: $viewName")
+                }
+            centerPane.children.setAll(view)
+        } catch (e: Exception) {
+            logger.warn("Show view {} failed: {}", viewName, e.message)
+            centerPane.children.clear()
+        }
+    }
+
     private fun updateAuthUi() {
         val loggedIn = syncService.userRole != null
         navLoginBtn.isVisible = !loggedIn
@@ -200,7 +232,11 @@ class MainController : KoinComponent {
     }
 
     private fun showSettingsDialog() {
-        showDialog("SettingsDialog.fxml", "Settings")
+        try {
+            SettingsController().showAndWait()
+        } catch (e: Exception) {
+            logger.warn("Failed to open settings dialog: {}", e.message)
+        }
     }
 
     private fun showCreateContactDialog() {
