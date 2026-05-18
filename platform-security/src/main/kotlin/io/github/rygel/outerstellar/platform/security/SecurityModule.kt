@@ -22,6 +22,8 @@ val securityModule
                     sessionTimeoutSeconds = get<AppConfig>().sessionTimeoutMinutes.toLong() * 60,
                     maxFailedLoginAttempts = get<AppConfig>().maxFailedLoginAttempts,
                     lockoutDurationSeconds = get<AppConfig>().lockoutDurationSeconds,
+                    sessionAbsoluteTimeoutSeconds = get<AppConfig>().sessionAbsoluteTimeoutMinutes.toLong() * 60,
+                    registrationEnabled = get<AppConfig>().registrationEnabled,
                 ),
                 getOrNull(),
                 get(),

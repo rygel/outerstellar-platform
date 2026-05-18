@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.security
 
 import io.github.rygel.outerstellar.platform.model.ApiKey
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
+import io.github.rygel.outerstellar.platform.model.RegistrationDisabledException
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
@@ -244,11 +245,26 @@ class SecurityServiceTest {
     // ---- register ----
 
     @Test
+    fun `register throws RegistrationDisabledException when registration is disabled`() {
+        val disabledService =
+            SecurityService(
+                userRepository = userRepository,
+                passwordEncoder = passwordEncoder,
+                auditRepository = auditRepository,
+                apiKeyRepository = apiKeyRepository,
+                totpService = totpService,
+                config = SecurityConfig(registrationEnabled = false),
+            )
+
+        assertThrows<RegistrationDisabledException> { disabledService.register("new@test.com", "ValidP@ss1") }
+    }
+
+    @Test
     fun `register throws on duplicate username`() {
         every { userRepository.findByUsername("existing") } returns testUser
 
         assertThrows<UsernameAlreadyExistsException> {
-            service.register("existing", java.util.UUID.randomUUID().toString())
+            service.register("existing", "ValidP@ss1" + java.util.UUID.randomUUID().toString())
         }
     }
 
@@ -269,9 +285,9 @@ class SecurityServiceTest {
     @Test
     fun `register trims whitespace before validation`() {
         every { userRepository.findByUsername("newuser") } returns null
-        every { passwordEncoder.encode("validpassword") } returns "encoded_hash"
+        every { passwordEncoder.encode("Validp@ss1") } returns "encoded_hash"
 
-        val result = service.register("newuser", "  validpassword  ")
+        val result = service.register("newuser", "  Validp@ss1  ")
 
         assertEquals("newuser", result.username)
         assertEquals(UserRole.USER, result.role)
@@ -283,9 +299,9 @@ class SecurityServiceTest {
     @Test
     fun `register creates user with encoded password`() {
         every { userRepository.findByUsername("newuser") } returns null
-        every { passwordEncoder.encode("validpassword") } returns "encoded_hash"
+        every { passwordEncoder.encode("Validp@ss1") } returns "encoded_hash"
 
-        val result = service.register("newuser", "validpassword")
+        val result = service.register("newuser", "Validp@ss1")
 
         assertEquals("newuser", result.username)
         assertEquals(UserRole.USER, result.role)
@@ -302,16 +318,16 @@ class SecurityServiceTest {
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("wrongcurrent", testUser.passwordHash) } returns false
 
-        assertThrows<WeakPasswordException> { service.changePassword(testUser.id, "wrongcurrent", "newpassword1") }
+        assertThrows<WeakPasswordException> { service.changePassword(testUser.id, "wrongcurrent", "Newp@ss1") }
     }
 
     @Test
     fun `changePassword updates hash on success`() {
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
-        every { passwordEncoder.encode("newpassword1") } returns "new_hash"
+        every { passwordEncoder.encode("Newp@ss1") } returns "new_hash"
 
-        service.changePassword(testUser.id, "currentpass", "newpassword1")
+        service.changePassword(testUser.id, "currentpass", "Newp@ss1")
 
         val userSlot = slot<User>()
         verify { userRepository.save(capture(userSlot)) }
@@ -331,9 +347,9 @@ class SecurityServiceTest {
             )
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
-        every { passwordEncoder.encode("newpassword1") } returns "new_hash"
+        every { passwordEncoder.encode("Newp@ss1") } returns "new_hash"
 
-        serviceWithSessions.changePassword(testUser.id, "currentpass", "newpassword1")
+        serviceWithSessions.changePassword(testUser.id, "currentpass", "Newp@ss1")
 
         verify { sessionRepository.deleteByUserId(testUser.id) }
     }
@@ -342,9 +358,9 @@ class SecurityServiceTest {
     fun `changePassword works without session repository`() {
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
-        every { passwordEncoder.encode("newpassword1") } returns "new_hash"
+        every { passwordEncoder.encode("Newp@ss1") } returns "new_hash"
 
-        service.changePassword(testUser.id, "currentpass", "newpassword1")
+        service.changePassword(testUser.id, "currentpass", "Newp@ss1")
 
         val userSlot = slot<User>()
         verify { userRepository.save(capture(userSlot)) }

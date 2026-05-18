@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
+import io.github.rygel.outerstellar.platform.model.RegistrationDisabledException
 import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.UserRole
@@ -109,6 +110,9 @@ class SecurityService(
     }
 
     fun register(username: String, password: String): User {
+        if (!config.registrationEnabled) {
+            throw RegistrationDisabledException()
+        }
         require(username.isNotBlank()) { "Username is required" }
         val normalized = password.trim()
         validatePassword(normalized)?.let { throw WeakPasswordException(it) }
