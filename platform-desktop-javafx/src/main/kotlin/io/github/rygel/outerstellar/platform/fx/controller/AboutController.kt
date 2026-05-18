@@ -6,23 +6,20 @@ import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class AboutController {
+object AboutController : KoinComponent {
+    private val appConfig: FxAppConfig by inject()
 
-    companion object : KoinComponent {
-        private val appConfig: FxAppConfig by inject()
-
-        fun show(owner: Stage) {
-            val alert = Alert(Alert.AlertType.INFORMATION)
-            alert.initOwner(owner)
-            alert.title = "About"
-            alert.headerText = "Outerstellar"
-            alert.contentText = buildString {
-                appendLine("Version: ${appConfig.version}")
-                appendLine()
-                appendLine("Licensed under the MIT License.")
-                append("Built with Kotlin, JavaFX, and AtlantaFX.")
-            }
-            alert.showAndWait()
+    fun show(owner: Stage) {
+        val alert = Alert(Alert.AlertType.INFORMATION)
+        alert.initOwner(owner)
+        alert.title = "About"
+        alert.headerText = "Outerstellar"
+        alert.contentText = buildString {
+            appendLine("Version: ${appConfig.version}")
+            appendLine()
+            appendLine("Licensed under the MIT License.")
+            append("Built with Kotlin, JavaFX, and AtlantaFX.")
         }
+        alert.showAndWait()
     }
 }
