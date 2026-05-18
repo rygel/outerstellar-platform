@@ -359,87 +359,37 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Fixed in PR #292 — global search box in topbar, type filters on search page.
   — `platform-web/src/main/jte/.../layouts/TopbarLayout.kte`, `platform-web/src/main/jte/.../SearchPage.kte`
 
-- [ ] **Complete TOTP setup UX**
-  TOTP setup uses hardcoded English labels/errors, raw text responses, and lacks backup-code regeneration/copy/download affordances. Localize the flow, return styled fragments/status codes, and improve backup-code management.
-  — `platform-web/.../web/TOTPRoutes.kt`, `platform-web/src/main/jte/.../TotpSetupFragment.kte`, `platform-web/src/main/jte/.../TotpChallengeForm.kte`
-
-- [x] ~~**Hide or finish Sign in with Apple**~~
-  Fixed in PR #286 — Apple OAuth button hidden when provider not configured.
-  — `platform-security/.../security/AppleOAuthProvider.kt`, `platform-web/.../web/OAuthRoutes.kt`
-
-- [x] ~~**Improve accessibility labels for icon-only controls**~~
-  Fixed in PR #287 — aria-labels added to 14 icon-only controls across 7 templates.
-  — `platform-web/src/main/jte/.../layouts/TopbarLayout.kte`, `platform-web/src/main/jte/.../components/NotificationBell.kte`, `platform-web/src/main/jte/.../components/MessageList.kte`, `platform-web/src/main/jte/.../ContactsPage.kte`
-
-### Performance
-
-- [x] ~~**Apply the web filter chain only once**~~
-  Fixed in PR #277 — removed inner `buildFilterChain()` call; filters applied once to all routes.
-  — `platform-web/.../App.kt`
-
-- [x] ~~**Restrict dynamic ETag hashing**~~
-  Fixed — `etagCachingFilter` now only hashes cacheable content types (CSS, JS, fonts, images). Dynamic HTML is never buffered/hashed.
-  — `platform-web/.../web/Filters.kt`
-
-- [x] ~~**Resolve session state once per request**~~
-  Fixed — `WebContext` now caches a single `sessionLookup` lazy value; both `user` and `sessionExpired` derive from it.
-  — `platform-web/.../web/WebContext.kt`
-
-- [x] ~~**Batch sync push upserts**~~
-  Fixed in PR #280 — added batchUpsertSyncedMessages()/batchUpsertSyncedContacts() with jOOQ batch + JDBI INSERT ON CONFLICT.
-
-- [x] ~~**Bound sync pull and dirty push batches**~~
-  Fixed in PR #280 — limit param (default 500) on findChangesSince/listDirty; hasMore field on SyncPullResponse; client loops on hasMore.
-
-- [x] ~~**Stream or page CSV exports**~~
-  Fixed in PR #280 — users 100/page, audit 500/page capped 10K, messages/contacts 500/page.
-
-- [x] ~~**Reduce paired list/count pagination queries**~~
-  Fixed in PR #280 — COUNT(*) OVER() single-query pagination via PagedQueryResult.
-
-- [x] ~~**Push search ranking and limits closer to providers**~~
-  Fixed in PR #280 — ceil(limit / providers.size) per provider, skip count query for search.
-
-- [x] ~~**Debounce desktop search reloads**~~
-  Fixed in PR #280 — 300ms javax.swing.Timer debounce on SyncViewModel.searchQuery.
-
-### High Priority
-
-- [x] ~~**Configurable CSP policy via AppConfig**~~
-  Currently hardcoded in `DEFAULT_CSP_POLICY`. Add `cspPolicy` field that can be overridden via env/YAML. Keep default for security but allow deployments to customize.
-  — `platform-core/.../AppConfig.kt`
-
-- [x] ~~**TOTP two-factor authentication**~~
-  Fixed in PR #276 — TOTP secret generation, verification, setup flow, and login enforcement.
-
-- [x] ~~**Unified Settings page — `/settings` with tabs**~~
-  Fixed in PR #294 — all 6 tabs with inline content via HTMX fragments.
-
-- [ ] **Search SPI — `SearchProvider` interface**
-  Define a `SearchProvider` interface and aggregate results across plugins on `/search?q=`. Currently search uses a hardcoded empty list.
-  — `platform-web/.../web/SearchRoutes.kt`
-
-- [ ] **Export SPI — CSV/JSON export for any entity**
-  Generic export framework that can serialize lists of entities (messages, contacts, etc.) to CSV or JSON. Useful for admin dashboard and user data portability.
-
-- [x] ~~**Mobile responsive layout**~~
-  `SidebarLayout` and `TopbarLayout` are desktop-oriented. Add responsive breakpoints, hamburger navigation, touch-friendly controls.
-
-- [ ] **Jazzer fuzz tests for high-risk surfaces**
-  Add Jazzer (JVM fuzzing) tests for: CSP parsing, JWT validation, OAuth callback parsing, rate limiter token bucket math, input validation.
-
-### Low Priority
-
-- [ ] **JavaFX desktop module implementation**
+- [x] ~~**Complete TOTP setup UX**~~
+- [x] ~~**Search SPI**~~
+- [x] ~~**Export SPI**~~
+- [x] ~~**Jazzer fuzz tests for high-risk surfaces**~~
+- [x] ~~**JavaFX desktop module implementation**~~
   Design spec exists and module is scaffolded (`platform-desktop-javafx`) but not implemented. Implement sync client UI using JavaFX as an alternative to Swing.
 
 ## Security Review - 2026-05-17
 
 - [x] ~~**Hash password reset tokens at rest**~~
-  Fixed — switched from UUIDv4 to UUID v7 (SecureRandom, time-ordered, 122-bit randomness). `docs/ADRs/2026-05-17-password-reset-tokens.md`
+  Fixed — reset links still carry the raw one-time token, but the database now stores only a SHA-256 token hash. Legacy raw-token lookup remains as a transition fallback.
+  — `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt`
 
 - [x] ~~**Revoke active sessions after password reset**~~
   Fixed in PR #296 — `sessionRepository?.deleteByUserId()` called after password reset, matching the existing `changePassword()` pattern.
+
+- [x] ~~**Hydrate lockout and TOTP fields from both user repositories**~~
+  Fixed — jOOQ and JDBI user lookups now map `failed_login_attempts`, `locked_until`, `totp_secret`, `totp_enabled`, and `totp_backup_codes` into `User`, so lockout and TOTP enforcement cannot be bypassed by dropped fields.
+  — `platform-persistence-jooq/src/main/kotlin/io/github/rygel/outerstellar/platform/persistence/JooqUserRepository.kt`, `platform-persistence-jdbi/src/main/kotlin/io/github/rygel/outerstellar/platform/persistence/JdbiUserRepository.kt`
+
+- [x] ~~**Align JDBI schema with TOTP user fields**~~
+  Fixed — added the missing JDBI migration for `totp_secret`, `totp_enabled`, and `totp_backup_codes`.
+  — `platform-persistence-jdbi/src/main/resources/db/migration/V11__add_totp.sql`
+
+- [x] ~~**Require current password for API account deletion**~~
+  Fixed — `DELETE /api/v1/auth/account` now requires a JSON body with `currentPassword`; passwordless service deletion is no longer public.
+  — `platform-core/src/main/kotlin/io/github/rygel/outerstellar/platform/model/AuthModels.kt`, `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/AuthApi.kt`, `platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/SecurityService.kt`
+
+- [x] ~~**Revoke bearer session on API and desktop logout**~~
+  Fixed — added `POST /api/v1/auth/logout`; desktop sync logout calls it best-effort before clearing local session state.
+  — `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/AuthApi.kt`, `platform-sync-client/src/main/kotlin/io/github/rygel/outerstellar/platform/sync/SyncService.kt`
 
 - [x] ~~**Serialize JSON exports with structured JSON APIs**~~
 - [x] ~~**Harden rate limiting under proxies and concurrency**~~
@@ -453,3 +403,25 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 
 - [x] ~~**Sanitize authentication identifiers in logs and audit details**~~
   Fixed in PR #298 — added `sanitize()` helper (truncate 80 chars, strip CR/LF) applied to 18 log statements across SecurityService, PasswordResetService, and OAuthService.
+
+## Security Review - 2026-05-18
+
+- [ ] **Account-scope messages, contacts, sync, and export APIs**
+  Messages and contacts are still globally visible at repository/API boundaries. Add ownership/account fields to schema and enforce scoping consistently in web UI, sync pull/push, search, and export paths.
+  — `platform-core/src/main/kotlin/io/github/rygel/outerstellar/platform/persistence/MessageRepository.kt`, `platform-core/src/main/kotlin/io/github/rygel/outerstellar/platform/persistence/ContactRepository.kt`, `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/SyncApi.kt`
+
+- [ ] **Move TOTP API routes under bearer authentication and CSRF expectations**
+  TOTP API routes should be mounted consistently with authenticated API contracts and mutation routes should follow the same CSRF/security model as adjacent account-security operations.
+  — `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/TOTPApi.kt`, `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt`
+
+- [ ] **Remove weak default admin password from local compose and fail closed in production**
+  `ADMIN_PASSWORD=admin123` remains in local compose-style configuration, and the production default DB password guard logs a fatal message but does not stop startup.
+  — `docker-compose.yml`, `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/Main.kt`
+
+- [ ] **Harden rate limiter forwarding and config behavior**
+  The forwarded-IP handling and rate-limiter configuration need a final pass so proxy behavior is explicit and deployment defaults do not leave surprising gaps.
+  — `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/RateLimiter.kt`, `platform-core/src/main/kotlin/io/github/rygel/outerstellar/platform/AppConfig.kt`
+
+- [ ] **Fix JavaFX SyncEngine contact update mismatch**
+  `platform-desktop-javafx` does not currently compile because `FxSyncViewModel.updateContact()` calls `SyncEngine.updateContact(...)`, but the interface has no matching method.
+  — `platform-desktop-javafx/src/main/kotlin/io/github/rygel/outerstellar/platform/fx/viewmodel/FxSyncViewModel.kt`, `platform-sync-client/src/main/kotlin/io/github/rygel/outerstellar/platform/sync/engine/SyncEngine.kt`

@@ -1,5 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.User
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -8,6 +12,8 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
+import org.http4k.core.cookie.Cookie
+import org.http4k.core.cookie.cookie
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -29,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach
 class ContactsPaginationIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
+    private lateinit var sessionCookie: Cookie
 
     private fun insertContact(name: String, index: Int) {
         contactRepository.createServerContact(
@@ -44,7 +51,26 @@ class ContactsPaginationIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        app = buildApp()
+        val sec =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+        val user =
+            User(
+                id = UUID.randomUUID(),
+                username = "contactstest",
+                email = "contacts@test.com",
+                passwordHash = encoder.encode("testpass1"),
+                role = UserRole.USER,
+            )
+        userRepository.save(user)
+        sessionCookie = Cookie(WebContext.SESSION_COOKIE, sec.createSession(user.id))
+        app = buildApp(securityService = sec)
     }
 
     @AfterEach fun teardown() = cleanup()
@@ -53,7 +79,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
 
     @Test
     fun `contacts page returns 200 OK`() {
-        val response = app(Request(GET, "/contacts"))
+        val response = app(Request(GET, "/contacts").cookie(sessionCookie))
         assertEquals(Status.OK, response.status)
     }
 
@@ -61,7 +87,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `contacts page renders card grid with one card per contact`() {
         (1..3).forEach { insertContact("Contact $it", it) }
 
-        val body = app(Request(GET, "/contacts")).bodyString()
+        val body = app(Request(GET, "/contacts").cookie(sessionCookie)).bodyString()
 
         (1..3).forEach { assertTrue(body.contains("Contact $it"), "Page should render card for Contact $it") }
         assertTrue(body.contains("card"), "Page should use DaisyUI card class for contacts")
@@ -69,7 +95,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
 
     @Test
     fun `empty contacts list shows no cards but still renders page`() {
-        val body = app(Request(GET, "/contacts")).bodyString()
+        val body = app(Request(GET, "/contacts").cookie(sessionCookie)).bodyString()
         assertEquals(Status.OK, body.let { Status.OK })
         assertTrue(body.contains("Contacts Directory"), "Page title should be present")
     }
@@ -80,7 +106,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `default request uses limit=12 and offset=0`() {
         (1..5).forEach { insertContact("Person $it", it) }
 
-        val body = app(Request(GET, "/contacts")).bodyString()
+        val body = app(Request(GET, "/contacts").cookie(sessionCookie)).bodyString()
         (1..5).forEach { assertTrue(body.contains("Person $it"), "Default page should include Person $it") }
     }
 
@@ -90,7 +116,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `pagination controls are hidden when all contacts fit on one page`() {
         (1..5).forEach { insertContact("One-Page $it", it) }
 
-        val body = app(Request(GET, "/contacts")).bodyString()
+        val body = app(Request(GET, "/contacts").cookie(sessionCookie)).bodyString()
 
         // Pagination controls only appear when hasPrevious || hasNext
         assertFalse(
@@ -103,7 +129,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `pagination controls appear when there are more pages`() {
         (1..25).forEach { insertContact("Big List $it", it) }
 
-        val body = app(Request(GET, "/contacts")).bodyString()
+        val body = app(Request(GET, "/contacts").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("ri-arrow-right-s-line"), "Next button should appear when more pages exist")
     }
 
@@ -111,7 +137,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `first page does not have a previous button that is enabled`() {
         (1..25).forEach { insertContact("First Page $it", it) }
 
-        val body = app(Request(GET, "/contacts")).bodyString()
+        val body = app(Request(GET, "/contacts").cookie(sessionCookie)).bodyString()
 
         // Previous button should exist but be disabled (offset=0)
         assertFalse(
@@ -125,7 +151,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `second page has a previous button pointing to first page`() {
         (1..25).forEach { insertContact("Second Page $it", it) }
 
-        val body = app(Request(GET, "/contacts?limit=12&offset=12")).bodyString()
+        val body = app(Request(GET, "/contacts?limit=12&offset=12").cookie(sessionCookie)).bodyString()
 
         assertTrue(
             body.contains("offset=0") || body.contains("previousUrl"),
@@ -138,7 +164,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `last page does not have a next button that is enabled`() {
         (1..25).forEach { insertContact("Last Page $it", it) }
 
-        val body = app(Request(GET, "/contacts?limit=12&offset=24")).bodyString()
+        val body = app(Request(GET, "/contacts?limit=12&offset=24").cookie(sessionCookie)).bodyString()
 
         // hasNext should be false because 24 + 12 = 36 > 25
         assertTrue(body.contains("ri-arrow-right-s-line"), "Next arrow element exists but should be disabled")
@@ -154,7 +180,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `total contact count is displayed when pagination is active`() {
         (1..42).forEach { insertContact("Counted $it", it) }
 
-        val body = app(Request(GET, "/contacts")).bodyString()
+        val body = app(Request(GET, "/contacts").cookie(sessionCookie)).bodyString()
 
         assertTrue(body.contains("42"), "Page should display total contact count of 42")
         assertTrue(body.contains("contacts total"), "Page should label the total count")
@@ -164,7 +190,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `current page number is displayed`() {
         (1..20).forEach { insertContact("Paged $it", it) }
 
-        val body = app(Request(GET, "/contacts?limit=5&offset=0")).bodyString()
+        val body = app(Request(GET, "/contacts?limit=5&offset=0").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("Page 1"), "First page should show 'Page 1'")
     }
 
@@ -172,7 +198,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `offset advances page number in display`() {
         (1..20).forEach { insertContact("Offset $it", it) }
 
-        val body = app(Request(GET, "/contacts?limit=5&offset=5")).bodyString()
+        val body = app(Request(GET, "/contacts?limit=5&offset=5").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("Page 2"), "Offset=5 with limit=5 should show 'Page 2'")
     }
 
@@ -184,7 +210,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
         insertContact("B", 2)
         insertContact("C", 3)
 
-        val response = app(Request(GET, "/contacts?limit=3"))
+        val response = app(Request(GET, "/contacts?limit=3").cookie(sessionCookie))
         assertEquals(Status.OK, response.status)
         val body = response.bodyString()
         assertTrue(body.contains("A") && body.contains("B") && body.contains("C"))
@@ -193,19 +219,19 @@ class ContactsPaginationIntegrationTest : WebTest() {
     @Test
     fun `limit is capped at 50`() {
         // limit=100 should be clamped to 50
-        val response = app(Request(GET, "/contacts?limit=100"))
+        val response = app(Request(GET, "/contacts?limit=100").cookie(sessionCookie))
         assertEquals(Status.OK, response.status)
     }
 
     @Test
     fun `limit minimum is 1`() {
-        val response = app(Request(GET, "/contacts?limit=0"))
+        val response = app(Request(GET, "/contacts?limit=0").cookie(sessionCookie))
         assertEquals(Status.OK, response.status)
     }
 
     @Test
     fun `negative offset is treated as zero`() {
-        val response = app(Request(GET, "/contacts?offset=-5"))
+        val response = app(Request(GET, "/contacts?offset=-5").cookie(sessionCookie))
         assertEquals(Status.OK, response.status)
     }
 
@@ -216,13 +242,13 @@ class ContactsPaginationIntegrationTest : WebTest() {
         insertContact("Alice Wonder", 1)
         insertContact("Bob Normal", 2)
 
-        val body = app(Request(GET, "/contacts?q=alice")).bodyString()
+        val body = app(Request(GET, "/contacts?q=alice").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("Alice Wonder"))
     }
 
     @Test
     fun `null query passes null to contact service`() {
-        val response = app(Request(GET, "/contacts"))
+        val response = app(Request(GET, "/contacts").cookie(sessionCookie))
         assertEquals(Status.OK, response.status)
     }
 }

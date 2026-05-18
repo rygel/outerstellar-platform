@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
@@ -98,6 +99,18 @@ class PasswordResetFlowIntegrationTest : WebTest() {
 
         val tokensAfter = testDsl.fetchCount(testDsl.selectFrom(org.jooq.impl.DSL.table("plt_password_reset_tokens")))
         assertEquals(tokensBefore + 1, tokensAfter, "One token should be stored in the DB")
+    }
+
+    @Test
+    fun `password reset stores only token hash`() {
+        val rawToken = requestRawToken(testUser.email)
+        assertNotNull(rawToken, "Token should be generated after reset request")
+
+        val storedToken =
+            testDsl.fetchValue("SELECT token FROM plt_password_reset_tokens WHERE user_id = ?", testUser.id) as String
+
+        assertNotEquals(rawToken, storedToken, "Raw reset token must not be stored")
+        assertTrue(storedToken.matches(Regex("[0-9a-f]{64}")), "Stored reset token should be a SHA-256 hex hash")
     }
 
     @Test

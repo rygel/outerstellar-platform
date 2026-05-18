@@ -4,7 +4,10 @@ import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import javafx.fxml.FXML
 import javafx.scene.control.Button
+import javafx.scene.control.ButtonType
 import javafx.scene.control.CheckBox
+import javafx.scene.control.Dialog
+import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
 import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
@@ -71,8 +74,17 @@ class ProfileController : KoinComponent {
         alert.title = "Delete Account"
         val result = alert.showAndWait()
         if (result.isPresent && result.get() == javafx.scene.control.ButtonType.YES) {
+            val passwordDialog = Dialog<String>()
+            if (ownerStage != null) passwordDialog.initOwner(ownerStage)
+            passwordDialog.title = "Confirm Password"
+            passwordDialog.dialogPane.buttonTypes.addAll(ButtonType.OK, ButtonType.CANCEL)
+            val passwordField = PasswordField()
+            passwordDialog.dialogPane.content = passwordField
+            passwordDialog.setResultConverter { button -> if (button == ButtonType.OK) passwordField.text else null }
+            val passwordResult = passwordDialog.showAndWait()
+            if (passwordResult.isEmpty || passwordResult.get().isBlank()) return
             viewModel
-                .deleteAccount()
+                .deleteAccount(passwordResult.get())
                 .also { task ->
                     task.setOnSucceeded {
                         task.value

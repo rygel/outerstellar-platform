@@ -88,6 +88,8 @@ data class UpdateProfileRequest(val email: String, val username: String? = null,
 
 @Serializable data class UpdateNotificationPrefsRequest(val emailEnabled: Boolean, val pushEnabled: Boolean)
 
+@Serializable data class DeleteAccountRequest(val currentPassword: String)
+
 @Serializable
 data class NotificationSummary(
     val id: String,
