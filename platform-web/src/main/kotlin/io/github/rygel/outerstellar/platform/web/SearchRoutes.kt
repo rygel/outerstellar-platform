@@ -11,9 +11,6 @@ import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
 import org.http4k.template.TemplateRenderer
 
-private const val DEFAULT_SEARCH_LIMIT = 20
-private const val MAX_SEARCH_LIMIT = 100
-
 class SearchRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
@@ -31,7 +28,8 @@ class SearchRoutes(
                     val ctx = request.webContext
                     val query = request.query("q").orEmpty()
                     val limit =
-                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_SEARCH_LIMIT) ?: DEFAULT_SEARCH_LIMIT
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, SearchPageFactory.MAX_SEARCH_LIMIT)
+                            ?: SearchPageFactory.DEFAULT_SEARCH_LIMIT
                     val type = request.query("type").orEmpty()
                     renderer.render(pageFactory.buildSearchPage(ctx, query, providers, limit, type))
                 },
@@ -43,17 +41,9 @@ class SearchRoutes(
                 { request ->
                     val query = request.query("q").orEmpty()
                     val limit =
-                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_SEARCH_LIMIT) ?: DEFAULT_SEARCH_LIMIT
-                    val results =
-                        if (query.isBlank()) {
-                            emptyList()
-                        } else {
-                            val providerLimit = (kotlin.math.ceil(limit.toDouble() / providers.size)).toInt()
-                            providers
-                                .flatMap { it.search(query, providerLimit) }
-                                .sortedByDescending { it.score }
-                                .take(limit)
-                        }
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, SearchPageFactory.MAX_SEARCH_LIMIT)
+                            ?: SearchPageFactory.DEFAULT_SEARCH_LIMIT
+                    val results = SearchPageFactory.aggregateResults(providers, query, limit)
                     val json =
                         KotlinxSerialization.asJsonObject(
                             mapOf("query" to query, "results" to results, "total" to results.size)
