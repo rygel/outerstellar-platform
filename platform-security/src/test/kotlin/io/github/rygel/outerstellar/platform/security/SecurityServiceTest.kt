@@ -681,7 +681,7 @@ class SecurityServiceTest {
                 totpService = totpService,
             )
 
-        val rawToken = "oss_abcdef1234567890abcdef1234567890abcdef1234567890"
+        val rawToken = "oss_" + "test".repeat(12)
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         val tokenHash = digest.digest(rawToken.toByteArray()).joinToString("") { "%02x".format(it) }
 
@@ -714,7 +714,7 @@ class SecurityServiceTest {
                 totpService = totpService,
             )
 
-        val rawToken = "oss_abcdef1234567890abcdef1234567890abcdef1234567890"
+        val rawToken = "oss_" + "test".repeat(12)
         val digest = java.security.MessageDigest.getInstance("SHA-256")
         val tokenHash = digest.digest(rawToken.toByteArray()).joinToString("") { "%02x".format(it) }
 
