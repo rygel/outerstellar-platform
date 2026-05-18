@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
+import io.github.rygel.outerstellar.platform.model.DeleteAccountRequest
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.model.UpdateNotificationPrefsRequest
@@ -39,19 +40,18 @@ class ProfileApiIntegrationTest : WebTest() {
     private val updateProfileLens = Body.auto<UpdateProfileRequest>().toLens()
     private val updateNotifPrefsLens = Body.auto<UpdateNotificationPrefsRequest>().toLens()
     private val userProfileLens = Body.auto<UserProfileResponse>().toLens()
+    private val deleteAccountLens = Body.auto<DeleteAccountRequest>().toLens()
 
-    @BeforeEach
-    fun setupTest() {
-        cleanup()
-        app = buildApp()
-    }
+    @BeforeEach fun setupTest() = resetApp()
 
     @AfterEach fun teardown() = cleanup()
 
     // ---- Helpers ----
 
-    private fun registerAndLogin(username: String = "profuser${UUID.randomUUID().toString().take(6)}"): String {
-        val password = testPassword()
+    private fun registerAndLogin(
+        username: String = "profuser${UUID.randomUUID().toString().take(6)}",
+        password: String = testPassword(),
+    ): String {
         app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, password)))
         val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest(username, password)))
         return tokenLens(loginResp).token
@@ -59,6 +59,11 @@ class ProfileApiIntegrationTest : WebTest() {
 
     private fun bearer(method: org.http4k.core.Method, path: String, token: String) =
         Request(method, path).header("Authorization", "Bearer $token")
+
+    private fun resetApp() {
+        cleanup()
+        app = buildApp()
+    }
 
     // ---- GET /api/v1/auth/profile ----
 
@@ -218,13 +223,41 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `DELETE account removes the user`() {
-        val token = registerAndLogin("ivan")
+        val password = testPassword()
+        val token = registerAndLogin("ivan", password)
         val user = userRepository.findByUsername("ivan")!!
 
-        val response = app(bearer(DELETE, "/api/v1/auth/account", token))
+        val response =
+            app(bearer(DELETE, "/api/v1/auth/account", token).with(deleteAccountLens of DeleteAccountRequest(password)))
 
         assertEquals(Status.OK, response.status)
         assertNull(userRepository.findById(user.id))
+    }
+
+    @Test
+    fun `DELETE account rejects missing current password`() {
+        val token = registerAndLogin("ian")
+        val user = userRepository.findByUsername("ian")!!
+
+        val response = app(bearer(DELETE, "/api/v1/auth/account", token))
+
+        assertEquals(Status.BAD_REQUEST, response.status)
+        assertNotNull(userRepository.findById(user.id))
+    }
+
+    @Test
+    fun `DELETE account rejects incorrect current password`() {
+        val token = registerAndLogin("isla")
+        val user = userRepository.findByUsername("isla")!!
+
+        val response =
+            app(
+                bearer(DELETE, "/api/v1/auth/account", token)
+                    .with(deleteAccountLens of DeleteAccountRequest("wrong-password"))
+            )
+
+        assertEquals(Status.BAD_REQUEST, response.status)
+        assertNotNull(userRepository.findById(user.id))
     }
 
     @Test
@@ -243,7 +276,11 @@ class ProfileApiIntegrationTest : WebTest() {
         val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("soleadmin", password)))
         val adminToken = tokenLens(loginResp).token
 
-        val response = app(bearer(DELETE, "/api/v1/auth/account", adminToken))
+        val response =
+            app(
+                bearer(DELETE, "/api/v1/auth/account", adminToken)
+                    .with(deleteAccountLens of DeleteAccountRequest(password))
+            )
 
         assertEquals(Status.FORBIDDEN, response.status)
         assertNotNull(userRepository.findById(adminId))
@@ -275,7 +312,11 @@ class ProfileApiIntegrationTest : WebTest() {
         val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1", "adminpass1")))
         val token1 = tokenLens(loginResp).token
 
-        val response = app(bearer(DELETE, "/api/v1/auth/account", token1))
+        val response =
+            app(
+                bearer(DELETE, "/api/v1/auth/account", token1)
+                    .with(deleteAccountLens of DeleteAccountRequest("adminpass1"))
+            )
 
         assertEquals(Status.OK, response.status)
         assertNull(userRepository.findById(id1))

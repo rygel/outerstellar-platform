@@ -471,9 +471,9 @@ class SyncViewModel(
             .execute()
     }
 
-    fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
+    fun deleteAccount(currentPassword: String, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Result<Unit>, Unit>() {
-                override fun doInBackground(): Result<Unit> = engine.deleteAccount()
+                override fun doInBackground(): Result<Unit> = engine.deleteAccount(currentPassword)
 
                 override fun done() {
                     val result = get()

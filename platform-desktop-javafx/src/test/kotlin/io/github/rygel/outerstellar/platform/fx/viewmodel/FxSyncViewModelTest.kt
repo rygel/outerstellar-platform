@@ -167,9 +167,9 @@ class FxSyncViewModelTest {
 
     @Test
     fun `deleteAccount delegates to engine`() {
-        every { engine.deleteAccount() } returns Result.success(Unit)
-        viewModel.deleteAccount().run()
-        verify { engine.deleteAccount() }
+        every { engine.deleteAccount("secret") } returns Result.success(Unit)
+        viewModel.deleteAccount("secret").run()
+        verify { engine.deleteAccount("secret") }
     }
 
     @Test
@@ -190,6 +190,14 @@ class FxSyncViewModelTest {
     fun `resolveConflict delegates to engine`() {
         viewModel.resolveConflict("id", ConflictStrategy.MINE).run()
         verify { engine.resolveConflict("id", ConflictStrategy.MINE) }
+    }
+
+    @Test
+    fun `updateContact delegates to engine`() {
+        every { engine.updateContact(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+            Result.success(Unit)
+        viewModel.updateContact("id", "n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d").run()
+        verify { engine.updateContact("id", "n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d") }
     }
 
     @Test

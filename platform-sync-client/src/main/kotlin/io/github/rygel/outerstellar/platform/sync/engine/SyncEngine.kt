@@ -41,7 +41,7 @@ interface SyncEngine {
 
     fun updateProfile(email: String, username: String? = null, avatarUrl: String? = null): Result<Unit>
 
-    fun deleteAccount(): Result<Unit>
+    fun deleteAccount(currentPassword: String): Result<Unit>
 
     fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Result<Unit>
 
@@ -50,6 +50,17 @@ interface SyncEngine {
     fun resolveConflict(syncId: String, strategy: ConflictStrategy)
 
     fun createContact(
+        name: String,
+        emails: List<String>,
+        phones: List<String>,
+        socialMedia: List<String>,
+        company: String,
+        companyAddress: String,
+        department: String,
+    ): Result<Unit>
+
+    fun updateContact(
+        syncId: String,
         name: String,
         emails: List<String>,
         phones: List<String>,

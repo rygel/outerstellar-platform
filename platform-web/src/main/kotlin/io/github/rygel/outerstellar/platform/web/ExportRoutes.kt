@@ -11,7 +11,7 @@ class ExportRoutes(private val providers: List<ExportProvider>) : ServerRoutes {
 
     override val routes = providers.flatMap { provider ->
         listOf(
-            "/api/v1/export/${provider.entityType}/csv" meta
+            "/api/v1/admin/export/${provider.entityType}/csv" meta
                 {
                     summary = "Export ${provider.displayName} as CSV"
                 } bindContract
@@ -22,7 +22,7 @@ class ExportRoutes(private val providers: List<ExportProvider>) : ServerRoutes {
                         .header("Content-Disposition", "attachment; filename=\"${provider.entityType}.csv\"")
                         .body(provider.exportCsv())
                 },
-            "/api/v1/export/${provider.entityType}/json" meta
+            "/api/v1/admin/export/${provider.entityType}/json" meta
                 {
                     summary = "Export ${provider.displayName} as JSON"
                 } bindContract

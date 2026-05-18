@@ -81,12 +81,12 @@ internal class DesktopSyncEngineProfileTest : DesktopSyncEngineTestBase() {
     fun `deleteAccount success`() {
         stubLoggedIn()
 
-        val result = engine.deleteAccount()
+        val result = engine.deleteAccount("secret")
 
         assertTrue(result.isSuccess)
         assertFalse(engine.state.isLoggedIn)
         assertEquals("Account deleted", engine.state.status)
-        verify { syncService.deleteAccount() }
+        verify { syncService.deleteAccount("secret") }
         verify { syncService.logout() }
         verify { analytics.track("user", "account_deleted") }
         verify { notifier.notifySuccess("Account deleted") }
@@ -95,9 +95,9 @@ internal class DesktopSyncEngineProfileTest : DesktopSyncEngineTestBase() {
     @Test
     fun `deleteAccount failure`() {
         stubLoggedIn()
-        every { syncService.deleteAccount() } throws RuntimeException("Fail")
+        every { syncService.deleteAccount("secret") } throws RuntimeException("Fail")
 
-        val result = engine.deleteAccount()
+        val result = engine.deleteAccount("secret")
 
         assertTrue(result.isFailure)
         verify { notifier.notifyFailure("Account deletion failed: Fail") }

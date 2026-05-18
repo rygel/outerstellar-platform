@@ -255,13 +255,13 @@ class DesktopSyncEngine(
             Result.success(Unit)
         }
 
-    override fun deleteAccount(): Result<Unit> =
+    override fun deleteAccount(currentPassword: String): Result<Unit> =
         runGuardedResult(
             "deleteAccount",
             onError = { e -> notifier?.notifyFailure("Account deletion failed: ${e.message}") },
         ) {
             val username = state.userName
-            syncService.deleteAccount()
+            syncService.deleteAccount(currentPassword)
             stopAutoSync()
             syncService.logout()
             analytics.track(username, "account_deleted")
@@ -311,6 +311,44 @@ class DesktopSyncEngine(
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.warn("Failed to create contact", e)
             fireError("createContact", e.message ?: "Unknown error")
+            Result.failure(e)
+        }
+    }
+
+    override fun updateContact(
+        syncId: String,
+        name: String,
+        emails: List<String>,
+        phones: List<String>,
+        socialMedia: List<String>,
+        company: String,
+        companyAddress: String,
+        department: String,
+    ): Result<Unit> {
+        val svc = contactService
+        if (svc == null) {
+            return Result.failure(IllegalStateException("Contact service not available"))
+        }
+        return try {
+            val stored =
+                svc.getContactBySyncId(syncId)
+                    ?: return Result.failure(IllegalStateException("Contact not found: $syncId"))
+            val updated =
+                stored.copy(
+                    name = name,
+                    emails = emails,
+                    phones = phones,
+                    socialMedia = socialMedia,
+                    company = company,
+                    companyAddress = companyAddress,
+                )
+            svc.updateContact(updated)
+            loadContacts()
+            analytics.track(state.userName, "contact_updated", mapOf("name" to name))
+            Result.success(Unit)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            logger.warn("Failed to update contact", e)
+            fireError("updateContact", e.message ?: "Unknown error")
             Result.failure(e)
         }
     }

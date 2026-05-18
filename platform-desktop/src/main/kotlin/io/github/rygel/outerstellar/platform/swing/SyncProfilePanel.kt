@@ -11,6 +11,7 @@ import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JOptionPane
 import javax.swing.JPanel
+import javax.swing.JPasswordField
 import javax.swing.JTextField
 import javax.swing.border.TitledBorder
 import net.miginfocom.swing.MigLayout
@@ -172,8 +173,24 @@ class SyncProfilePanel(
                     JOptionPane.WARNING_MESSAGE,
                 )
             if (confirmed == JOptionPane.YES_OPTION) {
+                val passwordField = JPasswordField()
+                val passwordConfirmed =
+                    JOptionPane.showConfirmDialog(
+                        frame,
+                        passwordField,
+                        i18nService.translate("swing.password.current"),
+                        JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.PLAIN_MESSAGE,
+                    )
+                if (passwordConfirmed != JOptionPane.OK_OPTION) {
+                    return@addActionListener
+                }
+                val currentPassword = String(passwordField.password)
+                if (currentPassword.isBlank()) {
+                    return@addActionListener
+                }
                 deleteAccountBtn.isEnabled = false
-                viewModel.deleteAccount { success, error ->
+                viewModel.deleteAccount(currentPassword) { success, error ->
                     if (success) {
                         JOptionPane.showMessageDialog(
                             frame,

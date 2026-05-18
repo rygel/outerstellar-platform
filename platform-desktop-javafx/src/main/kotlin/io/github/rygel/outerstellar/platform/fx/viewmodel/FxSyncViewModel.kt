@@ -120,7 +120,8 @@ class FxSyncViewModel(private val engine: SyncEngine) {
     fun updateProfile(email: String, username: String?, avatarUrl: String?): Task<Result<Unit>> =
         task("updateProfile") { engine.updateProfile(email, username, avatarUrl) }
 
-    fun deleteAccount(): Task<Result<Unit>> = task("deleteAccount") { engine.deleteAccount() }
+    fun deleteAccount(currentPassword: String): Task<Result<Unit>> =
+        task("deleteAccount") { engine.deleteAccount(currentPassword) }
 
     fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Task<Result<Unit>> =
         task("updateNotificationPreferences") { engine.updateNotificationPreferences(emailEnabled, pushEnabled) }
@@ -142,6 +143,20 @@ class FxSyncViewModel(private val engine: SyncEngine) {
     ): Task<Result<Unit>> =
         task("createContact") {
             engine.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
+        }
+
+    fun updateContact(
+        syncId: String,
+        name: String,
+        emails: List<String>,
+        phones: List<String>,
+        socialMedia: List<String>,
+        company: String,
+        companyAddress: String,
+        department: String,
+    ): Task<Result<Unit>> =
+        task("updateContact") {
+            engine.updateContact(syncId, name, emails, phones, socialMedia, company, companyAddress, department)
         }
 
     fun loadData(): Task<Unit> = task("loadData") { engine.loadData() }

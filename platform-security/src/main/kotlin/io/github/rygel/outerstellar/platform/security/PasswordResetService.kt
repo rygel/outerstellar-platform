@@ -7,7 +7,6 @@ import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import java.security.SecureRandom
 import java.time.Instant
-import java.util.UUID
 import org.slf4j.LoggerFactory
 
 class PasswordResetService(
@@ -30,11 +29,11 @@ class PasswordResetService(
             return null
         }
 
-        val tokenValue = generateUuidV7().toString()
+        val tokenValue = generateResetToken()
         val resetToken =
             PasswordResetToken(
                 userId = user.id,
-                token = tokenValue,
+                token = hashToken(tokenValue),
                 expiresAt = Instant.now().plusSeconds(RESET_TOKEN_TTL_SECONDS),
             )
         resetRepository?.save(resetToken)
@@ -50,7 +49,9 @@ class PasswordResetService(
     }
 
     fun resetPassword(token: String, newPassword: String) {
-        val resetToken = resetRepository?.findByToken(token) ?: throw IllegalArgumentException("Invalid reset token")
+        val repository = resetRepository ?: throw IllegalArgumentException("Invalid reset token")
+        val resetToken =
+            repository.findByToken(hashToken(token)) ?: throw IllegalArgumentException("Invalid reset token")
 
         if (resetToken.used) {
             throw IllegalArgumentException("Reset token has already been used")
@@ -66,7 +67,7 @@ class PasswordResetService(
 
         val updated = user.copy(passwordHash = passwordEncoder.encode(normalized))
         userRepository.save(updated)
-        resetRepository.markUsed(token)
+        repository.markUsed(resetToken.token)
         sessionRepository?.deleteByUserId(user.id)
         logger.info("Password reset completed for user {}", sanitize(user.username))
         audit("PASSWORD_RESET_COMPLETED", actor = user)
@@ -88,19 +89,18 @@ class PasswordResetService(
     companion object {
         private const val MAX_LOG_ID_LENGTH = 80
         private const val RESET_TOKEN_TTL_SECONDS = 3600L
-        private const val UUID_V7_VERSION = 0x7000L
-        private const val UUID_V7_VARIANT_MASK = 0x0FFFL
-        private const val UUID_V7_RANDOM_MASK = 0x3FFFFFFFFFFFFFFFL
-        private const val UUID_V7_VARIANT = 63
+        private const val RESET_TOKEN_BYTES = 32
         private val SECURE_RANDOM = SecureRandom()
 
-        private fun generateUuidV7(): UUID {
-            val timestamp = System.currentTimeMillis()
-            val randomA = SECURE_RANDOM.nextLong()
-            val randomB = SECURE_RANDOM.nextLong()
-            val msb = (timestamp shl 16) or UUID_V7_VERSION or (randomA and UUID_V7_VARIANT_MASK)
-            val lsb = (randomB and UUID_V7_RANDOM_MASK) or (1L shl UUID_V7_VARIANT)
-            return UUID(msb, lsb)
+        private fun generateResetToken(): String {
+            val bytes = ByteArray(RESET_TOKEN_BYTES)
+            SECURE_RANDOM.nextBytes(bytes)
+            return "prt_" + bytes.joinToString("") { "%02x".format(it) }
+        }
+
+        private fun hashToken(token: String): String {
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+            return digest.digest(token.toByteArray()).joinToString("") { "%02x".format(it) }
         }
     }
 }

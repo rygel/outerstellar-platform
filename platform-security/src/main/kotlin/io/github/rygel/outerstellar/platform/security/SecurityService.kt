@@ -159,10 +159,13 @@ class SecurityService(
         if (adminId == targetId) {
             throw InsufficientPermissionException("Cannot change your own enabled status")
         }
+        val admin = userRepository.findById(adminId) ?: throw UserNotFoundException(adminId.toString())
+        if (admin.role != UserRole.ADMIN) {
+            throw InsufficientPermissionException("Only administrators can enable/disable accounts")
+        }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateEnabled(targetId, enabled)
         logger.info("User {} enabled set to {} by admin {}", sanitize(target.username), enabled, adminId)
-        val admin = userRepository.findById(adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
         audit(action, actor = admin, target = target)
     }
@@ -182,10 +185,13 @@ class SecurityService(
         if (adminId == targetId) {
             throw InsufficientPermissionException("Cannot change your own role")
         }
+        val admin = userRepository.findById(adminId) ?: throw UserNotFoundException(adminId.toString())
+        if (admin.role != UserRole.ADMIN) {
+            throw InsufficientPermissionException("Only administrators can change user roles")
+        }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateRole(targetId, role)
         logger.info("User {} role set to {} by admin {}", sanitize(target.username), role, adminId)
-        val admin = userRepository.findById(adminId)
         audit("USER_ROLE_CHANGED", actor = admin, target = target, detail = "from ${target.role} to $role")
     }
 
@@ -261,7 +267,7 @@ class SecurityService(
         logger.info("Profile updated for user {}", sanitize(user.username))
     }
 
-    fun deleteAccount(userId: UUID) {
+    private fun deleteAccount(userId: UUID) {
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         if (user.role == UserRole.ADMIN) {
             val adminCount = userRepository.countByRole(UserRole.ADMIN)

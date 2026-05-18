@@ -240,7 +240,8 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
     @Test
     fun `home page renders inside layout shell`() {
-        val response = app(Request(GET, "/"))
+        val admin = seedAdmin()
+        val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
         assertEquals(Status.OK, response.status)
         val body = response.bodyString()
         assertTrue(body.contains("drawer lg:drawer-open"))

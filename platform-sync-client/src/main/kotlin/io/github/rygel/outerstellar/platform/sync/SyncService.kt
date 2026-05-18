@@ -4,6 +4,7 @@ package io.github.rygel.outerstellar.platform.sync
 
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.ChangePasswordRequest
+import io.github.rygel.outerstellar.platform.model.DeleteAccountRequest
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.NotificationSummary
 import io.github.rygel.outerstellar.platform.model.PasswordResetConfirm
@@ -61,6 +62,7 @@ class SyncService(
     private val updateProfileLens = Body.auto<UpdateProfileRequest>().toLens()
     private val userProfileResponseLens = Body.auto<UserProfileResponse>().toLens()
     private val updateNotifPrefsLens = Body.auto<UpdateNotificationPrefsRequest>().toLens()
+    private val deleteAccountLens = Body.auto<DeleteAccountRequest>().toLens()
 
     fun login(username: String, pass: String): AuthTokenResponse {
         val request = Request(POST, "$baseUrl/api/v1/auth/login").with(loginRequestLens of LoginRequest(username, pass))
@@ -94,6 +96,10 @@ class SyncService(
     }
 
     fun logout() {
+        apiToken?.let { token ->
+            val request = Request(POST, "$baseUrl/api/v1/auth/logout").header("Authorization", "Bearer $token")
+            runCatching { client(request) }
+        }
         this.apiToken = null
         this.userRole = null
     }
@@ -207,8 +213,12 @@ class SyncService(
         }
     }
 
-    fun deleteAccount() {
-        val response = authenticatedRequest(Request(DELETE, "$baseUrl/api/v1/auth/account"))
+    fun deleteAccount(currentPassword: String) {
+        val response =
+            authenticatedRequest(
+                Request(DELETE, "$baseUrl/api/v1/auth/account")
+                    .with(deleteAccountLens of DeleteAccountRequest(currentPassword))
+            )
         checkSessionExpired(response)
         if (response.status != Status.OK) {
             throw SyncException(response.bodyString().ifBlank { "Account deletion failed" })

@@ -293,18 +293,21 @@ class SyncServiceTest {
     fun `deleteAccount sends DELETE with auth`() {
         val (loginSvc, loginResp) = makeLoginSvc()
         var method: Method? = null
+        var body: String? = null
         val svc = makeSvc { req ->
             if (req.uri.toString().contains("auth/login")) {
                 loginResp
             } else {
                 method = req.method
+                body = req.bodyString()
                 Response(Status.OK)
             }
         }
         loginSvc.login("alice", "pass")
         svc.login("alice", "pass")
-        svc.deleteAccount()
+        svc.deleteAccount("pass")
         assertEquals(Method.DELETE, method)
+        assertEquals("{\"currentPassword\":\"pass\"}", body)
     }
 
     @Test

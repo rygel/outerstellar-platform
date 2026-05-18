@@ -16,9 +16,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findById(id: UUID): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users WHERE id = :id"
-                )
+                .createQuery(USER_SELECT + " WHERE id = :id")
                 .bind("id", id)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -29,9 +27,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findByUsername(username: String): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users WHERE username = :username"
-                )
+                .createQuery(USER_SELECT + " WHERE username = :username")
                 .bind("username", username)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -42,9 +38,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findByEmail(email: String): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users WHERE email = :email"
-                )
+                .createQuery(USER_SELECT + " WHERE email = :email")
                 .bind("email", email)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -94,21 +88,14 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
 
     override fun findAll(): List<User> {
         return jdbi.withHandle<List<User>, Exception> { handle ->
-            handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users ORDER BY username"
-                )
-                .map { rs, _ -> mapUser(rs) }
-                .list()
+            handle.createQuery("$USER_SELECT ORDER BY username").map { rs, _ -> mapUser(rs) }.list()
         }
     }
 
     override fun findPage(limit: Int, offset: Int): List<User> =
         jdbi.withHandle<List<User>, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users ORDER BY username LIMIT :limit OFFSET :offset"
-                )
+                .createQuery("$USER_SELECT ORDER BY username LIMIT :limit OFFSET :offset")
                 .bind("limit", limit)
                 .bind("offset", offset)
                 .map { rs, _ -> mapUser(rs) }
@@ -316,6 +303,8 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             passwordHash = rs.getString("password_hash"),
             role = UserRole.valueOf(rs.getString("role")),
             enabled = rs.getBoolean("enabled"),
+            failedLoginAttempts = rs.getInt("failed_login_attempts"),
+            lockedUntil = rs.getTimestamp("locked_until")?.toInstant(),
             lastActivityAt = lastActivity?.toInstant(),
             avatarUrl = rs.getString("avatar_url"),
             emailNotificationsEnabled = rs.getBoolean("email_notifications_enabled"),
@@ -323,6 +312,19 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             language = rs.getString("language"),
             theme = rs.getString("theme"),
             layout = rs.getString("layout"),
+            totpSecret = rs.getString("totp_secret"),
+            totpEnabled = rs.getBoolean("totp_enabled"),
+            totpBackupCodes = rs.getString("totp_backup_codes"),
         )
+    }
+
+    companion object {
+        private const val USER_SELECT =
+            """
+            SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url,
+                   email_notifications_enabled, push_notifications_enabled, language, theme, layout,
+                   failed_login_attempts, locked_until, totp_secret, totp_enabled, totp_backup_codes
+            FROM plt_users
+            """
     }
 }

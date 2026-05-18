@@ -34,6 +34,9 @@ class ContactsRoutes(
                 GET to
                 { request: Request ->
                     val ctx = request.webContext
+                    if (ctx.user == null) {
+                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    }
                     val query = request.query("q")
                     val limit =
                         request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT) ?: DEFAULT_CONTACTS_LIMIT
@@ -46,7 +49,11 @@ class ContactsRoutes(
                 } bindContract
                 GET to
                 { request: Request ->
-                    renderer.render(pageFactory.buildContactForm(request.webContext))
+                    val ctx = request.webContext
+                    if (ctx.user == null) {
+                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    }
+                    renderer.render(pageFactory.buildContactForm(ctx))
                 },
             "/contacts" meta
                 {
@@ -55,6 +62,9 @@ class ContactsRoutes(
                 POST to
                 { request: Request ->
                     val ctx = request.webContext
+                    if (ctx.user == null) {
+                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    }
                     val params = request.bodyAsForm()
                     val name = params.findSingle("name") ?: return@to Response(Status.BAD_REQUEST).body("name required")
                     contactService?.createContact(
@@ -79,7 +89,13 @@ class ContactsRoutes(
                 } bindContract
                 GET to
                 { syncId: String, _ ->
-                    { request: Request -> renderer.render(pageFactory.buildContactForm(request.webContext, syncId)) }
+                    { request: Request ->
+                        val ctx = request.webContext
+                        if (ctx.user == null) {
+                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        }
+                        renderer.render(pageFactory.buildContactForm(ctx, syncId))
+                    }
                 },
             "/contacts" / syncIdPath / "update" meta
                 {
@@ -89,6 +105,9 @@ class ContactsRoutes(
                 { syncId: String, _ ->
                     { request: Request ->
                         val ctx = request.webContext
+                        if (ctx.user == null) {
+                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        }
                         val params = request.bodyAsForm()
                         val existing =
                             contactService?.getContactBySyncId(syncId)
@@ -122,6 +141,9 @@ class ContactsRoutes(
                 { syncId: String, _ ->
                     { request: Request ->
                         val ctx = request.webContext
+                        if (ctx.user == null) {
+                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        }
                         contactService?.deleteContact(syncId)
                         val params = request.bodyAsForm()
                         val query = params.findSingle("q")
@@ -138,7 +160,11 @@ class ContactsRoutes(
                 } bindContract
                 POST to
                 { syncId: String, _ ->
-                    { _: Request ->
+                    { request: Request ->
+                        val ctx = request.webContext
+                        if (ctx.user == null) {
+                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        }
                         contactService?.restoreContact(syncId)
                         Response(Status.FOUND).header("location", "/messages/trash")
                     }
@@ -149,7 +175,11 @@ class ContactsRoutes(
                 } bindContract
                 GET to
                 { request: Request ->
-                    renderer.render(pageFactory.buildContactTrashList(request.webContext))
+                    val ctx = request.webContext
+                    if (ctx.user == null) {
+                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    }
+                    renderer.render(pageFactory.buildContactTrashList(ctx))
                 },
         )
 

@@ -9,39 +9,75 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
 import org.jooq.DSLContext
+import org.jooq.Record
+import org.jooq.impl.DSL
+import org.jooq.impl.SQLDataType
 import org.slf4j.LoggerFactory
 
 class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     private val logger = LoggerFactory.getLogger(JooqUserRepository::class.java)
+    private val failedLoginAttempts = DSL.field(DSL.name("failed_login_attempts"), SQLDataType.INTEGER)
+    private val lockedUntil = DSL.field(DSL.name("locked_until"), SQLDataType.TIMESTAMPWITHTIMEZONE)
+    private val totpSecret = DSL.field(DSL.name("totp_secret"), SQLDataType.VARCHAR)
+    private val totpEnabled = DSL.field(DSL.name("totp_enabled"), SQLDataType.BOOLEAN)
+    private val totpBackupCodes = DSL.field(DSL.name("totp_backup_codes"), SQLDataType.CLOB)
+    private val userFields =
+        listOf(
+            PLT_USERS.ID,
+            PLT_USERS.USERNAME,
+            PLT_USERS.EMAIL,
+            PLT_USERS.PASSWORD_HASH,
+            PLT_USERS.ROLE,
+            PLT_USERS.ENABLED,
+            PLT_USERS.LAST_ACTIVITY_AT,
+            PLT_USERS.AVATAR_URL,
+            PLT_USERS.EMAIL_NOTIFICATIONS_ENABLED,
+            PLT_USERS.PUSH_NOTIFICATIONS_ENABLED,
+            PLT_USERS.LANGUAGE,
+            PLT_USERS.THEME,
+            PLT_USERS.LAYOUT,
+            failedLoginAttempts,
+            lockedUntil,
+            totpSecret,
+            totpEnabled,
+            totpBackupCodes,
+        )
 
-    private fun mapUser(record: io.github.rygel.outerstellar.platform.jooq.tables.records.PltUsersRecord): User {
+    private fun mapUser(record: Record): User {
         return User(
-            id = record.id!!,
-            username = record.username!!,
-            email = record.email!!,
-            passwordHash = record.passwordHash!!,
-            role = UserRole.valueOf(record.role!!),
-            enabled = record.enabled!!,
-            lastActivityAt = record.lastActivityAt?.toInstant(ZoneOffset.UTC),
-            avatarUrl = record.avatarUrl,
-            emailNotificationsEnabled = record.emailNotificationsEnabled ?: true,
-            pushNotificationsEnabled = record.pushNotificationsEnabled ?: true,
-            language = record.language,
-            theme = record.theme,
-            layout = record.layout,
+            id = record.get(PLT_USERS.ID)!!,
+            username = record.get(PLT_USERS.USERNAME)!!,
+            email = record.get(PLT_USERS.EMAIL)!!,
+            passwordHash = record.get(PLT_USERS.PASSWORD_HASH)!!,
+            role = UserRole.valueOf(record.get(PLT_USERS.ROLE)!!),
+            enabled = record.get(PLT_USERS.ENABLED)!!,
+            failedLoginAttempts = record.get(failedLoginAttempts) ?: 0,
+            lockedUntil = record.get(lockedUntil)?.toInstant(),
+            lastActivityAt = record.get(PLT_USERS.LAST_ACTIVITY_AT)?.toInstant(ZoneOffset.UTC),
+            avatarUrl = record.get(PLT_USERS.AVATAR_URL),
+            emailNotificationsEnabled = record.get(PLT_USERS.EMAIL_NOTIFICATIONS_ENABLED) ?: true,
+            pushNotificationsEnabled = record.get(PLT_USERS.PUSH_NOTIFICATIONS_ENABLED) ?: true,
+            language = record.get(PLT_USERS.LANGUAGE),
+            theme = record.get(PLT_USERS.THEME),
+            layout = record.get(PLT_USERS.LAYOUT),
+            totpSecret = record.get(totpSecret),
+            totpEnabled = record.get(totpEnabled) ?: false,
+            totpBackupCodes = record.get(totpBackupCodes),
         )
     }
 
     override fun findById(id: UUID): User? {
-        return dsl.selectFrom(PLT_USERS).where(PLT_USERS.ID.eq(id)).fetchOne()?.let { mapUser(it) }
+        return dsl.select(userFields).from(PLT_USERS).where(PLT_USERS.ID.eq(id)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun findByUsername(username: String): User? {
-        return dsl.selectFrom(PLT_USERS).where(PLT_USERS.USERNAME.eq(username)).fetchOne()?.let { mapUser(it) }
+        return dsl.select(userFields).from(PLT_USERS).where(PLT_USERS.USERNAME.eq(username)).fetchOne()?.let {
+            mapUser(it)
+        }
     }
 
     override fun findByEmail(email: String): User? {
-        return dsl.selectFrom(PLT_USERS).where(PLT_USERS.EMAIL.eq(email)).fetchOne()?.let { mapUser(it) }
+        return dsl.select(userFields).from(PLT_USERS).where(PLT_USERS.EMAIL.eq(email)).fetchOne()?.let { mapUser(it) }
     }
 
     override fun save(user: User) {
@@ -76,11 +112,13 @@ class JooqUserRepository(private val dsl: DSLContext) : UserRepository {
     }
 
     override fun findAll(): List<User> {
-        return dsl.selectFrom(PLT_USERS).orderBy(PLT_USERS.USERNAME).fetch().map { mapUser(it) }
+        return dsl.select(userFields).from(PLT_USERS).orderBy(PLT_USERS.USERNAME).fetch().map { mapUser(it) }
     }
 
     override fun findPage(limit: Int, offset: Int): List<User> =
-        dsl.selectFrom(PLT_USERS).orderBy(PLT_USERS.USERNAME).limit(limit).offset(offset).fetch().map { mapUser(it) }
+        dsl.select(userFields).from(PLT_USERS).orderBy(PLT_USERS.USERNAME).limit(limit).offset(offset).fetch().map {
+            mapUser(it)
+        }
 
     override fun countAll(): Long = dsl.selectCount().from(PLT_USERS).fetchOne(0, Long::class.java) ?: 0L
 

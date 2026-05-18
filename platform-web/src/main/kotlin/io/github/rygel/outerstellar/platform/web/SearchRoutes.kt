@@ -26,6 +26,9 @@ class SearchRoutes(
                 GET to
                 { request ->
                     val ctx = request.webContext
+                    if (ctx.user == null) {
+                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    }
                     val query = request.query("q").orEmpty()
                     val limit =
                         request.query("limit")?.toIntOrNull()?.coerceIn(1, SearchPageFactory.MAX_SEARCH_LIMIT)
@@ -39,6 +42,12 @@ class SearchRoutes(
                 } bindContract
                 GET to
                 { request ->
+                    val ctx = request.webContext
+                    if (ctx.user == null) {
+                        return@to Response(Status.UNAUTHORIZED)
+                            .header("content-type", "application/json")
+                            .body("""{"message":"Authentication required","status":401}""")
+                    }
                     val query = request.query("q").orEmpty()
                     val limit =
                         request.query("limit")?.toIntOrNull()?.coerceIn(1, SearchPageFactory.MAX_SEARCH_LIMIT)
