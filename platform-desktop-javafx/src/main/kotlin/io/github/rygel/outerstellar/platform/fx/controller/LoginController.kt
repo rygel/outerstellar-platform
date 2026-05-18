@@ -21,6 +21,7 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
     private val usernameField = TextField()
     private val passwordField = PasswordField()
     private val loginButton = Button("Login")
+    private val cancelButton = Button("Cancel")
 
     fun createScene(): Scene {
         val root =
@@ -46,6 +47,11 @@ class LoginController(private val onLoginSuccess: () -> Unit, private val onCanc
                     loginButton.apply {
                         prefWidth = 250.0
                         setOnAction { onLogin() }
+                    },
+                    cancelButton.apply {
+                        prefWidth = 250.0
+                        isVisible = onCancel != null
+                        setOnAction { onCancel?.invoke() }
                     },
                 )
             }
