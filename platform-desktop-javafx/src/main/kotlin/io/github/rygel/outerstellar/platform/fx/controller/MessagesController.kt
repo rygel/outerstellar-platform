@@ -1,19 +1,14 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
-import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import javafx.beans.property.SimpleObjectProperty
 import javafx.fxml.FXML
-import javafx.fxml.FXMLLoader
-import javafx.scene.Scene
 import javafx.scene.control.Label
 import javafx.scene.control.ListView
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
-import javafx.stage.Modality
-import javafx.stage.Stage
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
@@ -27,7 +22,6 @@ class MessagesController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(MessagesController::class.java)
     private val viewModel: FxSyncViewModel by inject()
-    private val themeManager: FxThemeManager by inject()
 
     @FXML private lateinit var searchField: TextField
     @FXML private lateinit var messagesList: ListView<MessageSummary>
@@ -116,17 +110,9 @@ class MessagesController : KoinComponent {
     }
 
     private fun showConflictDialog(msg: MessageSummary) {
-        val loader = FXMLLoader(javaClass.getResource("/fxml/ConflictDialog.fxml"))
-        val root = loader.load<javafx.scene.Parent>()
-        val controller = loader.getController<ConflictController>()
+        val controller = ConflictController()
         controller.setMessage(msg)
-        val stage = Stage()
-        stage.initModality(Modality.APPLICATION_MODAL)
-        stage.title = "Resolve Sync Conflict"
-        val scene = Scene(root)
-        themeManager.setScene(scene)
-        stage.scene = scene
-        stage.showAndWait()
+        controller.showAndWait()
         if (controller.conflictStrategy != null) {
             loadMessages()
         }

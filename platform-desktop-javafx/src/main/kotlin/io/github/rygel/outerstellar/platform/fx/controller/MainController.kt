@@ -16,6 +16,7 @@ import javafx.scene.control.Alert
 import javafx.scene.control.Button
 import javafx.scene.control.ButtonType
 import javafx.scene.control.Label
+import javafx.scene.input.KeyCombination
 import javafx.scene.layout.StackPane
 import javafx.scene.layout.VBox
 import javafx.stage.Modality
@@ -45,6 +46,14 @@ class MainController : KoinComponent {
     @FXML private lateinit var navSettingsBtn: Button
     @FXML private lateinit var navLoginBtn: Button
     @FXML private lateinit var navLogoutBtn: Button
+
+    fun createScene(scene: Scene) {
+        scene.accelerators[KeyCombination.valueOf("Ctrl+N")] = Runnable { onNewMessage() }
+        scene.accelerators[KeyCombination.valueOf("Ctrl+O")] = Runnable { onNewContact() }
+        scene.accelerators[KeyCombination.valueOf("F5")] = Runnable { onSync() }
+        scene.accelerators[KeyCombination.valueOf("Ctrl+,")] = Runnable { onSettings() }
+        scene.accelerators[KeyCombination.valueOf("Ctrl+Q")] = Runnable { onExit() }
+    }
 
     @FXML
     fun initialize() {
@@ -208,15 +217,18 @@ class MainController : KoinComponent {
     }
 
     private fun showChangePasswordDialog() {
-        showDialog("ChangePasswordDialog.fxml", "Change Password")
+        val owner = sidebar.scene?.window as? Stage ?: return
+        ChangePasswordController.show(owner)
     }
 
     private fun showHelpDialog() {
-        showDialog("HelpDialog.fxml", "Help")
+        val owner = sidebar.scene?.window as? Stage ?: return
+        HelpController.show(owner)
     }
 
     private fun showAboutDialog() {
-        showDialog("AboutDialog.fxml", "About")
+        val owner = sidebar.scene?.window as? Stage ?: return
+        AboutController.show(owner)
     }
 
     private fun checkForUpdate() {
