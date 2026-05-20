@@ -90,39 +90,39 @@ class ComponentRoutes(
                 },
         ) + voteRoutes()
 
-    private fun voteRoutes() =
-        if (voteService != null)
-            listOf(
-                "/components/messages/{syncId}/vote" meta
-                    {
-                        summary = "Vote fragment for a message"
-                    } bindContract
-                    GET to
-                    { request: org.http4k.core.Request ->
-                        val syncId = extractSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
-                        val ctx = request.webContext
-                        val userId = ctx.user?.id
-                        val score = voteService.getScore(syncId, userId)
-                        renderer.render(VoteFragmentViewModel(score, syncId))
-                    },
-                "/components/messages/{syncId}/vote" meta
-                    {
-                        summary = "Submit a vote on a message"
-                    } bindContract
-                    POST to
-                    { request: org.http4k.core.Request ->
-                        val syncId = extractSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
-                        val ctx = request.webContext
-                        val user = ctx.user
-                        if (user == null) {
-                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
-                        }
-                        val direction = request.form("direction")?.toIntOrNull() ?: 0
-                        val score = voteService.vote(syncId, user.id, direction) ?: VoteScore(syncId, 0, 0, 0, null)
-                        renderer.render(VoteFragmentViewModel(score, syncId))
-                    },
-            )
-        else emptyList()
+    private fun voteRoutes(): List<org.http4k.contract.ContractRoute> {
+        val vs = voteService ?: return emptyList()
+        return listOf(
+            "/components/messages/{syncId}/vote" meta
+                {
+                    summary = "Vote fragment for a message"
+                } bindContract
+                GET to
+                { request: org.http4k.core.Request ->
+                    val syncId = extractSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
+                    val ctx = request.webContext
+                    val userId = ctx.user?.id
+                    val score = vs.getScore(syncId, userId)
+                    renderer.render(VoteFragmentViewModel(score, syncId))
+                },
+            "/components/messages/{syncId}/vote" meta
+                {
+                    summary = "Submit a vote on a message"
+                } bindContract
+                POST to
+                { request: org.http4k.core.Request ->
+                    val syncId = extractSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
+                    val ctx = request.webContext
+                    val user = ctx.user
+                    if (user == null) {
+                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                    }
+                    val direction = request.form("direction")?.toIntOrNull() ?: 0
+                    val score = vs.vote(syncId, user.id, direction) ?: VoteScore(syncId, 0, 0, 0, null)
+                    renderer.render(VoteFragmentViewModel(score, syncId))
+                },
+        )
+    }
 
     private fun extractSyncId(request: org.http4k.core.Request): String? {
         val path = request.uri.path
