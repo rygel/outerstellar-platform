@@ -147,6 +147,8 @@ All configuration is read from `application.yaml` (or `application-{profile}.yam
 | `profile` | `APP_PROFILE` | `default` | Active config profile |
 | `devMode` | `DEVMODE` | false | Dev auto-login |
 | `sessionTimeoutMinutes` | `SESSIONTIMEOUTMINUTES` | 30 | Session timeout |
+| `registrationEnabled` | `REGISTRATION_ENABLED` | true | Enable or disable public user registration |
+| `sessionAbsoluteTimeoutMinutes` | `SESSION_ABSOLUTE_TIMEOUT_MINUTES` | 1440 | Absolute max session lifetime in minutes (cannot be extended by sliding window) |
 | `cspPolicy` | `CSP_POLICY` | (default policy) | Content-Security-Policy |
 
 ### Runtime Config (runtime section)

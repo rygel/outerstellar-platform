@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.ChangePasswordRequest
@@ -36,7 +37,7 @@ import org.http4k.lens.LensFailure
 import org.http4k.lens.Path
 import org.http4k.lens.long
 
-class AuthApi(private val securityService: SecurityService) : ServerRoutes {
+class AuthApi(private val securityService: SecurityService, private val appConfig: AppConfig) : ServerRoutes {
     private val loginRequestLens = Body.auto<LoginRequest>().toLens()
     private val registerRequestLens = Body.auto<RegisterRequest>().toLens()
     private val tokenResponseLens = Body.auto<AuthTokenResponse>().toLens()
@@ -249,25 +250,29 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 } bindContract
                 POST to
                 { request ->
-                    val register = registerRequestLens(request)
-                    try {
-                        val user = securityService.register(register.username, register.password)
-                        val sessionToken = securityService.createSession(user.id)
-                        Response(Status.OK)
-                            .with(
-                                tokenResponseLens of
-                                    AuthTokenResponse(
-                                        token = sessionToken,
-                                        username = user.username,
-                                        role = user.role.name,
-                                    )
-                            )
-                    } catch (e: UsernameAlreadyExistsException) {
-                        Response(Status.CONFLICT).body(e.message ?: "Username already taken")
-                    } catch (e: WeakPasswordException) {
-                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
-                    } catch (e: IllegalArgumentException) {
-                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
+                    if (!appConfig.registrationEnabled) {
+                        Response(Status.FORBIDDEN).body("Registration is disabled")
+                    } else {
+                        val register = registerRequestLens(request)
+                        try {
+                            val user = securityService.register(register.username, register.password)
+                            val sessionToken = securityService.createSession(user.id)
+                            Response(Status.OK)
+                                .with(
+                                    tokenResponseLens of
+                                        AuthTokenResponse(
+                                            token = sessionToken,
+                                            username = user.username,
+                                            role = user.role.name,
+                                        )
+                                )
+                        } catch (e: UsernameAlreadyExistsException) {
+                            Response(Status.CONFLICT).body(e.message ?: "Username already taken")
+                        } catch (e: WeakPasswordException) {
+                            Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
+                        } catch (e: IllegalArgumentException) {
+                            Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
+                        }
                     }
                 },
             "/api/v1/auth/reset-request" meta

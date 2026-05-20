@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
+import io.github.rygel.outerstellar.platform.model.RegistrationDisabledException
 import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.UserRole
@@ -109,6 +110,9 @@ class SecurityService(
     }
 
     fun register(username: String, password: String): User {
+        if (!config.registrationEnabled) {
+            throw RegistrationDisabledException()
+        }
         require(username.isNotBlank()) { "Username is required" }
         val normalized = password.trim()
         validatePassword(normalized)?.let { throw WeakPasswordException(it) }
@@ -319,9 +323,13 @@ class SecurityService(
         val tokenHash = hashToken(rawToken)
         val activeSession = repo.findByTokenHash(tokenHash)
         if (activeSession != null) {
+            val absoluteDeadline = activeSession.createdAt.plusSeconds(config.sessionAbsoluteTimeoutSeconds)
+            if (Instant.now().isAfter(absoluteDeadline)) {
+                repo.deleteByTokenHash(tokenHash)
+                return SessionLookup.Expired
+            }
             val user = userRepository.findById(activeSession.userId)
             if (user != null && user.enabled) {
-                // Extend session on activity
                 repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(config.sessionTimeoutSeconds))
                 activityUpdater?.record(user.id) ?: userRepository.updateLastActivity(user.id)
                 return SessionLookup.Active(user)

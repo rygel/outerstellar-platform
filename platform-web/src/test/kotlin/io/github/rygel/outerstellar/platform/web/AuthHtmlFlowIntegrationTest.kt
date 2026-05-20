@@ -59,7 +59,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "htmltestuser",
                 email = "htmltestuser@test.com",
-                passwordHash = encoder.encode("correct-password"),
+                passwordHash = encoder.encode("C0rr3ct-P@ss"),
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
@@ -122,7 +122,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
             app(
                 Request(POST, "/auth/components/result")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(formBody("mode" to "sign-in", "email" to testUser.username, "password" to "correct-password"))
+                    .body(formBody("mode" to "sign-in", "email" to testUser.username, "password" to "C0rr3ct-P@ss"))
             )
 
         assertEquals(Status.FOUND, response.status)
@@ -193,7 +193,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                         formBody(
                             "mode" to "register",
                             "email" to testUser.username, // already registered
-                            "password" to "anotherpassword",
+                            "password" to "An0ther-P@ss1",
                         )
                     )
             )
@@ -265,9 +265,9 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(
                         formBody(
-                            "currentPassword" to "correct-password",
-                            "newPassword" to "new-strong-password",
-                            "confirmPassword" to "new-strong-password",
+                            "currentPassword" to "C0rr3ct-P@ss",
+                            "newPassword" to "N3w-Str0ng@Pw",
+                            "confirmPassword" to "N3w-Str0ng@Pw",
                         )
                     )
             )
@@ -310,9 +310,9 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(
                         formBody(
-                            "currentPassword" to "correct-password",
-                            "newPassword" to "new-pass-one",
-                            "confirmPassword" to "new-pass-two",
+                            "currentPassword" to "C0rr3ct-P@ss",
+                            "newPassword" to "N3w-P@ss-One1",
+                            "confirmPassword" to "N3w-P@ss-Two2",
                         )
                     )
             )

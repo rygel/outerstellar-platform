@@ -1,0 +1,4 @@
+[allowlist]
+paths = [
+    '''platform-security/src/test/kotlin/.*SecurityServiceTest\.kt$''',
+]
