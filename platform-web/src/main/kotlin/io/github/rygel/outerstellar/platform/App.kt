@@ -42,6 +42,7 @@ import io.github.rygel.outerstellar.platform.web.TOTPApiRoutes
 import io.github.rygel.outerstellar.platform.web.TOTPRoutes
 import io.github.rygel.outerstellar.platform.web.UserAdminApi
 import io.github.rygel.outerstellar.platform.web.UserAdminRoutes
+import io.github.rygel.outerstellar.platform.web.VoteApi
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
 import io.github.rygel.outerstellar.platform.web.analyticsPageViewFilter
 import io.github.rygel.outerstellar.platform.web.etagCachingFilter
@@ -253,10 +254,15 @@ private fun buildApiRoutes(
     val notificationService = ctx.notificationService
     val appLabel = ctx.appLabel
 
+    val voteService = ctx.voteService
+
     val apiRoutes = contract {
         renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
         routes += AuthApi(securityService, ctx.config).routes
+        if (voteService != null) {
+            routes += VoteApi(voteService).routes
+        }
     }
 
     val syncContract = contract {
@@ -374,7 +380,7 @@ private fun buildComponentRoutes(ctx: AppContext): RoutingHttpHandler {
     return contract {
         renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), KotlinxSerialization)
         descriptionPath = "/components/openapi.json"
-        routes += ComponentRoutes(pageFactory, jteRenderer).routes
+        routes += ComponentRoutes(pageFactory, jteRenderer, ctx.voteService).routes
     }
 }
 

@@ -207,6 +207,13 @@ data class ErrorHelpFragment(val title: String, val items: List<String>) : ViewM
 
 data class FooterStatusFragment(val text: String) : ViewModel
 
+data class VoteFragmentViewModel(
+    val score: io.github.rygel.outerstellar.platform.model.VoteScore,
+    val messageSyncId: String,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/VoteFragment"
+}
+
 data class DevDashboardPage(
     val metrics: String,
     val cacheStats: Map<String, Any>,
