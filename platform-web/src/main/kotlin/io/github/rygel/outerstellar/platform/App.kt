@@ -85,6 +85,7 @@ private class OptionalServices(
     val deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository?,
     val syncWebSocket: SyncWebSocket?,
     val plugin: PlatformPlugin?,
+    val voteService: io.github.rygel.outerstellar.platform.service.VoteService?,
 )
 
 private class AppContext(
@@ -124,6 +125,9 @@ private class AppContext(
     val plugin
         get() = services.plugin
 
+    val voteService
+        get() = services.voteService
+
     val appLabel: String
         get() = plugin?.appLabel ?: "Outerstellar"
 
@@ -154,6 +158,7 @@ fun app(
     activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater? = null,
     syncWebSocket: SyncWebSocket? = null,
     totpService: TOTPService? = null,
+    voteService: io.github.rygel.outerstellar.platform.service.VoteService? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
     val ctx =
@@ -176,6 +181,7 @@ fun app(
                     deviceTokenRepository = deviceTokenRepository,
                     syncWebSocket = syncWebSocket,
                     plugin = plugin,
+                    voteService = voteService,
                 ),
         )
     val httpHandler = assembleHttpHandler(ctx)
