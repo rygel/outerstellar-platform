@@ -17,9 +17,11 @@ import io.github.rygel.outerstellar.platform.persistence.JooqPasswordResetReposi
 import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqTransactionManager
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqVoteRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
+import io.github.rygel.outerstellar.platform.persistence.VoteRepository
 import io.github.rygel.outerstellar.platform.security.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.security.CachingUserRepository
 import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
@@ -101,6 +103,8 @@ val persistenceModule
         single<DeviceTokenRepository> { JooqDeviceTokenRepository(get()) }
 
         single<SessionRepository> { JooqSessionRepository(get()) }
+
+        single<VoteRepository> { JooqVoteRepository(get()) }
     }
 
 /**
