@@ -214,6 +214,13 @@ data class VoteFragmentViewModel(
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/VoteFragment"
 }
 
+data class PollFragmentViewModel(
+    val results: io.github.rygel.outerstellar.platform.model.PollWithResults,
+    val syncId: String,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/PollCard"
+}
+
 data class DevDashboardPage(
     val metrics: String,
     val cacheStats: Map<String, Any>,
