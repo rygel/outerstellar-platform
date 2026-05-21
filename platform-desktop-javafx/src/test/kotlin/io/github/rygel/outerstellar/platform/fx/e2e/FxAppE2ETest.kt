@@ -7,9 +7,11 @@ import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.model.PagedResult
 import io.github.rygel.outerstellar.platform.model.PaginationMetadata
 import io.github.rygel.outerstellar.platform.service.MessageService
-import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
-import io.mockk.every
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import io.mockk.mockk
 import java.util.Locale
 import javafx.fxml.FXMLLoader
@@ -49,11 +51,14 @@ class FxAppE2ETest {
             }
 
             val messageService = mockk<MessageService>(relaxed = true)
-            every { messageService.listMessages(any(), any(), any(), any()) } returns
+            io.mockk.every { messageService.listMessages(any(), any(), any(), any()) } returns
                 PagedResult(emptyList(), PaginationMetadata(1, 100, 0))
 
-            val syncService = mockk<SyncService>(relaxed = true)
-            val syncEngine = mockk<SyncEngine>(relaxed = true)
+            val authModule = mockk<AuthModule>(relaxed = true)
+            val syncDataModule = mockk<SyncDataModule>(relaxed = true)
+            val profileModule = mockk<ProfileModule>(relaxed = true)
+            val adminModule = mockk<AdminModule>(relaxed = true)
+            val notificationModule = mockk<NotificationModule>(relaxed = true)
 
             val testModule = module {
                 single { FxAppConfig() }
@@ -63,12 +68,15 @@ class FxAppE2ETest {
                 single { FxThemeManager() }
                 single<I18nService> { I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) } }
                 single { messageService }
-                single { syncService }
+                single<AuthModule> { authModule }
+                single<SyncDataModule> { syncDataModule }
+                single<ProfileModule> { profileModule }
+                single<AdminModule> { adminModule }
+                single<NotificationModule> { notificationModule }
                 single<io.github.rygel.outerstellar.platform.persistence.MessageCache> {
                     io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
                 }
-                single<SyncEngine> { syncEngine }
-                single { FxSyncViewModel(get()) }
+                single { FxSyncViewModel(get(), get(), get(), get(), get(), get()) }
             }
 
             GlobalContext.startKoin { modules(testModule) }

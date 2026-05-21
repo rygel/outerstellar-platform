@@ -133,13 +133,11 @@ fun main() {
 
     val i18nService = I18nService.create("messages").also { it.setLocale(initialLocale) }
 
-    SwingUtilities.invokeLater { initializeUi(splash, analytics, connectivityChecker, savedState, i18nService) }
+    SwingUtilities.invokeLater { initializeUi(splash, savedState, i18nService) }
 }
 
 private fun initializeUi(
     splash: JWindow,
-    analytics: PersistentBatchingAnalyticsService?,
-    connectivityChecker: ConnectivityChecker,
     savedState: DesktopState?,
     i18nService: I18nService,
 ) {

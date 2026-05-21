@@ -1,13 +1,21 @@
 package io.github.rygel.outerstellar.platform.fx.viewmodel
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.ContactSummary
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.NotificationSummary
 import io.github.rygel.outerstellar.platform.model.UserSummary
-import io.github.rygel.outerstellar.platform.sync.engine.EngineListener
-import io.github.rygel.outerstellar.platform.sync.engine.EngineState
-import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleIntegerProperty
@@ -17,22 +25,28 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.concurrent.Task
 
-@Suppress("TooManyFunctions")
-class FxSyncViewModel(private val engine: SyncEngine) {
+class FxSyncViewModel(
+    private val authModule: AuthModule,
+    private val syncDataModule: SyncDataModule,
+    private val profileModule: ProfileModule,
+    private val adminModule: AdminModule,
+    private val notificationModule: NotificationModule,
+    private val i18n: I18nService,
+) {
 
-    val userName = SimpleStringProperty("")
-    val userEmail = SimpleStringProperty("")
-    val userAvatarUrl = SimpleObjectProperty<String?>(null)
-    val userRole = SimpleObjectProperty<String?>(null)
-    val isLoggedIn = SimpleBooleanProperty(false)
-    val isOnline = SimpleBooleanProperty(true)
-    val isSyncing = SimpleBooleanProperty(false)
+    val userName = SimpleStringProperty(authModule.authState.userName)
+    val userEmail = SimpleStringProperty(profileModule.profileState.userEmail)
+    val userAvatarUrl = SimpleObjectProperty<String?>(profileModule.profileState.userAvatarUrl)
+    val userRole = SimpleObjectProperty<String?>(authModule.authState.userRole)
+    val isLoggedIn = SimpleBooleanProperty(authModule.authState.isLoggedIn)
+    val isOnline = SimpleBooleanProperty(syncDataModule.syncDataState.isOnline)
+    val isSyncing = SimpleBooleanProperty(syncDataModule.syncDataState.isSyncing)
     val status = SimpleStringProperty("Ready")
-    val searchQuery = SimpleStringProperty("")
+    val searchQuery = SimpleStringProperty(syncDataModule.syncDataState.searchQuery)
     val author = SimpleStringProperty("")
     val content = SimpleStringProperty("")
-    val emailNotificationsEnabled = SimpleBooleanProperty(false)
-    val pushNotificationsEnabled = SimpleBooleanProperty(false)
+    val emailNotificationsEnabled = SimpleBooleanProperty(profileModule.profileState.emailNotificationsEnabled)
+    val pushNotificationsEnabled = SimpleBooleanProperty(profileModule.profileState.pushNotificationsEnabled)
 
     val messages: ObservableList<MessageSummary> = FXCollections.observableArrayList()
     val contacts: ObservableList<ContactSummary> = FXCollections.observableArrayList()
@@ -41,10 +55,29 @@ class FxSyncViewModel(private val engine: SyncEngine) {
 
     val unreadNotificationCount = SimpleIntegerProperty(0)
 
-    private val listener =
-        object : EngineListener {
-            override fun onStateChanged(newState: EngineState) {
-                Platform.runLater { syncProperties(newState) }
+    private val syncDataListener =
+        object : SyncDataListener {
+            override fun onSyncDataStateChanged(
+                state: io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataState
+            ) {
+                Platform.runLater {
+                    isOnline.set(state.isOnline)
+                    isSyncing.set(state.isSyncing)
+                    if (state.syncStatus.isNotBlank()) status.set(state.syncStatus)
+                    messages.setAll(state.messages)
+                    contacts.setAll(state.contacts)
+                }
+            }
+        }
+
+    private val authListener =
+        object : AuthListener {
+            override fun onAuthStateChanged(state: io.github.rygel.outerstellar.platform.sync.engine.module.AuthState) {
+                Platform.runLater {
+                    isLoggedIn.set(state.isLoggedIn)
+                    userName.set(state.userName)
+                    userRole.set(state.userRole)
+                }
             }
 
             override fun onSessionExpired() {
@@ -57,80 +90,131 @@ class FxSyncViewModel(private val engine: SyncEngine) {
             }
         }
 
+    private val profileListener =
+        object : ProfileListener {
+            override fun onProfileStateChanged(
+                state: io.github.rygel.outerstellar.platform.sync.engine.module.ProfileState
+            ) {
+                Platform.runLater {
+                    userEmail.set(state.userEmail)
+                    userAvatarUrl.set(state.userAvatarUrl)
+                    emailNotificationsEnabled.set(state.emailNotificationsEnabled)
+                    pushNotificationsEnabled.set(state.pushNotificationsEnabled)
+                }
+            }
+        }
+
+    private val adminListener =
+        object : AdminListener {
+            override fun onAdminStateChanged(
+                state: io.github.rygel.outerstellar.platform.sync.engine.module.AdminState
+            ) {
+                Platform.runLater { adminUsers.setAll(state.adminUsers) }
+            }
+        }
+
+    private val notificationListener =
+        object : NotificationListener {
+            override fun onNotificationStateChanged(
+                state: io.github.rygel.outerstellar.platform.sync.engine.module.NotificationState
+            ) {
+                Platform.runLater {
+                    notifications.setAll(state.notifications)
+                    unreadNotificationCount.set(state.unreadCount)
+                }
+            }
+        }
+
     init {
-        engine.addListener(listener)
-        syncProperties(engine.state)
+        syncDataModule.addListener(syncDataListener)
+        authModule.addListener(authListener)
+        profileModule.addListener(profileListener)
+        adminModule.addListener(adminListener)
+        notificationModule.addListener(notificationListener)
+        syncFromModules()
     }
 
-    private fun syncProperties(state: EngineState) {
-        userName.set(state.userName)
-        userEmail.set(state.userEmail)
-        userAvatarUrl.set(state.userAvatarUrl)
-        userRole.set(state.userRole)
-        isLoggedIn.set(state.isLoggedIn)
-        isOnline.set(state.isOnline)
-        isSyncing.set(state.isSyncing)
-        if (state.status.isNotBlank()) status.set(state.status)
-        searchQuery.set(state.searchQuery)
-        emailNotificationsEnabled.set(state.emailNotificationsEnabled)
-        pushNotificationsEnabled.set(state.pushNotificationsEnabled)
-        messages.setAll(state.messages)
-        contacts.setAll(state.contacts)
-        adminUsers.setAll(state.adminUsers)
-        notifications.setAll(state.notifications)
-        unreadNotificationCount.set(state.notifications.count { !it.read })
+    private fun syncFromModules() {
+        val auth = authModule.authState
+        userName.set(auth.userName)
+        isLoggedIn.set(auth.isLoggedIn)
+        userRole.set(auth.userRole)
+
+        val sd = syncDataModule.syncDataState
+        isOnline.set(sd.isOnline)
+        isSyncing.set(sd.isSyncing)
+        if (sd.syncStatus.isNotBlank()) status.set(sd.syncStatus)
+        messages.setAll(sd.messages)
+        contacts.setAll(sd.contacts)
+
+        val prof = profileModule.profileState
+        userEmail.set(prof.userEmail)
+        userAvatarUrl.set(prof.userAvatarUrl)
+        emailNotificationsEnabled.set(prof.emailNotificationsEnabled)
+        pushNotificationsEnabled.set(prof.pushNotificationsEnabled)
+
+        adminUsers.setAll(adminModule.adminState.adminUsers)
+        notifications.setAll(notificationModule.notificationState.notifications)
+        unreadNotificationCount.set(notificationModule.notificationState.unreadCount)
     }
 
-    fun login(username: String, password: String): Task<Result<Unit>> =
-        task("login") { engine.login(username, password) }
+    fun login(username: String, password: String): Task<Result<Unit>> = task { authModule.login(username, password) }
 
-    fun register(username: String, password: String): Task<Result<Unit>> =
-        task("register") { engine.register(username, password) }
+    fun register(username: String, password: String): Task<Result<Unit>> = task {
+        authModule.register(username, password)
+    }
 
-    fun logout(): Task<Unit> = task("logout") { engine.logout() }
+    fun logout(): Task<Unit> = task { authModule.logout() }
 
-    fun sync(isAuto: Boolean = false): Task<Result<Unit>> = task("sync") { engine.sync(isAuto) }
+    fun sync(isAuto: Boolean = false): Task<Result<Unit>> = task { syncDataModule.sync(isAuto) }
 
-    fun changePassword(currentPassword: String, newPassword: String): Task<Result<Unit>> =
-        task("changePassword") { engine.changePassword(currentPassword, newPassword) }
+    fun changePassword(currentPassword: String, newPassword: String): Task<Result<Unit>> = task {
+        authModule.changePassword(currentPassword, newPassword)
+    }
 
-    fun requestPasswordReset(email: String): Task<Result<Unit>> =
-        task("requestPasswordReset") { engine.requestPasswordReset(email) }
+    fun requestPasswordReset(email: String): Task<Result<Unit>> = task { authModule.requestPasswordReset(email) }
 
-    fun resetPassword(token: String, newPassword: String): Task<Result<Unit>> =
-        task("resetPassword") { engine.resetPassword(token, newPassword) }
+    fun resetPassword(token: String, newPassword: String): Task<Result<Unit>> = task {
+        authModule.resetPassword(token, newPassword)
+    }
 
-    fun loadUsers(): Task<Unit> = task("loadUsers") { engine.loadUsers() }
+    fun loadUsers(): Task<Unit> = task { adminModule.loadUsers() }
 
-    fun setUserEnabled(userId: String, enabled: Boolean): Task<Result<Unit>> =
-        task("setUserEnabled") { engine.setUserEnabled(userId, enabled) }
+    fun setUserEnabled(userId: String, enabled: Boolean): Task<Result<Unit>> = task {
+        adminModule.setUserEnabled(userId, enabled)
+    }
 
-    fun setUserRole(userId: String, role: String): Task<Result<Unit>> =
-        task("setUserRole") { engine.setUserRole(userId, role) }
+    fun setUserRole(userId: String, role: String): Task<Result<Unit>> = task { adminModule.setUserRole(userId, role) }
 
-    fun loadNotifications(): Task<Unit> = task("loadNotifications") { engine.loadNotifications() }
+    fun loadNotifications(): Task<Unit> = task { notificationModule.loadNotifications() }
 
-    fun markNotificationRead(notificationId: String): Task<Unit> =
-        task("markNotificationRead") { engine.markNotificationRead(notificationId) }
+    fun markNotificationRead(notificationId: String): Task<Unit> = task {
+        notificationModule.markNotificationRead(notificationId)
+    }
 
-    fun markAllNotificationsRead(): Task<Unit> = task("markAllNotificationsRead") { engine.markAllNotificationsRead() }
+    fun markAllNotificationsRead(): Task<Unit> = task { notificationModule.markAllNotificationsRead() }
 
-    fun loadProfile(): Task<Unit> = task("loadProfile") { engine.loadProfile() }
+    fun loadProfile(): Task<Unit> = task { profileModule.loadProfile() }
 
-    fun updateProfile(email: String, username: String?, avatarUrl: String?): Task<Result<Unit>> =
-        task("updateProfile") { engine.updateProfile(email, username, avatarUrl) }
+    fun updateProfile(email: String, username: String?, avatarUrl: String?): Task<Result<Unit>> = task {
+        profileModule.updateProfile(email, username, avatarUrl)
+    }
 
-    fun deleteAccount(currentPassword: String): Task<Result<Unit>> =
-        task("deleteAccount") { engine.deleteAccount(currentPassword) }
+    fun deleteAccount(currentPassword: String): Task<Result<Unit>> = task {
+        profileModule.deleteAccount(currentPassword)
+    }
 
-    fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Task<Result<Unit>> =
-        task("updateNotificationPreferences") { engine.updateNotificationPreferences(emailEnabled, pushEnabled) }
+    fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Task<Result<Unit>> = task {
+        profileModule.updateNotificationPreferences(emailEnabled, pushEnabled)
+    }
 
-    fun createLocalMessage(author: String, content: String): Task<Result<Unit>> =
-        task("createLocalMessage") { engine.createLocalMessage(author, content) }
+    fun createLocalMessage(author: String, content: String): Task<Result<Unit>> = task {
+        syncDataModule.createLocalMessage(author, content)
+    }
 
-    fun resolveConflict(syncId: String, strategy: ConflictStrategy): Task<Unit> =
-        task("resolveConflict") { engine.resolveConflict(syncId, strategy) }
+    fun resolveConflict(syncId: String, strategy: ConflictStrategy): Task<Unit> = task {
+        syncDataModule.resolveConflict(syncId, strategy)
+    }
 
     fun createContact(
         name: String,
@@ -140,10 +224,9 @@ class FxSyncViewModel(private val engine: SyncEngine) {
         company: String,
         companyAddress: String,
         department: String,
-    ): Task<Result<Unit>> =
-        task("createContact") {
-            engine.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
-        }
+    ): Task<Result<Unit>> = task {
+        syncDataModule.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
+    }
 
     fun updateContact(
         syncId: String,
@@ -154,40 +237,33 @@ class FxSyncViewModel(private val engine: SyncEngine) {
         company: String,
         companyAddress: String,
         department: String,
-    ): Task<Result<Unit>> =
-        task("updateContact") {
-            engine.updateContact(syncId, name, emails, phones, socialMedia, company, companyAddress, department)
-        }
+    ): Task<Result<Unit>> = task {
+        syncDataModule.updateContact(syncId, name, emails, phones, socialMedia, company, companyAddress, department)
+    }
 
-    fun loadData(): Task<Unit> = task("loadData") { engine.loadData() }
+    fun loadData(): Task<Unit> = task { syncDataModule.loadData() }
 
-    fun loadMessages(): Task<Unit> = task("loadMessages") { engine.loadMessages() }
+    fun loadMessages(): Task<Unit> = task { syncDataModule.loadMessages() }
 
-    fun loadContacts(): Task<Unit> = task("loadContacts") { engine.loadContacts() }
+    fun loadContacts(): Task<Unit> = task { syncDataModule.loadContacts() }
 
     fun startAutoSync() {
-        engine.startAutoSync()
+        syncDataModule.startAutoSync()
     }
 
     fun stopAutoSync() {
-        engine.stopAutoSync()
-    }
-
-    fun startConnectivityChecker() {
-        engine.startConnectivityChecker()
-    }
-
-    fun stopConnectivityChecker() {
-        engine.stopConnectivityChecker()
+        syncDataModule.stopAutoSync()
     }
 
     fun shutdown() {
-        engine.removeListener(listener)
-        engine.shutdown()
+        syncDataModule.removeListener(syncDataListener)
+        authModule.removeListener(authListener)
+        profileModule.removeListener(profileListener)
+        adminModule.removeListener(adminListener)
+        notificationModule.removeListener(notificationListener)
     }
 
-    @Suppress("UnusedParameter")
-    private fun <T> task(operation: String, block: () -> T): Task<T> {
+    private fun <T> task(block: () -> T): Task<T> {
         return object : Task<T>() {
             override fun call(): T = block()
         }

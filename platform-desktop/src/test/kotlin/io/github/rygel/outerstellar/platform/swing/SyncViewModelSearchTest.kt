@@ -19,15 +19,6 @@ import org.junit.jupiter.api.Test
 class SyncViewModelSearchTest {
     private val i18n = mockk<I18nService>(relaxed = true)
 
-    private fun createVm(): SyncViewModel {
-        val authModule = mockk<AuthModule>(relaxed = true)
-        val syncDataModule = mockk<SyncDataModule>(relaxed = true)
-        val profileModule = mockk<ProfileModule>(relaxed = true)
-        val adminModule = mockk<AdminModule>(relaxed = true)
-        val notificationModule = mockk<NotificationModule>(relaxed = true)
-        return SyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18n)
-    }
-
     @Test
     fun `searchQuery debounces rapid keystrokes`() {
         val latch = CountDownLatch(1)
