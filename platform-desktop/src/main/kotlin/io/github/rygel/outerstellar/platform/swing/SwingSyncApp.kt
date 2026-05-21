@@ -11,7 +11,6 @@ import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
 import io.github.rygel.outerstellar.platform.swing.analytics.PersistentBatchingAnalyticsService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
 import io.github.rygel.outerstellar.platform.sync.engine.HttpConnectivityChecker
 import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
 import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
@@ -136,11 +135,7 @@ fun main() {
     SwingUtilities.invokeLater { initializeUi(splash, savedState, i18nService) }
 }
 
-private fun initializeUi(
-    splash: JWindow,
-    savedState: DesktopState?,
-    i18nService: I18nService,
-) {
+private fun initializeUi(splash: JWindow, savedState: DesktopState?, i18nService: I18nService) {
     val themeManager = ThemeManager()
     val startupTheme =
         savedState?.themeId?.let { themeId ->

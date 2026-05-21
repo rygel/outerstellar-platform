@@ -21,11 +21,14 @@ import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
 import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModuleImpl
 import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModuleImpl
+import org.http4k.client.JavaHttpClient
+import org.http4k.core.HttpHandler
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val apiClientModule
     get() = module {
+        single<HttpHandler> { JavaHttpClient() }
         single { ApiSession() }
         single<AuthClient> { HttpAuthClient(get(named("serverBaseUrl")), get(), get()) }
         single<SyncClient> { HttpSyncClient(get(named("serverBaseUrl")), get(), get()) }

@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.PollWithResults
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.User
@@ -7,7 +8,6 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlinx.serialization.Serializable
 import org.http4k.core.Body
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.DELETE
@@ -44,27 +44,12 @@ import org.junit.jupiter.api.BeforeEach
  */
 class PollIntegrationTest : WebTest() {
 
-    @Serializable private data class PollOptionDto(val id: Long, val position: Int, val text: String)
-
-    @Serializable
-    private data class PollResultsDto(
-        val syncId: String,
-        val question: String,
-        val multiChoice: Boolean,
-        val closed: Boolean,
-        val deadline: String? = null,
-        val options: List<PollOptionDto>,
-        val voteCounts: Map<Long, Int>,
-        val totalVotes: Int,
-        val userVotedOptionIds: Set<Long> = emptySet(),
-    )
-
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
     private lateinit var securityService: SecurityService
     private lateinit var sessionToken: String
 
-    private val pollResultsLens = Body.auto<PollResultsDto>().toLens()
+    private val pollResultsLens = Body.auto<PollWithResults>().toLens()
 
     @BeforeEach
     fun setupTest() {
@@ -99,7 +84,7 @@ class PollIntegrationTest : WebTest() {
     private fun createPollViaApi(
         question: String = "Test question?",
         options: List<String> = listOf("Option A", "Option B"),
-    ): PollResultsDto {
+    ): PollWithResults {
         val body = """{"question":"$question","options":${options.joinToString(",", "[", "]") { "\"$it\"" }}}"""
         val response =
             app(
@@ -123,7 +108,7 @@ class PollIntegrationTest : WebTest() {
             )
         assertEquals(Status.CREATED, response.status)
         val result = pollResultsLens(response)
-        assertEquals("What?", result.question)
+        assertEquals("What?", result.poll.question)
         assertEquals(2, result.options.size)
     }
 
@@ -153,10 +138,10 @@ class PollIntegrationTest : WebTest() {
     @Test
     fun `GET api-polls-syncId returns poll with results`() {
         val created = createPollViaApi()
-        val response = app(Request(GET, "/api/v1/polls/${created.syncId}").cookie(sessionCookie()))
+        val response = app(Request(GET, "/api/v1/polls/${created.poll.syncId}").cookie(sessionCookie()))
         assertEquals(Status.OK, response.status)
         val result = pollResultsLens(response)
-        assertEquals(created.syncId, result.syncId)
+        assertEquals(created.poll.syncId, result.poll.syncId)
         assertEquals(2, result.options.size)
     }
 
@@ -172,7 +157,7 @@ class PollIntegrationTest : WebTest() {
         val optionId = created.options.first().id
         val response =
             app(
-                Request(POST, "/api/v1/polls/${created.syncId}/vote")
+                Request(POST, "/api/v1/polls/${created.poll.syncId}/vote")
                     .header("content-type", "application/json")
                     .body("""{"optionId":$optionId}""")
                     .cookie(sessionCookie())
@@ -188,7 +173,7 @@ class PollIntegrationTest : WebTest() {
         val optionId = created.options.first().id
         val response =
             app(
-                Request(POST, "/api/v1/polls/${created.syncId}/vote")
+                Request(POST, "/api/v1/polls/${created.poll.syncId}/vote")
                     .header("content-type", "application/json")
                     .body("""{"optionId":$optionId}""")
             )
@@ -201,26 +186,26 @@ class PollIntegrationTest : WebTest() {
         val optionId = created.options.first().id
 
         app(
-            Request(POST, "/api/v1/polls/${created.syncId}/vote")
+            Request(POST, "/api/v1/polls/${created.poll.syncId}/vote")
                 .header("content-type", "application/json")
                 .body("""{"optionId":$optionId}""")
                 .cookie(sessionCookie())
         )
 
         val response =
-            app(Request(DELETE, "/api/v1/polls/${created.syncId}/vote?optionId=$optionId").cookie(sessionCookie()))
+            app(Request(DELETE, "/api/v1/polls/${created.poll.syncId}/vote?optionId=$optionId").cookie(sessionCookie()))
         assertEquals(Status.NO_CONTENT, response.status)
     }
 
     @Test
     fun `POST api-polls-syncId-close closes poll`() {
         val created = createPollViaApi()
-        val response = app(Request(POST, "/api/v1/polls/${created.syncId}/close").cookie(sessionCookie()))
+        val response = app(Request(POST, "/api/v1/polls/${created.poll.syncId}/close").cookie(sessionCookie()))
         assertEquals(Status.OK, response.status)
 
-        val getResponse = app(Request(GET, "/api/v1/polls/${created.syncId}").cookie(sessionCookie()))
+        val getResponse = app(Request(GET, "/api/v1/polls/${created.poll.syncId}").cookie(sessionCookie()))
         val result = pollResultsLens(getResponse)
-        assertTrue(result.closed)
+        assertTrue(result.poll.closedAt != null)
     }
 
     @Test
@@ -240,7 +225,7 @@ class PollIntegrationTest : WebTest() {
 
         val response =
             app(
-                Request(POST, "/api/v1/polls/${created.syncId}/close")
+                Request(POST, "/api/v1/polls/${created.poll.syncId}/close")
                     .cookie(Cookie(WebContext.SESSION_COOKIE, otherToken))
             )
         assertEquals(Status.FORBIDDEN, response.status)
@@ -249,10 +234,10 @@ class PollIntegrationTest : WebTest() {
     @Test
     fun `DELETE api-polls-syncId deletes poll`() {
         val created = createPollViaApi()
-        val response = app(Request(DELETE, "/api/v1/polls/${created.syncId}").cookie(sessionCookie()))
+        val response = app(Request(DELETE, "/api/v1/polls/${created.poll.syncId}").cookie(sessionCookie()))
         assertEquals(Status.NO_CONTENT, response.status)
 
-        val getResponse = app(Request(GET, "/api/v1/polls/${created.syncId}").cookie(sessionCookie()))
+        val getResponse = app(Request(GET, "/api/v1/polls/${created.poll.syncId}").cookie(sessionCookie()))
         assertEquals(Status.NOT_FOUND, getResponse.status)
     }
 
@@ -268,7 +253,7 @@ class PollIntegrationTest : WebTest() {
     @Test
     fun `GET components-polls-syncId returns poll card fragment`() {
         val created = createPollViaApi()
-        val response = app(Request(GET, "/components/polls/${created.syncId}").cookie(sessionCookie()))
+        val response = app(Request(GET, "/components/polls/${created.poll.syncId}").cookie(sessionCookie()))
         assertEquals(Status.OK, response.status)
         val body = response.bodyString()
         assertTrue(body.contains("Test question?"), "Fragment should contain poll question")
@@ -281,7 +266,7 @@ class PollIntegrationTest : WebTest() {
         val optionId = created.options.first().id
         val response =
             app(
-                Request(POST, "/components/polls/${created.syncId}/vote")
+                Request(POST, "/components/polls/${created.poll.syncId}/vote")
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body("optionId=$optionId")
                     .cookie(sessionCookie())
