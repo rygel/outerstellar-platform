@@ -2,8 +2,9 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.Poll
 import io.github.rygel.outerstellar.platform.model.PollOption
-import java.sql.Timestamp
 import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -18,10 +19,10 @@ class JooqPollRepository(private val dsl: DSLContext) : PollRepository {
     private val creatorIdField = DSL.field(DSL.name("creator_id"), SQLDataType.UUID)
     private val questionField = DSL.field(DSL.name("question"), SQLDataType.VARCHAR)
     private val multiChoiceField = DSL.field(DSL.name("multi_choice"), SQLDataType.BOOLEAN)
-    private val closedAtField = DSL.field(DSL.name("closed_at"), SQLDataType.TIMESTAMP)
-    private val deadlineField = DSL.field(DSL.name("deadline"), SQLDataType.TIMESTAMP)
-    private val pollCreatedAtField = DSL.field(DSL.name("created_at"), SQLDataType.TIMESTAMP)
-    private val pollUpdatedAtField = DSL.field(DSL.name("updated_at"), SQLDataType.TIMESTAMP)
+    private val closedAtField = DSL.field(DSL.name("closed_at"), SQLDataType.TIMESTAMPWITHTIMEZONE)
+    private val deadlineField = DSL.field(DSL.name("deadline"), SQLDataType.TIMESTAMPWITHTIMEZONE)
+    private val pollCreatedAtField = DSL.field(DSL.name("created_at"), SQLDataType.TIMESTAMPWITHTIMEZONE)
+    private val pollUpdatedAtField = DSL.field(DSL.name("updated_at"), SQLDataType.TIMESTAMPWITHTIMEZONE)
 
     private val optionsTable = DSL.table("plt_poll_options")
     private val optionIdField = DSL.field(DSL.name("id"), SQLDataType.BIGINT)
@@ -41,10 +42,10 @@ class JooqPollRepository(private val dsl: DSLContext) : PollRepository {
             creatorId = record.get(creatorIdField)!!,
             question = record.get(questionField)!!,
             multiChoice = record.get(multiChoiceField) ?: false,
-            closedAt = record.get(closedAtField)?.toInstant(),
-            deadline = record.get(deadlineField)?.toInstant(),
-            createdAt = record.get(pollCreatedAtField)?.toInstant() ?: Instant.now(),
-            updatedAt = record.get(pollUpdatedAtField)?.toInstant() ?: Instant.now(),
+            closedAt = record.get(closedAtField, OffsetDateTime::class.java)?.toInstant(),
+            deadline = record.get(deadlineField, OffsetDateTime::class.java)?.toInstant(),
+            createdAt = record.get(pollCreatedAtField, OffsetDateTime::class.java)?.toInstant() ?: Instant.now(),
+            updatedAt = record.get(pollUpdatedAtField, OffsetDateTime::class.java)?.toInstant() ?: Instant.now(),
         )
 
     private fun mapOptionRecord(record: Record): PollOption =
@@ -62,9 +63,9 @@ class JooqPollRepository(private val dsl: DSLContext) : PollRepository {
                 .set(creatorIdField, poll.creatorId)
                 .set(questionField, poll.question)
                 .set(multiChoiceField, poll.multiChoice)
-                .set(deadlineField, poll.deadline?.let { Timestamp.from(it) })
-                .set(pollCreatedAtField, Timestamp.from(poll.createdAt))
-                .set(pollUpdatedAtField, Timestamp.from(poll.updatedAt))
+                .set(deadlineField, poll.deadline?.let { it.atOffset(ZoneOffset.UTC) })
+                .set(pollCreatedAtField, poll.createdAt.atOffset(ZoneOffset.UTC))
+                .set(pollUpdatedAtField, poll.updatedAt.atOffset(ZoneOffset.UTC))
                 .returning(pollIdField)
                 .fetchOne()!!
 
@@ -125,7 +126,7 @@ class JooqPollRepository(private val dsl: DSLContext) : PollRepository {
     }
 
     override fun closePoll(syncId: String) {
-        val now = Timestamp.from(Instant.now())
+        val now = OffsetDateTime.now(ZoneOffset.UTC)
         dsl.update(pollsTable)
             .set(closedAtField, now)
             .set(pollUpdatedAtField, now)
