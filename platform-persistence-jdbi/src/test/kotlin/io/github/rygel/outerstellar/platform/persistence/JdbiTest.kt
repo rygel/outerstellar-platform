@@ -31,6 +31,9 @@ abstract class JdbiTest {
             handle.execute("DELETE FROM plt_contact_socials")
             handle.execute("DELETE FROM plt_contacts")
             handle.execute("DELETE FROM plt_messages")
+            handle.execute("DELETE FROM plt_poll_votes")
+            handle.execute("DELETE FROM plt_poll_options")
+            handle.execute("DELETE FROM plt_polls")
             handle.execute("DELETE FROM plt_sync_state")
             handle.execute("DELETE FROM plt_users")
         }
