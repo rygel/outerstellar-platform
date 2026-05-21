@@ -62,7 +62,7 @@ class NotificationModuleImpl(
         listeners.forEach { it.onSessionExpired() }
     }
 
-    private inline fun runGuarded(operation: String, crossinline onError: (Exception) -> Unit = {}, block: () -> Unit) {
+    private fun runGuarded(operation: String, onError: (Exception) -> Unit = {}, block: () -> Unit) {
         try {
             block()
         } catch (e: SessionExpiredException) {

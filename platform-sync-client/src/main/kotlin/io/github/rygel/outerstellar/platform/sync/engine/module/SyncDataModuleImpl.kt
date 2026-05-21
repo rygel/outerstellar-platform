@@ -302,7 +302,7 @@ class SyncDataModuleImpl(
         return if (parts.isEmpty()) "Everything up to date" else "Synced: ${parts.joinToString(", ")}"
     }
 
-    private inline fun runGuarded(operation: String, crossinline onError: (Exception) -> Unit = {}, block: () -> Unit) {
+    private fun runGuarded(operation: String, onError: (Exception) -> Unit = {}, block: () -> Unit) {
         try {
             block()
         } catch (e: SessionExpiredException) {
@@ -314,9 +314,9 @@ class SyncDataModuleImpl(
         }
     }
 
-    private inline fun runGuardedResult(
+    private fun runGuardedResult(
         operation: String,
-        crossinline onError: (Exception) -> Unit = {},
+        onError: (Exception) -> Unit = {},
         block: () -> Result<Unit>,
     ): Result<Unit> {
         return try {

@@ -142,9 +142,9 @@ class AuthModuleImpl(
         notifier?.notifyFailure("Session expired. Please log in again.")
     }
 
-    private inline fun runGuardedResult(
+    private fun runGuardedResult(
         operation: String,
-        crossinline onError: (Exception) -> Unit = {},
+        onError: (Exception) -> Unit = {},
         block: () -> Result<Unit>,
     ): Result<Unit> {
         return try {

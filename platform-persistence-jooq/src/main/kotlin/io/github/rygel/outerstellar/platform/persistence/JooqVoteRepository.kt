@@ -2,8 +2,8 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.MessageVote
 import io.github.rygel.outerstellar.platform.model.VoteScore
-import java.sql.Timestamp
 import java.time.Instant
+import java.time.ZoneOffset
 import java.util.UUID
 import org.jooq.DSLContext
 import org.jooq.Record
@@ -17,7 +17,7 @@ class JooqVoteRepository(private val dsl: DSLContext) : VoteRepository {
     private val messageSyncIdField = DSL.field(DSL.name("message_sync_id"), SQLDataType.VARCHAR)
     private val userIdField = DSL.field(DSL.name("user_id"), SQLDataType.UUID)
     private val directionField = DSL.field(DSL.name("direction"), SQLDataType.INTEGER)
-    private val createdAtField = DSL.field(DSL.name("created_at"), SQLDataType.TIMESTAMP)
+    private val createdAtField = DSL.field(DSL.name("created_at"), SQLDataType.TIMESTAMPWITHTIMEZONE)
 
     private fun mapRecord(record: Record): MessageVote =
         MessageVote(
@@ -33,7 +33,7 @@ class JooqVoteRepository(private val dsl: DSLContext) : VoteRepository {
             .set(messageSyncIdField, vote.messageSyncId)
             .set(userIdField, vote.userId)
             .set(directionField, vote.direction)
-            .set(createdAtField, Timestamp.from(vote.createdAt))
+            .set(createdAtField, vote.createdAt.atOffset(ZoneOffset.UTC))
             .execute()
     }
 

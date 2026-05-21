@@ -1,6 +1,5 @@
 package io.github.rygel.outerstellar.platform.sync.client
 
-import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.model.SyncException
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
@@ -43,11 +42,5 @@ class HttpSyncClient(private val baseUrl: String, private val session: ApiSessio
     private fun authenticated(request: Request): Response {
         val authed = session.apiToken?.let { request.header("Authorization", "Bearer $it") } ?: request
         return client(authed)
-    }
-
-    private fun checkSessionExpired(response: Response) {
-        if (response.status == Status.UNAUTHORIZED && response.header("X-Session-Expired") == "true") {
-            throw SessionExpiredException()
-        }
     }
 }
