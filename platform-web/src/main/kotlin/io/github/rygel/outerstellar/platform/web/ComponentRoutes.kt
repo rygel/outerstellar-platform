@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.model.VoteScore
 import io.github.rygel.outerstellar.platform.service.PollService
 import io.github.rygel.outerstellar.platform.service.VoteService
 import org.http4k.contract.bindContract
+import org.http4k.contract.div
 import org.http4k.contract.meta
 import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.GET
@@ -12,6 +13,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.body.form
+import org.http4k.lens.Path
 import org.http4k.lens.Query
 import org.http4k.lens.int
 import org.http4k.lens.string
@@ -21,8 +23,6 @@ private const val DEFAULT_LIMIT = 10
 private const val MAX_LIMIT = 100
 private const val VOTE_PATH_PREFIX = "/components/messages/"
 private const val VOTE_PATH_SUFFIX = "/vote"
-private const val POLL_PATH_PREFIX = "/components/polls/"
-private const val POLL_PATH_SUFFIX_VOTE = "/vote"
 
 class ComponentRoutes(
     private val pageFactory: WebPageFactory,
@@ -35,6 +35,7 @@ class ComponentRoutes(
     private val offsetLens = Query.int().defaulted("offset", 0)
     private val yearLens = Query.int().optional("year")
     private val optionIdLens = Query.string().required("optionId")
+    private val pollSyncIdPath = Path.string().of("syncId")
 
     override val routes =
         listOf(
@@ -96,113 +97,110 @@ class ComponentRoutes(
                 },
         ) + voteRoutes() + pollRoutes()
 
-    private fun voteRoutes(): List<org.http4k.contract.ContractRoute> {
-        val vs = voteService ?: return emptyList()
-        return listOf(
-            "/components/messages/{syncId}/vote" meta
-                {
-                    summary = "Vote fragment for a message"
-                } bindContract
-                GET to
-                { request: org.http4k.core.Request ->
-                    val syncId = extractVoteSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
-                    val ctx = request.webContext
-                    val userId = ctx.user?.id
-                    val score = vs.getScore(syncId, userId)
-                    renderer.render(VoteFragmentViewModel(score, syncId))
-                },
-            "/components/messages/{syncId}/vote" meta
-                {
-                    summary = "Submit a vote on a message"
-                } bindContract
-                POST to
-                { request: org.http4k.core.Request ->
-                    val syncId = extractVoteSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
-                    val ctx = request.webContext
-                    val user = ctx.user
-                    if (user == null) {
-                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
-                    }
-                    val direction = request.form("direction")?.toIntOrNull() ?: 0
-                    val score = vs.vote(syncId, user.id, direction) ?: VoteScore(syncId, 0, 0, 0, null)
-                    renderer.render(VoteFragmentViewModel(score, syncId))
-                },
-        )
-    }
+    private fun voteRoutes() =
+        if (voteService == null) {
+            emptyList()
+        } else {
+            val vs = voteService
+            listOf(
+                "/components/messages/{syncId}/vote" meta
+                    {
+                        summary = "Vote fragment for a message"
+                    } bindContract
+                    GET to
+                    { request: org.http4k.core.Request ->
+                        val syncId = extractVoteSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
+                        val ctx = request.webContext
+                        val userId = ctx.user?.id
+                        val score = vs.getScore(syncId, userId)
+                        renderer.render(VoteFragmentViewModel(score, syncId))
+                    },
+                "/components/messages/{syncId}/vote" meta
+                    {
+                        summary = "Submit a vote on a message"
+                    } bindContract
+                    POST to
+                    { request: org.http4k.core.Request ->
+                        val syncId = extractVoteSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
+                        val ctx = request.webContext
+                        val user = ctx.user
+                        if (user == null) {
+                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        }
+                        val direction = request.form("direction")?.toIntOrNull() ?: 0
+                        val score = vs.vote(syncId, user.id, direction) ?: VoteScore(syncId, 0, 0, 0, null)
+                        renderer.render(VoteFragmentViewModel(score, syncId))
+                    },
+            )
+        }
 
-    private fun pollRoutes(): List<org.http4k.contract.ContractRoute> {
-        val ps = pollService ?: return emptyList()
-        return listOf(
-            "/components/polls/{syncId}" meta
-                {
-                    summary = "Poll card fragment"
-                } bindContract
-                GET to
-                { request: org.http4k.core.Request ->
-                    val syncId = extractPollSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
-                    val ctx = request.webContext
-                    val results = ps.getPoll(syncId, ctx.user?.id) ?: return@to Response(Status.NOT_FOUND)
-                    renderer.render(PollFragmentViewModel(results, syncId))
-                },
-            "/components/polls/{syncId}/vote" meta
-                {
-                    summary = "Cast a vote on a poll option"
-                } bindContract
-                POST to
-                { request: org.http4k.core.Request ->
-                    val syncId = extractPollSyncIdVote(request) ?: return@to Response(Status.BAD_REQUEST)
-                    val ctx = request.webContext
-                    val user = ctx.user
-                    if (user == null) {
-                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
-                    }
-                    val optionId = request.form("optionId")?.toLongOrNull() ?: return@to Response(Status.BAD_REQUEST)
-                    val results =
-                        try {
-                            ps.castVote(syncId, optionId, user.id)
-                        } catch (_: IllegalStateException) {
-                            ps.getPoll(syncId, user.id)
-                        } ?: return@to Response(Status.NOT_FOUND)
-                    renderer.render(PollFragmentViewModel(results, syncId))
-                },
-            "/components/polls/{syncId}/vote" meta
-                {
-                    summary = "Remove a vote from a poll option"
-                } bindContract
-                DELETE to
-                { request: org.http4k.core.Request ->
-                    val syncId = extractPollSyncIdVote(request) ?: return@to Response(Status.BAD_REQUEST)
-                    val ctx = request.webContext
-                    val user = ctx.user
-                    if (user == null) {
-                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
-                    }
-                    val optionId = optionIdLens(request).toLongOrNull() ?: return@to Response(Status.BAD_REQUEST)
-                    ps.removeVote(syncId, optionId, user.id)
-                    val results = ps.getPoll(syncId, user.id) ?: return@to Response(Status.NOT_FOUND)
-                    renderer.render(PollFragmentViewModel(results, syncId))
-                },
-        )
-    }
+    private fun pollRoutes() =
+        if (pollService == null) {
+            emptyList()
+        } else {
+            val ps = pollService
+            listOf(
+                "/components/polls" / pollSyncIdPath meta
+                    {
+                        summary = "Poll card fragment"
+                    } bindContract
+                    GET to
+                    { syncId ->
+                        { request: org.http4k.core.Request ->
+                            val ctx = request.webContext
+                            val results = ps.getPoll(syncId, ctx.user?.id) ?: return@to Response(Status.NOT_FOUND)
+                            renderer.render(PollFragmentViewModel(results, syncId))
+                        }
+                    },
+                "/components/polls" / pollSyncIdPath / "vote" meta
+                    {
+                        summary = "Cast a vote on a poll option"
+                    } bindContract
+                    POST to
+                    { syncId, _ ->
+                        { request: org.http4k.core.Request ->
+                            val ctx = request.webContext
+                            val user = ctx.user
+                            if (user == null) {
+                                return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            }
+                            val optionId =
+                                request.form("optionId")?.toLongOrNull() ?: return@to Response(Status.BAD_REQUEST)
+                            val results =
+                                try {
+                                    ps.castVote(syncId, optionId, user.id)
+                                } catch (_: IllegalStateException) {
+                                    ps.getPoll(syncId, user.id)
+                                } ?: return@to Response(Status.NOT_FOUND)
+                            renderer.render(PollFragmentViewModel(results, syncId))
+                        }
+                    },
+                "/components/polls" / pollSyncIdPath / "vote" meta
+                    {
+                        summary = "Remove a vote from a poll option"
+                    } bindContract
+                    DELETE to
+                    { syncId, _ ->
+                        { request: org.http4k.core.Request ->
+                            val ctx = request.webContext
+                            val user = ctx.user
+                            if (user == null) {
+                                return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            }
+                            val optionId =
+                                optionIdLens(request).toLongOrNull() ?: return@to Response(Status.BAD_REQUEST)
+                            ps.removeVote(syncId, optionId, user.id)
+                            val results = ps.getPoll(syncId, user.id) ?: return@to Response(Status.NOT_FOUND)
+                            renderer.render(PollFragmentViewModel(results, syncId))
+                        }
+                    },
+            )
+        }
 
     private fun extractVoteSyncId(request: org.http4k.core.Request): String? {
         val path = request.uri.path
         if (!path.startsWith(VOTE_PATH_PREFIX) || !path.endsWith(VOTE_PATH_SUFFIX)) return null
         val syncId = path.removePrefix(VOTE_PATH_PREFIX).removeSuffix(VOTE_PATH_SUFFIX)
-        return syncId.ifBlank { null }
-    }
-
-    private fun extractPollSyncId(request: org.http4k.core.Request): String? {
-        val path = request.uri.path
-        if (!path.startsWith(POLL_PATH_PREFIX)) return null
-        val syncId = path.removePrefix(POLL_PATH_PREFIX)
-        return syncId.ifBlank { null }
-    }
-
-    private fun extractPollSyncIdVote(request: org.http4k.core.Request): String? {
-        val path = request.uri.path
-        if (!path.startsWith(POLL_PATH_PREFIX) || !path.endsWith(POLL_PATH_SUFFIX_VOTE)) return null
-        val syncId = path.removePrefix(POLL_PATH_PREFIX).removeSuffix(POLL_PATH_SUFFIX_VOTE)
         return syncId.ifBlank { null }
     }
 }

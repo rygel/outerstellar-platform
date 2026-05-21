@@ -1,12 +1,12 @@
 package io.github.rygel.outerstellar.platform.fx.service
 
-import io.github.rygel.outerstellar.platform.sync.engine.EngineNotifier
+import io.github.rygel.outerstellar.platform.sync.engine.module.ModuleNotifier
 import java.awt.SystemTray
 import java.awt.Toolkit
 import java.awt.TrayIcon
 import org.slf4j.LoggerFactory
 
-object FxTrayNotifier : EngineNotifier {
+object FxTrayNotifier : ModuleNotifier {
     private val logger = LoggerFactory.getLogger(FxTrayNotifier::class.java)
     private var trayIcon: TrayIcon? = null
 

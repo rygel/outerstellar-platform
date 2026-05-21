@@ -22,6 +22,11 @@ class KoinModuleTest : KoinTest {
                     OutboxRepository::class,
                     MessageCache::class,
                     TransactionManager::class,
+                    io.github.rygel.outerstellar.platform.service.MessageService::class,
+                    io.github.rygel.outerstellar.platform.analytics.AnalyticsService::class,
+                    io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker::class,
+                    io.github.rygel.outerstellar.platform.sync.engine.module.ModuleNotifier::class,
+                    io.github.rygel.outerstellar.platform.service.ContactService::class,
                 )
         )
     }

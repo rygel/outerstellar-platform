@@ -6,7 +6,7 @@ import io.github.rygel.outerstellar.platform.fx.update.UpdateService
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
 import javafx.application.Platform
 import javafx.beans.binding.Bindings
 import javafx.fxml.FXML
@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory
 class MainController : KoinComponent {
 
     private val logger = LoggerFactory.getLogger(MainController::class.java)
-    private val syncService: SyncService by inject()
+    private val authModule: AuthModule by inject()
     private val themeManager: FxThemeManager by inject()
     private val viewModel: FxSyncViewModel by inject()
 
@@ -112,7 +112,7 @@ class MainController : KoinComponent {
 
     @FXML
     fun onNavLogout() {
-        syncService.logout()
+        authModule.logout()
         updateAuthUi()
     }
 
@@ -183,13 +183,13 @@ class MainController : KoinComponent {
     }
 
     private fun updateAuthUi() {
-        val loggedIn = syncService.userRole != null
+        val loggedIn = authModule.authState.isLoggedIn
         navLoginBtn.isVisible = !loggedIn
         navLoginBtn.isManaged = !loggedIn
         navLogoutBtn.isVisible = loggedIn
         navLogoutBtn.isManaged = loggedIn
-        navUsersBtn.isVisible = loggedIn && syncService.userRole == UserRole.ADMIN.name
-        navUsersBtn.isManaged = loggedIn && syncService.userRole == UserRole.ADMIN.name
+        navUsersBtn.isVisible = loggedIn && authModule.authState.userRole == UserRole.ADMIN.name
+        navUsersBtn.isManaged = loggedIn && authModule.authState.userRole == UserRole.ADMIN.name
     }
 
     private fun showDialog(fxmlFile: String, title: String) {

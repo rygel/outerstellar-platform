@@ -2,21 +2,21 @@ package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
+import io.github.rygel.outerstellar.platform.di.apiClientModule
 import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.desktopModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
-import io.github.rygel.outerstellar.platform.service.MessageService
-import io.github.rygel.outerstellar.platform.service.SyncProvider
 import io.github.rygel.outerstellar.platform.swing.analytics.PersistentBatchingAnalyticsService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.github.rygel.outerstellar.platform.sync.engine.HttpConnectivityChecker
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.awt.Color
@@ -57,7 +57,6 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
-import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 private const val FRAME_WIDTH = 1000
@@ -65,9 +64,11 @@ private const val FRAME_HEIGHT = 750
 
 object DesktopComponent : KoinComponent {
     val config: SwingAppConfig = get()
-    val messageService: MessageService = get()
-    val contactService: io.github.rygel.outerstellar.platform.service.ContactService = get()
-    val syncService: SyncService = get()
+    val authModule: AuthModule = get()
+    val syncDataModule: SyncDataModule = get()
+    val profileModule: ProfileModule = get()
+    val adminModule: AdminModule = get()
+    val notificationModule: NotificationModule = get()
 }
 
 fun main() {
@@ -131,16 +132,10 @@ fun main() {
 
     val i18nService = I18nService.create("messages").also { it.setLocale(initialLocale) }
 
-    SwingUtilities.invokeLater { initializeUi(splash, analytics, connectivityChecker, savedState, i18nService) }
+    SwingUtilities.invokeLater { initializeUi(splash, savedState, i18nService) }
 }
 
-private fun initializeUi(
-    splash: JWindow,
-    analytics: PersistentBatchingAnalyticsService?,
-    connectivityChecker: ConnectivityChecker,
-    savedState: DesktopState?,
-    i18nService: I18nService,
-) {
+private fun initializeUi(splash: JWindow, savedState: DesktopState?, i18nService: I18nService) {
     val themeManager = ThemeManager()
     val startupTheme =
         savedState?.themeId?.let { themeId ->
@@ -148,17 +143,15 @@ private fun initializeUi(
         } ?: DesktopTheme.DARK
     themeManager.applyTheme(startupTheme)
 
-    val notifier = SystemTrayNotifier(i18nService)
-    val engine =
-        DesktopSyncEngine(
-            DesktopComponent.syncService,
-            DesktopComponent.messageService,
-            DesktopComponent.contactService,
-            analytics ?: NoOpAnalyticsService(),
-            connectivityChecker,
-            notifier,
+    val viewModel =
+        SyncViewModel(
+            DesktopComponent.authModule,
+            DesktopComponent.syncDataModule,
+            DesktopComponent.profileModule,
+            DesktopComponent.adminModule,
+            DesktopComponent.notificationModule,
+            i18nService,
         )
-    val viewModel = SyncViewModel(engine, i18nService, DesktopComponent.contactService)
     val window =
         SyncWindow(
             viewModel,
@@ -657,11 +650,8 @@ internal fun swingRuntimeModules(): List<Module> =
                 AppConfig(jdbcUrl = cfg.jdbcUrl, jdbcUser = cfg.jdbcUser, jdbcPassword = cfg.jdbcPassword)
             }
             single<MessageCache> { NoOpMessageCache }
-            single<SyncService> {
-                SyncService(baseUrl = get(named("serverBaseUrl")), repository = get(), transactionManager = get())
-            }
-            single<SyncProvider> { get<SyncService>() }
         },
         persistenceModule,
         coreModule,
+        apiClientModule,
     )

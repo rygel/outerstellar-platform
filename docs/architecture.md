@@ -218,6 +218,37 @@ The web application uses HTMX for component-like fragment replacement:
 
 This keeps the application mostly server-rendered while still enabling richer interactions.
 
+### http4k contract routing with path parameters
+
+The project uses http4k's contract-based routing with `bindContract`. Path parameters use the `/` operator from `org.http4k.contract.div`. **This DSL has non-obvious arity rules that trip up anyone who hasn't read the working code:**
+
+```kotlin
+val syncIdPath = Path.string().of("syncId")
+
+// Single path param — handler takes 1 arg
+"/api/v1/polls" / syncIdPath meta { ... } bindContract GET to
+    { syncId -> { req -> Response(...) } }
+
+// Path param + literal suffix — handler takes 2 args (second is the suffix string, ignore with _)
+"/api/v1/polls" / syncIdPath / "vote" meta { ... } bindContract POST to
+    { syncId, _ -> { req -> Response(...) } }
+```
+
+The `/` operator between a path lens and a string literal creates a **multi-segment** route spec. The handler lambda arity **must** match the number of segments. Getting this wrong produces a compile error, not a runtime error — but only if you compile.
+
+**Reference implementation:** `HomeRoutes.kt` in `platform-web` is the canonical working example. Always read it before writing new contract routes. Do not guess at the DSL syntax.
+
+**Route classes** consumed by `App.kt` implement `ServerRoutes` and return `List<ContractRoute>`. `App.kt` uses `+=` to add them. Do not remove this interface.
+
+### Kotlinx Serialization in http4k models
+
+http4k uses `KotlinxSerialization` as its JSON body lens provider. Models used in request/response bodies must use `@Serializable` with explicit serializer annotations for non-standard types:
+
+- **UUID fields**: Use `@Serializable(with = UuidSerializer::class)` — do NOT use `@Contextual` because no `SerializersModule` is configured in the http4k JSON instance.
+- **Instant fields**: Use `@Serializable(with = InstantSerializer::class)` — same reason.
+
+The serializers live in `platform-core/.../model/Serialization.kt` as `internal` objects. Using `@Contextual` silently fails at runtime with a "no serializer found" error.
+
 ### Shell layout
 
 The web pages now share a shell with:

@@ -225,6 +225,79 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 - Export SPI (CSV/JSON export)
 - Jazzer fuzz tests
 
+## http4k contract routing rules
+
+These are hard-won rules from actual failures. Violating them produces compile errors or wrong runtime behavior.
+
+### Path parameters with the `/` operator
+
+`Path.string().of("id")` creates a path lens. Chaining with `/ "literal"` creates a **multi-segment** route spec. The handler lambda arity MUST match:
+
+```kotlin
+// Single path param — 1-arg handler
+"/api/v1/polls" / syncIdPath meta { ... } bindContract GET to
+    { syncId -> { req -> Response(...) } }
+
+// Path param + literal suffix — 2-arg handler (second arg is the literal, always ignore with _)
+"/api/v1/polls" / syncIdPath / "vote" meta { ... } bindContract POST to
+    { syncId, _ -> { req -> Response(...) } }
+```
+
+Getting the arity wrong is a **compile error**, not a runtime error. The compiler catches it — but only if you compile.
+
+### Reference implementation
+
+`HomeRoutes.kt` in `platform-web` is the canonical working example of path-param contract routes. **Always read it before writing new contract routes.** Do not guess at the DSL syntax.
+
+### ServerRoutes interface
+
+Route classes consumed by `App.kt` must implement `ServerRoutes` and return `List<ContractRoute>` from `routes`. Do not remove this interface — `App.kt` uses `+=` to add them. If a class cannot implement `ServerRoutes` (e.g. returns `Pair<Binder, ContractRoute>`), the return type is wrong and the route DSL is being used incorrectly.
+
+## Agent discipline: read before write, verify after write
+
+These rules exist because an agent repeatedly caused multi-hour debugging sessions by skipping them.
+
+### Read existing patterns before writing
+
+Before writing or rewriting code in an unfamiliar DSL or framework pattern:
+1. **Find a working reference** in the same codebase (e.g. `HomeRoutes.kt` for http4k contract routes)
+2. **Read it fully** — understand every import, operator, lambda arity, and return type
+3. **Copy the pattern mechanically** — do not improvise or assume syntax
+
+Guessing at framework DSLs and "fixing" compile errors iteratively is wasteful. The reference implementation already exists.
+
+### Compile after every file change
+
+After editing a file, compile immediately:
+```powershell
+mvn -pl <module> compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"
+```
+
+Do not batch 5 file rewrites and then compile. Errors compound and become harder to diagnose.
+
+### Run tests before declaring work done
+
+After all files compile, run the relevant tests before pushing:
+```powershell
+mvn -pl <module> test -Dtest=<TestClass>
+```
+
+Do not push code that has not been compiled and tested locally. CI round-trips waste time.
+
+### Do not chain guesses
+
+If a fix introduces a new error, **stop and read the reference implementation** instead of guessing again. Each wrong guess adds cognitive load and makes the next guess worse. The pattern is:
+
+```
+Write → Compile → FAIL → Read reference → Fix → Compile → PASS
+```
+
+Not:
+
+```
+Write → Compile → FAIL → Guess fix → Compile → FAIL → Guess fix → Compile → FAIL → ...
+```
+
 ## Safety and repository hygiene
 
 - Do not commit transient artifacts from `target/`.

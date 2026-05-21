@@ -8,8 +8,6 @@ import io.github.rygel.outerstellar.platform.swing.SystemTrayNotifier
 import io.github.rygel.outerstellar.platform.swing.analytics.PersistentBatchingAnalyticsService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
 import io.github.rygel.outerstellar.platform.sync.engine.DesktopAppConfig
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
-import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
 import java.nio.file.Path
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -31,8 +29,7 @@ val desktopModule
                 )
             else NoOpAnalyticsService()
         }
-        single<SyncEngine> { DesktopSyncEngine(get(), get(), getOrNull(), get(), getOrNull(), getOrNull()) }
-        single { SyncViewModel(get(), get(), getOrNull()) }
+        single { SyncViewModel(get(), get(), get(), get(), get(), get()) }
         single { SystemTrayNotifier(get()) }
         single<I18nService> { I18nService.create("messages") }
     }

@@ -2,20 +2,19 @@ package io.github.rygel.outerstellar.platform.model
 
 import java.time.Instant
 import java.util.UUID
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class Poll(
     val id: Long = 0,
     val syncId: String,
-    @Contextual val creatorId: UUID,
+    @Serializable(with = UuidSerializer::class) val creatorId: UUID,
     val question: String,
     val multiChoice: Boolean = false,
-    @Contextual val closedAt: Instant? = null,
-    @Contextual val deadline: Instant? = null,
-    @Contextual val createdAt: Instant = Instant.now(),
-    @Contextual val updatedAt: Instant = Instant.now(),
+    @Serializable(with = InstantSerializer::class) val closedAt: Instant? = null,
+    @Serializable(with = InstantSerializer::class) val deadline: Instant? = null,
+    @Serializable(with = InstantSerializer::class) val createdAt: Instant = Instant.now(),
+    @Serializable(with = InstantSerializer::class) val updatedAt: Instant = Instant.now(),
 )
 
 @Serializable data class PollOption(val id: Long = 0, val pollId: Long, val position: Int, val optionText: String)
@@ -25,8 +24,8 @@ data class PollVote(
     val id: Long = 0,
     val pollId: Long,
     val optionId: Long,
-    @Contextual val userId: UUID,
-    @Contextual val createdAt: Instant = Instant.now(),
+    @Serializable(with = UuidSerializer::class) val userId: UUID,
+    @Serializable(with = InstantSerializer::class) val createdAt: Instant = Instant.now(),
 )
 
 @Serializable

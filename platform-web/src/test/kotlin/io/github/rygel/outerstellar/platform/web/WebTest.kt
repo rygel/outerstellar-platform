@@ -13,6 +13,7 @@ import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqNotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqOAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqPasswordResetRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqPollRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
@@ -23,6 +24,7 @@ import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.NotificationService
+import io.github.rygel.outerstellar.platform.service.PollService
 import javax.sql.DataSource
 import org.http4k.core.HttpHandler
 import org.jooq.DSLContext
@@ -36,6 +38,7 @@ data class TestOverrides(
     val contactService: ContactService? = null,
     val notificationService: NotificationService? = null,
     val deviceTokenRepository: DeviceTokenRepository? = null,
+    val pollService: PollService? = null,
 )
 
 abstract class WebTest protected constructor() {
@@ -91,6 +94,9 @@ abstract class WebTest protected constructor() {
             testDsl.execute("DELETE FROM plt_contact_socials")
             testDsl.execute("DELETE FROM plt_contacts")
             testDsl.execute("DELETE FROM plt_messages")
+            testDsl.execute("DELETE FROM plt_poll_votes")
+            testDsl.execute("DELETE FROM plt_poll_options")
+            testDsl.execute("DELETE FROM plt_polls")
             testDsl.execute("DELETE FROM plt_sync_state")
             testDsl.execute("DELETE FROM plt_users")
         }
@@ -106,6 +112,8 @@ abstract class WebTest protected constructor() {
         val notificationRepository by lazy { JooqNotificationRepository(testDsl) }
         val passwordResetRepository by lazy { JooqPasswordResetRepository(testDsl) }
         val oauthRepository by lazy { JooqOAuthRepository(testDsl) }
+        val pollRepository by lazy { JooqPollRepository(testDsl) }
+        val pollService by lazy { PollService(pollRepository) }
 
         fun buildApp(
             config: AppConfig = testConfig,
@@ -153,6 +161,7 @@ abstract class WebTest protected constructor() {
                     resolvedUserRepo,
                     deviceTokenRepository = overrides.deviceTokenRepository,
                     notificationService = overrides.notificationService,
+                    pollService = overrides.pollService ?: pollService,
                 )
                 .http!!
         }
