@@ -14,12 +14,16 @@ import io.github.rygel.outerstellar.platform.persistence.JdbiMessageRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiOAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiOutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiPasswordResetRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiPollRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiTransactionManager
 import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiVoteRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.persistence.PollRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
+import io.github.rygel.outerstellar.platform.persistence.VoteRepository
 import io.github.rygel.outerstellar.platform.security.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.security.CachingUserRepository
 import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
@@ -90,6 +94,10 @@ val persistenceModule
         single<DeviceTokenRepository> { JdbiDeviceTokenRepository(get()) }
 
         single<SessionRepository> { JdbiSessionRepository(get()) }
+
+        single<VoteRepository> { JdbiVoteRepository(get()) }
+
+        single<PollRepository> { JdbiPollRepository(get()) }
     }
 
 private const val DEV_ADMIN_PLACEHOLDER_HASH = "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"

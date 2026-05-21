@@ -21,6 +21,7 @@ import io.github.rygel.outerstellar.platform.service.EmailService
 import io.github.rygel.outerstellar.platform.service.EventPublisher
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.NoOpEmailService
+import io.github.rygel.outerstellar.platform.service.PollService
 import io.github.rygel.outerstellar.platform.service.ResilientEmailService
 import io.github.rygel.outerstellar.platform.service.SmtpConfig
 import io.github.rygel.outerstellar.platform.service.SmtpEmailService
@@ -106,6 +107,7 @@ val webModule
         single { SyncWebSocket(get<SecurityService>()) }
         single<EventPublisher> { get<SyncWebSocket>() }
         single { VoteService(get(), get()) }
+        single { PollService(get()) }
         single<PolyHandler>(named("webServer")) {
             app(
                 messageService = getOrNull<MessageService>(),
@@ -125,6 +127,7 @@ val webModule
                 syncWebSocket = getOrNull<SyncWebSocket>(),
                 totpService = get<TOTPService>(),
                 voteService = getOrNull<VoteService>(),
+                pollService = getOrNull<PollService>(),
             )
         }
     }

@@ -87,6 +87,7 @@ private class OptionalServices(
     val syncWebSocket: SyncWebSocket?,
     val plugin: PlatformPlugin?,
     val voteService: io.github.rygel.outerstellar.platform.service.VoteService?,
+    val pollService: io.github.rygel.outerstellar.platform.service.PollService?,
 )
 
 private class AppContext(
@@ -129,6 +130,9 @@ private class AppContext(
     val voteService
         get() = services.voteService
 
+    val pollService
+        get() = services.pollService
+
     val appLabel: String
         get() = plugin?.appLabel ?: "Outerstellar"
 
@@ -160,6 +164,7 @@ fun app(
     syncWebSocket: SyncWebSocket? = null,
     totpService: TOTPService? = null,
     voteService: io.github.rygel.outerstellar.platform.service.VoteService? = null,
+    pollService: io.github.rygel.outerstellar.platform.service.PollService? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
     val ctx =
@@ -183,6 +188,7 @@ fun app(
                     syncWebSocket = syncWebSocket,
                     plugin = plugin,
                     voteService = voteService,
+                    pollService = pollService,
                 ),
         )
     val httpHandler = assembleHttpHandler(ctx)
