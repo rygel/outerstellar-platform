@@ -42,6 +42,7 @@ import io.github.rygel.outerstellar.platform.web.TOTPApiRoutes
 import io.github.rygel.outerstellar.platform.web.TOTPRoutes
 import io.github.rygel.outerstellar.platform.web.UserAdminApi
 import io.github.rygel.outerstellar.platform.web.UserAdminRoutes
+import io.github.rygel.outerstellar.platform.web.VoteApi
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
 import io.github.rygel.outerstellar.platform.web.analyticsPageViewFilter
 import io.github.rygel.outerstellar.platform.web.etagCachingFilter
@@ -85,6 +86,7 @@ private class OptionalServices(
     val deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository?,
     val syncWebSocket: SyncWebSocket?,
     val plugin: PlatformPlugin?,
+    val voteService: io.github.rygel.outerstellar.platform.service.VoteService?,
 )
 
 private class AppContext(
@@ -124,6 +126,9 @@ private class AppContext(
     val plugin
         get() = services.plugin
 
+    val voteService
+        get() = services.voteService
+
     val appLabel: String
         get() = plugin?.appLabel ?: "Outerstellar"
 
@@ -154,6 +159,7 @@ fun app(
     activityUpdater: io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater? = null,
     syncWebSocket: SyncWebSocket? = null,
     totpService: TOTPService? = null,
+    voteService: io.github.rygel.outerstellar.platform.service.VoteService? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
     val ctx =
@@ -176,6 +182,7 @@ fun app(
                     deviceTokenRepository = deviceTokenRepository,
                     syncWebSocket = syncWebSocket,
                     plugin = plugin,
+                    voteService = voteService,
                 ),
         )
     val httpHandler = assembleHttpHandler(ctx)
@@ -247,10 +254,15 @@ private fun buildApiRoutes(
     val notificationService = ctx.notificationService
     val appLabel = ctx.appLabel
 
+    val voteService = ctx.voteService
+
     val apiRoutes = contract {
         renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
         routes += AuthApi(securityService, ctx.config).routes
+        if (voteService != null) {
+            routes += VoteApi(voteService).routes
+        }
     }
 
     val syncContract = contract {
@@ -368,7 +380,7 @@ private fun buildComponentRoutes(ctx: AppContext): RoutingHttpHandler {
     return contract {
         renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), KotlinxSerialization)
         descriptionPath = "/components/openapi.json"
-        routes += ComponentRoutes(pageFactory, jteRenderer).routes
+        routes += ComponentRoutes(pageFactory, jteRenderer, ctx.voteService).routes
     }
 }
 
