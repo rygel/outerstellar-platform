@@ -1,0 +1,55 @@
+@import io.github.rygel.outerstellar.platform.web.PollFragmentViewModel
+@param model: PollFragmentViewModel
+
+<div class="poll-card card bg-base-100 shadow-sm border border-base-300">
+    <div class="card-body p-4 gap-2">
+        <h3 class="font-semibold text-base">${model.results.poll.question}</h3>
+        <ul class="flex flex-col gap-2">
+        @for(option in model.results.options)
+            <li class="flex items-center gap-2">
+                <div class="flex-1">
+                    <div class="flex justify-between text-sm mb-0.5">
+                        <span class="@if(option.id in model.results.userVotedOptionIds) font-bold text-primary @endif">${option.optionText}</span>
+                        <span class="opacity-60 tabular-nums">${model.results.voteCounts[option.id] ?: 0}</span>
+                    </div>
+                    <progress class="progress @if(option.id in model.results.userVotedOptionIds) progress-primary @else progress-neutral @endif w-full"
+                              value="${if (model.results.totalVotes > 0) ((model.results.voteCounts[option.id] ?: 0) * 100.0 / model.results.totalVotes).toInt() else 0}"
+                              max="100"></progress>
+                </div>
+                @if(model.results.poll.closedAt == null && (model.results.poll.deadline == null || !java.time.Instant.now().isAfter(model.results.poll.deadline)))
+                    @if(option.id in model.results.userVotedOptionIds)
+                        <button class="btn btn-outline btn-primary btn-xs"
+                                hx-delete="/components/polls/${model.syncId}/vote?optionId=${option.id}"
+                                hx-target="closest .poll-card"
+                                hx-swap="outerHTML"
+                                aria-label="Remove vote for ${option.optionText}">
+                            <i aria-hidden="true" class="ri-close-line"></i>
+                        </button>
+                    @else
+                        <button class="btn btn-ghost btn-xs"
+                                hx-post="/components/polls/${model.syncId}/vote"
+                                hx-vals='{"optionId": "${option.id}"}'
+                                hx-target="closest .poll-card"
+                                hx-swap="outerHTML"
+                                aria-label="Vote for ${option.optionText}">
+                            <i aria-hidden="true" class="ri-checkbox-blank-line"></i>
+                        </button>
+                    @endif
+                @endif
+            </li>
+        @endfor
+        </ul>
+        <div class="flex items-center gap-2 text-xs opacity-60 mt-1">
+            <span>${model.results.totalVotes} vote@if(model.results.totalVotes != 1)s@endif</span>
+            @if(model.results.poll.deadline != null)
+                <span>&middot; Deadline: ${model.results.poll.deadline.toString()}</span>
+            @endif
+            @if(model.results.poll.closedAt != null || (model.results.poll.deadline != null && java.time.Instant.now().isAfter(model.results.poll.deadline)))
+                <span class="badge badge-error badge-xs">Closed</span>
+            @endif
+            @if(model.results.poll.multiChoice)
+                <span class="badge badge-ghost badge-xs">Multi-choice</span>
+            @endif
+        </div>
+    </div>
+</div>

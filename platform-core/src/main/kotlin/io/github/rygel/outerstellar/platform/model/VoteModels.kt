@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.model
 
-import kotlinx.serialization.Serializable
 import java.time.Instant
 import java.util.UUID
+import kotlinx.serialization.Serializable
 
 data class MessageVote(
     val id: Long = 0,

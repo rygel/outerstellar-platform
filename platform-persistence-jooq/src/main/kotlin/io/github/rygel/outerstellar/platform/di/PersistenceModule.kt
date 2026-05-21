@@ -14,12 +14,14 @@ import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqOAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqOutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqPasswordResetRepository
+import io.github.rygel.outerstellar.platform.persistence.JooqPollRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqTransactionManager
 import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
 import io.github.rygel.outerstellar.platform.persistence.JooqVoteRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.persistence.PollRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.persistence.VoteRepository
 import io.github.rygel.outerstellar.platform.security.ApiKeyRepository
@@ -105,6 +107,8 @@ val persistenceModule
         single<SessionRepository> { JooqSessionRepository(get()) }
 
         single<VoteRepository> { JooqVoteRepository(get()) }
+
+        single<PollRepository> { JooqPollRepository(get()) }
     }
 
 /**

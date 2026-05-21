@@ -34,6 +34,7 @@ import io.github.rygel.outerstellar.platform.web.PlatformPlugin
 import io.github.rygel.outerstellar.platform.web.PluginAdminDashboardPage
 import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.PluginOptions
+import io.github.rygel.outerstellar.platform.web.PollApi
 import io.github.rygel.outerstellar.platform.web.SearchRoutes
 import io.github.rygel.outerstellar.platform.web.SettingsRoutes
 import io.github.rygel.outerstellar.platform.web.SyncApi
@@ -87,6 +88,7 @@ private class OptionalServices(
     val syncWebSocket: SyncWebSocket?,
     val plugin: PlatformPlugin?,
     val voteService: io.github.rygel.outerstellar.platform.service.VoteService?,
+    val pollService: io.github.rygel.outerstellar.platform.service.PollService?,
 )
 
 private class AppContext(
@@ -129,6 +131,9 @@ private class AppContext(
     val voteService
         get() = services.voteService
 
+    val pollService
+        get() = services.pollService
+
     val appLabel: String
         get() = plugin?.appLabel ?: "Outerstellar"
 
@@ -160,6 +165,7 @@ fun app(
     syncWebSocket: SyncWebSocket? = null,
     totpService: TOTPService? = null,
     voteService: io.github.rygel.outerstellar.platform.service.VoteService? = null,
+    pollService: io.github.rygel.outerstellar.platform.service.PollService? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
     val ctx =
@@ -183,6 +189,7 @@ fun app(
                     syncWebSocket = syncWebSocket,
                     plugin = plugin,
                     voteService = voteService,
+                    pollService = pollService,
                 ),
         )
     val httpHandler = assembleHttpHandler(ctx)
@@ -255,6 +262,7 @@ private fun buildApiRoutes(
     val appLabel = ctx.appLabel
 
     val voteService = ctx.voteService
+    val pollService = ctx.pollService
 
     val apiRoutes = contract {
         renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
@@ -262,6 +270,9 @@ private fun buildApiRoutes(
         routes += AuthApi(securityService, ctx.config).routes
         if (voteService != null) {
             routes += VoteApi(voteService).routes
+        }
+        if (pollService != null) {
+            routes += PollApi(pollService).routes
         }
     }
 
@@ -380,7 +391,7 @@ private fun buildComponentRoutes(ctx: AppContext): RoutingHttpHandler {
     return contract {
         renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), KotlinxSerialization)
         descriptionPath = "/components/openapi.json"
-        routes += ComponentRoutes(pageFactory, jteRenderer, ctx.voteService).routes
+        routes += ComponentRoutes(pageFactory, jteRenderer, ctx.voteService, ctx.pollService).routes
     }
 }
 
