@@ -31,6 +31,7 @@ import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.pl
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteNotificationBellGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JtePageHeaderGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JtePaginationGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JtePollCardGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteSidebarSelectorGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteLayoutHeadGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteSidebarLayoutGenerated
@@ -81,6 +82,7 @@ object JteClassRegistry {
             JteNotificationBellGenerated::class.java,
             JtePageHeaderGenerated::class.java,
             JtePaginationGenerated::class.java,
+            JtePollCardGenerated::class.java,
             JteSidebarSelectorGenerated::class.java,
         )
 
