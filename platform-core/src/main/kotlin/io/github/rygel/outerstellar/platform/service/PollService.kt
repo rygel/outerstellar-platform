@@ -38,17 +38,15 @@ class PollService(private val pollRepository: PollRepository) {
 
     fun castVote(pollSyncId: String, optionId: Long, userId: UUID): PollWithResults? {
         val poll = pollRepository.findById(pollSyncId) ?: return null
-        if (poll.closedAt != null) throw IllegalStateException("Poll is closed")
-        if (poll.deadline != null && Instant.now().isAfter(poll.deadline)) {
-            throw IllegalStateException("Poll deadline has passed")
-        }
+        check(poll.closedAt == null) { "Poll is closed" }
+        check(poll.deadline == null || !Instant.now().isAfter(poll.deadline)) { "Poll deadline has passed" }
         val option = pollRepository.findOptionById(optionId) ?: throw IllegalArgumentException("Option not found")
-        if (option.pollId != poll.id) throw IllegalArgumentException("Option does not belong to this poll")
+        require(option.pollId == poll.id) { "Option does not belong to this poll" }
 
         if (!poll.multiChoice) {
             val userVotes = pollRepository.getUserVotes(poll.id, userId)
-            if (userVotes.isNotEmpty() && optionId !in userVotes) {
-                throw IllegalStateException("Already voted on a different option in this single-choice poll")
+            check(optionId in userVotes || userVotes.isEmpty()) {
+                "Already voted on a different option in this single-choice poll"
             }
         }
 
@@ -72,13 +70,13 @@ class PollService(private val pollRepository: PollRepository) {
 
     fun closePoll(syncId: String, creatorId: UUID) {
         val poll = pollRepository.findById(syncId) ?: throw IllegalArgumentException("Poll not found")
-        if (poll.creatorId != creatorId) throw IllegalStateException("Only the creator can close this poll")
+        check(poll.creatorId == creatorId) { "Only the creator can close this poll" }
         pollRepository.closePoll(syncId)
     }
 
     fun deletePoll(syncId: String, creatorId: UUID) {
         val poll = pollRepository.findById(syncId) ?: throw IllegalArgumentException("Poll not found")
-        if (poll.creatorId != creatorId) throw IllegalStateException("Only the creator can delete this poll")
+        check(poll.creatorId == creatorId) { "Only the creator can delete this poll" }
         pollRepository.delete(syncId)
     }
 

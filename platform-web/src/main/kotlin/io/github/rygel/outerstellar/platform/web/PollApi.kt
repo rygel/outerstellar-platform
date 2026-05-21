@@ -5,7 +5,6 @@ import io.github.rygel.outerstellar.platform.model.Poll
 import io.github.rygel.outerstellar.platform.model.PollWithResults
 import io.github.rygel.outerstellar.platform.service.PollService
 import java.util.UUID
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
@@ -25,12 +24,20 @@ class PollApi(private val pollService: PollService) : ServerRoutes {
 
     @Serializable private data class CastVoteRequest(val optionId: Long)
 
-    @Serializable private data class PollListResponse(val polls: List<@Contextual Poll>)
+    @Serializable
+    private data class PollSummary(
+        val syncId: String,
+        val question: String,
+        val multiChoice: Boolean,
+        val closed: Boolean,
+        val deadline: String? = null,
+        val totalVotes: Int = 0,
+    )
 
     private val createPollLens = Body.auto<CreatePollRequest>().toLens()
     private val castVoteLens = Body.auto<CastVoteRequest>().toLens()
     private val pollResultsLens = Body.auto<PollWithResults>().toLens()
-    private val pollListLens = Body.auto<PollListResponse>().toLens()
+    private val pollListLens = Body.auto<List<PollSummary>>().toLens()
 
     private val stubPoll = Poll(syncId = "stub", creatorId = UUID(0, 0), question = "stub")
 
@@ -65,14 +72,23 @@ class PollApi(private val pollService: PollService) : ServerRoutes {
             "/api/v1/polls" meta
                 {
                     summary = "List open polls"
-                    returning(Status.OK, pollListLens to PollListResponse(emptyList()))
+                    returning(Status.OK, pollListLens to emptyList<PollSummary>())
                 } bindContract
                 Method.GET to
                 { request: Request ->
                     val limit = Query.int().defaulted("limit", 20)(request)
                     val offset = Query.int().defaulted("offset", 0)(request)
-                    val polls = pollService.listOpen(limit, offset)
-                    Response(Status.OK).with(pollListLens of PollListResponse(polls))
+                    val polls =
+                        pollService.listOpen(limit, offset).map { p ->
+                            PollSummary(
+                                syncId = p.syncId,
+                                question = p.question,
+                                multiChoice = p.multiChoice,
+                                closed = p.closedAt != null,
+                                deadline = p.deadline?.toString(),
+                            )
+                        }
+                    Response(Status.OK).with(pollListLens of polls)
                 },
             "/api/v1/polls/{syncId}" meta
                 {
