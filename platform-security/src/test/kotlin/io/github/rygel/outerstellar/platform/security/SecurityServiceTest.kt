@@ -3,10 +3,16 @@ package io.github.rygel.outerstellar.platform.security
 import io.github.rygel.outerstellar.platform.model.ApiKey
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.RegistrationDisabledException
+import io.github.rygel.outerstellar.platform.model.Session
+import io.github.rygel.outerstellar.platform.model.SessionLookup
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
+import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
+import io.github.rygel.outerstellar.platform.persistence.SessionRepository
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

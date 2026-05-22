@@ -1,15 +1,15 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.DeviceToken
+import io.github.rygel.outerstellar.platform.model.Session
+import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxEntry
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxStatus
-import io.github.rygel.outerstellar.platform.security.DeviceToken
-import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
+import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import io.github.rygel.outerstellar.platform.security.OAuthConnection
 import io.github.rygel.outerstellar.platform.security.OAuthRepository
-import io.github.rygel.outerstellar.platform.security.Session
-import io.github.rygel.outerstellar.platform.security.SessionRepository
 import java.time.Instant
 import java.util.UUID
 

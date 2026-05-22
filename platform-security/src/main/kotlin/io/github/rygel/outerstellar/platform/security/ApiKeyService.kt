@@ -3,6 +3,9 @@ package io.github.rygel.outerstellar.platform.security
 import io.github.rygel.outerstellar.platform.model.ApiKey
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
+import io.github.rygel.outerstellar.platform.model.User
+import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory
 

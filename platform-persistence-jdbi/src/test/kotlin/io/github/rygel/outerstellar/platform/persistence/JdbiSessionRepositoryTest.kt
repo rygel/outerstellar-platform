@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.persistence
 
+import io.github.rygel.outerstellar.platform.model.Session
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.Session
-import io.github.rygel.outerstellar.platform.security.User
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID

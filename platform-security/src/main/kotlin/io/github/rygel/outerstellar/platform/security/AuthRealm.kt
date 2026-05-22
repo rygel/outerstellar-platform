@@ -1,5 +1,8 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.model.SessionLookup
+import io.github.rygel.outerstellar.platform.model.User
+
 /** Result of an [AuthRealm] authentication attempt. */
 sealed class AuthResult {
     /** Token was recognised and the user is authenticated. */

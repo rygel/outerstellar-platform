@@ -298,6 +298,15 @@ Not:
 Write → Compile → FAIL → Guess fix → Compile → FAIL → Guess fix → Compile → FAIL → ...
 ```
 
+## Testing discipline: no smoke tests
+
+This project uses **full end-to-end tests only**. There are zero smoke tests.
+
+- **NEVER** write or suggest smoke tests. A smoke test is a superficial check (e.g., "does it start?", "does the endpoint return 200?") that validates infrastructure, not behavior.
+- Every test must assert meaningful behavior: correct data, correct state transitions, correct error handling.
+- If you are tempted to write a test that just checks an HTTP status code without verifying the response body or side effects, write a real test instead.
+- Integration tests exercise the full stack (filters → routes → services → persistence → database). They are the standard, not the exception.
+
 ## Safety and repository hygiene
 
 - Do not commit transient artifacts from `target/`.

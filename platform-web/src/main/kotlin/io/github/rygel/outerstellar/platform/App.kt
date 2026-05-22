@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
 import io.github.rygel.outerstellar.platform.security.AppleOAuthProvider
 import io.github.rygel.outerstellar.platform.security.AuthRealm
@@ -13,7 +14,6 @@ import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionRealm
 import io.github.rygel.outerstellar.platform.security.TOTPService
-import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.web.AdminNavItem
 import io.github.rygel.outerstellar.platform.web.AuthApi
@@ -84,7 +84,7 @@ private class OptionalServices(
     val cache: MessageCache?,
     val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService?,
     val jwtService: io.github.rygel.outerstellar.platform.security.JwtService?,
-    val deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository?,
+    val deviceTokenRepository: io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository?,
     val syncWebSocket: SyncWebSocket?,
     val plugin: PlatformPlugin?,
     val voteService: io.github.rygel.outerstellar.platform.service.VoteService?,
@@ -155,7 +155,7 @@ fun app(
     config: AppConfig,
     securityService: SecurityService,
     userRepository: UserRepository,
-    deviceTokenRepository: io.github.rygel.outerstellar.platform.security.DeviceTokenRepository? = null,
+    deviceTokenRepository: io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository? = null,
     analytics: AnalyticsService = NoOpAnalyticsService(),
     notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
