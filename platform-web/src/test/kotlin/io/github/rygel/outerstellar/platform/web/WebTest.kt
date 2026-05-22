@@ -90,6 +90,37 @@ abstract class WebTest protected constructor() {
 
         val renderer by lazy { createRenderer() }
         val encoder by lazy { BCryptPasswordEncoder(logRounds = 4) }
+        val testPasswordHash by lazy { encoder.encode("Test@12345678") }
+
+        fun createSecurityService(userRepository: UserRepository = this.userRepository): SecurityService =
+            SecurityService(
+                userRepository,
+                encoder,
+                sessionRepository = sessionRepository,
+                apiKeyRepository = apiKeyRepository,
+                resetRepository = passwordResetRepository,
+                auditRepository = auditRepository,
+            )
+
+        fun withAuthenticatedUser(
+            username: String = "testuser_" + java.util.UUID.randomUUID().toString().take(8),
+            passwordHash: String = testPasswordHash,
+            role: String = "USER",
+        ): Triple<String, String, String> {
+            val userId = java.util.UUID.randomUUID()
+            val user =
+                io.github.rygel.outerstellar.platform.model.User(
+                    id = userId,
+                    username = username,
+                    email = "$username@test.com",
+                    passwordHash = passwordHash,
+                    role = io.github.rygel.outerstellar.platform.model.UserRole.valueOf(role),
+                )
+            userRepository.save(user)
+            val token = createSecurityService().createSession(userId)
+            return Triple(token, userId.toString(), username)
+        }
+
         val userRepository by lazy { JdbiUserRepository(testJdbi) }
         val messageRepository by lazy { JdbiMessageRepository(testJdbi) }
         val contactRepository by lazy { JdbiContactRepository(testJdbi) }
