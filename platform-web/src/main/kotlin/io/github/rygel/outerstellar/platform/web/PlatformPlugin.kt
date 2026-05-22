@@ -122,6 +122,15 @@ data class PluginContext(
  * ```kotlin
  * startKoin { modules(myPluginModule, persistenceModule, coreModule, webModule, securityModule) }
  * ```
+ *
+ * **Important:** If your plugin provides Flyway migrations, you must also bind `PluginMigrationSource` so the
+ * persistence module can discover them:
+ * ```kotlin
+ * module {
+ *     single<PlatformPlugin> { MyPlugin() }
+ *     single<PluginMigrationSource> { get<PlatformPlugin>() }
+ * }
+ * ```
  */
 interface PlatformPlugin : PluginMigrationSource {
     /** Unique identifier for this plugin (used in logging). */
