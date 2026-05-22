@@ -2,8 +2,6 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.DeviceToken
 import java.sql.ResultSet
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 
@@ -27,7 +25,7 @@ class JdbiDeviceTokenRepository(private val jdbi: Jdbi) : DeviceTokenRepository 
                 .bind("platform", deviceToken.platform)
                 .bind("token", deviceToken.token)
                 .bind("appBundle", deviceToken.appBundle)
-                .bind("now", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("now", java.sql.Timestamp.from(java.time.Instant.now()))
                 .execute()
         }
     }

@@ -16,7 +16,6 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -61,8 +60,6 @@ class MessageSearchIntegrationTest : WebTest() {
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun bearer() = "Bearer $sessionToken"
 

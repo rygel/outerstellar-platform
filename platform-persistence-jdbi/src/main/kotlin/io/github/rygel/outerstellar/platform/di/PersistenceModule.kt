@@ -13,6 +13,7 @@ import io.github.rygel.outerstellar.platform.persistence.JdbiAuditRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiContactRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiDeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiMessageRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiOAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiOutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiPasswordResetRepository
@@ -22,6 +23,7 @@ import io.github.rygel.outerstellar.platform.persistence.JdbiTransactionManager
 import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiVoteRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
+import io.github.rygel.outerstellar.platform.persistence.NotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.PollRepository
@@ -98,6 +100,8 @@ val persistenceModule
         single<VoteRepository> { JdbiVoteRepository(get()) }
 
         single<PollRepository> { JdbiPollRepository(get()) }
+
+        single<NotificationRepository> { JdbiNotificationRepository(get()) }
     }
 
 private const val DEV_ADMIN_PLACEHOLDER_HASH = "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"

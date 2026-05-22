@@ -13,7 +13,6 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -68,8 +67,6 @@ class ComponentFragmentIntegrationTest : WebTest() {
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
 

@@ -2,7 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.persistence.JooqNotificationRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import java.util.UUID
@@ -16,7 +16,6 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -83,15 +82,13 @@ class PlatformPageRenderingTest : WebTest() {
         adminToken = securityService.createSession(adminUser.id)
         userToken = securityService.createSession(regularUser.id)
 
-        val notificationService = NotificationService(JooqNotificationRepository(testDsl))
+        val notificationService = NotificationService(JdbiNotificationRepository(testJdbi))
         app =
             buildApp(
                 securityService = securityService,
                 overrides = TestOverrides(notificationService = notificationService),
             )
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminToken)
 

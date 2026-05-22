@@ -6,17 +6,18 @@ import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.infra.migrate
+import io.github.rygel.outerstellar.platform.persistence.CleanupTables
 import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqApiKeyRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqAuditRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqContactRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqNotificationRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqOAuthRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqPasswordResetRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqPollRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiApiKeyRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiAuditRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiContactRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiMessageRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiOAuthRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiPasswordResetRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiPollRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiSessionRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
@@ -27,9 +28,8 @@ import io.github.rygel.outerstellar.platform.service.NotificationService
 import io.github.rygel.outerstellar.platform.service.PollService
 import javax.sql.DataSource
 import org.http4k.core.HttpHandler
-import org.jooq.DSLContext
-import org.jooq.SQLDialect.POSTGRES
-import org.jooq.impl.DSL
+import org.jdbi.v3.core.Jdbi
+import org.junit.jupiter.api.AfterEach
 import org.testcontainers.containers.PostgreSQLContainer
 
 data class TestOverrides(
@@ -42,6 +42,12 @@ data class TestOverrides(
 )
 
 abstract class WebTest protected constructor() {
+
+    @AfterEach
+    fun resetState() {
+        cleanup()
+    }
+
     companion object {
         private val container =
             PostgreSQLContainer<Nothing>("postgres:18").apply {
@@ -74,45 +80,26 @@ abstract class WebTest protected constructor() {
                     ),
             )
 
-        val testDsl: DSLContext by lazy { DSL.using(dataSource, POSTGRES) }
-
-        fun setup() {
-            // Initialization is handled by lazy properties
-        }
+        val testJdbi: Jdbi by lazy { Jdbi.create(dataSource) }
 
         fun cleanup() {
-            testDsl.execute("DELETE FROM plt_sessions")
-            testDsl.execute("DELETE FROM plt_notifications")
-            testDsl.execute("DELETE FROM plt_device_tokens")
-            testDsl.execute("DELETE FROM plt_oauth_connections")
-            testDsl.execute("DELETE FROM plt_api_keys")
-            testDsl.execute("DELETE FROM plt_password_reset_tokens")
-            testDsl.execute("DELETE FROM plt_audit_log")
-            testDsl.execute("DELETE FROM plt_outbox")
-            testDsl.execute("DELETE FROM plt_contact_emails")
-            testDsl.execute("DELETE FROM plt_contact_phones")
-            testDsl.execute("DELETE FROM plt_contact_socials")
-            testDsl.execute("DELETE FROM plt_contacts")
-            testDsl.execute("DELETE FROM plt_messages")
-            testDsl.execute("DELETE FROM plt_poll_votes")
-            testDsl.execute("DELETE FROM plt_poll_options")
-            testDsl.execute("DELETE FROM plt_polls")
-            testDsl.execute("DELETE FROM plt_sync_state")
-            testDsl.execute("DELETE FROM plt_users")
+            testJdbi.useHandle<Exception> { handle ->
+                CleanupTables.ALL.forEach { table -> handle.execute("DELETE FROM $table") }
+            }
         }
 
         val renderer by lazy { createRenderer() }
         val encoder by lazy { BCryptPasswordEncoder(logRounds = 4) }
-        val userRepository by lazy { JooqUserRepository(testDsl) }
-        val messageRepository by lazy { JooqMessageRepository(testDsl) }
-        val contactRepository by lazy { JooqContactRepository(testDsl) }
-        val sessionRepository by lazy { JooqSessionRepository(testDsl) }
-        val apiKeyRepository by lazy { JooqApiKeyRepository(testDsl) }
-        val auditRepository by lazy { JooqAuditRepository(testDsl) }
-        val notificationRepository by lazy { JooqNotificationRepository(testDsl) }
-        val passwordResetRepository by lazy { JooqPasswordResetRepository(testDsl) }
-        val oauthRepository by lazy { JooqOAuthRepository(testDsl) }
-        val pollRepository by lazy { JooqPollRepository(testDsl) }
+        val userRepository by lazy { JdbiUserRepository(testJdbi) }
+        val messageRepository by lazy { JdbiMessageRepository(testJdbi) }
+        val contactRepository by lazy { JdbiContactRepository(testJdbi) }
+        val sessionRepository by lazy { JdbiSessionRepository(testJdbi) }
+        val apiKeyRepository by lazy { JdbiApiKeyRepository(testJdbi) }
+        val auditRepository by lazy { JdbiAuditRepository(testJdbi) }
+        val notificationRepository by lazy { JdbiNotificationRepository(testJdbi) }
+        val passwordResetRepository by lazy { JdbiPasswordResetRepository(testJdbi) }
+        val oauthRepository by lazy { JdbiOAuthRepository(testJdbi) }
+        val pollRepository by lazy { JdbiPollRepository(testJdbi) }
         val pollService by lazy { PollService(pollRepository) }
 
         fun buildApp(

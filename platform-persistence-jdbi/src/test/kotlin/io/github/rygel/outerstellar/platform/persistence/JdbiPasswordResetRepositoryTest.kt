@@ -1,8 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.PasswordResetToken
-import io.github.rygel.outerstellar.platform.model.User
-import io.github.rygel.outerstellar.platform.model.UserRole
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.Test
@@ -15,21 +13,6 @@ import kotlin.test.assertTrue
 class JdbiPasswordResetRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiPasswordResetRepository(jdbi) }
-    private val userRepo by lazy { JdbiUserRepository(jdbi) }
-
-    private fun createUser(): UUID {
-        val id = UUID.randomUUID()
-        userRepo.save(
-            User(
-                id = id,
-                username = "user_${id.toString().take(6)}",
-                email = "${id.toString().take(6)}@example.com",
-                passwordHash = "hash",
-                role = UserRole.USER,
-            )
-        )
-        return id
-    }
 
     private fun token(userId: UUID, rawToken: String = UUID.randomUUID().toString()) =
         PasswordResetToken(userId = userId, token = rawToken, expiresAt = Instant.now().plusSeconds(3600), used = false)

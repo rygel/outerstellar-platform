@@ -37,7 +37,7 @@ class PasswordResetService(
         val resetToken =
             PasswordResetToken(
                 userId = user.id,
-                token = hashToken(tokenValue),
+                token = TokenHashing.hash(tokenValue),
                 expiresAt = Instant.now().plusSeconds(RESET_TOKEN_TTL_SECONDS),
             )
         resetRepository?.save(resetToken)
@@ -55,7 +55,7 @@ class PasswordResetService(
     fun resetPassword(token: String, newPassword: String) {
         val repository = resetRepository ?: throw IllegalArgumentException("Invalid reset token")
         val resetToken =
-            repository.findByToken(hashToken(token)) ?: throw IllegalArgumentException("Invalid reset token")
+            repository.findByToken(TokenHashing.hash(token)) ?: throw IllegalArgumentException("Invalid reset token")
 
         if (resetToken.used) {
             throw IllegalArgumentException("Reset token has already been used")
@@ -100,11 +100,6 @@ class PasswordResetService(
             val bytes = ByteArray(RESET_TOKEN_BYTES)
             SECURE_RANDOM.nextBytes(bytes)
             return "prt_" + bytes.joinToString("") { "%02x".format(it) }
-        }
-
-        private fun hashToken(token: String): String {
-            val digest = java.security.MessageDigest.getInstance("SHA-256")
-            return digest.digest(token.toByteArray()).joinToString("") { "%02x".format(it) }
         }
     }
 }

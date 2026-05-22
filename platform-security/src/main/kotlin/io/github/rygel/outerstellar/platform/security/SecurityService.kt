@@ -257,25 +257,23 @@ class SecurityService(
                 throw UsernameAlreadyExistsException(newEmail)
             }
         }
-        if (newUsername != null && newUsername != user.username) {
-            require(newUsername.isNotBlank()) { "Username cannot be blank" }
-            require(newUsername.length <= MAX_USERNAME_LENGTH) {
+        val resolvedUsername = newUsername ?: user.username
+        if (resolvedUsername != user.username) {
+            require(resolvedUsername.isNotBlank()) { "Username cannot be blank" }
+            require(resolvedUsername.length <= MAX_USERNAME_LENGTH) {
                 "Username cannot exceed $MAX_USERNAME_LENGTH characters"
             }
-            if (userRepository.findByUsername(newUsername) != null) {
-                throw UsernameAlreadyExistsException(newUsername)
+            if (userRepository.findByUsername(resolvedUsername) != null) {
+                throw UsernameAlreadyExistsException(resolvedUsername)
             }
-            userRepository.updateUsername(userId, newUsername)
         }
-        if (newAvatarUrl != user.avatarUrl) {
-            val sanitizedUrl = newAvatarUrl?.takeIf { it.isNotBlank() }
-            if (sanitizedUrl != null) {
-                UrlValidator.validate(sanitizedUrl)
-            }
-            userRepository.updateAvatarUrl(userId, sanitizedUrl)
+        val sanitizedUrl = newAvatarUrl?.takeIf { it.isNotBlank() }
+        if (sanitizedUrl != null && sanitizedUrl != user.avatarUrl) {
+            UrlValidator.validate(sanitizedUrl)
         }
-        userRepository.save(user.copy(email = newEmail))
-        logger.info("Profile updated for user {}", sanitize(user.username))
+        val updated = user.copy(email = newEmail, username = resolvedUsername, avatarUrl = sanitizedUrl)
+        userRepository.save(updated)
+        logger.info("Profile updated for user {}", sanitize(updated.username))
     }
 
     private fun deleteAccount(userId: UUID) {
@@ -313,7 +311,7 @@ class SecurityService(
     fun createSession(userId: UUID): String {
         val repo = sessionRepository ?: error("SessionRepository is not configured")
         val rawToken = "oss_" + generateRandomHex(SESSION_TOKEN_HEX_LENGTH)
-        val tokenHash = hashToken(rawToken)
+        val tokenHash = TokenHashing.hash(rawToken)
         val session =
             Session(
                 tokenHash = tokenHash,
@@ -327,7 +325,7 @@ class SecurityService(
 
     fun lookupSession(rawToken: String): SessionLookup {
         val repo = sessionRepository ?: return SessionLookup.NotFound
-        val tokenHash = hashToken(rawToken)
+        val tokenHash = TokenHashing.hash(rawToken)
         val activeSession = repo.findByTokenHash(tokenHash)
         if (activeSession != null) {
             val absoluteDeadline = activeSession.createdAt.plusSeconds(config.sessionAbsoluteTimeoutSeconds)
@@ -357,7 +355,7 @@ class SecurityService(
 
     fun deleteSession(rawToken: String) {
         val repo = sessionRepository ?: return
-        repo.deleteByTokenHash(hashToken(rawToken))
+        repo.deleteByTokenHash(TokenHashing.hash(rawToken))
     }
 
     private fun generatePartialAuthToken(userId: UUID): String {
@@ -412,11 +410,6 @@ class SecurityService(
         val bytes = ByteArray(length / 2)
         secureRandom.nextBytes(bytes)
         return bytes.joinToString("") { "%02x".format(it) }
-    }
-
-    private fun hashToken(key: String): String {
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 
     private fun audit(

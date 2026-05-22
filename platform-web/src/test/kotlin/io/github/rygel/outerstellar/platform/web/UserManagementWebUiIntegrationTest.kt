@@ -22,7 +22,6 @@ import org.http4k.core.Status
 import org.http4k.core.cookie.cookie
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -52,8 +51,6 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private data class RegisteredUser(val id: UUID, val token: String, val sessionToken: String)
 
@@ -135,9 +132,11 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     @Test
     fun `session timeout redirects HTML requests to auth page`() {
         val admin = seedAdmin()
-        testDsl.execute(
-            "UPDATE plt_sessions SET expires_at = TIMESTAMP '2020-01-01 00:00:00' WHERE user_id = '${admin.id}'"
-        )
+        testJdbi.useHandle<Exception> { handle ->
+            handle.execute(
+                "UPDATE plt_sessions SET expires_at = TIMESTAMP '2020-01-01 00:00:00' WHERE user_id = '${admin.id}'"
+            )
+        }
         val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
         assertEquals(Status.FOUND, response.status)
         assertEquals("/auth?expired=true", response.header("location"))

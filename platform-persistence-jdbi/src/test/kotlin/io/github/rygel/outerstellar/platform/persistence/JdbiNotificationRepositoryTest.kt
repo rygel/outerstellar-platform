@@ -1,7 +1,5 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.model.User
-import io.github.rygel.outerstellar.platform.model.UserRole
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -13,21 +11,6 @@ import kotlin.test.assertTrue
 class JdbiNotificationRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiNotificationRepository(jdbi) }
-    private val userRepo by lazy { JdbiUserRepository(jdbi) }
-
-    private fun createUser(): UUID {
-        val id = UUID.randomUUID()
-        userRepo.save(
-            User(
-                id = id,
-                username = "user_${id.toString().take(6)}",
-                email = "${id.toString().take(6)}@example.com",
-                passwordHash = "hash",
-                role = UserRole.USER,
-            )
-        )
-        return id
-    }
 
     private fun notification(userId: UUID, title: String = "Title", type: String = "info") =
         Notification(userId = userId, title = title, body = "Body for $title", type = type)

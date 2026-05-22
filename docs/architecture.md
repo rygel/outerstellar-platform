@@ -7,7 +7,7 @@ This platform is meant to provide a working vertical slice for:
 - Kotlin on JDK 21
 - http4k for the web server
 - Flyway for schema migration
-- jOOQ or JDBI for database access (jOOQ with code generation by default, JDBI as a lighter alternative)
+- JDBI for database access
 - PostgreSQL for persistence
 - JTE with Kotlin templates (`.kte`) for server-rendered HTML
 - HTMX for progressive enhancement and fragment swapping
@@ -21,8 +21,7 @@ The goal is to start from a runnable platform, not just a dependency list.
 The project is organized as a **multi-module Maven project**:
 
 - `platform-core` - shared domain models, services, and configuration
-- `platform-persistence-jooq` - jOOQ-backed repository implementation and Flyway migrations
-- `platform-persistence-jdbi` - JDBI-backed repository implementation (alternative to jOOQ)
+- `platform-persistence-jdbi` - JDBI-backed repository implementation and Flyway migrations
 - `platform-sync-client` - shared sync DTOs and client sync service
 - `platform-web` - http4k web server, JTE templates, and HTMX interactions
 - `platform-desktop` - Swing desktop client, theme manager, and UI tests
@@ -36,7 +35,7 @@ This structure provides better separation of concerns, allows for independent te
 
 ### Web application
 
-- `Main.kt` creates the data source, runs Flyway, builds the jOOQ repository, creates the JTE renderer, and starts Jetty via http4k.
+- `Main.kt` creates the data source, runs Flyway, builds the JDBI repository, creates the JTE renderer, and starts Jetty via http4k.
 - `App.kt` composes the routes for:
   - home page
   - auth example pages
@@ -64,7 +63,7 @@ PostgreSQL is the sole database engine for the platform:
 
 - production-grade RDBMS
 - used for local development via Podman/Docker
-- works well with Flyway and jOOQ
+- works well with Flyway and JDBI
 - keeps the platform consistent across environments
 
 ### Flyway
@@ -78,78 +77,28 @@ Current migrations:
 - `V3__sessions_table.sql`
 - `V4__user_preferences.sql`
 
-### Persistence modules: jOOQ and JDBI
+### Persistence module: JDBI
 
-The platform provides **two independent, interchangeable persistence modules**. You choose one at the application level — they are never both on the classpath at the same time.
+The platform uses JDBI for database access.
 
 | Module | Artifact | Database access | Koin module |
 |--------|----------|----------------|-------------|
-| jOOQ | `platform-persistence-jooq` | jOOQ with code generation | `persistenceModule` (from `io.github.rygel.outerstellar.platform.di`) |
 | JDBI | `platform-persistence-jdbi` | JDBI lightweight SQL | `persistenceModule` (from `io.github.rygel.outerstellar.platform.di`) |
 
-Both modules:
+The module:
 
-- Implement the **same repository interfaces** defined in `platform-core`
-- Provide the **same Flyway migrations** at `classpath:db/migration`
-- Provide the **same Koin module name** (`persistenceModule`) so the rest of the app is agnostic
-- Provide the **same `DatabaseInfra` functions** (`migrate`, `migratePlugin`, `createDataSource`)
-
-#### Choosing jOOQ (default)
-
-`platform-web` and `platform-desktop` use jOOQ by default. jOOQ provides:
-
-- type-safe SQL access via generated schema bindings
-- clean fit for Kotlin
-- explicit SQL instead of ORM behavior
-
-The repository layer wraps jOOQ so the app uses a small domain-oriented API rather than scattered DSL calls.
-
-Include in your POM:
-```xml
-<dependency>
-    <groupId>io.github.rygel</groupId>
-    <artifactId>outerstellar-platform-persistence-jooq</artifactId>
-</dependency>
-```
-
-#### Choosing JDBI
-
-JDBI is a lighter alternative with no code generation step. It provides the same repository interfaces and Koin wiring.
-
-To use JDBI instead of jOOQ:
-
-1. Replace `outerstellar-platform-persistence-jooq` with `outerstellar-platform-persistence-jdbi` in your POM
-2. Import the JDBI `persistenceModule` instead of the jOOQ one
-3. No other code changes needed — all repository interfaces are the same
-
-```xml
-<!-- Replace jOOQ with JDBI -->
-<dependency>
-    <groupId>io.github.rygel</groupId>
-    <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
-</dependency>
-```
-
-**Important:** The JDBI module has zero jOOQ dependencies. If you use JDBI, no jOOQ classes will be on your compile or runtime classpath.
+- Implements repository interfaces defined in `platform-core`
+- Provides Flyway migrations at `classpath:db/migration`
+- Provides the `persistenceModule` Koin module so the rest of the app is agnostic
+- Provides `DatabaseInfra` functions (`migrate`, `migratePlugin`, `createDataSource`)
 
 #### Adding new repositories
 
 When adding a new repository:
 
 1. Define the interface in `platform-core` (e.g. `FooRepository`)
-2. Implement it in **both** `platform-persistence-jooq` and `platform-persistence-jdbi`
-3. Register both implementations in their respective `PersistenceModule.kt`
-
-#### jOOQ code generation policy
-
-The project uses **manual jOOQ code generation** with generated sources checked into version control.
-
-- generated sources location: `platform-persistence-jooq/src/main/generated/jooq`
-- generation profile: `jooq-codegen`
-- generation command: `mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources`
-- PowerShell shortcut: `./generate-jooq.ps1`
-
-This keeps builds deterministic and removes implicit schema/codegen drift between environments.
+2. Implement it in `platform-persistence-jdbi`
+3. Register the implementation in `PersistenceModule.kt`
 
 ### Plugin migrations
 
@@ -334,25 +283,11 @@ Important behavior:
 
 Launches the Swing sync demo.
 
-### `generate-jooq.ps1`
-
-Regenerates jOOQ sources using the manual `jooq-codegen` profile.
-
-Use this whenever Flyway migrations or jOOQ generation config changes.
-
 ## Important findings and gotchas
 
 These are worth preserving because they caused real issues during implementation.
 
-### 1. jOOQ/Flyway code generation against PostgreSQL
-
-**Finding:** jOOQ code generation requires a running PostgreSQL instance to introspect the schema.
-
-**Decision:** run codegen manually via profile `jooq-codegen` against the local PostgreSQL instance (started via `docker/podman-compose.yml`).
-
-**Why:** it avoids starting a database during every build while ensuring generated code matches the real schema.
-
-### 2. Kotlin/http4k compatibility
+### 1. Kotlin/http4k compatibility
 
 **Finding:** current http4k metadata was not happy with the earlier Kotlin version that was first used.
 
@@ -360,7 +295,7 @@ These are worth preserving because they caused real issues during implementation
 
 **Why:** this resolved the compatibility issue cleanly.
 
-### 3. JTE runtime dependency
+### 2. JTE runtime dependency
 
 **Finding:** the application could fail at runtime with:
 
@@ -372,7 +307,7 @@ even though templates compiled.
 
 **Why:** the runtime engine needs those classes available when rendering generated templates.
 
-### 4. JTE hot-reload classloader
+### 3. JTE hot-reload classloader
 
 **Finding:** when creating the JTE engine for hot reload, the generated classes did not automatically see the full application classpath.
 
@@ -380,7 +315,7 @@ even though templates compiled.
 
 **Why:** without that, generated template classes could not reliably resolve runtime classes under `exec:java`.
 
-### 5. JTE output location
+### 4. JTE output location
 
 **Finding:** default hot-reload behavior could write generated template classes into an undesirable repo-root output location.
 
@@ -388,7 +323,7 @@ even though templates compiled.
 
 **Why:** it keeps generated artifacts under `target/` and avoids polluting the project root.
 
-### 6. Outerstellar theme resource loading
+### 5. Outerstellar theme resource loading
 
 **Finding:** loading `themes.json` directly caused deserialization failure because it is not a single concrete theme payload for this usage.
 
@@ -399,7 +334,7 @@ even though templates compiled.
 
 **Why:** the theme service expects a specific theme structure in this path.
 
-### 7. Web startup process handling
+### 6. Web startup process handling
 
 **Finding:** stopping only the Maven process did not always stop the actual Jetty listener.
 
@@ -407,7 +342,7 @@ even though templates compiled.
 
 **Why:** this avoids zombie server processes and makes `start-web.ps1` / `stop-web.ps1` reliable.
 
-### 8. PID shutdown races
+### 7. PID shutdown races
 
 **Finding:** process-tree shutdown can race with already-exiting children.
 
@@ -415,7 +350,7 @@ even though templates compiled.
 
 **Why:** shutdown should remain reliable even if a child disappears between discovery and termination.
 
-### 9. Swing UI testing without stealing the display
+### 8. Swing UI testing without stealing the display
 
 **Finding:** Swing GUI tests need a display (`JFrame` throws `HeadlessException` when `java.awt.headless=true`). But tests must not pop up windows on the developer's machine.
 
@@ -619,7 +554,6 @@ All common operations use Maven profiles — no shell scripts needed:
 | `mvn -Pdocker package` | Build Docker image |
 | `mvn -Ptest-desktop verify` | Run Swing GUI tests inside Docker with Xvfb |
 | `mvn -Pseed compile exec:java` | Seed database with sample data |
-| `mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources` | Regenerate jOOQ code |
 | `mvn -Pruntime-dev compile exec:java -pl platform-web` | Run web app in dev mode |
 
 ## What is necessary right now
@@ -628,10 +562,8 @@ For this platform to remain healthy, these pieces are important:
 
 - Flyway remains the schema authority
 - Detekt ensures Kotlin code style and formatting (configured in `detekt.yml`)
-- jOOQ remains the default database access layer (JDBI is the alternative)
-- jOOQ generated sources remain checked in under `persistence-jooq/src/main/generated/jooq`
-- jOOQ sources are regenerated manually with `-Pjooq-codegen` when schema changes
-- New repositories must be implemented in both `platform-persistence-jooq` and `platform-persistence-jdbi`
+- JDBI is the database access layer
+- New repositories must be implemented in `platform-persistence-jdbi`
 - JTE/KTE remains the server rendering path
 - `jte-runtime` stays on the runtime classpath
 - JTE hot-reload continues using the explicit application classloader

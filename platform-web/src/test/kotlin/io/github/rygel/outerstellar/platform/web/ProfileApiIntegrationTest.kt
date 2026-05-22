@@ -27,7 +27,6 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 class ProfileApiIntegrationTest : WebTest() {
@@ -43,8 +42,6 @@ class ProfileApiIntegrationTest : WebTest() {
     private val deleteAccountLens = Body.auto<DeleteAccountRequest>().toLens()
 
     @BeforeEach fun setupTest() = resetApp()
-
-    @AfterEach fun teardown() = cleanup()
 
     // ---- Helpers ----
 

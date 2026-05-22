@@ -22,7 +22,6 @@ import org.http4k.core.Request
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
@@ -204,8 +203,6 @@ class PerformanceBenchmarkTest : WebTest() {
         bearerToken = tokenLens(loginResp).token
     }
 
-    @AfterEach fun teardownBenchmark() = cleanup()
-
     // ---------------------------------------------------------------------------
     // Benchmarks
     // ---------------------------------------------------------------------------
@@ -290,7 +287,7 @@ class PerformanceBenchmarkTest : WebTest() {
         val coldRec = LatencyRecorder("GET /api/v1/sync?since=0 (cold)")
         repeat(WARMUP) { app(req) }
         repeat(ITERATIONS) {
-            testDsl.execute("DELETE FROM plt_sync_state")
+            testJdbi.useHandle<Exception> { handle -> handle.execute("DELETE FROM plt_sync_state") }
             coldRec.record { app(req) }
         }
 

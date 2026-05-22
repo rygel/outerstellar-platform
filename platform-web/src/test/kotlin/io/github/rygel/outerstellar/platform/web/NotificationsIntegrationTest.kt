@@ -18,7 +18,6 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 class NotificationsIntegrationTest : WebTest() {
@@ -36,8 +35,6 @@ class NotificationsIntegrationTest : WebTest() {
         notificationService = NotificationService(notificationRepository)
         app = buildApp(overrides = TestOverrides(notificationService = notificationService))
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun registerAndLogin(
         username: String = "notifuser${UUID.randomUUID().toString().take(6)}"

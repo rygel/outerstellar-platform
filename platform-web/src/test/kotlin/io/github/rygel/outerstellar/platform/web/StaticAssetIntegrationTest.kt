@@ -7,7 +7,6 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -30,8 +29,6 @@ class StaticAssetIntegrationTest : WebTest() {
     fun setupTest() {
         app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     @Test
     fun `GET site css returns 200`() {

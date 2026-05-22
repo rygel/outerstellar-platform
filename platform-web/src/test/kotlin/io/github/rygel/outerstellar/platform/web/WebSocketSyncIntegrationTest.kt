@@ -12,7 +12,6 @@ import org.http4k.core.Request
 import org.http4k.websocket.Websocket
 import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsStatus
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 class WebSocketSyncIntegrationTest : WebTest() {
@@ -45,8 +44,6 @@ class WebSocketSyncIntegrationTest : WebTest() {
         testToken = securityService.createSession(testUser.id)
         syncWebSocket = SyncWebSocket(securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     @Test
     fun `unauthenticated WebSocket connection is closed with 4401`() {

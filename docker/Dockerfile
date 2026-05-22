@@ -25,7 +25,6 @@ RUN apt-get update && \
 COPY pom.xml .
 COPY platform-core/pom.xml platform-core/
 COPY platform-security/pom.xml platform-security/
-COPY platform-persistence-jooq/pom.xml platform-persistence-jooq/
 COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
 COPY platform-sync-client/pom.xml platform-sync-client/
 COPY platform-web/pom.xml platform-web/

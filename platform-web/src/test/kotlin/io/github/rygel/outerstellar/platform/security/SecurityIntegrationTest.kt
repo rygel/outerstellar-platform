@@ -2,11 +2,10 @@ package io.github.rygel.outerstellar.platform.security
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.persistence.JooqUserRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
 import io.github.rygel.outerstellar.platform.web.WebTest
 import io.github.rygel.outerstellar.platform.web.testPassword
 import java.util.UUID
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -15,13 +14,13 @@ import org.junit.jupiter.api.Test
 
 class SecurityIntegrationTest : WebTest() {
 
-    private lateinit var userRepository: JooqUserRepository
+    private lateinit var userRepository: JdbiUserRepository
     private lateinit var passwordEncoder: PasswordEncoder
     private lateinit var securityService: SecurityService
 
     @BeforeEach
     fun setupTest() {
-        userRepository = JooqUserRepository(testDsl)
+        userRepository = JdbiUserRepository(testJdbi)
         passwordEncoder = BCryptPasswordEncoder(logRounds = 4) // Fast for tests
         securityService =
             SecurityService(
@@ -29,11 +28,6 @@ class SecurityIntegrationTest : WebTest() {
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
             )
-    }
-
-    @AfterEach
-    fun teardown() {
-        cleanup()
     }
 
     @Test

@@ -11,7 +11,7 @@
     <packaging>pom</packaging>
 
     <name>Outerstellar Platform</name>
-    <description>Opinionated app scaffold with http4k, jOOQ, JDBI, Flyway, JTE, and Koin</description>
+    <description>Opinionated app scaffold with http4k, JDBI, Flyway, JTE, and Koin</description>
     <url>https://github.com/rygel/outerstellar-platform</url>
 
     <licenses>
@@ -38,7 +38,6 @@
 
     <modules>
         <module>platform-core</module>
-        <module>platform-persistence-jooq</module>
         <module>platform-persistence-jdbi</module>
         <module>platform-sync-client</module>
         <module>platform-web</module>
@@ -58,7 +57,6 @@
         <netty.version>4.2.13.Final</netty.version>
         <flyway.version>12.6.1</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
-        <jooq.version>3.21.4</jooq.version>
         <jdbi.version>3.53.0</jdbi.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <jte.version>3.2.4</jte.version>
@@ -197,11 +195,6 @@
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>outerstellar-platform-persistence-jooq</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -328,11 +321,6 @@
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-i18n</artifactId>
                 <version>${outerstellar.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jooq</groupId>
-                <artifactId>jooq</artifactId>
-                <version>${jooq.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jdbi</groupId>
@@ -669,11 +657,6 @@
                     <version>${flyway.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.jooq</groupId>
-                    <artifactId>jooq-codegen-maven</artifactId>
-                    <version>${jooq.version}</version>
-                </plugin>
-                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>${maven.resources.plugin.version}</version>
@@ -936,9 +919,6 @@
                     <watches>
                         <watch>
                             <directory>platform-core/src/main/kotlin</directory>
-                        </watch>
-                        <watch>
-                            <directory>platform-persistence-jooq/src/main/kotlin</directory>
                         </watch>
                         <watch>
                             <directory>platform-web/src/main/kotlin</directory>

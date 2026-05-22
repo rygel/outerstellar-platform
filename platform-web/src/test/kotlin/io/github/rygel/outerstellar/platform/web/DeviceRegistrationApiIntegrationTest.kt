@@ -63,7 +63,6 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
     @AfterEach
     fun teardown() {
         deviceTokenRepository.clear()
-        cleanup()
     }
 
     private fun bearer() = "Bearer $sessionToken"

@@ -16,7 +16,6 @@ import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -61,8 +60,6 @@ class MessageRestoreIntegrationTest : WebTest() {
         val txManager = StubTransactionManager()
         messageService = MessageService(messageRepository, outbox, txManager, cache)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun buildTestApp() = buildApp(securityService = sec)
 

@@ -14,7 +14,6 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.OPTIONS
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -62,8 +61,6 @@ class SecurityHeadersIntegrationTest : WebTest() {
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     // ---- X-Content-Type-Options ----
 

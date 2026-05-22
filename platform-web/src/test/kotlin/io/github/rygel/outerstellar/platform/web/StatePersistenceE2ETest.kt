@@ -12,7 +12,6 @@ import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 class StatePersistenceE2ETest : WebTest() {
@@ -39,11 +38,6 @@ class StatePersistenceE2ETest : WebTest() {
             )
         userRepository.save(user)
         sessionCookie = Cookie(WebContext.SESSION_COOKIE, sec.createSession(user.id))
-    }
-
-    @AfterEach
-    fun teardown() {
-        cleanup()
     }
 
     @Test
