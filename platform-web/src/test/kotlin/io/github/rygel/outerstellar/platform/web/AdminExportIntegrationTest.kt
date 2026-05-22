@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
@@ -15,6 +16,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -51,7 +53,7 @@ class AdminExportIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "exportadmin",
                 email = "exportadmin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -59,21 +61,13 @@ class AdminExportIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "exportuser",
                 email = "exportuser@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         adminToken = securityService.createSession(adminUser.id)
         userToken = securityService.createSession(regularUser.id)
 
@@ -89,7 +83,7 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-users-export returns 200 with text-csv content type`() {
         val response = app(Request(GET, "/admin/users/export").cookie(adminSession()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val contentType = response.header("Content-Type").orEmpty()
         assertTrue(contentType.contains("text/csv"), "Export should return text/csv, got: $contentType")
     }
@@ -124,13 +118,13 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-users-export as non-admin returns 403`() {
         val response = app(Request(GET, "/admin/users/export").cookie(userSession()))
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     @Test
     fun `GET admin-users-export unauthenticated redirects to auth`() {
         val response = app(Request(GET, "/admin/users/export"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
@@ -139,7 +133,7 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-audit as admin returns 200`() {
         val response = app(Request(GET, "/admin/audit").cookie(adminSession()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -151,13 +145,13 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-audit as non-admin returns 403`() {
         val response = app(Request(GET, "/admin/audit").cookie(userSession()))
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     @Test
     fun `GET admin-audit unauthenticated redirects to auth`() {
         val response = app(Request(GET, "/admin/audit"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
@@ -166,7 +160,7 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-audit-export returns 200 with text-csv`() {
         val response = app(Request(GET, "/admin/audit/export").cookie(adminSession()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val contentType = response.header("Content-Type").orEmpty()
         assertTrue(contentType.contains("text/csv"), "Audit export should be CSV, got: $contentType")
     }
@@ -189,7 +183,7 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-audit-export as non-admin returns 403`() {
         val response = app(Request(GET, "/admin/audit/export").cookie(userSession()))
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     // ---- GET /admin/users/export/json ----
@@ -197,7 +191,7 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-users-export-json returns 200 with application-json content type`() {
         val response = app(Request(GET, "/admin/users/export/json").cookie(adminSession()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val contentType = response.header("Content-Type").orEmpty()
         assertTrue(contentType.contains("application/json"), "Export should return application/json, got: $contentType")
     }
@@ -228,13 +222,13 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-users-export-json as non-admin returns 403`() {
         val response = app(Request(GET, "/admin/users/export/json").cookie(userSession()))
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     @Test
     fun `GET admin-users-export-json unauthenticated redirects to auth`() {
         val response = app(Request(GET, "/admin/users/export/json"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
@@ -243,7 +237,7 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-audit-export-json returns 200 with application-json`() {
         val response = app(Request(GET, "/admin/audit/export/json").cookie(adminSession()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val contentType = response.header("Content-Type").orEmpty()
         assertTrue(contentType.contains("application/json"), "Audit export should be JSON, got: $contentType")
     }
@@ -267,7 +261,7 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-audit-export-json as non-admin returns 403`() {
         val response = app(Request(GET, "/admin/audit/export/json").cookie(userSession()))
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     // ---- usersAsCsv unit tests ----
@@ -348,7 +342,7 @@ class AdminExportIntegrationTest : WebTest() {
     @Test
     fun `GET admin-users with limit=1 renders page with pagination awareness`() {
         val response = app(Request(GET, "/admin/users?limit=1&offset=0").cookie(adminSession()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.isNotBlank(), "User admin page should render content")
     }

@@ -1,11 +1,10 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.UserRole
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
@@ -13,22 +12,17 @@ import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
-import org.junit.jupiter.api.BeforeEach
+import org.http4k.hamkrest.hasStatus
 
 class AuthenticationWorkflowTest : WebTest() {
 
-    private lateinit var app: HttpHandler
-
-    @BeforeEach
-    fun setupTest() {
-        app = buildApp()
-    }
+    private val app by lazy { buildApp() }
 
     @Test
     fun `user registration and login with redirect workflow`() {
         // 1. Try to access admin dashboard -> should redirect to auth with returnTo
         val initialResponse = app(Request(GET, "/admin/dev"))
-        assertEquals(Status.FOUND, initialResponse.status)
+        assertThat(initialResponse, hasStatus(Status.FOUND))
         val location = initialResponse.header("location")!!
         assertTrue(
             location.contains("/auth") && location.contains("returnTo"),
@@ -47,7 +41,7 @@ class AuthenticationWorkflowTest : WebTest() {
                     .form("confirmPassword", password)
             )
         // Registration redirects to /auth?registered=true
-        assertEquals(Status.FOUND, regResponse.status)
+        assertThat(regResponse, hasStatus(Status.FOUND))
         assertTrue(regResponse.header("location")!!.contains("registered=true"))
 
         // Update user to ADMIN role manually for test
@@ -64,8 +58,8 @@ class AuthenticationWorkflowTest : WebTest() {
                     .form("password", password)
             )
 
-        assertEquals(Status.FOUND, loginResponse.status)
-        assertEquals("/admin/dev", loginResponse.header("location"))
+        assertThat(loginResponse, hasStatus(Status.FOUND))
+        assertThat(loginResponse, org.http4k.hamkrest.hasHeader("location", "/admin/dev"))
 
         val sessionCookie = loginResponse.cookies().find { it.name == "app_session" }
         assertNotNull(sessionCookie, "Session cookie should be present in response")
@@ -75,7 +69,7 @@ class AuthenticationWorkflowTest : WebTest() {
 
         // 4. Access admin dashboard with session
         val adminResponse = app(Request(GET, "/admin/dev").cookie(sessionCookie))
-        assertEquals(Status.OK, adminResponse.status)
+        assertThat(adminResponse, hasStatus(Status.OK))
         assertTrue(adminResponse.bodyString().contains("Developer Dashboard"))
     }
 
@@ -103,7 +97,7 @@ class AuthenticationWorkflowTest : WebTest() {
 
         // Try to access admin dashboard -> should be Forbidden (403)
         val adminResponse = app(Request(GET, "/admin/dev").cookie(sessionCookie))
-        assertEquals(Status.FORBIDDEN, adminResponse.status)
+        assertThat(adminResponse, hasStatus(Status.FORBIDDEN))
     }
 
     @Test
@@ -127,7 +121,7 @@ class AuthenticationWorkflowTest : WebTest() {
                     .form("password", password)
             )
 
-        assertEquals(Status.FOUND, loginResponse.status)
-        assertEquals("/", loginResponse.header("location"))
+        assertThat(loginResponse, hasStatus(Status.FOUND))
+        assertThat(loginResponse, org.http4k.hamkrest.hasHeader("location", "/"))
     }
 }

@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
@@ -13,6 +14,7 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
+import org.http4k.hamkrest.hasStatus
 
 class SyncIntegrationTest : WebTest() {
     @Test
@@ -25,7 +27,7 @@ class SyncIntegrationTest : WebTest() {
                 id = adminId,
                 username = "admin",
                 email = "admin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         )
@@ -42,7 +44,7 @@ class SyncIntegrationTest : WebTest() {
 
         val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $adminToken"))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val pullResponse = KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
         assertEquals(2, pullResponse.messages.size)
     }

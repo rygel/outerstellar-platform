@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.ChangePasswordRequest
 import io.github.rygel.outerstellar.platform.model.LoginRequest
@@ -24,6 +25,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 class UserManagementIntegrationTest : WebTest() {
@@ -41,15 +43,7 @@ class UserManagementIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                auditRepository = auditRepository,
-                resetRepository = passwordResetRepository,
-                apiKeyRepository = apiKeyRepository,
-                sessionRepository = sessionRepository,
-            )
+        securityService = createSecurityService()
 
         app = buildApp(securityService = securityService)
     }
@@ -61,7 +55,7 @@ class UserManagementIntegrationTest : WebTest() {
     private fun registerUser(username: String, password: String): RegisteredUser {
         val response =
             app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, password)))
-        assertEquals(Status.OK, response.status, "Registration should succeed for $username")
+        assertThat(response, hasStatus(Status.OK))
         val auth = tokenLens(response)
         val userId = userRepository.findByUsername(username)!!.id
         return RegisteredUser(userId, auth.token)
@@ -69,7 +63,7 @@ class UserManagementIntegrationTest : WebTest() {
 
     private fun loginUser(username: String, password: String): AuthTokenResponse {
         val response = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest(username, password)))
-        assertEquals(Status.OK, response.status, "Login should succeed for $username")
+        assertThat(response, hasStatus(Status.OK))
         return tokenLens(response)
     }
 
@@ -105,12 +99,12 @@ class UserManagementIntegrationTest : WebTest() {
                 bearerRequest(PUT, "/api/v1/auth/password", auth.token)
                     .with(changePasswordLens of ChangePasswordRequest("0ldP@ssw0rd1!", "N3wP@ssw0rd1!"))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
 
         // Verify old password no longer works
         val failLogin =
             app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("pwduser", "0ldP@ssw0rd1!")))
-        assertEquals(Status.UNAUTHORIZED, failLogin.status)
+        assertThat(failLogin, hasStatus(Status.UNAUTHORIZED))
 
         // Verify new password works
         val successLogin = loginUser("pwduser", "N3wP@ssw0rd1!")
@@ -126,7 +120,7 @@ class UserManagementIntegrationTest : WebTest() {
                 bearerRequest(PUT, "/api/v1/auth/password", auth.token)
                     .with(changePasswordLens of ChangePasswordRequest("wrongpassword", "N3wP@ssw0rd1!"))
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test
@@ -138,7 +132,7 @@ class UserManagementIntegrationTest : WebTest() {
                 bearerRequest(PUT, "/api/v1/auth/password", auth.token)
                     .with(changePasswordLens of ChangePasswordRequest("C0rr3ctP@ss1!", "short"))
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test
@@ -148,7 +142,7 @@ class UserManagementIntegrationTest : WebTest() {
                 Request(PUT, "/api/v1/auth/password")
                     .with(changePasswordLens of ChangePasswordRequest("anything", "N3wP@ssw0rd1!"))
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     // ---- Password Change (HTML form) ----
@@ -166,7 +160,7 @@ class UserManagementIntegrationTest : WebTest() {
         registerUser("user2", testPassword())
 
         val response = app(bearerRequest(GET, "/api/v1/admin/users", admin.token))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
 
         val users = userSummaryListLens(response)
         assertTrue(users.size >= 3, "Should have at least admin + 2 users")
@@ -180,7 +174,7 @@ class UserManagementIntegrationTest : WebTest() {
         val auth = registerUser("regularuser", testPassword())
 
         val response = app(bearerRequest(GET, "/api/v1/admin/users", auth.token))
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     @Test
@@ -194,12 +188,12 @@ class UserManagementIntegrationTest : WebTest() {
                 bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/enabled", admin.token)
                     .with(setUserEnabledLens of SetUserEnabledRequest(false))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
 
         // Verify the disabled user cannot log in
         val loginResponse =
             app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("disableuser", password)))
-        assertEquals(Status.UNAUTHORIZED, loginResponse.status)
+        assertThat(loginResponse, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -220,7 +214,7 @@ class UserManagementIntegrationTest : WebTest() {
                 bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/enabled", admin.token)
                     .with(setUserEnabledLens of SetUserEnabledRequest(true))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
 
         // User can log in again
         val loginResponse = loginUser("reenableuser", password)
@@ -236,7 +230,7 @@ class UserManagementIntegrationTest : WebTest() {
                 bearerRequest(PUT, "/api/v1/admin/users/${admin.id}/enabled", admin.token)
                     .with(setUserEnabledLens of SetUserEnabledRequest(false))
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test
@@ -249,11 +243,11 @@ class UserManagementIntegrationTest : WebTest() {
                 bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/role", admin.token)
                     .with(setUserRoleLens of SetUserRoleRequest("ADMIN"))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
 
         // Verify the promoted user can now list users (admin privilege)
         val listResponse = app(bearerRequest(GET, "/api/v1/admin/users", userAuth.token))
-        assertEquals(Status.OK, listResponse.status)
+        assertThat(listResponse, hasStatus(Status.OK))
     }
 
     @Test
@@ -273,11 +267,11 @@ class UserManagementIntegrationTest : WebTest() {
                 bearerRequest(PUT, "/api/v1/admin/users/${userAuth.id}/role", admin.token)
                     .with(setUserRoleLens of SetUserRoleRequest("USER"))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
 
         // Verify the demoted user can no longer list users
         val listResponse = app(bearerRequest(GET, "/api/v1/admin/users", userAuth.token))
-        assertEquals(Status.FORBIDDEN, listResponse.status)
+        assertThat(listResponse, hasStatus(Status.FORBIDDEN))
     }
 
     @Test
@@ -289,7 +283,7 @@ class UserManagementIntegrationTest : WebTest() {
                 bearerRequest(PUT, "/api/v1/admin/users/${admin.id}/role", admin.token)
                     .with(setUserRoleLens of SetUserRoleRequest("USER"))
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test

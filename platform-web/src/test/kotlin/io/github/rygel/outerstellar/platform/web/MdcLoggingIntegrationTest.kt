@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.AppenderBase
+import com.natpryce.hamkrest.assertion.assertThat
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -11,6 +12,7 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.slf4j.LoggerFactory
@@ -170,7 +172,7 @@ class MdcLoggingIntegrationTest : WebTest() {
     fun `X-Request-Id header is present on non-200 responses`() {
         val response = app(Request(GET, "/nonexistent-page-xyz"))
 
-        assertEquals(Status.NOT_FOUND, response.status)
+        assertThat(response, hasStatus(Status.NOT_FOUND))
         val requestId = response.header("X-Request-Id")
         assertNotNull(requestId, "X-Request-Id should be present even on 404 responses")
     }

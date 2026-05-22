@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
@@ -7,7 +8,6 @@ import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
@@ -16,6 +16,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -56,7 +57,7 @@ class PlatformPageRenderingTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "pagerender_admin",
                 email = "pagerender_admin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -64,21 +65,13 @@ class PlatformPageRenderingTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "pagerender_user",
                 email = "pagerender_user@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         adminToken = securityService.createSession(adminUser.id)
         userToken = securityService.createSession(regularUser.id)
 
@@ -95,7 +88,7 @@ class PlatformPageRenderingTest : WebTest() {
     private fun userSession() = Cookie(WebContext.SESSION_COOKIE, userToken)
 
     private fun assertHtmlPage(response: org.http4k.core.Response, path: String) {
-        assertEquals(Status.OK, response.status, "Expected 200 for $path")
+        assertThat(response, hasStatus(Status.OK))
         val contentType = response.header("content-type").orEmpty()
         assertTrue(contentType.contains("text/html"), "Expected text/html for $path, got: $contentType")
         val body = response.bodyString()
@@ -258,7 +251,7 @@ class PlatformPageRenderingTest : WebTest() {
     @Test
     fun `unknown path returns 404`() {
         val response = app(Request(GET, "/this-page-does-not-exist"))
-        assertEquals(Status.NOT_FOUND, response.status)
+        assertThat(response, hasStatus(Status.NOT_FOUND))
     }
 
     // ---- Health (JSON) ----
@@ -266,7 +259,7 @@ class PlatformPageRenderingTest : WebTest() {
     @Test
     fun `health endpoint returns JSON with UP status`() {
         val response = app(Request(GET, "/health"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val contentType = response.header("content-type").orEmpty()
         assertTrue(contentType.contains("application/json"), "/health should return JSON")
         val body = response.bodyString()
@@ -278,8 +271,8 @@ class PlatformPageRenderingTest : WebTest() {
     @Test
     fun `authenticated page includes standard security headers`() {
         val response = app(Request(GET, "/").cookie(userSession()))
-        assertEquals("nosniff", response.header("X-Content-Type-Options"))
-        assertEquals("DENY", response.header("X-Frame-Options"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Content-Type-Options", "nosniff"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Frame-Options", "DENY"))
         assertNotNull(response.header("X-Request-Id"), "Pages should include X-Request-Id")
     }
 }

@@ -1,11 +1,11 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -13,6 +13,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -49,20 +50,12 @@ class ComponentFragmentIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "fragmentuser",
                 email = "fragment@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         testToken = securityService.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
@@ -75,7 +68,7 @@ class ComponentFragmentIntegrationTest : WebTest() {
     @Test
     fun `GET components-navigation-page returns 200`() {
         val response = app(Request(GET, "/components/navigation/page"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -90,7 +83,7 @@ class ComponentFragmentIntegrationTest : WebTest() {
     @Test
     fun `GET components-navigation-page with session returns 200`() {
         val response = app(Request(GET, "/components/navigation/page").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -100,7 +93,7 @@ class ComponentFragmentIntegrationTest : WebTest() {
                 Request(GET, "/components/navigation/page?theme=dark&pagePath=/")
                     .cookie(Cookie(WebContext.THEME_COOKIE, "dark"))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertTrue(
             response.header("HX-Redirect")?.contains("theme=dark") == true,
             "Navigation page should HX-Redirect with theme param",
@@ -112,7 +105,7 @@ class ComponentFragmentIntegrationTest : WebTest() {
     @Test
     fun `GET sidebar-theme-selector returns 200`() {
         val response = app(Request(GET, "/components/sidebar/theme-selector"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -137,7 +130,7 @@ class ComponentFragmentIntegrationTest : WebTest() {
     @Test
     fun `GET sidebar-language-selector returns 200`() {
         val response = app(Request(GET, "/components/sidebar/language-selector"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -163,7 +156,7 @@ class ComponentFragmentIntegrationTest : WebTest() {
     @Test
     fun `GET sidebar-layout-selector returns 200`() {
         val response = app(Request(GET, "/components/sidebar/layout-selector"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -191,7 +184,7 @@ class ComponentFragmentIntegrationTest : WebTest() {
     @Test
     fun `GET components-message-list returns 200`() {
         val response = app(Request(GET, "/components/message-list").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -203,38 +196,38 @@ class ComponentFragmentIntegrationTest : WebTest() {
     @Test
     fun `GET components-message-list with limit=5 returns 200`() {
         val response = app(Request(GET, "/components/message-list?limit=5").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `GET components-message-list with offset=10 returns 200`() {
         val response = app(Request(GET, "/components/message-list?offset=10").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `GET components-message-list with q= query returns 200`() {
         val response = app(Request(GET, "/components/message-list?q=hello").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `GET components-message-list with year= returns 200`() {
         val response = app(Request(GET, "/components/message-list?year=2024").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `GET components-message-list with limit over 100 is clamped`() {
         // limit=999 should be clamped to 100 and not crash
         val response = app(Request(GET, "/components/message-list?limit=999").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `GET components-message-list with negative offset is clamped to 0`() {
         val response = app(Request(GET, "/components/message-list?offset=-99").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     // ---- Fragment vs full page ----

@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushContactResponse
 import java.util.UUID
@@ -16,6 +16,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -38,22 +39,14 @@ class ContactDetailsSyncIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        val securityService = createSecurityService()
 
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "contactdetailsuser",
                 email = "contactdetails@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
@@ -119,7 +112,7 @@ class ContactDetailsSyncIntegrationTest : WebTest() {
 
     private fun pullContacts(): SyncPullContactResponse {
         val response = app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         return KotlinxSerialization.asA(response.bodyString(), SyncPullContactResponse::class)
     }
 
@@ -129,7 +122,7 @@ class ContactDetailsSyncIntegrationTest : WebTest() {
         val emails = listOf("alice@example.com", "alice.work@corp.com")
 
         val pushResponse = pushContact(PushContactParams(syncId, "Alice", emails = emails))
-        assertEquals(Status.OK, pushResponse.status)
+        assertThat(pushResponse, hasStatus(Status.OK))
         val pushBody = KotlinxSerialization.asA(pushResponse.bodyString(), SyncPushContactResponse::class)
         assertEquals(1, pushBody.appliedCount)
 

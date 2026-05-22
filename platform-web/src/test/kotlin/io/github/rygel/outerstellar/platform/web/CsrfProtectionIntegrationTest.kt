@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -11,6 +11,7 @@ import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -40,7 +41,7 @@ class CsrfProtectionIntegrationTest : WebTest() {
     fun `POST without CSRF cookie is rejected with 403`() {
         val response = app(Request(POST, "/logout").body(""))
 
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     @Test
@@ -55,7 +56,7 @@ class CsrfProtectionIntegrationTest : WebTest() {
                     .body("other_field=value")
             )
 
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     @Test
@@ -71,7 +72,7 @@ class CsrfProtectionIntegrationTest : WebTest() {
 
         // Logout redirects (302) when CSRF passes, not 403
         assertNotEquals(Status.FORBIDDEN, response.status)
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
     }
 
     @Test
@@ -92,7 +93,7 @@ class CsrfProtectionIntegrationTest : WebTest() {
                     .body("_csrf=wrong-token")
             )
 
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     @Test

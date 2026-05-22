@@ -149,3 +149,12 @@ class InMemoryDeviceTokenRepository : DeviceTokenRepository {
 
 /** Generates a dynamic test password that meets complexity requirements (8+ chars, upper, lower, digit, special). */
 fun testPassword(): String = "T3st@" + java.util.UUID.randomUUID().toString().take(12)
+
+fun formBody(vararg pairs: Pair<String, String>): String =
+    pairs.joinToString("&") { (k, v) -> "$k=${java.net.URLEncoder.encode(v, "UTF-8")}" }
+
+fun formPost(url: String, vararg pairs: Pair<String, String>): org.http4k.core.Request =
+    org.http4k.core
+        .Request(org.http4k.core.Method.POST, url)
+        .header("content-type", "application/x-www-form-urlencoded")
+        .body(formBody(*pairs))

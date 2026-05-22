@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.PasswordResetService
@@ -13,6 +14,7 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -68,7 +70,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .body("""{"email":"${testUser.email}"}""")
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -81,7 +83,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
             )
 
         // Must return 200 even for unknown emails to prevent user enumeration
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -129,7 +131,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .body("""{"token":"$rawToken","newPassword":"N3wS3cur3P@ss!"}""")
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -141,7 +143,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .body("""{"token":"completely-invalid-token","newPassword":"newSecurePass99"}""")
             )
 
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test
@@ -162,7 +164,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"username":"${testUser.username}","password":"Br@ndN3wP@ss1!"}""")
             )
-        assertEquals(Status.OK, loginResponse.status, "New password should work for login")
+        assertThat(loginResponse, hasStatus(Status.OK))
     }
 
     @Test
@@ -182,6 +184,6 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"username":"${testUser.username}","password":"0ldP@ssw0rd!"}""")
             )
-        assertEquals(Status.UNAUTHORIZED, loginResponse.status, "Old password should be rejected")
+        assertThat(loginResponse, hasStatus(Status.UNAUTHORIZED))
     }
 }

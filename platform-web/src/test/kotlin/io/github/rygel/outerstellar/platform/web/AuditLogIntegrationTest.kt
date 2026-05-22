@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
@@ -11,6 +12,7 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.PUT
 import org.http4k.core.Request
 import org.http4k.core.Status
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -61,7 +63,7 @@ class AuditLogIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "auditadmin",
                 email = "auditadmin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         targetUser =
@@ -69,7 +71,7 @@ class AuditLogIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "audittarget",
                 email = "audittarget@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)
@@ -185,7 +187,7 @@ class AuditLogIntegrationTest : WebTest() {
             )
 
         // InsufficientPermissionException → BAD_REQUEST in UserAdminApi
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
         assertEquals(countBefore, auditCount(), "No audit entry for self-action")
     }
 }

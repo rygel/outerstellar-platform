@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
@@ -8,15 +9,15 @@ import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.web.StubMessageCache
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
+import io.github.rygel.outerstellar.platform.web.bodyContains
 import io.mockk.every
 import io.mockk.mockk
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Status
+import org.http4k.hamkrest.hasStatus
 
 class PlatformAppTest {
     @Test
@@ -50,7 +51,7 @@ class PlatformAppTest {
         assertNotNull(handler)
 
         val healthResponse = handler(Request(Method.GET, "/health"))
-        assertEquals(Status.OK, healthResponse.status)
-        assertTrue(healthResponse.bodyString().contains("UP"))
+        assertThat(healthResponse, hasStatus(Status.OK))
+        assertThat(healthResponse, bodyContains("UP"))
     }
 }

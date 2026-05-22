@@ -1,11 +1,11 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
@@ -14,6 +14,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -37,15 +38,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),
@@ -61,7 +54,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     private fun seedAdmin(): String {
         val id = UUID.randomUUID()
-        userRepository.save(User(id, "admin", "admin@test.com", encoder.encode(testPassword()), UserRole.ADMIN))
+        userRepository.save(User(id, "admin", "admin@test.com", testPasswordHash, UserRole.ADMIN))
         return securityService.createSession(id)
     }
 
@@ -105,7 +98,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
     fun `requesting with theme=dark sets app_theme cookie to dark`() {
         val response = app(Request(GET, "/?theme=dark").cookie(sessionCookie))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
             setCookie.contains("app_theme=dark") || setCookie.contains("app_theme=\"dark\""),
@@ -117,7 +110,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
     fun `requesting with theme=light sets app_theme cookie to light`() {
         val response = app(Request(GET, "/?theme=light").cookie(sessionCookie))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
             setCookie.contains("app_theme=light") || setCookie.contains("app_theme=\"light\""),
