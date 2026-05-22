@@ -9,21 +9,12 @@ import org.flywaydb.core.Flyway
 
 private val IS_NATIVE_IMAGE = System.getProperty("org.graalvm.nativeimage.imagekind") != null
 
-private val MIGRATION_NAMES =
-    listOf(
-        "V1__initial_schema",
-        "V2__user_profile_enhancements",
-        "V3__sessions_table",
-        "V4__user_preferences",
-        "V5__performance_indexes",
-        "V6__admin_stats_indexes",
-        "V7__account_lockout",
-        "V8__query_path_indexes",
-        "V9__add_totp",
-        "V10__add_trgm_search_indexes",
-        "V11__add_message_votes",
-        "V12__add_polls",
-    )
+private val MIGRATION_NAMES: List<String> by lazy {
+    val stream =
+        Thread.currentThread().contextClassLoader.getResourceAsStream("db/migration/migrations.index")
+            ?: error("Migration manifest not found on classpath: db/migration/migrations.index")
+    stream.bufferedReader().use { it.readLines().filter { line -> line.isNotBlank() } }
+}
 
 fun createDataSource(jdbcUrl: String, jdbcUser: String, jdbcPassword: String): HikariDataSource =
     createDataSource(jdbcUrl, jdbcUser, jdbcPassword, RuntimeConfig())

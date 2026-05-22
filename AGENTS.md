@@ -298,6 +298,23 @@ Not:
 Write → Compile → FAIL → Guess fix → Compile → FAIL → Guess fix → Compile → FAIL → ...
 ```
 
+## Commit gate: all local tests must pass
+
+Before every commit, the following MUST be true:
+
+1. **All non-desktop tests pass locally.** Run the full reactor build:
+   ```powershell
+   mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+   ```
+   If any test fails, fix it before committing. Do not commit failing tests.
+
+2. **Desktop/UI tests must run in Podman containers.** Desktop/Swing tests must NEVER run directly on the host machine — they capture mouse and keyboard. Use:
+   ```powershell
+   podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
+   podman run --rm --network host -v "${env:USERPROFILE}\.m2\repository:/root/.m2/repository" -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml" -v "/var/run/docker.sock:/var/run/docker.sock" outerstellar-test-desktop
+   ```
+
+**Do not commit if either of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
 ## Testing discipline: no smoke tests
 
 This project uses **full end-to-end tests only**. There are zero smoke tests.
