@@ -36,7 +36,7 @@ HikariCP with configurable sizing (6 knobs in `runtime.*`). Default: pool size 2
 
 ### Fetch Projections
 
-All jOOQ and JDBI queries use explicit column projections instead of `SELECT *`. This avoids transferring unused columns (notably `created_at` on several tables, and `processed_at`/`retry_count`/`last_error`/`deleted_at` on outbox reads).
+All JDBI queries use explicit column projections instead of `SELECT *`. This avoids transferring unused columns (notably `created_at` on several tables, and `processed_at`/`retry_count`/`last_error`/`deleted_at` on outbox reads).
 
 ## Startup
 
@@ -54,7 +54,7 @@ Logged at startup as: `Startup — Koin modules loaded: 42ms`
 
 For production, set `FLYWAY_ENABLED=false` on the app and run migrations separately:
 ```bash
-mvn -pl platform-persistence-jooq -Pmigrate exec:java
+mvn -pl platform-persistence-jdbi -Pmigrate exec:java
 ```
 
 ### JTE Preload

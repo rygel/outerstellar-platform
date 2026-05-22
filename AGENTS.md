@@ -23,8 +23,7 @@ This project uses **synchronous blocking I/O** with a planned migration to **Jav
 ```
 platform-core              Domain models, services, configuration (AppConfig, RuntimeConfig)
 platform-security          Auth, permissions, User/UserRepository, OAuth, API keys, JWT
-platform-persistence-jooq  jOOQ repositories + Flyway migrations
-platform-persistence-jdbi  JDBI repositories (alternative to jOOQ, same repository interfaces)
+platform-persistence-jdbi  JDBI repositories + Flyway migrations
 platform-sync-client       Sync DTOs, DesktopSyncEngine (sync client logic)
 platform-web               http4k web server, JTE templates, HTMX frontend
 platform-desktop           Swing desktop client with two-way sync
@@ -34,11 +33,11 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
 
 ### Key Design Patterns
 
-- **Repository pattern**: Interfaces in `platform-core` (e.g. `MessageRepository`, `ContactRepository`), implementations in both `platform-persistence-jooq` (JooqXxxRepository) and `platform-persistence-jdbi` (JdbiXxxRepository). Never include both at runtime.
+- **Repository pattern**: Interfaces in `platform-core` (e.g. `MessageRepository`, `ContactRepository`), implementations in `platform-persistence-jdbi` (JdbiXxxRepository).
 - **Dependency injection**: Koin. Objects use `by inject()` for lazy resolution or `get()` for eager. MainComponent uses lazy delegates.
 - **http4k routes**: Contract-based routing via `bindContract`. Filters chain via `.then()`. All routes assembled in `App.kt`.
 - **JTE templates**: Precompiled in production (`JTE_PRODUCTION=true`), source-compiled in dev. Templates in `src/main/jte/`.
-- **Flyway migrations**: Source of truth for schema. jOOQ generated sources committed to version control.
+- **Flyway migrations**: Source of truth for schema.
 - **AppConfig/RuntimeConfig**: Configuration from YAML + env vars. `AppConfig.fromEnvironment()` loads `application-{PROFILE}.yaml` then `application.yaml`. All fields support env var override.
 - **WebPageFactory → domain factories**: AuthPageFactory, ErrorPageFactory, SidebarFactory, ContactsPageFactory, HomePageFactory, InfraPageFactory, SettingsPageFactory, SearchPageFactory, DevDashboardPageFactory, AdminPageFactory. All delegate from the original WebPageFactory.
 
@@ -49,7 +48,6 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
   - `start-web.ps1`
   - `stop-web.ps1`
   - `start-swing.ps1`
-  - `generate-jooq.ps1`
 
 ### Test execution
 
@@ -57,7 +55,7 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
 # Full build excluding desktop modules (PowerShell)
 # NOTE: `-pl,!platform-desktop,!platform-desktop-javafx` does NOT work via PowerShell + cmd.exe
 # Use explicit module list instead:
-mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 
 # Run a specific test
 mvn -pl platform-web test -Dtest=HealthCheckIntegrationTest
@@ -111,17 +109,11 @@ There are TWO `UserRole` enums — one in `platform-core` (model package) and on
 - Database migration:
   - `-Pmigrate` runs standalone migration via `MigratorKt`.
 
-## jOOQ and database schema rules
+## Database schema rules
 
 - Flyway migrations are the schema source of truth.
-- jOOQ generated sources are version controlled under:
-  - `platform-persistence-jooq/src/main/generated/jooq`
-- Do not rely on implicit jOOQ generation during normal `compile`/`test`.
-- When schema-relevant changes are made (migration changes, jOOQ config changes), regenerate and commit generated files:
-  - `mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources`
-  - or `./generate-jooq.ps1`
-- Migration and generated source changes should be committed together.
 - Naming convention: `V{version}__{description}.sql` (Flyway default).
+- Migration changes should be committed with corresponding code changes.
 
 ## Swing theming and i18n rules
 
@@ -178,7 +170,7 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 | Desktop main | `SwingSyncApp.kt` (SyncWindow, SyncWindowMenu, SyncWindowNav) |
 | Desktop dialogs | `SyncDialogs.kt` (630 lines) |
 | Sync engine | `DesktopSyncEngine.kt` in `platform-sync-client` |
-| Migrations | `platform-persistence-jooq/src/main/resources/db/migration/` |
+| Migrations | `platform-persistence-jdbi/src/main/resources/db/migration/` |
 
 ## Testing expectations
 

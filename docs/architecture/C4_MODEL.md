@@ -38,8 +38,8 @@ C4Container
 
     Rel(user, web_app, "Uses", "HTTPS")
     Rel(user, desktop_app, "Uses", "Native UI")
-    Rel(web_app, db, "Reads/Writes", "jOOQ")
-    Rel(desktop_app, db, "Reads/Writes", "jOOQ")
+    Rel(web_app, db, "Reads/Writes", "JDBI")
+    Rel(desktop_app, db, "Reads/Writes", "JDBI")
     Rel(desktop_app, web_app, "Synchronizes with", "JSON/HTTPS")
 ```
 
@@ -58,7 +58,7 @@ C4Component
     Boundary(web_boundary, "Web Application") {
         Component(app_routes, "Server Routes", "http4k-contract", "Defines API and Web endpoints.")
         Component(msg_service, "Message Service", "Kotlin Service", "Encapsulates business logic and outbox processing.")
-        Component(msg_repo, "Message Repository", "jOOQ", "Handles data persistence and caching.")
+        Component(msg_repo, "Message Repository", "JDBI", "Handles data persistence and caching.")
         Component(outbox_proc, "Outbox Processor", "Background Task", "Processes pending sync tasks.")
         Component(auth_filter, "Security Module", "http4k Filter", "Handles RBAC and authentication.")
     }
@@ -69,7 +69,7 @@ C4Component
     Rel(msg_service, msg_repo, "Uses")
     Rel(msg_service, outbox_proc, "Triggers")
     Rel(outbox_proc, msg_repo, "Updates status")
-    Rel(msg_repo, db, "JDBC/jOOQ")
+    Rel(msg_repo, db, "JDBC/JDBI")
 ```
 
 ---
@@ -78,7 +78,7 @@ C4Component
 The project is organized into several highly decoupled Maven modules:
 
 - **`platform-core`**: Domain models (`StoredMessage`), Service interfaces, and shared business logic.
-- **`platform-persistence-jooq`**: Implementation of repositories using jOOQ, Flyway migrations, and Caffeine caching.
+- **`platform-persistence-jdbi`**: Implementation of repositories using JDBI, Flyway migrations, and Caffeine caching.
 - **`platform-security`**: Authentication logic, Role-Based Access Control (RBAC), and user models.
 - **`platform-sync-client`**: Client-side synchronization logic using Resilience4j (Retry/Circuit Breaker).
 - **`platform-web`**: The http4k server, JTE templates, and Web Component-based UI.

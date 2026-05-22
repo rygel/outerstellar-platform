@@ -17,7 +17,7 @@ Production: Use a managed PostgreSQL service. Set `JDBC_URL`, `JDBC_USER`, `JDBC
 mvn clean install -DskipTests
 
 # Build with quality checks
-mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 ```
 
 ## Run
@@ -45,7 +45,7 @@ Run migrations separately (production):
 
 ```bash
 FLYWAY_ENABLED=false java -jar platform-web-*.jar   # app starts without migrations
-mvn -pl platform-persistence-jooq -Pmigrate exec:java  # run migrations separately
+mvn -pl platform-persistence-jdbi -Pmigrate exec:java  # run migrations separately
 ```
 
 ## Docker

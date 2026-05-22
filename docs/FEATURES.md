@@ -71,13 +71,12 @@
 ### Database Support
 - **PostgreSQL** — sole database engine for development, testing, and production
 - **Flyway migrations** — versioned schema management with plugin migration support
-- **jOOQ** — type-safe SQL with code generation (default)
-- **JDBI** — lightweight SQL abstraction (alternative to jOOQ; zero jOOQ dependency)
+- **JDBI** — lightweight SQL abstraction for all repository implementations
 - **HikariCP** — connection pooling
 
-### Dual Persistence Architecture
+### Persistence Architecture
 
-The platform provides two independent persistence modules (`platform-persistence-jooq` and `platform-persistence-jdbi`) that implement identical repository interfaces. Applications choose one at the POM level — the rest of the code is persistence-agnostic. See `docs/architecture.md` for details on switching between them.
+The platform uses `platform-persistence-jdbi` for all repository implementations against the interfaces defined in `platform-core`.
 
 ### Plugin Migration Isolation
 
