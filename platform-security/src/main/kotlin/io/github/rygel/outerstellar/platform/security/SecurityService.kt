@@ -257,25 +257,23 @@ class SecurityService(
                 throw UsernameAlreadyExistsException(newEmail)
             }
         }
-        if (newUsername != null && newUsername != user.username) {
-            require(newUsername.isNotBlank()) { "Username cannot be blank" }
-            require(newUsername.length <= MAX_USERNAME_LENGTH) {
+        val resolvedUsername = newUsername ?: user.username
+        if (resolvedUsername != user.username) {
+            require(resolvedUsername.isNotBlank()) { "Username cannot be blank" }
+            require(resolvedUsername.length <= MAX_USERNAME_LENGTH) {
                 "Username cannot exceed $MAX_USERNAME_LENGTH characters"
             }
-            if (userRepository.findByUsername(newUsername) != null) {
-                throw UsernameAlreadyExistsException(newUsername)
+            if (userRepository.findByUsername(resolvedUsername) != null) {
+                throw UsernameAlreadyExistsException(resolvedUsername)
             }
-            userRepository.updateUsername(userId, newUsername)
         }
-        if (newAvatarUrl != user.avatarUrl) {
-            val sanitizedUrl = newAvatarUrl?.takeIf { it.isNotBlank() }
-            if (sanitizedUrl != null) {
-                UrlValidator.validate(sanitizedUrl)
-            }
-            userRepository.updateAvatarUrl(userId, sanitizedUrl)
+        val sanitizedUrl = newAvatarUrl?.takeIf { it.isNotBlank() }
+        if (sanitizedUrl != null && sanitizedUrl != user.avatarUrl) {
+            UrlValidator.validate(sanitizedUrl)
         }
-        userRepository.save(user.copy(email = newEmail))
-        logger.info("Profile updated for user {}", sanitize(user.username))
+        val updated = user.copy(email = newEmail, username = resolvedUsername, avatarUrl = sanitizedUrl)
+        userRepository.save(updated)
+        logger.info("Profile updated for user {}", sanitize(updated.username))
     }
 
     private fun deleteAccount(userId: UUID) {

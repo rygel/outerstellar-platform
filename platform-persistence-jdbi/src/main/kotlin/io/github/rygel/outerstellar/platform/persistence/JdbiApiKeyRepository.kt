@@ -1,8 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.ApiKey
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 
@@ -22,7 +20,7 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
                 .bind("keyPrefix", apiKey.keyPrefix)
                 .bind("name", apiKey.name)
                 .bind("enabled", apiKey.enabled)
-                .bind("createdAt", LocalDateTime.ofInstant(apiKey.createdAt, ZoneOffset.UTC))
+                .bind("createdAt", java.sql.Timestamp.from(apiKey.createdAt))
                 .execute()
         }
     }
@@ -66,7 +64,7 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_api_keys SET last_used_at = :lastUsedAt WHERE id = :id")
-                .bind("lastUsedAt", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("lastUsedAt", java.sql.Timestamp.from(java.time.Instant.now()))
                 .bind("id", id)
                 .execute()
         }

@@ -580,7 +580,9 @@ class SecurityServiceTest {
 
         service.updateProfile(testUser.id, testUser.email, newUsername = "newname")
 
-        verify { userRepository.updateUsername(testUser.id, "newname") }
+        val saved = slot<User>()
+        verify { userRepository.save(capture(saved)) }
+        assertEquals("newname", saved.captured.username)
     }
 
     @Test
@@ -602,7 +604,9 @@ class SecurityServiceTest {
 
         service.updateProfile(testUser.id, testUser.email, newUsername = testUser.username)
 
-        verify(exactly = 0) { userRepository.updateUsername(any(), any()) }
+        val saved = slot<User>()
+        verify { userRepository.save(capture(saved)) }
+        assertEquals(testUser.username, saved.captured.username)
     }
 
     @Test
@@ -612,7 +616,9 @@ class SecurityServiceTest {
 
         service.updateProfile(testUser.id, testUser.email, newAvatarUrl = "https://example.com/avatar.png")
 
-        verify { userRepository.updateAvatarUrl(testUser.id, "https://example.com/avatar.png") }
+        val saved = slot<User>()
+        verify { userRepository.save(capture(saved)) }
+        assertEquals("https://example.com/avatar.png", saved.captured.avatarUrl)
     }
 
     @Test
@@ -623,7 +629,9 @@ class SecurityServiceTest {
 
         service.updateProfile(testUser.id, testUser.email, newAvatarUrl = "")
 
-        verify { userRepository.updateAvatarUrl(testUser.id, null) }
+        val saved = slot<User>()
+        verify { userRepository.save(capture(saved)) }
+        assertNull(saved.captured.avatarUrl)
     }
 
     // ---- deleteAccount ----

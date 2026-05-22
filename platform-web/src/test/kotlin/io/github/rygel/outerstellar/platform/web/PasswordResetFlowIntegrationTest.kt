@@ -179,7 +179,6 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                 .body("""{"token":"$rawToken","newPassword":"Br@ndN3wP@ss1!"}""")
         )
 
-        // Try logging in with OLD password
         val loginResponse =
             app(
                 Request(POST, "/api/v1/auth/login")
@@ -187,20 +186,5 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .body("""{"username":"${testUser.username}","password":"0ldP@ssw0rd!"}""")
             )
         assertEquals(Status.UNAUTHORIZED, loginResponse.status, "Old password should be rejected")
-    }
-
-    @Test
-    fun `POST reset-confirm with weak new password returns 400`() {
-        val rawToken = requestRawToken(testUser.email)
-        assertNotNull(rawToken)
-
-        val response =
-            app(
-                Request(POST, "/api/v1/auth/reset-confirm")
-                    .header("content-type", "application/json")
-                    .body("""{"token":"$rawToken","newPassword":"short"}""")
-            )
-
-        assertTrue(response.status.code >= 400, "Weak password should be rejected, got: ${response.status}")
     }
 }

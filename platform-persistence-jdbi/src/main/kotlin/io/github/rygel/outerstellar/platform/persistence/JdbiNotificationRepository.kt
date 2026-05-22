@@ -1,8 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 
@@ -22,7 +20,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
                 .bind("title", notification.title)
                 .bind("body", notification.body)
                 .bind("type", notification.type)
-                .bind("createdAt", notification.createdAt.atOffset(ZoneOffset.UTC).toLocalDateTime())
+                .bind("createdAt", java.sql.Timestamp.from(notification.createdAt))
                 .execute()
         }
     }
@@ -54,7 +52,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_notifications SET read_at = :readAt WHERE id = :id AND user_id = :userId")
-                .bind("readAt", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("readAt", java.sql.Timestamp.from(java.time.Instant.now()))
                 .bind("id", id)
                 .bind("userId", userId)
                 .execute()
@@ -67,7 +65,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
                 .createUpdate(
                     "UPDATE plt_notifications SET read_at = :readAt WHERE user_id = :userId AND read_at IS NULL"
                 )
-                .bind("readAt", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("readAt", java.sql.Timestamp.from(java.time.Instant.now()))
                 .bind("userId", userId)
                 .execute()
         }

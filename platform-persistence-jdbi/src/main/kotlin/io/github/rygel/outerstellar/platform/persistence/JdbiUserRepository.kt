@@ -4,7 +4,6 @@ import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 import org.slf4j.LoggerFactory
@@ -50,14 +49,15 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             handle
                 .createUpdate(
                     """
-                    INSERT INTO plt_users (id, username, email, password_hash, role, enabled)
-                    VALUES (:id, :username, :email, :passwordHash, :role, :enabled)
+                    INSERT INTO plt_users (id, username, email, password_hash, role, enabled, avatar_url)
+                    VALUES (:id, :username, :email, :passwordHash, :role, :enabled, :avatarUrl)
                     ON CONFLICT (id) DO UPDATE SET
                         username = EXCLUDED.username,
                         email = EXCLUDED.email,
                         password_hash = EXCLUDED.password_hash,
                         role = EXCLUDED.role,
-                        enabled = EXCLUDED.enabled
+                        enabled = EXCLUDED.enabled,
+                        avatar_url = EXCLUDED.avatar_url
                     """
                 )
                 .bind("id", user.id)
@@ -66,6 +66,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
                 .bind("passwordHash", user.passwordHash)
                 .bind("role", user.role.name)
                 .bind("enabled", user.enabled)
+                .bind("avatarUrl", user.avatarUrl)
                 .execute()
         }
     }
@@ -139,7 +140,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_users SET last_activity_at = :lastActivity WHERE id = :id")
-                .bind("lastActivity", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("lastActivity", java.sql.Timestamp.from(java.time.Instant.now()))
                 .bind("id", userId)
                 .execute()
         }
