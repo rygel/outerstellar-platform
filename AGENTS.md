@@ -57,14 +57,31 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
 # Use explicit module list instead:
 mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 
-# Run a specific test
-mvn -pl platform-web test -Dtest=HealthCheckIntegrationTest
+# Run a specific test in a specific module (ALWAYS use -am to rebuild upstream modules)
+mvn -pl platform-web -am test -Dtest=HealthCheckIntegrationTest
 
 # Skip CSS build when tests hang on npm
-mvn -pl platform-web test -Dexec.skip=true
+mvn -pl platform-web -am test -Dexec.skip=true
 
 # Skipping quality checks for fast iteration
 mvn -pl platform-web compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
+```
+
+### Stale classpath prevention
+
+**Always use `-am` (also-make) when running `-pl` (project list).** Without `-am`, Maven resolves
+upstream dependencies from `~/.m2/repository/` which may contain stale SNAPSHOT JARs, causing
+phantom test failures that don't exist in the source code.
+
+```powershell
+# WRONG — resolves upstream from ~/.m2/ (may be stale)
+mvn -pl platform-web test
+
+# CORRECT — rebuilds upstream modules first, uses fresh reactor output
+mvn -pl platform-web -am test
+
+# Full reactor build (always safe, no -am needed)
+mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 ```
 
 ### Desktop Tests in Podman
