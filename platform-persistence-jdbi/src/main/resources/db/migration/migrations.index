@@ -8,3 +8,4 @@ V4__user_preferences
 V5__performance_indexes
 V6__admin_stats_indexes
 V7__account_lockout
+V8__query_path_indexes
