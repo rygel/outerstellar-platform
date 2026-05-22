@@ -102,7 +102,7 @@ The primary test base for all platform-web integration tests. Provides:
 |----------|------|-------|
 | `container` | `PostgreSQLContainer` | Singleton, shared across ~50 test classes |
 | `testConfig` | `AppConfig` | Pre-configured with container JDBC details |
-| `testDsl` | `DSLContext` | Database context, lazily initialized |
+| `testJdbi` | `Jdbi` | Database context, lazily initialized |
 | `renderer` | JTE renderer | Precompiled (`jte.production=true`) |
 | `userRepository`, `messageRepository`, etc. | Repository instances | All lazily initialized |
 | `buildApp(...)` | `HttpHandler` | Factory that assembles the full http4k app |
