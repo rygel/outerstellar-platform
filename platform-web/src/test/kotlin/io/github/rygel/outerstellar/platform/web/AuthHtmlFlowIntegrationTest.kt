@@ -53,7 +53,6 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
         testUser =
             User(
                 id = UUID.randomUUID(),

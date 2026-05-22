@@ -3,10 +3,7 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.AppleOAuthConfig
 import io.github.rygel.outerstellar.platform.app
-import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.createRenderer
-import io.github.rygel.outerstellar.platform.infra.migrate
-import io.github.rygel.outerstellar.platform.persistence.CleanupTables
 import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiAuditRepository
@@ -26,11 +23,14 @@ import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import io.github.rygel.outerstellar.platform.service.PollService
-import javax.sql.DataSource
+import io.github.rygel.outerstellar.platform.testing.SharedPostgres
+import io.github.rygel.outerstellar.platform.testing.sanitizeDbName
+import java.util.UUID
 import org.http4k.core.HttpHandler
 import org.jdbi.v3.core.Jdbi
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.testcontainers.containers.PostgreSQLContainer
+import org.junit.jupiter.api.TestInstance
 
 data class TestOverrides(
     val userRepository: UserRepository? = null,
@@ -41,139 +41,146 @@ data class TestOverrides(
     val pollService: PollService? = null,
 )
 
-abstract class WebTest protected constructor() {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+abstract class WebTest {
+    private val testDb = SharedPostgres.createDatabase(sanitizeDbName(this::class.simpleName!!))
 
-    @AfterEach
-    fun resetState() {
-        cleanup()
+    val testConfig by lazy {
+        AppConfig(
+            port = 0,
+            jdbcUrl = testDb.jdbcUrl,
+            jdbcUser = testDb.jdbcUser,
+            jdbcPassword = testDb.jdbcPassword,
+            devDashboardEnabled = true,
+            csrfEnabled = false,
+            corsOrigins = "*",
+            appleOAuth =
+                AppleOAuthConfig(
+                    enabled = true,
+                    clientId = "test.client.id",
+                    teamId = "test.team",
+                    keyId = "test.key",
+                    privateKeyPem = "test.pem",
+                ),
+        )
     }
 
-    companion object {
-        private val container =
-            PostgreSQLContainer<Nothing>("postgres:18").apply {
-                withDatabaseName("outerstellar")
-                withUsername("outerstellar")
-                withPassword("outerstellar")
-                start()
-            }
+    val testJdbi: Jdbi by lazy { testDb.jdbi }
+    val renderer by lazy { createRenderer() }
+    val encoder by lazy { BCryptPasswordEncoder(logRounds = 4) }
+    val testPasswordHash by lazy { encoder.encode("Test@12345678") }
 
-        private val dataSource: DataSource by lazy {
-            createDataSource(container.jdbcUrl, container.username, container.password).also { migrate(it) }
-        }
+    open val userRepository by lazy { JdbiUserRepository(testJdbi) }
+    val messageRepository by lazy { JdbiMessageRepository(testJdbi) }
+    val contactRepository by lazy { JdbiContactRepository(testJdbi) }
+    val sessionRepository by lazy { JdbiSessionRepository(testJdbi) }
+    val apiKeyRepository by lazy { JdbiApiKeyRepository(testJdbi) }
+    val auditRepository by lazy { JdbiAuditRepository(testJdbi) }
+    val notificationRepository by lazy { JdbiNotificationRepository(testJdbi) }
+    val passwordResetRepository by lazy { JdbiPasswordResetRepository(testJdbi) }
+    open val oauthRepository by lazy { JdbiOAuthRepository(testJdbi) }
+    val pollRepository by lazy { JdbiPollRepository(testJdbi) }
+    val pollService by lazy { PollService(pollRepository) }
 
-        val testConfig =
-            AppConfig(
-                port = 0,
-                jdbcUrl = container.jdbcUrl,
-                jdbcUser = container.username,
-                jdbcPassword = container.password,
-                devDashboardEnabled = true,
-                csrfEnabled = false,
-                corsOrigins = "*",
-                appleOAuth =
-                    AppleOAuthConfig(
-                        enabled = true,
-                        clientId = "test.client.id",
-                        teamId = "test.team",
-                        keyId = "test.key",
-                        privateKeyPem = "test.pem",
-                    ),
+    fun createSecurityService(userRepository: UserRepository = this.userRepository): SecurityService =
+        SecurityService(
+            userRepository,
+            encoder,
+            sessionRepository = sessionRepository,
+            apiKeyRepository = apiKeyRepository,
+            resetRepository = passwordResetRepository,
+            auditRepository = auditRepository,
+        )
+
+    fun withAuthenticatedUser(
+        username: String = "testuser_" + UUID.randomUUID().toString().take(8),
+        passwordHash: String = testPasswordHash,
+        role: String = "USER",
+    ): Triple<String, String, String> {
+        val userId = UUID.randomUUID()
+        val user =
+            io.github.rygel.outerstellar.platform.model.User(
+                id = userId,
+                username = username,
+                email = "$username@test.com",
+                passwordHash = passwordHash,
+                role = io.github.rygel.outerstellar.platform.model.UserRole.valueOf(role),
+            )
+        userRepository.save(user)
+        val token = createSecurityService().createSession(userId)
+        return Triple(token, userId.toString(), username)
+    }
+
+    fun buildApp(
+        config: AppConfig = testConfig,
+        securityService: SecurityService = createSecurityService(),
+        overrides: TestOverrides = TestOverrides(),
+    ): HttpHandler {
+        val resolvedUserRepo = overrides.userRepository ?: this.userRepository
+        val resolvedMessageCache = overrides.messageCache ?: StubMessageCache()
+        val outbox = StubOutboxRepository()
+        val txManager = StubTransactionManager()
+        val messageService = MessageService(messageRepository, outbox, txManager, resolvedMessageCache)
+        val resolvedContactService =
+            overrides.contactService
+                ?: ContactService(contactRepository, transactionManager = txManager, auditRepository = auditRepository)
+        val pageFactory =
+            WebPageFactory(
+                messageRepository,
+                messageService,
+                resolvedContactService,
+                securityService,
+                appleOAuthEnabled = true,
             )
 
-        val testJdbi: Jdbi by lazy { Jdbi.create(dataSource) }
-
-        fun cleanup() {
-            testJdbi.useHandle<Exception> { handle ->
-                CleanupTables.ALL.forEach { table -> handle.execute("DELETE FROM $table") }
-            }
-        }
-
-        val renderer by lazy { createRenderer() }
-        val encoder by lazy { BCryptPasswordEncoder(logRounds = 4) }
-        val testPasswordHash by lazy { encoder.encode("Test@12345678") }
-
-        fun createSecurityService(userRepository: UserRepository = this.userRepository): SecurityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
+        return app(
+                messageService,
+                resolvedContactService,
+                outbox,
+                resolvedMessageCache,
+                renderer,
+                pageFactory,
+                config,
+                securityService,
+                resolvedUserRepo,
+                deviceTokenRepository = overrides.deviceTokenRepository,
+                notificationService = overrides.notificationService,
+                pollService = overrides.pollService ?: pollService,
             )
+            .http!!
+    }
 
-        fun withAuthenticatedUser(
-            username: String = "testuser_" + java.util.UUID.randomUUID().toString().take(8),
-            passwordHash: String = testPasswordHash,
-            role: String = "USER",
-        ): Triple<String, String, String> {
-            val userId = java.util.UUID.randomUUID()
-            val user =
-                io.github.rygel.outerstellar.platform.model.User(
-                    id = userId,
-                    username = username,
-                    email = "$username@test.com",
-                    passwordHash = passwordHash,
-                    role = io.github.rygel.outerstellar.platform.model.UserRole.valueOf(role),
-                )
-            userRepository.save(user)
-            val token = createSecurityService().createSession(userId)
-            return Triple(token, userId.toString(), username)
+    private val tablesToDelete =
+        listOf(
+            "plt_sessions",
+            "plt_notifications",
+            "plt_device_tokens",
+            "plt_oauth_connections",
+            "plt_api_keys",
+            "plt_password_reset_tokens",
+            "plt_audit_log",
+            "plt_outbox",
+            "plt_contact_emails",
+            "plt_contact_phones",
+            "plt_contact_socials",
+            "plt_contacts",
+            "plt_messages",
+            "plt_poll_votes",
+            "plt_poll_options",
+            "plt_polls",
+            "plt_sync_state",
+            "plt_users",
+        )
+
+    @AfterEach
+    fun cleanDatabase() {
+        testJdbi.useHandle<Exception> { handle ->
+            tablesToDelete.forEach { table -> handle.execute("DELETE FROM $table") }
         }
+    }
 
-        val userRepository by lazy { JdbiUserRepository(testJdbi) }
-        val messageRepository by lazy { JdbiMessageRepository(testJdbi) }
-        val contactRepository by lazy { JdbiContactRepository(testJdbi) }
-        val sessionRepository by lazy { JdbiSessionRepository(testJdbi) }
-        val apiKeyRepository by lazy { JdbiApiKeyRepository(testJdbi) }
-        val auditRepository by lazy { JdbiAuditRepository(testJdbi) }
-        val notificationRepository by lazy { JdbiNotificationRepository(testJdbi) }
-        val passwordResetRepository by lazy { JdbiPasswordResetRepository(testJdbi) }
-        val oauthRepository by lazy { JdbiOAuthRepository(testJdbi) }
-        val pollRepository by lazy { JdbiPollRepository(testJdbi) }
-        val pollService by lazy { PollService(pollRepository) }
-
-        fun buildApp(
-            config: AppConfig = testConfig,
-            securityService: SecurityService = createSecurityService(),
-            overrides: TestOverrides = TestOverrides(),
-        ): HttpHandler {
-            val resolvedUserRepo = overrides.userRepository ?: this.userRepository
-            val resolvedMessageCache = overrides.messageCache ?: StubMessageCache()
-            val outbox = StubOutboxRepository()
-            val txManager = StubTransactionManager()
-            val messageService = MessageService(messageRepository, outbox, txManager, resolvedMessageCache)
-            val resolvedContactService =
-                overrides.contactService
-                    ?: ContactService(
-                        contactRepository,
-                        transactionManager = txManager,
-                        auditRepository = auditRepository,
-                    )
-            val pageFactory =
-                WebPageFactory(
-                    messageRepository,
-                    messageService,
-                    resolvedContactService,
-                    securityService,
-                    appleOAuthEnabled = true,
-                )
-
-            return app(
-                    messageService,
-                    resolvedContactService,
-                    outbox,
-                    resolvedMessageCache,
-                    renderer,
-                    pageFactory,
-                    config,
-                    securityService,
-                    resolvedUserRepo,
-                    deviceTokenRepository = overrides.deviceTokenRepository,
-                    notificationService = overrides.notificationService,
-                    pollService = overrides.pollService ?: pollService,
-                )
-                .http!!
-        }
+    @AfterAll
+    fun tearDown() {
+        testDb.drop()
     }
 }

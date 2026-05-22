@@ -45,6 +45,7 @@
         <module>platform-desktop-javafx</module>
         <module>platform-security</module>
         <module>platform-seed</module>
+        <module>platform-test-infrastructure</module>
     </modules>
 
     <properties>

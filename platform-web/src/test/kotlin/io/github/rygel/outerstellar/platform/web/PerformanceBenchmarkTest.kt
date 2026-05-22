@@ -180,8 +180,6 @@ class PerformanceBenchmarkTest : WebTest() {
 
     @BeforeEach
     fun setupBenchmark() {
-        cleanup()
-
         val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
 
         app =

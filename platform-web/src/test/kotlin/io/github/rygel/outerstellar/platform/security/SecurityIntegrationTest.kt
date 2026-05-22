@@ -14,17 +14,17 @@ import org.junit.jupiter.api.Test
 
 class SecurityIntegrationTest : WebTest() {
 
-    private lateinit var userRepository: JdbiUserRepository
+    private lateinit var localUserRepository: JdbiUserRepository
     private lateinit var passwordEncoder: PasswordEncoder
     private lateinit var securityService: SecurityService
 
     @BeforeEach
     fun setupTest() {
-        userRepository = JdbiUserRepository(testJdbi)
+        localUserRepository = JdbiUserRepository(testJdbi)
         passwordEncoder = BCryptPasswordEncoder(logRounds = 4) // Fast for tests
         securityService =
             SecurityService(
-                userRepository = userRepository,
+                userRepository = localUserRepository,
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
             )
@@ -44,7 +44,7 @@ class SecurityIntegrationTest : WebTest() {
                 passwordHash = passwordEncoder.encode(password),
                 role = UserRole.USER,
             )
-        userRepository.save(newUser)
+        localUserRepository.save(newUser)
 
         // 2. Authenticate
         val result = securityService.authenticate(username, password)
@@ -60,7 +60,7 @@ class SecurityIntegrationTest : WebTest() {
         val username = "secureuser"
         val password = "correctpassword"
 
-        userRepository.save(
+        localUserRepository.save(
             User(
                 id = UUID.randomUUID(),
                 username = username,

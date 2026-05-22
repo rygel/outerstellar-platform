@@ -36,7 +36,6 @@ class MessageRestoreIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
         sec = createSecurityService()
         val user =
             User(

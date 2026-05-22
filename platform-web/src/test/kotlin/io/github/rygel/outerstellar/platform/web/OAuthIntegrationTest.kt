@@ -40,12 +40,12 @@ import org.junit.jupiter.api.BeforeEach
 class OAuthIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var oauthRepository: InMemoryOAuthRepository
+    private lateinit var localOAuthRepository: InMemoryOAuthRepository
     private lateinit var securityService: SecurityService
 
     @BeforeEach
     fun setupTest() {
-        oauthRepository = InMemoryOAuthRepository()
+        localOAuthRepository = InMemoryOAuthRepository()
         securityService =
             SecurityService(
                 userRepository = userRepository,
@@ -54,7 +54,7 @@ class OAuthIntegrationTest : WebTest() {
                 apiKeyRepository = apiKeyRepository,
                 resetRepository = passwordResetRepository,
                 auditRepository = auditRepository,
-                oauthRepository = oauthRepository,
+                oauthRepository = localOAuthRepository,
             )
 
         app = buildApp(securityService = securityService)
@@ -62,7 +62,7 @@ class OAuthIntegrationTest : WebTest() {
 
     @AfterEach
     fun teardown() {
-        oauthRepository.clear()
+        localOAuthRepository.clear()
     }
 
     // ---- Initiation ----
@@ -286,7 +286,7 @@ class OAuthIntegrationTest : WebTest() {
     fun `findOrCreateOAuthUser creates an OAuthConnection record on first call`() {
         securityService.findOrCreateOAuthUser("apple", "apple.sub.002", "linked@example.com")
 
-        val connections = oauthRepository.findByProviderSubject("apple", "apple.sub.002")
+        val connections = localOAuthRepository.findByProviderSubject("apple", "apple.sub.002")
         assertNotNull(connections, "OAuthConnection should be saved for the new user")
         assertEquals("apple.sub.002", connections.subject)
     }
