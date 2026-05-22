@@ -51,7 +51,7 @@ val persistenceModule
                     migrate(ds)
                     getOrNull<PluginMigrationSource>()?.let { plugin ->
                         plugin.migrationLocation?.let { location ->
-                            migratePlugin(ds, location, plugin.migrationHistoryTable)
+                            migratePlugin(ds, location, plugin.migrationHistoryTable, plugin.migrationNames)
                         }
                     }
                 }
