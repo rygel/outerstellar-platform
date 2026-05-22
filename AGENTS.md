@@ -315,7 +315,6 @@ Before every commit, the following MUST be true:
    ```
 
 **Do not commit if either of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
-
 ## Testing discipline: no smoke tests
 
 This project uses **full end-to-end tests only**. There are zero smoke tests.
