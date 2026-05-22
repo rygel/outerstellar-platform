@@ -89,7 +89,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
 
     @Test
     fun `POST reset-request stores token in database`() {
-        val tokensBefore = testDsl.fetchCount(testDsl.selectFrom(org.jooq.impl.DSL.table("plt_password_reset_tokens")))
+        val tokensBefore = testJdbi.open().createQuery("SELECT COUNT(*) FROM plt_password_reset_tokens").mapTo(Int::class.java).first()
 
         app(
             Request(POST, "/api/v1/auth/reset-request")
@@ -97,7 +97,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                 .body("""{"email":"${testUser.email}"}""")
         )
 
-        val tokensAfter = testDsl.fetchCount(testDsl.selectFrom(org.jooq.impl.DSL.table("plt_password_reset_tokens")))
+        val tokensAfter = testJdbi.open().createQuery("SELECT COUNT(*) FROM plt_password_reset_tokens").mapTo(Int::class.java).first()
         assertEquals(tokensBefore + 1, tokensAfter, "One token should be stored in the DB")
     }
 
@@ -107,7 +107,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
         assertNotNull(rawToken, "Token should be generated after reset request")
 
         val storedToken =
-            testDsl.fetchValue("SELECT token FROM plt_password_reset_tokens WHERE user_id = ?", testUser.id) as String
+            testJdbi.open().createQuery("SELECT token FROM plt_password_reset_tokens WHERE user_id = :id").bind("id", testUser.id).mapTo(String::class.java).first()
 
         assertNotEquals(rawToken, storedToken, "Raw reset token must not be stored")
         assertTrue(storedToken.matches(Regex("[0-9a-f]{64}")), "Stored reset token should be a SHA-256 hex hash")

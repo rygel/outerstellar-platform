@@ -2,7 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.persistence.JooqNotificationRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import java.util.UUID
@@ -83,7 +83,7 @@ class PlatformPageRenderingTest : WebTest() {
         adminToken = securityService.createSession(adminUser.id)
         userToken = securityService.createSession(regularUser.id)
 
-        val notificationService = NotificationService(JooqNotificationRepository(testDsl))
+        val notificationService = NotificationService(JdbiNotificationRepository(testJdbi))
         app =
             buildApp(
                 securityService = securityService,

@@ -290,7 +290,7 @@ class PerformanceBenchmarkTest : WebTest() {
         val coldRec = LatencyRecorder("GET /api/v1/sync?since=0 (cold)")
         repeat(WARMUP) { app(req) }
         repeat(ITERATIONS) {
-            testDsl.execute("DELETE FROM plt_sync_state")
+            testJdbi.useHandle<Exception> { handle -> handle.execute("DELETE FROM plt_sync_state") }
             coldRec.record { app(req) }
         }
 

@@ -135,9 +135,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     @Test
     fun `session timeout redirects HTML requests to auth page`() {
         val admin = seedAdmin()
-        testDsl.execute(
-            "UPDATE plt_sessions SET expires_at = TIMESTAMP '2020-01-01 00:00:00' WHERE user_id = '${admin.id}'"
-        )
+        testJdbi.useHandle<Exception> { handle -> handle.execute("UPDATE plt_sessions SET expires_at = TIMESTAMP '2020-01-01 00:00:00' WHERE user_id = '${admin.id}'") }
         val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
         assertEquals(Status.FOUND, response.status)
         assertEquals("/auth?expired=true", response.header("location"))
