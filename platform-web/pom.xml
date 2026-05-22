@@ -188,6 +188,21 @@
             <artifactId>http4k-testing-hamkrest</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-webdriver</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-chaos</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-approval</artifactId>
+            <scope>test</scope>
+        </dependency>
         
     </dependencies>
 
