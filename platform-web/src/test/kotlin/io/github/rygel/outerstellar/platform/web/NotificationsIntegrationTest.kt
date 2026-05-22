@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
@@ -18,6 +19,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 class NotificationsIntegrationTest : WebTest() {
@@ -58,7 +60,7 @@ class NotificationsIntegrationTest : WebTest() {
         val (_, token) = registerAndLogin()
         val response = app(bearerRequest(GET, "/api/v1/notifications", token))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val notifications = notificationListLens(response)
         assertTrue(notifications.isEmpty())
     }
@@ -71,7 +73,7 @@ class NotificationsIntegrationTest : WebTest() {
 
         val response = app(bearerRequest(GET, "/api/v1/notifications", token))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val notifications = notificationListLens(response)
         assertEquals(2, notifications.size)
         assertTrue(notifications.any { it.title == "Warning" })
@@ -96,7 +98,7 @@ class NotificationsIntegrationTest : WebTest() {
     @Test
     fun `GET notifications requires authentication`() {
         val response = app(Request(GET, "/api/v1/notifications"))
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -108,7 +110,7 @@ class NotificationsIntegrationTest : WebTest() {
 
         val response = app(bearerRequest(PUT, "/api/v1/notifications/$notifId/read", token))
 
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
         val updated = notificationRepository.findByUserId(userId)[0]
         assertTrue(updated.isRead)
     }
@@ -122,7 +124,7 @@ class NotificationsIntegrationTest : WebTest() {
         assertEquals(2, notificationRepository.countUnread(userId))
 
         val response = app(bearerRequest(PUT, "/api/v1/notifications/read-all", token))
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
         assertEquals(0, notificationRepository.countUnread(userId))
     }
 
@@ -145,14 +147,14 @@ class NotificationsIntegrationTest : WebTest() {
     @Test
     fun `GET notifications page redirects unauthenticated users`() {
         val response = app(Request(GET, "/notifications"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location")?.contains("/auth") == true)
     }
 
     @Test
     fun `GET notification bell component returns HTML`() {
         val response = app(Request(GET, "/components/notification-bell"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertTrue(response.bodyString().contains("ri-notification"))
     }
 
@@ -163,6 +165,6 @@ class NotificationsIntegrationTest : WebTest() {
 
         // The bell fragment counts per-user; anonymous request shows 0
         val response = app(Request(GET, "/components/notification-bell"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 }

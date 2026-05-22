@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
@@ -14,6 +15,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -70,7 +72,7 @@ class OAuthIntegrationTest : WebTest() {
         // The real AppleOAuthProvider stub redirects to /not-configured.
         // Use a white-box approach: the route must return a 302 redirect.
         val response = app(Request(GET, "/auth/oauth/apple"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location")
         assertNotNull(location, "302 response must have Location header")
         assertTrue(location.isNotBlank(), "Location header must not be blank, got: $location")
@@ -98,7 +100,7 @@ class OAuthIntegrationTest : WebTest() {
     @Test
     fun `GET auth-oauth-unknown-provider returns 404`() {
         val response = app(Request(GET, "/auth/oauth/nonexistent_provider_xyz"))
-        assertEquals(Status.NOT_FOUND, response.status)
+        assertThat(response, hasStatus(Status.NOT_FOUND))
     }
 
     // ---- Callback — state validation ----
@@ -107,7 +109,7 @@ class OAuthIntegrationTest : WebTest() {
     fun `GET callback without state cookie redirects to auth with oauth_error`() {
         // No oauth_state cookie → CSRF check fails
         val response = app(Request(GET, "/auth/oauth/apple/callback?code=testcode&state=somestate"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
         assertTrue(
             location.contains("oauth_error=true"),
@@ -122,7 +124,7 @@ class OAuthIntegrationTest : WebTest() {
                 Request(GET, "/auth/oauth/apple/callback?code=testcode&state=wrong_state")
                     .cookie(Cookie("oauth_state", "correct_state"))
             )
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
         assertTrue(
             location.contains("oauth_error=true"),
@@ -134,7 +136,7 @@ class OAuthIntegrationTest : WebTest() {
     fun `GET callback without code param redirects to auth with oauth_error`() {
         val state = UUID.randomUUID().toString()
         val response = app(Request(GET, "/auth/oauth/apple/callback?state=$state").cookie(Cookie("oauth_state", state)))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
         assertTrue(
             location.contains("oauth_error=true"),
@@ -156,7 +158,7 @@ class OAuthIntegrationTest : WebTest() {
                 Request(GET, "/auth/oauth/apple/callback?code=authcode&state=$state")
                     .cookie(Cookie("oauth_state", state))
             )
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
         // AppleOAuthProvider stub → OAuthException → redirects to /auth?oauth_error=true
         assertTrue(
@@ -175,7 +177,7 @@ class OAuthIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body("code=authcode&state=somestate")
             )
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
         assertTrue(
             location.contains("oauth_error=true"),
@@ -192,7 +194,7 @@ class OAuthIntegrationTest : WebTest() {
                     .body("code=authcode&state=wrong_state")
                     .cookie(Cookie("oauth_state", "correct_state"))
             )
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
         assertTrue(
             location.contains("oauth_error=true"),
@@ -210,7 +212,7 @@ class OAuthIntegrationTest : WebTest() {
                     .body("state=$state")
                     .cookie(Cookie("oauth_state", state))
             )
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
         assertTrue(
             location.contains("oauth_error=true"),
@@ -223,7 +225,7 @@ class OAuthIntegrationTest : WebTest() {
     @Test
     fun `GET not-configured returns 503 SERVICE_UNAVAILABLE`() {
         val response = app(Request(GET, "/auth/oauth/apple/not-configured"))
-        assertEquals(Status.SERVICE_UNAVAILABLE, response.status)
+        assertThat(response, hasStatus(Status.SERVICE_UNAVAILABLE))
     }
 
     @Test

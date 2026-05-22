@@ -4,7 +4,6 @@ import com.natpryce.hamkrest.Matcher
 import com.natpryce.hamkrest.and
 import com.natpryce.hamkrest.containsSubstring
 import com.natpryce.hamkrest.present
-import org.http4k.core.ContentType
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.hamkrest.hasBody
@@ -15,7 +14,8 @@ fun hasOkStatus(): Matcher<Response> = hasStatus(Status.OK)
 
 fun bodyContains(text: String): Matcher<Response> = hasBody(containsSubstring(text))
 
-fun hasContentType(type: String): Matcher<Response> = org.http4k.hamkrest.hasContentType(ContentType(type))
+fun hasContentType(type: String): Matcher<Response> =
+    hasHeader("content-type", present(containsSubstring(type))) as Matcher<Response>
 
 fun hasLocation(path: String): Matcher<Response> = hasHeader("Location", path) as Matcher<Response>
 

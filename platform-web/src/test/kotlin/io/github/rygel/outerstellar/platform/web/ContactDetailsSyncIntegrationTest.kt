@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse
@@ -15,6 +16,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -110,7 +112,7 @@ class ContactDetailsSyncIntegrationTest : WebTest() {
 
     private fun pullContacts(): SyncPullContactResponse {
         val response = app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         return KotlinxSerialization.asA(response.bodyString(), SyncPullContactResponse::class)
     }
 
@@ -120,7 +122,7 @@ class ContactDetailsSyncIntegrationTest : WebTest() {
         val emails = listOf("alice@example.com", "alice.work@corp.com")
 
         val pushResponse = pushContact(PushContactParams(syncId, "Alice", emails = emails))
-        assertEquals(Status.OK, pushResponse.status)
+        assertThat(pushResponse, hasStatus(Status.OK))
         val pushBody = KotlinxSerialization.asA(pushResponse.bodyString(), SyncPushContactResponse::class)
         assertEquals(1, pushBody.appliedCount)
 

@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import java.util.UUID
@@ -11,6 +12,7 @@ import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 class StatePersistenceE2ETest : WebTest() {
@@ -36,7 +38,7 @@ class StatePersistenceE2ETest : WebTest() {
         val app = buildApp()
 
         val response = app(Request(GET, "/?lang=fr").cookie(sessionCookie))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
 
         val langCookie = response.cookies().find { it.name == "app_lang" }
         assertEquals("fr", langCookie?.value)

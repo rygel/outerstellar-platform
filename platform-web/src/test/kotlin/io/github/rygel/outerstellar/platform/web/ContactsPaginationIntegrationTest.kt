@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import java.util.UUID
@@ -13,6 +14,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -68,7 +70,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
     @Test
     fun `contacts page returns 200 OK`() {
         val response = app(Request(GET, "/contacts").cookie(sessionCookie))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -199,7 +201,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
         insertContact("C", 3)
 
         val response = app(Request(GET, "/contacts?limit=3").cookie(sessionCookie))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.contains("A") && body.contains("B") && body.contains("C"))
     }
@@ -208,19 +210,19 @@ class ContactsPaginationIntegrationTest : WebTest() {
     fun `limit is capped at 50`() {
         // limit=100 should be clamped to 50
         val response = app(Request(GET, "/contacts?limit=100").cookie(sessionCookie))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `limit minimum is 1`() {
         val response = app(Request(GET, "/contacts?limit=0").cookie(sessionCookie))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `negative offset is treated as zero`() {
         val response = app(Request(GET, "/contacts?offset=-5").cookie(sessionCookie))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     // ---- Search / query ----
@@ -237,6 +239,6 @@ class ContactsPaginationIntegrationTest : WebTest() {
     @Test
     fun `null query passes null to contact service`() {
         val response = app(Request(GET, "/contacts").cookie(sessionCookie))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 }

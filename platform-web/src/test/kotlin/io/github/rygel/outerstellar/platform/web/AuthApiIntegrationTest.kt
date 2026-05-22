@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -8,6 +9,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
+import org.http4k.hamkrest.hasStatus
 
 class AuthApiIntegrationTest : WebTest() {
 
@@ -30,7 +32,7 @@ class AuthApiIntegrationTest : WebTest() {
                             io.github.rygel.outerstellar.platform.model.RegisterRequest("api-user", password)
                     )
             )
-        assertEquals(Status.OK, registerResponse.status)
+        assertThat(registerResponse, hasStatus(Status.OK))
         assertEquals("api-user", tokenLens(registerResponse).username)
 
         val loginResponse =
@@ -38,7 +40,7 @@ class AuthApiIntegrationTest : WebTest() {
                 Request(POST, "/api/v1/auth/login")
                     .with(loginLens of io.github.rygel.outerstellar.platform.model.LoginRequest("api-user", password))
             )
-        assertEquals(Status.OK, loginResponse.status)
+        assertThat(loginResponse, hasStatus(Status.OK))
         assertTrue(tokenLens(loginResponse).token.isNotBlank())
     }
 }

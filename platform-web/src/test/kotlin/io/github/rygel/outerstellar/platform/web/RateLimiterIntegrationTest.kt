@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,6 +12,7 @@ import org.http4k.core.RequestSource
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
+import org.http4k.hamkrest.hasStatus
 
 class RateLimiterIntegrationTest : WebTest() {
 
@@ -41,7 +43,7 @@ class RateLimiterIntegrationTest : WebTest() {
         repeat(10) { loginRequest(ip) }
 
         val response = loginRequest(ip)
-        assertEquals(Status.TOO_MANY_REQUESTS, response.status, "11th request from same IP should be rate limited")
+        assertThat(response, hasStatus(Status.TOO_MANY_REQUESTS))
     }
 
     @Test

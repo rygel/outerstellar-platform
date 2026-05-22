@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
@@ -17,6 +18,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -82,7 +84,7 @@ class ConcurrentSyncIntegrationTest : WebTest() {
 
     private fun pullMessages(token: String): SyncPullResponse {
         val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $token"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         return KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
     }
 

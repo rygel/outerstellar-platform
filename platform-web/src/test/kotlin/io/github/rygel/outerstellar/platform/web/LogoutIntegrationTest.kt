@@ -1,11 +1,11 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -17,6 +17,7 @@ import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -60,7 +61,7 @@ class LogoutIntegrationTest : WebTest() {
     fun `POST logout redirects to home`() {
         val response = app(Request(POST, "/logout").cookie(sessionCookie()))
 
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location")?.contains("/") == true)
     }
 
@@ -81,14 +82,14 @@ class LogoutIntegrationTest : WebTest() {
     fun `POST logout without a session still redirects cleanly`() {
         val response = app(Request(POST, "/logout"))
 
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
     }
 
     @Test
     fun `home page is accessible before logout`() {
         val response = app(Request(GET, "/").cookie(sessionCookie()))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test

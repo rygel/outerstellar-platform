@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
@@ -15,6 +16,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -73,7 +75,7 @@ class MessageSearchIntegrationTest : WebTest() {
 
     private fun pullMessages(since: Long = 0L): SyncPullResponse {
         val response = app(Request(GET, "/api/v1/sync?since=$since").header("Authorization", bearer()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         return KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
     }
 
@@ -147,7 +149,7 @@ class MessageSearchIntegrationTest : WebTest() {
         val syncId = UUID.randomUUID().toString()
         val pushResponse = pushMessage(syncId, "Count test", timestamp = 1000L)
 
-        assertEquals(Status.OK, pushResponse.status)
+        assertThat(pushResponse, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(pushResponse.bodyString(), SyncPushResponse::class)
         assertEquals(1, body.appliedCount, "One message should be applied")
     }
