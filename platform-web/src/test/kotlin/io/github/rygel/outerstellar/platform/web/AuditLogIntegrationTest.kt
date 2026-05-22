@@ -32,11 +32,24 @@ class AuditLogIntegrationTest : WebTest() {
     private lateinit var adminToken: String
     private lateinit var targetToken: String
 
-    private fun auditCount(): Int = testJdbi.open().createQuery("SELECT COUNT(*) FROM plt_audit_log").mapTo(Int::class.java).first()
+    private fun auditCount(): Int =
+        testJdbi.open().createQuery("SELECT COUNT(*) FROM plt_audit_log").mapTo(Int::class.java).first()
 
-    private fun latestAction(): String? = testJdbi.open().createQuery("SELECT action FROM plt_audit_log ORDER BY created_at DESC LIMIT 1").mapTo(String::class.java).findFirst().orElse(null)
+    private fun latestAction(): String? =
+        testJdbi
+            .open()
+            .createQuery("SELECT action FROM plt_audit_log ORDER BY created_at DESC LIMIT 1")
+            .mapTo(String::class.java)
+            .findFirst()
+            .orElse(null)
 
-    private fun latestTargetUsername(): String? = testJdbi.open().createQuery("SELECT target_username FROM plt_audit_log ORDER BY created_at DESC LIMIT 1").mapTo(String::class.java).findFirst().orElse(null)
+    private fun latestTargetUsername(): String? =
+        testJdbi
+            .open()
+            .createQuery("SELECT target_username FROM plt_audit_log ORDER BY created_at DESC LIMIT 1")
+            .mapTo(String::class.java)
+            .findFirst()
+            .orElse(null)
 
     @BeforeEach
     fun setupTest() {

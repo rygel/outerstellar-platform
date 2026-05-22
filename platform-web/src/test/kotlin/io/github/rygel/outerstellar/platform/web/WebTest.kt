@@ -74,8 +74,7 @@ abstract class WebTest protected constructor() {
 
         val testJdbi: Jdbi by lazy { Jdbi.create(dataSource) }
 
-        fun setup() {
-        }
+        fun setup() {}
 
         fun cleanup() {
             testJdbi.useHandle<Exception> { handle ->

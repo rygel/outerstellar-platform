@@ -46,7 +46,11 @@ class SessionTimeoutIntegrationTest : WebTest() {
         activeToken = securityService.createSession(activeUser.id)
         expiredToken = securityService.createSession(expiredUser.id)
 
-        testJdbi.useHandle<Exception> { handle -> handle.execute("UPDATE plt_sessions SET expires_at = CURRENT_TIMESTAMP - INTERVAL '2 hours' WHERE user_id = '${expiredUser.id}'") }
+        testJdbi.useHandle<Exception> { handle ->
+            handle.execute(
+                "UPDATE plt_sessions SET expires_at = CURRENT_TIMESTAMP - INTERVAL '2 hours' WHERE user_id = '${expiredUser.id}'"
+            )
+        }
 
         app = buildApp(securityService = securityService)
     }
