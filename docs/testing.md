@@ -11,6 +11,7 @@ This document describes the Outerstellar Platform test architecture, patterns, a
 - [JTE Template Testing](#jte-template-testing)
 - [End-to-End Tests Only](#end-to-end-tests-only)
 - [Desktop Testing](#desktop-testing)
+- [http4k Testing Modules](#http4k-testing-modules)
 - [Anti-Patterns](#anti-patterns)
 - [Running Tests](#running-tests)
 
@@ -82,9 +83,9 @@ Tests do not restart the container or recreate the database between tests. Inste
 ```kotlin
 @AfterEach
 fun cleanup() {
-    testDsl.execute("DELETE FROM plt_sessions")
-    testDsl.execute("DELETE FROM plt_notifications")
-    // ... all tables in dependency order
+    testJdbi.useHandle<Exception> { handle ->
+        CleanupTables.ALL.forEach { table -> handle.execute("DELETE FROM $table") }
+    }
 }
 ```
 
@@ -106,6 +107,9 @@ The primary test base for all platform-web integration tests. Provides:
 | `renderer` | JTE renderer | Precompiled (`jte.production=true`) |
 | `userRepository`, `messageRepository`, etc. | Repository instances | All lazily initialized |
 | `buildApp(...)` | `HttpHandler` | Factory that assembles the full http4k app |
+| `createSecurityService()` | `SecurityService` | Constructs SecurityService with default repos |
+| `withAuthenticatedUser()` | `Triple<token, userId, username>` | Creates user + session, returns cookie value |
+| `testPasswordHash` | `String` | Pre-computed BCrypt hash (cached, not per-test) |
 | `cleanup()` | Row-level DELETE | Called in `@AfterEach` |
 
 **Usage pattern:**
@@ -126,9 +130,8 @@ class MyFeatureTest : WebTest() {
         // Act: hit the HTTP handler
         val response = app(Request(GET, "/messages"))
 
-        // Assert: verify status, body content, side effects
-        assertEquals(200, response.status.code)
-        assertTrue(response.bodyString().contains(user.displayName))
+        // Assert: use http4k hamkrest matchers
+        assertThat(response, hasStatus(Status.OK).and(bodyContains(user.displayName)))
     }
 }
 ```
@@ -235,16 +238,14 @@ If you are tempted to write a test that only checks an HTTP status code without 
 @Test
 fun `health check returns 200`() {
     val response = app(Request(GET, "/health"))
-    assertEquals(200, response.status.code)
+    assertThat(response, hasStatus(Status.OK))
 }
 
 // GOOD: end-to-end test — verifies actual behavior
 @Test
 fun `health check reports database connectivity`() {
     val response = app(Request(GET, "/health"))
-    assertEquals(200, response.status.code)
-    val body = response.bodyString()
-    assertTrue(body.contains("\"UP\""), "Health check must report UP status: $body")
+    assertThat(response, hasStatus(Status.OK).and(bodyContains("UP")))
 }
 ```
 
@@ -263,6 +264,54 @@ podman run --rm --network host `
     -v "/var/run/docker.sock:/var/run/docker.sock" `
     outerstellar-test-desktop
 ```
+
+## http4k Testing Modules
+
+The project uses four http4k testing modules for assertion quality and template verification:
+
+### hamkrest matchers (`http4k-testing-hamkrest`)
+
+All HTTP assertions use hamkrest matchers from `HttpMatchers.kt`. Compose with `.and()`:
+
+```kotlin
+import io.github.rygel.outerstellar.platform.web.*
+
+assertThat(response, hasOkStatus())
+assertThat(response, hasStatus(Status.NOT_FOUND))
+assertThat(response, bodyContains("expected text"))
+assertThat(response, hasContentType("text/html"))
+assertThat(response, hasRedirect("/auth/sign-in"))
+assertThat(response, hasOkStatus().and(bodyContains("data")))
+```
+
+### Approval testing (`http4k-testing-approval`)
+
+Snapshot HTML responses to golden files. Catches template regressions that hamkrest assertions miss:
+
+```kotlin
+@ExtendWith(ApprovalTest::class)
+class ErrorPagesApprovalTest : WebTest() {
+    @Test
+    fun `error page matches snapshot`(approver: Approver) {
+        approver.assertApproved(app(Request(GET, "/errors/not-found")))
+    }
+}
+```
+
+Golden files (`.approved`) live in `src/test/resources/`. To accept changes, copy `.actual` to `.approved` and commit.
+
+### WebDriver (`http4k-testing-webdriver`)
+
+JSoup-backed WebDriver — navigate HTML pages, find elements, submit forms — all in-memory:
+
+```kotlin
+val driver = Http4kWebDriver(app)
+driver.navigate().to("http://test/auth/sign-in")
+```
+
+### Chaos (`http4k-testing-chaos`)
+
+Inject failures (500 errors, latency) into the HTTP handler for resilience testing.
 
 ## Anti-Patterns
 

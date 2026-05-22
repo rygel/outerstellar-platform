@@ -208,6 +208,12 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
 - Playwright E2E tests are tagged `@Tag("e2e")` and run in CI via Docker E2E workflow.
 - After any `mvn clean install -DskipTests` that changes compiled production code in a dependency module, the dependent module's test classpath may hold stale classes. Always do `mvn clean test` or `mvn clean install -DskipTests` before running tests in downstream modules.
 
+### http4k testing conventions
+
+- All HTTP assertions use hamkrest matchers (`HttpMatchers.kt`). New tests should use `assertThat(response, hasStatus(...))` instead of raw `assertEquals`.
+- Approval tests live in `src/test/kotlin/.../approval/`. Golden files (`.approved`) in `src/test/resources/`.
+- WebDriver and Chaos tests are proof-of-concept — expand as needed.
+
 ## Project Status (as of May 2026)
 
 ### Core features
