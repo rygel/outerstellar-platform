@@ -1331,6 +1331,9 @@
       "glob": "db/migration"
     },
     {
+      "glob": "db/migration/migrations.index"
+    },
+    {
       "glob": "db/migration/V1__initial_schema.sql"
     },
     {

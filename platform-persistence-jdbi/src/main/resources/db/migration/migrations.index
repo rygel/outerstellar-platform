@@ -1,0 +1,10 @@
+V1__initial_schema
+V10__add_trgm_search_indexes
+V11__add_totp
+V12__add_polls
+V2__user_profile_enhancements
+V3__sessions_table
+V4__user_preferences
+V5__performance_indexes
+V6__admin_stats_indexes
+V7__account_lockout
