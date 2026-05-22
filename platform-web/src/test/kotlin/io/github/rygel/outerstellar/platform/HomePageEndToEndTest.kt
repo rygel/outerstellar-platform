@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.web.WebContext
 import io.github.rygel.outerstellar.platform.web.WebTest
 import java.util.UUID
@@ -22,15 +21,7 @@ class HomePageEndToEndTest : WebTest() {
 
     @BeforeEach
     fun setupUser() {
-        val sec =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        val sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),

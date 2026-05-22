@@ -50,15 +50,7 @@ class SessionSecurityIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         sessionTokens = mutableMapOf()
 
         regularUser =
@@ -66,7 +58,7 @@ class SessionSecurityIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "regularuser",
                 email = "regular@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         adminUser =
@@ -74,7 +66,7 @@ class SessionSecurityIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "adminuser",
                 email = "admin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         disabledUser =
@@ -82,7 +74,7 @@ class SessionSecurityIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "disableduser",
                 email = "disabled@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
                 enabled = true,
             )

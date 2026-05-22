@@ -51,7 +51,7 @@ class AdminExportIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "exportadmin",
                 email = "exportadmin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -59,21 +59,13 @@ class AdminExportIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "exportuser",
                 email = "exportuser@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         adminToken = securityService.createSession(adminUser.id)
         userToken = securityService.createSession(regularUser.id)
 

@@ -11,16 +11,10 @@ import org.http4k.core.RequestSource
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
-import org.junit.jupiter.api.BeforeEach
 
 class RateLimiterIntegrationTest : WebTest() {
 
-    private lateinit var app: HttpHandler
-
-    @BeforeEach
-    fun setupTest() {
-        app = buildApp()
-    }
+    private val app by lazy { buildApp() }
 
     private fun loginRequest(ip: String) =
         app(

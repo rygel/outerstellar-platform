@@ -28,19 +28,11 @@ class WebSocketSyncIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "wsuser",
                 email = "ws@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         testToken = securityService.createSession(testUser.id)
         syncWebSocket = SyncWebSocket(securityService)
     }

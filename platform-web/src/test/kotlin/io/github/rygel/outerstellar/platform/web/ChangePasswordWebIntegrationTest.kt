@@ -49,15 +49,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
 
         testToken = securityService.createSession(testUser.id)
 

@@ -4,12 +4,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.BeforeEach
 
 /**
  * Integration tests for error pages and the global error handler (Feature 8).
@@ -31,12 +29,7 @@ import org.junit.jupiter.api.BeforeEach
  */
 class ErrorPagesIntegrationTest : WebTest() {
 
-    private lateinit var app: HttpHandler
-
-    @BeforeEach
-    fun setupTest() {
-        app = buildApp()
-    }
+    private val app by lazy { buildApp() }
 
     // ---- /errors/{kind} ----
 

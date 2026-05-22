@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushResponse
 import java.util.UUID
@@ -37,22 +36,14 @@ class MessageSearchIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        val securityService = createSecurityService()
 
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "searchuser",
                 email = "search@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)

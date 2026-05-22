@@ -49,20 +49,12 @@ class ComponentFragmentIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "fragmentuser",
                 email = "fragment@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         testToken = securityService.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)

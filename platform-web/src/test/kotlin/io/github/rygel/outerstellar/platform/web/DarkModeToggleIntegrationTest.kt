@@ -37,15 +37,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),
@@ -61,7 +53,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     private fun seedAdmin(): String {
         val id = UUID.randomUUID()
-        userRepository.save(User(id, "admin", "admin@test.com", encoder.encode(testPassword()), UserRole.ADMIN))
+        userRepository.save(User(id, "admin", "admin@test.com", testPasswordHash, UserRole.ADMIN))
         return securityService.createSession(id)
     }
 

@@ -43,20 +43,12 @@ class LogoutIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "logoutuser",
                 email = "logout@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(user)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         userToken = securityService.createSession(user.id)
 
         app = buildApp(securityService = securityService)

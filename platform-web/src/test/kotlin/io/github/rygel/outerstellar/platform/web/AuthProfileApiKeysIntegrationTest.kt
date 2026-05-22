@@ -43,15 +43,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         testToken = securityService.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
@@ -121,7 +113,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "taken_user",
                 email = "taken@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(other)

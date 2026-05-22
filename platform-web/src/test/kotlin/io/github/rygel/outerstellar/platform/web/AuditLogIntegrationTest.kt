@@ -61,7 +61,7 @@ class AuditLogIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "auditadmin",
                 email = "auditadmin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         targetUser =
@@ -69,7 +69,7 @@ class AuditLogIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "audittarget",
                 email = "audittarget@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)

@@ -47,7 +47,7 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "deviceuser",
                 email = "device@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)

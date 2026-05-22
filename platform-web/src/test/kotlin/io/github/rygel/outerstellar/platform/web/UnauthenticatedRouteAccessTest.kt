@@ -5,16 +5,10 @@ import kotlin.test.assertEquals
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.BeforeEach
 
 class UnauthenticatedRouteAccessTest : WebTest() {
 
-    private lateinit var app: org.http4k.core.HttpHandler
-
-    @BeforeEach
-    fun setupTest() {
-        app = buildApp()
-    }
+    private val app by lazy { buildApp() }
 
     private fun assertRedirectsToAuth(request: Request) {
         val response = app(request)

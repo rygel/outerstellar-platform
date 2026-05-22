@@ -57,20 +57,12 @@ class PollIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "polluser",
                 email = "poll@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         sessionToken = securityService.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
@@ -214,7 +206,7 @@ class PollIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "otheruser",
                 email = "other@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(otherUser)

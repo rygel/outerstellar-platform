@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,15 +49,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val sec =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        val sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),

@@ -26,15 +26,7 @@ class SessionTimeoutIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
 
         activeUser = createTestUser("activeuser", "active@test.com")
         expiredUser = createTestUser("expireduser", "expired@test.com")
@@ -59,7 +51,7 @@ class SessionTimeoutIntegrationTest : WebTest() {
             id = UUID.randomUUID(),
             username = name,
             email = email,
-            passwordHash = encoder.encode(testPassword()),
+            passwordHash = testPasswordHash,
             role = UserRole.USER,
         )
 

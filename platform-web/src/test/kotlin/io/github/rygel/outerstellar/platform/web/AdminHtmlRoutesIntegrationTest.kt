@@ -46,7 +46,7 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "adminhtml",
                 email = "adminhtml@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -54,21 +54,13 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "regularhtml",
                 email = "regularhtml@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         adminToken = securityService.createSession(adminUser.id)
         regularToken = securityService.createSession(regularUser.id)
 

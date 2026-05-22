@@ -3,11 +3,9 @@ package io.github.rygel.outerstellar.platform.web
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.BeforeEach
 
 /**
  * Integration tests for the /health endpoint.
@@ -22,12 +20,7 @@ import org.junit.jupiter.api.BeforeEach
  */
 class HealthCheckIntegrationTest : WebTest() {
 
-    private lateinit var app: HttpHandler
-
-    @BeforeEach
-    fun setupTest() {
-        app = buildApp()
-    }
+    private val app by lazy { buildApp() }
 
     @Test
     fun `GET health returns 200`() {

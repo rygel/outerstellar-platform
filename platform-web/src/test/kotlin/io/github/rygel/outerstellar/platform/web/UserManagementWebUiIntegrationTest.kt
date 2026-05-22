@@ -39,15 +39,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                auditRepository = auditRepository,
-                resetRepository = passwordResetRepository,
-                apiKeyRepository = apiKeyRepository,
-                sessionRepository = sessionRepository,
-            )
+        securityService = createSecurityService()
 
         app = buildApp(securityService = securityService)
     }

@@ -24,15 +24,7 @@ class MessageActionE2ETest : WebTest() {
 
     @BeforeEach
     fun setupUser() {
-        sec =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),

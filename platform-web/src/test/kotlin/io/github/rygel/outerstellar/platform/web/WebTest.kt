@@ -135,15 +135,7 @@ abstract class WebTest protected constructor() {
 
         fun buildApp(
             config: AppConfig = testConfig,
-            securityService: SecurityService =
-                SecurityService(
-                    userRepository,
-                    encoder,
-                    sessionRepository = sessionRepository,
-                    apiKeyRepository = apiKeyRepository,
-                    resetRepository = passwordResetRepository,
-                    auditRepository = auditRepository,
-                ),
+            securityService: SecurityService = createSecurityService(),
             overrides: TestOverrides = TestOverrides(),
         ): HttpHandler {
             val resolvedUserRepo = overrides.userRepository ?: this.userRepository

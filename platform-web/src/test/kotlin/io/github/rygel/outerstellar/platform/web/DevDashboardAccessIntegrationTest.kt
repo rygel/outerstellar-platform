@@ -42,7 +42,7 @@ class DevDashboardAccessIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "devdash_admin",
                 email = "devdash_admin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -50,21 +50,13 @@ class DevDashboardAccessIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "devdash_user",
                 email = "devdash_user@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         adminToken = securityService.createSession(adminUser.id)
         userToken = securityService.createSession(regularUser.id)
 

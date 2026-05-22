@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.model.DeviceToken
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ApnsPushNotificationService
 import io.github.rygel.outerstellar.platform.service.ConsolePushNotificationService
 import io.github.rygel.outerstellar.platform.service.FcmPushNotificationService
@@ -51,22 +50,14 @@ class PushNotificationsIntegrationTest : WebTest() {
     @BeforeEach
     fun setupTest() {
         deviceTokenRepository = InMemoryDeviceTokenRepository()
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        val securityService = createSecurityService()
 
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "pushtest",
                 email = "pushtest@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)

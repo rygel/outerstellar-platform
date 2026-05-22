@@ -50,7 +50,7 @@ class ApiKeyAuthIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "apikeyuser",
                 email = "apikey@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)

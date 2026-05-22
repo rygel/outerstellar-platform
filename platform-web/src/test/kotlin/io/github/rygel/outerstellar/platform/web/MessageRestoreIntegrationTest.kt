@@ -36,15 +36,7 @@ class MessageRestoreIntegrationTest : WebTest() {
     @BeforeEach
     fun setupTest() {
         cleanup()
-        sec =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),

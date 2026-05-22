@@ -5,7 +5,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
@@ -13,16 +12,10 @@ import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
-import org.junit.jupiter.api.BeforeEach
 
 class AuthenticationWorkflowTest : WebTest() {
 
-    private lateinit var app: HttpHandler
-
-    @BeforeEach
-    fun setupTest() {
-        app = buildApp()
-    }
+    private val app by lazy { buildApp() }
 
     @Test
     fun `user registration and login with redirect workflow`() {

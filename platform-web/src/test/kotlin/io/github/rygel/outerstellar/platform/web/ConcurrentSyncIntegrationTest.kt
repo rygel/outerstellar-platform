@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
@@ -40,22 +39,14 @@ class ConcurrentSyncIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        val securityService = createSecurityService()
 
         userA =
             User(
                 id = UUID.randomUUID(),
                 username = "concurrent_user_a",
                 email = "concurrent_a@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userB =
@@ -63,7 +54,7 @@ class ConcurrentSyncIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "concurrent_user_b",
                 email = "concurrent_b@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(userA)

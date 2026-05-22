@@ -3,22 +3,15 @@ package io.github.rygel.outerstellar.platform.web
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.BeforeEach
 
 class AuthApiIntegrationTest : WebTest() {
 
-    private lateinit var app: HttpHandler
-
-    @BeforeEach
-    fun setupTest() {
-        app = buildApp()
-    }
+    private val app by lazy { buildApp() }
 
     @Test
     fun `register api creates user and allows login`() {

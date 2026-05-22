@@ -25,7 +25,7 @@ class SyncIntegrationTest : WebTest() {
                 id = adminId,
                 username = "admin",
                 email = "admin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         )

@@ -69,7 +69,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "otherapikeyuser",
                 email = "other@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
