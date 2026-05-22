@@ -183,6 +183,11 @@
             <version>0.30.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-hamkrest</artifactId>
+            <scope>test</scope>
+        </dependency>
         
     </dependencies>
 

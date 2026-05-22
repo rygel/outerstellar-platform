@@ -288,6 +288,11 @@
                 <version>${http4k.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.http4k</groupId>
+                <artifactId>http4k-testing-hamkrest</artifactId>
+                <version>${http4k.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>gg.jte</groupId>
                 <artifactId>jte</artifactId>
                 <version>${jte.version}</version>
