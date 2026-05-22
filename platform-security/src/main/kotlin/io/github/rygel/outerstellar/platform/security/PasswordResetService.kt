@@ -2,9 +2,13 @@ package io.github.rygel.outerstellar.platform.security
 
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.PasswordResetToken
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
+import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
+import io.github.rygel.outerstellar.platform.persistence.SessionRepository
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.security.SecureRandom
 import java.time.Instant
 import org.slf4j.LoggerFactory

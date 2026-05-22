@@ -322,7 +322,7 @@ class PerformanceBenchmarkTest : WebTest() {
         val prodSecurityService = SecurityService(userRepository, prodEncoder, sessionRepository = sessionRepository)
 
         userRepository.save(
-            io.github.rygel.outerstellar.platform.security.User(
+            io.github.rygel.outerstellar.platform.model.User(
                 id = java.util.UUID.randomUUID(),
                 username = "prodperfuser",
                 email = "prodperf@example.com",

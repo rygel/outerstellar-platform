@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.mockk.mockk
 import java.util.UUID

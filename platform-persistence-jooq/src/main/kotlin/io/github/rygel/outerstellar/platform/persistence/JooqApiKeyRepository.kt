@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.ApiKey
-import io.github.rygel.outerstellar.platform.security.ApiKeyRepository
 import java.util.UUID
 import org.jooq.DSLContext
 import org.jooq.Record

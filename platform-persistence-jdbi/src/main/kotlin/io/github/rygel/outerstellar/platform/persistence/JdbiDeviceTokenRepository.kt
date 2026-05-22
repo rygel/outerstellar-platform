@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.security.DeviceToken
-import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
+import io.github.rygel.outerstellar.platform.model.DeviceToken
 import java.sql.ResultSet
 import java.time.LocalDateTime
 import java.time.ZoneOffset

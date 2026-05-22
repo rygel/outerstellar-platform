@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.PasswordResetToken
-import io.github.rygel.outerstellar.platform.security.PasswordResetRepository
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
