@@ -69,7 +69,6 @@ jobs:
         with:
           path: |
             platform-core/target/
-            platform-persistence-jooq/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -90,7 +89,7 @@ jobs:
           - modules: core+security+sync
             pl: platform-core,platform-security,platform-sync-client
           - modules: persistence
-            pl: platform-persistence-jooq,platform-persistence-jdbi
+            pl: platform-persistence-jdbi
           - modules: web
             pl: platform-web
     env:
@@ -117,7 +116,6 @@ jobs:
         with:
           path: |
             platform-core/target/
-            platform-persistence-jooq/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -127,7 +125,7 @@ jobs:
       - name: Install parent POM and dependencies
         run: >
           mvn install -N -q
-          && mvn install -pl platform-core,platform-security,platform-sync-client,platform-persistence-jooq,platform-persistence-jdbi
+          && mvn install -pl platform-core,platform-security,platform-sync-client,platform-persistence-jdbi
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -179,7 +177,6 @@ jobs:
         with:
           path: |
             platform-core/target/
-            platform-persistence-jooq/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -193,7 +190,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-persistence-jooq,platform-sync-client,platform-security
+          -pl platform-core,platform-persistence-jdbi,platform-sync-client,platform-security
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -238,7 +235,6 @@ jobs:
         with:
           path: |
             platform-core/target/
-            platform-persistence-jooq/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -249,7 +245,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-persistence-jooq,platform-sync-client,platform-security,platform-web
+          -pl platform-core,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
           -DskipTests -Dexec.skip=true -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -311,7 +307,6 @@ jobs:
         with:
           path: |
             platform-core/target/
-            platform-persistence-jooq/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -321,7 +316,7 @@ jobs:
       - name: Install parent POM and dependencies
         run: >
           mvn install -N -q
-          && mvn install -pl platform-core,platform-security,platform-persistence-jooq
+          && mvn install -pl platform-core,platform-security,platform-persistence-jdbi
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -329,7 +324,7 @@ jobs:
 
       - name: Run persistence tests against PostgreSQL service
         run: >
-          mvn verify -pl platform-persistence-jooq
+          mvn verify -pl platform-persistence-jdbi
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
           -Dspotless.check.skip=true -Denforcer.skip=true

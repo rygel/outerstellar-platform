@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   docker-e2e:
-    name: Docker E2E Smoke Tests
+    name: Docker E2E Tests
     runs-on: ubuntu-latest
     environment: ci
     permissions:
@@ -57,6 +57,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: 'maven'
           server-id: github-rygel
           server-username: GITHUB_ACTOR
           server-password: GH_PACKAGES_TOKEN
@@ -116,20 +117,20 @@ jobs:
         run: |
           mvn install -N -q
           mvn install \
-            -pl platform-core,platform-persistence-jooq,platform-sync-client,platform-security,platform-web \
+            -pl platform-core,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web \
             -DskipTests -Dexec.skip=true -q \
             -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
             -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true \
             -Djacoco.skip=true -Denforcer.skip=true
 
-      - name: Run Docker smoke tests
+      - name: Run Playwright E2E tests against live container
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/platform-web/target/playwright-browsers
+          E2E_BASE_URL: http://localhost:8080
         run: >
           mvn test -pl platform-web
-          -Dgroups=docker-e2e
+          -Dgroups=e2e
           -DexcludedGroups=
-          -DE2E_BASE_URL=http://localhost:8080
           -Denforcer.skip=true
           -Ddetekt.skip=true
           -Dcheckstyle.skip=true

@@ -182,16 +182,18 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 
 ## Testing expectations
 
+Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
+
 - Prefer module-focused validation first, then broader reactor validation when changes cross modules.
 - Minimum for persistence/schema changes:
-  - `mvn -pl platform-persistence-jooq test`
+  - `mvn -pl platform-persistence-jdbi test`
 - Minimum for Swing UI/theming changes:
   - `mvn -pl platform-desktop -Ptests-headless test`
 - Minimum for web changes:
   - `mvn -pl platform-web test -Dexec.skip=true`
 - **Full reactor must exclude desktop modules** when running locally:
   ```bash
-  mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+  mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
   ```
 - Desktop tests via Podman (see Podman section above).
 - Playwright E2E tests are tagged `@Tag("e2e")` and run in CI via Docker E2E workflow.
@@ -304,7 +306,7 @@ Before every commit, the following MUST be true:
 
 1. **All non-desktop tests pass locally.** Run the full reactor build:
    ```powershell
-   mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+   mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
    ```
    If any test fails, fix it before committing. Do not commit failing tests.
 
@@ -315,14 +317,17 @@ Before every commit, the following MUST be true:
    ```
 
 **Do not commit if either of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
-## Testing discipline: no smoke tests
 
-This project uses **full end-to-end tests only**. There are zero smoke tests.
+## Testing discipline
 
-- **NEVER** write or suggest smoke tests. A smoke test is a superficial check (e.g., "does it start?", "does the endpoint return 200?") that validates infrastructure, not behavior.
-- Every test must assert meaningful behavior: correct data, correct state transitions, correct error handling.
-- If you are tempted to write a test that just checks an HTTP status code without verifying the response body or side effects, write a real test instead.
+Full test architecture, patterns, and conventions are documented in **[docs/testing.md](docs/testing.md)**. Read it before writing any new tests.
+
+Key rules:
+- **Full end-to-end tests only. Zero smoke tests.** Every test must assert meaningful behavior: correct data, correct state transitions, correct error handling. Checking only an HTTP status code is a smoke test — write a real test instead.
 - Integration tests exercise the full stack (filters → routes → services → persistence → database). They are the standard, not the exception.
+- Never create your own PostgreSQL container — extend `WebTest` or `JdbiTest`.
+- Never use `TemplateEngine.create(DirectoryCodeResolver(...))` in tests — always use precompiled templates.
+- Never run desktop tests on the host — use Podman containers.
 
 ## Safety and repository hygiene
 
