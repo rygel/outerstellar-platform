@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 class ArchitectureTest {
 
     // NOTE: The core module test classpath only contains classes from the `core` module itself.
-    // Other modules (security, api-client, web, desktop, persistence-jooq, persistence-jdbi)
+    // Other modules (security, api-client, web, desktop, persistence-jdbi)
     // are NOT on this classpath. Rules targeting those packages will match 0 classes.
     // All rules use allowEmptyShould(true) to avoid false failures for absent packages.
 
@@ -23,7 +23,7 @@ class ArchitectureTest {
                 .resideInAPackage("..core..")
                 .should()
                 .dependOnClassesThat()
-                .resideInAnyPackage("..web..", "..desktop..", "..persistence.jooq..")
+                .resideInAnyPackage("..web..", "..desktop..")
                 .allowEmptyShould(true)
 
         rule.check(importedClasses)
@@ -76,7 +76,7 @@ class ArchitectureTest {
                 .resideInAPackage("..sync..")
                 .should()
                 .dependOnClassesThat()
-                .resideInAnyPackage("..persistence.jooq..", "..persistence.jdbi..", "..desktop..", "..web..")
+                .resideInAnyPackage("..persistence.jdbi..", "..desktop..", "..web..")
                 .allowEmptyShould(true)
 
         rule.check(importedClasses)
@@ -125,9 +125,8 @@ class ArchitectureTest {
 
     @Test
     fun `repository implementations should not reside in core`() {
-        // Classes (not interfaces) named Jooq*Repository or Jdbi*Repository must NOT be in core.
-        // persistence-jooq and persistence-jdbi are not on core's classpath so this checks 0
-        // classes,
+        // Classes (not interfaces) named Jdbi*Repository must NOT be in core.
+        // persistence-jdbi is not on core's classpath so this checks 0 classes,
         // but allowEmptyShould(true) ensures no failure.
         val importedClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
 
@@ -136,7 +135,7 @@ class ArchitectureTest {
                 .that()
                 .areNotInterfaces()
                 .and()
-                .haveNameMatching(".*\\.(Jooq|Jdbi).+Repository")
+                .haveNameMatching(".*\\.Jdbi.+Repository")
                 .should()
                 .resideInAPackage("..core..")
                 .allowEmptyShould(true)
