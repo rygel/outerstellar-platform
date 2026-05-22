@@ -1,7 +1,5 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.model.User
-import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.OAuthConnection
 import java.util.UUID
 import kotlin.test.Test
@@ -13,21 +11,6 @@ import kotlin.test.assertTrue
 class JdbiOAuthRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiOAuthRepository(jdbi) }
-    private val userRepo by lazy { JdbiUserRepository(jdbi) }
-
-    private fun createUser(): UUID {
-        val id = UUID.randomUUID()
-        userRepo.save(
-            User(
-                id = id,
-                username = "user_${id.toString().take(6)}",
-                email = "${id.toString().take(6)}@example.com",
-                passwordHash = "hash",
-                role = UserRole.USER,
-            )
-        )
-        return id
-    }
 
     private fun connection(
         userId: UUID,

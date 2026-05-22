@@ -54,7 +54,6 @@ class MdcLoggingIntegrationTest : WebTest() {
         val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as ch.qos.logback.classic.Logger
         rootLogger.detachAppender(testAppender)
         capturedEvents.clear()
-        cleanup()
     }
 
     // ---- X-Request-Id header ----

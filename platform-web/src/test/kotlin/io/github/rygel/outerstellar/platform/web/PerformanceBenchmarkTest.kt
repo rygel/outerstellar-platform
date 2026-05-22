@@ -22,7 +22,6 @@ import org.http4k.core.Request
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
@@ -203,8 +202,6 @@ class PerformanceBenchmarkTest : WebTest() {
         val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("perfuser", password)))
         bearerToken = tokenLens(loginResp).token
     }
-
-    @AfterEach fun teardownBenchmark() = cleanup()
 
     // ---------------------------------------------------------------------------
     // Benchmarks

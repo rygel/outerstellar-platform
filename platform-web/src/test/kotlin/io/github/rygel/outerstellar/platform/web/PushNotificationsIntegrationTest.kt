@@ -82,7 +82,6 @@ class PushNotificationsIntegrationTest : WebTest() {
     @AfterEach
     fun teardown() {
         deviceTokenRepository.clear()
-        cleanup()
     }
 
     // ---- POST /api/v1/devices/register ----

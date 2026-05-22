@@ -18,7 +18,6 @@ import org.http4k.core.Method.PUT
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -80,8 +79,6 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun bearerFor(user: User) = if (user == testUser) "Bearer $testToken" else "Bearer $otherToken"
 

@@ -13,15 +13,8 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
-import org.junit.jupiter.api.AfterEach
 
 class SyncIntegrationTest : WebTest() {
-
-    @AfterEach
-    fun teardown() {
-        cleanup()
-    }
-
     @Test
     fun `can pull changes from api`() {
         val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)

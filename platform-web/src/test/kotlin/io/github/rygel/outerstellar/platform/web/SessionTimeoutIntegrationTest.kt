@@ -13,7 +13,6 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 class SessionTimeoutIntegrationTest : WebTest() {
@@ -63,8 +62,6 @@ class SessionTimeoutIntegrationTest : WebTest() {
             passwordHash = encoder.encode(testPassword()),
             role = UserRole.USER,
         )
-
-    @AfterEach fun teardown() = cleanup()
 
     @Test
     fun `expired bearer token returns 401 with X-Session-Expired header`() {

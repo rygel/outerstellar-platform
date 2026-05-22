@@ -61,7 +61,6 @@ class OAuthIntegrationTest : WebTest() {
     @AfterEach
     fun teardown() {
         oauthRepository.clear()
-        cleanup()
     }
 
     // ---- Initiation ----

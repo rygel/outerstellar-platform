@@ -11,7 +11,6 @@ import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -34,8 +33,6 @@ class CsrfProtectionIntegrationTest : WebTest() {
     fun setupTest() {
         app = buildApp(config = testConfig.copy(csrfEnabled = true))
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun csrfCookie(token: String) = Cookie(WebContext.CSRF_COOKIE, token)
 

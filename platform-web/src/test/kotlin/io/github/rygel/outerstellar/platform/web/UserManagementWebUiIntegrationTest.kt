@@ -22,7 +22,6 @@ import org.http4k.core.Status
 import org.http4k.core.cookie.cookie
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -52,8 +51,6 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private data class RegisteredUser(val id: UUID, val token: String, val sessionToken: String)
 

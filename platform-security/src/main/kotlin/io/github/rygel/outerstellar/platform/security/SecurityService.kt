@@ -311,7 +311,7 @@ class SecurityService(
     fun createSession(userId: UUID): String {
         val repo = sessionRepository ?: error("SessionRepository is not configured")
         val rawToken = "oss_" + generateRandomHex(SESSION_TOKEN_HEX_LENGTH)
-        val tokenHash = hashToken(rawToken)
+        val tokenHash = TokenHashing.hash(rawToken)
         val session =
             Session(
                 tokenHash = tokenHash,
@@ -325,7 +325,7 @@ class SecurityService(
 
     fun lookupSession(rawToken: String): SessionLookup {
         val repo = sessionRepository ?: return SessionLookup.NotFound
-        val tokenHash = hashToken(rawToken)
+        val tokenHash = TokenHashing.hash(rawToken)
         val activeSession = repo.findByTokenHash(tokenHash)
         if (activeSession != null) {
             val absoluteDeadline = activeSession.createdAt.plusSeconds(config.sessionAbsoluteTimeoutSeconds)
@@ -355,7 +355,7 @@ class SecurityService(
 
     fun deleteSession(rawToken: String) {
         val repo = sessionRepository ?: return
-        repo.deleteByTokenHash(hashToken(rawToken))
+        repo.deleteByTokenHash(TokenHashing.hash(rawToken))
     }
 
     private fun generatePartialAuthToken(userId: UUID): String {
@@ -410,11 +410,6 @@ class SecurityService(
         val bytes = ByteArray(length / 2)
         secureRandom.nextBytes(bytes)
         return bytes.joinToString("") { "%02x".format(it) }
-    }
-
-    private fun hashToken(key: String): String {
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 
     private fun audit(

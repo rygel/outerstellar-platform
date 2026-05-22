@@ -11,7 +11,6 @@ import org.http4k.core.RequestSource
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 class RateLimiterIntegrationTest : WebTest() {
@@ -22,8 +21,6 @@ class RateLimiterIntegrationTest : WebTest() {
     fun setupTest() {
         app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun loginRequest(ip: String) =
         app(

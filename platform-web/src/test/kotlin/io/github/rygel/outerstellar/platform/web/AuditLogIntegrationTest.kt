@@ -11,7 +11,6 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.PUT
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -80,8 +79,6 @@ class AuditLogIntegrationTest : WebTest() {
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun bearerHeader(user: User) = if (user == adminUser) "Bearer $adminToken" else "Bearer $targetToken"
 

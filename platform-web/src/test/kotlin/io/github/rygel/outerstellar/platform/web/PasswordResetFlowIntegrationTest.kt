@@ -13,7 +13,6 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -48,8 +47,6 @@ class PasswordResetFlowIntegrationTest : WebTest() {
 
         app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private val resetService by lazy {
         PasswordResetService(

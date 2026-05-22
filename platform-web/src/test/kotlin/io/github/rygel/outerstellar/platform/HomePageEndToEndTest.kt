@@ -13,7 +13,6 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -43,8 +42,6 @@ class HomePageEndToEndTest : WebTest() {
         userRepository.save(user)
         sessionCookie = Cookie(WebContext.SESSION_COOKIE, sec.createSession(user.id))
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     @Test
     fun `home page is available on running server`() {

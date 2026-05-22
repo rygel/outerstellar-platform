@@ -14,7 +14,6 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -72,8 +71,6 @@ class ContactsPaginationIntegrationTest : WebTest() {
         sessionCookie = Cookie(WebContext.SESSION_COOKIE, sec.createSession(user.id))
         app = buildApp(securityService = sec)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     // ---- Page rendering ----
 

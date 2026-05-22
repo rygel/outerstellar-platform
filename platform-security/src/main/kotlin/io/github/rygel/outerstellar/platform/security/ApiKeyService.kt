@@ -20,7 +20,7 @@ class ApiKeyService(
         require(name.isNotBlank()) { "API key name is required" }
         val rawKey = "osk_" + generateRandomHex(API_KEY_HEX_LENGTH)
         val keyPrefix = rawKey.take(API_KEY_PREFIX_LENGTH)
-        val keyHash = hashToken(rawKey)
+        val keyHash = TokenHashing.hash(rawKey)
 
         val apiKey = ApiKey(userId = userId, keyHash = keyHash, keyPrefix = keyPrefix, name = name)
         apiKeyRepository?.save(apiKey)
@@ -29,7 +29,7 @@ class ApiKeyService(
     }
 
     fun authenticateApiKey(rawKey: String): User? {
-        val keyHash = hashToken(rawKey)
+        val keyHash = TokenHashing.hash(rawKey)
         val apiKey = apiKeyRepository?.findByKeyHash(keyHash) ?: return null
         if (!apiKey.enabled) return null
 
@@ -63,11 +63,6 @@ class ApiKeyService(
         val bytes = ByteArray(length / 2)
         secureRandom.nextBytes(bytes)
         return bytes.joinToString("") { "%02x".format(it) }
-    }
-
-    private fun hashToken(key: String): String {
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
     }
 
     companion object {

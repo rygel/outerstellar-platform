@@ -9,7 +9,6 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 class AuthApiIntegrationTest : WebTest() {
@@ -20,8 +19,6 @@ class AuthApiIntegrationTest : WebTest() {
     fun setupTest() {
         app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     @Test
     fun `register api creates user and allows login`() {

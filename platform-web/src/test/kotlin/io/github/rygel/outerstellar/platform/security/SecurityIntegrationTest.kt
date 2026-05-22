@@ -6,7 +6,6 @@ import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
 import io.github.rygel.outerstellar.platform.web.WebTest
 import io.github.rygel.outerstellar.platform.web.testPassword
 import java.util.UUID
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -29,11 +28,6 @@ class SecurityIntegrationTest : WebTest() {
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
             )
-    }
-
-    @AfterEach
-    fun teardown() {
-        cleanup()
     }
 
     @Test

@@ -13,7 +13,6 @@ import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 class AuthenticationWorkflowTest : WebTest() {
@@ -24,8 +23,6 @@ class AuthenticationWorkflowTest : WebTest() {
     fun setupTest() {
         app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     @Test
     fun `user registration and login with redirect workflow`() {
