@@ -8,7 +8,6 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.http4k.core.HttpHandler
 import org.http4k.core.Method.PUT
 import org.http4k.core.Request
 import org.http4k.core.Status
@@ -27,34 +26,36 @@ import org.junit.jupiter.api.BeforeEach
  */
 class AuditLogIntegrationTest : WebTest() {
 
-    private lateinit var app: HttpHandler
+    private val app by lazy { buildApp() }
+
     private lateinit var adminUser: User
     private lateinit var targetUser: User
     private lateinit var adminToken: String
     private lateinit var targetToken: String
 
     private fun auditCount(): Int =
-        testJdbi.open().createQuery("SELECT COUNT(*) FROM plt_audit_log").mapTo(Int::class.java).first()
+        testJdbi.withHandle<Int, Exception> {
+            it.createQuery("SELECT COUNT(*) FROM plt_audit_log").mapTo(Int::class.java).first()
+        }
 
     private fun latestAction(): String? =
-        testJdbi
-            .open()
-            .createQuery("SELECT action FROM plt_audit_log ORDER BY created_at DESC LIMIT 1")
-            .mapTo(String::class.java)
-            .findFirst()
-            .orElse(null)
+        testJdbi.withHandle<String?, Exception> {
+            it.createQuery("SELECT action FROM plt_audit_log ORDER BY created_at DESC LIMIT 1")
+                .mapTo(String::class.java)
+                .findFirst()
+                .orElse(null)
+        }
 
     private fun latestTargetUsername(): String? =
-        testJdbi
-            .open()
-            .createQuery("SELECT target_username FROM plt_audit_log ORDER BY created_at DESC LIMIT 1")
-            .mapTo(String::class.java)
-            .findFirst()
-            .orElse(null)
+        testJdbi.withHandle<String?, Exception> {
+            it.createQuery("SELECT target_username FROM plt_audit_log ORDER BY created_at DESC LIMIT 1")
+                .mapTo(String::class.java)
+                .findFirst()
+                .orElse(null)
+        }
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
         val securityService =
             SecurityService(userRepository, encoder, auditRepository, sessionRepository = sessionRepository)
 
@@ -78,8 +79,6 @@ class AuditLogIntegrationTest : WebTest() {
         userRepository.save(targetUser)
         adminToken = securityService.createSession(adminUser.id)
         targetToken = securityService.createSession(targetUser.id)
-
-        app = buildApp(securityService = securityService)
     }
 
     private fun bearerHeader(user: User) = if (user == adminUser) "Bearer $adminToken" else "Bearer $targetToken"

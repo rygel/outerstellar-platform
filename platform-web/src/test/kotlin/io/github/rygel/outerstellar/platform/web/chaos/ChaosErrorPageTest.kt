@@ -12,7 +12,7 @@ import org.http4k.core.then
 
 class ChaosErrorPageTest : WebTest() {
 
-    private val app by lazy { WebTest.buildApp() }
+    private val app by lazy { buildApp() }
 
     @Test
     fun `chaos engine injects 500 when enabled`() {

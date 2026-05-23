@@ -24,6 +24,7 @@ This project uses **synchronous blocking I/O** with a planned migration to **Jav
 platform-core              Domain models, services, configuration (AppConfig, RuntimeConfig)
 platform-security          Auth, permissions, User/UserRepository, OAuth, API keys, JWT
 platform-persistence-jdbi  JDBI repositories + Flyway migrations
+platform-test-infrastructure SharedPostgres container, TestDatabase, testing utilities
 platform-sync-client       Sync DTOs, DesktopSyncEngine (sync client logic)
 platform-web               http4k web server, JTE templates, HTMX frontend
 platform-desktop           Swing desktop client with two-way sync
@@ -55,7 +56,7 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
 # Full build excluding desktop modules (PowerShell)
 # NOTE: `-pl,!platform-desktop,!platform-desktop-javafx` does NOT work via PowerShell + cmd.exe
 # Use explicit module list instead:
-mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 
 # Run a specific test in a specific module (ALWAYS use -am to rebuild upstream modules)
 mvn -pl platform-web -am test -Dtest=HealthCheckIntegrationTest
@@ -81,7 +82,7 @@ mvn -pl platform-web test
 mvn -pl platform-web -am test
 
 # Full reactor build (always safe, no -am needed)
-mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 ```
 
 ### Desktop Tests in Podman
@@ -188,6 +189,9 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 | Desktop dialogs | `SyncDialogs.kt` (630 lines) |
 | Sync engine | `DesktopSyncEngine.kt` in `platform-sync-client` |
 | Migrations | `platform-persistence-jdbi/src/main/resources/db/migration/` |
+| Test infrastructure | `platform-test-infrastructure` (`SharedPostgres`, `TestDatabase`) |
+| Web test base | `platform-web/src/test/kotlin/.../web/WebTest.kt` |
+| Jdbi test base | `platform-persistence-jdbi/src/test/kotlin/.../persistence/JdbiTest.kt` |
 
 ## Testing expectations
 
@@ -202,7 +206,7 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
   - `mvn -pl platform-web test -Dexec.skip=true`
 - **Full reactor must exclude desktop modules** when running locally:
   ```bash
-  mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+  mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
   ```
 - Desktop tests via Podman (see Podman section above).
 - Playwright E2E tests are tagged `@Tag("e2e")` and run in CI via Docker E2E workflow.
@@ -213,6 +217,15 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
 - All HTTP assertions use hamkrest matchers (`HttpMatchers.kt`). New tests should use `assertThat(response, hasStatus(...))` instead of raw `assertEquals`.
 - Approval tests live in `src/test/kotlin/.../approval/`. Golden files (`.approved`) in `src/test/resources/`.
 - WebDriver and Chaos tests are proof-of-concept — expand as needed.
+
+### Shared PostgreSQL container conventions
+
+- `platform-test-infrastructure` provides `SharedPostgres` (singleton reused container) and `TestDatabase` (per-class DB handle).
+- `WebTest` and `JdbiTest` both use `@TestInstance(PER_CLASS)` — each test class gets its own database, dropped in `@AfterAll`.
+- `@AfterEach` row deletion cleans between methods within a class. No manual `cleanup()` calls needed.
+- platform-web Surefire config: `parallel=classes`, `threadCount=4`. Classes run concurrently (each has its own DB), methods run sequentially.
+- Never create your own PostgreSQL container — extend `WebTest` or `JdbiTest`.
+- Never use `testJdbi.open()` — it leaks connections. Use `testJdbi.withHandle { }` or `testJdbi.useHandle<Exception> { }`.
 
 ## Project Status (as of May 2026)
 
@@ -321,7 +334,7 @@ Before every commit, the following MUST be true:
 
 1. **All non-desktop tests pass locally.** Run the full reactor build:
    ```powershell
-   mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+   mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
    ```
    If any test fails, fix it before committing. Do not commit failing tests.
 

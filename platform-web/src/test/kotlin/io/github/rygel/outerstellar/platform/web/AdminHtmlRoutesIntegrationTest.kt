@@ -41,7 +41,6 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
         adminUser =
             User(
                 id = UUID.randomUUID(),
