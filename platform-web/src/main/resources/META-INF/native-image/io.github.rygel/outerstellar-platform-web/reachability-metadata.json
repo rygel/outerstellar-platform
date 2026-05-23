@@ -1358,19 +1358,13 @@
       "glob": "db/migration/V8__query_path_indexes.sql"
     },
     {
-      "glob": "db/migration/V9__add_totp.sql"
-    },
-    {
       "glob": "db/migration/V10__add_trgm_search_indexes.sql"
-    },
-    {
-      "glob": "db/migration/V11__add_message_votes.sql"
     },
     {
       "glob": "db/migration/V12__add_polls.sql"
     },
     {
-      "glob": "jooq-settings.xml"
+      "glob": "db/migration/V13__utc_only_timestamptz.sql"
     },
     {
       "glob": "logback-test.xml"
