@@ -49,6 +49,23 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
   - `stop-web.ps1`
   - `start-swing.ps1`
 
+### Container runtime (Podman)
+
+**Podman 5.8.2** is available on this machine with rootful mode enabled, providing Docker API compatibility at `npipe:////./pipe/docker_engine`. Testcontainers uses this automatically — no `DOCKER_HOST` configuration needed.
+
+```powershell
+# Check Podman status
+podman machine list
+
+# Start if stopped (must be rootful for Docker API forwarding)
+podman machine start
+
+# Verify Docker API compatibility
+docker ps
+```
+
+**Before running integration tests**, ensure the Podman machine is running (`podman machine start`). All Testcontainers-based integration tests (WebTest, JdbiTest) require it. If tests fail with `NoClassDefFoundError` on test classes, the Podman machine is likely stopped.
+
 ### Test execution
 
 ```powershell
