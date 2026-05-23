@@ -1370,6 +1370,9 @@
       "glob": "db/migration/V13__utc_only_timestamptz.sql"
     },
     {
+      "glob": "static/**"
+    },
+    {
       "glob": "logback-test.xml"
     },
     {
