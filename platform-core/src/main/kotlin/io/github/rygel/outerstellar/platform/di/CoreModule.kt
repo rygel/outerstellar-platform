@@ -1,33 +1,57 @@
 package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.platform.AppConfig
+import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
+import io.github.rygel.outerstellar.platform.persistence.TransactionManager
+import io.github.rygel.outerstellar.platform.service.ApnsPushNotificationService
+import io.github.rygel.outerstellar.platform.service.ConsoleEmailService
+import io.github.rygel.outerstellar.platform.service.ConsolePushNotificationService
+import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.EmailService
 import io.github.rygel.outerstellar.platform.service.EventPublisher
+import io.github.rygel.outerstellar.platform.service.FcmPushNotificationService
+import io.github.rygel.outerstellar.platform.service.MessageService
+import io.github.rygel.outerstellar.platform.service.NoOpEventPublisher
+import io.github.rygel.outerstellar.platform.service.OutboxProcessor
 import io.github.rygel.outerstellar.platform.service.PushNotificationService
 import org.koin.dsl.module
 
 @Deprecated("Use createCoreComponents() for server runtime. This exists for desktop Koin compatibility only.")
 val coreModule
     get() = module {
+        single<EventPublisher> { NoOpEventPublisher }
+        single<EmailService> { ConsoleEmailService() }
         single {
-            val config = get<AppConfig>()
-            createCoreComponents(
-                config = config,
-                messageRepository = get(),
-                contactRepository = get(),
-                outboxRepository = get(),
-                messageCache = get<MessageCache>(),
-                transactionManager = getOrNull(),
-                auditRepository = getOrNull(),
-                eventPublisher = get<EventPublisher>(),
-                emailService = get<EmailService>(),
+            MessageService(
+                get(),
+                get(),
+                getOrNull<TransactionManager>(),
+                get<MessageCache>(),
+                get<EventPublisher>(),
+                getOrNull<AuditRepository>(),
             )
         }
-        single { get<CoreComponents>().messageService }
-        single { get<CoreComponents>().contactService }
-        single { get<CoreComponents>().outboxProcessor }
-        single<EventPublisher> { get<CoreComponents>().eventPublisher }
-        single<EmailService> { get<CoreComponents>().emailService }
-        single<PushNotificationService> { get<CoreComponents>().pushNotificationService }
+        single {
+            ContactService(get(), get<EventPublisher>(), getOrNull<TransactionManager>(), getOrNull<AuditRepository>())
+        }
+        single { OutboxProcessor(get(), getOrNull<TransactionManager>()) }
+        single<PushNotificationService> {
+            val config = get<AppConfig>().pushNotifications
+            if (!config.enabled) {
+                ConsolePushNotificationService
+            } else {
+                when (config.provider) {
+                    "fcm" -> FcmPushNotificationService(config.fcmServiceAccountJson)
+                    "apns" ->
+                        ApnsPushNotificationService(
+                            privateKeyPem = config.apnsPrivateKeyPem,
+                            teamId = config.apnsTeamId,
+                            keyId = config.apnsKeyId,
+                            bundleId = config.apnsBundleId,
+                        )
+                    else -> ConsolePushNotificationService
+                }
+            }
+        }
     }
