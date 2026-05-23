@@ -39,9 +39,8 @@ import org.jdbi.v3.core.Jdbi
 import org.koin.dsl.module
 
 /**
- * Persistence module backed by JDBI. Suitable for environments that do not use jOOQ code generation (e.g., lightweight
- * deployments, embedded databases). Wire this into your Koin app in place of the jOOQ module — never include both
- * `platform-persistence-jdbi` and `platform-persistence-jooq` at runtime.
+ * Persistence module backed by JDBI. Provides all repository implementations via Koin.
+ * Wire this into your Koin application to get DataSource, Jdbi, and repository bindings.
  */
 val persistenceModule
     get() = module {

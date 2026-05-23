@@ -317,7 +317,7 @@ If you're in platform-web, extend `WebTest`. If you're in platform-persistence-j
 
 ### Never eagerly initialize expensive resources
 
-Use `by lazy` for DataSource, DSLContext, Jdbi handles, repositories, and any service that depends on them. Eager initialization in `@BeforeEach` creates unnecessary overhead when test classes only use a subset of resources.
+Use `by lazy` for DataSource, Jdbi handles, repositories, and any service that depends on them. Eager initialization in `@BeforeEach` creates unnecessary overhead when test classes only use a subset of resources.
 
 ### Never use `TemplateEngine.create(DirectoryCodeResolver(...))` in tests
 
