@@ -1361,6 +1361,9 @@
       "glob": "db/migration/V10__add_trgm_search_indexes.sql"
     },
     {
+      "glob": "db/migration/V11__add_totp.sql"
+    },
+    {
       "glob": "db/migration/V12__add_polls.sql"
     },
     {
