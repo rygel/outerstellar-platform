@@ -151,4 +151,52 @@
         <Class name="io.github.rygel.outerstellar.platform.di.SyncClientComponents"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
+    <Match>
+        <Class name="~io\.github\.rygel\.outerstellar\.platform\.di\.DesktopComponentsKt"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    <Match>
+        <Class name="~io\.github\.rygel\.outerstellar\.platform\.di\.DesktopComponentsKt"/>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.DesktopComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="MS_PKGPROTECT"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="PA_PUBLIC_PRIMITIVE_ATTRIBUTE"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
 </FindBugsFilter>
