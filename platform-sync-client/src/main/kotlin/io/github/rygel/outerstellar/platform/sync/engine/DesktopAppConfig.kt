@@ -57,7 +57,7 @@ data class DesktopAppConfig(
                 jdbcUrl = yaml.str("jdbcUrl", env, "JDBC_URL", "jdbc:postgresql://localhost:5432/outerstellar"),
                 jdbcUser = yaml.str("jdbcUser", env, "JDBC_USER", "outerstellar"),
                 jdbcPassword = yaml.str("jdbcPassword", env, "JDBC_PASSWORD", "outerstellar"),
-                version = yaml.str("version", env, "VERSION", "1.0.0"),
+                version = yaml.str("version", env, "APP_VERSION", "1.0.0"),
                 updateUrl = yaml.str("updateUrl", env, "UPDATE_URL", ""),
                 devMode = yaml.bool("devMode", env, "DEV_MODE", false),
                 devUsername = yaml.str("devUsername", env, "DEV_USERNAME", ""),

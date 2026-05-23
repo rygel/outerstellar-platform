@@ -150,6 +150,7 @@ All configuration is read from `application.yaml` (or `application-{profile}.yam
 
 | YAML Key | Env Var | Default | Description |
 |---|---|---|---|
+| `version` | `APP_VERSION` | `dev` | Application version shown in footer |
 | `port` | `PORT` | 8080 | HTTP server port |
 | `jdbcUrl` | `JDBC_URL` | `jdbc:postgresql://localhost:5432/outerstellar` | Database URL |
 | `jdbcUser` | `JDBC_USER` | `outerstellar` | Database user |
