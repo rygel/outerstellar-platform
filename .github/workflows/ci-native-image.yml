@@ -137,10 +137,15 @@ jobs:
 
       - name: Verify native startup check passed
         run: |
-          docker logs outerstellar-native 2>&1 | grep -q "Native startup check" && \
-            echo "NativeStartupCheck ran" || echo "NativeStartupCheck skipped (expected if not native)"
-          docker logs outerstellar-native 2>&1 | grep -i "NATIVE CHECK FAILED" && \
-            (echo "FAIL: NativeStartupCheck reported failures" && exit 1) || true
+          if docker logs outerstellar-native 2>&1 | grep -q "Native startup check"; then
+            echo "NativeStartupCheck ran"
+          else
+            echo "NativeStartupCheck skipped (expected if not native)"
+          fi
+          if docker logs outerstellar-native 2>&1 | grep -i "NATIVE CHECK FAILED"; then
+            echo "FAIL: NativeStartupCheck reported failures"
+            exit 1
+          fi
           echo "Native startup diagnostics OK"
 
       - name: Collect container logs on failure
