@@ -36,6 +36,7 @@ import org.http4k.template.TemplateRenderer
 
 private object NoOpPluginMigrationSource : PluginMigrationSource
 
+@Suppress("LongParameterList")
 class WebComponents(
     val templateRenderer: TemplateRenderer,
     val pageFactory: WebPageFactory,
@@ -53,6 +54,7 @@ class WebComponents(
     val pluginMigrationSource: PluginMigrationSource,
 )
 
+@Suppress("LongParameterList")
 fun createWebComponents(
     config: AppConfig,
     plugin: PlatformPlugin? = null,

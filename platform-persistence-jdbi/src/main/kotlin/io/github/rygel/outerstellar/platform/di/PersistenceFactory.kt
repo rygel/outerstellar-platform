@@ -40,6 +40,7 @@ import org.jdbi.v3.core.Jdbi
 
 private const val DEV_ADMIN_PLACEHOLDER_HASH = "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"
 
+@Suppress("LongParameterList")
 class PersistenceComponents(
     val dataSource: DataSource,
     val jdbi: Jdbi,
@@ -65,14 +66,7 @@ fun createPersistenceComponents(
 ): PersistenceComponents {
     val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword, config.runtime)
     try {
-        if (config.runtime.flywayEnabled) {
-            migrate(ds)
-            pluginMigrationSource?.let { plugin ->
-                plugin.migrationLocation?.let { location ->
-                    migratePlugin(ds, location, plugin.migrationHistoryTable, plugin.migrationNames)
-                }
-            }
-        }
+        runMigrations(ds, config, pluginMigrationSource)
     } catch (e: Exception) {
         ds.close()
         throw e
@@ -106,4 +100,16 @@ fun createPersistenceComponents(
         pollRepository = JdbiPollRepository(jdbi),
         notificationRepository = JdbiNotificationRepository(jdbi),
     )
+}
+
+private fun runMigrations(
+    ds: DataSource,
+    config: AppConfig,
+    pluginMigrationSource: PluginMigrationSource?,
+) {
+    if (!config.runtime.flywayEnabled) return
+    migrate(ds)
+    val plugin = pluginMigrationSource ?: return
+    val location = plugin.migrationLocation ?: return
+    migratePlugin(ds, location, plugin.migrationHistoryTable, plugin.migrationNames)
 }
