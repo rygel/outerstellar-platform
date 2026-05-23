@@ -36,7 +36,7 @@ import org.http4k.template.TemplateRenderer
 
 private object NoOpPluginMigrationSource : PluginMigrationSource
 
-data class WebComponents(
+class WebComponents(
     val templateRenderer: TemplateRenderer,
     val pageFactory: WebPageFactory,
     val messageCache: MessageCache,

@@ -40,7 +40,7 @@ import org.jdbi.v3.core.Jdbi
 
 private const val DEV_ADMIN_PLACEHOLDER_HASH = "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"
 
-data class PersistenceComponents(
+class PersistenceComponents(
     val dataSource: DataSource,
     val jdbi: Jdbi,
     val messageRepository: MessageRepository,

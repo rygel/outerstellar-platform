@@ -19,7 +19,7 @@ import io.github.rygel.outerstellar.platform.service.NoOpEventPublisher
 import io.github.rygel.outerstellar.platform.service.OutboxProcessor
 import io.github.rygel.outerstellar.platform.service.PushNotificationService
 
-data class CoreComponents(
+class CoreComponents(
     val messageService: MessageService,
     val contactService: ContactService,
     val outboxProcessor: OutboxProcessor,

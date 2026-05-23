@@ -8,7 +8,7 @@ import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.service.EmailService
 
-data class SecurityComponents(
+class SecurityComponents(
     val passwordEncoder: PasswordEncoder,
     val jwtService: JwtService,
     val asyncActivityUpdater: AsyncActivityUpdater,
