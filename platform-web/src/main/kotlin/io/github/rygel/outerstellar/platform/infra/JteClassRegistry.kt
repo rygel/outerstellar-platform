@@ -15,15 +15,19 @@ import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.pl
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteHomePageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteLayoutRouterGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteNotificationsPageGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JtePluginAdminDashboardGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteProfilePageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteResetPasswordPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSearchPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSettingsPageGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteSettingsTabContentGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTotpChallengeFormGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTotpSetupFragmentGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteTrashPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteUserAdminPageGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteConflictResolveModalGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteContactFormGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteContactTrashListGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteMessageEditGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteMessageListGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteModalGenerated
@@ -33,6 +37,7 @@ import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.pl
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JtePaginationGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JtePollCardGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteSidebarSelectorGenerated
+import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.components.JteVoteFragmentGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteLayoutHeadGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteSidebarLayoutGenerated
 import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.layouts.JteTopbarLayoutGenerated
@@ -53,10 +58,12 @@ object JteClassRegistry {
             JteHomePageGenerated::class.java,
             JteLayoutRouterGenerated::class.java,
             JteNotificationsPageGenerated::class.java,
+            JtePluginAdminDashboardGenerated::class.java,
             JteProfilePageGenerated::class.java,
             JteResetPasswordPageGenerated::class.java,
             JteSearchPageGenerated::class.java,
             JteSettingsPageGenerated::class.java,
+            JteSettingsTabContentGenerated::class.java,
             JteTrashPageGenerated::class.java,
             JteUserAdminPageGenerated::class.java,
         )
@@ -69,12 +76,14 @@ object JteClassRegistry {
             JteErrorHelpFragmentGenerated::class.java,
             JteFooterStatusFragmentGenerated::class.java,
             JteTotpChallengeFormGenerated::class.java,
+            JteTotpSetupFragmentGenerated::class.java,
         )
 
     private val componentClasses =
         listOf(
             JteConflictResolveModalGenerated::class.java,
             JteContactFormGenerated::class.java,
+            JteContactTrashListGenerated::class.java,
             JteMessageEditGenerated::class.java,
             JteMessageListGenerated::class.java,
             JteModalGenerated::class.java,
@@ -84,6 +93,7 @@ object JteClassRegistry {
             JtePaginationGenerated::class.java,
             JtePollCardGenerated::class.java,
             JteSidebarSelectorGenerated::class.java,
+            JteVoteFragmentGenerated::class.java,
         )
 
     private val layoutClasses =
