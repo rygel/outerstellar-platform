@@ -59,7 +59,7 @@ object NativeStartupCheck {
             Class.forName(className)
             logger.debug("  [OK] {} - class loaded", name)
             CheckResult(name, true)
-        } catch (e: ClassNotFoundException) {
+        } catch (_: ClassNotFoundException) {
             CheckResult(name, false, "$className not found - check JteClassRegistry and reflection metadata")
         }
     }
