@@ -11,7 +11,7 @@
     <packaging>pom</packaging>
 
     <name>Outerstellar Platform</name>
-    <description>Opinionated app scaffold with http4k, jOOQ, JDBI, Flyway, JTE, and Koin</description>
+    <description>Opinionated app scaffold with http4k, JDBI, Flyway, JTE, and Koin</description>
     <url>https://github.com/rygel/outerstellar-platform</url>
 
     <licenses>
@@ -38,7 +38,6 @@
 
     <modules>
         <module>platform-core</module>
-        <module>platform-persistence-jooq</module>
         <module>platform-persistence-jdbi</module>
         <module>platform-sync-client</module>
         <module>platform-web</module>
@@ -46,6 +45,7 @@
         <module>platform-desktop-javafx</module>
         <module>platform-security</module>
         <module>platform-seed</module>
+        <module>platform-test-infrastructure</module>
     </modules>
 
     <properties>
@@ -54,21 +54,20 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.14</outerstellar.version>
-        <http4k.version>6.47.0.0</http4k.version>
-        <netty.version>4.2.13.Final</netty.version>
-        <flyway.version>12.6.1</flyway.version>
+        <http4k.version>6.47.2.0</http4k.version>
+        <netty.version>4.2.14.Final</netty.version>
+        <flyway.version>12.6.2</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
-        <jooq.version>3.21.4</jooq.version>
         <jdbi.version>3.53.0</jdbi.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <jte.version>3.2.4</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
-        <junit.version>6.0.3</junit.version>
-        <enforcer.version>3.6.2</enforcer.version>
+        <junit.version>6.1.0</junit.version>
+        <enforcer.version>3.6.3</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
         <spotbugs.version>4.9.8.3</spotbugs.version>
-        <spotless.version>3.5.0</spotless.version>
+        <spotless.version>3.5.1</spotless.version>
         <ktfmt.version>0.62</ktfmt.version>
         <jacoco.version>0.8.14</jacoco.version>
         <extra-enforcer-rules.version>1.12.0</extra-enforcer-rules.version>
@@ -102,7 +101,7 @@
         <angus.mail.version>2.0.5</angus.mail.version>
         <jakarta.mail.api.version>2.1.5</jakarta.mail.api.version>
         <jakarta.activation.api.version>2.1.4</jakarta.activation.api.version>
-        <playwright.version>1.59.0</playwright.version>
+        <playwright.version>1.60.0</playwright.version>
         <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
         <maven.resources.plugin.version>3.5.0</maven.resources.plugin.version>
         <exec.maven.plugin.version>3.6.3</exec.maven.plugin.version>
@@ -193,11 +192,6 @@
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.rygel</groupId>
-                <artifactId>outerstellar-platform-persistence-jooq</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -295,6 +289,26 @@
                 <version>${http4k.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.http4k</groupId>
+                <artifactId>http4k-testing-hamkrest</artifactId>
+                <version>${http4k.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.http4k</groupId>
+                <artifactId>http4k-testing-approval</artifactId>
+                <version>${http4k.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.http4k</groupId>
+                <artifactId>http4k-testing-webdriver</artifactId>
+                <version>${http4k.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.http4k</groupId>
+                <artifactId>http4k-testing-chaos</artifactId>
+                <version>${http4k.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>gg.jte</groupId>
                 <artifactId>jte</artifactId>
                 <version>${jte.version}</version>
@@ -328,11 +342,6 @@
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-i18n</artifactId>
                 <version>${outerstellar.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jooq</groupId>
-                <artifactId>jooq</artifactId>
-                <version>${jooq.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jdbi</groupId>
@@ -669,11 +678,6 @@
                     <version>${flyway.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.jooq</groupId>
-                    <artifactId>jooq-codegen-maven</artifactId>
-                    <version>${jooq.version}</version>
-                </plugin>
-                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>${maven.resources.plugin.version}</version>
@@ -936,9 +940,6 @@
                     <watches>
                         <watch>
                             <directory>platform-core/src/main/kotlin</directory>
-                        </watch>
-                        <watch>
-                            <directory>platform-persistence-jooq/src/main/kotlin</directory>
                         </watch>
                         <watch>
                             <directory>platform-web/src/main/kotlin</directory>

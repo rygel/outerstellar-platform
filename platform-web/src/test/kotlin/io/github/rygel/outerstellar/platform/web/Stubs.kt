@@ -1,15 +1,15 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.DeviceToken
+import io.github.rygel.outerstellar.platform.model.Session
+import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxEntry
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxStatus
-import io.github.rygel.outerstellar.platform.security.DeviceToken
-import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
+import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import io.github.rygel.outerstellar.platform.security.OAuthConnection
 import io.github.rygel.outerstellar.platform.security.OAuthRepository
-import io.github.rygel.outerstellar.platform.security.Session
-import io.github.rygel.outerstellar.platform.security.SessionRepository
 import java.time.Instant
 import java.util.UUID
 
@@ -149,3 +149,12 @@ class InMemoryDeviceTokenRepository : DeviceTokenRepository {
 
 /** Generates a dynamic test password that meets complexity requirements (8+ chars, upper, lower, digit, special). */
 fun testPassword(): String = "T3st@" + java.util.UUID.randomUUID().toString().take(12)
+
+fun formBody(vararg pairs: Pair<String, String>): String =
+    pairs.joinToString("&") { (k, v) -> "$k=${java.net.URLEncoder.encode(v, "UTF-8")}" }
+
+fun formPost(url: String, vararg pairs: Pair<String, String>): org.http4k.core.Request =
+    org.http4k.core
+        .Request(org.http4k.core.Method.POST, url)
+        .header("content-type", "application/x-www-form-urlencoded")
+        .body(formBody(*pairs))

@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import io.mockk.mockk
 import io.mockk.verify
 import java.util.UUID
@@ -12,7 +12,6 @@ import org.http4k.core.Request
 import org.http4k.websocket.Websocket
 import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsStatus
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
 class WebSocketSyncIntegrationTest : WebTest() {
@@ -29,24 +28,14 @@ class WebSocketSyncIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "wsuser",
                 email = "ws@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         testToken = securityService.createSession(testUser.id)
         syncWebSocket = SyncWebSocket(securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     @Test
     fun `unauthenticated WebSocket connection is closed with 4401`() {

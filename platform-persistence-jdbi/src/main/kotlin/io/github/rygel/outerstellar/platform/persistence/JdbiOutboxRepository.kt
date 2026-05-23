@@ -1,7 +1,5 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.*
 import org.jdbi.v3.core.Jdbi
 
@@ -58,7 +56,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
                     """
                 )
                 .bind("id", id)
-                .bind("processedAt", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("processedAt", java.sql.Timestamp.from(java.time.Instant.now()))
                 .execute()
         }
     }

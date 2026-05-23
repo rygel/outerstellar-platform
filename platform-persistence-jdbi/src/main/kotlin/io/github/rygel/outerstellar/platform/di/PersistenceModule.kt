@@ -4,38 +4,43 @@ import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
 import io.github.rygel.outerstellar.platform.infra.migratePlugin
+import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
+import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiAuditRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiContactRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiDeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiMessageRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiOAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiOutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiPasswordResetRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiPollRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiTransactionManager
 import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiVoteRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
+import io.github.rygel.outerstellar.platform.persistence.NotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
+import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
+import io.github.rygel.outerstellar.platform.persistence.PollRepository
+import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
-import io.github.rygel.outerstellar.platform.security.ApiKeyRepository
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.persistence.VoteRepository
 import io.github.rygel.outerstellar.platform.security.CachingUserRepository
-import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.security.OAuthRepository
-import io.github.rygel.outerstellar.platform.security.PasswordResetRepository
-import io.github.rygel.outerstellar.platform.security.SessionRepository
-import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.micrometer.core.instrument.Metrics
 import javax.sql.DataSource
 import org.jdbi.v3.core.Jdbi
 import org.koin.dsl.module
 
 /**
- * Persistence module backed by JDBI. Suitable for environments that do not use jOOQ code generation (e.g., lightweight
- * deployments, embedded databases). Wire this into your Koin app in place of the jOOQ module — never include both
- * `platform-persistence-jdbi` and `platform-persistence-jooq` at runtime.
+ * Persistence module backed by JDBI. Provides all repository implementations via Koin.
+ * Wire this into your Koin application to get DataSource, Jdbi, and repository bindings.
  */
 val persistenceModule
     get() = module {
@@ -47,7 +52,7 @@ val persistenceModule
                     migrate(ds)
                     getOrNull<PluginMigrationSource>()?.let { plugin ->
                         plugin.migrationLocation?.let { location ->
-                            migratePlugin(ds, location, plugin.migrationHistoryTable)
+                            migratePlugin(ds, location, plugin.migrationHistoryTable, plugin.migrationNames)
                         }
                     }
                 }
@@ -90,6 +95,12 @@ val persistenceModule
         single<DeviceTokenRepository> { JdbiDeviceTokenRepository(get()) }
 
         single<SessionRepository> { JdbiSessionRepository(get()) }
+
+        single<VoteRepository> { JdbiVoteRepository(get()) }
+
+        single<PollRepository> { JdbiPollRepository(get()) }
+
+        single<NotificationRepository> { JdbiNotificationRepository(get()) }
     }
 
 private const val DEV_ADMIN_PLACEHOLDER_HASH = "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"

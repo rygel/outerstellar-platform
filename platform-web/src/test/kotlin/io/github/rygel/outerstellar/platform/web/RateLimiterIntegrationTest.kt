@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,23 +12,16 @@ import org.http4k.core.RequestSource
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
+import org.http4k.hamkrest.hasStatus
 
 class RateLimiterIntegrationTest : WebTest() {
 
-    private lateinit var app: HttpHandler
-
-    @BeforeEach
-    fun setupTest() {
-        app = buildApp()
-    }
-
-    @AfterEach fun teardown() = cleanup()
+    private val app by lazy { buildApp() }
 
     private fun loginRequest(ip: String) =
         app(
             Request(POST, "/api/v1/auth/login")
+                .source(RequestSource(ip))
                 .header("content-type", "application/json")
                 .header("X-Forwarded-For", ip)
                 .body("""{"username":"nobody","password":"wrong"}""")
@@ -50,7 +44,7 @@ class RateLimiterIntegrationTest : WebTest() {
         repeat(10) { loginRequest(ip) }
 
         val response = loginRequest(ip)
-        assertEquals(Status.TOO_MANY_REQUESTS, response.status, "11th request from same IP should be rate limited")
+        assertThat(response, hasStatus(Status.TOO_MANY_REQUESTS))
     }
 
     @Test
@@ -94,6 +88,7 @@ class RateLimiterIntegrationTest : WebTest() {
         fun registerRequest() =
             app(
                 Request(POST, "/api/v1/auth/register")
+                    .source(RequestSource(ip))
                     .header("content-type", "application/json")
                     .header("X-Forwarded-For", ip)
                     .body("""{"username":"testuser${UUID.randomUUID()}","password":"short"}""")
@@ -125,6 +120,7 @@ class RateLimiterIntegrationTest : WebTest() {
             val ip = "10.99.0.${i + 1}"
             app(
                 Request(POST, "/api/v1/auth/login")
+                    .source(RequestSource(ip))
                     .header("content-type", "application/json")
                     .header("X-Forwarded-For", ip)
                     .body("""{"username":"$username","password":"wrong"}""")
@@ -134,6 +130,7 @@ class RateLimiterIntegrationTest : WebTest() {
         val response =
             app(
                 Request(POST, "/api/v1/auth/login")
+                    .source(RequestSource("10.99.0.100"))
                     .header("content-type", "application/json")
                     .header("X-Forwarded-For", "10.99.0.100")
                     .body("""{"username":"$username","password":"wrong"}""")
@@ -178,6 +175,7 @@ class RateLimiterIntegrationTest : WebTest() {
         repeat(9) { i ->
             app(
                 Request(POST, "/api/v1/auth/login")
+                    .source(RequestSource(ip))
                     .header("content-type", "application/json")
                     .header("X-Forwarded-For", ip)
                     .body("""{"username":"filler-$i","password":"wrong"}""")
@@ -187,6 +185,7 @@ class RateLimiterIntegrationTest : WebTest() {
         val response =
             app(
                 Request(POST, "/api/v1/auth/login")
+                    .source(RequestSource(ip))
                     .header("content-type", "application/json")
                     .header("X-Forwarded-For", ip)
                     .body("""{"username":"$targetAccount","password":"wrong"}""")
@@ -226,6 +225,7 @@ class RateLimiterIntegrationTest : WebTest() {
             val ip = "10.77.0.${i + 1}"
             app(
                 Request(POST, "/auth/components/result")
+                    .source(RequestSource(ip))
                     .header("content-type", "application/x-www-form-urlencoded")
                     .header("X-Forwarded-For", ip)
                     .body("mode=sign-in&email=${java.net.URLEncoder.encode(email, "UTF-8")}&password=wrong")
@@ -235,6 +235,7 @@ class RateLimiterIntegrationTest : WebTest() {
         val response =
             app(
                 Request(POST, "/auth/components/result")
+                    .source(RequestSource("10.77.0.100"))
                     .header("content-type", "application/x-www-form-urlencoded")
                     .header("X-Forwarded-For", "10.77.0.100")
                     .body("mode=sign-in&email=${java.net.URLEncoder.encode(email, "UTF-8")}&password=wrong")

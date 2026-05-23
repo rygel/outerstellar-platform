@@ -1,7 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,7 +11,7 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -46,8 +47,6 @@ class LoginReturnToIntegrationTest : WebTest() {
         app = buildApp()
     }
 
-    @AfterEach fun teardown() = cleanup()
-
     private fun loginRequest(returnTo: String? = null): org.http4k.core.Response {
         val url =
             if (returnTo != null) {
@@ -65,7 +64,7 @@ class LoginReturnToIntegrationTest : WebTest() {
     @Test
     fun `successful login without returnTo redirects to root`() {
         val response = loginRequest()
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location") ?: ""
         assertEquals("/", location, "Should redirect to / when no returnTo")
     }
@@ -73,7 +72,7 @@ class LoginReturnToIntegrationTest : WebTest() {
     @Test
     fun `successful login with valid internal returnTo redirects there`() {
         val response = loginRequest(returnTo = "/messages")
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location") ?: ""
         assertEquals("/messages", location, "Should redirect to /messages")
     }
@@ -81,7 +80,7 @@ class LoginReturnToIntegrationTest : WebTest() {
     @Test
     fun `successful login with nested internal returnTo redirects there`() {
         val response = loginRequest(returnTo = "/admin/users")
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location") ?: ""
         assertEquals("/admin/users", location, "Should redirect to /admin/users")
     }
@@ -89,7 +88,7 @@ class LoginReturnToIntegrationTest : WebTest() {
     @Test
     fun `returnTo with external http URL is sanitised to root`() {
         val response = loginRequest(returnTo = "https://evil.com/steal")
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location") ?: ""
         assertEquals("/", location, "External URL should be sanitised to /")
     }
@@ -97,7 +96,7 @@ class LoginReturnToIntegrationTest : WebTest() {
     @Test
     fun `returnTo with protocol-relative URL is sanitised to root`() {
         val response = loginRequest(returnTo = "//evil.com/steal")
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location") ?: ""
         assertEquals("/", location, "Protocol-relative URL should be sanitised to /")
     }
@@ -105,7 +104,7 @@ class LoginReturnToIntegrationTest : WebTest() {
     @Test
     fun `returnTo with blank value redirects to root`() {
         val response = loginRequest(returnTo = "")
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location") ?: ""
         assertEquals("/", location, "Blank returnTo should redirect to /")
     }
@@ -125,7 +124,7 @@ class LoginReturnToIntegrationTest : WebTest() {
     @Test
     fun `login sets session cookie on success`() {
         val response = loginRequest(returnTo = "/")
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val setCookie = response.header("Set-Cookie") ?: ""
         assertTrue(
             setCookie.contains(WebContext.SESSION_COOKIE),

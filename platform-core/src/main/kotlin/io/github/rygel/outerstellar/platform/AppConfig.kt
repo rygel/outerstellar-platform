@@ -133,7 +133,7 @@ data class AppConfig(
                 logger.warn("JDBC_URL is blank — database connection will fail at runtime")
             }
             return AppConfig(
-                version = yaml.str("version", env, "VERSION", "dev"),
+                version = yaml.str("version", env, "APP_VERSION", "dev"),
                 port = port,
                 jdbcUrl = jdbcUrl,
                 jdbcUser = yaml.str("jdbcUser", env, "JDBC_USER", "outerstellar"),

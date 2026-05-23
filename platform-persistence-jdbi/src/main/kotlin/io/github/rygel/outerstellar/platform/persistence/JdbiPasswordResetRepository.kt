@@ -1,9 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.PasswordResetToken
-import io.github.rygel.outerstellar.platform.security.PasswordResetRepository
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.sql.Timestamp
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 
@@ -17,7 +15,7 @@ class JdbiPasswordResetRepository(private val jdbi: Jdbi) : PasswordResetReposit
                 )
                 .bind("userId", token.userId)
                 .bind("token", token.token)
-                .bind("expiresAt", LocalDateTime.ofInstant(token.expiresAt, ZoneOffset.UTC))
+                .bind("expiresAt", Timestamp.from(token.expiresAt))
                 .bind("used", token.used)
                 .execute()
         }

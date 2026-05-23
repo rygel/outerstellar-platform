@@ -31,8 +31,7 @@ The web app starts on `http://localhost:8080`. A first-boot admin user is create
 
 ```
 platform-core              Domain models, services, configuration
-platform-persistence-jooq  jOOQ repositories + Flyway migrations
-platform-persistence-jdbi  JDBI repositories (alternative to jOOQ)
+platform-persistence-jdbi  JDBI repositories + Flyway migrations
 platform-security          Auth, permissions, OAuth, API keys
 platform-sync-client       Sync DTOs and client sync service
 platform-web               http4k web server, JTE templates, HTMX
@@ -44,7 +43,6 @@ platform-seed              Database seeding utility
 
 ```
 platform-core
-    ├── platform-persistence-jooq
     ├── platform-persistence-jdbi
     ├── platform-security
     └── platform-sync-client
@@ -100,7 +98,7 @@ Set `APP_PROFILE` to select a profile. The loader first tries `/application-{pro
 
 ### Schema
 
-All tables use the `plt_` prefix to avoid collisions with plugin tables. Migrations are in `platform-persistence-jooq/src/main/resources/db/migration/`.
+All tables use the `plt_` prefix to avoid collisions with plugin tables. Migrations are in `platform-persistence-jdbi/src/main/resources/db/migration/`.
 
 | Migration | Tables |
 |---|---|
@@ -109,19 +107,9 @@ All tables use the `plt_` prefix to avoid collisions with plugin tables. Migrati
 | V3 | Creates `plt_sessions` |
 | V4 | Adds `language`, `theme`, `layout` to `plt_users` |
 
-### jOOQ Code Generation
-
-Generated sources are version-controlled under `platform-persistence-jooq/src/main/generated/jooq`. Regenerate after schema changes:
-
-```bash
-mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources
-```
-
-Commit migration and generated source changes together.
-
 ### Dual Persistence
 
-The platform ships two interchangeable persistence modules (`jooq` and `jdbi`) that implement identical repository interfaces. Switch by replacing the Maven dependency and importing the other module's `persistenceModule` in Koin. No other code changes needed.
+The platform uses JDBI as its persistence layer, implementing repository interfaces defined in `platform-core`.
 
 ## Plugin Development
 
@@ -387,7 +375,6 @@ mvn spotless:check checkstyle:check pmd:check spotbugs:check detekt:check
 | `scripts/start-web.ps1` | Start web dev stack (Tailwind watcher, Maven watcher, app) |
 | `scripts/stop-web.ps1` | Kill web dev stack |
 | `scripts/start-swing.ps1` | Start Swing desktop client |
-| `generate-jooq.ps1` | Regenerate jOOQ sources |
 
 ---
 

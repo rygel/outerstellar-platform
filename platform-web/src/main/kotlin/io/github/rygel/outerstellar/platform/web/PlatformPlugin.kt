@@ -9,9 +9,9 @@ import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
+import io.github.rygel.outerstellar.platform.model.User
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRepository
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import org.http4k.contract.ContractRoute
 import org.http4k.core.Filter
@@ -121,6 +121,15 @@ data class PluginContext(
  * Register your Koin module by passing it to `startKoin` **before** the host modules are resolved:
  * ```kotlin
  * startKoin { modules(myPluginModule, persistenceModule, coreModule, webModule, securityModule) }
+ * ```
+ *
+ * **Important:** If your plugin provides Flyway migrations, you must also bind `PluginMigrationSource` so the
+ * persistence module can discover them:
+ * ```kotlin
+ * module {
+ *     single<PlatformPlugin> { MyPlugin() }
+ *     single<PluginMigrationSource> { get<PlatformPlugin>() }
+ * }
  * ```
  */
 interface PlatformPlugin : PluginMigrationSource {

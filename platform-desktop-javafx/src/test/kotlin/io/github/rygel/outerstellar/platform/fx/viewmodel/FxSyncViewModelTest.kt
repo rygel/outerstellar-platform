@@ -1,11 +1,16 @@
 package io.github.rygel.outerstellar.platform.fx.viewmodel
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
-import io.github.rygel.outerstellar.platform.sync.engine.EngineState
-import io.github.rygel.outerstellar.platform.sync.engine.SyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.util.Locale
 import javafx.application.Platform
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -23,24 +28,31 @@ class FxSyncViewModelTest {
         fun initJavaFX() {
             try {
                 Platform.startup {}
-            } catch (_: IllegalStateException) {
-                // already initialized by another test
-            }
+            } catch (_: IllegalStateException) {}
         }
     }
 
-    private lateinit var engine: SyncEngine
+    private lateinit var authModule: AuthModule
+    private lateinit var syncDataModule: SyncDataModule
+    private lateinit var profileModule: ProfileModule
+    private lateinit var adminModule: AdminModule
+    private lateinit var notificationModule: NotificationModule
+    private lateinit var i18n: I18nService
     private lateinit var viewModel: FxSyncViewModel
 
     @BeforeEach
     fun setUp() {
-        engine = mockk(relaxed = true)
-        every { engine.state } returns EngineState()
-        viewModel = FxSyncViewModel(engine)
+        authModule = mockk(relaxed = true)
+        syncDataModule = mockk(relaxed = true)
+        profileModule = mockk(relaxed = true)
+        adminModule = mockk(relaxed = true)
+        notificationModule = mockk(relaxed = true)
+        i18n = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
+        viewModel = FxSyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18n)
     }
 
     @Test
-    fun `initial state reflects engine state`() {
+    fun `initial state reflects module defaults`() {
         assertEquals("", viewModel.userName.get())
         assertEquals("", viewModel.userEmail.get())
         assertNull(viewModel.userAvatarUrl.get())
@@ -58,211 +70,202 @@ class FxSyncViewModelTest {
     }
 
     @Test
-    fun `login delegates to engine`() {
-        every { engine.login("user", "pass") } returns Result.success(Unit)
+    fun `login delegates to authModule`() {
+        every { authModule.login("user", "pass") } returns Result.success(Unit)
         val task = viewModel.login("user", "pass")
         task.run()
-        verify { engine.login("user", "pass") }
+        verify { authModule.login("user", "pass") }
     }
 
     @Test
-    fun `register delegates to engine`() {
-        every { engine.register("newuser", "pass") } returns Result.success(Unit)
+    fun `register delegates to authModule`() {
+        every { authModule.register("newuser", "pass") } returns Result.success(Unit)
         val task = viewModel.register("newuser", "pass")
         task.run()
-        verify { engine.register("newuser", "pass") }
+        verify { authModule.register("newuser", "pass") }
     }
 
     @Test
-    fun `logout delegates to engine`() {
+    fun `logout delegates to authModule`() {
         viewModel.logout().run()
-        verify { engine.logout() }
+        verify { authModule.logout() }
     }
 
     @Test
-    fun `sync delegates to engine`() {
-        every { engine.sync(false) } returns Result.success(Unit)
+    fun `sync delegates to syncDataModule`() {
+        every { syncDataModule.sync(false) } returns Result.success(Unit)
         viewModel.sync().run()
-        verify { engine.sync(false) }
+        verify { syncDataModule.sync(false) }
     }
 
     @Test
-    fun `sync with auto parameter delegates to engine`() {
-        every { engine.sync(true) } returns Result.success(Unit)
+    fun `sync with auto parameter delegates to syncDataModule`() {
+        every { syncDataModule.sync(true) } returns Result.success(Unit)
         viewModel.sync(isAuto = true).run()
-        verify { engine.sync(true) }
+        verify { syncDataModule.sync(true) }
     }
 
     @Test
-    fun `changePassword delegates to engine`() {
-        every { engine.changePassword("old", "new") } returns Result.success(Unit)
+    fun `changePassword delegates to authModule`() {
+        every { authModule.changePassword("old", "new") } returns Result.success(Unit)
         viewModel.changePassword("old", "new").run()
-        verify { engine.changePassword("old", "new") }
+        verify { authModule.changePassword("old", "new") }
     }
 
     @Test
-    fun `requestPasswordReset delegates to engine`() {
-        every { engine.requestPasswordReset("a@b.com") } returns Result.success(Unit)
+    fun `requestPasswordReset delegates to authModule`() {
+        every { authModule.requestPasswordReset("a@b.com") } returns Result.success(Unit)
         viewModel.requestPasswordReset("a@b.com").run()
-        verify { engine.requestPasswordReset("a@b.com") }
+        verify { authModule.requestPasswordReset("a@b.com") }
     }
 
     @Test
-    fun `resetPassword delegates to engine`() {
-        every { engine.resetPassword("token", "newpass") } returns Result.success(Unit)
+    fun `resetPassword delegates to authModule`() {
+        every { authModule.resetPassword("token", "newpass") } returns Result.success(Unit)
         viewModel.resetPassword("token", "newpass").run()
-        verify { engine.resetPassword("token", "newpass") }
+        verify { authModule.resetPassword("token", "newpass") }
     }
 
     @Test
-    fun `loadUsers delegates to engine`() {
+    fun `loadUsers delegates to adminModule`() {
         viewModel.loadUsers().run()
-        verify { engine.loadUsers() }
+        verify { adminModule.loadUsers() }
     }
 
     @Test
-    fun `setUserEnabled delegates to engine`() {
-        every { engine.setUserEnabled("id", true) } returns Result.success(Unit)
+    fun `setUserEnabled delegates to adminModule`() {
+        every { adminModule.setUserEnabled("id", true) } returns Result.success(Unit)
         viewModel.setUserEnabled("id", true).run()
-        verify { engine.setUserEnabled("id", true) }
+        verify { adminModule.setUserEnabled("id", true) }
     }
 
     @Test
-    fun `setUserRole delegates to engine`() {
-        every { engine.setUserRole("id", "ADMIN") } returns Result.success(Unit)
+    fun `setUserRole delegates to adminModule`() {
+        every { adminModule.setUserRole("id", "ADMIN") } returns Result.success(Unit)
         viewModel.setUserRole("id", "ADMIN").run()
-        verify { engine.setUserRole("id", "ADMIN") }
+        verify { adminModule.setUserRole("id", "ADMIN") }
     }
 
     @Test
-    fun `loadNotifications delegates to engine`() {
+    fun `loadNotifications delegates to notificationModule`() {
         viewModel.loadNotifications().run()
-        verify { engine.loadNotifications() }
+        verify { notificationModule.loadNotifications() }
     }
 
     @Test
-    fun `markNotificationRead delegates to engine`() {
+    fun `markNotificationRead delegates to notificationModule`() {
         viewModel.markNotificationRead("notif1").run()
-        verify { engine.markNotificationRead("notif1") }
+        verify { notificationModule.markNotificationRead("notif1") }
     }
 
     @Test
-    fun `markAllNotificationsRead delegates to engine`() {
+    fun `markAllNotificationsRead delegates to notificationModule`() {
         viewModel.markAllNotificationsRead().run()
-        verify { engine.markAllNotificationsRead() }
+        verify { notificationModule.markAllNotificationsRead() }
     }
 
     @Test
-    fun `loadProfile delegates to engine`() {
+    fun `loadProfile delegates to profileModule`() {
         viewModel.loadProfile().run()
-        verify { engine.loadProfile() }
+        verify { profileModule.loadProfile() }
     }
 
     @Test
-    fun `updateProfile delegates to engine`() {
-        every { engine.updateProfile("e@m.com", "user", "av") } returns Result.success(Unit)
+    fun `updateProfile delegates to profileModule`() {
+        every { profileModule.updateProfile("e@m.com", "user", "av") } returns Result.success(Unit)
         viewModel.updateProfile("e@m.com", "user", "av").run()
-        verify { engine.updateProfile("e@m.com", "user", "av") }
+        verify { profileModule.updateProfile("e@m.com", "user", "av") }
     }
 
     @Test
-    fun `deleteAccount delegates to engine`() {
-        every { engine.deleteAccount("secret") } returns Result.success(Unit)
+    fun `deleteAccount delegates to profileModule`() {
+        every { profileModule.deleteAccount("secret") } returns Result.success(Unit)
         viewModel.deleteAccount("secret").run()
-        verify { engine.deleteAccount("secret") }
+        verify { profileModule.deleteAccount("secret") }
     }
 
     @Test
-    fun `updateNotificationPreferences delegates to engine`() {
-        every { engine.updateNotificationPreferences(true, false) } returns Result.success(Unit)
+    fun `updateNotificationPreferences delegates to profileModule`() {
+        every { profileModule.updateNotificationPreferences(true, false) } returns Result.success(Unit)
         viewModel.updateNotificationPreferences(true, false).run()
-        verify { engine.updateNotificationPreferences(true, false) }
+        verify { profileModule.updateNotificationPreferences(true, false) }
     }
 
     @Test
-    fun `createLocalMessage delegates to engine`() {
-        every { engine.createLocalMessage("author", "content") } returns Result.success(Unit)
+    fun `createLocalMessage delegates to syncDataModule`() {
+        every { syncDataModule.createLocalMessage("author", "content") } returns Result.success(Unit)
         viewModel.createLocalMessage("author", "content").run()
-        verify { engine.createLocalMessage("author", "content") }
+        verify { syncDataModule.createLocalMessage("author", "content") }
     }
 
     @Test
-    fun `resolveConflict delegates to engine`() {
+    fun `resolveConflict delegates to syncDataModule`() {
         viewModel.resolveConflict("id", ConflictStrategy.MINE).run()
-        verify { engine.resolveConflict("id", ConflictStrategy.MINE) }
+        verify { syncDataModule.resolveConflict("id", ConflictStrategy.MINE) }
     }
 
     @Test
-    fun `updateContact delegates to engine`() {
-        every { engine.updateContact(any(), any(), any(), any(), any(), any(), any(), any()) } returns
+    fun `updateContact delegates to syncDataModule`() {
+        every { syncDataModule.updateContact(any(), any(), any(), any(), any(), any(), any(), any()) } returns
             Result.success(Unit)
         viewModel.updateContact("id", "n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d").run()
-        verify { engine.updateContact("id", "n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d") }
+        verify { syncDataModule.updateContact("id", "n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d") }
     }
 
     @Test
-    fun `createContact delegates to engine`() {
-        every { engine.createContact(any(), any(), any(), any(), any(), any(), any()) } returns Result.success(Unit)
+    fun `createContact delegates to syncDataModule`() {
+        every { syncDataModule.createContact(any(), any(), any(), any(), any(), any(), any()) } returns
+            Result.success(Unit)
         viewModel.createContact("n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d").run()
-        verify { engine.createContact("n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d") }
+        verify { syncDataModule.createContact("n", listOf("e"), listOf("p"), listOf("s"), "c", "a", "d") }
     }
 
     @Test
-    fun `loadData delegates to engine`() {
+    fun `loadData delegates to syncDataModule`() {
         viewModel.loadData().run()
-        verify { engine.loadData() }
+        verify { syncDataModule.loadData() }
     }
 
     @Test
-    fun `loadMessages delegates to engine`() {
+    fun `loadMessages delegates to syncDataModule`() {
         viewModel.loadMessages().run()
-        verify { engine.loadMessages() }
+        verify { syncDataModule.loadMessages() }
     }
 
     @Test
-    fun `loadContacts delegates to engine`() {
+    fun `loadContacts delegates to syncDataModule`() {
         viewModel.loadContacts().run()
-        verify { engine.loadContacts() }
+        verify { syncDataModule.loadContacts() }
     }
 
     @Test
-    fun `addListener is called in constructor`() {
-        verify { engine.addListener(any()) }
+    fun `addListener is called on all modules in constructor`() {
+        verify { syncDataModule.addListener(any()) }
+        verify { authModule.addListener(any()) }
+        verify { profileModule.addListener(any()) }
+        verify { adminModule.addListener(any()) }
+        verify { notificationModule.addListener(any()) }
     }
 
     @Test
-    fun `shutdown removes listener and shuts down engine`() {
+    fun `shutdown removes listeners from all modules`() {
         viewModel.shutdown()
-        verify { engine.shutdown() }
+        verify { syncDataModule.removeListener(any()) }
+        verify { authModule.removeListener(any()) }
+        verify { profileModule.removeListener(any()) }
+        verify { adminModule.removeListener(any()) }
+        verify { notificationModule.removeListener(any()) }
     }
 
     @Test
-    fun `startAutoSync delegates to engine`() {
+    fun `startAutoSync delegates to syncDataModule`() {
         viewModel.startAutoSync()
-        verify { engine.startAutoSync() }
+        verify { syncDataModule.startAutoSync() }
     }
 
     @Test
-    fun `stopAutoSync delegates to engine`() {
+    fun `stopAutoSync delegates to syncDataModule`() {
         viewModel.stopAutoSync()
-        verify { engine.stopAutoSync() }
-    }
-
-    @Test
-    fun `startConnectivityChecker delegates to engine`() {
-        viewModel.startConnectivityChecker()
-        verify { engine.startConnectivityChecker() }
-    }
-
-    @Test
-    fun `stopConnectivityChecker delegates to engine`() {
-        viewModel.stopConnectivityChecker()
-        verify { engine.stopConnectivityChecker() }
-    }
-
-    @Test
-    fun `shutdown does not throw when called`() {
-        viewModel.shutdown()
-        verify { engine.shutdown() }
+        verify { syncDataModule.stopAutoSync() }
     }
 }

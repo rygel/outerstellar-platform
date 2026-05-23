@@ -26,7 +26,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-persistence-jooq</artifactId>
+            <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
@@ -83,8 +83,8 @@
             <artifactId>logback-classic</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
+            <groupId>org.jdbi</groupId>
+            <artifactId>jdbi3-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -92,13 +92,14 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-postgresql</artifactId>
+            <groupId>io.github.rygel</groupId>
+            <artifactId>outerstellar-platform-test-infrastructure</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -175,7 +176,27 @@
         <dependency>
             <groupId>com.code-intelligence</groupId>
             <artifactId>jazzer-junit</artifactId>
-            <version>0.23.0</version>
+            <version>0.30.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-hamkrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-webdriver</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-chaos</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-approval</artifactId>
             <scope>test</scope>
         </dependency>
         
@@ -314,12 +335,13 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Web tests share a PostgreSQL database — parallel execution would cause races -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <parallel>none</parallel>
+                    <parallel>classes</parallel>
+                    <threadCount>4</threadCount>
+                    <useUnlimitedThreads>false</useUnlimitedThreads>
                     <systemPropertyVariables>
                         <jte.production>true</jte.production>
                     </systemPropertyVariables>

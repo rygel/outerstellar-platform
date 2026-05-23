@@ -22,7 +22,6 @@ import org.http4k.core.Request
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
@@ -181,8 +180,6 @@ class PerformanceBenchmarkTest : WebTest() {
 
     @BeforeEach
     fun setupBenchmark() {
-        cleanup()
-
         val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
 
         app =
@@ -203,8 +200,6 @@ class PerformanceBenchmarkTest : WebTest() {
         val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("perfuser", password)))
         bearerToken = tokenLens(loginResp).token
     }
-
-    @AfterEach fun teardownBenchmark() = cleanup()
 
     // ---------------------------------------------------------------------------
     // Benchmarks
@@ -290,7 +285,7 @@ class PerformanceBenchmarkTest : WebTest() {
         val coldRec = LatencyRecorder("GET /api/v1/sync?since=0 (cold)")
         repeat(WARMUP) { app(req) }
         repeat(ITERATIONS) {
-            testDsl.execute("DELETE FROM plt_sync_state")
+            testJdbi.useHandle<Exception> { handle -> handle.execute("DELETE FROM plt_sync_state") }
             coldRec.record { app(req) }
         }
 
@@ -322,7 +317,7 @@ class PerformanceBenchmarkTest : WebTest() {
         val prodSecurityService = SecurityService(userRepository, prodEncoder, sessionRepository = sessionRepository)
 
         userRepository.save(
-            io.github.rygel.outerstellar.platform.security.User(
+            io.github.rygel.outerstellar.platform.model.User(
                 id = java.util.UUID.randomUUID(),
                 username = "prodperfuser",
                 email = "prodperf@example.com",

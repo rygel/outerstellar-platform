@@ -3,11 +3,11 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.persistence.QueryCount
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.SecurityRules
-import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRepository
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.Duration

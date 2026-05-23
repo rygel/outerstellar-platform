@@ -5,12 +5,12 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.I18nTextResolver
 import io.github.rygel.outerstellar.platform.TextResolver
+import io.github.rygel.outerstellar.platform.model.SessionLookup
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.SessionLookup
-import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRepository
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit

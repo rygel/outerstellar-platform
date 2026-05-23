@@ -1,0 +1,283 @@
+
+
+
+    
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="[CSRF-TOKEN]">
+    <meta name="theme-color" content="#0f172a">
+    <title>Error Pages - Outerstellar Platform</title>
+    
+    <meta name="description" content="Error page examples demonstrating themed error layouts.">
+    
+    
+    <link rel="canonical" href="http://localhost:8080/errors/not-found">
+    
+    
+    <meta name="robots" content="noindex, nofollow">
+    
+    
+    
+    <link rel="preload" href="/site.css?v=[CACHE-BUSTER]" as="style">
+    <link rel="preload" href="/vendor/remixicon/remixicon.woff2" as="font" type="font/woff2" crossorigin>
+    <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/site.css?v=[CACHE-BUSTER]">
+    <script defer src="/vendor/htmx.min.js"></script>
+    <script defer src="/vendor/htmx-ext-ws.js"></script>
+</head>
+
+<body hx-ext="ws" ws-connect="/ws/sync"
+      data-toast-error="Error" data-toast-success="Success">
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:bg-primary focus:text-primary-content focus:px-4 focus:py-2 focus:rounded">Skip to content</a>
+<div id="toast-container" class="fixed top-6 right-6 z-[9999] pointer-events-none w-80"></div>
+<div class="drawer lg:drawer-open">
+    <input id="sidebar-drawer" type="checkbox" class="drawer-toggle">
+    <div class="drawer-content flex flex-col min-h-screen">
+        <header class="navbar bg-base-100 border-b border-base-300 sticky top-0 z-40 px-7 min-h-[84px]">
+            <div class="flex-none lg:hidden">
+                <label for="sidebar-drawer" class="btn btn-ghost btn-square" aria-label="Toggle menu">
+                    <i aria-hidden="true" class="ri-menu-line text-xl"></i>
+                </label>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">Error Pages</span>
+                <strong class="text-xl font-extrabold tracking-tight">Translated, themed platform with web + desktop sync</strong>
+            </div>
+            <div class="flex items-center gap-4 ml-auto">
+            
+            
+            </div>
+        </header>
+        <main id="main-content" class="flex-1 p-6">
+            <div id="ws-updates" ws-subscribe aria-live="polite"></div>
+            
+    <section class="card bg-base-200 border border-base-300 mb-4">
+        <div>
+            <p class="badge badge-outline">Error 404</p>
+            <h1>The page could not be found</h1>
+            <p>Use this 404 example to show how sidebar navigation and recovery actions stay available.</p>
+        </div>
+        <div class="flex gap-3 justify-end mt-4">
+            <a href="/" class="btn btn-primary btn-sm">Back to home</a>
+            <a href="/auth" class="btn btn-ghost btn-sm">Open auth examples</a>
+        </div>
+    </section>
+
+    <section class="card bg-base-200 border border-base-300">
+        <button class="btn btn-ghost btn-sm"
+                hx-get="/errors/components/help/not-found"
+                hx-target="#error-help-slot"
+                hx-swap="innerHTML">
+            Load HTMX recovery tips
+        </button>
+        <div id="error-help-slot" class="mt-4" style="display: none;" aria-live="polite">
+            
+        </div>
+    </section>
+
+        </main>
+        <footer class="flex items-center justify-between px-6 py-4 border-t border-base-content/5 bg-base-content/5 text-sm opacity-80">
+            <span>Powered by http4k, jOOQ, Flyway, Outerstellar i18n/theme, and HTMX.</span>
+            <div class="flex items-center gap-3 ml-auto">
+                <span class="opacity-60 text-xs">v%s</span>
+                <div id="footer-status"
+                     class="badge"
+                     hx-get="/components/footer-status"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                </div>
+            </div>
+        </footer>
+    </div>
+    <div class="drawer-side z-50">
+        <label for="sidebar-drawer" class="drawer-overlay"></label>
+        <aside class="menu bg-base-200 w-56 min-h-full border-r border-base-300 flex flex-col">
+            <div class="p-4 border-b border-base-content/5">
+                <a href="/" class="flex items-center gap-2 text-xl font-extrabold text-accent uppercase tracking-wider">
+                    <i aria-hidden="true" class="ri-planet-fill"></i>
+                    Outerstellar Platform
+                </a>
+            </div>
+            <nav class="p-2 flex-1 flex flex-col gap-0.5">
+                
+                    <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link"
+                       href="/"
+                       onclick="document.getElementById('sidebar-drawer').checked = false">
+                        <i class="ri-home-5-line text-lg opacity-80 w-5 text-center"></i>
+                        Home
+                    </a>
+                
+                    <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link"
+                       href="/search"
+                       onclick="document.getElementById('sidebar-drawer').checked = false">
+                        <i class="ri-search-line text-lg opacity-80 w-5 text-center"></i>
+                        Search
+                    </a>
+                
+                    <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link"
+                       href="/contacts"
+                       onclick="document.getElementById('sidebar-drawer').checked = false">
+                        <i class="ri-user-3-line text-lg opacity-80 w-5 text-center"></i>
+                        Contacts
+                    </a>
+                
+                    <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link"
+                       href="/messages/trash"
+                       onclick="document.getElementById('sidebar-drawer').checked = false">
+                        <i class="ri-delete-bin-7-line text-lg opacity-80 w-5 text-center"></i>
+                        Trash
+                    </a>
+                
+            </nav>
+            <div class="p-5 bg-base-300/50 border-t border-base-content/5" ws-subscribe>
+                <div class="mb-5">
+                    <div id="theme-selector">
+                        
+<div>
+    <h3 class="text-[0.65rem] uppercase tracking-widest font-extrabold opacity-50 mb-2">Themes</h3>
+    <form hx-get="/components/navigation/page" hx-target="body" hx-push-url="true">
+        <select id="theme-selector" name="theme" class="select select-bordered select-sm w-full" onchange="htmx.trigger(this.form, 'submit')" aria-label="Choose your theme">
+            
+                <option value="dark" selected>Dark</option>
+            
+                <option value="light">Light</option>
+            
+                <option value="cupcake">Cupcake</option>
+            
+                <option value="bumblebee">Bumblebee</option>
+            
+                <option value="emerald">Emerald</option>
+            
+                <option value="corporate">Corporate</option>
+            
+                <option value="synthwave">Synthwave</option>
+            
+                <option value="retro">Retro</option>
+            
+                <option value="cyberpunk">Cyberpunk</option>
+            
+                <option value="valentine">Valentine</option>
+            
+                <option value="halloween">Halloween</option>
+            
+                <option value="garden">Garden</option>
+            
+                <option value="forest">Forest</option>
+            
+                <option value="aqua">Aqua</option>
+            
+                <option value="lofi">Lo-Fi</option>
+            
+                <option value="pastel">Pastel</option>
+            
+                <option value="fantasy">Fantasy</option>
+            
+                <option value="wireframe">Wireframe</option>
+            
+                <option value="black">Black</option>
+            
+                <option value="luxury">Luxury</option>
+            
+                <option value="dracula">Dracula</option>
+            
+                <option value="cmyk">CMYK</option>
+            
+                <option value="autumn">Autumn</option>
+            
+                <option value="business">Business</option>
+            
+                <option value="acid">Acid</option>
+            
+                <option value="lemonade">Lemonade</option>
+            
+                <option value="night">Night</option>
+            
+                <option value="coffee">Coffee</option>
+            
+                <option value="winter">Winter</option>
+            
+                <option value="dim">Dim</option>
+            
+                <option value="nord">Nord</option>
+            
+                <option value="sunset">Sunset</option>
+            
+        </select>
+        
+            <input type="hidden" name="pagePath" value="/errors/not-found">
+        
+            <input type="hidden" name="lang" value="en">
+        
+            <input type="hidden" name="layout" value="nice">
+        
+    </form>
+</div>
+
+                    </div>
+                </div>
+                <div class="mb-5">
+                    <div id="language-selector">
+                        
+<div>
+    <h3 class="text-[0.65rem] uppercase tracking-widest font-extrabold opacity-50 mb-2">Language</h3>
+    <form hx-get="/components/navigation/page" hx-target="body" hx-push-url="true">
+        <select id="language-selector" name="lang" class="select select-bordered select-sm w-full" onchange="htmx.trigger(this.form, 'submit')" aria-label="Choose your language">
+            
+                <option value="en" selected>English</option>
+            
+                <option value="fr">French</option>
+            
+        </select>
+        
+            <input type="hidden" name="pagePath" value="/errors/not-found">
+        
+            <input type="hidden" name="theme" value="dark">
+        
+            <input type="hidden" name="layout" value="nice">
+        
+    </form>
+</div>
+
+                    </div>
+                </div>
+                <div>
+                    <div id="layout-selector">
+                        
+<div>
+    <h3 class="text-[0.65rem] uppercase tracking-widest font-extrabold opacity-50 mb-2">Layout</h3>
+    <form hx-get="/components/navigation/page" hx-target="body" hx-push-url="true">
+        <select id="layout-selector" name="layout" class="select select-bordered select-sm w-full" onchange="htmx.trigger(this.form, 'submit')" aria-label="Choose your layout">
+            
+                <option value="nice" selected>Nice</option>
+            
+                <option value="cozy">Cozy</option>
+            
+                <option value="compact">Compact</option>
+            
+        </select>
+        
+            <input type="hidden" name="pagePath" value="/errors/not-found">
+        
+            <input type="hidden" name="theme" value="dark">
+        
+            <input type="hidden" name="lang" value="en">
+        
+    </form>
+</div>
+
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+<script src="/platform.js?v=[CACHE-BUSTER]"></script>
+</body>
+</html>
+
+
+

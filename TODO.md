@@ -68,7 +68,7 @@ Architecture, security, and maintainability improvements identified during code 
 
 - [x] ~~**Scope device-token deregistration to authenticated user**~~
   Fixed in PR #277 — DELETE now requires token ownership (token + user_id match).
-  — `platform-web/.../web/DeviceRegistrationApi.kt`, `platform-persistence-jooq/.../JooqDeviceTokenRepository.kt`, `platform-persistence-jdbi/.../JdbiDeviceTokenRepository.kt`
+  — `platform-web/.../web/DeviceRegistrationApi.kt`, `platform-persistence-jdbi/.../JdbiDeviceTokenRepository.kt`
 
 - [x] ~~**Neutralize formula injection in CSV exports**~~
   Fixed in PR #277 — `CsvUtils.escapeCsv()` prefixes `=`, `+`, `-`, `@`, tab, CR with `'`.
@@ -178,8 +178,8 @@ Architecture, security, and maintainability improvements identified during code 
   — `platform-web/.../web/WebContext.kt`
 
 - [x] ~~**Outbox status strings (`"PENDING"`, `"PROCESSED"`, `"FAILED"`) scattered**~~
-  Fixed in PR #243 — extracted `OutboxStatus` enum in `OutboxRepository.kt`. All 19 usages across `MessageService`, `JooqOutboxRepository`, `JdbiOutboxRepository`, `DevDashboardRoutes`, and tests updated.
-  — `platform-core/.../persistence/OutboxRepository.kt`
+  Fixed in PR #243 — extracted `OutboxStatus` enum in `OutboxRepository.kt`. All 19 usages across `MessageService`, `JdbiOutboxRepository`, `DevDashboardRoutes`, and tests updated.
+  — `platform-core/.../persistence/OutboxRepository.kt`, `JdbiOutboxRepository`, `DevDashboardRoutes`
 
 ---
 
@@ -278,14 +278,14 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [x] **Bound the `gravatarCache` with Caffeine**
   — `platform-web/.../web/WebPageFactory.kt` line 9
 
-- [x] **Eliminate extra SELECT in `JooqContactRepository.updateContact()`**
-  — `platform-persistence-jooq/.../persistence/JooqContactRepository.kt` lines 247–252
+- [x] **Eliminate extra SELECT in `JdbiContactRepository.updateContact()`**
+   — `platform-persistence-jdbi/.../persistence/JdbiContactRepository.kt`
 
 - [x] **Continuous outbox drain when batch is full**
   — `platform-core/.../service/OutboxProcessor.kt` line 8 · `Main.kt` line 61
 
-- [x] **Document the jOOQ vs. JDBI persistence selection policy**
-  Both modules implement the same repository interfaces with no runtime flag or documented rule for which is active.
+- [x] **Document the JDBI persistence selection policy**
+  JDBI is the sole persistence implementation, implementing all repository interfaces defined in `platform-core`.
 
 - [x] **Guard `WebContext.user` against cache removal**
   — `platform-web/.../web/WebContext.kt` lines 69–86
@@ -386,7 +386,7 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   — `platform-web/.../web/WebContext.kt`
 
 - [x] ~~**Batch sync push upserts**~~
-  Fixed in PR #280 — added batchUpsertSyncedMessages()/batchUpsertSyncedContacts() with jOOQ batch + JDBI INSERT ON CONFLICT.
+  Fixed in PR #280 — added batchUpsertSyncedMessages()/batchUpsertSyncedContacts() with JDBI batch INSERT ON CONFLICT.
 
 - [x] ~~**Bound sync pull and dirty push batches**~~
   Fixed in PR #280 — limit param (default 500) on findChangesSince/listDirty; hasMore field on SyncPullResponse; client loops on hasMore.

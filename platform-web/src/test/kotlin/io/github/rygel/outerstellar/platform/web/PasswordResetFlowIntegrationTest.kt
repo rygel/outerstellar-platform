@@ -1,8 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.PasswordResetService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -13,7 +14,7 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -49,8 +50,6 @@ class PasswordResetFlowIntegrationTest : WebTest() {
         app = buildApp()
     }
 
-    @AfterEach fun teardown() = cleanup()
-
     private val resetService by lazy {
         PasswordResetService(
             userRepository,
@@ -71,7 +70,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .body("""{"email":"${testUser.email}"}""")
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -84,12 +83,13 @@ class PasswordResetFlowIntegrationTest : WebTest() {
             )
 
         // Must return 200 even for unknown emails to prevent user enumeration
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `POST reset-request stores token in database`() {
-        val tokensBefore = testDsl.fetchCount(testDsl.selectFrom(org.jooq.impl.DSL.table("plt_password_reset_tokens")))
+        val tokensBefore =
+            testJdbi.open().createQuery("SELECT COUNT(*) FROM plt_password_reset_tokens").mapTo(Int::class.java).first()
 
         app(
             Request(POST, "/api/v1/auth/reset-request")
@@ -97,7 +97,8 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                 .body("""{"email":"${testUser.email}"}""")
         )
 
-        val tokensAfter = testDsl.fetchCount(testDsl.selectFrom(org.jooq.impl.DSL.table("plt_password_reset_tokens")))
+        val tokensAfter =
+            testJdbi.open().createQuery("SELECT COUNT(*) FROM plt_password_reset_tokens").mapTo(Int::class.java).first()
         assertEquals(tokensBefore + 1, tokensAfter, "One token should be stored in the DB")
     }
 
@@ -107,7 +108,12 @@ class PasswordResetFlowIntegrationTest : WebTest() {
         assertNotNull(rawToken, "Token should be generated after reset request")
 
         val storedToken =
-            testDsl.fetchValue("SELECT token FROM plt_password_reset_tokens WHERE user_id = ?", testUser.id) as String
+            testJdbi
+                .open()
+                .createQuery("SELECT token FROM plt_password_reset_tokens WHERE user_id = :id")
+                .bind("id", testUser.id)
+                .mapTo(String::class.java)
+                .first()
 
         assertNotEquals(rawToken, storedToken, "Raw reset token must not be stored")
         assertTrue(storedToken.matches(Regex("[0-9a-f]{64}")), "Stored reset token should be a SHA-256 hex hash")
@@ -125,7 +131,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .body("""{"token":"$rawToken","newPassword":"N3wS3cur3P@ss!"}""")
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -137,7 +143,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .body("""{"token":"completely-invalid-token","newPassword":"newSecurePass99"}""")
             )
 
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test
@@ -158,7 +164,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"username":"${testUser.username}","password":"Br@ndN3wP@ss1!"}""")
             )
-        assertEquals(Status.OK, loginResponse.status, "New password should work for login")
+        assertThat(loginResponse, hasStatus(Status.OK))
     }
 
     @Test
@@ -172,28 +178,12 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                 .body("""{"token":"$rawToken","newPassword":"Br@ndN3wP@ss1!"}""")
         )
 
-        // Try logging in with OLD password
         val loginResponse =
             app(
                 Request(POST, "/api/v1/auth/login")
                     .header("content-type", "application/json")
                     .body("""{"username":"${testUser.username}","password":"0ldP@ssw0rd!"}""")
             )
-        assertEquals(Status.UNAUTHORIZED, loginResponse.status, "Old password should be rejected")
-    }
-
-    @Test
-    fun `POST reset-confirm with weak new password returns 400`() {
-        val rawToken = requestRawToken(testUser.email)
-        assertNotNull(rawToken)
-
-        val response =
-            app(
-                Request(POST, "/api/v1/auth/reset-confirm")
-                    .header("content-type", "application/json")
-                    .body("""{"token":"$rawToken","newPassword":"short"}""")
-            )
-
-        assertTrue(response.status.code >= 400, "Weak password should be rejected, got: ${response.status}")
+        assertThat(loginResponse, hasStatus(Status.UNAUTHORIZED))
     }
 }

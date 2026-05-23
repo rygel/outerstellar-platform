@@ -1,10 +1,11 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,7 +19,7 @@ import org.http4k.core.Method.PUT
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -70,7 +71,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "otherapikeyuser",
                 email = "other@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
@@ -80,8 +81,6 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun bearerFor(user: User) = if (user == testUser) "Bearer $testToken" else "Bearer $otherToken"
 
@@ -99,7 +98,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"name":"Test Key"}""")
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -137,7 +136,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"name":"No Auth"}""")
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -149,7 +148,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"name":""}""")
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     // ---- List ----
@@ -157,7 +156,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
     @Test
     fun `GET api-v1-auth-api-keys returns empty list when no keys exist`() {
         val response = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", bearerFor(testUser)))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val keys = apiKeySummaryListLens(response)
         assertTrue(keys.isEmpty(), "Should return empty list when no keys have been created")
     }
@@ -211,7 +210,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
     @Test
     fun `GET api-keys without bearer returns 401`() {
         val response = app(Request(GET, "/api/v1/auth/api-keys"))
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     // ---- Delete ----
@@ -232,7 +231,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
 
         val deleteResponse =
             app(Request(DELETE, "/api/v1/auth/api-keys/$keyId").header("Authorization", bearerFor(testUser)))
-        assertEquals(Status.OK, deleteResponse.status)
+        assertThat(deleteResponse, hasStatus(Status.OK))
 
         val afterDelete =
             apiKeySummaryListLens(
@@ -244,7 +243,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
     @Test
     fun `DELETE api-keys without bearer returns 401`() {
         val response = app(Request(DELETE, "/api/v1/auth/api-keys/999"))
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     // ---- Using API key as bearer token ----
@@ -261,7 +260,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
         val apiKey = createApiKeyResponseLens(createResponse).key
 
         val syncResponse = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $apiKey"))
-        assertEquals(Status.OK, syncResponse.status, "API key should work as sync bearer token")
+        assertThat(syncResponse, hasStatus(Status.OK))
     }
 
     @Test
@@ -282,7 +281,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
 
         // Now try to use it
         val syncResponse = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $apiKey"))
-        assertEquals(Status.UNAUTHORIZED, syncResponse.status, "Deleted API key must not authenticate")
+        assertThat(syncResponse, hasStatus(Status.UNAUTHORIZED))
     }
 
     // ---- PUT /api/v1/auth/password (bearer protected) ----
@@ -296,7 +295,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"currentPassword":"$testUserPassword","newPassword":"${testPassword()}"}""")
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -308,7 +307,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"currentPassword":"wrongpass","newPassword":"${testPassword()}"}""")
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test
@@ -319,6 +318,6 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"currentPassword":"$testUserPassword","newPassword":"${testPassword()}"}""")
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 }

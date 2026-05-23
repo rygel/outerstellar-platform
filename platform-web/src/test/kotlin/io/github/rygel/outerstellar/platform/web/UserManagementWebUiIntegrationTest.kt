@@ -1,11 +1,12 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,7 +23,7 @@ import org.http4k.core.Status
 import org.http4k.core.cookie.cookie
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -40,27 +41,17 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                auditRepository = auditRepository,
-                resetRepository = passwordResetRepository,
-                apiKeyRepository = apiKeyRepository,
-                sessionRepository = sessionRepository,
-            )
+        securityService = createSecurityService()
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private data class RegisteredUser(val id: UUID, val token: String, val sessionToken: String)
 
     private fun registerUser(username: String, password: String): RegisteredUser {
         val response =
             app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, password)))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val auth = tokenLens(response)
         val userId = userRepository.findByUsername(username)!!.id
         val sessionToken = securityService.createSession(userId)
@@ -92,7 +83,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
         val admin = seedAdmin()
         val response =
             app(Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertTrue(response.bodyString().contains("User Administration"))
     }
 
@@ -103,7 +94,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
             app(
                 Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.sessionToken))
             )
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
     }
 
     @Test
@@ -135,12 +126,14 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     @Test
     fun `session timeout redirects HTML requests to auth page`() {
         val admin = seedAdmin()
-        testDsl.execute(
-            "UPDATE plt_sessions SET expires_at = TIMESTAMP '2020-01-01 00:00:00' WHERE user_id = '${admin.id}'"
-        )
+        testJdbi.useHandle<Exception> { handle ->
+            handle.execute(
+                "UPDATE plt_sessions SET expires_at = TIMESTAMP '2020-01-01 00:00:00' WHERE user_id = '${admin.id}'"
+            )
+        }
         val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
-        assertEquals(Status.FOUND, response.status)
-        assertEquals("/auth?expired=true", response.header("location"))
+        assertThat(response, hasStatus(Status.FOUND))
+        assertThat(response, org.http4k.hamkrest.hasHeader("location", "/auth?expired=true"))
     }
 
     @Test
@@ -148,7 +141,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
         val admin = seedAdmin()
         val response =
             app(Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     // ---- Navigation ----
@@ -197,7 +190,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
                     .header("Origin", "http://localhost:3000")
                     .header("Access-Control-Request-Method", "POST")
             )
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
         assertNotNull(response.header("Access-Control-Allow-Origin"))
     }
 
@@ -206,8 +199,8 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     @Test
     fun `security headers present on responses`() {
         val response = app(Request(GET, "/health"))
-        assertEquals("nosniff", response.header("X-Content-Type-Options"))
-        assertEquals("DENY", response.header("X-Frame-Options"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Content-Type-Options", "nosniff"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Frame-Options", "DENY"))
     }
 
     // ---- Correlation ID ----
@@ -230,7 +223,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     @Test
     fun `health endpoint returns json with db status`() {
         val response = app(Request(GET, "/health"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.contains("\"status\""))
         assertTrue(body.contains("\"database\""))
@@ -242,7 +235,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     fun `home page renders inside layout shell`() {
         val admin = seedAdmin()
         val response = app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", admin.token)))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.contains("drawer lg:drawer-open"))
         assertTrue(body.contains("drawer-side"))
@@ -251,7 +244,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     @Test
     fun `error pages render inside layout shell`() {
         val response = app(Request(GET, "/nonexistent-page"))
-        assertEquals(Status.NOT_FOUND, response.status)
+        assertThat(response, hasStatus(Status.NOT_FOUND))
         assertTrue(response.bodyString().contains("drawer lg:drawer-open"))
     }
 }

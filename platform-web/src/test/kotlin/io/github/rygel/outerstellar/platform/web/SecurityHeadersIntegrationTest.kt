@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,7 +14,7 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.OPTIONS
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -39,22 +39,14 @@ class SecurityHeadersIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        val securityService = createSecurityService()
 
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "headeruser",
                 email = "headers@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
@@ -63,26 +55,24 @@ class SecurityHeadersIntegrationTest : WebTest() {
         app = buildApp(securityService = securityService)
     }
 
-    @AfterEach fun teardown() = cleanup()
-
     // ---- X-Content-Type-Options ----
 
     @Test
     fun `HTML route has X-Content-Type-Options nosniff`() {
         val response = app(Request(GET, "/auth"))
-        assertEquals("nosniff", response.header("X-Content-Type-Options"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Content-Type-Options", "nosniff"))
     }
 
     @Test
     fun `API route has X-Content-Type-Options nosniff`() {
         val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
-        assertEquals("nosniff", response.header("X-Content-Type-Options"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Content-Type-Options", "nosniff"))
     }
 
     @Test
     fun `health endpoint has X-Content-Type-Options nosniff`() {
         val response = app(Request(GET, "/health"))
-        assertEquals("nosniff", response.header("X-Content-Type-Options"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Content-Type-Options", "nosniff"))
     }
 
     // ---- X-Frame-Options ----
@@ -90,13 +80,13 @@ class SecurityHeadersIntegrationTest : WebTest() {
     @Test
     fun `HTML route has X-Frame-Options DENY`() {
         val response = app(Request(GET, "/auth"))
-        assertEquals("DENY", response.header("X-Frame-Options"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Frame-Options", "DENY"))
     }
 
     @Test
     fun `API route has X-Frame-Options DENY`() {
         val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
-        assertEquals("DENY", response.header("X-Frame-Options"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Frame-Options", "DENY"))
     }
 
     // ---- Referrer-Policy ----
@@ -150,7 +140,7 @@ class SecurityHeadersIntegrationTest : WebTest() {
         // /health does not start with /api/, so it WILL get CSP
         val response = app(Request(GET, "/health"))
         // Just verify it doesn't crash — CSP presence depends on path prefix logic
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     // ---- CORS ----
@@ -169,7 +159,7 @@ class SecurityHeadersIntegrationTest : WebTest() {
                     .header("Origin", "https://example.com")
                     .header("Access-Control-Request-Method", "POST")
             )
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
         assertNotNull(response.header("Access-Control-Allow-Origin"), "CORS preflight should include Allow-Origin")
         assertNotNull(response.header("Access-Control-Allow-Methods"), "CORS preflight should include Allow-Methods")
     }

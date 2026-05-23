@@ -2,7 +2,9 @@ package io.github.rygel.outerstellar.platform.security
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 

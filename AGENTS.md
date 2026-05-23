@@ -23,8 +23,8 @@ This project uses **synchronous blocking I/O** with a planned migration to **Jav
 ```
 platform-core              Domain models, services, configuration (AppConfig, RuntimeConfig)
 platform-security          Auth, permissions, User/UserRepository, OAuth, API keys, JWT
-platform-persistence-jooq  jOOQ repositories + Flyway migrations
-platform-persistence-jdbi  JDBI repositories (alternative to jOOQ, same repository interfaces)
+platform-persistence-jdbi  JDBI repositories + Flyway migrations
+platform-test-infrastructure SharedPostgres container, TestDatabase, testing utilities
 platform-sync-client       Sync DTOs, DesktopSyncEngine (sync client logic)
 platform-web               http4k web server, JTE templates, HTMX frontend
 platform-desktop           Swing desktop client with two-way sync
@@ -34,11 +34,11 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
 
 ### Key Design Patterns
 
-- **Repository pattern**: Interfaces in `platform-core` (e.g. `MessageRepository`, `ContactRepository`), implementations in both `platform-persistence-jooq` (JooqXxxRepository) and `platform-persistence-jdbi` (JdbiXxxRepository). Never include both at runtime.
+- **Repository pattern**: Interfaces in `platform-core` (e.g. `MessageRepository`, `ContactRepository`), implementations in `platform-persistence-jdbi` (JdbiXxxRepository).
 - **Dependency injection**: Koin. Objects use `by inject()` for lazy resolution or `get()` for eager. MainComponent uses lazy delegates.
 - **http4k routes**: Contract-based routing via `bindContract`. Filters chain via `.then()`. All routes assembled in `App.kt`.
 - **JTE templates**: Precompiled in production (`JTE_PRODUCTION=true`), source-compiled in dev. Templates in `src/main/jte/`.
-- **Flyway migrations**: Source of truth for schema. jOOQ generated sources committed to version control.
+- **Flyway migrations**: Source of truth for schema.
 - **AppConfig/RuntimeConfig**: Configuration from YAML + env vars. `AppConfig.fromEnvironment()` loads `application-{PROFILE}.yaml` then `application.yaml`. All fields support env var override.
 - **WebPageFactory → domain factories**: AuthPageFactory, ErrorPageFactory, SidebarFactory, ContactsPageFactory, HomePageFactory, InfraPageFactory, SettingsPageFactory, SearchPageFactory, DevDashboardPageFactory, AdminPageFactory. All delegate from the original WebPageFactory.
 
@@ -49,7 +49,49 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
   - `start-web.ps1`
   - `stop-web.ps1`
   - `start-swing.ps1`
-  - `generate-jooq.ps1`
+
+### Container runtime (Podman)
+
+**Podman 5.8.2** is available on this machine with rootful mode enabled, providing Docker API compatibility at `npipe:////./pipe/docker_engine`. Testcontainers uses this automatically — no `DOCKER_HOST` configuration needed.
+
+```powershell
+# Check Podman status
+podman machine list
+
+# Start if stopped (must be rootful for Docker API forwarding)
+podman machine start
+
+# Verify Docker API compatibility
+docker ps
+```
+
+**Before running integration tests**, ensure the Podman machine is running (`podman machine start`). All Testcontainers-based integration tests (WebTest, JdbiTest) require it. If tests fail with `NoClassDefFoundError` on test classes, the Podman machine is likely stopped.
+
+### Test timeout guardrails
+
+The full non-desktop reactor build (6 modules) must complete in **under 20 minutes**. If it exceeds 20 minutes, something is wrong — investigate immediately.
+
+Existing timeouts enforced by Maven Surefire:
+
+| Timeout | Value | Scope |
+|---|---|---|
+| `forkedProcessTimeoutInSeconds` | 300 (5 min) | Kills an entire Surefire fork if it hangs |
+| `junit.jupiter.execution.timeout.default` | 120s (2 min) | Fails a single test method if it takes too long |
+
+These prevent individual hangs but do NOT limit total build time. For total-build enforcement:
+- **CI workflows** set `timeout-minutes: 20` on the test job.
+- **Locally**, use `scripts/test.ps1` — wraps `mvn clean verify` with a hard 20-minute kill switch and warns if the build exceeds 75% of the limit.
+
+```powershell
+# Full build with 20-minute timeout (default)
+pwsh scripts/test.ps1
+
+# Quick iteration — single module, skip quality checks
+pwsh scripts/test.ps1 -Modules platform-web -SkipQuality
+
+# Custom timeout
+pwsh scripts/test.ps1 -TimeoutMinutes 10 -Modules platform-core
+```
 
 ### Test execution
 
@@ -57,16 +99,33 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
 # Full build excluding desktop modules (PowerShell)
 # NOTE: `-pl,!platform-desktop,!platform-desktop-javafx` does NOT work via PowerShell + cmd.exe
 # Use explicit module list instead:
-mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 
-# Run a specific test
-mvn -pl platform-web test -Dtest=HealthCheckIntegrationTest
+# Run a specific test in a specific module (ALWAYS use -am to rebuild upstream modules)
+mvn -pl platform-web -am test -Dtest=HealthCheckIntegrationTest
 
 # Skip CSS build when tests hang on npm
-mvn -pl platform-web test -Dexec.skip=true
+mvn -pl platform-web -am test -Dexec.skip=true
 
 # Skipping quality checks for fast iteration
 mvn -pl platform-web compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
+```
+
+### Stale classpath prevention
+
+**Always use `-am` (also-make) when running `-pl` (project list).** Without `-am`, Maven resolves
+upstream dependencies from `~/.m2/repository/` which may contain stale SNAPSHOT JARs, causing
+phantom test failures that don't exist in the source code.
+
+```powershell
+# WRONG — resolves upstream from ~/.m2/ (may be stale)
+mvn -pl platform-web test
+
+# CORRECT — rebuilds upstream modules first, uses fresh reactor output
+mvn -pl platform-web -am test
+
+# Full reactor build (always safe, no -am needed)
+mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 ```
 
 ### Desktop Tests in Podman
@@ -111,17 +170,11 @@ There are TWO `UserRole` enums — one in `platform-core` (model package) and on
 - Database migration:
   - `-Pmigrate` runs standalone migration via `MigratorKt`.
 
-## jOOQ and database schema rules
+## Database schema rules
 
 - Flyway migrations are the schema source of truth.
-- jOOQ generated sources are version controlled under:
-  - `platform-persistence-jooq/src/main/generated/jooq`
-- Do not rely on implicit jOOQ generation during normal `compile`/`test`.
-- When schema-relevant changes are made (migration changes, jOOQ config changes), regenerate and commit generated files:
-  - `mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources`
-  - or `./generate-jooq.ps1`
-- Migration and generated source changes should be committed together.
 - Naming convention: `V{version}__{description}.sql` (Flyway default).
+- Migration changes should be committed with corresponding code changes.
 
 ## Swing theming and i18n rules
 
@@ -140,6 +193,7 @@ All configuration is read from `application.yaml` (or `application-{profile}.yam
 
 | YAML Key | Env Var | Default | Description |
 |---|---|---|---|
+| `version` | `APP_VERSION` | `dev` | Application version shown in footer |
 | `port` | `PORT` | 8080 | HTTP server port |
 | `jdbcUrl` | `JDBC_URL` | `jdbc:postgresql://localhost:5432/outerstellar` | Database URL |
 | `jdbcUser` | `JDBC_USER` | `outerstellar` | Database user |
@@ -178,24 +232,44 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 | Desktop main | `SwingSyncApp.kt` (SyncWindow, SyncWindowMenu, SyncWindowNav) |
 | Desktop dialogs | `SyncDialogs.kt` (630 lines) |
 | Sync engine | `DesktopSyncEngine.kt` in `platform-sync-client` |
-| Migrations | `platform-persistence-jooq/src/main/resources/db/migration/` |
+| Migrations | `platform-persistence-jdbi/src/main/resources/db/migration/` |
+| Test infrastructure | `platform-test-infrastructure` (`SharedPostgres`, `TestDatabase`) |
+| Web test base | `platform-web/src/test/kotlin/.../web/WebTest.kt` |
+| Jdbi test base | `platform-persistence-jdbi/src/test/kotlin/.../persistence/JdbiTest.kt` |
 
 ## Testing expectations
 
+Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
+
 - Prefer module-focused validation first, then broader reactor validation when changes cross modules.
 - Minimum for persistence/schema changes:
-  - `mvn -pl platform-persistence-jooq test`
+  - `mvn -pl platform-persistence-jdbi test`
 - Minimum for Swing UI/theming changes:
   - `mvn -pl platform-desktop -Ptests-headless test`
 - Minimum for web changes:
   - `mvn -pl platform-web test -Dexec.skip=true`
 - **Full reactor must exclude desktop modules** when running locally:
   ```bash
-  mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+  mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
   ```
 - Desktop tests via Podman (see Podman section above).
 - Playwright E2E tests are tagged `@Tag("e2e")` and run in CI via Docker E2E workflow.
 - After any `mvn clean install -DskipTests` that changes compiled production code in a dependency module, the dependent module's test classpath may hold stale classes. Always do `mvn clean test` or `mvn clean install -DskipTests` before running tests in downstream modules.
+
+### http4k testing conventions
+
+- All HTTP assertions use hamkrest matchers (`HttpMatchers.kt`). New tests should use `assertThat(response, hasStatus(...))` instead of raw `assertEquals`.
+- Approval tests live in `src/test/kotlin/.../approval/`. Golden files (`.approved`) in `src/test/resources/`.
+- WebDriver and Chaos tests are proof-of-concept — expand as needed.
+
+### Shared PostgreSQL container conventions
+
+- `platform-test-infrastructure` provides `SharedPostgres` (singleton reused container) and `TestDatabase` (per-class DB handle).
+- `WebTest` and `JdbiTest` both use `@TestInstance(PER_CLASS)` — each test class gets its own database, dropped in `@AfterAll`.
+- `@AfterEach` row deletion cleans between methods within a class. No manual `cleanup()` calls needed.
+- platform-web Surefire config: `parallel=classes`, `threadCount=4`. Classes run concurrently (each has its own DB), methods run sequentially.
+- Never create your own PostgreSQL container — extend `WebTest` or `JdbiTest`.
+- Never use `testJdbi.open()` — it leaks connections. Use `testJdbi.withHandle { }` or `testJdbi.useHandle<Exception> { }`.
 
 ## Project Status (as of May 2026)
 
@@ -224,6 +298,108 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 - Search SPI (SearchProvider interface)
 - Export SPI (CSV/JSON export)
 - Jazzer fuzz tests
+
+## http4k contract routing rules
+
+These are hard-won rules from actual failures. Violating them produces compile errors or wrong runtime behavior.
+
+### Path parameters with the `/` operator
+
+`Path.string().of("id")` creates a path lens. Chaining with `/ "literal"` creates a **multi-segment** route spec. The handler lambda arity MUST match:
+
+```kotlin
+// Single path param — 1-arg handler
+"/api/v1/polls" / syncIdPath meta { ... } bindContract GET to
+    { syncId -> { req -> Response(...) } }
+
+// Path param + literal suffix — 2-arg handler (second arg is the literal, always ignore with _)
+"/api/v1/polls" / syncIdPath / "vote" meta { ... } bindContract POST to
+    { syncId, _ -> { req -> Response(...) } }
+```
+
+Getting the arity wrong is a **compile error**, not a runtime error. The compiler catches it — but only if you compile.
+
+### Reference implementation
+
+`HomeRoutes.kt` in `platform-web` is the canonical working example of path-param contract routes. **Always read it before writing new contract routes.** Do not guess at the DSL syntax.
+
+### ServerRoutes interface
+
+Route classes consumed by `App.kt` must implement `ServerRoutes` and return `List<ContractRoute>` from `routes`. Do not remove this interface — `App.kt` uses `+=` to add them. If a class cannot implement `ServerRoutes` (e.g. returns `Pair<Binder, ContractRoute>`), the return type is wrong and the route DSL is being used incorrectly.
+
+## Agent discipline: read before write, verify after write
+
+These rules exist because an agent repeatedly caused multi-hour debugging sessions by skipping them.
+
+### Read existing patterns before writing
+
+Before writing or rewriting code in an unfamiliar DSL or framework pattern:
+1. **Find a working reference** in the same codebase (e.g. `HomeRoutes.kt` for http4k contract routes)
+2. **Read it fully** — understand every import, operator, lambda arity, and return type
+3. **Copy the pattern mechanically** — do not improvise or assume syntax
+
+Guessing at framework DSLs and "fixing" compile errors iteratively is wasteful. The reference implementation already exists.
+
+### Compile after every file change
+
+After editing a file, compile immediately:
+```powershell
+mvn -pl <module> compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"
+```
+
+Do not batch 5 file rewrites and then compile. Errors compound and become harder to diagnose.
+
+### Run tests before declaring work done
+
+After all files compile, run the relevant tests before pushing:
+```powershell
+mvn -pl <module> test -Dtest=<TestClass>
+```
+
+Do not push code that has not been compiled and tested locally. CI round-trips waste time.
+
+### Do not chain guesses
+
+If a fix introduces a new error, **stop and read the reference implementation** instead of guessing again. Each wrong guess adds cognitive load and makes the next guess worse. The pattern is:
+
+```
+Write → Compile → FAIL → Read reference → Fix → Compile → PASS
+```
+
+Not:
+
+```
+Write → Compile → FAIL → Guess fix → Compile → FAIL → Guess fix → Compile → FAIL → ...
+```
+
+## Commit gate: all local tests must pass
+
+Before every commit, the following MUST be true:
+
+1. **All non-desktop tests pass locally.** Run the full reactor build:
+   ```powershell
+   mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+   ```
+   If any test fails, fix it before committing. Do not commit failing tests.
+
+2. **Desktop/UI tests must run in Podman containers.** Desktop/Swing tests must NEVER run directly on the host machine — they capture mouse and keyboard. Use:
+   ```powershell
+   podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
+   podman run --rm --network host -v "${env:USERPROFILE}\.m2\repository:/root/.m2/repository" -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml" -v "/var/run/docker.sock:/var/run/docker.sock" outerstellar-test-desktop
+   ```
+
+**Do not commit if either of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
+
+## Testing discipline
+
+Full test architecture, patterns, and conventions are documented in **[docs/testing.md](docs/testing.md)**. Read it before writing any new tests.
+
+Key rules:
+- **Full end-to-end tests only. Zero smoke tests.** Every test must assert meaningful behavior: correct data, correct state transitions, correct error handling. Checking only an HTTP status code is a smoke test — write a real test instead.
+- Integration tests exercise the full stack (filters → routes → services → persistence → database). They are the standard, not the exception.
+- Never create your own PostgreSQL container — extend `WebTest` or `JdbiTest`.
+- Never use `TemplateEngine.create(DirectoryCodeResolver(...))` in tests — always use precompiled templates.
+- Never run desktop tests on the host — use Podman containers.
 
 ## Safety and repository hygiene
 

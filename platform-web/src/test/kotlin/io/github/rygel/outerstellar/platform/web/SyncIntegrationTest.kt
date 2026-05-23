@@ -1,8 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.mockk.mockk
@@ -13,15 +14,9 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 
 class SyncIntegrationTest : WebTest() {
-
-    @AfterEach
-    fun teardown() {
-        cleanup()
-    }
-
     @Test
     fun `can pull changes from api`() {
         val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
@@ -32,7 +27,7 @@ class SyncIntegrationTest : WebTest() {
                 id = adminId,
                 username = "admin",
                 email = "admin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         )
@@ -49,7 +44,7 @@ class SyncIntegrationTest : WebTest() {
 
         val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $adminToken"))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val pullResponse = KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
         assertEquals(2, pullResponse.messages.size)
     }

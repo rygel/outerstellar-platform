@@ -1,12 +1,12 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.service.MessageService
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.http4k.core.Method.GET
@@ -16,7 +16,7 @@ import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -36,16 +36,7 @@ class MessageRestoreIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
-        sec =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),
@@ -61,8 +52,6 @@ class MessageRestoreIntegrationTest : WebTest() {
         val txManager = StubTransactionManager()
         messageService = MessageService(messageRepository, outbox, txManager, cache)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun buildTestApp() = buildApp(securityService = sec)
 
@@ -81,7 +70,7 @@ class MessageRestoreIntegrationTest : WebTest() {
 
         val response = app(Request(POST, "/messages/restore/$syncId").cookie(sessionCookie))
 
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location")?.contains("/messages/trash") == true)
     }
 
@@ -120,7 +109,7 @@ class MessageRestoreIntegrationTest : WebTest() {
         val app = buildTestApp()
         val response = app(Request(POST, "/messages/restore/non-existent-sync-id").cookie(sessionCookie))
         // Should redirect, not throw a 500
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
     }
 
     @Test
@@ -140,7 +129,7 @@ class MessageRestoreIntegrationTest : WebTest() {
 
         // Restore via HTTP
         val restoreResponse = app(Request(POST, "/messages/restore/$syncId").cookie(sessionCookie))
-        assertEquals(Status.FOUND, restoreResponse.status)
+        assertThat(restoreResponse, hasStatus(Status.FOUND))
 
         // Confirm restored
         assertTrue(messageRepository.listMessages(limit = 10, includeDeleted = false).any { it.syncId == syncId })

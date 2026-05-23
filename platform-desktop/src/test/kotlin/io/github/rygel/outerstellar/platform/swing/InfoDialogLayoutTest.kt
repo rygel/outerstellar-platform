@@ -1,11 +1,12 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
-import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
-import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import io.mockk.mockk
 import java.awt.GraphicsEnvironment
 import java.util.Locale
@@ -17,8 +18,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 class InfoDialogLayoutTest {
-    private val messageService = mockk<MessageService>(relaxed = true)
-    private val syncService = mockk<SyncService>(relaxed = true)
 
     companion object {
         @JvmStatic
@@ -31,17 +30,25 @@ class InfoDialogLayoutTest {
         }
     }
 
+    private fun createVm(i18n: I18nService): SyncViewModel {
+        val authModule = mockk<AuthModule>(relaxed = true)
+        val syncDataModule = mockk<SyncDataModule>(relaxed = true)
+        val profileModule = mockk<ProfileModule>(relaxed = true)
+        val adminModule = mockk<AdminModule>(relaxed = true)
+        val notificationModule = mockk<NotificationModule>(relaxed = true)
+        return SyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18n)
+    }
+
     @Test
     fun `info dialog action button is anchored below content`() {
         val i18n = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
-        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
-        val viewModel = SyncViewModel(engine, i18n)
+        val viewModel = createVm(i18n)
         val window = runOnEdtResult { SyncWindow(viewModel, ThemeManager(), i18n) }
 
         runOnEdt { window.configureForTest() }
         val dialog = runOnEdtResult { window.buildInfoDialog("About", "Some message text", null) }
         runOnEdt {
-            dialog.pack() // force MigLayout to size and position all children
+            dialog.pack()
             dialog.validate()
         }
 
@@ -50,8 +57,6 @@ class InfoDialogLayoutTest {
             val closeButton = findByName<JButton>(dialog, "infoDialogCloseButton")
             val pane = dialog.contentPane
 
-            // Convert component positions to dialog content-pane coordinates so we compare
-            // the same coordinate space (components live in different nested panels).
             val msgY = SwingUtilities.convertPoint(messageArea.parent, 0, messageArea.y, pane).y
             val btnY = SwingUtilities.convertPoint(closeButton.parent, 0, closeButton.y, pane).y
 

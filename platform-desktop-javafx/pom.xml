@@ -21,7 +21,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-persistence-jooq</artifactId>
+            <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>

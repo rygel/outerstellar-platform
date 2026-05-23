@@ -3,7 +3,7 @@ package io.github.rygel.outerstellar.platform.swing
 import io.github.rygel.outerstellar.platform.infra.migrate
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
 import javax.sql.DataSource
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -60,7 +60,7 @@ class SwingStartupE2ETest : KoinTest {
         migrate(dataSource)
 
         assertNotNull(get<MessageService>())
-        assertNotNull(get<SyncService>())
+        assertNotNull(get<AuthModule>())
         assertNotNull(get<SyncViewModel>())
     }
 }

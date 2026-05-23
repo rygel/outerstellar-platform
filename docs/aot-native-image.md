@@ -328,11 +328,22 @@ platform-web/src/main/resources/META-INF/native-image/io.github.rygel/outerstell
 | hoplite config parsers | ~5 | YAML, property file parsers |
 | Resource bundles | 4 | `messages.properties`, `messages_fr.properties`, `themes.json` |
 
+### Drift Prevention
+
+The metadata must stay in sync with actual classpath files. Three mechanisms prevent drift:
+
+1. **Build-time test** — `NativeResourceDriftTest` validates that all migrations, i18n bundles, and config files are listed. It fails the build if any are missing or stale.
+
+2. **Generation script** — `scripts/generate-reachability-resources.ps1` scans classpath files and outputs JSON entries for pasting into `reachability-metadata.json`.
+
+3. **Runtime self-check** — `NativeStartupCheck` runs on native-image startup and verifies critical resources are accessible. It fails fast with actionable error messages if anything is missing.
+
 ### When to Update
 
 Update the metadata when:
 
 - Adding new JTE templates (add the generated class to both `JteClassRegistry` and `reachability-metadata.json`)
+- Adding new Flyway migrations (the drift test will catch it, then run `scripts/generate-reachability-resources.ps1`)
 - Adding new dependencies that use reflection (run the tracing agent to detect them)
 - Changing logging configuration (Logback classes may differ)
 - Adding new i18n resource bundles

@@ -1,27 +1,19 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import org.http4k.core.Method
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
+import org.http4k.hamkrest.hasStatus
 
 class UnauthenticatedRouteAccessTest : WebTest() {
 
-    private lateinit var app: org.http4k.core.HttpHandler
-
-    @BeforeEach
-    fun setupTest() {
-        app = buildApp()
-    }
-
-    @AfterEach fun teardown() = cleanup()
+    private val app by lazy { buildApp() }
 
     private fun assertRedirectsToAuth(request: Request) {
         val response = app(request)
-        assertEquals(Status.FOUND, response.status, "Expected redirect to auth for ${request.method} ${request.uri}")
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location") ?: ""
         assert(location.contains("/auth")) {
             "Expected redirect to /auth, got: $location for ${request.method} ${request.uri}"
@@ -30,7 +22,7 @@ class UnauthenticatedRouteAccessTest : WebTest() {
 
     private fun assertUnauthorized(request: Request) {
         val response = app(request)
-        assertEquals(Status.UNAUTHORIZED, response.status, "Expected 401 for ${request.method} ${request.uri}")
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test

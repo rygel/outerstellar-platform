@@ -6,7 +6,11 @@ import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
 import io.github.rygel.outerstellar.platform.model.PagedResult
 import io.github.rygel.outerstellar.platform.model.PaginationMetadata
 import io.github.rygel.outerstellar.platform.service.MessageService
-import io.github.rygel.outerstellar.platform.sync.SyncService
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import io.mockk.every
 import io.mockk.mockk
 import java.util.Locale
@@ -47,7 +51,11 @@ class ThemeSwitchE2ETest {
             every { messageService.listMessages(any(), any(), any(), any()) } returns
                 PagedResult(emptyList(), PaginationMetadata(1, 100, 0))
 
-            val syncService = mockk<SyncService>(relaxed = true)
+            val authModule = mockk<AuthModule>(relaxed = true)
+            val syncDataModule = mockk<SyncDataModule>(relaxed = true)
+            val profileModule = mockk<ProfileModule>(relaxed = true)
+            val adminModule = mockk<AdminModule>(relaxed = true)
+            val notificationModule = mockk<NotificationModule>(relaxed = true)
 
             val testModule = module {
                 single { FxAppConfig() }
@@ -57,7 +65,11 @@ class ThemeSwitchE2ETest {
                 single { FxThemeManager() }
                 single<I18nService> { I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) } }
                 single { messageService }
-                single { syncService }
+                single<AuthModule> { authModule }
+                single<SyncDataModule> { syncDataModule }
+                single<ProfileModule> { profileModule }
+                single<AdminModule> { adminModule }
+                single<NotificationModule> { notificationModule }
                 single<io.github.rygel.outerstellar.platform.persistence.MessageCache> {
                     io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
                 }

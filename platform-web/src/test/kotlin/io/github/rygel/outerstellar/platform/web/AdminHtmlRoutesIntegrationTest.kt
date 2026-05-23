@@ -1,11 +1,11 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
@@ -15,7 +15,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -41,13 +41,12 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
         adminUser =
             User(
                 id = UUID.randomUUID(),
                 username = "adminhtml",
                 email = "adminhtml@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -55,28 +54,18 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "regularhtml",
                 email = "regularhtml@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         adminToken = securityService.createSession(adminUser.id)
         regularToken = securityService.createSession(regularUser.id)
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun adminCookie() = Cookie(WebContext.SESSION_COOKIE, adminToken)
 
@@ -85,7 +74,7 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
     @Test
     fun `GET admin-users returns 200 for admin`() {
         val response = app(Request(GET, "/admin/users").cookie(adminCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -111,7 +100,7 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
     @Test
     fun `GET admin-users-export returns CSV with correct content-type`() {
         val response = app(Request(GET, "/admin/users/export").cookie(adminCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val contentType = response.header("Content-Type") ?: ""
         assertTrue(contentType.contains("text/csv"), "Should return CSV content-type, got: $contentType")
     }
@@ -143,7 +132,7 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
     @Test
     fun `GET admin-audit returns 200 for admin`() {
         val response = app(Request(GET, "/admin/audit").cookie(adminCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -155,12 +144,12 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
     @Test
     fun `POST admin-users toggle-enabled returns 200 for admin`() {
         val response = app(Request(POST, "/admin/users/${regularUser.id}/toggle-enabled").cookie(adminCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `POST admin-users toggle-role returns 200 for admin`() {
         val response = app(Request(POST, "/admin/users/${regularUser.id}/toggle-role").cookie(adminCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 }

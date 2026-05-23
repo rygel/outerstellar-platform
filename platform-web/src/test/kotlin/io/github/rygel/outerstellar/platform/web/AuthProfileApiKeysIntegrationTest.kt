@@ -1,8 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,7 +18,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -33,7 +34,6 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
         testUser =
             User(
                 id = UUID.randomUUID(),
@@ -44,21 +44,11 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        securityService = createSecurityService()
         testToken = securityService.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
 
@@ -70,14 +60,14 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
     @Test
     fun `GET auth-profile without session redirects to auth`() {
         val response = app(Request(GET, "/auth/profile"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
     @Test
     fun `GET auth-profile with valid session returns 200`() {
         val response = app(Request(GET, "/auth/profile").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -90,7 +80,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .body(formBody("email" to "updated@test.com"))
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val saved = userRepository.findById(testUser.id)
         assertEquals("updated@test.com", saved?.email)
     }
@@ -103,7 +93,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("email" to "noauth@test.com"))
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -124,7 +114,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "taken_user",
                 email = "taken@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(other)
@@ -137,7 +127,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .body(formBody("email" to testUser.email, "username" to "taken_user"))
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertEquals("htmltestuser", userRepository.findById(testUser.id)?.username)
     }
 
@@ -188,7 +178,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("emailNotifications" to "on"))
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     // ---- Delete account ----
@@ -202,7 +192,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("currentPassword" to "correct-password"))
             )
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location").orEmpty().contains("deleted=true"))
         assertNull(userRepository.findById(testUser.id))
     }
@@ -215,7 +205,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("currentPassword" to "correct-password"))
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -239,7 +229,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("currentPassword" to "admin123"))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertNotNull(userRepository.findById(adminUser.id))
     }
 
@@ -248,14 +238,14 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
     @Test
     fun `GET api-keys without session redirects to auth`() {
         val response = app(Request(GET, "/auth/api-keys"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
     @Test
     fun `GET api-keys with valid session returns 200`() {
         val response = app(Request(GET, "/auth/api-keys").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -267,7 +257,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("name" to ""))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertFalse(response.bodyString().contains("osk_"))
     }
 
@@ -280,7 +270,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("name" to "My Integration Key"))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertTrue(response.bodyString().contains("osk_"))
     }
 
@@ -292,7 +282,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("name" to "Key"))
             )
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
@@ -306,7 +296,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
     @Test
     fun `GET auth-reset with token param renders the form`() {
         val response = app(Request(GET, "/auth/reset/some-token-value"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertTrue(response.bodyString().isNotBlank())
     }
 
@@ -324,7 +314,7 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                         )
                     )
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -336,6 +326,6 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("token" to "not-a-real-token", "newPassword" to pwd, "confirmPassword" to pwd))
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 }

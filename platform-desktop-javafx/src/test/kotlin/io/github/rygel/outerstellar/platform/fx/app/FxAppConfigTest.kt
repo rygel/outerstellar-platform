@@ -44,7 +44,7 @@ class FxAppConfigTest {
                 "JDBC_USER" to "admin",
                 "JDBC_PASSWORD" to "secret",
                 "DEV_MODE" to "true",
-                "VERSION" to "2.0.0",
+                "APP_VERSION" to "2.0.0",
             )
         val config = FxAppConfig.fromEnvironment(env)
         assertThat(config.serverBaseUrl).isEqualTo("https://prod.example.com")
