@@ -3,6 +3,7 @@ package io.github.rygel.outerstellar.platform
 import io.github.rygel.outerstellar.platform.di.coreModule
 import io.github.rygel.outerstellar.platform.di.persistenceModule
 import io.github.rygel.outerstellar.platform.di.webModule
+import io.github.rygel.outerstellar.platform.infra.NativeStartupCheck
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
 import io.github.rygel.outerstellar.platform.security.PasswordEncoder
@@ -40,6 +41,7 @@ object MainComponent : KoinComponent {
 }
 
 fun main() {
+    NativeStartupCheck.run()
     val t0 = System.currentTimeMillis()
 
     startKoin { modules(configModule, persistenceModule, coreModule, webModule, securityModule) }

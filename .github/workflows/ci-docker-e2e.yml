@@ -24,6 +24,7 @@ jobs:
   docker-e2e:
     name: Docker E2E Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: ci
     permissions:
       contents: read

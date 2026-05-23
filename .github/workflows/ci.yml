@@ -17,6 +17,7 @@ jobs:
   build:
     name: Build, Test, and Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: ci
     permissions:
       contents: read
@@ -69,6 +70,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -79,6 +81,7 @@ jobs:
     name: Unit Tests (${{ matrix.modules }})
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: ci
     permissions:
       contents: read
@@ -116,6 +119,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -150,6 +154,7 @@ jobs:
     name: Desktop Tests (Xvfb)
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: ci
     permissions:
       contents: read
@@ -177,6 +182,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -190,7 +196,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-persistence-jdbi,platform-sync-client,platform-security
+          -pl platform-core,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -208,6 +214,7 @@ jobs:
     name: Playwright E2E Tests
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: ci
     permissions:
       contents: read
@@ -235,6 +242,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -245,7 +253,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
+          -pl platform-core,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
           -DskipTests -Dexec.skip=true -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -265,6 +273,7 @@ jobs:
     name: PostgreSQL Integration Tests
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: ci
     permissions:
       contents: read
@@ -307,6 +316,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -338,6 +348,7 @@ jobs:
     name: Coverage Report
     needs: unit-tests
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     if: always()
@@ -360,6 +371,7 @@ jobs:
   security:
     name: Security (OWASP + Enforcer)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: ci
     permissions:
       contents: read
