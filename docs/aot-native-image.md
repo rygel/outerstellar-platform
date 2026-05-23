@@ -17,6 +17,8 @@ This guide covers building and running the Outerstellar Platform web server as a
 11. [Updating Metadata with the Tracing Agent](#updating-metadata-with-the-tracing-agent)
 12. [Troubleshooting](#troubleshooting)
 
+**Related**: [ADR-0002: Native-image Docker build layering strategy](adr/0002-native-image-docker-build-layering.md)
+
 ---
 
 ## Prerequisites
@@ -138,31 +140,99 @@ curl http://localhost:9091/health
 
 ## Building with Docker (Linux)
 
-For production Linux binaries, use the multi-stage `Dockerfile.native`:
+For production Linux binaries, use the unified `Dockerfile.build` with the `native-runtime` target. **Always use `podman` — never `docker`.**
+
+**Architecture decision**: See [ADR-0002](adr/0002-native-image-docker-build-layering.md) for the layering strategy and rationale.
 
 ```bash
-# Build the native image inside a container
-docker build -f docker/Dockerfile.native -t outerstellar-platform:native .
+# Build the native image inside a container (use podman, never docker)
+podman build --target native-runtime -f docker/Dockerfile.build -t outerstellar-native .
 
-# Run it
-docker run --rm \
+# Build JVM runtime instead
+podman build --target jvm-runtime -f docker/Dockerfile.build -t outerstellar-jvm .
+
+# Build desktop test runner
+podman build --target desktop-test -f docker/Dockerfile.build -t outerstellar-test-desktop .
+
+# Run native image
+podman run --rm \
   -p 8080:8080 \
   -e JDBC_URL=jdbc:postgresql://host.docker.internal:5432/outerstellar \
   -e JDBC_USER=outerstellar \
   -e JDBC_PASSWORD=outerstellar \
   -e SESSIONCOOKIESECURE=false \
-  outerstellar-platform:native
+  outerstellar-native
 ```
 
-### Dockerfile stages
+### Dockerfile.build targets
 
-| Stage | Base image | Purpose |
+The unified `Dockerfile.build` supports three `--target` values. All share the same `deps` + `builder` stages for maximum caching (see [ADR-0002](adr/0002-native-image-docker-build-layering.md)):
+
+| Target | Base image | Purpose | Size |
+|---|---|---|---|
+| `jvm-runtime` | `eclipse-temurin:21-jre-alpine` | JVM runtime (JAR) | ~249 MB |
+| `native-runtime` | `debian:bookworm-slim` | GraalVM native binary | ~203 MB |
+| `desktop-test` | `maven:3.9-eclipse-temurin-21` | Desktop Swing test runner (Xvfb) | ~794 MB |
+
+### Build caching
+
+The Dockerfile uses BuildKit `--mount=type=cache` for Maven and npm downloads. These caches persist across builds and are **not** invalidated by source changes:
+
+- `/root/.m2/repository` — Maven dependency cache
+- `/root/.npm` — npm cache
+
+CI uses GitHub Actions cache (`cache-from: type=gha`) for cross-build persistence.
+
+### Expected build times
+
+| Scenario | Time | Notes |
 |---|---|---|
-| `builder` | `maven:3.9-eclipse-temurin-21` | Compiles fat JAR with Maven + Node.js (for Tailwind) |
-| `native-builder` | `ghcr.io/graalvm/native-image-community:25.0.2` | Runs `native-image` on the fat JAR |
-| Final | `debian:bookworm-slim` | Minimal runtime image with `libstdc++6` only |
+| Cold build (no cache) | ~4 min | Full download + compile |
+| Source change (most common) | ~2.5 min | Dependency and CSS layers cached |
+| CSS-only change | ~1 min | Only CSS stage rebuilds |
+| Repeated build (no changes) | ~30s | All layers cached |
 
-The final image is ~220 MB. The binary runs as a non-root user (`appuser`).
+### Optimization levels
+
+The Dockerfile accepts an `OPT_LEVEL` build-arg:
+
+```bash
+# Fast compilation (PR builds, local iteration)
+podman build --build-arg OPT_LEVEL=1 --target native-runtime -f docker/Dockerfile.build -t outerstellar-native .
+
+# Optimized binary (production, push to main)
+podman build --build-arg OPT_LEVEL=2 --target native-runtime -f docker/Dockerfile.build -t outerstellar-native .
+```
+
+### Local development workflow
+
+For fast iteration, reuse test infrastructure between rebuilds:
+
+```powershell
+# One-time: create test network + database
+podman network create rq-test
+podman run -d --name rq-test-db --network rq-test `
+  -e POSTGRES_USER=outerstellar -e POSTGRES_PASSWORD=outerstellar -e POSTGRES_DB=outerstellar `
+  postgres:18
+
+# Per-iteration: rebuild, restart app only
+podman build --target native-runtime -t outerstellar-native -f docker/Dockerfile.build .
+podman rm -f rq-test-app 2>$null
+podman run -d --name rq-test-app --network rq-test `
+  -e JDBC_URL=jdbc:postgresql://rq-test-db:5432/outerstellar `
+  -e JDBC_USER=outerstellar -e JDBC_PASSWORD=outerstellar `
+  -e DEVMODE=true -e SESSIONCOOKIESECURE=false `
+  outerstellar-native
+
+# Verify
+Start-Sleep 3
+podman exec rq-test-app curl -sf http://localhost:8080/health
+
+# Cleanup (when done with all testing)
+podman rm -f rq-test-app rq-test-db; podman network rm rq-test
+```
+
+The final image is ~203 MB. The binary runs as a non-root user (`appuser`).
 
 ---
 
@@ -390,7 +460,7 @@ Native mode: JteClassRegistry.getTemplateClass() → Template(name, class) → r
 
 ### Adding a New Template
 
-When you add a new `.kte` template file, you must update **three places**:
+When you add a new `.kte` template file, you must update **two places** (the `NativeResourcesExtension` auto-generates reflection entries):
 
 1. **Create the template file** — e.g., `platform-web/src/main/jte/pages/myPage.kte`
 
@@ -406,15 +476,7 @@ When you add a new `.kte` template file, you must update **three places**:
    )
    ```
 
-3. **Add to `reachability-metadata.json`** — Register the generated class for reflection:
-
-   ```json
-   {
-     "type": "gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.platform.web.JteMyPageGenerated",
-     "allDeclaredFields": true,
-     "allDeclaredMethods": true
-   }
-   ```
+   The `NativeResourcesExtension` (configured in `platform-web/pom.xml` as a plugin dependency of `jte-maven-plugin`) automatically registers the generated class in `META-INF/native-image/jte-generated/reflection-config.json` at build time. No manual `reachability-metadata.json` edits are needed for JTE templates.
 
 The diagnostic log at startup confirms registration:
 
@@ -425,7 +487,7 @@ INFO  JteInfra - Preloaded 34 template classes, 0 not found
 
 ### Future Removal
 
-This workaround is needed because JTE 3.2.4 lacks a `NativeResourcesExtension`. When JTE releases a version with native-image support (expected in 3.2.5+), the registry can be replaced with `TemplateEngine.createPrecompiled(...)` and the standard JTE production path.
+The `JteClassRegistry` manual class loading is a safety net. The `jte-native-resources` dependency and `NativeResourcesExtension` now auto-generate `reflection-config.json` at build time, registering all generated JTE template classes for GraalVM reflection. If the extension proves reliable across all templates, `JteClassRegistry` can be simplified to only handle edge cases.
 
 ---
 

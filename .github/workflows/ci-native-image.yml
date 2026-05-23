@@ -4,14 +4,14 @@ on:
   push:
     branches: [main, develop]
     paths:
-      - 'docker/Dockerfile.native'
+      - 'docker/Dockerfile.build'
       - 'platform-web/**'
       - 'platform-persistence-jdbi/src/main/resources/db/migration/**'
       - 'pom.xml'
   pull_request:
     branches: [main, develop]
     paths:
-      - 'docker/Dockerfile.native'
+      - 'docker/Dockerfile.build'
       - 'platform-web/**'
       - 'platform-persistence-jdbi/src/main/resources/db/migration/**'
       - 'pom.xml'
@@ -62,7 +62,8 @@ jobs:
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
-          file: docker/Dockerfile.native
+          file: docker/Dockerfile.build
+          target: native-runtime
           tags: outerstellar-platform:native
           load: true
           cache-from: type=gha
@@ -110,9 +111,9 @@ jobs:
 
       - name: Verify static assets return 200
         run: |
-          STATUS=$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:8080/static/site.css)
+          STATUS=$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:8080/site.css)
           if [ "$STATUS" != "200" ]; then
-            echo "FAIL: Static CSS returned $STATUS (expected 200)"
+            echo "FAIL: site.css returned $STATUS (expected 200)"
             docker logs outerstellar-native
             exit 1
           fi
@@ -130,7 +131,7 @@ jobs:
           echo "Root route OK (returned $RESPONSE)"
 
           # Auth page must render HTML
-          AUTH_BODY=$(curl -sf http://localhost:8080/auth/sign-in)
+          AUTH_BODY=$(curl -sf http://localhost:8080/auth)
           echo "$AUTH_BODY" | grep -q '<html' || (echo "FAIL: Auth page does not contain <html>" && exit 1)
           echo "$AUTH_BODY" | grep -q 'sign-in' || (echo "FAIL: Auth page does not contain sign-in content" && exit 1)
           echo "Auth page OK (HTML rendered with expected content)"

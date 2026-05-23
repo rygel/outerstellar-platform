@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.di.WebComponents
 import io.github.rygel.outerstellar.platform.di.createCoreComponents
 import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
+import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
@@ -37,29 +38,33 @@ fun createServerComponents(plugin: PlatformPlugin? = null): ServerComponents {
             sessionRepository = persistence.sessionRepository,
         )
 
-    val web =
-        createWebComponents(
-            config = config,
-            plugin = plugin,
-            securityService = security.securityService,
-            messageRepository = persistence.messageRepository,
-            userRepository = persistence.userRepository,
-            voteRepository = persistence.voteRepository,
-            pollRepository = persistence.pollRepository,
-            notificationRepository = persistence.notificationRepository,
-        )
-
     val core =
         createCoreComponents(
             config = config,
             messageRepository = persistence.messageRepository,
             contactRepository = persistence.contactRepository,
             outboxRepository = persistence.outboxRepository,
-            messageCache = web.messageCache,
+            messageCache =
+                CaffeineMessageCache(
+                    maxSize = config.runtime.cacheMessageMaxSize.toLong(),
+                    ttlMinutes = config.runtime.cacheMessageExpireMinutes.toLong(),
+                ),
             transactionManager = persistence.transactionManager,
             auditRepository = persistence.auditRepository,
-            eventPublisher = web.eventPublisher,
-            emailService = web.emailService,
+        )
+
+    val web =
+        createWebComponents(
+            config = config,
+            plugin = plugin,
+            securityService = security.securityService,
+            messageRepository = persistence.messageRepository,
+            messageService = core.messageService,
+            contactService = core.contactService,
+            userRepository = persistence.userRepository,
+            voteRepository = persistence.voteRepository,
+            pollRepository = persistence.pollRepository,
+            notificationRepository = persistence.notificationRepository,
         )
 
     val polyHandler =

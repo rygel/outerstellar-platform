@@ -323,6 +323,11 @@
                 <version>${jte.version}</version>
             </dependency>
             <dependency>
+                <groupId>gg.jte</groupId>
+                <artifactId>jte-native-resources</artifactId>
+                <version>${jte.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-core</artifactId>
                 <version>${flyway.version}</version>
@@ -645,6 +650,7 @@
                         </systemPropertyVariables>
                         <environmentVariables>
                             <PLAYWRIGHT_BROWSERS_PATH>${project.build.directory}/playwright-browsers</PLAYWRIGHT_BROWSERS_PATH>
+                            <DOCKER_HOST>npipe:////./pipe/podman-machine-default</DOCKER_HOST>
                         </environmentVariables>
                     </configuration>
                 </plugin>
