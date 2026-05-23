@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import javafx.geometry.Insets
@@ -12,14 +13,13 @@ import javafx.scene.control.Label
 import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
 import javafx.scene.layout.VBox
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
-class ProfileController : KoinComponent {
+class ProfileController {
 
     private val logger = LoggerFactory.getLogger(ProfileController::class.java)
-    private val viewModel: FxSyncViewModel by inject()
+    private val viewModel: FxSyncViewModel
+        get() = FxAppContext.viewModel
 
     fun createView(): Parent {
         viewModel.loadProfile().runInBackground()

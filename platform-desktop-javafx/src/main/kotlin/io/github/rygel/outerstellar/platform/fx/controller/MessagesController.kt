@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.MessageSummary
@@ -9,19 +10,18 @@ import javafx.scene.control.Label
 import javafx.scene.control.ListView
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
 @Suppress("TooManyFunctions")
-class MessagesController : KoinComponent {
+class MessagesController {
 
     private companion object {
         const val MESSAGE_PREVIEW_LENGTH = 80
     }
 
     private val logger = LoggerFactory.getLogger(MessagesController::class.java)
-    private val viewModel: FxSyncViewModel by inject()
+    private val viewModel: FxSyncViewModel
+        get() = FxAppContext.viewModel
 
     @FXML private lateinit var searchField: TextField
     @FXML private lateinit var messagesList: ListView<MessageSummary>

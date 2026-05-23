@@ -1,13 +1,13 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.app.FxAppConfig
 import javafx.scene.control.Alert
 import javafx.stage.Stage
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
-object AboutController : KoinComponent {
-    private val appConfig: FxAppConfig by inject()
+object AboutController {
+    private val appConfig: FxAppConfig
+        get() = FxAppContext.appConfig
 
     fun show(owner: Stage) {
         val alert = Alert(Alert.AlertType.INFORMATION)

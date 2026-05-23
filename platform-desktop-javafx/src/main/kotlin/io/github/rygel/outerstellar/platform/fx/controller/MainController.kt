@@ -1,6 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
-import io.github.rygel.outerstellar.platform.fx.app.FxAppConfig
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
 import io.github.rygel.outerstellar.platform.fx.update.UpdateService
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
@@ -21,17 +21,19 @@ import javafx.scene.layout.StackPane
 import javafx.scene.layout.VBox
 import javafx.stage.Modality
 import javafx.stage.Stage
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
-import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
-class MainController : KoinComponent {
+class MainController {
 
     private val logger = LoggerFactory.getLogger(MainController::class.java)
-    private val authModule: AuthModule by inject()
-    private val themeManager: FxThemeManager by inject()
-    private val viewModel: FxSyncViewModel by inject()
+    private val authModule: AuthModule
+        get() = FxAppContext.authModule
+
+    private val themeManager: FxThemeManager
+        get() = FxAppContext.themeManager
+
+    private val viewModel: FxSyncViewModel
+        get() = FxAppContext.viewModel
 
     @FXML private lateinit var sidebar: VBox
     @FXML private lateinit var centerPane: StackPane
@@ -232,7 +234,7 @@ class MainController : KoinComponent {
     }
 
     private fun checkForUpdate() {
-        val config = get<FxAppConfig>()
+        val config = FxAppContext.appConfig
         val service = UpdateService(config.version, config.updateUrl)
         Thread {
                 val result = service.checkForUpdate()

@@ -1,19 +1,19 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import javafx.fxml.FXML
 import javafx.scene.control.PasswordField
 import javafx.scene.control.TextField
 import javafx.stage.Stage
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
-class RegisterController : KoinComponent {
+class RegisterController {
 
     private val logger = LoggerFactory.getLogger(RegisterController::class.java)
-    private val viewModel: FxSyncViewModel by inject()
+    private val viewModel: FxSyncViewModel
+        get() = FxAppContext.viewModel
 
     @FXML private lateinit var usernameField: TextField
     @FXML private lateinit var passwordField: PasswordField

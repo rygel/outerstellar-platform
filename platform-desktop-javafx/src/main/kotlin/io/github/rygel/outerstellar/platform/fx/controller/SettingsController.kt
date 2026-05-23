@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.service.FxStateProvider
 import io.github.rygel.outerstellar.platform.fx.service.FxTheme
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
@@ -15,13 +16,14 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.stage.Modality
 import javafx.stage.Stage
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
-class SettingsController : KoinComponent {
+class SettingsController {
 
-    private val themeManager: FxThemeManager by inject()
-    private val i18nService: I18nService by inject()
+    private val themeManager: FxThemeManager
+        get() = FxAppContext.themeManager
+
+    private val i18nService: I18nService
+        get() = FxAppContext.i18nService
 
     fun showAndWait() {
         val stage = Stage()

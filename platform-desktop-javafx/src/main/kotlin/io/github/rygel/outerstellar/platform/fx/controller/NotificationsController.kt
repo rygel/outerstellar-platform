@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.NotificationSummary
@@ -16,14 +17,13 @@ import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
-class NotificationsController : KoinComponent {
+class NotificationsController {
 
     private val logger = LoggerFactory.getLogger(NotificationsController::class.java)
-    private val viewModel: FxSyncViewModel by inject()
+    private val viewModel: FxSyncViewModel
+        get() = FxAppContext.viewModel
 
     fun createView(): Parent {
         val titleLabel = Label("Notifications").also { it.font = Font.font(null, FontWeight.BOLD, 18.0) }
