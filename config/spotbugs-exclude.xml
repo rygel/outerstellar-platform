@@ -26,6 +26,22 @@
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.CoreComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.PersistenceComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.security.SecurityComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.ServerComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.sync(\..*)?"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
@@ -43,10 +59,6 @@
     </Match>
     <Match>
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.infra(\..*)?"/>
-        <Bug pattern="EI_EXPOSE_REP"/>
-    </Match>
-    <Match>
-        <Class name="io.github.rygel.outerstellar.platform.seed.SeedComponent"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>
