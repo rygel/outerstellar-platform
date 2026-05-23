@@ -70,6 +70,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -118,6 +119,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -180,6 +182,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -193,7 +196,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-persistence-jdbi,platform-sync-client,platform-security
+          -pl platform-core,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -239,6 +242,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -249,7 +253,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
+          -pl platform-core,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
           -DskipTests -Dexec.skip=true -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -312,6 +316,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
