@@ -17,6 +17,7 @@ jobs:
   build:
     name: Build, Test, and Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: ci
     permissions:
       contents: read
@@ -79,6 +80,7 @@ jobs:
     name: Unit Tests (${{ matrix.modules }})
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: ci
     permissions:
       contents: read
@@ -150,6 +152,7 @@ jobs:
     name: Desktop Tests (Xvfb)
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: ci
     permissions:
       contents: read
@@ -208,6 +211,7 @@ jobs:
     name: Playwright E2E Tests
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: ci
     permissions:
       contents: read
@@ -265,6 +269,7 @@ jobs:
     name: PostgreSQL Integration Tests
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: ci
     permissions:
       contents: read
@@ -338,6 +343,7 @@ jobs:
     name: Coverage Report
     needs: unit-tests
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     if: always()
@@ -360,6 +366,7 @@ jobs:
   security:
     name: Security (OWASP + Enforcer)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: ci
     permissions:
       contents: read

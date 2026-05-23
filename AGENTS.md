@@ -66,6 +66,19 @@ docker ps
 
 **Before running integration tests**, ensure the Podman machine is running (`podman machine start`). All Testcontainers-based integration tests (WebTest, JdbiTest) require it. If tests fail with `NoClassDefFoundError` on test classes, the Podman machine is likely stopped.
 
+### Test timeout guardrails
+
+The full non-desktop reactor build (6 modules) must complete in **under 20 minutes**. If it exceeds 20 minutes, something is wrong — investigate immediately.
+
+Existing timeouts enforced by Maven Surefire:
+
+| Timeout | Value | Scope |
+|---|---|---|
+| `forkedProcessTimeoutInSeconds` | 300 (5 min) | Kills an entire Surefire fork if it hangs |
+| `junit.jupiter.execution.timeout.default` | 120s (2 min) | Fails a single test method if it takes too long |
+
+These prevent individual hangs but do NOT limit total build time. For total-build enforcement, CI workflows set `timeout-minutes: 20` on the test job.
+
 ### Test execution
 
 ```powershell
