@@ -40,10 +40,6 @@
             <artifactId>snakeyaml-engine</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-core-jvm</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.http4k</groupId>
             <artifactId>http4k-ops-resilience4j</artifactId>
         </dependency>
@@ -54,12 +50,6 @@
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-retry</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-test-junit5</artifactId>
-            <version>${koin.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.mockk</groupId>
