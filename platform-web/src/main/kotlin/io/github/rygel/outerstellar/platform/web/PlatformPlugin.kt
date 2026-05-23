@@ -18,7 +18,6 @@ import org.http4k.core.Filter
 import org.http4k.core.Request
 import org.http4k.lens.LensFailure
 import org.http4k.template.TemplateRenderer
-import org.koin.core.module.Module
 import org.slf4j.LoggerFactory
 
 /**
@@ -177,7 +176,4 @@ interface PlatformPlugin : PluginMigrationSource {
     fun filters(context: PluginContext): List<Filter> = emptyList()
 
     fun adminSections(context: PluginContext): List<AdminSection> = emptyList()
-
-    /** Koin modules this plugin needs. Register in `startKoin` rather than relying on this. */
-    fun koinModules(): List<Module> = emptyList()
 }

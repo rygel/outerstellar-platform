@@ -37,6 +37,7 @@ import org.koin.dsl.module
 /** Null-object for apps without a plugin — migrationLocation returns null so no plugin migrations run. */
 private object NoPluginMigrationSource : PluginMigrationSource
 
+@Deprecated("Use createWebComponents() for server runtime. This exists for desktop Koin compatibility only.")
 val webModule
     get() = module {
         includes(adminWebModule)

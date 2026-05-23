@@ -1,27 +1,10 @@
 package io.github.rygel.outerstellar.platform.di
 
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
-import io.github.rygel.outerstellar.platform.infra.createDataSource
-import io.github.rygel.outerstellar.platform.infra.migrate
-import io.github.rygel.outerstellar.platform.infra.migratePlugin
+import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
 import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiApiKeyRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiAuditRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiContactRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiDeviceTokenRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiOAuthRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiOutboxRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiPasswordResetRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiPollRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiTransactionManager
-import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiVoteRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.NotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
@@ -31,76 +14,30 @@ import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.persistence.VoteRepository
-import io.github.rygel.outerstellar.platform.security.CachingUserRepository
 import io.github.rygel.outerstellar.platform.security.OAuthRepository
-import io.micrometer.core.instrument.Metrics
-import javax.sql.DataSource
-import org.jdbi.v3.core.Jdbi
 import org.koin.dsl.module
 
-/**
- * Persistence module backed by JDBI. Provides all repository implementations via Koin. Wire this into your Koin
- * application to get DataSource, Jdbi, and repository bindings.
- */
+@Deprecated("Use createPersistenceComponents() for server runtime. This exists for desktop Koin compatibility only.")
 val persistenceModule
     get() = module {
-        single<DataSource> {
-            val config = get<io.github.rygel.outerstellar.platform.AppConfig>()
-            val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword, config.runtime)
-            try {
-                if (config.runtime.flywayEnabled) {
-                    migrate(ds)
-                    getOrNull<PluginMigrationSource>()?.let { plugin ->
-                        plugin.migrationLocation?.let { location ->
-                            migratePlugin(ds, location, plugin.migrationHistoryTable, plugin.migrationNames)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                ds.close()
-                throw e
-            }
-            if (config.devMode) {
-                JdbiUserRepository(Jdbi.create(ds)).seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
-            }
-            ds
+        single {
+            val config = get<AppConfig>()
+            createPersistenceComponents(config, getOrNull())
         }
-
-        single<Jdbi> {
-            Jdbi.create(get<DataSource>()).also {
-                if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
-                    Metrics.globalRegistry.gauge("database.connections.active", 1)
-                }
-            }
-        }
-
-        single<MessageRepository> { JdbiMessageRepository(get()) }
-
-        single<ContactRepository> { JdbiContactRepository(get()) }
-
-        single<UserRepository> { CachingUserRepository(JdbiUserRepository(get())) }
-
-        single<OutboxRepository> { JdbiOutboxRepository(get()) }
-
-        single<TransactionManager> { JdbiTransactionManager(get()) }
-
-        single<AuditRepository> { JdbiAuditRepository(get()) }
-
-        single<PasswordResetRepository> { JdbiPasswordResetRepository(get()) }
-
-        single<ApiKeyRepository> { JdbiApiKeyRepository(get()) }
-
-        single<OAuthRepository> { JdbiOAuthRepository(get()) }
-
-        single<DeviceTokenRepository> { JdbiDeviceTokenRepository(get()) }
-
-        single<SessionRepository> { JdbiSessionRepository(get()) }
-
-        single<VoteRepository> { JdbiVoteRepository(get()) }
-
-        single<PollRepository> { JdbiPollRepository(get()) }
-
-        single<NotificationRepository> { JdbiNotificationRepository(get()) }
+        single { get<PersistenceComponents>().dataSource }
+        single { get<PersistenceComponents>().jdbi }
+        single<MessageRepository> { get<PersistenceComponents>().messageRepository }
+        single<ContactRepository> { get<PersistenceComponents>().contactRepository }
+        single<UserRepository> { get<PersistenceComponents>().userRepository }
+        single<OutboxRepository> { get<PersistenceComponents>().outboxRepository }
+        single<TransactionManager> { get<PersistenceComponents>().transactionManager }
+        single<AuditRepository> { get<PersistenceComponents>().auditRepository }
+        single<PasswordResetRepository> { get<PersistenceComponents>().passwordResetRepository }
+        single<ApiKeyRepository> { get<PersistenceComponents>().apiKeyRepository }
+        single<OAuthRepository> { get<PersistenceComponents>().oAuthRepository }
+        single<DeviceTokenRepository> { get<PersistenceComponents>().deviceTokenRepository }
+        single<SessionRepository> { get<PersistenceComponents>().sessionRepository }
+        single<VoteRepository> { get<PersistenceComponents>().voteRepository }
+        single<PollRepository> { get<PersistenceComponents>().pollRepository }
+        single<NotificationRepository> { get<PersistenceComponents>().notificationRepository }
     }
-
-private const val DEV_ADMIN_PLACEHOLDER_HASH = "\$2a\$04\$DevPlaceholderAdminXXuZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZe"
