@@ -77,7 +77,20 @@ Existing timeouts enforced by Maven Surefire:
 | `forkedProcessTimeoutInSeconds` | 300 (5 min) | Kills an entire Surefire fork if it hangs |
 | `junit.jupiter.execution.timeout.default` | 120s (2 min) | Fails a single test method if it takes too long |
 
-These prevent individual hangs but do NOT limit total build time. For total-build enforcement, CI workflows set `timeout-minutes: 20` on the test job.
+These prevent individual hangs but do NOT limit total build time. For total-build enforcement:
+- **CI workflows** set `timeout-minutes: 20` on the test job.
+- **Locally**, use `scripts/test.ps1` — wraps `mvn clean verify` with a hard 20-minute kill switch and warns if the build exceeds 75% of the limit.
+
+```powershell
+# Full build with 20-minute timeout (default)
+pwsh scripts/test.ps1
+
+# Quick iteration — single module, skip quality checks
+pwsh scripts/test.ps1 -Modules platform-web -SkipQuality
+
+# Custom timeout
+pwsh scripts/test.ps1 -TimeoutMinutes 10 -Modules platform-core
+```
 
 ### Test execution
 
