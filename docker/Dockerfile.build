@@ -11,8 +11,12 @@ FROM maven:3.9-eclipse-temurin-21@sha256:481aad0b7042ad7a924ebd49ea5b307a049bd33
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl gnupg python3 ca-certificates && \
-    rm -rf /var/lib/apt/lists/* && \
+    apt-get install -y --no-install-recommends \
+        curl='8.5.0-*' \
+        gnupg='2.4.4-*' \
+        python3='3.12.*' \
+        ca-certificates='20240203' \
+    && rm -rf /var/lib/apt/lists/* && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
         -o /tmp/nodesource.gpg.key && \
     gpg --dearmor < /tmp/nodesource.gpg.key > /etc/apt/keyrings/nodesource.gpg && \
@@ -89,7 +93,7 @@ RUN native-image \
 # podman build --target native-runtime -t outerstellar-native -f docker/Dockerfile.build .
 FROM debian:bookworm-slim AS native-runtime
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libstdc++6 && \
+    apt-get install -y --no-install-recommends libstdc++6='12.2.0-*' && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -r appgroup && useradd -r -g appgroup appuser && \
     mkdir -p /app/data && chown -R appuser:appgroup /app/data
@@ -105,8 +109,14 @@ ENTRYPOINT ["./outerstellar-web"]
 # podman build --target desktop-test -t outerstellar-test-desktop -f docker/Dockerfile.build .
 FROM maven:3.9-eclipse-temurin-21@sha256:481aad0b7042ad7a924ebd49ea5b307a049bd33d758f8613d68dcbd2904f3c8e AS desktop-deps
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends xvfb x11-utils libxrender1 libxtst6 libxi6 fontconfig && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+        xvfb='2:21.1.*' \
+        x11-utils='7.7+6build*' \
+        libxrender1='1:0.9.*' \
+        libxtst6='2:1.2.*' \
+        libxi6='2:1.8.*' \
+        fontconfig='2.15.0-*' \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY pom.xml .
 COPY platform-core/pom.xml platform-core/
