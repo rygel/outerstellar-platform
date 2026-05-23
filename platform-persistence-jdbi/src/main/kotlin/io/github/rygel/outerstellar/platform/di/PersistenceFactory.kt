@@ -102,11 +102,7 @@ fun createPersistenceComponents(
     )
 }
 
-private fun runMigrations(
-    ds: DataSource,
-    config: AppConfig,
-    pluginMigrationSource: PluginMigrationSource?,
-) {
+private fun runMigrations(ds: DataSource, config: AppConfig, pluginMigrationSource: PluginMigrationSource?) {
     if (!config.runtime.flywayEnabled) return
     migrate(ds)
     val plugin = pluginMigrationSource ?: return

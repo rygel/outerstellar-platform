@@ -42,6 +42,10 @@
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.WebComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.sync(\..*)?"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
