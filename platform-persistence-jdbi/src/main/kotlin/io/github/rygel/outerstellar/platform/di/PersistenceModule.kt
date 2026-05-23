@@ -39,8 +39,8 @@ import org.jdbi.v3.core.Jdbi
 import org.koin.dsl.module
 
 /**
- * Persistence module backed by JDBI. Provides all repository implementations via Koin.
- * Wire this into your Koin application to get DataSource, Jdbi, and repository bindings.
+ * Persistence module backed by JDBI. Provides all repository implementations via Koin. Wire this into your Koin
+ * application to get DataSource, Jdbi, and repository bindings.
  */
 val persistenceModule
     get() = module {
