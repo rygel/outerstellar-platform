@@ -1,52 +1,34 @@
 package io.github.rygel.outerstellar.platform.seed
 
-import io.github.rygel.outerstellar.platform.di.coreModule
-import io.github.rygel.outerstellar.platform.di.persistenceModule
-import io.github.rygel.outerstellar.platform.infra.migrate
+import io.github.rygel.outerstellar.platform.AppConfig
+import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.persistence.ContactRepository
-import io.github.rygel.outerstellar.platform.persistence.MessageRepository
-import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.securityModule
 import java.util.UUID
-import javax.sql.DataSource
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
-import org.koin.core.context.startKoin
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.seed.SeedData")
 
-object SeedComponent : KoinComponent {
-    val dataSource: DataSource = get()
-    val messageRepository: MessageRepository = get()
-    val contactRepository: ContactRepository = get()
-    val userRepository: UserRepository = get()
-}
-
 fun main() {
     logger.info("Starting database seed process...")
 
-    startKoin { modules(persistenceModule, coreModule, securityModule) }
-
-    val seed = SeedComponent
-    migrate(seed.dataSource)
+    val config = AppConfig.fromEnvironment()
+    val persistence = createPersistenceComponents(config)
 
     logger.info("Seeding messages...")
-    seed.messageRepository.seedMessages()
+    persistence.messageRepository.seedMessages()
 
     logger.info("Seeding contacts...")
-    seed.contactRepository.seedContacts()
+    persistence.contactRepository.seedContacts()
 
     logger.info("Seeding users...")
-    seedUsers(seed.userRepository)
+    seedUsers(persistence.userRepository)
 
     logger.info("Database seeding completed successfully.")
 }
 
-private fun seedUsers(repo: UserRepository) {
+private fun seedUsers(repo: io.github.rygel.outerstellar.platform.persistence.UserRepository) {
     val encoder = BCryptPasswordEncoder(logRounds = 10)
     val seedPassword = System.getenv("SEED_USER_PASSWORD")
     if (seedPassword.isNullOrBlank()) {
