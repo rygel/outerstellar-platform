@@ -1,0 +1,6 @@
+<FindBugsFilter>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.testing.SharedPostgres"/>
+        <Bug pattern="BC_UNCONFIRMED_CAST_OF_RETURN_VALUE,OBL_UNSATISFIED_OBLIGATION,SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE,ODR_OPEN_DATABASE_RESOURCE"/>
+    </Match>
+</FindBugsFilter>

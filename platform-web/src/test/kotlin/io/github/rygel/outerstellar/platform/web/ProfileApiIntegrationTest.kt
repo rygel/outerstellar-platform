@@ -60,7 +60,6 @@ class ProfileApiIntegrationTest : WebTest() {
         Request(method, path).header("Authorization", "Bearer $token")
 
     private fun resetApp() {
-        cleanup()
         app = buildApp()
     }
 

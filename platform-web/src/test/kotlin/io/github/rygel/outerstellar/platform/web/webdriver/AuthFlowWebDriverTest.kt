@@ -8,7 +8,7 @@ import org.http4k.webdriver.Http4kWebDriver
 
 class AuthFlowWebDriverTest : WebTest() {
 
-    private val driver by lazy { Http4kWebDriver(WebTest.buildApp()) }
+    private val driver by lazy { Http4kWebDriver(buildApp()) }
 
     @Test
     fun `sign-in form fragment returns page content via webdriver`() {

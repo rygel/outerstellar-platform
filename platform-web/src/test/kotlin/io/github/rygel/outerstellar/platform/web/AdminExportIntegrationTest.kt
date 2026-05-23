@@ -47,7 +47,6 @@ class AdminExportIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
         adminUser =
             User(
                 id = UUID.randomUUID(),

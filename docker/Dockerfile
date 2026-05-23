@@ -25,10 +25,12 @@ RUN apt-get update && \
 COPY pom.xml .
 COPY platform-core/pom.xml platform-core/
 COPY platform-security/pom.xml platform-security/
+COPY platform-test-infrastructure/pom.xml platform-test-infrastructure/
 COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
 COPY platform-sync-client/pom.xml platform-sync-client/
 COPY platform-web/pom.xml platform-web/
 COPY platform-desktop/pom.xml platform-desktop/
+COPY platform-desktop-javafx/pom.xml platform-desktop-javafx/
 COPY platform-seed/pom.xml platform-seed/
 
 # Copy npm config for CSS build

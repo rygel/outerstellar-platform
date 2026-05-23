@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ExtendWith(ApprovalTest::class)
 class ErrorPagesApprovalTest : WebTest() {
 
-    private val app by lazy { WebTest.buildApp() }
+    private val app by lazy { buildApp() }
 
     private val csrfTokenPattern = Regex("""name="csrf-token" content="[^"]+"""")
     private val cacheBusterPattern = Regex("""\?v=\d+""")

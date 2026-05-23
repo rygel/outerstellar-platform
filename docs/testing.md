@@ -22,39 +22,52 @@ Every test in this project exercises the full stack. There are no unit tests tha
 The test infrastructure has three layers:
 
 ```
-platform-web:        WebTest (shared container + datasource + repos + http4k app)
-                        |
-platform-persistence-jdbi:  JdbiTest (shared container + datasource + Jdbi handle)
-                        |
+platform-test-infrastructure:  SharedPostgres (singleton reused container)
+                                  + TestDatabase (per-class database)
+                                      |
+platform-web:        WebTest (per-class DB via SharedPostgres + repos + http4k app)
+                                      |
+platform-persistence-jdbi:  JdbiTest (per-class DB via SharedPostgres + Jdbi handle)
+                                      |
 platform-core / platform-security / platform-sync-client:  No database (pure unit tests)
 ```
 
-- **WebTest** starts one PostgreSQL container, runs all migrations, and constructs all repositories and the full http4k HTTP handler. ~50 integration test classes extend it.
-- **JdbiTest** starts one PostgreSQL container, runs all migrations, and provides a shared Jdbi handle. All JDBI repository tests extend it.
+- **SharedPostgres** (in `platform-test-infrastructure`) manages a single reused PostgreSQL 18 container via Testcontainers `withReuse(true)`. Each test class gets its own database via `CREATE DATABASE`, dropped in `@AfterAll`.
+- **WebTest** creates a per-class database, runs all migrations, and constructs all repositories and the full http4k HTTP handler. ~55 integration test classes extend it.
+- **JdbiTest** creates a per-class database, runs all migrations, and provides a Jdbi handle. All JDBI repository tests extend it.
 - **platform-core, platform-security, platform-sync-client** have no database dependency. Their tests are pure unit tests (MockK, in-memory stubs).
 
 ### Maven Surefire Configuration
 
-- **`reuseForks: true`** — one JVM fork per module. Companion-object singletons are shared across all test classes in the fork.
+- **`reuseForks: true`** — one JVM fork per module. Container singleton is shared across all test classes in the fork.
 - **`forkedProcessTimeoutInSeconds: 300`** — 5-minute hard kill per fork. If a test hangs, it gets killed.
 - **`junit.jupiter.execution.timeout.default: 120s`** — per-test timeout.
-- **`parallel: classes`** at root level, but **`parallel: none`** for platform-web (shared mutable database state cannot tolerate concurrency).
-- Platform-web tests run sequentially. All other modules run up to 4 test classes concurrently.
+- **platform-web: `parallel: classes`, `threadCount: 4`** — test classes run concurrently, each with its own database. Methods within a class run sequentially.
+- All other modules run with root-level parallel settings.
 
-## Container Caching
+## Container Architecture
 
-### One PostgreSQL per JVM Fork
+### Shared PostgreSQL Container (platform-test-infrastructure)
 
-Each test base class uses a Kotlin companion object to hold a singleton `PostgreSQLContainer`. Because `reuseForks=true`, this container starts once and is reused by every test class in the module:
+All database-dependent tests share a single PostgreSQL 18 container managed by `SharedPostgres` in `platform-test-infrastructure`. The container uses Testcontainers `withReuse(true)` to persist across test runs.
+
+Each test class gets its own database via `SharedPostgres.createDatabase(className)`, which runs `CREATE DATABASE` on the shared container. The database is dropped in `@AfterAll` via `testDb.drop()`. This means:
+
+- No cross-class data contamination — each class starts with a fresh, migrated database
+- `@AfterEach` cleanup deletes rows between test methods within a class
+- Container startup happens once per JVM fork (not per test class)
 
 ```kotlin
-companion object {
-    private val container = PostgreSQLContainer<Nothing>("postgres:18").apply {
-        withDatabaseName("outerstellar")
-        withUsername("outerstellar")
-        withPassword("outerstellar")
-        start()
-    }
+@TestInstance(PER_CLASS)
+abstract class WebTest {
+    private val testDb = SharedPostgres.createDatabase(sanitizeDbName(this::class.simpleName!!))
+    val testJdbi: Jdbi by lazy { testDb.jdbi }
+
+    @AfterEach
+    fun cleanDatabase() { /* DELETE from all tables */ }
+
+    @AfterAll
+    fun tearDown() { testDb.drop() }
 }
 ```
 
@@ -63,33 +76,27 @@ companion object {
 Everything except the container itself uses `by lazy` so it initializes on first access, not on class load:
 
 ```kotlin
-private val dataSource: DataSource by lazy {
-    createDataSource(container.jdbcUrl, container.username, container.password)
-        .also { migrate(it) }
-}
-
-val testDsl: DSLContext by lazy { DSL.using(dataSource, POSTGRES) }
-
-val userRepository by lazy { JdbiUserRepository(jdbi) }
-val messageRepository by lazy { JdbiMessageRepository(jdbi) }
+val testJdbi: Jdbi by lazy { testDb.jdbi }
+val userRepository by lazy { JdbiUserRepository(testJdbi) }
+val messageRepository by lazy { JdbiMessageRepository(testJdbi) }
 ```
 
-This means if a test class only uses `userRepository`, the `messageRepository` is never constructed. Expensive resources (DataSource, DSLContext, repositories) initialize exactly once, on demand.
+This means if a test class only uses `userRepository`, the `messageRepository` is never constructed. Expensive resources (DataSource, Jdbi, repositories) initialize exactly once, on demand.
 
-### Row-Level Cleanup Between Tests
+### Row-Level Cleanup Between Tests (within a class)
 
-Tests do not restart the container or recreate the database between tests. Instead, they delete all rows in foreign-key-safe order:
+Tests do not drop and recreate the database between methods. Instead, they delete all rows in foreign-key-safe order:
 
 ```kotlin
 @AfterEach
-fun cleanup() {
+fun cleanDatabase() {
     testJdbi.useHandle<Exception> { handle ->
-        CleanupTables.ALL.forEach { table -> handle.execute("DELETE FROM $table") }
+        tablesToDelete.forEach { table -> handle.execute("DELETE FROM $table") }
     }
 }
 ```
 
-This is fast (milliseconds) compared to container restart (seconds).
+This is fast (milliseconds) compared to recreating the database (hundreds of milliseconds).
 
 ## Test Base Classes
 
@@ -101,8 +108,8 @@ The primary test base for all platform-web integration tests. Provides:
 
 | Resource | Type | Notes |
 |----------|------|-------|
-| `container` | `PostgreSQLContainer` | Singleton, shared across ~50 test classes |
-| `testConfig` | `AppConfig` | Pre-configured with container JDBC details |
+| `testDb` | `TestDatabase` | Per-class database, created via `SharedPostgres.createDatabase()` |
+| `testConfig` | `AppConfig` | Pre-configured with per-class DB JDBC details |
 | `testJdbi` | `Jdbi` | Database context, lazily initialized |
 | `renderer` | JTE renderer | Precompiled (`jte.production=true`) |
 | `userRepository`, `messageRepository`, etc. | Repository instances | All lazily initialized |
@@ -110,7 +117,7 @@ The primary test base for all platform-web integration tests. Provides:
 | `createSecurityService()` | `SecurityService` | Constructs SecurityService with default repos |
 | `withAuthenticatedUser()` | `Triple<token, userId, username>` | Creates user + session, returns cookie value |
 | `testPasswordHash` | `String` | Pre-computed BCrypt hash (cached, not per-test) |
-| `cleanup()` | Row-level DELETE | Called in `@AfterEach` |
+| `cleanDatabase()` | Row-level DELETE | Called in `@AfterEach` |
 
 **Usage pattern:**
 
@@ -119,19 +126,11 @@ class MyFeatureTest : WebTest() {
 
     private val app: HttpHandler by lazy { buildApp() }
 
-    @AfterEach
-    fun reset() = cleanup()
-
     @Test
     fun `should do something meaningful`() {
-        // Arrange: insert test data directly via repository
-        val user = userRepository.create(User(...))
-
-        // Act: hit the HTTP handler
-        val response = app(Request(GET, "/messages"))
-
-        // Assert: use http4k hamkrest matchers
-        assertThat(response, hasStatus(Status.OK).and(bodyContains(user.displayName)))
+        val user = withAuthenticatedUser()
+        val response = app(Request(GET, "/messages").header("Authorization", "Bearer ${user.first}"))
+        assertThat(response, hasStatus(Status.OK).and(bodyContains(user.third)))
     }
 }
 ```
@@ -151,7 +150,7 @@ private val app: HttpHandler by lazy {
 
 **Path:** `platform-persistence-jdbi/src/test/kotlin/.../persistence/JdbiTest.kt`
 
-Provides a shared Jdbi handle against the singleton PostgreSQL container.
+Provides a per-class database via `SharedPostgres` and a Jdbi handle against it.
 
 **Usage pattern:**
 
@@ -160,15 +159,12 @@ class JdbiMessageRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiMessageRepository(jdbi) }
 
-    @AfterEach
-    fun reset() = cleanup()
-
     @Test
     fun `should insert and retrieve message`() {
         val msg = repo.create(Message(...))
         val found = repo.findById(msg.id)
         assertNotNull(found)
-        assertEquals(msg.syncId, found.syncId)
+        assertEquals(msg.syncId, found.syncSyncId)
     }
 }
 ```
@@ -179,8 +175,8 @@ class JdbiMessageRepositoryTest : JdbiTest() {
 
 1. Extend `WebTest`
 2. Use `by lazy` for the app and any test-specific dependencies
-3. Call `cleanup()` in `@AfterEach`
-4. Insert test data via repositories (not HTTP)
+3. The base class handles `@AfterEach` cleanup (row deletion) and `@AfterAll` (database drop)
+4. Insert test data via `withAuthenticatedUser()` or repositories (not HTTP)
 5. Call `app(Request(...))` to exercise the HTTP layer
 6. Assert on status code **and** response body content and/or side effects
 
@@ -188,7 +184,7 @@ class JdbiMessageRepositoryTest : JdbiTest() {
 
 1. Extend `JdbiTest`
 2. Use `by lazy` for the repository under test
-3. Call `cleanup()` in `@AfterEach`
+3. The base class handles `@AfterEach` cleanup (row deletion) and `@AfterAll` (database drop)
 4. Insert test data, call repository methods, verify state
 
 ### For platform-core, platform-security, platform-sync-client (unit tests)
@@ -317,7 +313,7 @@ Inject failures (500 errors, latency) into the HTTP handler for resilience testi
 
 ### Never create your own PostgreSQL container
 
-If you're in platform-web, extend `WebTest`. If you're in platform-persistence-jdbi, extend `JdbiTest`. These classes already manage a shared container. Creating another container wastes ~10 seconds of startup time per redundant instance.
+If you're in platform-web, extend `WebTest`. If you're in platform-persistence-jdbi, extend `JdbiTest`. These classes already manage a per-class database via the shared container. Creating another container wastes ~10 seconds of startup time per redundant instance.
 
 ### Never eagerly initialize expensive resources
 

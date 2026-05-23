@@ -118,7 +118,7 @@ jobs:
         run: |
           mvn install -N -q
           mvn install \
-            -pl platform-core,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web \
+            -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web \
             -DskipTests -Dexec.skip=true -q \
             -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
             -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true \
