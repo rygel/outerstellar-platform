@@ -110,7 +110,7 @@ jobs:
 
       - name: Verify static assets return 200
         run: |
-          STATUS=$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:8080/static/css/site.css)
+          STATUS=$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:8080/static/site.css)
           if [ "$STATUS" != "200" ]; then
             echo "FAIL: Static CSS returned $STATUS (expected 200)"
             docker logs outerstellar-native
