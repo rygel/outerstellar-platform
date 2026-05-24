@@ -1,0 +1,26 @@
+@param banners: List<io.github.rygel.outerstellar.platform.banner.Banner>
+<div class="flex flex-col gap-2 px-6 pt-4" aria-live="polite">
+@foreach(val banner : banners)
+    <div class="alert
+        @if(banner.severity == io.github.rygel.outerstellar.platform.banner.BannerSeverity.CRITICAL) alert-error
+        @elseif(banner.severity == io.github.rygel.outerstellar.platform.banner.BannerSeverity.WARNING) alert-warning
+        @elseif(banner.severity == io.github.rygel.outerstellar.platform.banner.BannerSeverity.SCHEDULED_MAINTENANCE) alert-accent
+        @else alert-info
+        @endif
+        flex items-center gap-3">
+        <div class="flex-1">
+            <h3 class="font-bold text-sm">${banner.title}</h3>
+            <p class="text-sm">${banner.body}</p>
+        </div>
+        @if(banner.isDismissible && banner.dismissUrl != null)
+            <button class="btn btn-sm btn-ghost"
+                    hx-post="${banner.dismissUrl}"
+                    hx-target="closest .alert"
+                    hx-swap="outerHTML"
+                    aria-label="Dismiss ${banner.title}">
+                &times;
+            </button>
+        @endif
+    </div>
+@endforeach
+</div>
