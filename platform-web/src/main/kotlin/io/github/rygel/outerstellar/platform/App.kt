@@ -628,6 +628,7 @@ private fun buildFilterChain(ctx: AppContext): Filter {
                     ),
                     cookieSecure = config.sessionCookieSecure,
                     appBaseUrl = config.appBaseUrl,
+                    bannerProviders = plugin?.bannerProviders(ctx.pluginContext()) ?: emptyList(),
                 )
             )
 
