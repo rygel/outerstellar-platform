@@ -17,7 +17,9 @@ import io.github.rygel.outerstellar.platform.model.UpdateProfileRequest
 import io.github.rygel.outerstellar.platform.model.UserProfileResponse
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
+import io.github.rygel.outerstellar.platform.security.AccountService
 import io.github.rygel.outerstellar.platform.security.AuthResult
+import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionService
@@ -40,6 +42,8 @@ import org.http4k.lens.long
 
 class AuthApi(
     private val securityService: SecurityService,
+    private val authService: AuthService,
+    private val accountService: AccountService,
     private val sessionService: SessionService,
     private val appConfig: AppConfig,
 ) : ServerRoutes {
@@ -73,7 +77,7 @@ class AuthApi(
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
                         val body = changePasswordLens(request)
-                        securityService.changePassword(user.id, body.currentPassword, body.newPassword)
+                        accountService.changePassword(user.id, body.currentPassword, body.newPassword)
                         Response(Status.OK).body("Password changed successfully")
                     } catch (e: WeakPasswordException) {
                         Response(Status.BAD_REQUEST).body(e.message ?: "Invalid password")
@@ -154,7 +158,7 @@ class AuthApi(
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
                         val body = updateProfileLens(request)
-                        securityService.updateProfile(user.id, body.email, body.username, body.avatarUrl)
+                        accountService.updateProfile(user.id, body.email, body.username, body.avatarUrl)
                         Response(Status.OK).body("Profile updated")
                     } catch (e: UsernameAlreadyExistsException) {
                         Response(Status.CONFLICT).body(e.message ?: "Username already taken")
@@ -172,7 +176,7 @@ class AuthApi(
                 { request ->
                     val user = SecurityRules.USER_KEY(request)!!
                     val body = updateNotifPrefsLens(request)
-                    securityService.updateNotificationPreferences(user.id, body.emailEnabled, body.pushEnabled)
+                    accountService.updateNotificationPreferences(user.id, body.emailEnabled, body.pushEnabled)
                     Response(Status.OK).body("Preferences updated")
                 },
             "/api/v1/auth/logout" meta
@@ -200,7 +204,7 @@ class AuthApi(
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
                         val body = deleteAccountLens(request)
-                        securityService.deleteAccount(user.id, body.currentPassword)
+                        accountService.deleteAccount(user.id, body.currentPassword)
                         Response(Status.OK).body("Account deleted")
                     } catch (e: InsufficientPermissionException) {
                         Response(Status.FORBIDDEN).body(e.message ?: "Cannot delete the only admin")
@@ -225,7 +229,7 @@ class AuthApi(
                 POST to
                 { request ->
                     val login = loginRequestLens(request)
-                    val authResult = securityService.authenticate(login.username, login.password)
+                    val authResult = authService.authenticate(login.username, login.password)
 
                     if (authResult is AuthResult.Authenticated) {
                         val user = authResult.user
@@ -260,7 +264,7 @@ class AuthApi(
                     } else {
                         val register = registerRequestLens(request)
                         try {
-                            val user = securityService.register(register.username, register.password)
+                            val user = authService.register(register.username, register.password)
                             val sessionToken = sessionService.createSession(user.id)
                             Response(Status.OK)
                                 .with(

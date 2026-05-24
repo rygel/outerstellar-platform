@@ -17,6 +17,8 @@ import io.github.rygel.outerstellar.platform.persistence.JdbiSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.security.AccountService
+import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityConfig
 import io.github.rygel.outerstellar.platform.security.SecurityService
@@ -140,6 +142,9 @@ abstract class WebTest {
                 appleOAuthEnabled = true,
             )
 
+        val authService = AuthService(userRepository, encoder, auditRepository)
+        val accountService = AccountService(userRepository, encoder, sessionRepository, auditRepository)
+
         return app(
                 messageService,
                 resolvedContactService,
@@ -149,6 +154,8 @@ abstract class WebTest {
                 pageFactory,
                 config,
                 securityService,
+                authService,
+                accountService,
                 userAdminService,
                 sessionSvc,
                 resolvedUserRepo,
