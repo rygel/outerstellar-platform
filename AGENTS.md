@@ -301,34 +301,6 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
 - Never create your own PostgreSQL container — extend `WebTest` or `JdbiTest`.
 - Never use `testJdbi.open()` — it leaks connections. Use `testJdbi.withHandle { }` or `testJdbi.useHandle<Exception> { }`.
 
-## Project Status (as of May 2026)
-
-### Core features
-- Web app with auth, messages, contacts, notifications, search, admin, settings
-- Desktop Swing client with two-way sync
-- Plugin system (PlatformPlugin interface)
-- SEO: Open Graph, Twitter Card, JSON-LD, sitemap, robots.txt, canonical, hreflang
-- Accessibility: aria-hidden, aria-live, skip-to-content
-
-### Recently completed (PR #239-261)
-- AppContext refactoring, Security hardening (CORS, CSP, session, audit, SSRF)
-- Per-account rate limiting
-- WebPageFactory split into 10 domain factories
-- fragments-seo-core integration
-- Responsive layout (auto-close nav, touch CSS)
-- App.kt refactoring (OptionalServices extraction)
-- SyncWindowMenu + SyncWindowNav extraction
-- 18 performance/runtime items (configurable knobs, startup timing, fetch optimization, indexes, adaptive outbox)
-
-### Open items
-- Generic `catch (Exception)` boilerplate in DesktopSyncEngine
-- DesktopSyncEngine interface for testability
-- TOTP two-factor authentication
-- Unified Settings page with tabs
-- Search SPI (SearchProvider interface)
-- Export SPI (CSV/JSON export)
-- Jazzer fuzz tests
-
 ## http4k contract routing rules
 
 These are hard-won rules from actual failures. Violating them produces compile errors or wrong runtime behavior.
