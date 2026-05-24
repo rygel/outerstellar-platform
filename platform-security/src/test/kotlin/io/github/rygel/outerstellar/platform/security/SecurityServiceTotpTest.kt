@@ -35,7 +35,6 @@ class SecurityServiceTotpTest {
                 sessionRepository = sessionRepository,
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
-                totpService = totpService,
             )
     }
 

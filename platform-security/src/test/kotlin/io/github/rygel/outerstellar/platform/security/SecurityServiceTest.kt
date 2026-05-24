@@ -67,7 +67,6 @@ class SecurityServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 apiKeyRepository = apiKeyRepository,
-                totpService = totpService,
             )
         userAdminService = UserAdminService(userRepository, auditRepository)
     }
@@ -351,7 +350,6 @@ class SecurityServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 sessionRepository = sessionRepository,
-                totpService = totpService,
             )
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
@@ -704,7 +702,6 @@ class SecurityServiceTest {
                 auditRepository = auditRepository,
                 sessionRepository = sessionRepository,
                 config = config,
-                totpService = totpService,
                 sessionService = sessionService,
             )
 
@@ -740,7 +737,6 @@ class SecurityServiceTest {
                 auditRepository = auditRepository,
                 sessionRepository = sessionRepository,
                 config = config,
-                totpService = totpService,
                 sessionService = sessionService,
             )
 
