@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
+import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
 import io.github.rygel.outerstellar.platform.model.User
@@ -282,6 +283,7 @@ object Filters {
         pluginOptions: PluginOptions = PluginOptions(),
         cookieSecure: Boolean = true,
         appBaseUrl: String = "",
+        bannerProviders: List<BannerProvider> = emptyList(),
     ): Filter = Filter { next: HttpHandler ->
         { request ->
             val context =
@@ -294,6 +296,7 @@ object Filters {
                     securityService,
                     pluginOptions,
                     appBaseUrl,
+                    bannerProviders = bannerProviders,
                 )
             val contextUser =
                 try {

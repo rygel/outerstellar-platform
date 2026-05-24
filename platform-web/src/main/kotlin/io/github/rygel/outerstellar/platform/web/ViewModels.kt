@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.TextResolver
+import io.github.rygel.outerstellar.platform.banner.Banner
 import org.http4k.template.ViewModel
 
 data class ShellLink(val label: String, val url: String, val icon: String, val active: Boolean)
@@ -50,6 +51,7 @@ data class ShellView(
     val supportedLocales: List<String> = listOf("en"),
     val appBaseUrl: String = "",
     val ogImage: String = "",
+    val banners: List<Banner> = emptyList(),
 ) {
     fun text(key: String, vararg args: Any?): String = textResolver?.resolve(key, *args) ?: key
 }

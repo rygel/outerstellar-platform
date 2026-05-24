@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.I18nTextResolver
 import io.github.rygel.outerstellar.platform.TextResolver
+import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.model.SessionLookup
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
@@ -29,6 +30,7 @@ class WebContext(
     private val pluginOptions: PluginOptions = PluginOptions(),
     private val appBaseUrl: String = "",
     private val sidebarFactory: SidebarFactory = SidebarFactory(),
+    private val bannerProviders: List<BannerProvider> = emptyList(),
 ) {
     private val logger = LoggerFactory.getLogger(WebContext::class.java)
 
@@ -221,6 +223,13 @@ class WebContext(
         val currentPath = if (request.uri.path.isBlank()) "/" else request.uri.path
         val layoutClass = if (layout == "nice") "" else "layout-$layout"
         val navLinks = buildNavLinks(activeSection)
+        val user = this.user
+        val banners =
+            if (user != null && bannerProviders.isNotEmpty()) {
+                bannerProviders.flatMap { it.getBanners(user.id, user.role.name) }.sortedBy { it.severity.ordinal }
+            } else {
+                emptyList()
+            }
 
         return ShellView(
             pageTitle = pageTitle,
@@ -262,6 +271,7 @@ class WebContext(
             noIndex = activeSection in NO_INDEX_SECTIONS,
             supportedLocales = listOf("en", "fr"),
             appBaseUrl = appBaseUrl,
+            banners = banners,
         )
     }
 }
