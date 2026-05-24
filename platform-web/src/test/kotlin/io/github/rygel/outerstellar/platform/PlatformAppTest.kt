@@ -5,6 +5,8 @@ import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.security.AccountService
+import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.UserAdminService
@@ -32,6 +34,8 @@ class PlatformAppTest {
         val config = AppConfig(port = 8080, jdbcUrl = "jdbc:postgresql://localhost/test", devDashboardEnabled = true)
 
         val securityService = mockk<SecurityService>(relaxed = true)
+        val authService = mockk<AuthService>(relaxed = true)
+        val accountService = mockk<AccountService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
         val userAdminService = mockk<UserAdminService>(relaxed = true)
         val sessionService = mockk<SessionService>(relaxed = true)
@@ -49,6 +53,8 @@ class PlatformAppTest {
                 pageFactory,
                 config,
                 securityService,
+                authService,
+                accountService,
                 userAdminService,
                 sessionService,
                 userRepository,

@@ -122,6 +122,8 @@ class PlaywrightE2ETest {
                 pageFactory = web.pageFactory,
                 config = testConfig,
                 securityService = security.securityService,
+                authService = security.authService,
+                accountService = security.accountService,
                 userAdminService = security.userAdminService,
                 sessionService = security.sessionService,
                 userRepository = persistence.userRepository,

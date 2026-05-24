@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.security.AuthResult
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
 import org.http4k.core.Method.GET
@@ -14,7 +14,7 @@ import org.http4k.routing.routes
 import org.http4k.template.TemplateRenderer
 
 class TOTPRoutes(
-    private val securityService: SecurityService,
+    private val authService: AuthService,
     private val renderer: TemplateRenderer,
     private val sessionCookieSecure: Boolean,
     private val totpService: TOTPService,
@@ -30,7 +30,7 @@ class TOTPRoutes(
                     val partialToken = request.form("partialToken") ?: return@to Response(OK).body("Missing token")
                     val code = request.form("code") ?: return@to Response(OK).body("Missing code")
 
-                    val result = securityService.verifyTotp(partialToken, code, sessionService)
+                    val result = authService.verifyTotp(partialToken, code, sessionService)
                     when (result.status) {
                         "success" -> {
                             val sessionToken = result.token ?: return@to Response(OK).body("Missing session token")
@@ -164,7 +164,7 @@ class TOTPRoutes(
                             )
                     }
                     val (rawCodes, hashedCodes) = totpService.generateBackupCodes()
-                    securityService.enableTotp(user.id, secret, hashedCodes)
+                    authService.enableTotp(user.id, secret, hashedCodes)
                     Response(OK)
                         .body(
                             renderer(
@@ -192,7 +192,7 @@ class TOTPRoutes(
                     val ctx = RequestContext.KEY(request)
                     val shellRenderer = ShellRenderer.KEY(request)
                     val user = ctx.user ?: return@to Response(OK).body("Not authenticated")
-                    val authResult = securityService.authenticate(user.username, password)
+                    val authResult = authService.authenticate(user.username, password)
                     if (authResult !is AuthResult.Authenticated) {
                         return@to Response(OK)
                             .body(
@@ -213,7 +213,7 @@ class TOTPRoutes(
                                 )
                             )
                     }
-                    securityService.disableTotp(user.id)
+                    authService.disableTotp(user.id)
                     Response(OK)
                         .body(
                             renderer(

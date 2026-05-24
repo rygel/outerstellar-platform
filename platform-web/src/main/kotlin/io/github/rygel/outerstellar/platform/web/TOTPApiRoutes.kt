@@ -7,8 +7,8 @@ import io.github.rygel.outerstellar.platform.model.TotpSetupResponse
 import io.github.rygel.outerstellar.platform.model.TotpVerifyRequest
 import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.security.AuthResult
+import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.SecurityRules
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
 import org.http4k.core.Body
@@ -23,7 +23,7 @@ import org.http4k.routing.bind
 import org.http4k.routing.routes
 
 class TOTPApiRoutes(
-    private val securityService: SecurityService,
+    private val authService: AuthService,
     private val totpService: TOTPService,
     private val sessionService: SessionService,
 ) {
@@ -40,7 +40,7 @@ class TOTPApiRoutes(
                 POST to
                 { request ->
                     val body = totpVerifyRequest(request)
-                    val result = securityService.verifyTotp(body.partialToken, body.code, sessionService)
+                    val result = authService.verifyTotp(body.partialToken, body.code, sessionService)
                     when (result.status) {
                         "success" -> Response(OK).with(totpVerifyResponse of result)
                         "invalid_code" -> Response(UNAUTHORIZED).with(totpVerifyResponse of result)
@@ -64,7 +64,7 @@ class TOTPApiRoutes(
                         return@to Response(OK).with(totpConfirmResponse of TotpConfirmResponse("invalid_code"))
                     }
                     val (rawCodes, hashedCodes) = totpService.generateBackupCodes()
-                    securityService.enableTotp(user.id, body.secret, hashedCodes)
+                    authService.enableTotp(user.id, body.secret, hashedCodes)
                     Response(CREATED).with(totpConfirmResponse of TotpConfirmResponse("success", rawCodes))
                 },
             "/api/v1/auth/totp/disable" bind
@@ -72,11 +72,11 @@ class TOTPApiRoutes(
                 { request ->
                     val user = SecurityRules.USER_KEY(request) ?: return@to Response(UNAUTHORIZED)
                     val body = totpDisableRequest(request)
-                    val authResult = securityService.authenticate(user.username, body.password)
+                    val authResult = authService.authenticate(user.username, body.password)
                     if (authResult !is AuthResult.Authenticated) {
                         return@to Response(UNAUTHORIZED)
                     }
-                    securityService.disableTotp(user.id)
+                    authService.disableTotp(user.id)
                     Response(OK)
                 },
         )
