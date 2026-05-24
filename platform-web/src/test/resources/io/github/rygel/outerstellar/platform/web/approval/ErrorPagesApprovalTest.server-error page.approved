@@ -52,6 +52,7 @@
             
             </div>
         </header>
+        
         <main id="main-content" class="flex-1 p-6">
             <div id="ws-updates" ws-subscribe aria-live="polite"></div>
             

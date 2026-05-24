@@ -115,6 +115,7 @@ abstract class WebTest {
         config: AppConfig = testConfig,
         securityService: SecurityService = createSecurityService(),
         overrides: TestOverrides = TestOverrides(),
+        plugin: PlatformPlugin? = null,
     ): HttpHandler {
         val resolvedUserRepo = overrides.userRepository ?: this.userRepository
         val resolvedMessageCache = overrides.messageCache ?: StubMessageCache()
@@ -146,6 +147,7 @@ abstract class WebTest {
                 deviceTokenRepository = overrides.deviceTokenRepository,
                 notificationService = overrides.notificationService,
                 pollService = overrides.pollService ?: pollService,
+                plugin = plugin,
             )
             .http!!
     }

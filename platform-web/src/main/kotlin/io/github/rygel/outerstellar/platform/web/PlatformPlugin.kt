@@ -9,6 +9,7 @@ import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
+import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.SecurityService
@@ -32,6 +33,7 @@ data class PluginOptions(
     val navItems: List<PluginNavItem> = emptyList(),
     val textResolver: TextResolver? = null,
     val adminNavItems: List<AdminNavItem> = emptyList(),
+    val bannerProviders: List<BannerProvider> = emptyList(),
 )
 
 /**
@@ -166,4 +168,6 @@ interface PlatformPlugin : PluginMigrationSource {
     fun filters(context: PluginContext): List<Filter> = emptyList()
 
     fun adminSections(context: PluginContext): List<AdminSection> = emptyList()
+
+    fun bannerProviders(context: PluginContext): List<BannerProvider> = emptyList()
 }

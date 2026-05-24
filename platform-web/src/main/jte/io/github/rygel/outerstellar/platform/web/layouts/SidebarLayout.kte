@@ -57,6 +57,9 @@
             @endif
             </div>
         </header>
+        @if(!shell.banners.isEmpty())
+            @template.io.github.rygel.outerstellar.platform.web.components.Banners(banners = shell.banners)
+        @endif
         <main id="main-content" class="flex-1 p-6">
             <div id="ws-updates" ws-subscribe aria-live="polite"></div>
             ${content}
