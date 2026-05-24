@@ -1,6 +1,5 @@
 package io.github.rygel.outerstellar.platform
 
-import org.koin.dsl.module
 import org.slf4j.LoggerFactory
 import org.snakeyaml.engine.v2.api.Load
 import org.snakeyaml.engine.v2.api.LoadSettings
@@ -20,9 +19,6 @@ private const val DEFAULT_CSP_POLICY =
     "default-src 'self'; script-src 'self'; " +
         "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' wss:; img-src 'self' data:; " +
         "base-uri 'self'; form-action 'self'"
-
-val configModule
-    get() = module { single { AppConfig.fromEnvironment() } }
 
 data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
 

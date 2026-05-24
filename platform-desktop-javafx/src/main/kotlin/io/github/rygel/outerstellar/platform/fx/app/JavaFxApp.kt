@@ -1,14 +1,43 @@
 package io.github.rygel.outerstellar.platform.fx.app
 
 import io.github.rygel.outerstellar.i18n.I18nService
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.controller.MainController
-import io.github.rygel.outerstellar.platform.fx.di.fxRuntimeModules
 import io.github.rygel.outerstellar.platform.fx.service.FxStateProvider
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
+import io.github.rygel.outerstellar.platform.fx.service.FxTrayNotifier
 import io.github.rygel.outerstellar.platform.fx.service.FxWindowState
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
+import io.github.rygel.outerstellar.platform.infra.createDataSource
+import io.github.rygel.outerstellar.platform.infra.migrate
+import io.github.rygel.outerstellar.platform.persistence.JdbiContactRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiMessageRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiOutboxRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiTransactionManager
+import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
+import io.github.rygel.outerstellar.platform.service.ContactService
+import io.github.rygel.outerstellar.platform.service.MessageService
+import io.github.rygel.outerstellar.platform.service.NoOpEventPublisher
+import io.github.rygel.outerstellar.platform.sync.client.AdminClient
+import io.github.rygel.outerstellar.platform.sync.client.ApiSession
+import io.github.rygel.outerstellar.platform.sync.client.AuthClient
+import io.github.rygel.outerstellar.platform.sync.client.HttpAdminClient
+import io.github.rygel.outerstellar.platform.sync.client.HttpAuthClient
+import io.github.rygel.outerstellar.platform.sync.client.HttpNotificationClient
+import io.github.rygel.outerstellar.platform.sync.client.HttpProfileClient
+import io.github.rygel.outerstellar.platform.sync.client.HttpSyncClient
+import io.github.rygel.outerstellar.platform.sync.client.NotificationClient
+import io.github.rygel.outerstellar.platform.sync.client.ProfileClient
+import io.github.rygel.outerstellar.platform.sync.client.SyncClient
 import io.github.rygel.outerstellar.platform.sync.engine.HttpConnectivityChecker
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModuleImpl
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModuleImpl
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModuleImpl
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModuleImpl
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModuleImpl
+import io.micrometer.core.instrument.Metrics
 import java.awt.Desktop
 import java.net.URI
 import java.util.Locale
@@ -20,24 +49,154 @@ import javafx.scene.control.Label
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import javafx.stage.StageStyle
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
-import org.koin.core.context.startKoin
+import org.http4k.client.JavaHttpClient
+import org.jdbi.v3.core.Jdbi
 
-class JavaFxApp : Application(), KoinComponent {
+private class HttpClients(
+    val auth: AuthClient,
+    val sync: SyncClient,
+    val profile: ProfileClient,
+    val admin: AdminClient,
+    val notification: NotificationClient,
+)
+
+private class Repositories(
+    val messageRepository: JdbiMessageRepository,
+    val transactionManager: JdbiTransactionManager,
+    val messageService: MessageService,
+    val contactService: ContactService,
+)
+
+private class SyncModules(
+    val auth: AuthModuleImpl,
+    val syncData: SyncDataModuleImpl,
+    val profile: ProfileModuleImpl,
+    val admin: AdminModuleImpl,
+    val notification: NotificationModuleImpl,
+)
+
+class JavaFxApp : Application() {
 
     private lateinit var viewModel: FxSyncViewModel
 
     override fun init() {
-        startKoin { modules(fxRuntimeModules()) }
+        val fxConfig = FxAppConfig.fromEnvironment()
+        val clients = createHttpClients(fxConfig)
+        val repositories = createRepositories(fxConfig)
+        val analytics = NoOpAnalyticsService()
+        val modules = createModules(clients, repositories, analytics)
+        val i18nService = I18nService.create("messages")
+
+        viewModel =
+            FxSyncViewModel(
+                modules.auth,
+                modules.syncData,
+                modules.profile,
+                modules.admin,
+                modules.notification,
+                i18nService,
+            )
+
+        FxAppContext.viewModel = viewModel
+        FxAppContext.themeManager = FxThemeManager()
+        FxAppContext.i18nService = i18nService
+        FxAppContext.appConfig = fxConfig
+        FxAppContext.authModule = modules.auth
+    }
+
+    private fun createHttpClients(config: FxAppConfig): HttpClients {
+        val httpClient = JavaHttpClient()
+        val apiSession = ApiSession()
+        return HttpClients(
+            auth = HttpAuthClient(config.serverBaseUrl, apiSession, httpClient),
+            sync = HttpSyncClient(config.serverBaseUrl, apiSession, httpClient),
+            profile = HttpProfileClient(config.serverBaseUrl, apiSession, httpClient),
+            admin = HttpAdminClient(config.serverBaseUrl, apiSession, httpClient),
+            notification = HttpNotificationClient(config.serverBaseUrl, apiSession, httpClient),
+        )
+    }
+
+    private fun createRepositories(config: FxAppConfig): Repositories {
+        val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword)
+        try {
+            migrate(ds)
+        } catch (e: Exception) {
+            ds.close()
+            throw e
+        }
+
+        val jdbi =
+            Jdbi.create(ds).also {
+                if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
+                    Metrics.globalRegistry.gauge("database.connections.active", 1)
+                }
+            }
+
+        val messageRepository = JdbiMessageRepository(jdbi)
+        val contactRepository = JdbiContactRepository(jdbi)
+        val outboxRepository = JdbiOutboxRepository(jdbi)
+        val transactionManager = JdbiTransactionManager(jdbi)
+        val messageService = MessageService(messageRepository, outboxRepository, transactionManager, NoOpMessageCache)
+        val contactService = ContactService(contactRepository, NoOpEventPublisher, transactionManager)
+        return Repositories(messageRepository, transactionManager, messageService, contactService)
+    }
+
+    private fun createModules(clients: HttpClients, repos: Repositories, analytics: NoOpAnalyticsService): SyncModules {
+        lateinit var authModule: AuthModuleImpl
+        lateinit var syncDataModule: SyncDataModuleImpl
+
+        authModule =
+            AuthModuleImpl(
+                authClient = clients.auth,
+                analytics = analytics,
+                onLoadData = { syncDataModule.loadData() },
+                onStartAutoSync = { syncDataModule.startAutoSync() },
+                onStopAutoSync = { syncDataModule.stopAutoSync() },
+                notifier = FxTrayNotifier,
+            )
+        syncDataModule =
+            SyncDataModuleImpl(
+                syncClient = clients.sync,
+                messageService = repos.messageService,
+                contactService = repos.contactService,
+                analytics = analytics,
+                repository = repos.messageRepository,
+                transactionManager = repos.transactionManager,
+                authStateProvider = { authModule.authState },
+                notifier = FxTrayNotifier,
+            )
+        val profileModule =
+            ProfileModuleImpl(
+                profileClient = clients.profile,
+                analytics = analytics,
+                authStateProvider = { authModule.authState },
+                onLoadData = { syncDataModule.loadData() },
+                onStopAutoSync = { syncDataModule.stopAutoSync() },
+                onLogout = { authModule.logout() },
+                notifier = FxTrayNotifier,
+            )
+        val adminModule =
+            AdminModuleImpl(
+                adminClient = clients.admin,
+                analytics = analytics,
+                authStateProvider = { authModule.authState },
+                onStopAutoSync = { syncDataModule.stopAutoSync() },
+                onLogout = { authModule.logout() },
+            )
+        val notificationModule =
+            NotificationModuleImpl(
+                notificationClient = clients.notification,
+                onStopAutoSync = { syncDataModule.stopAutoSync() },
+                onLogout = { authModule.logout() },
+            )
+        return SyncModules(authModule, syncDataModule, profileModule, adminModule, notificationModule)
     }
 
     override fun start(primaryStage: Stage) {
         val splash = showSplash(primaryStage)
 
-        viewModel = get()
-        val config = get<FxAppConfig>()
-        val themeManager = get<FxThemeManager>()
+        val config = FxAppContext.appConfig
+        val themeManager = FxAppContext.themeManager
 
         val connectivityChecker =
             HttpConnectivityChecker(healthUrl = "${config.serverBaseUrl}/health").also { it.start() }
@@ -45,8 +204,7 @@ class JavaFxApp : Application(), KoinComponent {
         val savedState = FxStateProvider.loadState()
         val locale = savedState?.language?.let { Locale.of(it) } ?: Locale.getDefault()
         Locale.setDefault(locale)
-        val i18nService: I18nService = get()
-        i18nService.setLocale(locale)
+        FxAppContext.i18nService.setLocale(locale)
 
         val loader = FXMLLoader(javaClass.getResource("/fxml/MainWindow.fxml"))
         val root = loader.load<javafx.scene.Parent>()
@@ -62,7 +220,7 @@ class JavaFxApp : Application(), KoinComponent {
 
         savedState?.lastSearchQuery?.let { viewModel.searchQuery.set(it) }
 
-        primaryStage.title = i18nService.translate("javafx.app.title", "Outerstellar")
+        primaryStage.title = FxAppContext.i18nService.translate("javafx.app.title", "Outerstellar")
         if (savedState != null) {
             primaryStage.x = savedState.x
             primaryStage.y = savedState.y

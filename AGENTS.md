@@ -52,7 +52,31 @@ platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented
 
 ### Container runtime (Podman)
 
-**Podman 5.8.2** is available on this machine with rootful mode enabled, providing Docker API compatibility at `npipe:////./pipe/docker_engine`. Testcontainers uses this automatically — no `DOCKER_HOST` configuration needed.
+**Podman 5.8.2** is available on this machine with rootful mode enabled.
+
+**CRITICAL: Use `podman` exclusively. NEVER use the `docker` CLI.** The Docker CLI is unreliable on this machine — commands hang indefinitely and leave stale BuildKit containers that break Testcontainers. Always use `podman` commands directly.
+
+### Podman pipe configuration
+
+The Podman machine exposes two named pipes on Windows:
+
+| Pipe | Status | Use |
+|---|---|---|
+| `\\.\pipe\podman-machine-default` | **Working** | Podman-native API — always use this |
+| `\\.\pipe\docker_engine` | **Broken** | Docker compatibility pipe — unreliable, do NOT use |
+
+Testcontainers connects via `DOCKER_HOST` set in Surefire:
+```xml
+<environmentVariables>
+    <DOCKER_HOST>npipe:////./pipe/podman-machine-default</DOCKER_HOST>
+</environmentVariables>
+```
+
+The `~/.testcontainers.properties` must NOT pin `docker.client.strategy` — let Testcontainers auto-discover via `DOCKER_HOST`.
+
+### Parallel test execution
+
+Multiple agents/projects can run Testcontainers tests simultaneously against the same Podman pipe. The Podman-native pipe handles concurrent connections. Each Testcontainers instance creates unique containers with random host ports — no collisions. `SharedPostgres` uses `withReuse(true)` and `withLabel()` to share containers across test classes within a project while isolating from other projects.
 
 ```powershell
 # Check Podman status
@@ -61,8 +85,14 @@ podman machine list
 # Start if stopped (must be rootful for Docker API forwarding)
 podman machine start
 
-# Verify Docker API compatibility
-docker ps
+# Verify it's working
+podman ps
+
+# Build Docker images — ALWAYS use podman, never docker
+podman build -t my-image -f Dockerfile .
+
+# Run containers — ALWAYS use podman, never docker
+podman run -d --name my-container my-image
 ```
 
 **Before running integration tests**, ensure the Podman machine is running (`podman machine start`). All Testcontainers-based integration tests (WebTest, JdbiTest) require it. If tests fail with `NoClassDefFoundError` on test classes, the Podman machine is likely stopped.

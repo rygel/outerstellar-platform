@@ -4,12 +4,13 @@ import com.microsoft.playwright.Browser
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.di.coreModule
-import io.github.rygel.outerstellar.platform.di.persistenceModule
-import io.github.rygel.outerstellar.platform.di.webModule
+import io.github.rygel.outerstellar.platform.app
+import io.github.rygel.outerstellar.platform.di.createCoreComponents
+import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
+import io.github.rygel.outerstellar.platform.di.createWebComponents
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
-import io.github.rygel.outerstellar.platform.security.securityModule
+import io.github.rygel.outerstellar.platform.security.createSecurityComponents
 import kotlin.test.assertTrue
 import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
@@ -21,21 +22,13 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
-import org.koin.test.KoinTest
-import org.koin.test.get
 import org.testcontainers.containers.PostgreSQLContainer
 
 @Tag("e2e")
-class PlaywrightE2ETest : KoinTest {
+class PlaywrightE2ETest {
 
-    private val app: PolyHandler by lazy { get<PolyHandler>(named("webServer")) }
-    private val messageRepo: MessageRepository by lazy { get<MessageRepository>() }
-    private val contactRepo: ContactRepository by lazy { get<ContactRepository>() }
-
+    private lateinit var messageRepo: MessageRepository
+    private lateinit var contactRepo: ContactRepository
     private lateinit var server: Http4kServer
     private lateinit var browserContext: com.microsoft.playwright.BrowserContext
     private lateinit var page: Page
@@ -69,35 +62,73 @@ class PlaywrightE2ETest : KoinTest {
 
     @BeforeEach
     fun setup() {
-        stopKoin()
-        startKoin {
-            modules(
-                module {
-                    single {
-                        AppConfig(
-                            jdbcUrl = container.jdbcUrl,
-                            jdbcUser = container.username,
-                            jdbcPassword = container.password,
-                            devMode = true,
-                        )
-                    }
-                },
-                persistenceModule,
-                coreModule,
-                securityModule,
-                webModule,
+        val testConfig =
+            AppConfig(
+                jdbcUrl = container.jdbcUrl,
+                jdbcUser = container.username,
+                jdbcPassword = container.password,
+                devMode = true,
             )
-        }
 
-        // Manual migration and seeding for the test DB
-        val ds = getKoin().get<javax.sql.DataSource>()
-        io.github.rygel.outerstellar.platform.infra.migrate(ds)
+        val persistence = createPersistenceComponents(testConfig)
+        val security =
+            createSecurityComponents(
+                config = testConfig,
+                userRepository = persistence.userRepository,
+                auditRepository = persistence.auditRepository,
+                resetRepository = persistence.passwordResetRepository,
+                apiKeyRepository = persistence.apiKeyRepository,
+                oauthRepository = persistence.oAuthRepository,
+                sessionRepository = persistence.sessionRepository,
+            )
+        val web =
+            createWebComponents(
+                config = testConfig,
+                securityService = security.securityService,
+                messageRepository = persistence.messageRepository,
+                userRepository = persistence.userRepository,
+                voteRepository = persistence.voteRepository,
+                pollRepository = persistence.pollRepository,
+                notificationRepository = persistence.notificationRepository,
+            )
+        val core =
+            createCoreComponents(
+                config = testConfig,
+                messageRepository = persistence.messageRepository,
+                contactRepository = persistence.contactRepository,
+                outboxRepository = persistence.outboxRepository,
+                messageCache = web.messageCache,
+                transactionManager = persistence.transactionManager,
+                auditRepository = persistence.auditRepository,
+                eventPublisher = web.eventPublisher,
+                emailService = web.emailService,
+            )
+
+        messageRepo = persistence.messageRepository
+        contactRepo = persistence.contactRepository
 
         messageRepo.seedMessages()
         contactRepo.seedContacts()
 
-        // Start real HTTP server on random port
-        server = app.asServer(Netty(0)).start()
+        val polyHandler: PolyHandler =
+            app(
+                messageService = core.messageService,
+                contactService = core.contactService,
+                outboxRepository = persistence.outboxRepository,
+                cache = web.messageCache,
+                jteRenderer = web.templateRenderer,
+                pageFactory = web.pageFactory,
+                config = testConfig,
+                securityService = security.securityService,
+                userRepository = persistence.userRepository,
+                analytics = web.analyticsService,
+                notificationService = web.notificationService,
+                jwtService = security.jwtService,
+                syncWebSocket = web.syncWebSocket,
+                voteService = web.voteService,
+                pollService = web.pollService,
+            )
+        server = polyHandler.asServer(Netty(0)).start()
 
         browserContext = browser.newContext()
         page = browserContext.newPage()
@@ -108,7 +139,6 @@ class PlaywrightE2ETest : KoinTest {
         page.close()
         browserContext.close()
         server.stop()
-        stopKoin()
     }
 
     @Test
@@ -134,10 +164,6 @@ class PlaywrightE2ETest : KoinTest {
         page.locator("input[name='author']").fill("Playwright Tester")
         page.locator("textarea[name='content']").fill("Hello from E2E test!")
 
-        // Use a specific selector scoped to the message composer form so we don't
-        // accidentally click the logout or other submit buttons on the page.
-        // The form uses hx-post; HTMX sends XHR (not native form submit) — wait for
-        // the POST response to complete, then navigate explicitly for fresh SSR.
         page.waitForResponse({ response -> response.request().method() == "POST" }) {
             page.locator("form.form-grid button[type='submit']").click()
         }

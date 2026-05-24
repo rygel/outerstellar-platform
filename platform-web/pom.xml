@@ -67,6 +67,10 @@
             <artifactId>jte-runtime</artifactId>
         </dependency>
         <dependency>
+            <groupId>gg.jte</groupId>
+            <artifactId>jte-native-resources</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.github.rygel</groupId>
             <artifactId>outerstellar-theme</artifactId>
         </dependency>
@@ -108,12 +112,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-test-junit5</artifactId>
-            <version>${koin.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.http4k</groupId>
             <artifactId>http4k-client-apache</artifactId>
         </dependency>
@@ -121,10 +119,6 @@
             <groupId>io.mockk</groupId>
             <artifactId>mockk-jvm</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-core-jvm</artifactId>
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
@@ -282,6 +276,13 @@
             <plugin>
                 <groupId>gg.jte</groupId>
                 <artifactId>jte-maven-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>gg.jte</groupId>
+                        <artifactId>jte-native-resources</artifactId>
+                        <version>${jte.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>jte-generate</id>
@@ -293,6 +294,12 @@
                             <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
                             <contentType>Html</contentType>
                             <packageName>gg.jte.generated.precompiled.outerstellar</packageName>
+                            <targetResourceDirectory>${project.build.outputDirectory}</targetResourceDirectory>
+                            <extensions>
+                                <extension>
+                                    <className>gg.jte.nativeimage.NativeResourcesExtension</className>
+                                </extension>
+                            </extensions>
                         </configuration>
                     </execution>
                 </executions>

@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.UserRole
@@ -12,14 +13,13 @@ import javafx.scene.control.TableColumn
 import javafx.scene.control.TableView
 import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
-class UsersController : KoinComponent {
+class UsersController {
 
     private val logger = LoggerFactory.getLogger(UsersController::class.java)
-    private val viewModel: FxSyncViewModel by inject()
+    private val viewModel: FxSyncViewModel
+        get() = FxAppContext.viewModel
 
     fun createView(): Parent {
         val usernameColumn = TableColumn<UserSummary, String>("Username")

@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
 import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
 import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
@@ -11,12 +12,13 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.VBox
 import javafx.stage.Modality
 import javafx.stage.Stage
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
-object ChangePasswordController : KoinComponent {
-    private val viewModel: FxSyncViewModel by inject()
-    private val themeManager: FxThemeManager by inject()
+object ChangePasswordController {
+    private val viewModel: FxSyncViewModel
+        get() = FxAppContext.viewModel
+
+    private val themeManager: FxThemeManager
+        get() = FxAppContext.themeManager
 
     fun show(owner: Stage) {
         val currentField = PasswordField()

@@ -11,7 +11,7 @@
     <packaging>pom</packaging>
 
     <name>Outerstellar Platform</name>
-    <description>Opinionated app scaffold with http4k, JDBI, Flyway, JTE, and Koin</description>
+    <description>Opinionated app scaffold with http4k, JDBI, Flyway, JTE</description>
     <url>https://github.com/rygel/outerstellar-platform</url>
 
     <licenses>
@@ -79,7 +79,6 @@
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <bytebuddy.version>1.18.8</bytebuddy.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
-        <koin.version>4.2.1</koin.version>
         <kotlinx.serialization.version>1.11.0</kotlinx.serialization.version>
         <snakeyaml.engine.version>3.0.1</snakeyaml.engine.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
@@ -324,6 +323,11 @@
                 <version>${jte.version}</version>
             </dependency>
             <dependency>
+                <groupId>gg.jte</groupId>
+                <artifactId>jte-native-resources</artifactId>
+                <version>${jte.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-core</artifactId>
                 <version>${flyway.version}</version>
@@ -388,29 +392,6 @@
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.insert-koin</groupId>
-                <artifactId>koin-core-jvm</artifactId>
-                <version>${koin.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jetbrains.kotlin</groupId>
-                        <artifactId>kotlin-reflect</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.insert-koin</groupId>
-                <artifactId>koin-test-jvm</artifactId>
-                <version>${koin.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.insert-koin</groupId>
-                <artifactId>koin-test-junit5</artifactId>
-                <version>${koin.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -669,6 +650,7 @@
                         </systemPropertyVariables>
                         <environmentVariables>
                             <PLAYWRIGHT_BROWSERS_PATH>${project.build.directory}/playwright-browsers</PLAYWRIGHT_BROWSERS_PATH>
+                            <DOCKER_HOST>npipe:////./pipe/podman-machine-default</DOCKER_HOST>
                         </environmentVariables>
                     </configuration>
                 </plugin>

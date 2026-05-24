@@ -3,7 +3,13 @@ target/
 .git/
 .github/
 .claude/
+.opencode/
+.idea/
+*.iml
+docs/
+scripts/
 *.md
-doc/
+!AGENTS.md
 data/
 node_modules/
+*.log
