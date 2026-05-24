@@ -58,8 +58,8 @@ class DevDashboardAccessIntegrationTest : WebTest() {
         userRepository.save(regularUser)
 
         securityService = createSecurityService()
-        adminToken = securityService.createSession(adminUser.id)
-        userToken = securityService.createSession(regularUser.id)
+        adminToken = sessionSvc.createSession(adminUser.id)
+        userToken = sessionSvc.createSession(regularUser.id)
 
         app = buildApp(securityService = securityService)
 
@@ -67,9 +67,9 @@ class DevDashboardAccessIntegrationTest : WebTest() {
             buildApp(securityService = securityService, config = testConfig.copy(devDashboardEnabled = false))
     }
 
-    private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminToken)
+    private fun adminSession() = Cookie(RequestContext.SESSION_COOKIE, adminToken)
 
-    private fun userSession() = Cookie(WebContext.SESSION_COOKIE, userToken)
+    private fun userSession() = Cookie(RequestContext.SESSION_COOKIE, userToken)
 
     @Test
     fun `admin can access dev dashboard`() {

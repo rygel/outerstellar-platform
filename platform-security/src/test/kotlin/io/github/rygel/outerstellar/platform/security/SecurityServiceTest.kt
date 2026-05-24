@@ -3,8 +3,6 @@ package io.github.rygel.outerstellar.platform.security
 import io.github.rygel.outerstellar.platform.model.ApiKey
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.RegistrationDisabledException
-import io.github.rygel.outerstellar.platform.model.Session
-import io.github.rygel.outerstellar.platform.model.SessionLookup
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
@@ -685,78 +683,6 @@ class SecurityServiceTest {
         service.deleteAccount(adminUser.id, "correctpass")
 
         verify { userRepository.deleteById(adminUser.id) }
-    }
-
-    // ---- session absolute timeout ----
-
-    @Test
-    fun `lookupSession returns Expired when absolute timeout exceeded`() {
-        val sessionRepository: SessionRepository = mockk(relaxed = true)
-        val config = SecurityConfig(sessionTimeoutSeconds = 3600, sessionAbsoluteTimeoutSeconds = 7200)
-        val sessionService = SessionService(sessionRepository, userRepository, config)
-        val absoluteTimeoutService =
-            SecurityService(
-                userRepository = userRepository,
-                passwordEncoder = passwordEncoder,
-                auditRepository = auditRepository,
-                sessionRepository = sessionRepository,
-                config = config,
-                sessionService = sessionService,
-            )
-
-        val rawToken = "oss_" + "test".repeat(12)
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val tokenHash = digest.digest(rawToken.toByteArray()).joinToString("") { "%02x".format(it) }
-
-        val oldSession =
-            Session(
-                tokenHash = tokenHash,
-                userId = testUser.id,
-                createdAt = Instant.now().minusSeconds(7201),
-                expiresAt = Instant.now().plusSeconds(3600),
-            )
-
-        every { sessionRepository.findByTokenHash(tokenHash) } returns oldSession
-
-        val result = absoluteTimeoutService.lookupSession(rawToken)
-
-        assertTrue(result is SessionLookup.Expired)
-        verify { sessionRepository.deleteByTokenHash(tokenHash) }
-    }
-
-    @Test
-    fun `lookupSession returns Active when within absolute timeout`() {
-        val sessionRepository: SessionRepository = mockk(relaxed = true)
-        val config = SecurityConfig(sessionTimeoutSeconds = 3600, sessionAbsoluteTimeoutSeconds = 7200)
-        val sessionService = SessionService(sessionRepository, userRepository, config)
-        val absoluteTimeoutService =
-            SecurityService(
-                userRepository = userRepository,
-                passwordEncoder = passwordEncoder,
-                auditRepository = auditRepository,
-                sessionRepository = sessionRepository,
-                config = config,
-                sessionService = sessionService,
-            )
-
-        val rawToken = "oss_" + "test".repeat(12)
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val tokenHash = digest.digest(rawToken.toByteArray()).joinToString("") { "%02x".format(it) }
-
-        val activeSession =
-            Session(
-                tokenHash = tokenHash,
-                userId = testUser.id,
-                createdAt = Instant.now().minusSeconds(3600),
-                expiresAt = Instant.now().plusSeconds(3600),
-            )
-
-        every { sessionRepository.findByTokenHash(tokenHash) } returns activeSession
-        every { userRepository.findById(testUser.id) } returns testUser
-
-        val result = absoluteTimeoutService.lookupSession(rawToken)
-
-        assertTrue(result is SessionLookup.Active)
     }
 
     // ---- updateNotificationPreferences ----

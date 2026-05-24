@@ -72,8 +72,8 @@ class PlatformPageRenderingTest : WebTest() {
         userRepository.save(regularUser)
 
         securityService = createSecurityService()
-        adminToken = securityService.createSession(adminUser.id)
-        userToken = securityService.createSession(regularUser.id)
+        adminToken = sessionSvc.createSession(adminUser.id)
+        userToken = sessionSvc.createSession(regularUser.id)
 
         val notificationService = NotificationService(JdbiNotificationRepository(testJdbi))
         app =
@@ -83,9 +83,9 @@ class PlatformPageRenderingTest : WebTest() {
             )
     }
 
-    private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminToken)
+    private fun adminSession() = Cookie(RequestContext.SESSION_COOKIE, adminToken)
 
-    private fun userSession() = Cookie(WebContext.SESSION_COOKIE, userToken)
+    private fun userSession() = Cookie(RequestContext.SESSION_COOKIE, userToken)
 
     private fun assertHtmlPage(response: org.http4k.core.Response, path: String) {
         assertThat(response, hasStatus(Status.OK))

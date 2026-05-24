@@ -61,9 +61,7 @@ fun createSecurityComponents(
             emailService = emailService,
             oauthRepository = oauthRepository,
             config = securityConfig,
-            sessionRepository = sessionRepository,
             activityUpdater = asyncActivityUpdater,
-            sessionService = sessionService,
         )
     val permissionResolver = RoleBasedPermissionResolver()
     val authRealms = listOf(SessionRealm(sessionService), ApiKeyRealm(securityService))

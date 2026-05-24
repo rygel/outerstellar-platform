@@ -61,15 +61,15 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
         userRepository.save(regularUser)
 
         securityService = createSecurityService()
-        adminToken = securityService.createSession(adminUser.id)
-        regularToken = securityService.createSession(regularUser.id)
+        adminToken = sessionSvc.createSession(adminUser.id)
+        regularToken = sessionSvc.createSession(regularUser.id)
 
         app = buildApp(securityService = securityService)
     }
 
-    private fun adminCookie() = Cookie(WebContext.SESSION_COOKIE, adminToken)
+    private fun adminCookie() = Cookie(RequestContext.SESSION_COOKIE, adminToken)
 
-    private fun regularCookie() = Cookie(WebContext.SESSION_COOKIE, regularToken)
+    private fun regularCookie() = Cookie(RequestContext.SESSION_COOKIE, regularToken)
 
     @Test
     fun `GET admin-users returns 200 for admin`() {

@@ -4,7 +4,7 @@ import io.github.rygel.outerstellar.platform.model.SessionLookup
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.JwtService
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
 import java.util.Locale
 import org.http4k.core.Request
 import org.http4k.core.cookie.cookie
@@ -14,7 +14,7 @@ class RequestContext(
     val request: Request,
     private val userRepository: UserRepository? = null,
     private val jwtService: JwtService? = null,
-    private val securityService: SecurityService? = null,
+    private val sessionService: SessionService? = null,
 ) {
     companion object {
         val KEY = RequestKey.required<RequestContext>("request.context")
@@ -33,7 +33,7 @@ class RequestContext(
     }
 
     private val sessionLookup: SessionLookup? by lazy {
-        request.cookie(SESSION_COOKIE)?.value?.let { rawToken -> securityService?.lookupSession(rawToken) }
+        request.cookie(SESSION_COOKIE)?.value?.let { rawToken -> sessionService?.lookupSession(rawToken) }
     }
 
     val user: User? by lazy {

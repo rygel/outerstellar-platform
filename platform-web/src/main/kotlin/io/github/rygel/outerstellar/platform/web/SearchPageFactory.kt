@@ -32,14 +32,14 @@ class SearchPageFactory {
     }
 
     fun buildSearchPage(
-        ctx: WebContext,
+        shellRenderer: ShellRenderer,
         query: String,
         providers: List<SearchProvider>,
         limit: Int = DEFAULT_SEARCH_LIMIT,
         typeFilter: String = "",
     ): Page<SearchPage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.search.title"), "/search")
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.search.title"), "/search")
         val results =
             aggregateResults(providers, query, limit, typeFilter).map { r ->
                 SearchResultViewModel(id = r.id, title = r.title, subtitle = r.subtitle, url = r.url, type = r.type)

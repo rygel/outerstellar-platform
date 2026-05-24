@@ -3,14 +3,14 @@ package io.github.rygel.outerstellar.platform.web
 class DevDashboardPageFactory {
 
     fun buildDevDashboardPage(
-        ctx: WebContext,
+        shellRenderer: ShellRenderer,
         metrics: String,
         cacheStats: Map<String, Any>,
         outboxStats: OutboxStatsViewModel,
         telemetryStatus: String,
     ): Page<DevDashboardPage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.nav.dev"), "/admin/dev")
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.nav.dev"), "/admin/dev")
 
         return Page(
             shell = shell,

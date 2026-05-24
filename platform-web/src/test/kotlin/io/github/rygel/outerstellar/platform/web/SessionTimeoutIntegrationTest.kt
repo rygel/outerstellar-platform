@@ -35,8 +35,8 @@ class SessionTimeoutIntegrationTest : WebTest() {
         userRepository.save(activeUser)
         userRepository.save(expiredUser)
 
-        activeToken = securityService.createSession(activeUser.id)
-        expiredToken = securityService.createSession(expiredUser.id)
+        activeToken = sessionSvc.createSession(activeUser.id)
+        expiredToken = sessionSvc.createSession(expiredUser.id)
 
         testJdbi.useHandle<Exception> { handle ->
             handle.execute(
@@ -82,7 +82,7 @@ class SessionTimeoutIntegrationTest : WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(freshUser)
-        val freshToken = securityService.createSession(freshUser.id)
+        val freshToken = sessionSvc.createSession(freshUser.id)
 
         val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $freshToken"))
 
@@ -91,7 +91,7 @@ class SessionTimeoutIntegrationTest : WebTest() {
 
     @Test
     fun `expired session cookie on HTML route redirects to auth with expired param`() {
-        val response = app(Request(GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, expiredToken)))
+        val response = app(Request(GET, "/").cookie(Cookie(RequestContext.SESSION_COOKIE, expiredToken)))
 
         assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
@@ -100,7 +100,7 @@ class SessionTimeoutIntegrationTest : WebTest() {
 
     @Test
     fun `active session cookie on HTML route is accepted`() {
-        val response = app(Request(GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, activeToken)))
+        val response = app(Request(GET, "/").cookie(Cookie(RequestContext.SESSION_COOKIE, activeToken)))
 
         assertThat(response, hasStatus(Status.OK))
     }

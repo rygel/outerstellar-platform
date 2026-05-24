@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
@@ -17,17 +18,19 @@ class TOTPRoutes(
     private val renderer: TemplateRenderer,
     private val sessionCookieSecure: Boolean,
     private val totpService: TOTPService,
+    private val sessionService: SessionService,
 ) {
     val routes =
         routes(
             "/auth/components/totp-verify" bind
                 POST to
                 { request ->
-                    val ctx = WebContext.KEY(request)
+                    val ctx = RequestContext.KEY(request)
+                    val shellRenderer = ShellRenderer.KEY(request)
                     val partialToken = request.form("partialToken") ?: return@to Response(OK).body("Missing token")
                     val code = request.form("code") ?: return@to Response(OK).body("Missing code")
 
-                    val result = securityService.verifyTotp(partialToken, code)
+                    val result = securityService.verifyTotp(partialToken, code, sessionService)
                     when (result.status) {
                         "success" -> {
                             val sessionToken = result.token ?: return@to Response(OK).body("Missing session token")
@@ -41,12 +44,12 @@ class TOTPRoutes(
                                     renderer(
                                         TotpChallengeForm(
                                             partialToken = partialToken,
-                                            title = ctx.i18n.translate("web.totp.title"),
-                                            description = ctx.i18n.translate("web.totp.enterCode"),
-                                            codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
-                                            verifyLabel = ctx.i18n.translate("web.totp.verifyCode"),
-                                            backLinkLabel = ctx.i18n.translate("web.totp.backLink"),
-                                            error = ctx.i18n.translate("web.totp.invalidCode"),
+                                            title = shellRenderer.i18n.translate("web.totp.title"),
+                                            description = shellRenderer.i18n.translate("web.totp.enterCode"),
+                                            codeLabel = shellRenderer.i18n.translate("web.totp.codeLabel"),
+                                            verifyLabel = shellRenderer.i18n.translate("web.totp.verifyCode"),
+                                            backLinkLabel = shellRenderer.i18n.translate("web.totp.backLink"),
+                                            error = shellRenderer.i18n.translate("web.totp.invalidCode"),
                                         )
                                     )
                                 )
@@ -56,12 +59,12 @@ class TOTPRoutes(
                                     renderer(
                                         TotpChallengeForm(
                                             partialToken = partialToken,
-                                            title = ctx.i18n.translate("web.totp.title"),
-                                            description = ctx.i18n.translate("web.totp.enterCode"),
-                                            codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
-                                            verifyLabel = ctx.i18n.translate("web.totp.verifyCode"),
-                                            backLinkLabel = ctx.i18n.translate("web.totp.backLink"),
-                                            error = ctx.i18n.translate("web.totp.sessionExpired"),
+                                            title = shellRenderer.i18n.translate("web.totp.title"),
+                                            description = shellRenderer.i18n.translate("web.totp.enterCode"),
+                                            codeLabel = shellRenderer.i18n.translate("web.totp.codeLabel"),
+                                            verifyLabel = shellRenderer.i18n.translate("web.totp.verifyCode"),
+                                            backLinkLabel = shellRenderer.i18n.translate("web.totp.backLink"),
+                                            error = shellRenderer.i18n.translate("web.totp.sessionExpired"),
                                         )
                                     )
                                 )
@@ -71,12 +74,12 @@ class TOTPRoutes(
                                     renderer(
                                         TotpChallengeForm(
                                             partialToken = partialToken,
-                                            title = ctx.i18n.translate("web.totp.title"),
-                                            description = ctx.i18n.translate("web.totp.enterCode"),
-                                            codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
-                                            verifyLabel = ctx.i18n.translate("web.totp.verifyCode"),
-                                            backLinkLabel = ctx.i18n.translate("web.totp.backLink"),
-                                            error = ctx.i18n.translate("web.totp.sessionExpired"),
+                                            title = shellRenderer.i18n.translate("web.totp.title"),
+                                            description = shellRenderer.i18n.translate("web.totp.enterCode"),
+                                            codeLabel = shellRenderer.i18n.translate("web.totp.codeLabel"),
+                                            verifyLabel = shellRenderer.i18n.translate("web.totp.verifyCode"),
+                                            backLinkLabel = shellRenderer.i18n.translate("web.totp.backLink"),
+                                            error = shellRenderer.i18n.translate("web.totp.sessionExpired"),
                                         )
                                     )
                                 )
@@ -85,7 +88,8 @@ class TOTPRoutes(
             "/auth/components/totp-setup-status" bind
                 GET to
                 { request ->
-                    val ctx = WebContext.KEY(request)
+                    val ctx = RequestContext.KEY(request)
+                    val shellRenderer = ShellRenderer.KEY(request)
                     val user = ctx.user ?: return@to Response(OK).body("Not authenticated")
                     val remaining = countBackupCodes(user.totpBackupCodes)
                     Response(OK)
@@ -94,19 +98,20 @@ class TOTPRoutes(
                                 TotpSetupFragment(
                                     totpEnabled = user.totpEnabled,
                                     totpRemainingBackupCodes = remaining,
-                                    enabledLabel = ctx.i18n.translate("web.totp.enabled"),
-                                    disableLabel = ctx.i18n.translate("web.totp.disable"),
-                                    passwordLabel = ctx.i18n.translate("web.totp.passwordLabel"),
-                                    backupCodesLabel = ctx.i18n.translate("web.totp.backupCodes"),
-                                    backupCodesHint = ctx.i18n.translate("web.totp.backupCodes.hint"),
-                                    backupCodesRemainingLabel = ctx.i18n.translate("web.totp.backupCodes.remaining"),
-                                    copyLabel = ctx.i18n.translate("web.totp.backupCodes.copy"),
-                                    downloadLabel = ctx.i18n.translate("web.totp.backupCodes.download"),
-                                    disabledLabel = ctx.i18n.translate("web.totp.scanQr"),
-                                    manualKeyLabel = ctx.i18n.translate("web.totp.manualKey"),
-                                    codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
-                                    setupLabel = ctx.i18n.translate("web.totp.enable"),
-                                    verifyLabel = ctx.i18n.translate("web.totp.verifyAndEnable"),
+                                    enabledLabel = shellRenderer.i18n.translate("web.totp.enabled"),
+                                    disableLabel = shellRenderer.i18n.translate("web.totp.disable"),
+                                    passwordLabel = shellRenderer.i18n.translate("web.totp.passwordLabel"),
+                                    backupCodesLabel = shellRenderer.i18n.translate("web.totp.backupCodes"),
+                                    backupCodesHint = shellRenderer.i18n.translate("web.totp.backupCodes.hint"),
+                                    backupCodesRemainingLabel =
+                                        shellRenderer.i18n.translate("web.totp.backupCodes.remaining"),
+                                    copyLabel = shellRenderer.i18n.translate("web.totp.backupCodes.copy"),
+                                    downloadLabel = shellRenderer.i18n.translate("web.totp.backupCodes.download"),
+                                    disabledLabel = shellRenderer.i18n.translate("web.totp.scanQr"),
+                                    manualKeyLabel = shellRenderer.i18n.translate("web.totp.manualKey"),
+                                    codeLabel = shellRenderer.i18n.translate("web.totp.codeLabel"),
+                                    setupLabel = shellRenderer.i18n.translate("web.totp.enable"),
+                                    verifyLabel = shellRenderer.i18n.translate("web.totp.verifyAndEnable"),
                                 )
                             )
                         )
@@ -114,7 +119,8 @@ class TOTPRoutes(
             "/auth/components/totp-setup" bind
                 POST to
                 { request ->
-                    val ctx = WebContext.KEY(request)
+                    val ctx = RequestContext.KEY(request)
+                    val shellRenderer = ShellRenderer.KEY(request)
                     val user = ctx.user ?: return@to Response(OK).body("Not authenticated")
                     val secret = totpService.generateSecret()
                     val qrDataUri = totpService.generateQrDataUri(secret, user.email)
@@ -124,10 +130,10 @@ class TOTPRoutes(
                                 TotpSetupFragment(
                                     totpQrDataUri = qrDataUri,
                                     totpSecret = secret,
-                                    disabledLabel = ctx.i18n.translate("web.totp.scanQr"),
-                                    manualKeyLabel = ctx.i18n.translate("web.totp.manualKey"),
-                                    codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
-                                    verifyLabel = ctx.i18n.translate("web.totp.verifyAndEnable"),
+                                    disabledLabel = shellRenderer.i18n.translate("web.totp.scanQr"),
+                                    manualKeyLabel = shellRenderer.i18n.translate("web.totp.manualKey"),
+                                    codeLabel = shellRenderer.i18n.translate("web.totp.codeLabel"),
+                                    verifyLabel = shellRenderer.i18n.translate("web.totp.verifyAndEnable"),
                                 )
                             )
                         )
@@ -137,7 +143,8 @@ class TOTPRoutes(
                 { request ->
                     val secret = request.form("secret") ?: return@to Response(OK).body("Missing secret")
                     val code = request.form("code") ?: return@to Response(OK).body("Missing code")
-                    val ctx = WebContext.KEY(request)
+                    val ctx = RequestContext.KEY(request)
+                    val shellRenderer = ShellRenderer.KEY(request)
                     val user = ctx.user ?: return@to Response(OK).body("Not authenticated")
 
                     if (!totpService.verifyCode(secret, code)) {
@@ -148,10 +155,10 @@ class TOTPRoutes(
                                     TotpSetupFragment(
                                         totpQrDataUri = qrDataUri,
                                         totpSecret = secret,
-                                        disabledLabel = ctx.i18n.translate("web.totp.scanQr"),
-                                        manualKeyLabel = ctx.i18n.translate("web.totp.manualKey"),
-                                        codeLabel = ctx.i18n.translate("web.totp.codeLabel"),
-                                        verifyLabel = ctx.i18n.translate("web.totp.verifyAndEnable"),
+                                        disabledLabel = shellRenderer.i18n.translate("web.totp.scanQr"),
+                                        manualKeyLabel = shellRenderer.i18n.translate("web.totp.manualKey"),
+                                        codeLabel = shellRenderer.i18n.translate("web.totp.codeLabel"),
+                                        verifyLabel = shellRenderer.i18n.translate("web.totp.verifyAndEnable"),
                                     )
                                 )
                             )
@@ -165,14 +172,15 @@ class TOTPRoutes(
                                     totpEnabled = true,
                                     totpBackupCodes = rawCodes,
                                     totpRemainingBackupCodes = rawCodes.size,
-                                    enabledLabel = ctx.i18n.translate("web.totp.enabled"),
-                                    disableLabel = ctx.i18n.translate("web.totp.disable"),
-                                    passwordLabel = ctx.i18n.translate("web.totp.passwordLabel"),
-                                    backupCodesLabel = ctx.i18n.translate("web.totp.backupCodes"),
-                                    backupCodesHint = ctx.i18n.translate("web.totp.backupCodes.hint"),
-                                    backupCodesRemainingLabel = ctx.i18n.translate("web.totp.backupCodes.remaining"),
-                                    copyLabel = ctx.i18n.translate("web.totp.backupCodes.copy"),
-                                    downloadLabel = ctx.i18n.translate("web.totp.backupCodes.download"),
+                                    enabledLabel = shellRenderer.i18n.translate("web.totp.enabled"),
+                                    disableLabel = shellRenderer.i18n.translate("web.totp.disable"),
+                                    passwordLabel = shellRenderer.i18n.translate("web.totp.passwordLabel"),
+                                    backupCodesLabel = shellRenderer.i18n.translate("web.totp.backupCodes"),
+                                    backupCodesHint = shellRenderer.i18n.translate("web.totp.backupCodes.hint"),
+                                    backupCodesRemainingLabel =
+                                        shellRenderer.i18n.translate("web.totp.backupCodes.remaining"),
+                                    copyLabel = shellRenderer.i18n.translate("web.totp.backupCodes.copy"),
+                                    downloadLabel = shellRenderer.i18n.translate("web.totp.backupCodes.download"),
                                 )
                             )
                         )
@@ -181,7 +189,8 @@ class TOTPRoutes(
                 POST to
                 { request ->
                     val password = request.form("password") ?: return@to Response(OK).body("Missing password")
-                    val ctx = WebContext.KEY(request)
+                    val ctx = RequestContext.KEY(request)
+                    val shellRenderer = ShellRenderer.KEY(request)
                     val user = ctx.user ?: return@to Response(OK).body("Not authenticated")
                     val authResult = securityService.authenticate(user.username, password)
                     if (authResult !is AuthResult.Authenticated) {
@@ -190,15 +199,15 @@ class TOTPRoutes(
                                 renderer(
                                     TotpSetupFragment(
                                         totpEnabled = true,
-                                        enabledLabel = ctx.i18n.translate("web.totp.enabled"),
-                                        disableLabel = ctx.i18n.translate("web.totp.disable"),
-                                        passwordLabel = ctx.i18n.translate("web.totp.passwordLabel"),
-                                        backupCodesLabel = ctx.i18n.translate("web.totp.backupCodes"),
-                                        backupCodesHint = ctx.i18n.translate("web.totp.backupCodes.hint"),
+                                        enabledLabel = shellRenderer.i18n.translate("web.totp.enabled"),
+                                        disableLabel = shellRenderer.i18n.translate("web.totp.disable"),
+                                        passwordLabel = shellRenderer.i18n.translate("web.totp.passwordLabel"),
+                                        backupCodesLabel = shellRenderer.i18n.translate("web.totp.backupCodes"),
+                                        backupCodesHint = shellRenderer.i18n.translate("web.totp.backupCodes.hint"),
                                         backupCodesRemainingLabel =
-                                            ctx.i18n.translate("web.totp.backupCodes.remaining"),
-                                        copyLabel = ctx.i18n.translate("web.totp.backupCodes.copy"),
-                                        downloadLabel = ctx.i18n.translate("web.totp.backupCodes.download"),
+                                            shellRenderer.i18n.translate("web.totp.backupCodes.remaining"),
+                                        copyLabel = shellRenderer.i18n.translate("web.totp.backupCodes.copy"),
+                                        downloadLabel = shellRenderer.i18n.translate("web.totp.backupCodes.download"),
                                         totpRemainingBackupCodes = countBackupCodes(user.totpBackupCodes),
                                     )
                                 )
@@ -210,8 +219,8 @@ class TOTPRoutes(
                             renderer(
                                 TotpSetupFragment(
                                     totpEnabled = false,
-                                    disabledLabel = ctx.i18n.translate("web.totp.scanQr"),
-                                    setupLabel = ctx.i18n.translate("web.totp.enable"),
+                                    disabledLabel = shellRenderer.i18n.translate("web.totp.scanQr"),
+                                    setupLabel = shellRenderer.i18n.translate("web.totp.enable"),
                                 )
                             )
                         )

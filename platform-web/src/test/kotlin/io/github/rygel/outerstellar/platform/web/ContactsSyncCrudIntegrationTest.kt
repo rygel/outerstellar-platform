@@ -49,7 +49,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        sessionToken = securityService.createSession(testUser.id)
+        sessionToken = sessionSvc.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
     }

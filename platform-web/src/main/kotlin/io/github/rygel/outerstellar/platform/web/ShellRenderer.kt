@@ -9,6 +9,7 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import org.http4k.lens.RequestKey
 import org.slf4j.LoggerFactory
 
 class ShellRenderer(
@@ -32,6 +33,8 @@ class ShellRenderer(
     private val logger = LoggerFactory.getLogger(ShellRenderer::class.java)
 
     companion object {
+        val KEY = RequestKey.required<ShellRenderer>("shell.renderer")
+
         private val NO_INDEX_SECTIONS =
             setOf(
                 "/auth",
@@ -162,7 +165,6 @@ class ShellRenderer(
         val layoutClass = if (ctx.layout == "nice") "" else "layout-${ctx.layout}"
         val navLinks = buildNavLinks(activeSection)
         val user = ctx.user
-        val webContext = WebContext(ctx, this)
         val banners =
             if (user != null && bannerProviders.isNotEmpty()) {
                 bannerProviders.flatMap { it.getBanners(user.id, user.role.name) }.sortedBy { it.severity.ordinal }
@@ -180,9 +182,9 @@ class ShellRenderer(
             layoutClass = layoutClass,
             layoutStyle = ctx.shellStyle,
             navLinks = navLinks,
-            themeSelector = sidebarFactory.buildThemeSelector(webContext),
-            languageSelector = sidebarFactory.buildLanguageSelector(webContext),
-            layoutSelector = sidebarFactory.buildLayoutSelector(webContext),
+            themeSelector = sidebarFactory.buildThemeSelector(ctx, this),
+            languageSelector = sidebarFactory.buildLanguageSelector(ctx, this),
+            layoutSelector = sidebarFactory.buildLayoutSelector(ctx, this),
             footerCopy = i18n.translate("web.footer.copy"),
             footerVersion = i18n.translate("web.footer.version", appVersion),
             footerStatusUrl = url("/components/footer-status"),

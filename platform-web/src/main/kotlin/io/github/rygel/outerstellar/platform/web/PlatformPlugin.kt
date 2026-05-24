@@ -55,7 +55,7 @@ data class PluginContext(
      */
     fun currentUser(request: Request): User? =
         try {
-            request.webContext.user
+            request.requestContext.user
         } catch (e: LensFailure) {
             logger.debug("Lens extraction failed for current user check: {}", e.message)
             null
@@ -63,11 +63,11 @@ data class PluginContext(
 
     /**
      * Renders [bodyHtml] wrapped inside the platform's standardized layout shell defined by [shell]. The [ShellView] is
-     * obtained from [WebContext.shell()].
+     * obtained from [ShellRenderer.shell()].
      *
      * Usage:
      * ```kotlin
-     * val shell = request.webContext.shell("Page Title", "/section")
+     * val shell = request.shellRenderer.shell("Page Title", "/section")
      * val html = context.renderShell(shell, "<div>...</div>")
      * ```
      *

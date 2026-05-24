@@ -48,14 +48,14 @@ class DarkModeToggleIntegrationTest : WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(user)
-        sessionCookie = Cookie(WebContext.SESSION_COOKIE, securityService.createSession(user.id))
+        sessionCookie = Cookie(RequestContext.SESSION_COOKIE, sessionSvc.createSession(user.id))
         app = buildApp(securityService = securityService)
     }
 
     private fun seedAdmin(): String {
         val id = UUID.randomUUID()
         userRepository.save(User(id, "admin", "admin@test.com", testPasswordHash, UserRole.ADMIN))
-        return securityService.createSession(id)
+        return sessionSvc.createSession(id)
     }
 
     // ---- data-theme attribute ----

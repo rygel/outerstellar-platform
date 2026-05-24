@@ -32,11 +32,12 @@ class NotificationRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
                         Response(Status.FOUND).header("location", "/auth")
                     } else {
-                        renderer.render(pageFactory.buildNotificationsPage(ctx))
+                        renderer.render(pageFactory.buildNotificationsPage(ctx, shellRenderer))
                     }
                 },
             "/notifications/read-all" meta
@@ -45,13 +46,11 @@ class NotificationRoutes(
                 } bindContract
                 POST to
                 { request ->
-                    val ctx = request.webContext
-                    val user = ctx.user
+                    val user = request.requestContext.user
                     if (user == null) {
                         Response(Status.FORBIDDEN)
                     } else {
                         notificationService.markAllRead(user.id)
-                        // Re-render the page via HTMX redirect
                         Response(Status.FOUND).header("location", "/notifications")
                     }
                 },
@@ -62,8 +61,7 @@ class NotificationRoutes(
                 POST to
                 { notificationId, _ ->
                     { request ->
-                        val ctx = request.webContext
-                        val user = ctx.user
+                        val user = request.requestContext.user
                         if (user == null) {
                             Response(Status.FORBIDDEN)
                         } else {
@@ -82,8 +80,9 @@ class NotificationRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    val ctx = request.webContext
-                    val fragment = pageFactory.buildNotificationBell(ctx)
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
+                    val fragment = pageFactory.buildNotificationBell(ctx, shellRenderer)
                     Response(Status.OK).header("content-type", "text/html; charset=utf-8").body(renderer(fragment))
                 },
         )

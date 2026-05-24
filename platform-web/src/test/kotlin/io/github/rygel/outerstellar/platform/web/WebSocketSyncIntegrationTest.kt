@@ -3,6 +3,7 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
 import io.mockk.mockk
 import io.mockk.verify
 import java.util.UUID
@@ -20,6 +21,7 @@ class WebSocketSyncIntegrationTest : WebTest() {
     private lateinit var testToken: String
     private lateinit var syncWebSocket: SyncWebSocket
     private lateinit var securityService: SecurityService
+    private lateinit var sessionService: SessionService
 
     @BeforeEach
     fun setupTest() {
@@ -33,8 +35,9 @@ class WebSocketSyncIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
         securityService = createSecurityService()
-        testToken = securityService.createSession(testUser.id)
-        syncWebSocket = SyncWebSocket(securityService)
+        sessionService = sessionSvc
+        testToken = sessionService.createSession(testUser.id)
+        syncWebSocket = SyncWebSocket(sessionService)
     }
 
     @Test
@@ -49,7 +52,7 @@ class WebSocketSyncIntegrationTest : WebTest() {
 
     @Test
     fun `invalid session cookie is rejected with 4401`() {
-        val request = Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=not-a-valid-token")
+        val request = Request(GET, "/ws/sync").header("Cookie", "${RequestContext.SESSION_COOKIE}=not-a-valid-token")
         val wsResponse = syncWebSocket.handler(request)
         val mockWs = mockk<Websocket>(relaxed = true)
 
@@ -60,7 +63,8 @@ class WebSocketSyncIntegrationTest : WebTest() {
 
     @Test
     fun `unknown token in session cookie is rejected with 4401`() {
-        val request = Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=oss_${"z".repeat(48)}")
+        val request =
+            Request(GET, "/ws/sync").header("Cookie", "${RequestContext.SESSION_COOKIE}=oss_${"z".repeat(48)}")
         val wsResponse = syncWebSocket.handler(request)
         val mockWs = mockk<Websocket>(relaxed = true)
 
@@ -71,7 +75,7 @@ class WebSocketSyncIntegrationTest : WebTest() {
 
     @Test
     fun `valid session cookie accepts connection and registers handlers`() {
-        val request = Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=$testToken")
+        val request = Request(GET, "/ws/sync").header("Cookie", "${RequestContext.SESSION_COOKIE}=$testToken")
         val wsResponse = syncWebSocket.handler(request)
         val mockWs = mockk<Websocket>(relaxed = true)
 
@@ -85,7 +89,7 @@ class WebSocketSyncIntegrationTest : WebTest() {
 
     @Test
     fun `publishRefresh broadcasts to authenticated connection`() {
-        val request = Request(GET, "/ws/sync").header("Cookie", "${WebContext.SESSION_COOKIE}=$testToken")
+        val request = Request(GET, "/ws/sync").header("Cookie", "${RequestContext.SESSION_COOKIE}=$testToken")
         val wsResponse = syncWebSocket.handler(request)
         val mockWs = mockk<Websocket>(relaxed = true)
 

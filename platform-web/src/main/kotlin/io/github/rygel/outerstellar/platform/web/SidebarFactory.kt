@@ -8,25 +8,25 @@ class SidebarFactory {
     private val selectorCache: Cache<String, SidebarSelector> =
         Caffeine.newBuilder().maximumSize(500).expireAfterWrite(5, TimeUnit.MINUTES).build()
 
-    private fun cacheKey(type: String, ctx: WebContext): String {
+    private fun cacheKey(type: String, ctx: RequestContext): String {
         val pagePath = ctx.request.query("pagePath").orEmpty().ifBlank { ctx.request.uri.path }
         return "$type:${ctx.lang}:${ctx.theme}:${ctx.layout}:$pagePath"
     }
 
-    fun buildThemeSelector(ctx: WebContext): SidebarSelector =
-        selectorCache.get(cacheKey("theme", ctx)) { buildThemeSelectorInner(ctx) }
+    fun buildThemeSelector(ctx: RequestContext, renderer: ShellRenderer): SidebarSelector =
+        selectorCache.get(cacheKey("theme", ctx)) { buildThemeSelectorInner(ctx, renderer) }
 
-    fun buildLanguageSelector(ctx: WebContext): SidebarSelector =
-        selectorCache.get(cacheKey("lang", ctx)) { buildLanguageSelectorInner(ctx) }
+    fun buildLanguageSelector(ctx: RequestContext, renderer: ShellRenderer): SidebarSelector =
+        selectorCache.get(cacheKey("lang", ctx)) { buildLanguageSelectorInner(ctx, renderer) }
 
-    fun buildLayoutSelector(ctx: WebContext): SidebarSelector =
-        selectorCache.get(cacheKey("layout", ctx)) { buildLayoutSelectorInner(ctx) }
+    fun buildLayoutSelector(ctx: RequestContext, renderer: ShellRenderer): SidebarSelector =
+        selectorCache.get(cacheKey("layout", ctx)) { buildLayoutSelectorInner(ctx, renderer) }
 
-    private fun resolvePagePath(ctx: WebContext): String =
+    private fun resolvePagePath(ctx: RequestContext): String =
         ctx.request.query("pagePath").orEmpty().ifBlank { ctx.request.uri.path }
 
-    private fun buildThemeSelectorInner(ctx: WebContext): SidebarSelector {
-        val i18n = ctx.i18n
+    private fun buildThemeSelectorInner(ctx: RequestContext, renderer: ShellRenderer): SidebarSelector {
+        val i18n = renderer.i18n
         val pagePath = resolvePagePath(ctx)
         return SidebarSelector(
             heading = i18n.translate("web.sidebar.themes"),
@@ -47,8 +47,8 @@ class SidebarFactory {
         )
     }
 
-    private fun buildLanguageSelectorInner(ctx: WebContext): SidebarSelector {
-        val i18n = ctx.i18n
+    private fun buildLanguageSelectorInner(ctx: RequestContext, renderer: ShellRenderer): SidebarSelector {
+        val i18n = renderer.i18n
         val pagePath = resolvePagePath(ctx)
         return SidebarSelector(
             heading = i18n.translate("web.sidebar.language"),
@@ -69,8 +69,8 @@ class SidebarFactory {
         )
     }
 
-    private fun buildLayoutSelectorInner(ctx: WebContext): SidebarSelector {
-        val i18n = ctx.i18n
+    private fun buildLayoutSelectorInner(ctx: RequestContext, renderer: ShellRenderer): SidebarSelector {
+        val i18n = renderer.i18n
         val pagePath = resolvePagePath(ctx)
         return SidebarSelector(
             heading = i18n.translate("web.sidebar.layout"),
