@@ -624,6 +624,7 @@ private fun buildFilterChain(ctx: AppContext): Filter {
                         navItems = plugin?.navItems ?: emptyList(),
                         textResolver = plugin?.textResolver,
                         adminNavItems = adminNavItems,
+                        bannerProviders = plugin?.bannerProviders(ctx.pluginContext()) ?: emptyList(),
                     ),
                     cookieSecure = config.sessionCookieSecure,
                     appBaseUrl = config.appBaseUrl,
