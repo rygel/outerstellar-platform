@@ -52,12 +52,12 @@ class ChangePasswordWebIntegrationTest : WebTest() {
 
         securityService = createSecurityService()
 
-        testToken = securityService.createSession(testUser.id)
+        testToken = sessionSvc.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
     }
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
+    private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, testToken)
 
     private fun changePasswordRequest(
         currentPassword: String,

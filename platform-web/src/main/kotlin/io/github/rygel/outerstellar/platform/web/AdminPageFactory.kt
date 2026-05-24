@@ -13,9 +13,14 @@ class AdminPageFactory(
     private val userAdminService: UserAdminService? = null,
 ) {
 
-    fun buildUserAdminPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<UserAdminPage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.admin.users.title"), "/admin/users")
+    fun buildUserAdminPage(
+        ctx: RequestContext,
+        shellRenderer: ShellRenderer,
+        limit: Int = 20,
+        offset: Int = 0,
+    ): Page<UserAdminPage> {
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.admin.users.title"), "/admin/users")
         val totalCount = userAdminService?.countUsers() ?: 0L
         val safeOffset = offset.coerceIn(0, maxOf(0, totalCount.toInt() - 1))
         val pageUsers = userAdminService?.listUsers(limit, safeOffset) ?: emptyList()
@@ -23,8 +28,8 @@ class AdminPageFactory(
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
         val hasNext = safeOffset + limit < totalCount
-        val previousUrl = ctx.url("/admin/users?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
-        val nextUrl = ctx.url("/admin/users?limit=$limit&offset=${safeOffset + limit}")
+        val previousUrl = shellRenderer.url("/admin/users?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
+        val nextUrl = shellRenderer.url("/admin/users?limit=$limit&offset=${safeOffset + limit}")
 
         return Page(
             shell = shell,
@@ -40,13 +45,13 @@ class AdminPageFactory(
                                 email = u.email,
                                 role = u.role.name,
                                 enabled = u.enabled,
-                                toggleEnabledUrl = ctx.url("/admin/users/${u.id}/toggle-enabled"),
-                                toggleRoleUrl = ctx.url("/admin/users/${u.id}/toggle-role"),
+                                toggleEnabledUrl = shellRenderer.url("/admin/users/${u.id}/toggle-enabled"),
+                                toggleRoleUrl = shellRenderer.url("/admin/users/${u.id}/toggle-role"),
                                 isSelf = u.id == currentUserId,
                                 isLocked =
                                     u.lockedUntil != null &&
                                         (u.lockedUntil as java.time.Instant).isAfter(java.time.Instant.now()),
-                                unlockUrl = ctx.url("/admin/users/${u.id}/unlock"),
+                                unlockUrl = shellRenderer.url("/admin/users/${u.id}/unlock"),
                                 failedLoginAttempts = u.failedLoginAttempts,
                             )
                         },
@@ -72,17 +77,17 @@ class AdminPageFactory(
         )
     }
 
-    fun buildAuditLogPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<AuditLogPage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.admin.audit.title"), "/admin/audit")
+    fun buildAuditLogPage(shellRenderer: ShellRenderer, limit: Int = 20, offset: Int = 0): Page<AuditLogPage> {
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.admin.audit.title"), "/admin/audit")
         val totalCount = userAdminService?.countAuditEntries() ?: 0L
         val safeOffset = offset.coerceIn(0, maxOf(0, totalCount.toInt() - 1))
         val pageEntries = userAdminService?.getAuditLog(limit, safeOffset) ?: emptyList()
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
         val hasNext = safeOffset + limit < totalCount
-        val previousUrl = ctx.url("/admin/audit?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
-        val nextUrl = ctx.url("/admin/audit?limit=$limit&offset=${safeOffset + limit}")
+        val previousUrl = shellRenderer.url("/admin/audit?limit=$limit&offset=${maxOf(0, safeOffset - limit)}")
+        val nextUrl = shellRenderer.url("/admin/audit?limit=$limit&offset=${safeOffset + limit}")
 
         return Page(
             shell = shell,
@@ -115,9 +120,14 @@ class AdminPageFactory(
         )
     }
 
-    fun buildApiKeysPage(ctx: WebContext, newKey: String? = null, newKeyName: String? = null): Page<ApiKeysPage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.apikeys.title"), "/auth/api-keys")
+    fun buildApiKeysPage(
+        ctx: RequestContext,
+        shellRenderer: ShellRenderer,
+        newKey: String? = null,
+        newKeyName: String? = null,
+    ): Page<ApiKeysPage> {
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.apikeys.title"), "/auth/api-keys")
         val userId = checkNotNull(ctx.user?.id) { "User not logged in" }
         val keys = securityService?.listApiKeys(userId) ?: emptyList()
 
@@ -127,7 +137,7 @@ class AdminPageFactory(
                 ApiKeysPage(
                     title = i18n.translate("web.apikeys.title"),
                     keys = keys,
-                    createUrl = ctx.url("/auth/api-keys/create"),
+                    createUrl = shellRenderer.url("/auth/api-keys/create"),
                     newKey = newKey,
                     newKeyName = newKeyName,
                     description = i18n.translate("web.apikeys.description"),
@@ -150,9 +160,9 @@ class AdminPageFactory(
         )
     }
 
-    fun buildProfilePage(ctx: WebContext): Page<ProfilePage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.profile.title"), "/auth/profile")
+    fun buildProfilePage(ctx: RequestContext, shellRenderer: ShellRenderer): Page<ProfilePage> {
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.profile.title"), "/auth/profile")
         val user = ctx.user ?: throw InsufficientPermissionException("Authentication required")
         val avatarUrl = gravatarUrl(user.email, user.avatarUrl)
 
@@ -165,7 +175,7 @@ class AdminPageFactory(
                     email = user.email,
                     role = user.role.name,
                     avatarUrl = avatarUrl,
-                    submitUrl = ctx.url("/auth/components/profile-update"),
+                    submitUrl = shellRenderer.url("/auth/components/profile-update"),
                     usernameLabel = i18n.translate("web.profile.username"),
                     usernamePlaceholder = i18n.translate("web.profile.username.placeholder"),
                     emailLabel = i18n.translate("web.profile.email"),
@@ -175,12 +185,12 @@ class AdminPageFactory(
                     submitLabel = i18n.translate("web.profile.submit"),
                     emailNotificationsEnabled = user.emailNotificationsEnabled,
                     pushNotificationsEnabled = user.pushNotificationsEnabled,
-                    notificationPrefsUrl = ctx.url("/auth/notification-preferences"),
+                    notificationPrefsUrl = shellRenderer.url("/auth/notification-preferences"),
                     notificationPrefsLabel = i18n.translate("web.profile.notif.prefs"),
                     emailNotifLabel = i18n.translate("web.profile.notif.email"),
                     pushNotifLabel = i18n.translate("web.profile.notif.push"),
                     savePrefsLabel = i18n.translate("web.profile.notif.save"),
-                    deleteAccountUrl = ctx.url("/auth/account/delete"),
+                    deleteAccountUrl = shellRenderer.url("/auth/account/delete"),
                     dangerZoneLabel = i18n.translate("web.profile.danger.zone"),
                     deleteAccountLabel = i18n.translate("web.profile.delete.account"),
                     deleteAccountDescription = i18n.translate("web.profile.delete.account.description"),
@@ -192,13 +202,14 @@ class AdminPageFactory(
         )
     }
 
-    fun buildNotificationsPage(ctx: WebContext): Page<NotificationsPage> {
-        val i18n = ctx.i18n
+    fun buildNotificationsPage(ctx: RequestContext, shellRenderer: ShellRenderer): Page<NotificationsPage> {
+        val i18n = shellRenderer.i18n
         val user = ctx.user ?: throw InsufficientPermissionException("Authentication required")
         val unreadCount = notificationService?.countUnread(user.id) ?: 0
         val shell =
-            ctx.shell(i18n.translate("web.notifications.title"), "/notifications")
-                .copy(notificationsUrl = ctx.url("/notifications"), unreadNotificationCount = unreadCount)
+            shellRenderer
+                .shell(i18n.translate("web.notifications.title"), "/notifications")
+                .copy(notificationsUrl = shellRenderer.url("/notifications"), unreadNotificationCount = unreadCount)
         val notifications = notificationService?.listForUser(user.id) ?: emptyList()
         return Page(
             shell = shell,
@@ -215,11 +226,11 @@ class AdminPageFactory(
                                 type = n.type,
                                 read = n.isRead,
                                 timeAgo = formatTimeAgo(n.createdAt),
-                                markReadUrl = ctx.url("/notifications/${n.id}/read"),
+                                markReadUrl = shellRenderer.url("/notifications/${n.id}/read"),
                             )
                         },
                     unreadCount = unreadCount,
-                    markAllReadUrl = ctx.url("/notifications/read-all"),
+                    markAllReadUrl = shellRenderer.url("/notifications/read-all"),
                     emptyLabel = i18n.translate("web.notifications.empty"),
                     markAllReadLabel = i18n.translate("web.notifications.mark.all.read"),
                     markReadLabel = i18n.translate("web.notifications.mark.read"),
@@ -229,12 +240,12 @@ class AdminPageFactory(
         )
     }
 
-    fun buildNotificationBell(ctx: WebContext): NotificationBellFragment {
+    fun buildNotificationBell(ctx: RequestContext, shellRenderer: ShellRenderer): NotificationBellFragment {
         val unreadCount = ctx.user?.id?.let { notificationService?.countUnread(it) } ?: 0
         return NotificationBellFragment(
             unreadCount = unreadCount,
-            notificationsUrl = ctx.url("/notifications"),
-            title = ctx.i18n.translate("web.notification.bell.title"),
+            notificationsUrl = shellRenderer.url("/notifications"),
+            title = shellRenderer.i18n.translate("web.notification.bell.title"),
         )
     }
 

@@ -50,12 +50,12 @@ class LogoutIntegrationTest : WebTest() {
         userRepository.save(user)
 
         securityService = createSecurityService()
-        userToken = securityService.createSession(user.id)
+        userToken = sessionSvc.createSession(user.id)
 
         app = buildApp(securityService = securityService)
     }
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, userToken)
+    private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, userToken)
 
     @Test
     fun `POST logout redirects to home`() {
@@ -69,7 +69,7 @@ class LogoutIntegrationTest : WebTest() {
     fun `POST logout clears the session cookie`() {
         val response = app(Request(POST, "/logout").cookie(sessionCookie()))
 
-        val sessionCookieInResponse = response.cookies().find { it.name == WebContext.SESSION_COOKIE }
+        val sessionCookieInResponse = response.cookies().find { it.name == RequestContext.SESSION_COOKIE }
         assertNotNull(sessionCookieInResponse, "Session cookie should be present in Set-Cookie to clear it")
         // A cleared cookie has maxAge 0 or a past expiry
         assertTrue(
@@ -96,7 +96,7 @@ class LogoutIntegrationTest : WebTest() {
     fun `after logout the old session cookie no longer authenticates protected pages`() {
         // Simulate a "stale" cookie by using an ID that has no matching user
         val staleId = UUID.randomUUID().toString()
-        val staleSession = Cookie(WebContext.SESSION_COOKIE, staleId)
+        val staleSession = Cookie(RequestContext.SESSION_COOKIE, staleId)
 
         // Protected page should not return 200
         val response = app(Request(GET, "/admin/users").cookie(staleSession))

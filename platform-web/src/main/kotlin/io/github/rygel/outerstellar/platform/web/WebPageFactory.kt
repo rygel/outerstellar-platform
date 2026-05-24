@@ -32,93 +32,105 @@ open class WebPageFactory(
     private val userAdminService: io.github.rygel.outerstellar.platform.security.UserAdminService? = null,
 ) {
     fun buildContactsPage(
-        ctx: WebContext,
+        shellRenderer: ShellRenderer,
         query: String? = null,
         limit: Int = 12,
         offset: Int = 0,
-    ): Page<ContactsPage> = contactsFactory.buildContactsPage(ctx, query, limit, offset)
+    ): Page<ContactsPage> = contactsFactory.buildContactsPage(shellRenderer, query, limit, offset)
 
-    fun buildContactForm(ctx: WebContext, syncId: String? = null): ContactFormFragment =
-        contactsFactory.buildContactForm(ctx, syncId)
+    fun buildContactForm(shellRenderer: ShellRenderer, syncId: String? = null): ContactFormFragment =
+        contactsFactory.buildContactForm(shellRenderer, syncId)
 
     fun buildHomePage(
-        ctx: WebContext,
+        ctx: RequestContext,
+        shellRenderer: ShellRenderer,
         query: String? = null,
         limit: Int = 10,
         offset: Int = 0,
         year: Int? = null,
-    ): Page<HomePage> = homeFactory.buildHomePage(ctx, query, limit, offset, year)
+    ): Page<HomePage> = homeFactory.buildHomePage(ctx, shellRenderer, query, limit, offset, year)
 
     fun buildMessageList(
-        ctx: WebContext,
+        ctx: RequestContext,
+        shellRenderer: ShellRenderer,
         query: String? = null,
         limit: Int = 10,
         offset: Int = 0,
         year: Int? = null,
         isTrash: Boolean = false,
-    ): MessageListViewModel = homeFactory.buildMessageList(ctx, query, limit, offset, year, isTrash)
+    ): MessageListViewModel = homeFactory.buildMessageList(ctx, shellRenderer, query, limit, offset, year, isTrash)
 
-    fun buildTrashPage(ctx: WebContext): Page<TrashPage> = homeFactory.buildTrashPage(ctx)
+    fun buildTrashPage(ctx: RequestContext, shellRenderer: ShellRenderer): Page<TrashPage> =
+        homeFactory.buildTrashPage(ctx, shellRenderer)
 
-    fun buildContactTrashList(ctx: WebContext): ContactTrashListViewModel = contactsFactory.buildTrashContactList(ctx)
+    fun buildContactTrashList(shellRenderer: ShellRenderer): ContactTrashListViewModel =
+        contactsFactory.buildTrashContactList(shellRenderer)
 
-    fun buildMessageEditForm(ctx: WebContext, syncId: String): MessageEditFormFragment =
-        homeFactory.buildMessageEditForm(ctx, syncId)
+    fun buildMessageEditForm(shellRenderer: ShellRenderer, syncId: String): MessageEditFormFragment =
+        homeFactory.buildMessageEditForm(shellRenderer, syncId)
 
-    fun buildFooterStatus(ctx: WebContext): FooterStatusFragment = infraFactory.buildFooterStatus(ctx)
+    fun buildFooterStatus(shellRenderer: ShellRenderer): FooterStatusFragment =
+        infraFactory.buildFooterStatus(shellRenderer)
 
-    fun buildConflictResolveModal(ctx: WebContext, syncId: String): ConflictResolveViewModel =
-        infraFactory.buildConflictResolveModal(ctx, syncId)
+    fun buildConflictResolveModal(shellRenderer: ShellRenderer, syncId: String): ConflictResolveViewModel =
+        infraFactory.buildConflictResolveModal(shellRenderer, syncId)
 
-    fun buildAuthPage(ctx: WebContext): Page<AuthViewModel> = authPageFactory.buildAuthPage(ctx)
+    fun buildAuthPage(ctx: RequestContext, shellRenderer: ShellRenderer): Page<AuthViewModel> =
+        authPageFactory.buildAuthPage(ctx, shellRenderer)
 
-    fun buildAuthForm(ctx: WebContext, mode: String): AuthFormFragment = authPageFactory.buildAuthForm(ctx, mode)
+    fun buildAuthForm(ctx: RequestContext, shellRenderer: ShellRenderer, mode: String): AuthFormFragment =
+        authPageFactory.buildAuthForm(ctx, shellRenderer, mode)
 
-    fun buildAuthResult(ctx: WebContext, formValues: Map<String, String?>): AuthResultFragment =
-        authPageFactory.buildAuthResult(ctx, formValues)
+    fun buildAuthResult(shellRenderer: ShellRenderer, formValues: Map<String, String?>): AuthResultFragment =
+        authPageFactory.buildAuthResult(shellRenderer, formValues)
 
-    fun buildChangePasswordPage(ctx: WebContext): Page<ChangePasswordPage> =
-        authPageFactory.buildChangePasswordPage(ctx)
+    fun buildChangePasswordPage(shellRenderer: ShellRenderer): Page<ChangePasswordPage> =
+        authPageFactory.buildChangePasswordPage(shellRenderer)
 
-    fun buildChangePasswordForm(ctx: WebContext): ChangePasswordForm = authPageFactory.buildChangePasswordForm(ctx)
+    fun buildChangePasswordForm(shellRenderer: ShellRenderer): ChangePasswordForm =
+        authPageFactory.buildChangePasswordForm(shellRenderer)
 
-    fun buildResetPasswordPage(ctx: WebContext, token: String): Page<ResetPasswordPage> =
-        authPageFactory.buildResetPasswordPage(ctx, token)
+    fun buildResetPasswordPage(shellRenderer: ShellRenderer, token: String): Page<ResetPasswordPage> =
+        authPageFactory.buildResetPasswordPage(shellRenderer, token)
 
-    fun buildErrorPage(ctx: WebContext, kind: String): Page<ErrorPage> = errorPageFactory.buildErrorPage(ctx, kind)
+    fun buildErrorPage(shellRenderer: ShellRenderer, kind: String): Page<ErrorPage> =
+        errorPageFactory.buildErrorPage(shellRenderer, kind)
 
-    fun buildErrorHelp(ctx: WebContext, kind: String): ErrorHelpFragment = errorPageFactory.buildErrorHelp(ctx, kind)
+    fun buildErrorHelp(shellRenderer: ShellRenderer, kind: String): ErrorHelpFragment =
+        errorPageFactory.buildErrorHelp(shellRenderer, kind)
 
-    fun buildThemeSelector(ctx: WebContext): SidebarSelector = sidebarFactory.buildThemeSelector(ctx)
+    fun buildThemeSelector(ctx: RequestContext, shellRenderer: ShellRenderer): SidebarSelector =
+        sidebarFactory.buildThemeSelector(ctx, shellRenderer)
 
-    fun buildLanguageSelector(ctx: WebContext): SidebarSelector = sidebarFactory.buildLanguageSelector(ctx)
+    fun buildLanguageSelector(ctx: RequestContext, shellRenderer: ShellRenderer): SidebarSelector =
+        sidebarFactory.buildLanguageSelector(ctx, shellRenderer)
 
-    fun buildLayoutSelector(ctx: WebContext): SidebarSelector = sidebarFactory.buildLayoutSelector(ctx)
+    fun buildLayoutSelector(ctx: RequestContext, shellRenderer: ShellRenderer): SidebarSelector =
+        sidebarFactory.buildLayoutSelector(ctx, shellRenderer)
 
-    fun buildSettingsPage(ctx: WebContext, activeTab: String = "profile"): Page<SettingsPage> =
-        settingsPageFactory.buildSettingsPage(ctx, activeTab)
+    fun buildSettingsPage(shellRenderer: ShellRenderer, activeTab: String = "profile"): Page<SettingsPage> =
+        settingsPageFactory.buildSettingsPage(shellRenderer, activeTab)
 
-    fun buildSettingsFragment(ctx: WebContext, tab: String): SettingsTabContent =
-        settingsPageFactory.buildSettingsFragment(ctx, tab)
+    fun buildSettingsFragment(ctx: RequestContext, shellRenderer: ShellRenderer, tab: String): SettingsTabContent =
+        settingsPageFactory.buildSettingsFragment(ctx, shellRenderer, tab)
 
     fun buildSearchPage(
-        ctx: WebContext,
+        shellRenderer: ShellRenderer,
         query: String,
         providers: List<io.github.rygel.outerstellar.platform.search.SearchProvider>,
         limit: Int = 20,
         typeFilter: String = "",
-    ): Page<SearchPage> = searchPageFactory.buildSearchPage(ctx, query, providers, limit, typeFilter)
+    ): Page<SearchPage> = searchPageFactory.buildSearchPage(shellRenderer, query, providers, limit, typeFilter)
 
     fun buildDevDashboardPage(
-        ctx: WebContext,
+        shellRenderer: ShellRenderer,
         metrics: String,
         cacheStats: Map<String, Any>,
         outboxStats: OutboxStatsViewModel,
         telemetryStatus: String,
     ): Page<DevDashboardPage> =
-        devDashboardPageFactory.buildDevDashboardPage(ctx, metrics, cacheStats, outboxStats, telemetryStatus)
+        devDashboardPageFactory.buildDevDashboardPage(shellRenderer, metrics, cacheStats, outboxStats, telemetryStatus)
 
-    // Delegated factory methods - kept for backward compatibility
     private val adminPageFactory by lazy { AdminPageFactory(securityService, notificationService, userAdminService) }
     private val authPageFactory by lazy { AuthPageFactory(appleOAuthEnabled) }
     private val errorPageFactory by lazy { ErrorPageFactory() }
@@ -130,18 +142,29 @@ open class WebPageFactory(
     private val homeFactory by lazy { HomePageFactory(messageService, contactService) }
     private val infraFactory by lazy { InfraPageFactory(repository) }
 
-    fun buildUserAdminPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<UserAdminPage> =
-        adminPageFactory.buildUserAdminPage(ctx, limit, offset)
+    fun buildUserAdminPage(
+        ctx: RequestContext,
+        shellRenderer: ShellRenderer,
+        limit: Int = 20,
+        offset: Int = 0,
+    ): Page<UserAdminPage> = adminPageFactory.buildUserAdminPage(ctx, shellRenderer, limit, offset)
 
-    fun buildAuditLogPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<AuditLogPage> =
-        adminPageFactory.buildAuditLogPage(ctx, limit, offset)
+    fun buildAuditLogPage(shellRenderer: ShellRenderer, limit: Int = 20, offset: Int = 0): Page<AuditLogPage> =
+        adminPageFactory.buildAuditLogPage(shellRenderer, limit, offset)
 
-    fun buildApiKeysPage(ctx: WebContext, newKey: String? = null, newKeyName: String? = null): Page<ApiKeysPage> =
-        adminPageFactory.buildApiKeysPage(ctx, newKey, newKeyName)
+    fun buildApiKeysPage(
+        ctx: RequestContext,
+        shellRenderer: ShellRenderer,
+        newKey: String? = null,
+        newKeyName: String? = null,
+    ): Page<ApiKeysPage> = adminPageFactory.buildApiKeysPage(ctx, shellRenderer, newKey, newKeyName)
 
-    fun buildProfilePage(ctx: WebContext): Page<ProfilePage> = adminPageFactory.buildProfilePage(ctx)
+    fun buildProfilePage(ctx: RequestContext, shellRenderer: ShellRenderer): Page<ProfilePage> =
+        adminPageFactory.buildProfilePage(ctx, shellRenderer)
 
-    fun buildNotificationsPage(ctx: WebContext): Page<NotificationsPage> = adminPageFactory.buildNotificationsPage(ctx)
+    fun buildNotificationsPage(ctx: RequestContext, shellRenderer: ShellRenderer): Page<NotificationsPage> =
+        adminPageFactory.buildNotificationsPage(ctx, shellRenderer)
 
-    fun buildNotificationBell(ctx: WebContext): NotificationBellFragment = adminPageFactory.buildNotificationBell(ctx)
+    fun buildNotificationBell(ctx: RequestContext, shellRenderer: ShellRenderer): NotificationBellFragment =
+        adminPageFactory.buildNotificationBell(ctx, shellRenderer)
 }

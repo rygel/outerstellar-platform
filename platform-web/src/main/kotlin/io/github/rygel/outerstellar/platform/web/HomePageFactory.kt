@@ -9,15 +9,16 @@ class HomePageFactory(
     private fun requireList() = checkNotNull(messageListComponent) { "MessageService is required for home page" }
 
     fun buildHomePage(
-        ctx: WebContext,
+        ctx: RequestContext,
+        shellRenderer: ShellRenderer,
         query: String? = null,
         limit: Int = 10,
         offset: Int = 0,
         year: Int? = null,
     ): Page<HomePage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.nav.home"), "/")
-        val messageList = requireList().build(ctx, query, limit, offset, year)
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.nav.home"), "/")
+        val messageList = requireList().build(ctx, shellRenderer, query, limit, offset, year)
 
         return Page(
             shell = shell,
@@ -46,31 +47,32 @@ class HomePageFactory(
                     authorPlaceholder = i18n.translate("web.home.composer.author"),
                     contentPlaceholder = i18n.translate("web.home.composer.content"),
                     submitLabel = i18n.translate("web.home.composer.submit"),
-                    submitUrl = ctx.url("/messages"),
+                    submitUrl = shellRenderer.url("/messages"),
                     messageList = messageList,
                 ),
         )
     }
 
     fun buildMessageList(
-        ctx: WebContext,
+        ctx: RequestContext,
+        shellRenderer: ShellRenderer,
         query: String? = null,
         limit: Int = 10,
         offset: Int = 0,
         year: Int? = null,
         isTrash: Boolean = false,
-    ): MessageListViewModel = requireList().build(ctx, query, limit, offset, year, isTrash)
+    ): MessageListViewModel = requireList().build(ctx, shellRenderer, query, limit, offset, year, isTrash)
 
-    fun buildMessageEditForm(ctx: WebContext, syncId: String): MessageEditFormFragment {
+    fun buildMessageEditForm(shellRenderer: ShellRenderer, syncId: String): MessageEditFormFragment {
         val msg =
             messageService?.findBySyncId(syncId)
                 ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(syncId)
-        val i18n = ctx.i18n
+        val i18n = shellRenderer.i18n
         return MessageEditFormFragment(
             syncId = msg.syncId,
             author = msg.author,
             content = msg.content,
-            submitUrl = ctx.url("/messages/$syncId/update"),
+            submitUrl = shellRenderer.url("/messages/$syncId/update"),
             titleLabel = i18n.translate("web.messages.edit"),
             authorLabel = i18n.translate("web.home.composer.author"),
             contentLabel = i18n.translate("web.home.composer.content"),
@@ -79,10 +81,10 @@ class HomePageFactory(
         )
     }
 
-    fun buildTrashPage(ctx: WebContext): Page<TrashPage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.trash.title"), "/messages/trash")
-        val messageList = buildMessageList(ctx, isTrash = true)
+    fun buildTrashPage(ctx: RequestContext, shellRenderer: ShellRenderer): Page<TrashPage> {
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.trash.title"), "/messages/trash")
+        val messageList = buildMessageList(ctx, shellRenderer, isTrash = true)
         val contactList = contactService?.let {
             val dbContacts = it.listContacts(limit = 100, offset = 0, includeDeleted = true)
             ContactTrashListViewModel(
@@ -95,11 +97,11 @@ class HomePageFactory(
                             phones = c.phones,
                             company = c.company,
                             department = c.department,
-                            restoreUrl = ctx.url("/contacts/${c.syncId}/restore"),
+                            restoreUrl = shellRenderer.url("/contacts/${c.syncId}/restore"),
                         )
                     },
                 emptyMessage = i18n.translate("web.trash.contacts.empty"),
-                refreshUrl = ctx.url("/contacts/trash/list"),
+                refreshUrl = shellRenderer.url("/contacts/trash/list"),
                 title = i18n.translate("web.trash.contacts"),
                 restoreTitle = i18n.translate("web.contacts.restore"),
             )

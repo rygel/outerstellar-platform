@@ -54,7 +54,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
         assertThat(response, hasStatus(Status.OK))
         val auth = tokenLens(response)
         val userId = userRepository.findByUsername(username)!!.id
-        val sessionToken = securityService.createSession(userId)
+        val sessionToken = sessionSvc.createSession(userId)
         return RegisteredUser(userId, auth.token, sessionToken)
     }
 
@@ -72,7 +72,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
                 role = UserRole.ADMIN,
             )
         )
-        val token = securityService.createSession(adminId)
+        val token = sessionSvc.createSession(adminId)
         return AdminInfo(adminId, token, password)
     }
 

@@ -81,7 +81,7 @@ class UserManagementIntegrationTest : WebTest() {
                 role = UserRole.ADMIN,
             )
         )
-        val token = securityService.createSession(adminId)
+        val token = sessionSvc.createSession(adminId)
         return AdminInfo(adminId, token, password)
     }
 
@@ -148,7 +148,7 @@ class UserManagementIntegrationTest : WebTest() {
     // ---- Password Change (HTML form) ----
 
     // HTML form change-password tests use session cookies which require
-    // the full filter chain including WebContext user lookup. These are
+    // the full filter chain including RequestContext user lookup. These are
     // covered by manual testing and the API-level tests above.
 
     // ---- User Admin (API) ----

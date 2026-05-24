@@ -25,16 +25,17 @@ class SearchRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
-                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     }
                     val query = request.query("q").orEmpty()
                     val limit =
                         request.query("limit")?.toIntOrNull()?.coerceIn(1, SearchPageFactory.MAX_SEARCH_LIMIT)
                             ?: SearchPageFactory.DEFAULT_SEARCH_LIMIT
                     val type = request.query("type").orEmpty()
-                    renderer.render(pageFactory.buildSearchPage(ctx, query, providers, limit, type))
+                    renderer.render(pageFactory.buildSearchPage(shellRenderer, query, providers, limit, type))
                 },
             "/api/v1/search" meta
                 {
@@ -42,7 +43,7 @@ class SearchRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
                     if (ctx.user == null) {
                         return@to Response(Status.UNAUTHORIZED)
                             .header("content-type", "application/json")

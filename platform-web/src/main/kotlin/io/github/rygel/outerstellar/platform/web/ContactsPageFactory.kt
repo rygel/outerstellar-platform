@@ -2,8 +2,8 @@ package io.github.rygel.outerstellar.platform.web
 
 class ContactsPageFactory(private val contactService: io.github.rygel.outerstellar.platform.service.ContactService?) {
 
-    fun buildTrashContactList(ctx: WebContext): ContactTrashListViewModel {
-        val i18n = ctx.i18n
+    fun buildTrashContactList(shellRenderer: ShellRenderer): ContactTrashListViewModel {
+        val i18n = shellRenderer.i18n
         val dbContacts = contactService?.listContacts(limit = 100, offset = 0, includeDeleted = true) ?: emptyList()
         return ContactTrashListViewModel(
             contacts =
@@ -15,32 +15,32 @@ class ContactsPageFactory(private val contactService: io.github.rygel.outerstell
                         phones = it.phones,
                         company = it.company,
                         department = it.department,
-                        restoreUrl = ctx.url("/contacts/${it.syncId}/restore"),
+                        restoreUrl = shellRenderer.url("/contacts/${it.syncId}/restore"),
                     )
                 },
             emptyMessage = i18n.translate("web.trash.contacts.empty"),
-            refreshUrl = ctx.url("/contacts/trash/list"),
+            refreshUrl = shellRenderer.url("/contacts/trash/list"),
             title = i18n.translate("web.trash.contacts"),
             restoreTitle = i18n.translate("web.contacts.restore"),
         )
     }
 
     fun buildContactsPage(
-        ctx: WebContext,
+        shellRenderer: ShellRenderer,
         query: String? = null,
         limit: Int = 12,
         offset: Int = 0,
     ): Page<ContactsPage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.nav.contacts"), "/contacts")
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.nav.contacts"), "/contacts")
 
         val dbContacts = contactService?.listContacts(query, limit, offset) ?: emptyList()
         val totalCount = contactService?.countContacts(query) ?: 0L
         val currentPage = (offset / limit) + 1
         val hasPrevious = offset > 0
         val hasNext = offset + limit < totalCount
-        val previousUrl = ctx.url("/contacts?limit=$limit&offset=${maxOf(0, offset - limit)}")
-        val nextUrl = ctx.url("/contacts?limit=$limit&offset=${offset + limit}")
+        val previousUrl = shellRenderer.url("/contacts?limit=$limit&offset=${maxOf(0, offset - limit)}")
+        val nextUrl = shellRenderer.url("/contacts?limit=$limit&offset=${offset + limit}")
 
         return Page(
             shell = shell,
@@ -59,8 +59,8 @@ class ContactsPageFactory(private val contactService: io.github.rygel.outerstell
                                 company = it.company,
                                 companyAddress = it.companyAddress,
                                 department = it.department,
-                                deleteUrl = ctx.url("/contacts/${it.syncId}/delete"),
-                                editUrl = ctx.url("/contacts/${it.syncId}/edit"),
+                                deleteUrl = shellRenderer.url("/contacts/${it.syncId}/delete"),
+                                editUrl = shellRenderer.url("/contacts/${it.syncId}/edit"),
                             )
                         },
                     currentPage = currentPage,
@@ -80,8 +80,8 @@ class ContactsPageFactory(private val contactService: io.github.rygel.outerstell
         )
     }
 
-    fun buildContactForm(ctx: WebContext, syncId: String? = null): ContactFormFragment {
-        val i18n = ctx.i18n
+    fun buildContactForm(shellRenderer: ShellRenderer, syncId: String? = null): ContactFormFragment {
+        val i18n = shellRenderer.i18n
         val existing = syncId?.let { contactService?.getContactBySyncId(it) }
         return ContactFormFragment(
             syncId = existing?.syncId ?: "",
@@ -92,7 +92,7 @@ class ContactsPageFactory(private val contactService: io.github.rygel.outerstell
             company = existing?.company ?: "",
             companyAddress = existing?.companyAddress ?: "",
             department = existing?.department ?: "",
-            submitUrl = ctx.url(if (syncId != null) "/contacts/$syncId/update" else "/contacts"),
+            submitUrl = shellRenderer.url(if (syncId != null) "/contacts/$syncId/update" else "/contacts"),
             isEdit = syncId != null,
             titleLabel =
                 if (syncId != null) {

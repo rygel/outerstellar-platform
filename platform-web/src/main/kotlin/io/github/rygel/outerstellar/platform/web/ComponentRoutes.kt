@@ -57,7 +57,7 @@ class ComponentRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    renderer.render(pageFactory.buildThemeSelector(request.webContext))
+                    renderer.render(pageFactory.buildThemeSelector(request.requestContext, request.shellRenderer))
                 },
             "/components/sidebar/language-selector" meta
                 {
@@ -65,7 +65,7 @@ class ComponentRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    renderer.render(pageFactory.buildLanguageSelector(request.webContext))
+                    renderer.render(pageFactory.buildLanguageSelector(request.requestContext, request.shellRenderer))
                 },
             "/components/sidebar/layout-selector" meta
                 {
@@ -73,7 +73,7 @@ class ComponentRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    renderer.render(pageFactory.buildLayoutSelector(request.webContext))
+                    renderer.render(pageFactory.buildLayoutSelector(request.requestContext, request.shellRenderer))
                 },
             "/components/message-list" meta
                 {
@@ -85,15 +85,16 @@ class ComponentRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
-                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     }
                     val query = queryLens(request)
                     val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
                     val offset = offsetLens(request).coerceAtLeast(0)
                     val year = yearLens(request)
-                    renderer.render(pageFactory.buildMessageList(ctx, query, limit, offset, year))
+                    renderer.render(pageFactory.buildMessageList(ctx, shellRenderer, query, limit, offset, year))
                 },
         ) + voteRoutes() + pollRoutes()
 
@@ -110,7 +111,7 @@ class ComponentRoutes(
                     GET to
                     { request: org.http4k.core.Request ->
                         val syncId = extractVoteSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
                         val userId = ctx.user?.id
                         val score = vs.getScore(syncId, userId)
                         renderer.render(VoteFragmentViewModel(score, syncId))
@@ -122,10 +123,11 @@ class ComponentRoutes(
                     POST to
                     { request: org.http4k.core.Request ->
                         val syncId = extractVoteSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         val user = ctx.user
                         if (user == null) {
-                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                         }
                         val direction = request.form("direction")?.toIntOrNull() ?: 0
                         val score = vs.vote(syncId, user.id, direction) ?: VoteScore(syncId, 0, 0, 0, null)
@@ -147,7 +149,7 @@ class ComponentRoutes(
                     GET to
                     { syncId ->
                         { request: org.http4k.core.Request ->
-                            val ctx = request.webContext
+                            val ctx = request.requestContext
                             val results = ps.getPoll(syncId, ctx.user?.id) ?: return@to Response(Status.NOT_FOUND)
                             renderer.render(PollFragmentViewModel(results, syncId))
                         }
@@ -159,10 +161,11 @@ class ComponentRoutes(
                     POST to
                     { syncId, _ ->
                         { request: org.http4k.core.Request ->
-                            val ctx = request.webContext
+                            val ctx = request.requestContext
+                            val shellRenderer = request.shellRenderer
                             val user = ctx.user
                             if (user == null) {
-                                return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                                return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                             }
                             val optionId =
                                 request.form("optionId")?.toLongOrNull() ?: return@to Response(Status.BAD_REQUEST)
@@ -182,10 +185,11 @@ class ComponentRoutes(
                     DELETE to
                     { syncId, _ ->
                         { request: org.http4k.core.Request ->
-                            val ctx = request.webContext
+                            val ctx = request.requestContext
+                            val shellRenderer = request.shellRenderer
                             val user = ctx.user
                             if (user == null) {
-                                return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                                return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                             }
                             val optionId =
                                 optionIdLens(request).toLongOrNull() ?: return@to Response(Status.BAD_REQUEST)

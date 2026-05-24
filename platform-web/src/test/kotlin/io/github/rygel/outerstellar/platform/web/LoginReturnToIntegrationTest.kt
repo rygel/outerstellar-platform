@@ -127,7 +127,7 @@ class LoginReturnToIntegrationTest : WebTest() {
         assertThat(response, hasStatus(Status.FOUND))
         val setCookie = response.header("Set-Cookie") ?: ""
         assertTrue(
-            setCookie.contains(WebContext.SESSION_COOKIE),
+            setCookie.contains(RequestContext.SESSION_COOKIE),
             "Set-Cookie should contain session cookie, got: $setCookie",
         )
     }

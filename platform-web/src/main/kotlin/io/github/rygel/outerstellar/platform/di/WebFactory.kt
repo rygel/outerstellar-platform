@@ -17,6 +17,7 @@ import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.persistence.VoteRepository
 import io.github.rygel.outerstellar.platform.security.AdminStatsService
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.EmailService
@@ -60,6 +61,7 @@ fun createWebComponents(
     config: AppConfig,
     plugin: PlatformPlugin? = null,
     securityService: SecurityService,
+    sessionService: SessionService,
     userAdminService: UserAdminService,
     messageRepository: MessageRepository,
     messageService: MessageService? = null,
@@ -121,7 +123,7 @@ fun createWebComponents(
         }
 
     val i18nService = I18nService.create("messages")
-    val syncWebSocket = SyncWebSocket(securityService)
+    val syncWebSocket = SyncWebSocket(sessionService)
     val eventPublisher: EventPublisher = syncWebSocket
     val voteService = VoteService(voteRepository, messageRepository)
     val pollService = PollService(pollRepository)

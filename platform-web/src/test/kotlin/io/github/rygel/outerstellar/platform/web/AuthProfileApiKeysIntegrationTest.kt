@@ -45,12 +45,12 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
         userRepository.save(testUser)
 
         securityService = createSecurityService()
-        testToken = securityService.createSession(testUser.id)
+        testToken = sessionSvc.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
     }
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
+    private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, testToken)
 
     private fun formBody(vararg pairs: Pair<String, String>): String =
         pairs.joinToString("&") { (k, v) -> "$k=${java.net.URLEncoder.encode(v, "UTF-8")}" }
@@ -219,8 +219,8 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
                 role = UserRole.ADMIN,
             )
         userRepository.save(adminUser)
-        val adminToken = securityService.createSession(adminUser.id)
-        val adminCookie = Cookie(WebContext.SESSION_COOKIE, adminToken)
+        val adminToken = sessionSvc.createSession(adminUser.id)
+        val adminCookie = Cookie(RequestContext.SESSION_COOKIE, adminToken)
 
         val response =
             app(

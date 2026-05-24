@@ -58,6 +58,7 @@ fun createServerComponents(plugin: PlatformPlugin? = null): ServerComponents {
             config = config,
             plugin = plugin,
             securityService = security.securityService,
+            sessionService = security.sessionService,
             userAdminService = security.userAdminService,
             messageRepository = persistence.messageRepository,
             messageService = core.messageService,

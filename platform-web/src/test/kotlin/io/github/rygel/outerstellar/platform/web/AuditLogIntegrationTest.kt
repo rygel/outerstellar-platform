@@ -77,8 +77,8 @@ class AuditLogIntegrationTest : WebTest() {
             )
         userRepository.save(adminUser)
         userRepository.save(targetUser)
-        adminToken = securityService.createSession(adminUser.id)
-        targetToken = securityService.createSession(targetUser.id)
+        adminToken = sessionSvc.createSession(adminUser.id)
+        targetToken = sessionSvc.createSession(targetUser.id)
     }
 
     private fun bearerHeader(user: User) = if (user == adminUser) "Bearer $adminToken" else "Bearer $targetToken"

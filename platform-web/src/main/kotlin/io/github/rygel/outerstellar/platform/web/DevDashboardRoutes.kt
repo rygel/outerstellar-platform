@@ -30,7 +30,7 @@ class DevDashboardRoutes(
                         val outboxStats = outboxRepository.getStats()
                         val viewModel =
                             pageFactory.buildDevDashboardPage(
-                                ctx = request.webContext,
+                                shellRenderer = request.shellRenderer,
                                 metrics = "Prometheus export would go here",
                                 cacheStats = cache.getStats(),
                                 outboxStats =

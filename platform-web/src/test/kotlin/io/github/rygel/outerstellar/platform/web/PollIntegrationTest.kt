@@ -65,12 +65,12 @@ class PollIntegrationTest : WebTest() {
         userRepository.save(testUser)
 
         securityService = createSecurityService()
-        sessionToken = securityService.createSession(testUser.id)
+        sessionToken = sessionSvc.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
     }
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, sessionToken)
+    private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, sessionToken)
 
     private fun createPollViaApi(
         question: String = "Test question?",
@@ -212,12 +212,12 @@ class PollIntegrationTest : WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(otherUser)
-        val otherToken = securityService.createSession(otherUser.id)
+        val otherToken = sessionSvc.createSession(otherUser.id)
 
         val response =
             app(
                 Request(POST, "/api/v1/polls/${created.poll.syncId}/close")
-                    .cookie(Cookie(WebContext.SESSION_COOKIE, otherToken))
+                    .cookie(Cookie(RequestContext.SESSION_COOKIE, otherToken))
             )
         assertThat(response, hasStatus(Status.FORBIDDEN))
     }

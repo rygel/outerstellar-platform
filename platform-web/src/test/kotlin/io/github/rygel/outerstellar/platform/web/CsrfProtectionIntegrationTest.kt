@@ -35,7 +35,7 @@ class CsrfProtectionIntegrationTest : WebTest() {
         app = buildApp(config = testConfig.copy(csrfEnabled = true))
     }
 
-    private fun csrfCookie(token: String) = Cookie(WebContext.CSRF_COOKIE, token)
+    private fun csrfCookie(token: String) = Cookie(RequestContext.CSRF_COOKIE, token)
 
     @Test
     fun `POST without CSRF cookie is rejected with 403`() {
@@ -121,7 +121,7 @@ class CsrfProtectionIntegrationTest : WebTest() {
     fun `GET sets CSRF cookie when none exists`() {
         val response = app(Request(GET, "/"))
 
-        val csrfCookieInResponse = response.cookies().find { it.name == WebContext.CSRF_COOKIE }
+        val csrfCookieInResponse = response.cookies().find { it.name == RequestContext.CSRF_COOKIE }
         assert(csrfCookieInResponse != null) { "Expected _csrf cookie to be set on first GET" }
     }
 }

@@ -20,6 +20,7 @@ import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -37,7 +38,11 @@ import org.http4k.lens.LensFailure
 import org.http4k.lens.Path
 import org.http4k.lens.long
 
-class AuthApi(private val securityService: SecurityService, private val appConfig: AppConfig) : ServerRoutes {
+class AuthApi(
+    private val securityService: SecurityService,
+    private val sessionService: SessionService,
+    private val appConfig: AppConfig,
+) : ServerRoutes {
     private val loginRequestLens = Body.auto<LoginRequest>().toLens()
     private val registerRequestLens = Body.auto<RegisterRequest>().toLens()
     private val tokenResponseLens = Body.auto<AuthTokenResponse>().toLens()
@@ -178,7 +183,7 @@ class AuthApi(private val securityService: SecurityService, private val appConfi
                 POST to
                 { request ->
                     request.header("Authorization")?.removePrefix("Bearer ")?.let { token ->
-                        securityService.deleteSession(token)
+                        sessionService.deleteSession(token)
                     }
                     Response(Status.NO_CONTENT)
                 },
@@ -224,7 +229,7 @@ class AuthApi(private val securityService: SecurityService, private val appConfi
 
                     if (authResult is AuthResult.Authenticated) {
                         val user = authResult.user
-                        val sessionToken = securityService.createSession(user.id)
+                        val sessionToken = sessionService.createSession(user.id)
                         Response(Status.OK)
                             .with(
                                 tokenResponseLens of
@@ -256,7 +261,7 @@ class AuthApi(private val securityService: SecurityService, private val appConfi
                         val register = registerRequestLens(request)
                         try {
                             val user = securityService.register(register.username, register.password)
-                            val sessionToken = securityService.createSession(user.id)
+                            val sessionToken = sessionService.createSession(user.id)
                             Response(Status.OK)
                                 .with(
                                     tokenResponseLens of

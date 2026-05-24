@@ -36,14 +36,14 @@ private const val ARG_IS_TRASH = 4
 
 class MessageListComponent(private val messageService: MessageService) : WebComponent<MessageListViewModel> {
 
-    override fun build(ctx: WebContext, vararg args: Any?): MessageListViewModel {
+    override fun build(ctx: RequestContext, shellRenderer: ShellRenderer, vararg args: Any?): MessageListViewModel {
         val query = args.getOrNull(ARG_QUERY) as? String
         val limit = args.getOrNull(ARG_LIMIT) as? Int ?: DEFAULT_PAGE_SIZE
         val offset = args.getOrNull(ARG_OFFSET) as? Int ?: 0
         val year = args.getOrNull(ARG_YEAR) as? Int
         val isTrash = args.getOrNull(ARG_IS_TRASH) as? Boolean ?: false
 
-        val i18n = ctx.i18n
+        val i18n = shellRenderer.i18n
 
         val result =
             if (isTrash) {
@@ -52,12 +52,22 @@ class MessageListComponent(private val messageService: MessageService) : WebComp
                 messageService.listMessages(query, year, limit, offset)
             }
 
-        return buildViewModel(ctx, result.items, result.metadata.totalItems, limit, offset, query, year, isTrash, i18n)
+        return buildViewModel(
+            shellRenderer,
+            result.items,
+            result.metadata.totalItems,
+            limit,
+            offset,
+            query,
+            year,
+            isTrash,
+            i18n,
+        )
     }
 
     @Suppress("LongParameterList")
     private fun buildViewModel(
-        ctx: WebContext,
+        shellRenderer: ShellRenderer,
         items: List<MessageSummary>,
         total: Long,
         limit: Int,
@@ -72,7 +82,7 @@ class MessageListComponent(private val messageService: MessageService) : WebComp
         fun createUrl(page: Int): String {
             val newOffset = (page - 1) * limit
             val baseUrl = if (isTrash) "/messages/trash" else "/"
-            return ctx.url(
+            return shellRenderer.url(
                 "$baseUrl?limit=$limit&offset=$newOffset" +
                     (if (query != null) "&q=$query" else "") +
                     (if (year != null) "&year=$year" else "")
@@ -108,8 +118,8 @@ class MessageListComponent(private val messageService: MessageService) : WebComp
                 } else {
                     i18n.translate("web.home.list.empty")
                 },
-            deleteUrl = ctx.url("/messages"),
-            restoreUrl = ctx.url("/messages/restore"),
+            deleteUrl = shellRenderer.url("/messages"),
+            restoreUrl = shellRenderer.url("/messages/restore"),
             refreshUrl = currentUrl,
             pagination = pagination,
             isTrash = isTrash,

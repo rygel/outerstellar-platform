@@ -9,6 +9,7 @@ import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.persistence.QueryCount
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.SecurityRules
+import io.github.rygel.outerstellar.platform.security.SessionService
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.time.Duration
@@ -53,10 +54,6 @@ private const val DEFAULT_CSP_POLICY =
 private fun isNonPagePath(path: String): Boolean =
     path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
 
-/**
- * Adds ETag headers based on response body hash and returns 304 Not Modified when matched. Only processes cacheable
- * static assets (CSS, JS, fonts, images). Dynamic HTML is never buffered or hashed.
- */
 val etagCachingFilter: Filter = Filter { next: HttpHandler ->
     { request ->
         val response = next(request)
@@ -84,7 +81,6 @@ val etagCachingFilter: Filter = Filter { next: HttpHandler ->
     }
 }
 
-/** Adds Cache-Control headers for static assets (CSS, JS, images, fonts). */
 val staticCacheControlFilter: Filter = Filter { next: HttpHandler ->
     { request ->
         val response = next(request)
@@ -102,7 +98,7 @@ fun analyticsPageViewFilter(analytics: AnalyticsService): Filter = Filter { next
         val isTrackablePage = request.method == Method.GET && !isNonPagePath(request.uri.path)
         if (isTrackablePage) {
             try {
-                val userId = request.webContext.user?.id?.toString()
+                val userId = request.requestContext.user?.id?.toString()
                 if (userId != null) {
                     analytics.page(userId, request.uri.path)
                 }
@@ -247,7 +243,7 @@ object Filters {
     fun devAutoLogin(
         enabled: Boolean,
         userRepository: UserRepository,
-        securityService: io.github.rygel.outerstellar.platform.security.SecurityService,
+        sessionService: SessionService,
         sessionCookieSecure: Boolean,
     ): Filter = Filter { next ->
         { request ->
@@ -255,12 +251,12 @@ object Filters {
             val isLoopback =
                 request.header("X-Forwarded-For") == null &&
                     (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1"))
-            if (enabled && isLoopback && request.cookie(WebContext.SESSION_COOKIE) == null) {
+            if (enabled && isLoopback && request.cookie(RequestContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {
-                    val token = securityService.createSession(admin.id)
-                    val response = next(request.cookie(Cookie(WebContext.SESSION_COOKIE, token)))
-                    if (response.cookies().none { it.name == WebContext.SESSION_COOKIE }) {
+                    val token = sessionService.createSession(admin.id)
+                    val response = next(request.cookie(Cookie(RequestContext.SESSION_COOKIE, token)))
+                    if (response.cookies().none { it.name == RequestContext.SESSION_COOKIE }) {
                         response.header("Set-Cookie", SessionCookie.create(token, sessionCookieSecure))
                     } else {
                         response
@@ -274,26 +270,25 @@ object Filters {
         }
     }
 
+    @Suppress("LongParameterList")
     fun stateFilter(
         devDashboardEnabled: Boolean,
         userRepository: UserRepository,
         appVersion: String = "dev",
         jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
-        securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
         pluginOptions: PluginOptions = PluginOptions(),
         cookieSecure: Boolean = true,
         appBaseUrl: String = "",
         bannerProviders: List<BannerProvider> = emptyList(),
+        sessionService: SessionService? = null,
     ): Filter = Filter { next: HttpHandler ->
         { request ->
-            val context =
-                WebContext.create(
-                    request,
+            val requestContext = RequestContext(request, userRepository, jwtService, sessionService)
+            val shellRenderer =
+                ShellRenderer(
+                    requestContext,
                     devDashboardEnabled,
-                    userRepository,
                     appVersion,
-                    jwtService,
-                    securityService,
                     ShellConfig(
                         pluginOptions = pluginOptions,
                         appBaseUrl = appBaseUrl,
@@ -302,7 +297,7 @@ object Filters {
                 )
             val contextUser =
                 try {
-                    context.user
+                    requestContext.user
                 } catch (e: IllegalStateException) {
                     logger.debug("Could not resolve user from context: {}", e.message)
                     null
@@ -311,25 +306,26 @@ object Filters {
                 MDC.put("userId", contextUser.id.toString().take(LOG_ID_LENGTH))
                 MDC.put("username", contextUser.username)
             }
-            val response = next(request.with(WebContext.KEY of context))
+            val response =
+                next(request.with(RequestContext.KEY of requestContext).with(ShellRenderer.KEY of shellRenderer))
 
             val cookieMaxAge = Duration.ofDays(COOKIE_MAX_AGE_DAYS).toSeconds()
 
             val langCookie =
-                preferenceCookie(request.query("lang"), WebContext.LANG_COOKIE, cookieMaxAge, cookieSecure) {
-                    it in WebContext.SUPPORTED_LANGUAGES
+                preferenceCookie(request.query("lang"), RequestContext.LANG_COOKIE, cookieMaxAge, cookieSecure) {
+                    it in RequestContext.SUPPORTED_LANGUAGES
                 }
             val themeCookie =
-                preferenceCookie(request.query("theme"), WebContext.THEME_COOKIE, cookieMaxAge, cookieSecure) { v ->
+                preferenceCookie(request.query("theme"), RequestContext.THEME_COOKIE, cookieMaxAge, cookieSecure) { v ->
                     ThemeCatalog.isValidTheme(v)
                 }
             val layoutCookie =
-                preferenceCookie(request.query("layout"), WebContext.LAYOUT_COOKIE, cookieMaxAge, cookieSecure) {
-                    it in WebContext.SUPPORTED_LAYOUTS
+                preferenceCookie(request.query("layout"), RequestContext.LAYOUT_COOKIE, cookieMaxAge, cookieSecure) {
+                    it in RequestContext.SUPPORTED_LAYOUTS
                 }
             val shellCookie =
-                preferenceCookie(request.query("shell"), WebContext.SHELL_COOKIE, cookieMaxAge, cookieSecure) {
-                    it in WebContext.SUPPORTED_SHELLS
+                preferenceCookie(request.query("shell"), RequestContext.SHELL_COOKIE, cookieMaxAge, cookieSecure) {
+                    it in RequestContext.SUPPORTED_SHELLS
                 }
 
             persistUserPreferences(contextUser, langCookie, themeCookie, layoutCookie, userRepository)
@@ -348,9 +344,9 @@ object Filters {
         { request ->
             val ctx =
                 try {
-                    request.webContext
+                    request.requestContext
                 } catch (e: IllegalStateException) {
-                    logger.debug("Could not resolve WebContext for session timeout check: {}", e.message)
+                    logger.debug("Could not resolve RequestContext for session timeout check: {}", e.message)
                     null
                 }
 
@@ -368,12 +364,11 @@ object Filters {
         }
     }
 
-    // Bridge WebContext user into SecurityRules
     val securityFilter: Filter = Filter { next: HttpHandler ->
         { request ->
             val user =
                 try {
-                    request.webContext.user
+                    request.requestContext.user
                 } catch (e: IllegalStateException) {
                     logger.debug("Failed to extract user from context: {}", e.message)
                     null
@@ -382,13 +377,6 @@ object Filters {
         }
     }
 
-    /**
-     * Double-submit cookie CSRF protection for HTML form routes.
-     * - Ensures every response carries a `_csrf` cookie with a random token.
-     * - On unsafe methods (POST/PUT/DELETE/PATCH): rejects requests where the form field `_csrf` or header
-     *   `X-CSRF-Token` does not match the cookie.
-     * - Exempts `/api/v1/` routes (Bearer-token auth) and `/auth/oauth/` routes.
-     */
     fun csrfProtection(sessionCookieSecure: Boolean, enabled: Boolean = true): Filter = Filter { next ->
         { request ->
             if (!enabled) return@Filter next(request)
@@ -398,7 +386,7 @@ object Filters {
             val exempt = path.startsWith("/api/v1/") || path.startsWith("/auth/oauth/")
 
             if (request.method in unsafeMethods && !exempt) {
-                val cookieToken = request.cookie(WebContext.CSRF_COOKIE)?.value
+                val cookieToken = request.cookie(RequestContext.CSRF_COOKIE)?.value
                 val formToken = request.form("_csrf")
                 val headerToken = request.header("X-CSRF-Token")
                 val submitted = formToken ?: headerToken
@@ -414,13 +402,7 @@ object Filters {
                     next(request)
                 }
             } else {
-                // On safe methods: ensure the CSRF cookie is present; set it if missing.
-                // IMPORTANT: pre-generate the token and inject it into the request's Cookie
-                // header *before* calling the handler, so that WebContext.csrfToken reads the
-                // same value that we set in the response cookie. Without this, WebContext would
-                // generate an independent random UUID for the meta tag while the filter sets a
-                // different one in the cookie — making the first-visit CSRF check always fail.
-                val existingToken = request.cookie(WebContext.CSRF_COOKIE)?.value
+                val existingToken = request.cookie(RequestContext.CSRF_COOKIE)?.value
                 if (existingToken == null) {
                     val newToken = UUID.randomUUID().toString()
                     val existingCookieHeader = request.header("Cookie")
@@ -428,19 +410,19 @@ object Filters {
                         request.header(
                             "Cookie",
                             if (existingCookieHeader != null) {
-                                "${WebContext.CSRF_COOKIE}=$newToken; $existingCookieHeader"
+                                "${RequestContext.CSRF_COOKIE}=$newToken; $existingCookieHeader"
                             } else {
-                                "${WebContext.CSRF_COOKIE}=$newToken"
+                                "${RequestContext.CSRF_COOKIE}=$newToken"
                             },
                         )
                     val response = next(augmentedRequest)
                     response.cookie(
                         Cookie(
-                            WebContext.CSRF_COOKIE,
+                            RequestContext.CSRF_COOKIE,
                             newToken,
                             path = "/",
                             secure = sessionCookieSecure,
-                            httpOnly = false, // must be readable by JS for HTMX header injection
+                            httpOnly = false,
                             sameSite = SameSite.Strict,
                         )
                     )
@@ -478,12 +460,13 @@ object Filters {
         } else {
             val ctx =
                 try {
-                    request.webContext
+                    request.requestContext
                 } catch (e: IllegalStateException) {
-                    logger.debug("WebContext not found for error page: {}", e.message)
-                    WebContext.create(request)
+                    logger.debug("RequestContext not found for error page: {}", e.message)
+                    RequestContext(request)
                 }
-            val errorPage = pageFactory.buildErrorPage(ctx, "not-found")
+            val shellRenderer = runCatching { request.shellRenderer }.getOrDefault(ShellRenderer(ctx))
+            val errorPage = pageFactory.buildErrorPage(shellRenderer, "not-found")
             Response(Status.NOT_FOUND).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
         }
     }
@@ -515,13 +498,14 @@ object Filters {
         } else {
             val ctx =
                 try {
-                    request.webContext
+                    request.requestContext
                 } catch (ex: IllegalStateException) {
-                    logger.debug("WebContext not found for error page: {}", ex.message)
-                    WebContext.create(request)
+                    logger.debug("RequestContext not found for error page: {}", ex.message)
+                    RequestContext(request)
                 }
+            val shellRenderer = runCatching { request.shellRenderer }.getOrDefault(ShellRenderer(ctx))
             val errorKind = if (status == Status.INTERNAL_SERVER_ERROR) "server-error" else "not-found"
-            val errorPage = pageFactory.buildErrorPage(ctx, errorKind)
+            val errorPage = pageFactory.buildErrorPage(shellRenderer, errorKind)
             Response(status).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
         }
     }

@@ -61,8 +61,8 @@ class ConcurrentSyncIntegrationTest : WebTest() {
             )
         userRepository.save(userA)
         userRepository.save(userB)
-        tokenA = securityService.createSession(userA.id)
-        tokenB = securityService.createSession(userB.id)
+        tokenA = sessionSvc.createSession(userA.id)
+        tokenB = sessionSvc.createSession(userB.id)
 
         app = buildApp(securityService = securityService)
     }

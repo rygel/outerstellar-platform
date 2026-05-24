@@ -3,7 +3,7 @@ package io.github.rygel.outerstellar.platform
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.web.WebContext
+import io.github.rygel.outerstellar.platform.web.RequestContext
 import io.github.rygel.outerstellar.platform.web.WebTest
 import java.util.UUID
 import kotlin.test.assertTrue
@@ -32,7 +32,7 @@ class HomePageEndToEndTest : WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(user)
-        sessionCookie = Cookie(WebContext.SESSION_COOKIE, sec.createSession(user.id))
+        sessionCookie = Cookie(RequestContext.SESSION_COOKIE, sessionSvc.createSession(user.id))
     }
 
     @Test
