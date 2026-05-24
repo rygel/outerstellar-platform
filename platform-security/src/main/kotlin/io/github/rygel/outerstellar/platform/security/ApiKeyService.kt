@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
+import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory
 class ApiKeyService(
     private val userRepository: UserRepository,
     private val apiKeyRepository: ApiKeyRepository? = null,
+    private val auditRepository: AuditRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(ApiKeyService::class.java)
     private val secureRandom = java.security.SecureRandom()
@@ -25,6 +27,8 @@ class ApiKeyService(
         val apiKey = ApiKey(userId = userId, keyHash = keyHash, keyPrefix = keyPrefix, name = name)
         apiKeyRepository?.save(apiKey)
         logger.info("API key created for user {}", userId)
+        val user = userRepository.findById(userId)
+        auditRepository?.logAction("API_KEY_CREATED", actor = user, detail = "name=$name")
         return CreateApiKeyResponse(key = rawKey, name = name, keyPrefix = keyPrefix)
     }
 
@@ -57,6 +61,8 @@ class ApiKeyService(
     fun deleteApiKey(userId: UUID, keyId: Long) {
         apiKeyRepository?.delete(keyId, userId)
         logger.info("API key {} deleted for user {}", keyId, userId)
+        val user = userRepository.findById(userId)
+        auditRepository?.logAction("API_KEY_DELETED", actor = user, detail = "keyId=$keyId")
     }
 
     private fun generateRandomHex(length: Int): String {
