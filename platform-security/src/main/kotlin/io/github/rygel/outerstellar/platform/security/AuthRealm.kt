@@ -41,11 +41,11 @@ interface AuthRealm {
 }
 
 /** Authenticates session tokens (prefixed `oss_`) via the [SessionRepository]. */
-class SessionRealm(private val securityService: SecurityService) : AuthRealm {
+class SessionRealm(private val sessionService: SessionService) : AuthRealm {
     override val name = "session"
 
     override fun authenticate(token: String): AuthResult =
-        when (val result = securityService.lookupSession(token)) {
+        when (val result = sessionService.lookupSession(token)) {
             is SessionLookup.Active -> AuthResult.Authenticated(result.user)
             is SessionLookup.Expired -> AuthResult.Expired
             is SessionLookup.NotFound -> AuthResult.Skipped

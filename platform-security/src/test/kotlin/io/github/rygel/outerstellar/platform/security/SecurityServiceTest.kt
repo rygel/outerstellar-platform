@@ -34,6 +34,7 @@ class SecurityServiceTest {
     private lateinit var auditRepository: AuditRepository
     private lateinit var apiKeyRepository: ApiKeyRepository
     private lateinit var service: SecurityService
+    private lateinit var userAdminService: UserAdminService
     private val totpService = TOTPService()
 
     private val testUser =
@@ -66,8 +67,8 @@ class SecurityServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 apiKeyRepository = apiKeyRepository,
-                totpService = totpService,
             )
+        userAdminService = UserAdminService(userRepository, auditRepository)
     }
 
     // ---- authenticate ----
@@ -177,7 +178,7 @@ class SecurityServiceTest {
     fun `unlockAccount throws for non-admin caller`() {
         every { userRepository.findById(adminUser.id) } returns adminUser.copy(role = UserRole.USER)
 
-        assertThrows<InsufficientPermissionException> { service.unlockAccount(adminUser.id, testUser.id) }
+        assertThrows<InsufficientPermissionException> { userAdminService.unlockAccount(adminUser.id, testUser.id) }
     }
 
     @Test
@@ -185,7 +186,7 @@ class SecurityServiceTest {
         every { userRepository.findById(adminUser.id) } returns adminUser
         every { userRepository.findById(testUser.id) } returns testUser
 
-        service.unlockAccount(adminUser.id, testUser.id)
+        userAdminService.unlockAccount(adminUser.id, testUser.id)
 
         verify { userRepository.resetFailedLoginAttempts(testUser.id) }
     }
@@ -258,7 +259,6 @@ class SecurityServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 apiKeyRepository = apiKeyRepository,
-                totpService = totpService,
                 config = SecurityConfig(registrationEnabled = false),
             )
 
@@ -349,7 +349,6 @@ class SecurityServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 sessionRepository = sessionRepository,
-                totpService = totpService,
             )
         every { userRepository.findById(testUser.id) } returns testUser
         every { passwordEncoder.matches("currentpass", testUser.passwordHash) } returns true
@@ -393,14 +392,18 @@ class SecurityServiceTest {
 
     @Test
     fun `setUserEnabled prevents self-disable`() {
-        assertThrows<InsufficientPermissionException> { service.setUserEnabled(adminUser.id, adminUser.id, false) }
+        assertThrows<InsufficientPermissionException> {
+            userAdminService.setUserEnabled(adminUser.id, adminUser.id, false)
+        }
     }
 
     @Test
     fun `setUserEnabled rejects non-admin caller`() {
         every { userRepository.findById(testUser.id) } returns testUser
 
-        assertThrows<InsufficientPermissionException> { service.setUserEnabled(testUser.id, adminUser.id, false) }
+        assertThrows<InsufficientPermissionException> {
+            userAdminService.setUserEnabled(testUser.id, adminUser.id, false)
+        }
     }
 
     @Test
@@ -408,7 +411,7 @@ class SecurityServiceTest {
         every { userRepository.findById(adminUser.id) } returns adminUser
         every { userRepository.findById(testUser.id) } returns testUser
 
-        service.setUserEnabled(adminUser.id, testUser.id, false)
+        userAdminService.setUserEnabled(adminUser.id, testUser.id, false)
 
         verify { userRepository.updateEnabled(testUser.id, false) }
     }
@@ -417,14 +420,18 @@ class SecurityServiceTest {
 
     @Test
     fun `setUserRole prevents self-demotion`() {
-        assertThrows<InsufficientPermissionException> { service.setUserRole(adminUser.id, adminUser.id, UserRole.USER) }
+        assertThrows<InsufficientPermissionException> {
+            userAdminService.setUserRole(adminUser.id, adminUser.id, UserRole.USER)
+        }
     }
 
     @Test
     fun `setUserRole rejects non-admin caller`() {
         every { userRepository.findById(testUser.id) } returns testUser
 
-        assertThrows<InsufficientPermissionException> { service.setUserRole(testUser.id, adminUser.id, UserRole.ADMIN) }
+        assertThrows<InsufficientPermissionException> {
+            userAdminService.setUserRole(testUser.id, adminUser.id, UserRole.ADMIN)
+        }
     }
 
     @Test
@@ -432,7 +439,7 @@ class SecurityServiceTest {
         every { userRepository.findById(adminUser.id) } returns adminUser
         every { userRepository.findById(testUser.id) } returns testUser
 
-        service.setUserRole(adminUser.id, testUser.id, UserRole.ADMIN)
+        userAdminService.setUserRole(adminUser.id, testUser.id, UserRole.ADMIN)
 
         verify { userRepository.updateRole(testUser.id, UserRole.ADMIN) }
     }
@@ -685,14 +692,16 @@ class SecurityServiceTest {
     @Test
     fun `lookupSession returns Expired when absolute timeout exceeded`() {
         val sessionRepository: SessionRepository = mockk(relaxed = true)
+        val config = SecurityConfig(sessionTimeoutSeconds = 3600, sessionAbsoluteTimeoutSeconds = 7200)
+        val sessionService = SessionService(sessionRepository, userRepository, config)
         val absoluteTimeoutService =
             SecurityService(
                 userRepository = userRepository,
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 sessionRepository = sessionRepository,
-                config = SecurityConfig(sessionTimeoutSeconds = 3600, sessionAbsoluteTimeoutSeconds = 7200),
-                totpService = totpService,
+                config = config,
+                sessionService = sessionService,
             )
 
         val rawToken = "oss_" + "test".repeat(12)
@@ -718,14 +727,16 @@ class SecurityServiceTest {
     @Test
     fun `lookupSession returns Active when within absolute timeout`() {
         val sessionRepository: SessionRepository = mockk(relaxed = true)
+        val config = SecurityConfig(sessionTimeoutSeconds = 3600, sessionAbsoluteTimeoutSeconds = 7200)
+        val sessionService = SessionService(sessionRepository, userRepository, config)
         val absoluteTimeoutService =
             SecurityService(
                 userRepository = userRepository,
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 sessionRepository = sessionRepository,
-                config = SecurityConfig(sessionTimeoutSeconds = 3600, sessionAbsoluteTimeoutSeconds = 7200),
-                totpService = totpService,
+                config = config,
+                sessionService = sessionService,
             )
 
         val rawToken = "oss_" + "test".repeat(12)

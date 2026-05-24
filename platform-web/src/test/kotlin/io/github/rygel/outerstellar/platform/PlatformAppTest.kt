@@ -6,6 +6,8 @@ import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
+import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.web.StubMessageCache
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
@@ -31,6 +33,8 @@ class PlatformAppTest {
 
         val securityService = mockk<SecurityService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
+        val userAdminService = mockk<UserAdminService>(relaxed = true)
+        val sessionService = mockk<SessionService>(relaxed = true)
         every { userRepository.countAll() } returns 0L
         val contactService =
             io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
@@ -45,6 +49,8 @@ class PlatformAppTest {
                 pageFactory,
                 config,
                 securityService,
+                userAdminService,
+                sessionService,
                 userRepository,
             )
         val handler = polyHandler.http

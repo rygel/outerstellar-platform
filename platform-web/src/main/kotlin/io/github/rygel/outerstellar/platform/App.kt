@@ -13,7 +13,9 @@ import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionRealm
+import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
+import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.web.AdminNavItem
 import io.github.rygel.outerstellar.platform.web.AuthApi
@@ -94,6 +96,8 @@ private class OptionalServices(
 private class AppContext(
     val config: AppConfig,
     val securityService: SecurityService,
+    val userAdminService: UserAdminService,
+    val sessionService: SessionService,
     val userRepository: UserRepository,
     val jteRenderer: TemplateRenderer,
     val pageFactory: WebPageFactory,
@@ -154,6 +158,8 @@ fun app(
     pageFactory: WebPageFactory,
     config: AppConfig,
     securityService: SecurityService,
+    userAdminService: UserAdminService,
+    sessionService: SessionService,
     userRepository: UserRepository,
     deviceTokenRepository: io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository? = null,
     analytics: AnalyticsService = NoOpAnalyticsService(),
@@ -172,6 +178,8 @@ fun app(
         AppContext(
             config = config,
             securityService = securityService,
+            userAdminService = userAdminService,
+            sessionService = sessionService,
             userRepository = userRepository,
             jteRenderer = jteRenderer,
             pageFactory = pageFactory,
@@ -198,7 +206,7 @@ fun app(
 }
 
 private fun assembleHttpHandler(ctx: AppContext): HttpHandler {
-    val realms: List<AuthRealm> = listOf(SessionRealm(ctx.securityService), ApiKeyRealm(ctx.securityService))
+    val realms: List<AuthRealm> = listOf(SessionRealm(ctx.sessionService), ApiKeyRealm(ctx.securityService))
     val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(realms)
     val apiRoutes = buildApiRoutes(ctx, bearerSecurity, bearerAdminSecurity)
     val uiRoutes = buildUiRoutes(ctx)
@@ -254,6 +262,7 @@ private fun buildApiRoutes(
     bearerAdminSecurity: org.http4k.security.Security,
 ): List<org.http4k.routing.RoutingHttpHandler> {
     val securityService = ctx.securityService
+    val userAdminService = ctx.userAdminService
     val messageService = ctx.messageService
     val contactService = ctx.contactService
     val analytics = ctx.analytics
@@ -296,7 +305,7 @@ private fun buildApiRoutes(
         renderer = OpenApi3(ApiInfo("$appLabel Admin API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/v1/admin/api-openapi.json"
         security = bearerAdminSecurity
-        routes += UserAdminApi(securityService).routes
+        routes += UserAdminApi(userAdminService).routes
         val exportProviders =
             listOfNotNull(
                 messageService?.let { io.github.rygel.outerstellar.platform.export.MessageExportProvider(it) },
@@ -402,6 +411,7 @@ private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHan
     val jteRenderer = ctx.jteRenderer
     val devDashboardEnabled = ctx.config.devDashboardEnabled
     val securityService = ctx.securityService
+    val userAdminService = ctx.userAdminService
     val appLabel = ctx.appLabel
     val adminSecurity =
         object : org.http4k.security.Security {
@@ -423,7 +433,7 @@ private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHan
         if (outboxRepository != null && cache != null) {
             routes += DevDashboardRoutes(outboxRepository, cache, pageFactory, jteRenderer, devDashboardEnabled).routes
         }
-        routes += UserAdminRoutes(pageFactory, jteRenderer, securityService).routes
+        routes += UserAdminRoutes(pageFactory, jteRenderer, userAdminService).routes
         pluginSections.forEach { section -> routes += section.route }
     }
     return if (pluginSections.isNotEmpty()) {

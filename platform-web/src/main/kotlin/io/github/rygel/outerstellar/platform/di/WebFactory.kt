@@ -17,6 +17,7 @@ import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.persistence.VoteRepository
 import io.github.rygel.outerstellar.platform.security.AdminStatsService
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.EmailService
 import io.github.rygel.outerstellar.platform.service.EventPublisher
@@ -59,6 +60,7 @@ fun createWebComponents(
     config: AppConfig,
     plugin: PlatformPlugin? = null,
     securityService: SecurityService,
+    userAdminService: UserAdminService,
     messageRepository: MessageRepository,
     messageService: MessageService? = null,
     contactService: ContactService? = null,
@@ -83,6 +85,7 @@ fun createWebComponents(
             contactService,
             securityService,
             appleOAuthEnabled = config.appleOAuth.enabled,
+            userAdminService = userAdminService,
         )
 
     val runtime = config.runtime
@@ -124,7 +127,7 @@ fun createWebComponents(
     val pollService = PollService(pollRepository)
     val notificationService = NotificationService(notificationRepository)
     val adminStatsService = AdminStatsService(userRepository)
-    val adminPageFactory = AdminPageFactory(securityService, notificationService)
+    val adminPageFactory = AdminPageFactory(securityService, notificationService, userAdminService)
     val pluginMigrationSource: PluginMigrationSource = plugin ?: NoOpPluginMigrationSource
 
     return WebComponents(

@@ -13,7 +13,6 @@ import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
@@ -41,13 +40,13 @@ class SecurityService(
     private val config: SecurityConfig = SecurityConfig(),
     private val sessionRepository: SessionRepository? = null,
     private val activityUpdater: AsyncActivityUpdater? = null,
-    private val totpService: TOTPService = TOTPService(),
+    private val sessionService: SessionService? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
     private val secureRandom = SecureRandom()
+    private val totpService = TOTPService()
     private val partialAuthStore: Cache<String, PartialAuth> =
         Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.MINUTES).maximumSize(10_000).build()
-    private val random = SecureRandom()
 
     private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
 
@@ -155,65 +154,6 @@ class SecurityService(
         audit("PASSWORD_CHANGED", actor = user)
     }
 
-    fun listUsers(): List<UserSummary> {
-        return userRepository.findAll().map { it.toSummary() }
-    }
-
-    fun listUsers(limit: Int, offset: Int): List<UserSummary> =
-        userRepository.findPage(limit.coerceIn(1, MAX_PAGE_LIMIT), offset).map { it.toSummary() }
-
-    fun countUsers(): Long = userRepository.countAll()
-
-    fun findUserSummary(id: UUID): UserSummary? = userRepository.findById(id)?.toSummary()
-
-    fun setUserEnabled(adminId: UUID, targetId: UUID, enabled: Boolean) {
-        if (adminId == targetId) {
-            throw InsufficientPermissionException("Cannot change your own enabled status")
-        }
-        val admin = userRepository.findById(adminId) ?: throw UserNotFoundException(adminId.toString())
-        if (admin.role != UserRole.ADMIN) {
-            throw InsufficientPermissionException("Only administrators can enable/disable accounts")
-        }
-        val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
-        userRepository.updateEnabled(targetId, enabled)
-        logger.info("User {} enabled set to {} by admin {}", sanitize(target.username), enabled, adminId)
-        val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
-        audit(action, actor = admin, target = target)
-    }
-
-    fun unlockAccount(adminId: UUID, targetId: UUID) {
-        val admin = userRepository.findById(adminId) ?: throw UserNotFoundException(adminId.toString())
-        if (admin.role != UserRole.ADMIN) {
-            throw InsufficientPermissionException("Admin access required to unlock accounts")
-        }
-        val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
-        userRepository.resetFailedLoginAttempts(targetId)
-        logger.info("User {} unlocked by admin {}", sanitize(target.username), sanitize(admin.username))
-        audit("USER_UNLOCKED", actor = admin, target = target)
-    }
-
-    fun setUserRole(adminId: UUID, targetId: UUID, role: UserRole) {
-        if (adminId == targetId) {
-            throw InsufficientPermissionException("Cannot change your own role")
-        }
-        val admin = userRepository.findById(adminId) ?: throw UserNotFoundException(adminId.toString())
-        if (admin.role != UserRole.ADMIN) {
-            throw InsufficientPermissionException("Only administrators can change user roles")
-        }
-        val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
-        userRepository.updateRole(targetId, role)
-        logger.info("User {} role set to {} by admin {}", sanitize(target.username), role, adminId)
-        audit("USER_ROLE_CHANGED", actor = admin, target = target, detail = "from ${target.role} to $role")
-    }
-
-    fun countAuditEntries(): Long = auditRepository?.countAll() ?: 0L
-
-    fun getAuditLog(limit: Int = 50): List<AuditEntry> {
-        return auditRepository?.findRecent(limit) ?: emptyList()
-    }
-
-    fun getAuditLog(limit: Int, offset: Int): List<AuditEntry> = auditRepository?.findPage(limit, offset) ?: emptyList()
-
     // Delegated to PasswordResetService
 
     fun requestPasswordReset(email: String): String? = passwordResetService.requestPasswordReset(email)
@@ -304,12 +244,9 @@ class SecurityService(
         audit("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
     }
 
-    fun updatePreferences(userId: UUID, language: String?, theme: String?, layout: String?) {
-        userRepository.updatePreferences(userId, language, theme, layout)
-    }
-
     fun createSession(userId: UUID): String {
-        val repo = sessionRepository ?: error("SessionRepository is not configured")
+        if (sessionService != null) return sessionService.createSession(userId)
+        val repo = sessionRepository ?: error("SessionRepository/SessionService not configured")
         val rawToken = "oss_" + generateRandomHex(SESSION_TOKEN_HEX_LENGTH)
         val tokenHash = TokenHashing.hash(rawToken)
         val session =
@@ -324,6 +261,7 @@ class SecurityService(
     }
 
     fun lookupSession(rawToken: String): SessionLookup {
+        if (sessionService != null) return sessionService.lookupSession(rawToken)
         val repo = sessionRepository ?: return SessionLookup.NotFound
         val tokenHash = TokenHashing.hash(rawToken)
         val activeSession = repo.findByTokenHash(tokenHash)
@@ -341,7 +279,6 @@ class SecurityService(
             }
             return SessionLookup.NotFound
         }
-        // Check if there's an expired session
         val expiredSession = repo.findByTokenHashIncludingExpired(tokenHash)
         if (expiredSession != null) {
             return SessionLookup.Expired
@@ -349,18 +286,17 @@ class SecurityService(
         return SessionLookup.NotFound
     }
 
-    fun deleteExpiredSessions() {
-        sessionRepository?.deleteExpired()
-    }
-
     fun deleteSession(rawToken: String) {
-        val repo = sessionRepository ?: return
-        repo.deleteByTokenHash(TokenHashing.hash(rawToken))
+        if (sessionService != null) {
+            sessionService.deleteSession(rawToken)
+            return
+        }
+        sessionRepository?.deleteByTokenHash(TokenHashing.hash(rawToken))
     }
 
     private fun generatePartialAuthToken(userId: UUID): String {
         val bytes = ByteArray(32)
-        random.nextBytes(bytes)
+        secureRandom.nextBytes(bytes)
         val token = "pt_" + bytes.joinToString("") { "%02x".format(it) }
         partialAuthStore.put(token, PartialAuth(userId = userId))
         return token
@@ -406,12 +342,6 @@ class SecurityService(
         userRepository.disableTotp(userId)
     }
 
-    private fun generateRandomHex(length: Int): String {
-        val bytes = ByteArray(length / 2)
-        secureRandom.nextBytes(bytes)
-        return bytes.joinToString("") { "%02x".format(it) }
-    }
-
     private fun audit(
         action: String,
         actor: User? = null,
@@ -431,22 +361,16 @@ class SecurityService(
         )
     }
 
+    private fun generateRandomHex(length: Int): String {
+        val bytes = ByteArray(length / 2)
+        secureRandom.nextBytes(bytes)
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
     companion object {
         private const val MAX_USERNAME_LENGTH = 50
         private const val SESSION_TOKEN_HEX_LENGTH = 48
-        private const val MAX_PAGE_LIMIT = 1000
         private const val MAX_LOG_ID_LENGTH = 80
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }
-
-private fun User.toSummary() =
-    UserSummary(
-        id = id.toString(),
-        username = username,
-        email = email,
-        role = role,
-        enabled = enabled,
-        failedLoginAttempts = failedLoginAttempts,
-        lockedUntil = lockedUntil,
-    )
