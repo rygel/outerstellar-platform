@@ -18,7 +18,10 @@ import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
+import io.github.rygel.outerstellar.platform.security.SecurityConfig
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
+import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.NotificationService
@@ -82,6 +85,9 @@ abstract class WebTest {
     val pollRepository by lazy { JdbiPollRepository(testJdbi) }
     val pollService by lazy { PollService(pollRepository) }
 
+    val userAdminService by lazy { UserAdminService(userRepository, auditRepository) }
+    val sessionSvc by lazy { SessionService(sessionRepository, userRepository, SecurityConfig()) }
+
     fun createSecurityService(userRepository: UserRepository = this.userRepository): SecurityService =
         SecurityService(
             userRepository,
@@ -90,6 +96,7 @@ abstract class WebTest {
             apiKeyRepository = apiKeyRepository,
             resetRepository = passwordResetRepository,
             auditRepository = auditRepository,
+            sessionService = sessionSvc,
         )
 
     fun withAuthenticatedUser(
@@ -143,6 +150,8 @@ abstract class WebTest {
                 pageFactory,
                 config,
                 securityService,
+                userAdminService,
+                sessionSvc,
                 resolvedUserRepo,
                 deviceTokenRepository = overrides.deviceTokenRepository,
                 notificationService = overrides.notificationService,
