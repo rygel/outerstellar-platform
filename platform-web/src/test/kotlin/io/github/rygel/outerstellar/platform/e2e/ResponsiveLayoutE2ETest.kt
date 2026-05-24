@@ -92,6 +92,7 @@ class ResponsiveLayoutE2ETest {
             createWebComponents(
                 config = testConfig,
                 securityService = security.securityService,
+                userAdminService = security.userAdminService,
                 messageRepository = persistence.messageRepository,
                 userRepository = persistence.userRepository,
                 voteRepository = persistence.voteRepository,
@@ -124,6 +125,8 @@ class ResponsiveLayoutE2ETest {
                 pageFactory = web.pageFactory,
                 config = testConfig,
                 securityService = security.securityService,
+                userAdminService = security.userAdminService,
+                sessionService = security.sessionService,
                 userRepository = persistence.userRepository,
                 analytics = web.analyticsService,
                 notificationService = web.notificationService,

@@ -5,7 +5,7 @@ import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.UserAdminService
 import java.util.UUID
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -28,7 +28,7 @@ private const val MAX_AUDIT_EXPORT_ROWS = 10_000
 class UserAdminRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
-    private val securityService: SecurityService,
+    private val userAdminService: UserAdminService,
 ) : ServerRoutes {
     private val userIdPath = Path.string().of("userId")
 
@@ -55,7 +55,7 @@ class UserAdminRoutes(
                     var offset = 0
                     val pageSize = 100
                     do {
-                        val page = securityService.listUsers(pageSize, offset)
+                        val page = userAdminService.listUsers(pageSize, offset)
                         page.forEach { u ->
                             sb.appendLine(
                                 CsvUtils.toCsvRow(listOf(u.username, u.email, u.role.name, u.enabled.toString()))
@@ -78,7 +78,7 @@ class UserAdminRoutes(
                     var offset = 0
                     val pageSize = 100
                     do {
-                        val page = securityService.listUsers(pageSize, offset)
+                        val page = userAdminService.listUsers(pageSize, offset)
                         page.forEach { u ->
                             allUsers.add(
                                 UserExportRow(
@@ -105,9 +105,9 @@ class UserAdminRoutes(
                     { request: org.http4k.core.Request ->
                         val ctx = request.webContext
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
-                        val target = securityService.findUserSummary(UUID.fromString(userId))
+                        val target = userAdminService.findUserSummary(UUID.fromString(userId))
                         if (target != null) {
-                            securityService.setUserEnabled(admin.id, UUID.fromString(userId), !target.enabled)
+                            userAdminService.setUserEnabled(admin.id, UUID.fromString(userId), !target.enabled)
                         }
                         renderer.render(pageFactory.buildUserAdminPage(ctx))
                     }
@@ -135,7 +135,7 @@ class UserAdminRoutes(
                     val maxRows = MAX_AUDIT_EXPORT_ROWS
                     var totalRows = 0
                     do {
-                        val page = securityService.getAuditLog(pageSize, offset)
+                        val page = userAdminService.getAuditLog(pageSize, offset)
                         page.forEach { e ->
                             sb.appendLine(
                                 CsvUtils.toCsvRow(
@@ -169,7 +169,7 @@ class UserAdminRoutes(
                     val maxRows = MAX_AUDIT_EXPORT_ROWS
                     var totalRows = 0
                     do {
-                        val page = securityService.getAuditLog(pageSize, offset)
+                        val page = userAdminService.getAuditLog(pageSize, offset)
                         page.forEach { e ->
                             allEntries.add(
                                 AuditExportRow(
@@ -198,10 +198,10 @@ class UserAdminRoutes(
                     { request: org.http4k.core.Request ->
                         val ctx = request.webContext
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
-                        val target = securityService.findUserSummary(UUID.fromString(userId))
+                        val target = userAdminService.findUserSummary(UUID.fromString(userId))
                         if (target != null) {
                             val newRole = if (target.role == UserRole.ADMIN) UserRole.USER else UserRole.ADMIN
-                            securityService.setUserRole(admin.id, UUID.fromString(userId), newRole)
+                            userAdminService.setUserRole(admin.id, UUID.fromString(userId), newRole)
                         }
                         renderer.render(pageFactory.buildUserAdminPage(ctx))
                     }
@@ -215,7 +215,7 @@ class UserAdminRoutes(
                     { request: org.http4k.core.Request ->
                         val ctx = request.webContext
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
-                        securityService.unlockAccount(admin.id, java.util.UUID.fromString(userId))
+                        userAdminService.unlockAccount(admin.id, java.util.UUID.fromString(userId))
                         renderer.render(pageFactory.buildUserAdminPage(ctx))
                     }
                 },
