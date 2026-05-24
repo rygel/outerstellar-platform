@@ -1,8 +1,6 @@
 package io.github.rygel.outerstellar.platform.security
 
-import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
-import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
@@ -35,7 +33,7 @@ class AccountService(
         userRepository.save(updated)
         sessionRepository?.deleteByUserId(userId)
         logger.info("Password changed for user {}", sanitize(user.username))
-        audit("PASSWORD_CHANGED", actor = user)
+        auditRepository?.logAction("PASSWORD_CHANGED", actor = user)
     }
 
     fun updateProfile(userId: UUID, newEmail: String, newUsername: String? = null, newAvatarUrl: String? = null) {
@@ -80,7 +78,7 @@ class AccountService(
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
         userRepository.updateNotificationPreferences(userId, emailEnabled, pushEnabled)
         logger.info("Notification preferences updated for user {}", sanitize(user.username))
-        audit("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
+        auditRepository?.logAction("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
     }
 
     private fun deleteAccountInternal(userId: UUID) {
@@ -93,33 +91,11 @@ class AccountService(
         }
         userRepository.deleteById(userId)
         logger.info("Account deleted for user {}", sanitize(user.username))
-        audit("ACCOUNT_DELETED", actor = user)
-    }
-
-    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
-
-    private fun audit(
-        action: String,
-        actor: User? = null,
-        target: User? = null,
-        detail: String? = null,
-        targetUsername: String? = null,
-    ) {
-        auditRepository?.log(
-            AuditEntry(
-                actorId = actor?.id?.toString(),
-                actorUsername = actor?.username,
-                targetId = target?.id?.toString(),
-                targetUsername = targetUsername ?: target?.username,
-                action = action,
-                detail = detail,
-            )
-        )
+        auditRepository?.logAction("ACCOUNT_DELETED", actor = user)
     }
 
     companion object {
         private const val MAX_USERNAME_LENGTH = 50
-        private const val MAX_LOG_ID_LENGTH = 80
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }
