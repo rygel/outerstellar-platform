@@ -16,6 +16,8 @@ class SecurityComponents(
     val permissionResolver: PermissionResolver,
     val authRealms: List<AuthRealm>,
     val totpService: TOTPService,
+    val sessionService: SessionService,
+    val userAdminService: UserAdminService,
 )
 
 fun createSecurityComponents(
@@ -41,6 +43,14 @@ fun createSecurityComponents(
             registrationEnabled = config.registrationEnabled,
         )
     val totpService = TOTPService()
+    val sessionService =
+        SessionService(
+            sessionRepository = sessionRepository ?: error("SessionRepository required"),
+            userRepository = userRepository,
+            config = securityConfig,
+            activityUpdater = asyncActivityUpdater,
+        )
+    val userAdminService = UserAdminService(userRepository = userRepository, auditRepository = auditRepository)
     val securityService =
         SecurityService(
             userRepository = userRepository,
@@ -54,9 +64,10 @@ fun createSecurityComponents(
             sessionRepository = sessionRepository,
             activityUpdater = asyncActivityUpdater,
             totpService = totpService,
+            sessionService = sessionService,
         )
     val permissionResolver = RoleBasedPermissionResolver()
-    val authRealms = listOf(SessionRealm(securityService), ApiKeyRealm(securityService))
+    val authRealms = listOf(SessionRealm(sessionService), ApiKeyRealm(securityService))
     return SecurityComponents(
         passwordEncoder = passwordEncoder,
         jwtService = jwtService,
@@ -65,5 +76,7 @@ fun createSecurityComponents(
         permissionResolver = permissionResolver,
         authRealms = authRealms,
         totpService = totpService,
+        sessionService = sessionService,
+        userAdminService = userAdminService,
     )
 }
