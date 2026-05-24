@@ -439,3 +439,25 @@ Key rules:
 - Never push directly to `develop` or `main`. Always create feature branches and PRs.
 - Run full reactor `mvn verify` locally before pushing to CI. CI round-trips waste time.
 - Desktop/Swing tests must NEVER run directly on the host machine. Always use the Podman container.
+
+## Branch hygiene
+
+### Always start from latest upstream
+
+Before creating any new feature branch, ALWAYS fetch from origin and branch from the latest `origin/develop`:
+
+```powershell
+git fetch origin
+git checkout -b feat/my-feature origin/develop
+```
+
+NEVER reuse a branch whose PR was already merged. A merged branch contains stale code that conflicts with develop. Starting fresh avoids cherry-pick conflicts and regression bugs.
+
+### One PR per branch, one branch per PR
+
+After a PR is merged:
+1. Delete the local branch
+2. Create a new branch from `origin/develop` for the next piece of work
+3. Do NOT cherry-pick commits from the old branch onto the new one — redo the work on a clean base
+
+Cherry-picking across merged PRs creates conflicts because the target file state changed. Redoing the work on the new base is faster than resolving cascading conflicts.
