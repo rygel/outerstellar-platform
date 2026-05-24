@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.security
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
-import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
@@ -11,7 +10,6 @@ import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.util.UUID
-import org.slf4j.LoggerFactory
 
 class SecurityService(
     private val userRepository: UserRepository,
@@ -23,26 +21,7 @@ class SecurityService(
     private val oauthRepository: OAuthRepository? = null,
     private val config: SecurityConfig = SecurityConfig(),
     private val sessionRepository: SessionRepository? = null,
-    private val activityUpdater: AsyncActivityUpdater? = null,
 ) {
-    private val logger = LoggerFactory.getLogger(SecurityService::class.java)
-
-    private val authService =
-        AuthService(
-            userRepository = userRepository,
-            passwordEncoder = passwordEncoder,
-            auditRepository = auditRepository,
-            config = config,
-        )
-
-    private val accountService =
-        AccountService(
-            userRepository = userRepository,
-            passwordEncoder = passwordEncoder,
-            sessionRepository = sessionRepository,
-            auditRepository = auditRepository,
-        )
-
     private val passwordResetService by lazy {
         PasswordResetService(
             userRepository = userRepository,
@@ -67,29 +46,6 @@ class SecurityService(
             auditRepository = auditRepository,
         )
     }
-
-    fun authenticate(username: String, password: String): AuthResult? = authService.authenticate(username, password)
-
-    fun register(username: String, password: String): User = authService.register(username, password)
-
-    fun changePassword(userId: UUID, currentPassword: String, newPassword: String) =
-        accountService.changePassword(userId, currentPassword, newPassword)
-
-    fun updateProfile(userId: UUID, newEmail: String, newUsername: String? = null, newAvatarUrl: String? = null) =
-        accountService.updateProfile(userId, newEmail, newUsername, newAvatarUrl)
-
-    fun deleteAccount(userId: UUID, currentPassword: String) = accountService.deleteAccount(userId, currentPassword)
-
-    fun updateNotificationPreferences(userId: UUID, emailEnabled: Boolean, pushEnabled: Boolean) =
-        accountService.updateNotificationPreferences(userId, emailEnabled, pushEnabled)
-
-    fun verifyTotp(partialToken: String, code: String, sessionService: SessionService): TotpVerifyResponse =
-        authService.verifyTotp(partialToken, code, sessionService)
-
-    fun enableTotp(userId: UUID, secret: String, backupCodes: String) =
-        authService.enableTotp(userId, secret, backupCodes)
-
-    fun disableTotp(userId: UUID) = authService.disableTotp(userId)
 
     fun requestPasswordReset(email: String): String? = passwordResetService.requestPasswordReset(email)
 

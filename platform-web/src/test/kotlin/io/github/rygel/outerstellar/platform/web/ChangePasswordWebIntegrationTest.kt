@@ -3,6 +3,7 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
@@ -36,6 +37,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
     private lateinit var securityService: SecurityService
+    private lateinit var authService: AuthService
     private lateinit var testToken: String
 
     @BeforeEach
@@ -51,6 +53,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
         userRepository.save(testUser)
 
         securityService = createSecurityService()
+        authService = AuthService(userRepository, encoder, auditRepository)
 
         testToken = sessionSvc.createSession(testUser.id)
 
@@ -173,11 +176,11 @@ class ChangePasswordWebIntegrationTest : WebTest() {
         )
 
         // Verify old password no longer works
-        val oldAuth = securityService.authenticate(testUser.email, "OldPass123!")
+        val oldAuth = authService.authenticate(testUser.email, "OldPass123!")
         assertTrue(oldAuth == null, "Old password should no longer authenticate")
 
         // Verify new password works
-        val newAuth = securityService.authenticate(testUser.email, newPassword)
+        val newAuth = authService.authenticate(testUser.email, newPassword)
         assertNotNull(newAuth, "New password should authenticate successfully")
     }
 }
