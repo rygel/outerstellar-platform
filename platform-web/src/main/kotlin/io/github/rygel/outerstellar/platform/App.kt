@@ -6,10 +6,12 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.security.AccountService
 import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
 import io.github.rygel.outerstellar.platform.security.AppleOAuthProvider
 import io.github.rygel.outerstellar.platform.security.AuthRealm
 import io.github.rygel.outerstellar.platform.security.AuthResult
+import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionRealm
@@ -95,6 +97,8 @@ private class OptionalServices(
 
 private class AppContext(
     val config: AppConfig,
+    val authService: AuthService,
+    val accountService: AccountService,
     val securityService: SecurityService,
     val userAdminService: UserAdminService,
     val sessionService: SessionService,
@@ -157,6 +161,8 @@ fun app(
     jteRenderer: TemplateRenderer,
     pageFactory: WebPageFactory,
     config: AppConfig,
+    authService: AuthService,
+    accountService: AccountService,
     securityService: SecurityService,
     userAdminService: UserAdminService,
     sessionService: SessionService,
@@ -177,6 +183,8 @@ fun app(
     val ctx =
         AppContext(
             config = config,
+            authService = authService,
+            accountService = accountService,
             securityService = securityService,
             userAdminService = userAdminService,
             sessionService = sessionService,
@@ -276,7 +284,8 @@ private fun buildApiRoutes(
     val apiRoutes = contract {
         renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
-        routes += AuthApi(securityService, ctx.sessionService, ctx.config).routes
+        routes +=
+            AuthApi(ctx.authService, ctx.accountService, ctx.securityService, ctx.sessionService, ctx.config).routes
         if (voteService != null) {
             routes += VoteApi(voteService).routes
         }
@@ -292,7 +301,9 @@ private fun buildApiRoutes(
         if (messageService != null || contactService != null) {
             routes += SyncApi(messageService, contactService, analytics).routes
         }
-        routes += AuthApi(securityService, ctx.sessionService, ctx.config).bearerRoutes
+        routes +=
+            AuthApi(ctx.authService, ctx.accountService, ctx.securityService, ctx.sessionService, ctx.config)
+                .bearerRoutes
         if (deviceTokenRepository != null) {
             routes += DeviceRegistrationApi(deviceTokenRepository).routes
         }
@@ -346,6 +357,8 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
             AuthRoutes(
                     pageFactory,
                     jteRenderer,
+                    ctx.authService,
+                    ctx.accountService,
                     securityService,
                     ctx.sessionService,
                     sessionCookieSecure,
@@ -529,14 +542,14 @@ private fun buildBaseApp(
     ctx.totpService?.let { totpService ->
         appRoutes +=
             TOTPRoutes(
-                    ctx.securityService,
+                    ctx.authService,
                     ctx.jteRenderer,
                     ctx.config.sessionCookieSecure,
                     totpService,
                     ctx.sessionService,
                 )
                 .routes
-        appRoutes += TOTPApiRoutes(ctx.securityService, totpService, ctx.sessionService).routes
+        appRoutes += TOTPApiRoutes(ctx.authService, totpService, ctx.sessionService).routes
     }
     appRoutes.addAll(apiRoutes)
     if ("/" !in ctx.excludedRoutes) {

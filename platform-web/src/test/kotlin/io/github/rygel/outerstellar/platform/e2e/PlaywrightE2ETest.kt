@@ -121,6 +121,8 @@ class PlaywrightE2ETest {
                 jteRenderer = web.templateRenderer,
                 pageFactory = web.pageFactory,
                 config = testConfig,
+                authService = security.authService,
+                accountService = security.accountService,
                 securityService = security.securityService,
                 userAdminService = security.userAdminService,
                 sessionService = security.sessionService,

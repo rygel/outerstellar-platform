@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
@@ -42,6 +43,7 @@ class OAuthIntegrationTest : WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var localOAuthRepository: InMemoryOAuthRepository
     private lateinit var securityService: SecurityService
+    private lateinit var authService: AuthService
 
     @BeforeEach
     fun setupTest() {
@@ -56,6 +58,8 @@ class OAuthIntegrationTest : WebTest() {
                 auditRepository = auditRepository,
                 oauthRepository = localOAuthRepository,
             )
+        authService =
+            AuthService(userRepository = userRepository, passwordEncoder = encoder, auditRepository = auditRepository)
 
         app = buildApp(securityService = securityService)
     }
@@ -311,7 +315,7 @@ class OAuthIntegrationTest : WebTest() {
     @Test
     fun `findOrCreateOAuthUser generates unique username when base is already taken`() {
         // Create a user whose username will collide with the derived OAuth username
-        securityService.register("alice", testPassword())
+        authService.register("alice", testPassword())
 
         // Now sign in with Apple as alice@example.com → username 'alice' is taken → should be
         // alice2

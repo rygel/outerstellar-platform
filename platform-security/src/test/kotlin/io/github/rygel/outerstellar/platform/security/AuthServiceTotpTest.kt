@@ -15,13 +15,13 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-class SecurityServiceTotpTest {
+class AuthServiceTotpTest {
 
     private lateinit var userRepository: UserRepository
     private lateinit var sessionRepository: SessionRepository
     private lateinit var passwordEncoder: PasswordEncoder
     private lateinit var totpService: TOTPService
-    private lateinit var securityService: SecurityService
+    private lateinit var authService: AuthService
     private lateinit var sessionService: SessionService
 
     @BeforeEach
@@ -30,13 +30,8 @@ class SecurityServiceTotpTest {
         sessionRepository = mockk(relaxed = true)
         passwordEncoder = mockk(relaxed = true)
         totpService = TOTPService()
-        securityService =
-            SecurityService(
-                userRepository = userRepository,
-                sessionRepository = sessionRepository,
-                passwordEncoder = passwordEncoder,
-                config = SecurityConfig(),
-            )
+        authService =
+            AuthService(userRepository = userRepository, passwordEncoder = passwordEncoder, config = SecurityConfig())
         sessionService = SessionService(sessionRepository, userRepository, SecurityConfig())
     }
 
@@ -56,7 +51,7 @@ class SecurityServiceTotpTest {
         every { userRepository.findByUsername("alice") } returns user
         every { passwordEncoder.matches("pass", "hash") } returns true
 
-        val result = securityService.authenticate("alice", "pass")
+        val result = authService.authenticate("alice", "pass")
         assertTrue(result is AuthResult.TotpRequired, "Should require TOTP")
         assertNotNull((result as AuthResult.TotpRequired).token, "Should have partial token")
     }
@@ -70,13 +65,13 @@ class SecurityServiceTotpTest {
         every { passwordEncoder.matches("pass", "hash") } returns true
         every { sessionRepository.save(any()) } just Runs
 
-        val result = securityService.authenticate("bob", "pass")
+        val result = authService.authenticate("bob", "pass")
         assertTrue(result is AuthResult.Authenticated, "Should authenticate directly when TOTP disabled")
     }
 
     @Test
     fun `verifyTotp with invalid token returns expired`() {
-        val result = securityService.verifyTotp("pt_invalid", "123456", sessionService)
+        val result = authService.verifyTotp("pt_invalid", "123456", sessionService)
         assertEquals("expired", result.status, "Invalid token should be expired")
     }
 
@@ -86,7 +81,7 @@ class SecurityServiceTotpTest {
         every { userRepository.updateTotpSecret(any(), any(), any()) } just Runs
         every { userRepository.enableTotp(any()) } just Runs
 
-        securityService.enableTotp(userId, "newsecret", "[]")
+        authService.enableTotp(userId, "newsecret", "[]")
     }
 
     @Test
@@ -94,7 +89,7 @@ class SecurityServiceTotpTest {
         val userId = UUID.randomUUID()
         every { userRepository.updateTotpSecret(any(), any(), any()) } just Runs
 
-        securityService.disableTotp(userId)
+        authService.disableTotp(userId)
     }
 
     @Test
@@ -114,11 +109,11 @@ class SecurityServiceTotpTest {
         every { userRepository.findByUsername("alice") } returns user
         every { passwordEncoder.matches("pass", "hash") } returns true
 
-        val authResult = securityService.authenticate("alice", "pass")
+        val authResult = authService.authenticate("alice", "pass")
         val partialToken = (authResult as AuthResult.TotpRequired).token
 
         every { userRepository.findById(userId) } returns user
-        val result = securityService.verifyTotp(partialToken, "000000", sessionService)
+        val result = authService.verifyTotp(partialToken, "000000", sessionService)
         assertEquals("invalid_code", result.status, "Invalid code should return invalid_code")
     }
 }

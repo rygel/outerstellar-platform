@@ -12,6 +12,8 @@ class SecurityComponents(
     val passwordEncoder: PasswordEncoder,
     val jwtService: JwtService,
     val asyncActivityUpdater: AsyncActivityUpdater,
+    val authService: AuthService,
+    val accountService: AccountService,
     val securityService: SecurityService,
     val permissionResolver: PermissionResolver,
     val authRealms: List<AuthRealm>,
@@ -51,6 +53,20 @@ fun createSecurityComponents(
             activityUpdater = asyncActivityUpdater,
         )
     val userAdminService = UserAdminService(userRepository = userRepository, auditRepository = auditRepository)
+    val authService =
+        AuthService(
+            userRepository = userRepository,
+            passwordEncoder = passwordEncoder,
+            auditRepository = auditRepository,
+            config = securityConfig,
+        )
+    val accountService =
+        AccountService(
+            userRepository = userRepository,
+            passwordEncoder = passwordEncoder,
+            sessionRepository = sessionRepository,
+            auditRepository = auditRepository,
+        )
     val securityService =
         SecurityService(
             userRepository = userRepository,
@@ -69,6 +85,8 @@ fun createSecurityComponents(
         passwordEncoder = passwordEncoder,
         jwtService = jwtService,
         asyncActivityUpdater = asyncActivityUpdater,
+        authService = authService,
+        accountService = accountService,
         securityService = securityService,
         permissionResolver = permissionResolver,
         authRealms = authRealms,

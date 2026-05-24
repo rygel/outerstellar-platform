@@ -6,7 +6,9 @@ import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
+import io.github.rygel.outerstellar.platform.security.AccountService
 import io.github.rygel.outerstellar.platform.security.AuthResult
+import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import org.http4k.contract.bindContract
@@ -26,6 +28,8 @@ import org.slf4j.LoggerFactory
 class AuthRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
+    private val authService: AuthService,
+    private val accountService: AccountService,
     private val securityService: SecurityService,
     private val sessionService: SessionService,
     private val sessionCookieSecure: Boolean,
@@ -71,7 +75,7 @@ class AuthRoutes(
                     if (mode == "sign-in") {
                         val ctx = request.requestContext
                         val shellRenderer = request.shellRenderer
-                        val authResult = securityService.authenticate(email, password)
+                        val authResult = authService.authenticate(email, password)
                         if (authResult is AuthResult.TotpRequired) {
                             return@to renderer.render(
                                 TotpChallengeForm(
@@ -117,7 +121,7 @@ class AuthRoutes(
                             )
                         } else {
                             try {
-                                securityService.register(email, password)
+                                authService.register(email, password)
                                 val target = shellRenderer.url("/auth?registered=true")
                                 Response(Status.FOUND).header("location", target)
                             } catch (e: UsernameAlreadyExistsException) {
@@ -204,7 +208,7 @@ class AuthRoutes(
                             )
                         } else {
                             try {
-                                securityService.changePassword(user.id, currentPassword, newPassword)
+                                accountService.changePassword(user.id, currentPassword, newPassword)
                                 renderer.render(
                                     AuthResultFragment(
                                         title = shellRenderer.i18n.translate("web.password.success.title"),
@@ -325,7 +329,7 @@ class AuthRoutes(
                         val newUsername = request.form("username")?.takeIf { it.isNotBlank() }
                         val newAvatarUrl = request.form("avatarUrl")
                         try {
-                            securityService.updateProfile(user.id, newEmail, newUsername, newAvatarUrl)
+                            accountService.updateProfile(user.id, newEmail, newUsername, newAvatarUrl)
                             renderer.render(
                                 AuthResultFragment(
                                     title = shellRenderer.i18n.translate("web.profile.success.title"),
@@ -366,7 +370,7 @@ class AuthRoutes(
                     } else {
                         val emailEnabled = request.form("emailNotifications") == "on"
                         val pushEnabled = request.form("pushNotifications") == "on"
-                        securityService.updateNotificationPreferences(user.id, emailEnabled, pushEnabled)
+                        accountService.updateNotificationPreferences(user.id, emailEnabled, pushEnabled)
                         renderer.render(
                             AuthResultFragment(
                                 title = shellRenderer.i18n.translate("web.profile.notif.success.title"),
@@ -393,7 +397,7 @@ class AuthRoutes(
                             if (currentPassword.isBlank()) {
                                 return@to Response(Status.BAD_REQUEST).body("Current password is required")
                             }
-                            securityService.deleteAccount(user.id, currentPassword)
+                            accountService.deleteAccount(user.id, currentPassword)
                             Response(Status.FOUND)
                                 .header("location", shellRenderer.url("/auth?deleted=true"))
                                 .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
