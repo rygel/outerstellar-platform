@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.RegistrationDisabledException
+import io.github.rygel.outerstellar.platform.model.Session
 import io.github.rygel.outerstellar.platform.model.SessionLookup
 import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.model.User
@@ -39,11 +40,11 @@ class SecurityService(
     private val config: SecurityConfig = SecurityConfig(),
     private val sessionRepository: SessionRepository? = null,
     private val activityUpdater: AsyncActivityUpdater? = null,
-    private val totpService: TOTPService = TOTPService(),
     private val sessionService: SessionService? = null,
 ) {
     private val logger = LoggerFactory.getLogger(SecurityService::class.java)
     private val secureRandom = SecureRandom()
+    private val totpService = TOTPService()
     private val partialAuthStore: Cache<String, PartialAuth> =
         Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.MINUTES).maximumSize(10_000).build()
 
@@ -243,14 +244,54 @@ class SecurityService(
         audit("NOTIFICATION_PREFERENCES_UPDATED", actor = user)
     }
 
-    fun createSession(userId: UUID): String =
-        (sessionService ?: error("SessionService not configured")).createSession(userId)
+    fun createSession(userId: UUID): String {
+        if (sessionService != null) return sessionService.createSession(userId)
+        val repo = sessionRepository ?: error("SessionRepository/SessionService not configured")
+        val rawToken = "oss_" + generateRandomHex(SESSION_TOKEN_HEX_LENGTH)
+        val tokenHash = TokenHashing.hash(rawToken)
+        val session =
+            Session(
+                tokenHash = tokenHash,
+                userId = userId,
+                expiresAt = Instant.now().plusSeconds(config.sessionTimeoutSeconds),
+            )
+        repo.save(session)
+        logger.info("Session created for user {}", userId)
+        return rawToken
+    }
 
-    fun lookupSession(rawToken: String): SessionLookup =
-        sessionService?.lookupSession(rawToken) ?: SessionLookup.NotFound
+    fun lookupSession(rawToken: String): SessionLookup {
+        if (sessionService != null) return sessionService.lookupSession(rawToken)
+        val repo = sessionRepository ?: return SessionLookup.NotFound
+        val tokenHash = TokenHashing.hash(rawToken)
+        val activeSession = repo.findByTokenHash(tokenHash)
+        if (activeSession != null) {
+            val absoluteDeadline = activeSession.createdAt.plusSeconds(config.sessionAbsoluteTimeoutSeconds)
+            if (Instant.now().isAfter(absoluteDeadline)) {
+                repo.deleteByTokenHash(tokenHash)
+                return SessionLookup.Expired
+            }
+            val user = userRepository.findById(activeSession.userId)
+            if (user != null && user.enabled) {
+                repo.updateExpiresAt(tokenHash, Instant.now().plusSeconds(config.sessionTimeoutSeconds))
+                activityUpdater?.record(user.id) ?: userRepository.updateLastActivity(user.id)
+                return SessionLookup.Active(user)
+            }
+            return SessionLookup.NotFound
+        }
+        val expiredSession = repo.findByTokenHashIncludingExpired(tokenHash)
+        if (expiredSession != null) {
+            return SessionLookup.Expired
+        }
+        return SessionLookup.NotFound
+    }
 
     fun deleteSession(rawToken: String) {
-        sessionService?.deleteSession(rawToken)
+        if (sessionService != null) {
+            sessionService.deleteSession(rawToken)
+            return
+        }
+        sessionRepository?.deleteByTokenHash(TokenHashing.hash(rawToken))
     }
 
     private fun generatePartialAuthToken(userId: UUID): String {
@@ -320,8 +361,15 @@ class SecurityService(
         )
     }
 
+    private fun generateRandomHex(length: Int): String {
+        val bytes = ByteArray(length / 2)
+        secureRandom.nextBytes(bytes)
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
     companion object {
         private const val MAX_USERNAME_LENGTH = 50
+        private const val SESSION_TOKEN_HEX_LENGTH = 48
         private const val MAX_LOG_ID_LENGTH = 80
         private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }

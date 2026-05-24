@@ -63,7 +63,6 @@ fun createSecurityComponents(
             config = securityConfig,
             sessionRepository = sessionRepository,
             activityUpdater = asyncActivityUpdater,
-            totpService = totpService,
             sessionService = sessionService,
         )
     val permissionResolver = RoleBasedPermissionResolver()

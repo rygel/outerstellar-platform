@@ -259,7 +259,6 @@ class SecurityServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 apiKeyRepository = apiKeyRepository,
-                totpService = totpService,
                 config = SecurityConfig(registrationEnabled = false),
             )
 
