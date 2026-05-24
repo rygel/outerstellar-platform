@@ -12,6 +12,8 @@ object SharedPostgres {
             withUsername("outerstellar")
             withPassword("outerstellar")
             withReuse(true)
+            withLabel("io.github.rygel.project", "outerstellar-platform")
+            withLabel("io.github.rygel.role", "test-db")
             start()
         }
     }

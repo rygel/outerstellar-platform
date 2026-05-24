@@ -6,8 +6,17 @@ import io.github.rygel.outerstellar.platform.RuntimeConfig
 import java.nio.file.Files
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
+import org.slf4j.LoggerFactory
 
-private val IS_NATIVE_IMAGE = System.getProperty("org.graalvm.nativeimage.imagekind") != null
+private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.infra.DatabaseInfra")
+
+private val IS_NATIVE_IMAGE = run {
+    val imagekind = System.getProperty("org.graalvm.nativeimage.imagekind")
+    val substrate = System.getProperty("java.vm.name")?.contains("Substrate", ignoreCase = true) == true
+    val result = imagekind != null || substrate
+    logger.info("Native image detection: imagekind={}, substrate={}, result={}", imagekind, substrate, result)
+    result
+}
 
 private val MIGRATION_NAMES: List<String> by lazy {
     val stream =
@@ -43,9 +52,12 @@ fun createDataSource(
 fun migrate(dataSource: DataSource) {
     val config = Flyway.configure().dataSource(dataSource)
     if (IS_NATIVE_IMAGE) {
+        logger.info("Running in native image mode, extracting migrations to filesystem")
         val tempDir = extractMigrationsToFilesystem("db/migration", MIGRATION_NAMES)
+        logger.info("Extracted {} migrations to {}", MIGRATION_NAMES.size, tempDir.toAbsolutePath())
         config.locations("filesystem:${tempDir.toAbsolutePath()}")
     } else {
+        logger.info("Running in JVM mode, using classpath migrations")
         config.locations("classpath:db/migration")
     }
     config.load().migrate()

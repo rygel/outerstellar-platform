@@ -1,0 +1,141 @@
+# === Shared build Dockerfile for outerstellar-platform ===
+# Usage:
+#   podman build -t outerstellar-jvm -f docker/Dockerfile.build --target jvm-runtime .
+#   podman build -t outerstellar-native -f docker/Dockerfile.build --target native-runtime .
+#   podman build -t outerstellar-test-desktop -f docker/Dockerfile.build --target desktop-test .
+#
+# All targets share the same deps + builder stages for maximum caching.
+
+# === Stage 1: Dependencies (cached across all builds) ===
+FROM maven:3.9-eclipse-temurin-21@sha256:481aad0b7042ad7a924ebd49ea5b307a049bd33d758f8613d68dcbd2904f3c8e AS deps
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        curl='8.5.0-*' \
+        gnupg='2.4.4-*' \
+        python3='3.12.*' \
+        ca-certificates='20240203' \
+    && rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+        -o /tmp/nodesource.gpg.key && \
+    gpg --dearmor < /tmp/nodesource.gpg.key > /etc/apt/keyrings/nodesource.gpg && \
+    rm /tmp/nodesource.gpg.key && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" \
+        > /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY pom.xml .
+COPY platform-core/pom.xml platform-core/
+COPY platform-security/pom.xml platform-security/
+COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
+COPY platform-test-infrastructure/pom.xml platform-test-infrastructure/
+COPY platform-sync-client/pom.xml platform-sync-client/
+COPY platform-web/pom.xml platform-web/
+COPY platform-desktop/pom.xml platform-desktop/
+COPY platform-desktop-javafx/pom.xml platform-desktop-javafx/
+COPY platform-seed/pom.xml platform-seed/
+
+COPY package.json package-lock.json* ./
+
+RUN --mount=type=cache,target=/root/.m2/repository \
+    --mount=type=cache,target=/root/.npm \
+    (mvn dependency:go-offline -pl platform-web -am -DskipTests -Denforcer.skip=true || true) && \
+    npm ci --no-audit --no-fund
+
+# === Stage 2: Maven build (invalidated on source changes) ===
+FROM deps AS builder
+COPY . .
+
+RUN --mount=type=cache,target=/root/.m2/repository \
+    mvn package -pl platform-web -am -DskipTests -Denforcer.skip=true \
+    -Dspotless.check.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
+    -Dspotbugs.skip=true -Ddetekt.skip=true -Djacoco.skip=true \
+    -Dexec.skip=true
+
+# === Target: JVM runtime (Alpine JRE) ===
+# podman build --target jvm-runtime -t outerstellar-jvm -f docker/Dockerfile.build .
+FROM eclipse-temurin:21-jre-alpine AS jvm-runtime
+WORKDIR /app
+COPY --from=builder /app/platform-web/target/*-jar-with-dependencies.jar app.jar
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    mkdir -p /app/data && chown -R appuser:appgroup /app/data
+USER appuser
+EXPOSE 8080
+ENV APP_PROFILE=prod
+ENV SESSIONCOOKIESECURE=true
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# === Stage 3: Native image compilation ===
+# Only reached when building native-runtime target.
+FROM ghcr.io/graalvm/native-image-community:25.0.2 AS native-compile
+WORKDIR /app
+COPY --from=builder /app/platform-web/target/*-jar-with-dependencies.jar app.jar
+COPY --from=builder /app/platform-web/src/main/resources/META-INF/native-image/ META-INF/native-image/
+
+ARG OPT_LEVEL=""
+
+RUN native-image \
+    --no-fallback \
+    --enable-http --enable-https \
+    -H:+UnlockExperimentalVMOptions \
+    -DJTE_PRODUCTION=true \
+    --initialize-at-build-time=org.slf4j,ch.qos.logback \
+    --initialize-at-run-time=io.netty.channel.DefaultFileRegion \
+    -H:IncludeResources="^static/.*" \
+    ${OPT_LEVEL:+-O${OPT_LEVEL}} \
+    -H:Name=outerstellar-web \
+    -jar app.jar
+
+# === Target: Native runtime (Debian slim) ===
+# podman build --target native-runtime -t outerstellar-native -f docker/Dockerfile.build .
+FROM debian:bookworm-slim AS native-runtime
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libstdc++6='12.2.0-*' && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd -r appgroup && useradd -r -g appgroup appuser && \
+    mkdir -p /app/data && chown -R appuser:appgroup /app/data
+WORKDIR /app
+COPY --from=native-compile --chmod=755 /app/outerstellar-web ./outerstellar-web
+USER appuser
+EXPOSE 8080
+ENV APP_PROFILE=prod
+ENV SESSIONCOOKIESECURE=true
+ENTRYPOINT ["./outerstellar-web"]
+
+# === Target: Desktop test runner ===
+# podman build --target desktop-test -t outerstellar-test-desktop -f docker/Dockerfile.build .
+FROM maven:3.9-eclipse-temurin-21@sha256:481aad0b7042ad7a924ebd49ea5b307a049bd33d758f8613d68dcbd2904f3c8e AS desktop-deps
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        xvfb='2:21.1.*' \
+        x11-utils='7.7+6build*' \
+        libxrender1='1:0.9.*' \
+        libxtst6='2:1.2.*' \
+        libxi6='2:1.8.*' \
+        fontconfig='2.15.0-*' \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY pom.xml .
+COPY platform-core/pom.xml platform-core/
+COPY platform-security/pom.xml platform-security/
+COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
+COPY platform-sync-client/pom.xml platform-sync-client/
+COPY platform-web/pom.xml platform-web/
+COPY platform-desktop/pom.xml platform-desktop/
+COPY platform-seed/pom.xml platform-seed/
+RUN --mount=type=cache,target=/root/.m2/repository \
+    mvn dependency:resolve \
+        -pl platform-desktop -am \
+        -Denforcer.skip=true -Ddetekt.skip=true -Dspotbugs.skip=true \
+        -Dcheckstyle.skip=true -Dpmd.skip=true -Dcpd.skip=true \
+        -DskipTests --fail-at-end \
+    || true
+
+FROM desktop-deps AS desktop-test
+COPY . .
+COPY docker/entrypoint-desktop-tests.sh /entrypoint.sh
+RUN sed -i 's/\r//' /entrypoint.sh && chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]

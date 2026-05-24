@@ -18,7 +18,6 @@ import org.http4k.core.Filter
 import org.http4k.core.Request
 import org.http4k.lens.LensFailure
 import org.http4k.template.TemplateRenderer
-import org.koin.core.module.Module
 import org.slf4j.LoggerFactory
 
 /**
@@ -112,25 +111,15 @@ data class PluginContext(
 /**
  * Single-plugin contract. One outerstellar-platform host accepts exactly one plugin.
  *
- * Implement this interface and register it as a Koin `single` in your plugin's Koin module. The host will
- * automatically:
+ * Implement this interface and pass your plugin instance to [createServerComponents]:
+ * ```kotlin
+ * val components = createServerComponents(plugin = MyPlugin())
+ * ```
+ *
+ * The host will automatically:
  * - Include your routes in the web app
  * - Inject your nav items into the shell nav bar (replacing the defaults when non-empty)
  * - Run your Flyway migrations in a dedicated history table
- *
- * Register your Koin module by passing it to `startKoin` **before** the host modules are resolved:
- * ```kotlin
- * startKoin { modules(myPluginModule, persistenceModule, coreModule, webModule, securityModule) }
- * ```
- *
- * **Important:** If your plugin provides Flyway migrations, you must also bind `PluginMigrationSource` so the
- * persistence module can discover them:
- * ```kotlin
- * module {
- *     single<PlatformPlugin> { MyPlugin() }
- *     single<PluginMigrationSource> { get<PlatformPlugin>() }
- * }
- * ```
  */
 interface PlatformPlugin : PluginMigrationSource {
     /** Unique identifier for this plugin (used in logging). */
@@ -177,7 +166,4 @@ interface PlatformPlugin : PluginMigrationSource {
     fun filters(context: PluginContext): List<Filter> = emptyList()
 
     fun adminSections(context: PluginContext): List<AdminSection> = emptyList()
-
-    /** Koin modules this plugin needs. Register in `startKoin` rather than relying on this. */
-    fun koinModules(): List<Module> = emptyList()
 }
