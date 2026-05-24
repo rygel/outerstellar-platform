@@ -436,14 +436,17 @@ private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHan
                     GET to
                     { req ->
                         val webCtx =
-                            io.github.rygel.outerstellar.platform.web.WebContext(
+                            io.github.rygel.outerstellar.platform.web.WebContext.create(
                                 request = req,
-                                pluginOptions =
-                                    PluginOptions(
-                                        adminNavItems =
-                                            pluginSections.map {
-                                                AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon)
-                                            }
+                                shellConfig =
+                                    io.github.rygel.outerstellar.platform.web.ShellConfig(
+                                        pluginOptions =
+                                            PluginOptions(
+                                                adminNavItems =
+                                                    pluginSections.map {
+                                                        AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon)
+                                                    }
+                                            )
                                     ),
                             )
                         val shell = webCtx.shell("Plugin Dashboard", "/admin/plugins")

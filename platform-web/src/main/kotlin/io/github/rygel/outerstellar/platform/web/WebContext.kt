@@ -1,277 +1,60 @@
 package io.github.rygel.outerstellar.platform.web
 
-import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.rygel.outerstellar.i18n.I18nService
-import io.github.rygel.outerstellar.platform.I18nTextResolver
 import io.github.rygel.outerstellar.platform.TextResolver
-import io.github.rygel.outerstellar.platform.banner.BannerProvider
-import io.github.rygel.outerstellar.platform.model.SessionLookup
-import io.github.rygel.outerstellar.platform.model.User
-import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.SecurityService
-import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import org.http4k.core.Request
-import org.http4k.core.cookie.cookie
 import org.http4k.lens.RequestKey
-import org.slf4j.LoggerFactory
 
-class WebContext(
-    val request: Request,
-    private val devDashboardEnabled: Boolean = false,
-    private val userRepository: UserRepository? = null,
-    private val appVersion: String = "dev",
-    private val jwtService: JwtService? = null,
-    private val securityService: SecurityService? = null,
-    private val pluginOptions: PluginOptions = PluginOptions(),
-    private val appBaseUrl: String = "",
-    private val sidebarFactory: SidebarFactory = SidebarFactory(),
-    private val bannerProviders: List<BannerProvider> = emptyList(),
-) {
-    private val logger = LoggerFactory.getLogger(WebContext::class.java)
-
+class WebContext internal constructor(val requestContext: RequestContext, val shellRenderer: ShellRenderer) {
     companion object {
         val KEY = RequestKey.required<WebContext>("web.context")
 
-        const val LANG_COOKIE = "app_lang"
-        const val THEME_COOKIE = "app_theme"
-        const val LAYOUT_COOKIE = "app_layout"
-        const val SHELL_COOKIE = "app_shell"
-        const val SESSION_COOKIE = "app_session"
-        const val JWT_COOKIE = "app_jwt"
-        const val CSRF_COOKIE = "_csrf"
+        const val LANG_COOKIE = RequestContext.LANG_COOKIE
+        const val THEME_COOKIE = RequestContext.THEME_COOKIE
+        const val LAYOUT_COOKIE = RequestContext.LAYOUT_COOKIE
+        const val SHELL_COOKIE = RequestContext.SHELL_COOKIE
+        const val SESSION_COOKIE = RequestContext.SESSION_COOKIE
+        const val JWT_COOKIE = RequestContext.JWT_COOKIE
+        const val CSRF_COOKIE = RequestContext.CSRF_COOKIE
 
-        val SUPPORTED_LANGUAGES = setOf("en", "fr")
-        val SUPPORTED_LAYOUTS = listOf("nice", "cozy", "compact")
-        val SUPPORTED_SHELLS = listOf("sidebar", "topbar")
+        val SUPPORTED_LANGUAGES = RequestContext.SUPPORTED_LANGUAGES
+        val SUPPORTED_LAYOUTS = RequestContext.SUPPORTED_LAYOUTS
+        val SUPPORTED_SHELLS = RequestContext.SUPPORTED_SHELLS
 
-        private val NO_INDEX_SECTIONS =
-            setOf(
-                "/auth",
-                "/auth/profile",
-                "/auth/api-keys",
-                "/errors",
-                "/admin/users",
-                "/admin/audit",
-                "/admin/dev",
-                "/admin/plugins",
-                "/settings",
-                "/notifications",
-            )
-
-        /** Stable cache-buster computed once at class load — survives the JVM lifetime. */
-        val assetVersion: String = System.currentTimeMillis().toString()
-
-        /** Cached I18nService per locale to avoid re-parsing .properties on every request. */
-        private val i18nCache = ConcurrentHashMap<String, I18nService>()
-
-        private val navLinkCache: Cache<String, List<ShellLink>> =
-            Caffeine.newBuilder().maximumSize(500).expireAfterWrite(5, TimeUnit.MINUTES).build()
-
-        fun cachedI18n(lang: String): I18nService =
-            i18nCache.computeIfAbsent(lang) { I18nService.create("messages").also { it.setLocale(Locale.of(lang)) } }
-    }
-
-    val lang: String by lazy {
-        request.query("lang")
-            ?: request.cookie(LANG_COOKIE)?.value
-            ?: user?.language
-            ?: Locale.getDefault().language.lowercase().let { if (it == "fr") "fr" else "en" }
-    }
-
-    val theme: String by lazy {
-        val value = request.query("theme") ?: request.cookie(THEME_COOKIE)?.value ?: user?.theme ?: "dark"
-        if (ThemeCatalog.isValidTheme(value)) value else "dark"
-    }
-
-    val layout: String by lazy {
-        val value = request.query("layout") ?: request.cookie(LAYOUT_COOKIE)?.value ?: user?.layout ?: "nice"
-        if (value in SUPPORTED_LAYOUTS) value else "nice"
-    }
-
-    val shellStyle: String by lazy {
-        val value = request.query("shell") ?: request.cookie(SHELL_COOKIE)?.value ?: "sidebar"
-        if (value in SUPPORTED_SHELLS) value else "sidebar"
-    }
-
-    private val sessionLookup: SessionLookup? by lazy {
-        request.cookie(SESSION_COOKIE)?.value?.let { rawToken -> securityService?.lookupSession(rawToken) }
-    }
-
-    val user: User? by lazy {
-        val lookup = sessionLookup
-        when (lookup) {
-            is SessionLookup.Active -> lookup.user
-            else ->
-                request.cookie(JWT_COOKIE)?.value?.let { token ->
-                    jwtService?.extractClaims(token)?.let { (userId, _) ->
-                        userRepository?.findById(userId)?.takeIf { it.enabled }
-                    }
-                }
+        fun create(
+            request: Request,
+            devDashboardEnabled: Boolean = false,
+            userRepository: UserRepository? = null,
+            appVersion: String = "dev",
+            jwtService: JwtService? = null,
+            securityService: SecurityService? = null,
+            shellConfig: ShellConfig = ShellConfig(),
+        ): WebContext {
+            val ctx = RequestContext(request, userRepository, jwtService, securityService)
+            return WebContext(ctx, ShellRenderer(ctx, devDashboardEnabled, appVersion, shellConfig))
         }
     }
 
-    val sessionExpired: Boolean by lazy { sessionLookup is SessionLookup.Expired }
+    val request: Request
+        get() = requestContext.request
 
-    val i18n: I18nService by lazy { cachedI18n(lang) }
+    val user by requestContext::user
+    val sessionExpired by requestContext::sessionExpired
+    val csrfToken by requestContext::csrfToken
+    val lang by requestContext::lang
+    val theme by requestContext::theme
+    val layout by requestContext::layout
+    val shellStyle by requestContext::shellStyle
 
-    val textResolver: TextResolver by lazy { pluginOptions.textResolver ?: I18nTextResolver(i18n) }
+    val i18n: I18nService by shellRenderer::i18n
+    val textResolver: TextResolver by shellRenderer::textResolver
 
-    val csrfToken: String by lazy { request.cookie(CSRF_COOKIE)?.value ?: java.util.UUID.randomUUID().toString() }
+    fun url(path: String): String = shellRenderer.url(path)
 
-    fun url(path: String): String = path
+    fun componentUrl(path: String, pagePath: String): String = shellRenderer.componentUrl(path, pagePath)
 
-    fun componentUrl(path: String, pagePath: String): String =
-        "${url(path)}?pagePath=${if (pagePath.isBlank()) "/" else pagePath}"
-
-    private fun buildNavLinks(activeSection: String): List<ShellLink> {
-        val role = user?.role?.name ?: "ANONYMOUS"
-        val pluginKey = if (pluginOptions.navItems.isNotEmpty()) pluginOptions.navItems.hashCode() else 0
-        val cacheKey = "$lang:$role:$activeSection:$devDashboardEnabled:$pluginKey"
-        return navLinkCache.get(cacheKey) { buildNavLinksUncached(activeSection) }
-    }
-
-    @Suppress("LongMethod")
-    private fun buildNavLinksUncached(activeSection: String): List<ShellLink> {
-        val links: MutableList<ShellLink> =
-            if (pluginOptions.navItems.isNotEmpty()) {
-                // Plugin replaces the default nav; admin links are still appended below.
-                pluginOptions.navItems
-                    .map { item ->
-                        ShellLink(item.label, url(item.url), item.icon, activeSection == item.activeSection)
-                    }
-                    .toMutableList()
-            } else {
-                mutableListOf(
-                        ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
-                        ShellLink(
-                            i18n.translate("web.nav.search"),
-                            url("/search"),
-                            "ri-search-line",
-                            activeSection == "/search",
-                        ),
-                        ShellLink(
-                            i18n.translate("web.nav.contacts"),
-                            url("/contacts"),
-                            "ri-user-3-line",
-                            activeSection == "/contacts",
-                        ),
-                        ShellLink(
-                            i18n.translate("web.nav.trash"),
-                            url("/messages/trash"),
-                            "ri-delete-bin-7-line",
-                            activeSection == "/messages/trash",
-                        ),
-                    )
-                    .also { links ->
-                        if (user != null) {
-                            links.add(
-                                ShellLink(
-                                    i18n.translate("web.nav.settings"),
-                                    url("/settings"),
-                                    "ri-settings-3-line",
-                                    activeSection == "/settings",
-                                )
-                            )
-                        }
-                    }
-            }
-
-        appendAdminLinks(links, activeSection)
-        return links
-    }
-
-    private fun appendAdminLinks(links: MutableList<ShellLink>, activeSection: String) {
-        if (user?.role != UserRole.ADMIN) return
-        links.add(
-            ShellLink(
-                i18n.translate("web.nav.users"),
-                url("/admin/users"),
-                "ri-group-line",
-                activeSection == "/admin/users",
-            )
-        )
-        links.add(
-            ShellLink(
-                i18n.translate("web.nav.audit"),
-                url("/admin/audit"),
-                "ri-file-list-3-line",
-                activeSection == "/admin/audit",
-            )
-        )
-        if (devDashboardEnabled) {
-            links.add(
-                ShellLink(
-                    i18n.translate("web.nav.dev"),
-                    url("/admin/dev"),
-                    "ri-dashboard-line",
-                    activeSection == "/admin/dev",
-                )
-            )
-        }
-        pluginOptions.adminNavItems.forEach { item ->
-            links.add(ShellLink(item.label, url(item.url), item.icon, activeSection == item.url))
-        }
-    }
-
-    @Suppress("LongMethod")
-    fun shell(pageTitle: String, activeSection: String): ShellView {
-        val currentPath = if (request.uri.path.isBlank()) "/" else request.uri.path
-        val layoutClass = if (layout == "nice") "" else "layout-$layout"
-        val navLinks = buildNavLinks(activeSection)
-        val user = this.user
-        val banners =
-            if (user != null && bannerProviders.isNotEmpty()) {
-                bannerProviders.flatMap { it.getBanners(user.id, user.role.name) }.sortedBy { it.severity.ordinal }
-            } else {
-                emptyList()
-            }
-
-        return ShellView(
-            pageTitle = pageTitle,
-            appTitle = i18n.translate("web.app.title"),
-            appTagline = i18n.translate("web.app.tagline"),
-            currentPath = currentPath,
-            localeTag = lang,
-            themeName = theme,
-            layoutClass = layoutClass,
-            layoutStyle = shellStyle,
-            navLinks = navLinks,
-            themeSelector = sidebarFactory.buildThemeSelector(this),
-            languageSelector = sidebarFactory.buildLanguageSelector(this),
-            layoutSelector = sidebarFactory.buildLayoutSelector(this),
-            footerCopy = i18n.translate("web.footer.copy"),
-            footerVersion = i18n.translate("web.footer.version", appVersion),
-            footerStatusUrl = url("/components/footer-status"),
-            version = assetVersion,
-            username = user?.username,
-            isLoggedIn = user != null,
-            logoutUrl = url("/logout"),
-            changePasswordUrl = if (user != null) url("/auth/change-password") else null,
-            profileUrl = if (user != null) url("/auth/profile") else null,
-            toastErrorLabel = i18n.translate("web.layout.toast.error"),
-            toastSuccessLabel = i18n.translate("web.layout.toast.success"),
-            changePasswordLabel = i18n.translate("web.layout.change.password"),
-            signOutLabel = i18n.translate("web.layout.sign.out"),
-            csrfToken = csrfToken,
-            searchPlaceholder = i18n.translate("web.search.placeholder"),
-            searchLabel = i18n.translate("web.search.label"),
-            notificationsUrl = if (user != null) url("/notifications") else null,
-            textResolver = textResolver,
-            pageDescription =
-                i18n
-                    .translate("web.page.description.$activeSection")
-                    .takeIf { !it.startsWith("web.page.description.") }
-                    .orEmpty(),
-            canonicalUrl = if (appBaseUrl.isNotBlank()) "$appBaseUrl$currentPath" else "",
-            noIndex = activeSection in NO_INDEX_SECTIONS,
-            supportedLocales = listOf("en", "fr"),
-            appBaseUrl = appBaseUrl,
-            banners = banners,
-        )
-    }
+    fun shell(pageTitle: String, activeSection: String): ShellView = shellRenderer.shell(pageTitle, activeSection)
 }

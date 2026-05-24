@@ -14,6 +14,18 @@
         <Bug pattern="MS_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.web.RequestContext$Companion"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.web.ShellRenderer$Companion"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.web.WebContext"/>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+    </Match>
+    <Match>
         <Class name="~.*\$\$serializer"/>
         <Bug pattern="MS_EXPOSE_REP"/>
     </Match>

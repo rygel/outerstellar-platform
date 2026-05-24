@@ -287,16 +287,18 @@ object Filters {
     ): Filter = Filter { next: HttpHandler ->
         { request ->
             val context =
-                WebContext(
+                WebContext.create(
                     request,
                     devDashboardEnabled,
                     userRepository,
                     appVersion,
                     jwtService,
                     securityService,
-                    pluginOptions,
-                    appBaseUrl,
-                    bannerProviders = bannerProviders,
+                    ShellConfig(
+                        pluginOptions = pluginOptions,
+                        appBaseUrl = appBaseUrl,
+                        bannerProviders = bannerProviders,
+                    ),
                 )
             val contextUser =
                 try {
@@ -479,7 +481,7 @@ object Filters {
                     request.webContext
                 } catch (e: IllegalStateException) {
                     logger.debug("WebContext not found for error page: {}", e.message)
-                    WebContext(request)
+                    WebContext.create(request)
                 }
             val errorPage = pageFactory.buildErrorPage(ctx, "not-found")
             Response(Status.NOT_FOUND).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
@@ -516,7 +518,7 @@ object Filters {
                     request.webContext
                 } catch (ex: IllegalStateException) {
                     logger.debug("WebContext not found for error page: {}", ex.message)
-                    WebContext(request)
+                    WebContext.create(request)
                 }
             val errorKind = if (status == Status.INTERNAL_SERVER_ERROR) "server-error" else "not-found"
             val errorPage = pageFactory.buildErrorPage(ctx, errorKind)
