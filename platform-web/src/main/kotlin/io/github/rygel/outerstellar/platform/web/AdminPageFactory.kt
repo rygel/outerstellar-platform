@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
+import io.github.rygel.outerstellar.platform.security.UserAdminService
 
 private const val ADMIN_SECONDS_PER_MINUTE = 60
 private const val ADMIN_SECONDS_PER_HOUR = 3600
@@ -9,14 +10,15 @@ private const val ADMIN_SECONDS_PER_DAY = 86400
 class AdminPageFactory(
     private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
     private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
+    private val userAdminService: UserAdminService? = null,
 ) {
 
     fun buildUserAdminPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<UserAdminPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.admin.users.title"), "/admin/users")
-        val totalCount = securityService?.countUsers() ?: 0L
+        val totalCount = userAdminService?.countUsers() ?: 0L
         val safeOffset = offset.coerceIn(0, maxOf(0, totalCount.toInt() - 1))
-        val pageUsers = securityService?.listUsers(limit, safeOffset) ?: emptyList()
+        val pageUsers = userAdminService?.listUsers(limit, safeOffset) ?: emptyList()
         val currentUserId = ctx.user?.id?.toString()
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
@@ -73,9 +75,9 @@ class AdminPageFactory(
     fun buildAuditLogPage(ctx: WebContext, limit: Int = 20, offset: Int = 0): Page<AuditLogPage> {
         val i18n = ctx.i18n
         val shell = ctx.shell(i18n.translate("web.admin.audit.title"), "/admin/audit")
-        val totalCount = securityService?.countAuditEntries() ?: 0L
+        val totalCount = userAdminService?.countAuditEntries() ?: 0L
         val safeOffset = offset.coerceIn(0, maxOf(0, totalCount.toInt() - 1))
-        val pageEntries = securityService?.getAuditLog(limit, safeOffset) ?: emptyList()
+        val pageEntries = userAdminService?.getAuditLog(limit, safeOffset) ?: emptyList()
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
         val hasNext = safeOffset + limit < totalCount
