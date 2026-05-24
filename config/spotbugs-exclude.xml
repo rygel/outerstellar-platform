@@ -164,6 +164,14 @@
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.HttpClients"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.SyncModules"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
         <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH"/>
     </Match>

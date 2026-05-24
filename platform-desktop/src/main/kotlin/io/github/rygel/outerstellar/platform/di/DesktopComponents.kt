@@ -34,30 +34,114 @@ import java.nio.file.Path
 import org.http4k.client.JavaHttpClient
 import org.http4k.core.HttpHandler
 
+class HttpClients(
+    val handler: HttpHandler,
+    val session: ApiSession,
+    val auth: AuthClient,
+    val sync: SyncClient,
+    val profile: ProfileClient,
+    val admin: AdminClient,
+    val notification: NotificationClient,
+)
+
+class SyncModules(
+    val auth: AuthModule,
+    val syncData: SyncDataModule,
+    val profile: ProfileModule,
+    val admin: AdminModule,
+    val notification: NotificationModule,
+)
+
 class DesktopComponents(
     val appConfig: DesktopAppConfig,
     val config: AppConfig,
     val persistence: PersistenceComponents,
     val core: CoreComponents,
-    val httpHandler: HttpHandler,
-    val apiSession: ApiSession,
-    val authClient: AuthClient,
-    val syncClient: SyncClient,
-    val profileClient: ProfileClient,
-    val adminClient: AdminClient,
-    val notificationClient: NotificationClient,
-    val authModule: AuthModule,
-    val syncDataModule: SyncDataModule,
-    val profileModule: ProfileModule,
-    val adminModule: AdminModule,
-    val notificationModule: NotificationModule,
+    val clients: HttpClients,
+    val modules: SyncModules,
     val syncViewModel: SyncViewModel,
     val systemTrayNotifier: SystemTrayNotifier,
     val i18nService: I18nService,
     val analyticsService: AnalyticsService,
 )
 
-@Suppress("LongFunction")
+private fun createHttpClients(appConfig: DesktopAppConfig): HttpClients {
+    val handler: HttpHandler = JavaHttpClient()
+    val session = ApiSession()
+    return HttpClients(
+        handler = handler,
+        session = session,
+        auth = HttpAuthClient(appConfig.serverBaseUrl, session, handler),
+        sync = HttpSyncClient(appConfig.serverBaseUrl, session, handler),
+        profile = HttpProfileClient(appConfig.serverBaseUrl, session, handler),
+        admin = HttpAdminClient(appConfig.serverBaseUrl, session, handler),
+        notification = HttpNotificationClient(appConfig.serverBaseUrl, session, handler),
+    )
+}
+
+private fun createSyncModules(
+    clients: HttpClients,
+    persistence: PersistenceComponents,
+    core: CoreComponents,
+    analyticsService: AnalyticsService,
+): SyncModules {
+    lateinit var syncDataModule: SyncDataModule
+    lateinit var authModule: AuthModule
+
+    authModule =
+        AuthModuleImpl(
+            authClient = clients.auth,
+            analytics = analyticsService,
+            onLoadData = { syncDataModule.loadData() },
+            onStartAutoSync = { syncDataModule.startAutoSync() },
+            onStopAutoSync = { syncDataModule.stopAutoSync() },
+        )
+    syncDataModule =
+        SyncDataModuleImpl(
+            syncClient = clients.sync,
+            messageService = core.messageService,
+            contactService = core.contactService,
+            analytics = analyticsService,
+            repository = persistence.messageRepository,
+            transactionManager = persistence.transactionManager,
+            authStateProvider = { authModule.authState },
+        )
+    val profileModule =
+        ProfileModuleImpl(
+            profileClient = clients.profile,
+            analytics = analyticsService,
+            authStateProvider = { authModule.authState },
+            onLoadData = { syncDataModule.loadData() },
+            onStopAutoSync = { syncDataModule.stopAutoSync() },
+            onLogout = { authModule.logout() },
+        )
+    val adminModule =
+        AdminModuleImpl(
+            adminClient = clients.admin,
+            analytics = analyticsService,
+            authStateProvider = { authModule.authState },
+            onStopAutoSync = { syncDataModule.stopAutoSync() },
+            onLogout = { authModule.logout() },
+        )
+    val notificationModule =
+        NotificationModuleImpl(
+            notificationClient = clients.notification,
+            onStopAutoSync = { syncDataModule.stopAutoSync() },
+            onLogout = { authModule.logout() },
+        )
+    return SyncModules(authModule, syncDataModule, profileModule, adminModule, notificationModule)
+}
+
+private fun createAnalyticsService(appConfig: DesktopAppConfig): AnalyticsService =
+    if (appConfig.analyticsEnabled && appConfig.segmentWriteKey.isNotBlank())
+        PersistentBatchingAnalyticsService(
+            writeKey = appConfig.segmentWriteKey,
+            dataDir = Path.of("./data"),
+            maxFileSizeBytes = appConfig.analyticsMaxFileSizeKb * 1024,
+            maxEventAgeDays = appConfig.analyticsMaxEventAgeDays,
+        )
+    else NoOpAnalyticsService()
+
 fun createDesktopComponents(): DesktopComponents {
     val appConfig = DesktopAppConfig.fromEnvironment()
     val config =
@@ -74,77 +158,17 @@ fun createDesktopComponents(): DesktopComponents {
             auditRepository = persistence.auditRepository,
         )
     val i18nService = I18nService.create("messages")
-    val analyticsService: AnalyticsService =
-        if (appConfig.analyticsEnabled && appConfig.segmentWriteKey.isNotBlank())
-            PersistentBatchingAnalyticsService(
-                writeKey = appConfig.segmentWriteKey,
-                dataDir = Path.of("./data"),
-                maxFileSizeBytes = appConfig.analyticsMaxFileSizeKb * 1024,
-                maxEventAgeDays = appConfig.analyticsMaxEventAgeDays,
-            )
-        else NoOpAnalyticsService()
-
-    val httpHandler: HttpHandler = JavaHttpClient()
-    val apiSession = ApiSession()
-    val authClient: AuthClient = HttpAuthClient(appConfig.serverBaseUrl, apiSession, httpHandler)
-    val syncClientObj: SyncClient = HttpSyncClient(appConfig.serverBaseUrl, apiSession, httpHandler)
-    val profileClient: ProfileClient = HttpProfileClient(appConfig.serverBaseUrl, apiSession, httpHandler)
-    val adminClient: AdminClient = HttpAdminClient(appConfig.serverBaseUrl, apiSession, httpHandler)
-    val notificationClient: NotificationClient =
-        HttpNotificationClient(appConfig.serverBaseUrl, apiSession, httpHandler)
-
-    lateinit var syncDataModule: SyncDataModule
-    lateinit var authModule: AuthModule
-
-    authModule =
-        AuthModuleImpl(
-            authClient = authClient,
-            analytics = analyticsService,
-            onLoadData = { syncDataModule.loadData() },
-            onStartAutoSync = { syncDataModule.startAutoSync() },
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-        )
-    syncDataModule =
-        SyncDataModuleImpl(
-            syncClient = syncClientObj,
-            messageService = core.messageService,
-            contactService = core.contactService,
-            analytics = analyticsService,
-            repository = persistence.messageRepository,
-            transactionManager = persistence.transactionManager,
-            authStateProvider = { authModule.authState },
-        )
-    val profileModule =
-        ProfileModuleImpl(
-            profileClient = profileClient,
-            analytics = analyticsService,
-            authStateProvider = { authModule.authState },
-            onLoadData = { syncDataModule.loadData() },
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            onLogout = { authModule.logout() },
-        )
-    val adminModule =
-        AdminModuleImpl(
-            adminClient = adminClient,
-            analytics = analyticsService,
-            authStateProvider = { authModule.authState },
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            onLogout = { authModule.logout() },
-        )
-    val notificationModule =
-        NotificationModuleImpl(
-            notificationClient = notificationClient,
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            onLogout = { authModule.logout() },
-        )
+    val analyticsService = createAnalyticsService(appConfig)
+    val clients = createHttpClients(appConfig)
+    val modules = createSyncModules(clients, persistence, core, analyticsService)
 
     val syncViewModel =
         SyncViewModel(
-            authModule = authModule,
-            syncDataModule = syncDataModule,
-            profileModule = profileModule,
-            adminModule = adminModule,
-            notificationModule = notificationModule,
+            authModule = modules.auth,
+            syncDataModule = modules.syncData,
+            profileModule = modules.profile,
+            adminModule = modules.admin,
+            notificationModule = modules.notification,
             i18nService = i18nService,
         )
     val systemTrayNotifier = SystemTrayNotifier(i18nService)
@@ -153,18 +177,8 @@ fun createDesktopComponents(): DesktopComponents {
         config = config,
         persistence = persistence,
         core = core,
-        httpHandler = httpHandler,
-        apiSession = apiSession,
-        authClient = authClient,
-        syncClient = syncClientObj,
-        profileClient = profileClient,
-        adminClient = adminClient,
-        notificationClient = notificationClient,
-        authModule = authModule,
-        syncDataModule = syncDataModule,
-        profileModule = profileModule,
-        adminModule = adminModule,
-        notificationModule = notificationModule,
+        clients = clients,
+        modules = modules,
         syncViewModel = syncViewModel,
         systemTrayNotifier = systemTrayNotifier,
         i18nService = i18nService,
