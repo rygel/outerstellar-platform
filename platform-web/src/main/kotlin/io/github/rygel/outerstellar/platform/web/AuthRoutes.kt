@@ -8,6 +8,7 @@ import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsExceptio
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -26,6 +27,7 @@ class AuthRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
     private val securityService: SecurityService,
+    private val sessionService: SessionService,
     private val sessionCookieSecure: Boolean,
     private val analytics: AnalyticsService = NoOpAnalyticsService(),
     private val appConfig: AppConfig,
@@ -43,7 +45,7 @@ class AuthRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    renderer.render(pageFactory.buildAuthPage(request.webContext))
+                    renderer.render(pageFactory.buildAuthPage(request.requestContext, request.shellRenderer))
                 },
             "/auth/components/forms" / modePath meta
                 {
@@ -52,7 +54,7 @@ class AuthRoutes(
                 GET to
                 { mode ->
                     { request: org.http4k.core.Request ->
-                        renderer.render(pageFactory.buildAuthForm(request.webContext, mode))
+                        renderer.render(pageFactory.buildAuthForm(request.requestContext, request.shellRenderer, mode))
                     }
                 },
             "/auth/components/result" meta
@@ -67,18 +69,18 @@ class AuthRoutes(
                     val returnTo = safeReturnTo(request.query("returnTo") ?: request.form("returnTo"))
 
                     if (mode == "sign-in") {
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         val authResult = securityService.authenticate(email, password)
                         if (authResult is AuthResult.TotpRequired) {
-                            val totpCtx = request.webContext
                             return@to renderer.render(
                                 TotpChallengeForm(
                                     partialToken = authResult.token,
-                                    title = totpCtx.i18n.translate("web.totp.title"),
-                                    description = totpCtx.i18n.translate("web.totp.enterCode"),
-                                    codeLabel = totpCtx.i18n.translate("web.totp.codeLabel"),
-                                    verifyLabel = totpCtx.i18n.translate("web.totp.verifyCode"),
-                                    backLinkLabel = totpCtx.i18n.translate("web.totp.backLink"),
+                                    title = shellRenderer.i18n.translate("web.totp.title"),
+                                    description = shellRenderer.i18n.translate("web.totp.enterCode"),
+                                    codeLabel = shellRenderer.i18n.translate("web.totp.codeLabel"),
+                                    verifyLabel = shellRenderer.i18n.translate("web.totp.verifyCode"),
+                                    backLinkLabel = shellRenderer.i18n.translate("web.totp.backLink"),
                                 )
                             )
                         }
@@ -89,25 +91,26 @@ class AuthRoutes(
                                 mapOf("username" to user.username, "role" to user.role.name),
                             )
                             analytics.track(user.id.toString(), "User Logged In")
-                            val sessionToken = securityService.createSession(user.id)
+                            val sessionToken = sessionService.createSession(user.id)
                             Response(Status.FOUND)
-                                .header("location", ctx.url(returnTo))
+                                .header("location", shellRenderer.url(returnTo))
                                 .header("Set-Cookie", SessionCookie.create(sessionToken, sessionCookieSecure))
                         } else {
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.auth.result.error.title"),
+                                    title = shellRenderer.i18n.translate("web.auth.result.error.title"),
                                     message = "Invalid credentials",
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         }
                     } else if (mode == "register") {
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         if (!appConfig.registrationEnabled) {
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.auth.result.error.title"),
+                                    title = shellRenderer.i18n.translate("web.auth.result.error.title"),
                                     message = "Registration is currently disabled",
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
@@ -115,12 +118,12 @@ class AuthRoutes(
                         } else {
                             try {
                                 securityService.register(email, password)
-                                val target = ctx.url("/auth?registered=true")
+                                val target = shellRenderer.url("/auth?registered=true")
                                 Response(Status.FOUND).header("location", target)
                             } catch (e: UsernameAlreadyExistsException) {
                                 renderer.render(
                                     AuthResultFragment(
-                                        title = ctx.i18n.translate("web.auth.result.error.title"),
+                                        title = shellRenderer.i18n.translate("web.auth.result.error.title"),
                                         message = e.message ?: "Registration failed",
                                         toneClass = "bg-error/10 border-error/30 text-error",
                                     )
@@ -128,7 +131,7 @@ class AuthRoutes(
                             } catch (e: WeakPasswordException) {
                                 renderer.render(
                                     AuthResultFragment(
-                                        title = ctx.i18n.translate("web.auth.result.error.title"),
+                                        title = shellRenderer.i18n.translate("web.auth.result.error.title"),
                                         message = e.message ?: "Registration failed",
                                         toneClass = "bg-error/10 border-error/30 text-error",
                                     )
@@ -136,7 +139,7 @@ class AuthRoutes(
                             } catch (e: IllegalArgumentException) {
                                 renderer.render(
                                     AuthResultFragment(
-                                        title = ctx.i18n.translate("web.auth.result.error.title"),
+                                        title = shellRenderer.i18n.translate("web.auth.result.error.title"),
                                         message = e.message ?: "Registration failed",
                                         toneClass = "bg-error/10 border-error/30 text-error",
                                     )
@@ -144,20 +147,21 @@ class AuthRoutes(
                             }
                         }
                     } else if (mode == "recover") {
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         if (email.isNotBlank()) {
                             securityService.requestPasswordReset(email)
                         }
                         renderer.render(
                             AuthResultFragment(
-                                title = ctx.i18n.translate("web.auth.result.success.title"),
-                                message = ctx.i18n.translate("web.reset.request.success"),
+                                title = shellRenderer.i18n.translate("web.auth.result.success.title"),
+                                message = shellRenderer.i18n.translate("web.reset.request.success"),
                                 toneClass = "bg-success/10 border-success/30 text-success",
                             )
                         )
                     } else {
                         val formValues = request.form().associate { it.first to it.second }
-                        renderer.render(pageFactory.buildAuthResult(request.webContext, formValues))
+                        renderer.render(pageFactory.buildAuthResult(request.shellRenderer, formValues))
                     }
                 },
             "/auth/change-password" meta
@@ -166,11 +170,12 @@ class AuthRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
-                        Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     } else {
-                        renderer.render(pageFactory.buildChangePasswordPage(ctx))
+                        renderer.render(pageFactory.buildChangePasswordPage(shellRenderer))
                     }
                 },
             "/auth/components/change-password" meta
@@ -179,7 +184,8 @@ class AuthRoutes(
                 } bindContract
                 POST to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     val user = ctx.user
                     if (user == null) {
                         Response(Status.UNAUTHORIZED).body("Not logged in")
@@ -191,8 +197,8 @@ class AuthRoutes(
                         if (newPassword != confirmPassword) {
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.password.error.title"),
-                                    message = ctx.i18n.translate("web.password.error.mismatch"),
+                                    title = shellRenderer.i18n.translate("web.password.error.title"),
+                                    message = shellRenderer.i18n.translate("web.password.error.mismatch"),
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
@@ -201,15 +207,15 @@ class AuthRoutes(
                                 securityService.changePassword(user.id, currentPassword, newPassword)
                                 renderer.render(
                                     AuthResultFragment(
-                                        title = ctx.i18n.translate("web.password.success.title"),
-                                        message = ctx.i18n.translate("web.password.success.body"),
+                                        title = shellRenderer.i18n.translate("web.password.success.title"),
+                                        message = shellRenderer.i18n.translate("web.password.success.body"),
                                         toneClass = "bg-success/10 border-success/30 text-success",
                                     )
                                 )
                             } catch (e: WeakPasswordException) {
                                 renderer.render(
                                     AuthResultFragment(
-                                        title = ctx.i18n.translate("web.password.error.title"),
+                                        title = shellRenderer.i18n.translate("web.password.error.title"),
                                         message = e.message ?: "Password change failed",
                                         toneClass = "bg-error/10 border-error/30 text-error",
                                     )
@@ -225,8 +231,9 @@ class AuthRoutes(
                 GET to
                 { token ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
-                        renderer.render(pageFactory.buildResetPasswordPage(ctx, token))
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
+                        renderer.render(pageFactory.buildResetPasswordPage(shellRenderer, token))
                     }
                 },
             "/auth/components/reset-confirm" meta
@@ -235,7 +242,8 @@ class AuthRoutes(
                 } bindContract
                 POST to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     val token = request.form("token").orEmpty()
                     val newPassword = request.form("newPassword").orEmpty()
                     val confirmPassword = request.form("confirmPassword").orEmpty()
@@ -243,8 +251,8 @@ class AuthRoutes(
                     if (newPassword != confirmPassword) {
                         renderer.render(
                             AuthResultFragment(
-                                title = ctx.i18n.translate("web.reset.error.title"),
-                                message = ctx.i18n.translate("web.reset.error.mismatch"),
+                                title = shellRenderer.i18n.translate("web.reset.error.title"),
+                                message = shellRenderer.i18n.translate("web.reset.error.mismatch"),
                                 toneClass = "bg-error/10 border-error/30 text-error",
                             )
                         )
@@ -253,8 +261,8 @@ class AuthRoutes(
                             securityService.resetPassword(token, newPassword)
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.reset.success.title"),
-                                    message = ctx.i18n.translate("web.reset.success.body"),
+                                    title = shellRenderer.i18n.translate("web.reset.success.title"),
+                                    message = shellRenderer.i18n.translate("web.reset.success.body"),
                                     toneClass = "bg-success/10 border-success/30 text-success",
                                 )
                             )
@@ -262,16 +270,16 @@ class AuthRoutes(
                             logger.warn("Password reset failed with invalid token: {}", e.message)
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.reset.error.title"),
-                                    message = ctx.i18n.translate("web.reset.error.invalid"),
+                                    title = shellRenderer.i18n.translate("web.reset.error.title"),
+                                    message = shellRenderer.i18n.translate("web.reset.error.invalid"),
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
                         } catch (e: WeakPasswordException) {
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.reset.error.title"),
-                                    message = e.message ?: ctx.i18n.translate("web.reset.error.invalid"),
+                                    title = shellRenderer.i18n.translate("web.reset.error.title"),
+                                    message = e.message ?: shellRenderer.i18n.translate("web.reset.error.invalid"),
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
@@ -279,8 +287,8 @@ class AuthRoutes(
                             logger.error("Unexpected error during password reset", e)
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.reset.error.title"),
-                                    message = ctx.i18n.translate("web.reset.error.invalid"),
+                                    title = shellRenderer.i18n.translate("web.reset.error.title"),
+                                    message = shellRenderer.i18n.translate("web.reset.error.invalid"),
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
                             )
@@ -293,11 +301,12 @@ class AuthRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
-                        Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     } else {
-                        renderer.render(pageFactory.buildProfilePage(ctx))
+                        renderer.render(pageFactory.buildProfilePage(ctx, shellRenderer))
                     }
                 },
             "/auth/components/profile-update" meta
@@ -306,7 +315,8 @@ class AuthRoutes(
                 } bindContract
                 POST to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     val user = ctx.user
                     if (user == null) {
                         Response(Status.UNAUTHORIZED).body("Not logged in")
@@ -318,15 +328,15 @@ class AuthRoutes(
                             securityService.updateProfile(user.id, newEmail, newUsername, newAvatarUrl)
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.profile.success.title"),
-                                    message = ctx.i18n.translate("web.profile.success.body"),
+                                    title = shellRenderer.i18n.translate("web.profile.success.title"),
+                                    message = shellRenderer.i18n.translate("web.profile.success.body"),
                                     toneClass = "bg-success/10 border-success/30 text-success",
                                 )
                             )
                         } catch (e: UsernameAlreadyExistsException) {
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.profile.error.title"),
+                                    title = shellRenderer.i18n.translate("web.profile.error.title"),
                                     message = e.message ?: "Update failed",
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
@@ -334,7 +344,7 @@ class AuthRoutes(
                         } catch (e: IllegalArgumentException) {
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.profile.error.title"),
+                                    title = shellRenderer.i18n.translate("web.profile.error.title"),
                                     message = e.message ?: "Update failed",
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
@@ -348,7 +358,8 @@ class AuthRoutes(
                 } bindContract
                 POST to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     val user = ctx.user
                     if (user == null) {
                         Response(Status.UNAUTHORIZED).body("Not logged in")
@@ -358,8 +369,8 @@ class AuthRoutes(
                         securityService.updateNotificationPreferences(user.id, emailEnabled, pushEnabled)
                         renderer.render(
                             AuthResultFragment(
-                                title = ctx.i18n.translate("web.profile.notif.success.title"),
-                                message = ctx.i18n.translate("web.profile.notif.success.body"),
+                                title = shellRenderer.i18n.translate("web.profile.notif.success.title"),
+                                message = shellRenderer.i18n.translate("web.profile.notif.success.body"),
                                 toneClass = "bg-success/10 border-success/30 text-success",
                             )
                         )
@@ -371,7 +382,8 @@ class AuthRoutes(
                 } bindContract
                 POST to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     val user = ctx.user
                     if (user == null) {
                         Response(Status.UNAUTHORIZED).body("Not logged in")
@@ -383,12 +395,12 @@ class AuthRoutes(
                             }
                             securityService.deleteAccount(user.id, currentPassword)
                             Response(Status.FOUND)
-                                .header("location", ctx.url("/auth?deleted=true"))
+                                .header("location", shellRenderer.url("/auth?deleted=true"))
                                 .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
                         } catch (e: io.github.rygel.outerstellar.platform.model.InsufficientPermissionException) {
                             renderer.render(
                                 AuthResultFragment(
-                                    title = ctx.i18n.translate("web.profile.delete.error.title"),
+                                    title = shellRenderer.i18n.translate("web.profile.delete.error.title"),
                                     message = e.message ?: "Cannot delete account",
                                     toneClass = "bg-error/10 border-error/30 text-error",
                                 )
@@ -402,11 +414,12 @@ class AuthRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
-                        Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     } else {
-                        renderer.render(pageFactory.buildApiKeysPage(ctx))
+                        renderer.render(pageFactory.buildApiKeysPage(ctx, shellRenderer))
                     }
                 },
             "/auth/api-keys/create" meta
@@ -415,18 +428,24 @@ class AuthRoutes(
                 } bindContract
                 POST to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     val user = ctx.user
                     if (user == null) {
-                        Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     } else {
                         val name = request.form("name").orEmpty()
                         if (name.isBlank()) {
-                            renderer.render(pageFactory.buildApiKeysPage(ctx))
+                            renderer.render(pageFactory.buildApiKeysPage(ctx, shellRenderer))
                         } else {
                             val result = securityService.createApiKey(user.id, name)
                             renderer.render(
-                                pageFactory.buildApiKeysPage(ctx, newKey = result.key, newKeyName = result.name)
+                                pageFactory.buildApiKeysPage(
+                                    ctx,
+                                    shellRenderer,
+                                    newKey = result.key,
+                                    newKeyName = result.name,
+                                )
                             )
                         }
                     }
@@ -438,13 +457,14 @@ class AuthRoutes(
                 POST to
                 { id, _ ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         val user = ctx.user
                         if (user == null) {
-                            Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                         } else {
                             securityService.deleteApiKey(user.id, id)
-                            Response(Status.FOUND).header("location", ctx.url("/auth/api-keys"))
+                            Response(Status.FOUND).header("location", shellRenderer.url("/auth/api-keys"))
                         }
                     }
                 },

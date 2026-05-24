@@ -56,12 +56,12 @@ class ComponentFragmentIntegrationTest : WebTest() {
         userRepository.save(testUser)
 
         securityService = createSecurityService()
-        testToken = securityService.createSession(testUser.id)
+        testToken = sessionSvc.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
     }
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
+    private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, testToken)
 
     // ---- /components/navigation/page ----
 
@@ -91,7 +91,7 @@ class ComponentFragmentIntegrationTest : WebTest() {
         val response =
             app(
                 Request(GET, "/components/navigation/page?theme=dark&pagePath=/")
-                    .cookie(Cookie(WebContext.THEME_COOKIE, "dark"))
+                    .cookie(Cookie(RequestContext.THEME_COOKIE, "dark"))
             )
         assertThat(response, hasStatus(Status.OK))
         assertTrue(

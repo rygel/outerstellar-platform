@@ -52,8 +52,7 @@ class PollApi(private val pollService: PollService) : ServerRoutes {
                 } bindContract
                 Method.POST to
                 { request: Request ->
-                    val ctx = request.webContext
-                    val user = ctx.user
+                    val user = request.requestContext.user
                     if (user == null) {
                         return@to Response(Status.UNAUTHORIZED).body("Authentication required")
                     }
@@ -98,7 +97,7 @@ class PollApi(private val pollService: PollService) : ServerRoutes {
                 Method.GET to
                 { syncId ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
                         val result = pollService.getPoll(syncId, ctx.user?.id)
                         if (result != null) {
                             Response(Status.OK).with(pollResultsLens of result)
@@ -119,7 +118,7 @@ class PollApi(private val pollService: PollService) : ServerRoutes {
                 Method.POST to
                 { syncId, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
                         val user = ctx.user
                         if (user == null) {
                             return@to Response(Status.UNAUTHORIZED).body("Authentication required")
@@ -147,7 +146,7 @@ class PollApi(private val pollService: PollService) : ServerRoutes {
                 Method.DELETE to
                 { syncId, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
                         val user = ctx.user
                         if (user == null) {
                             return@to Response(Status.UNAUTHORIZED).body("Authentication required")
@@ -168,7 +167,7 @@ class PollApi(private val pollService: PollService) : ServerRoutes {
                 Method.POST to
                 { syncId, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
                         val user = ctx.user
                         if (user == null) {
                             return@to Response(Status.UNAUTHORIZED).body("Authentication required")
@@ -192,7 +191,7 @@ class PollApi(private val pollService: PollService) : ServerRoutes {
                 Method.DELETE to
                 { syncId ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
                         val user = ctx.user
                         if (user == null) {
                             return@to Response(Status.UNAUTHORIZED).body("Authentication required")

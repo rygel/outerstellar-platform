@@ -76,8 +76,8 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
         userRepository.save(otherUser)
-        testToken = securityService.createSession(testUser.id)
-        otherToken = securityService.createSession(otherUser.id)
+        testToken = sessionSvc.createSession(testUser.id)
+        otherToken = sessionSvc.createSession(otherUser.id)
 
         app = buildApp(securityService = securityService)
     }

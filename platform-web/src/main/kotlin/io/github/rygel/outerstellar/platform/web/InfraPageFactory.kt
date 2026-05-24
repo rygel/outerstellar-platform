@@ -2,14 +2,14 @@ package io.github.rygel.outerstellar.platform.web
 
 class InfraPageFactory(private val repository: io.github.rygel.outerstellar.platform.persistence.MessageRepository?) {
 
-    fun buildFooterStatus(ctx: WebContext): FooterStatusFragment {
-        val i18n = ctx.i18n
+    fun buildFooterStatus(shellRenderer: ShellRenderer): FooterStatusFragment {
+        val i18n = shellRenderer.i18n
         val msgCount = repository?.countMessages() ?: 0L
         val dirtyCount = repository?.countDirtyMessages() ?: 0L
         return FooterStatusFragment(text = i18n.translate("web.footer.status", msgCount, dirtyCount))
     }
 
-    fun buildConflictResolveModal(ctx: WebContext, syncId: String): ConflictResolveViewModel {
+    fun buildConflictResolveModal(shellRenderer: ShellRenderer, syncId: String): ConflictResolveViewModel {
         val message =
             checkNotNull(repository) { "MessageRepository is required for conflict resolution" }.findBySyncId(syncId)
                 ?: throw io.github.rygel.outerstellar.platform.model.MessageNotFoundException(syncId)
@@ -19,14 +19,14 @@ class InfraPageFactory(private val repository: io.github.rygel.outerstellar.plat
                 io.github.rygel.outerstellar.platform.sync.SyncMessage::class,
             )
 
-        val i18n = ctx.i18n
+        val i18n = shellRenderer.i18n
         return ConflictResolveViewModel(
             syncId = syncId,
             myAuthor = message.author,
             myContent = message.content,
             serverAuthor = serverVersion.author,
             serverContent = serverVersion.content,
-            resolveUrl = ctx.url("/messages/resolve/$syncId"),
+            resolveUrl = shellRenderer.url("/messages/resolve/$syncId"),
             modalTitle = i18n.translate("web.conflict.title"),
             myVersionLabel = i18n.translate("web.conflict.my.version"),
             serverVersionLabel = i18n.translate("web.conflict.server.version"),

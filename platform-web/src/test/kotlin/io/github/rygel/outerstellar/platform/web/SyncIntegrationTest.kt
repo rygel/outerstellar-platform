@@ -31,7 +31,7 @@ class SyncIntegrationTest : WebTest() {
                 role = UserRole.ADMIN,
             )
         )
-        val adminToken = securityService.createSession(adminId)
+        val adminToken = sessionSvc.createSession(adminId)
 
         val app =
             buildApp(

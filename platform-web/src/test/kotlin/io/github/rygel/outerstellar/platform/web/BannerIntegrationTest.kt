@@ -45,7 +45,7 @@ class BannerIntegrationTest : WebTest() {
         val app = buildApp(plugin = plugin)
 
         val (token, _, _) = withAuthenticatedUser()
-        val response = app(Request(Method.GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, token)))
+        val response = app(Request(Method.GET, "/").cookie(Cookie(RequestContext.SESSION_COOKIE, token)))
 
         assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
@@ -90,7 +90,7 @@ class BannerIntegrationTest : WebTest() {
         val app = buildApp(plugin = plugin)
 
         val (token, _, _) = withAuthenticatedUser()
-        val response = app(Request(Method.GET, "/").cookie(Cookie(WebContext.SESSION_COOKIE, token)))
+        val response = app(Request(Method.GET, "/").cookie(Cookie(RequestContext.SESSION_COOKIE, token)))
 
         assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()

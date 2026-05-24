@@ -9,6 +9,7 @@ import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
 import org.http4k.core.Body
 import org.http4k.core.Method.POST
@@ -21,7 +22,11 @@ import org.http4k.format.KotlinxSerialization.auto
 import org.http4k.routing.bind
 import org.http4k.routing.routes
 
-class TOTPApiRoutes(private val securityService: SecurityService, private val totpService: TOTPService) {
+class TOTPApiRoutes(
+    private val securityService: SecurityService,
+    private val totpService: TOTPService,
+    private val sessionService: SessionService,
+) {
     private val totpVerifyRequest = Body.auto<TotpVerifyRequest>().toLens()
     private val totpVerifyResponse = Body.auto<TotpVerifyResponse>().toLens()
     private val totpSetupResponse = Body.auto<TotpSetupResponse>().toLens()
@@ -35,7 +40,7 @@ class TOTPApiRoutes(private val securityService: SecurityService, private val to
                 POST to
                 { request ->
                     val body = totpVerifyRequest(request)
-                    val result = securityService.verifyTotp(body.partialToken, body.code)
+                    val result = securityService.verifyTotp(body.partialToken, body.code, sessionService)
                     when (result.status) {
                         "success" -> Response(OK).with(totpVerifyResponse of result)
                         "invalid_code" -> Response(UNAUTHORIZED).with(totpVerifyResponse of result)

@@ -22,6 +22,7 @@ class SecurityServiceTotpTest {
     private lateinit var passwordEncoder: PasswordEncoder
     private lateinit var totpService: TOTPService
     private lateinit var securityService: SecurityService
+    private lateinit var sessionService: SessionService
 
     @BeforeEach
     fun setUp() {
@@ -36,6 +37,7 @@ class SecurityServiceTotpTest {
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
             )
+        sessionService = SessionService(sessionRepository, userRepository, SecurityConfig())
     }
 
     @Test
@@ -74,7 +76,7 @@ class SecurityServiceTotpTest {
 
     @Test
     fun `verifyTotp with invalid token returns expired`() {
-        val result = securityService.verifyTotp("pt_invalid", "123456")
+        val result = securityService.verifyTotp("pt_invalid", "123456", sessionService)
         assertEquals("expired", result.status, "Invalid token should be expired")
     }
 
@@ -116,7 +118,7 @@ class SecurityServiceTotpTest {
         val partialToken = (authResult as AuthResult.TotpRequired).token
 
         every { userRepository.findById(userId) } returns user
-        val result = securityService.verifyTotp(partialToken, "000000")
+        val result = securityService.verifyTotp(partialToken, "000000", sessionService)
         assertEquals("invalid_code", result.status, "Invalid code should return invalid_code")
     }
 }

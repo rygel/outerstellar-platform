@@ -64,12 +64,12 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
         userRepository.save(testUser)
 
         securityService = createSecurityService()
-        testToken = securityService.createSession(testUser.id)
+        testToken = sessionSvc.createSession(testUser.id)
 
         app = buildApp(securityService = securityService)
     }
 
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
+    private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, testToken)
 
     private fun formBody(vararg pairs: Pair<String, String>): String =
         pairs.joinToString("&") { (k, v) -> "$k=${java.net.URLEncoder.encode(v, "UTF-8")}" }
@@ -120,7 +120,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
 
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
-            setCookie.contains(WebContext.SESSION_COOKIE),
+            setCookie.contains(RequestContext.SESSION_COOKIE),
             "Successful sign-in must set session cookie, got: $setCookie",
         )
     }
@@ -153,7 +153,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
             )
 
         val setCookie = response.header("Set-Cookie").orEmpty()
-        assertFalse(setCookie.contains(WebContext.SESSION_COOKIE), "Failed sign-in must not set a session cookie")
+        assertFalse(setCookie.contains(RequestContext.SESSION_COOKIE), "Failed sign-in must not set a session cookie")
     }
 
     // ---- Register ----

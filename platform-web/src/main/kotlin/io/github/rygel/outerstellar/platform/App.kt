@@ -50,8 +50,8 @@ import io.github.rygel.outerstellar.platform.web.WebPageFactory
 import io.github.rygel.outerstellar.platform.web.analyticsPageViewFilter
 import io.github.rygel.outerstellar.platform.web.etagCachingFilter
 import io.github.rygel.outerstellar.platform.web.rateLimitFilter
+import io.github.rygel.outerstellar.platform.web.shellRenderer
 import io.github.rygel.outerstellar.platform.web.staticCacheControlFilter
-import io.github.rygel.outerstellar.platform.web.webContext
 import org.http4k.contract.bindContract
 import org.http4k.contract.contract
 import org.http4k.contract.openapi.ApiInfo
@@ -276,7 +276,7 @@ private fun buildApiRoutes(
     val apiRoutes = contract {
         renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
-        routes += AuthApi(securityService, ctx.config).routes
+        routes += AuthApi(securityService, ctx.sessionService, ctx.config).routes
         if (voteService != null) {
             routes += VoteApi(voteService).routes
         }
@@ -292,7 +292,7 @@ private fun buildApiRoutes(
         if (messageService != null || contactService != null) {
             routes += SyncApi(messageService, contactService, analytics).routes
         }
-        routes += AuthApi(securityService, ctx.config).bearerRoutes
+        routes += AuthApi(securityService, ctx.sessionService, ctx.config).bearerRoutes
         if (deviceTokenRepository != null) {
             routes += DeviceRegistrationApi(deviceTokenRepository).routes
         }
@@ -319,6 +319,7 @@ private fun buildApiRoutes(
     return listOf(bearerAdminApiContract, apiRoutes, syncContract)
 }
 
+@Suppress("LongMethod")
 private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandler {
     val messageService = ctx.messageService
     val contactService = ctx.contactService
@@ -342,7 +343,16 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
             routes += ContactsRoutes(pageFactory, jteRenderer, contactService).routes
         }
         routes +=
-            AuthRoutes(pageFactory, jteRenderer, securityService, sessionCookieSecure, analytics, ctx.config).routes
+            AuthRoutes(
+                    pageFactory,
+                    jteRenderer,
+                    securityService,
+                    ctx.sessionService,
+                    sessionCookieSecure,
+                    analytics,
+                    ctx.config,
+                )
+                .routes
         val oauthProviders = mutableMapOf<String, io.github.rygel.outerstellar.platform.security.OAuthProvider>()
         val appleConfig = ctx.config.appleOAuth
         if (appleConfig.enabled && appleConfig.clientId.isNotBlank()) {
@@ -358,6 +368,7 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
             OAuthRoutes(
                     providers = oauthProviders,
                     securityService = securityService,
+                    sessionService = ctx.sessionService,
                     sessionCookieSecure = sessionCookieSecure,
                     appBaseUrl = ctx.config.appBaseUrl,
                 )
@@ -379,12 +390,12 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
         routes +=
             ("/logout" bindContract POST).to { request: org.http4k.core.Request ->
                 val rawToken =
-                    request.cookie(io.github.rygel.outerstellar.platform.web.WebContext.SESSION_COOKIE)?.value
+                    request.cookie(io.github.rygel.outerstellar.platform.web.RequestContext.SESSION_COOKIE)?.value
                 if (rawToken != null) {
-                    securityService.deleteSession(rawToken)
+                    ctx.sessionService.deleteSession(rawToken)
                 }
                 Response(Status.FOUND)
-                    .header("location", request.webContext.url("/"))
+                    .header("location", request.shellRenderer.url("/"))
                     .header(
                         "Set-Cookie",
                         io.github.rygel.outerstellar.platform.web.SessionCookie.clear(sessionCookieSecure),
@@ -445,9 +456,14 @@ private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHan
                 "/admin/plugins" bind
                     GET to
                     { req ->
-                        val webCtx =
-                            io.github.rygel.outerstellar.platform.web.WebContext.create(
-                                request = req,
+                        val pluginRequestContext =
+                            io.github.rygel.outerstellar.platform.web.RequestContext(
+                                req,
+                                sessionService = ctx.sessionService,
+                            )
+                        val pluginShellRenderer =
+                            io.github.rygel.outerstellar.platform.web.ShellRenderer(
+                                pluginRequestContext,
                                 shellConfig =
                                     io.github.rygel.outerstellar.platform.web.ShellConfig(
                                         pluginOptions =
@@ -459,7 +475,7 @@ private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHan
                                             )
                                     ),
                             )
-                        val shell = webCtx.shell("Plugin Dashboard", "/admin/plugins")
+                        val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
                         val page = Page(shell, PluginAdminDashboardPage(pluginSections.map { it.summaryCard }))
                         Response(Status.OK).body(ctx.jteRenderer(page) ?: "")
                     }
@@ -512,8 +528,15 @@ private fun buildBaseApp(
     val appRoutes = mutableListOf(uiRoutes, componentRoutes)
     ctx.totpService?.let { totpService ->
         appRoutes +=
-            TOTPRoutes(ctx.securityService, ctx.jteRenderer, ctx.config.sessionCookieSecure, totpService).routes
-        appRoutes += TOTPApiRoutes(ctx.securityService, totpService).routes
+            TOTPRoutes(
+                    ctx.securityService,
+                    ctx.jteRenderer,
+                    ctx.config.sessionCookieSecure,
+                    totpService,
+                    ctx.sessionService,
+                )
+                .routes
+        appRoutes += TOTPApiRoutes(ctx.securityService, totpService, ctx.sessionService).routes
     }
     appRoutes.addAll(apiRoutes)
     if ("/" !in ctx.excludedRoutes) {
@@ -625,14 +648,13 @@ private fun buildFilterChain(ctx: AppContext): Filter {
                 )
             )
             .then(Filters.csrfProtection(config.sessionCookieSecure, config.csrfEnabled))
-            .then(Filters.devAutoLogin(config.devMode, userRepository, securityService, config.sessionCookieSecure))
+            .then(Filters.devAutoLogin(config.devMode, userRepository, ctx.sessionService, config.sessionCookieSecure))
             .then(
                 Filters.stateFilter(
                     config.devDashboardEnabled,
                     userRepository,
                     config.version,
                     jwtService,
-                    securityService,
                     PluginOptions(
                         navItems = plugin?.navItems ?: emptyList(),
                         textResolver = plugin?.textResolver,
@@ -642,6 +664,7 @@ private fun buildFilterChain(ctx: AppContext): Filter {
                     cookieSecure = config.sessionCookieSecure,
                     appBaseUrl = config.appBaseUrl,
                     bannerProviders = plugin?.bannerProviders(ctx.pluginContext()) ?: emptyList(),
+                    sessionService = ctx.sessionService,
                 )
             )
 

@@ -96,7 +96,6 @@ abstract class WebTest {
             apiKeyRepository = apiKeyRepository,
             resetRepository = passwordResetRepository,
             auditRepository = auditRepository,
-            sessionService = sessionSvc,
         )
 
     fun withAuthenticatedUser(
@@ -114,7 +113,7 @@ abstract class WebTest {
                 role = io.github.rygel.outerstellar.platform.model.UserRole.valueOf(role),
             )
         userRepository.save(user)
-        val token = createSecurityService().createSession(userId)
+        val token = sessionSvc.createSession(userId)
         return Triple(token, userId.toString(), username)
     }
 

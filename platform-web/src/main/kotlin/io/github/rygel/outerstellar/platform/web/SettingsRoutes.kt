@@ -19,16 +19,17 @@ class SettingsRoutes(private val pageFactory: WebPageFactory, private val render
                 } bindContract
                 GET to
                 { request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
-                        Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     } else {
                         val tab = request.query("tab") ?: "profile"
                         val isHtmx = request.header("HX-Request") == "true"
                         if (isHtmx) {
-                            renderer.render(pageFactory.buildSettingsFragment(ctx, tab))
+                            renderer.render(pageFactory.buildSettingsFragment(ctx, shellRenderer, tab))
                         } else {
-                            renderer.render(pageFactory.buildSettingsPage(ctx, tab))
+                            renderer.render(pageFactory.buildSettingsPage(shellRenderer, tab))
                         }
                     }
                 }

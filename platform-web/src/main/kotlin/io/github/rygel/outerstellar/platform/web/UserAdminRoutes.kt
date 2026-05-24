@@ -42,7 +42,9 @@ class UserAdminRoutes(
                 { request: org.http4k.core.Request ->
                     val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT) ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(pageFactory.buildUserAdminPage(request.webContext, limit, offset))
+                    renderer.render(
+                        pageFactory.buildUserAdminPage(request.requestContext, request.shellRenderer, limit, offset)
+                    )
                 },
             "/admin/users/export" meta
                 {
@@ -103,13 +105,14 @@ class UserAdminRoutes(
                 POST to
                 { userId, _ ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         val target = userAdminService.findUserSummary(UUID.fromString(userId))
                         if (target != null) {
                             userAdminService.setUserEnabled(admin.id, UUID.fromString(userId), !target.enabled)
                         }
-                        renderer.render(pageFactory.buildUserAdminPage(ctx))
+                        renderer.render(pageFactory.buildUserAdminPage(ctx, shellRenderer))
                     }
                 },
             "/admin/audit" meta
@@ -120,7 +123,7 @@ class UserAdminRoutes(
                 { request: org.http4k.core.Request ->
                     val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT) ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(pageFactory.buildAuditLogPage(request.webContext, limit, offset))
+                    renderer.render(pageFactory.buildAuditLogPage(request.shellRenderer, limit, offset))
                 },
             "/admin/audit/export" meta
                 {
@@ -196,14 +199,15 @@ class UserAdminRoutes(
                 POST to
                 { userId, _ ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         val target = userAdminService.findUserSummary(UUID.fromString(userId))
                         if (target != null) {
                             val newRole = if (target.role == UserRole.ADMIN) UserRole.USER else UserRole.ADMIN
                             userAdminService.setUserRole(admin.id, UUID.fromString(userId), newRole)
                         }
-                        renderer.render(pageFactory.buildUserAdminPage(ctx))
+                        renderer.render(pageFactory.buildUserAdminPage(ctx, shellRenderer))
                     }
                 },
             "/admin/users" / userIdPath / "unlock" meta
@@ -213,10 +217,11 @@ class UserAdminRoutes(
                 POST to
                 { userId, _ ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         userAdminService.unlockAccount(admin.id, java.util.UUID.fromString(userId))
-                        renderer.render(pageFactory.buildUserAdminPage(ctx))
+                        renderer.render(pageFactory.buildUserAdminPage(ctx, shellRenderer))
                     }
                 },
         )

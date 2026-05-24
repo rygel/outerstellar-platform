@@ -83,18 +83,17 @@ class SessionSecurityIntegrationTest : WebTest() {
         userRepository.save(adminUser)
         userRepository.save(disabledUser)
 
-        sessionTokens[regularUser.id] = securityService.createSession(regularUser.id)
-        sessionTokens[adminUser.id] = securityService.createSession(adminUser.id)
-        sessionTokens[disabledUser.id] = securityService.createSession(disabledUser.id)
+        sessionTokens[regularUser.id] = sessionSvc.createSession(regularUser.id)
+        sessionTokens[adminUser.id] = sessionSvc.createSession(adminUser.id)
+        sessionTokens[disabledUser.id] = sessionSvc.createSession(disabledUser.id)
         userRepository.updateEnabled(disabledUser.id, false)
 
         app = buildApp(securityService = securityService)
     }
 
     private fun sessionFor(user: User): Cookie {
-        val token =
-            sessionTokens[user.id] ?: securityService.createSession(user.id).also { sessionTokens[user.id] = it }
-        return Cookie(WebContext.SESSION_COOKIE, token)
+        val token = sessionTokens[user.id] ?: sessionSvc.createSession(user.id).also { sessionTokens[user.id] = it }
+        return Cookie(RequestContext.SESSION_COOKIE, token)
     }
 
     // ---- Unauthenticated access ----
@@ -139,7 +138,9 @@ class SessionSecurityIntegrationTest : WebTest() {
     @Test
     fun `non-UUID session cookie is rejected and redirects to auth`() {
         val response =
-            app(Request(GET, "/auth/change-password").cookie(Cookie(WebContext.SESSION_COOKIE, "not-a-uuid-at-all")))
+            app(
+                Request(GET, "/auth/change-password").cookie(Cookie(RequestContext.SESSION_COOKIE, "not-a-uuid-at-all"))
+            )
         assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
@@ -148,7 +149,8 @@ class SessionSecurityIntegrationTest : WebTest() {
     fun `unknown token in session cookie is rejected`() {
         val response =
             app(
-                Request(GET, "/auth/change-password").cookie(Cookie(WebContext.SESSION_COOKIE, "oss_" + "a".repeat(48)))
+                Request(GET, "/auth/change-password")
+                    .cookie(Cookie(RequestContext.SESSION_COOKIE, "oss_" + "a".repeat(48)))
             )
         assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location").orEmpty().contains("/auth"))
@@ -197,7 +199,7 @@ class SessionSecurityIntegrationTest : WebTest() {
         val response = app(Request(POST, "/logout").cookie(sessionFor(regularUser)))
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
-            setCookie.contains(WebContext.SESSION_COOKIE) &&
+            setCookie.contains(RequestContext.SESSION_COOKIE) &&
                 (setCookie.contains("Max-Age=0") || setCookie.contains("max-age=0")),
             "Logout should expire the session cookie, got: $setCookie",
         )
@@ -273,7 +275,7 @@ class SessionSecurityIntegrationTest : WebTest() {
         val response = app(Request(GET, "/auth?theme=dark"))
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
-            setCookie.contains(WebContext.THEME_COOKIE),
+            setCookie.contains(RequestContext.THEME_COOKIE),
             "?theme=dark should set a theme cookie, got: $setCookie",
         )
     }
@@ -282,7 +284,7 @@ class SessionSecurityIntegrationTest : WebTest() {
     fun `lang=fr query param sets lang cookie`() {
         val response = app(Request(GET, "/auth?lang=fr"))
         val setCookie = response.header("Set-Cookie").orEmpty()
-        assertTrue(setCookie.contains(WebContext.LANG_COOKIE), "?lang=fr should set a lang cookie, got: $setCookie")
+        assertTrue(setCookie.contains(RequestContext.LANG_COOKIE), "?lang=fr should set a lang cookie, got: $setCookie")
     }
 
     @Test

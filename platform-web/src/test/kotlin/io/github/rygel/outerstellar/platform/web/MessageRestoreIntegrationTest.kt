@@ -46,7 +46,7 @@ class MessageRestoreIntegrationTest : WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(user)
-        sessionCookie = Cookie(WebContext.SESSION_COOKIE, sec.createSession(user.id))
+        sessionCookie = Cookie(RequestContext.SESSION_COOKIE, sessionSvc.createSession(user.id))
         val outbox = StubOutboxRepository()
         val cache = StubMessageCache()
         val txManager = StubTransactionManager()

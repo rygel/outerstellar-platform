@@ -37,8 +37,7 @@ class VoteApi(private val voteService: VoteService) : ServerRoutes {
                 Method.POST to
                 { syncId, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
-                        val user = ctx.user
+                        val user = request.requestContext.user
                         if (user == null) {
                             return@to Response(Status.UNAUTHORIZED).body("Authentication required")
                         }
@@ -65,8 +64,7 @@ class VoteApi(private val voteService: VoteService) : ServerRoutes {
                 Method.DELETE to
                 { syncId, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
-                        val user = ctx.user
+                        val user = request.requestContext.user
                         if (user == null) {
                             return@to Response(Status.UNAUTHORIZED).body("Authentication required")
                         }
@@ -83,7 +81,7 @@ class VoteApi(private val voteService: VoteService) : ServerRoutes {
                 Method.GET to
                 { syncId, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
                         val score = voteService.getScore(syncId, ctx.user?.id)
                         Response(Status.OK).with(voteScoreLens of score)
                     }

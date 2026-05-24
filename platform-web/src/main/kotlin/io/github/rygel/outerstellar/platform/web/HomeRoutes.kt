@@ -44,15 +44,16 @@ class HomeRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
-                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     }
                     val query = queryLens(request)
                     val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
                     val offset = offsetLens(request).coerceAtLeast(0)
                     val year = yearLens(request)
-                    renderer.render(pageFactory.buildHomePage(ctx, query, limit, offset, year))
+                    renderer.render(pageFactory.buildHomePage(ctx, shellRenderer, query, limit, offset, year))
                 },
             "/messages/trash" meta
                 {
@@ -60,11 +61,12 @@ class HomeRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
-                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     }
-                    renderer.render(pageFactory.buildTrashPage(ctx))
+                    renderer.render(pageFactory.buildTrashPage(ctx, shellRenderer))
                 },
             "/messages" meta
                 {
@@ -72,14 +74,15 @@ class HomeRoutes(
                 } bindContract
                 POST to
                 { request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     if (ctx.user == null) {
-                        return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                        return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                     }
                     val author = request.form("author").orEmpty()
                     val content = request.form("content").orEmpty()
                     messageService.createServerMessage(author, content)
-                    renderer.render(pageFactory.buildMessageList(ctx))
+                    renderer.render(pageFactory.buildMessageList(ctx, shellRenderer))
                 },
             "/messages/restore" / syncIdPath meta
                 {
@@ -88,12 +91,13 @@ class HomeRoutes(
                 POST to
                 { syncId ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                         }
                         messageService.restore(syncId)
-                        Response(Status.FOUND).header("location", ctx.url("/messages/trash"))
+                        Response(Status.FOUND).header("location", shellRenderer.url("/messages/trash"))
                     }
                 },
             "/messages/resolve" / syncIdPath meta
@@ -103,11 +107,12 @@ class HomeRoutes(
                 GET to
                 { syncId ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                         }
-                        val viewModel = pageFactory.buildConflictResolveModal(ctx, syncId)
+                        val viewModel = pageFactory.buildConflictResolveModal(shellRenderer, syncId)
                         renderer.render(viewModel)
                     }
                 },
@@ -118,9 +123,10 @@ class HomeRoutes(
                 POST to
                 { syncId ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                         }
                         val strategy = ConflictStrategy.fromString(request.form("strategy") ?: "server")
                         messageService.resolveConflict(syncId, strategy)
@@ -134,9 +140,10 @@ class HomeRoutes(
                 POST to
                 { syncId: String, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                         }
                         messageService.deleteMessage(syncId)
                         Response(Status.OK)
@@ -149,11 +156,12 @@ class HomeRoutes(
                 GET to
                 { syncId: String, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                         }
-                        renderer.render(pageFactory.buildMessageEditForm(ctx, syncId))
+                        renderer.render(pageFactory.buildMessageEditForm(shellRenderer, syncId))
                     }
                 },
             "/messages" / syncIdPath / "update" meta
@@ -163,15 +171,16 @@ class HomeRoutes(
                 POST to
                 { syncId: String, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", ctx.url("/auth"))
+                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                         }
                         val msg = messageService.findBySyncId(syncId)
                         val author = request.form("author").orEmpty()
                         val content = request.form("content").orEmpty()
                         messageService.updateMessage(msg!!.copy(author = author, content = content))
-                        renderer.render(pageFactory.buildMessageList(ctx))
+                        renderer.render(pageFactory.buildMessageList(ctx, shellRenderer))
                     }
                 },
             "/components/footer-status" meta
@@ -180,7 +189,7 @@ class HomeRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    renderer.render(pageFactory.buildFooterStatus(request.webContext))
+                    renderer.render(pageFactory.buildFooterStatus(request.shellRenderer))
                 },
         )
 }
