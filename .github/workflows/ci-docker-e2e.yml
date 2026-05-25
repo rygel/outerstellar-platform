@@ -99,8 +99,8 @@ jobs:
           target: jvm-runtime
           tags: outerstellar-platform:e2e
           load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: ${{ github.event_name == 'push' && 'type=gha' || '' }}
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max' || '' }}
 
       - name: Start application container
         run: |
