@@ -1,6 +1,9 @@
 package io.github.rygel.outerstellar.platform
 
 import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.di.CoreComponents
+import io.github.rygel.outerstellar.platform.di.PersistenceComponents
+import io.github.rygel.outerstellar.platform.di.WebComponents
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
@@ -10,8 +13,11 @@ import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.security.PasswordResetService
+import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SessionService
+import io.github.rygel.outerstellar.platform.security.TOTPService
 import io.github.rygel.outerstellar.platform.security.UserAdminService
+import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.web.StubMessageCache
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
@@ -44,27 +50,82 @@ class PlatformAppTest {
         val userAdminService = mockk<UserAdminService>(relaxed = true)
         val sessionService = mockk<SessionService>(relaxed = true)
         every { userRepository.countAll() } returns 0L
-        val contactService =
-            io.mockk.mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+        val contactService = mockk<ContactService>(relaxed = true)
 
-        val polyHandler =
-            app(
-                messageService,
-                contactService,
-                outbox,
-                cache,
-                createRenderer(),
-                pageFactory,
-                config,
-                apiKeyService,
-                passwordResetService,
-                oauthService,
-                authService,
-                accountService,
-                userAdminService,
-                sessionService,
-                userRepository,
+        val persistence =
+            PersistenceComponents(
+                dataSource = mockk(relaxed = true),
+                jdbi = mockk(relaxed = true),
+                messageRepository = repository,
+                contactRepository = mockk(relaxed = true),
+                userRepository = userRepository,
+                outboxRepository = outbox,
+                transactionManager = mockk(relaxed = true),
+                auditRepository = mockk(relaxed = true),
+                passwordResetRepository = mockk(relaxed = true),
+                apiKeyRepository = mockk(relaxed = true),
+                oAuthRepository = mockk(relaxed = true),
+                deviceTokenRepository = mockk(relaxed = true),
+                sessionRepository = mockk(relaxed = true),
+                voteRepository = mockk(relaxed = true),
+                pollRepository = mockk(relaxed = true),
+                notificationRepository = mockk(relaxed = true),
             )
+
+        val security =
+            SecurityComponents(
+                jwtService = mockk(relaxed = true),
+                asyncActivityUpdater = mockk(relaxed = true),
+                authService = authService,
+                accountService = accountService,
+                apiKeyService = apiKeyService,
+                passwordResetService = passwordResetService,
+                oauthService = oauthService,
+                authRealms = emptyList(),
+                totpService = TOTPService(),
+                sessionService = sessionService,
+                userAdminService = userAdminService,
+            )
+
+        val core =
+            CoreComponents(
+                messageService = messageService,
+                contactService = contactService,
+                outboxProcessor = mockk(relaxed = true),
+                eventPublisher = io.github.rygel.outerstellar.platform.service.NoOpEventPublisher,
+                emailService = io.github.rygel.outerstellar.platform.service.ConsoleEmailService(),
+                pushNotificationService = io.github.rygel.outerstellar.platform.service.ConsolePushNotificationService,
+            )
+
+        val notificationService =
+            mockk<io.github.rygel.outerstellar.platform.service.NotificationService>(relaxed = true)
+        val voteRepository = mockk<io.github.rygel.outerstellar.platform.persistence.VoteRepository>(relaxed = true)
+        val pollRepository = mockk<io.github.rygel.outerstellar.platform.persistence.PollRepository>(relaxed = true)
+
+        val web =
+            WebComponents(
+                templateRenderer = createRenderer(),
+                pageFactory = pageFactory,
+                messageCache = cache,
+                analyticsService = io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService(),
+                emailService = io.github.rygel.outerstellar.platform.service.NoOpEmailService(),
+                i18nService = io.github.rygel.outerstellar.i18n.I18nService.create("messages"),
+                syncWebSocket = io.github.rygel.outerstellar.platform.web.SyncWebSocket(sessionService),
+                eventPublisher = io.github.rygel.outerstellar.platform.service.NoOpEventPublisher,
+                voteService = io.github.rygel.outerstellar.platform.service.VoteService(voteRepository, repository),
+                pollService = io.github.rygel.outerstellar.platform.service.PollService(pollRepository),
+                notificationService = notificationService,
+                adminPageFactory =
+                    io.github.rygel.outerstellar.platform.web.AdminPageFactory(
+                        apiKeyService,
+                        notificationService,
+                        userAdminService,
+                    ),
+                adminStatsService = io.github.rygel.outerstellar.platform.security.AdminStatsService(userRepository),
+                pluginMigrationSource = object : PluginMigrationSource {},
+            )
+
+        val polyHandler = app(config = config, persistence = persistence, security = security, core = core, web = web)
         val handler = polyHandler.http
         assertNotNull(handler)
 

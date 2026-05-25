@@ -3,6 +3,9 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.AppleOAuthConfig
 import io.github.rygel.outerstellar.platform.app
+import io.github.rygel.outerstellar.platform.di.CoreComponents
+import io.github.rygel.outerstellar.platform.di.PersistenceComponents
+import io.github.rygel.outerstellar.platform.di.WebComponents
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiApiKeyRepository
@@ -11,10 +14,12 @@ import io.github.rygel.outerstellar.platform.persistence.JdbiContactRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiMessageRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiOAuthRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiOutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiPasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiPollRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiSessionRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiVoteRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.AccountService
@@ -23,13 +28,16 @@ import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.security.PasswordResetService
+import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SecurityConfig
 import io.github.rygel.outerstellar.platform.security.SessionService
+import io.github.rygel.outerstellar.platform.security.TOTPService
 import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import io.github.rygel.outerstellar.platform.service.PollService
+import io.github.rygel.outerstellar.platform.service.VoteService
 import io.github.rygel.outerstellar.platform.testing.SharedPostgres
 import io.github.rygel.outerstellar.platform.testing.sanitizeDbName
 import java.util.UUID
@@ -85,8 +93,10 @@ abstract class WebTest {
     val auditRepository by lazy { JdbiAuditRepository(testJdbi) }
     val notificationRepository by lazy { JdbiNotificationRepository(testJdbi) }
     val passwordResetRepository by lazy { JdbiPasswordResetRepository(testJdbi) }
-    open val oauthRepository by lazy { JdbiOAuthRepository(testJdbi) }
+    val outboxRepository by lazy { JdbiOutboxRepository(testJdbi) }
+    val voteRepository by lazy { JdbiVoteRepository(testJdbi) }
     val pollRepository by lazy { JdbiPollRepository(testJdbi) }
+    open val oauthRepository by lazy { JdbiOAuthRepository(testJdbi) }
     val pollService by lazy { PollService(pollRepository) }
 
     val userAdminService by lazy { UserAdminService(userRepository, auditRepository) }
@@ -141,26 +151,95 @@ abstract class WebTest {
 
         val authService = AuthService(userRepository, encoder, auditRepository)
         val accountService = AccountService(userRepository, encoder, sessionRepository, auditRepository)
+        val resolvedPollService = overrides.pollService ?: pollService
+
+        val persistence =
+            PersistenceComponents(
+                dataSource = testDb.dataSource,
+                jdbi = testJdbi,
+                messageRepository = messageRepository,
+                contactRepository = contactRepository,
+                userRepository = resolvedUserRepo,
+                outboxRepository = outbox,
+                transactionManager = txManager,
+                auditRepository = auditRepository,
+                passwordResetRepository = passwordResetRepository,
+                apiKeyRepository = apiKeyRepository,
+                oAuthRepository = oauthRepository,
+                deviceTokenRepository =
+                    overrides.deviceTokenRepository
+                        ?: io.github.rygel.outerstellar.platform.persistence.JdbiDeviceTokenRepository(testJdbi),
+                sessionRepository = sessionRepository,
+                voteRepository = voteRepository,
+                pollRepository = pollRepository,
+                notificationRepository = notificationRepository,
+            )
+
+        val security =
+            SecurityComponents(
+                jwtService =
+                    io.github.rygel.outerstellar.platform.security.JwtService(
+                        io.github.rygel.outerstellar.platform.JwtConfig()
+                    ),
+                asyncActivityUpdater =
+                    io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater(resolvedUserRepo),
+                authService = authService,
+                accountService = accountService,
+                apiKeyService = apiKeyService,
+                passwordResetService = passwordResetService,
+                oauthService = oauthService,
+                authRealms = emptyList(),
+                totpService = TOTPService(),
+                sessionService = sessionSvc,
+                userAdminService = userAdminService,
+            )
+
+        val core =
+            CoreComponents(
+                messageService = messageService,
+                contactService = resolvedContactService,
+                outboxProcessor =
+                    io.github.rygel.outerstellar.platform.service.OutboxProcessor(
+                        outboxRepository = outbox,
+                        transactionManager = txManager,
+                    ),
+                eventPublisher = io.github.rygel.outerstellar.platform.service.NoOpEventPublisher,
+                emailService = io.github.rygel.outerstellar.platform.service.ConsoleEmailService(),
+                pushNotificationService = io.github.rygel.outerstellar.platform.service.ConsolePushNotificationService,
+            )
+
+        val notificationService = overrides.notificationService ?: NotificationService(notificationRepository)
+        val voteService = VoteService(voteRepository, messageRepository)
+
+        val web =
+            WebComponents(
+                templateRenderer = renderer,
+                pageFactory = pageFactory,
+                messageCache = resolvedMessageCache,
+                analyticsService = io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService(),
+                emailService = io.github.rygel.outerstellar.platform.service.NoOpEmailService(),
+                i18nService = io.github.rygel.outerstellar.i18n.I18nService.create("messages"),
+                syncWebSocket = SyncWebSocket(sessionSvc),
+                eventPublisher = io.github.rygel.outerstellar.platform.service.NoOpEventPublisher,
+                voteService = voteService,
+                pollService = resolvedPollService,
+                notificationService = notificationService,
+                adminPageFactory =
+                    io.github.rygel.outerstellar.platform.web.AdminPageFactory(
+                        apiKeyService,
+                        notificationService,
+                        userAdminService,
+                    ),
+                adminStatsService = io.github.rygel.outerstellar.platform.security.AdminStatsService(resolvedUserRepo),
+                pluginMigrationSource = object : io.github.rygel.outerstellar.platform.PluginMigrationSource {},
+            )
 
         return app(
-                messageService,
-                resolvedContactService,
-                outbox,
-                resolvedMessageCache,
-                renderer,
-                pageFactory,
-                config,
-                apiKeyService,
-                passwordResetService,
-                oauthService,
-                authService,
-                accountService,
-                userAdminService,
-                sessionSvc,
-                resolvedUserRepo,
-                deviceTokenRepository = overrides.deviceTokenRepository,
-                notificationService = overrides.notificationService,
-                pollService = overrides.pollService ?: pollService,
+                config = config,
+                persistence = persistence,
+                security = security,
+                core = core,
+                web = web,
                 plugin = plugin,
             )
             .http!!
