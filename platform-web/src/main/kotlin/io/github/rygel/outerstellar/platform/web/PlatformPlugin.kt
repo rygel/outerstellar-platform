@@ -34,7 +34,6 @@ data class PluginOptions(
     val navItems: List<PluginNavItem> = emptyList(),
     val textResolver: TextResolver? = null,
     val adminNavItems: List<AdminNavItem> = emptyList(),
-    val bannerProviders: List<BannerProvider> = emptyList(),
 )
 
 /**

@@ -1,16 +1,23 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.AppleOAuthConfig
+import io.github.rygel.outerstellar.platform.JwtConfig
+import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.di.CoreComponents
 import io.github.rygel.outerstellar.platform.di.PersistenceComponents
 import io.github.rygel.outerstellar.platform.di.WebComponents
 import io.github.rygel.outerstellar.platform.infra.createRenderer
+import io.github.rygel.outerstellar.platform.model.User
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiAuditRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiContactRepository
+import io.github.rygel.outerstellar.platform.persistence.JdbiDeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiMessageRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiOAuthRepository
@@ -25,9 +32,12 @@ import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.AccountService
+import io.github.rygel.outerstellar.platform.security.AdminStatsService
 import io.github.rygel.outerstellar.platform.security.ApiKeyService
+import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
 import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
+import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.security.PasswordResetService
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
@@ -35,9 +45,14 @@ import io.github.rygel.outerstellar.platform.security.SecurityConfig
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
 import io.github.rygel.outerstellar.platform.security.UserAdminService
+import io.github.rygel.outerstellar.platform.service.ConsoleEmailService
+import io.github.rygel.outerstellar.platform.service.ConsolePushNotificationService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
+import io.github.rygel.outerstellar.platform.service.NoOpEmailService
+import io.github.rygel.outerstellar.platform.service.NoOpEventPublisher
 import io.github.rygel.outerstellar.platform.service.NotificationService
+import io.github.rygel.outerstellar.platform.service.OutboxProcessor
 import io.github.rygel.outerstellar.platform.service.PollService
 import io.github.rygel.outerstellar.platform.service.VoteService
 import io.github.rygel.outerstellar.platform.testing.SharedPostgres
@@ -153,7 +168,7 @@ abstract class WebTest {
                 apiKeyService,
                 appleOAuthEnabled = true,
             )
-        val authService = AuthService(userRepository, encoder, auditRepository)
+        val authService = AuthService(userRepository, encoder, auditRepository, totpService = TOTPService())
         val accountService = AccountService(userRepository, encoder, sessionRepository, auditRepository)
 
         val persistence = buildPersistence(resolvedUserRepo, outbox, txManager, overrides)
@@ -259,12 +274,6 @@ abstract class WebTest {
             voteService = VoteService(voteRepository, messageRepository),
             pollService = resolvedPollService,
             notificationService = notificationService,
-            adminPageFactory =
-                io.github.rygel.outerstellar.platform.web.AdminPageFactory(
-                    apiKeyService,
-                    notificationService,
-                    userAdminService,
-                ),
             adminStatsService = io.github.rygel.outerstellar.platform.security.AdminStatsService(userRepository),
             pluginMigrationSource = object : io.github.rygel.outerstellar.platform.PluginMigrationSource {},
         )

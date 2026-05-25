@@ -27,6 +27,7 @@ class SecurityIntegrationTest : WebTest() {
                 userRepository = localUserRepository,
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
+                totpService = TOTPService(),
             )
     }
 

@@ -23,10 +23,10 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val auditRepository: AuditRepository? = null,
     private val config: SecurityConfig = SecurityConfig(),
+    private val totpService: TOTPService,
 ) {
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
     private val secureRandom = SecureRandom()
-    private val totpService = TOTPService()
     private val partialAuthStore: Cache<String, PartialAuth> =
         Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.MINUTES).maximumSize(10_000).build()
 

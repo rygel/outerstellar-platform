@@ -31,7 +31,12 @@ class AuthServiceTotpTest {
         passwordEncoder = mockk(relaxed = true)
         totpService = TOTPService()
         authService =
-            AuthService(userRepository = userRepository, passwordEncoder = passwordEncoder, config = SecurityConfig())
+            AuthService(
+                userRepository = userRepository,
+                passwordEncoder = passwordEncoder,
+                config = SecurityConfig(),
+                totpService = totpService,
+            )
         sessionService = SessionService(sessionRepository, userRepository, SecurityConfig())
     }
 
