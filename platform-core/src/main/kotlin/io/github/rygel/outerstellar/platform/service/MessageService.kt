@@ -53,8 +53,7 @@ class MessageService(
         val limit = limit.coerceIn(1, MAX_PAGE_LIMIT)
         val cacheKey = "list:$query:$year:$limit:$offset"
 
-        @Suppress("UNCHECKED_CAST")
-        return cache.getOrPut(cacheKey) {
+        return cache.getMessageListOrPut(cacheKey) {
             val result = repository.listMessagesWithTotal(query, year, limit, offset)
             PagedResult(
                 items = result.items,
@@ -65,7 +64,7 @@ class MessageService(
                         totalItems = result.totalItems,
                     ),
             )
-        } as PagedResult<MessageSummary>
+        }
     }
 
     fun searchMessages(query: String, limit: Int = 20): List<MessageSummary> {
@@ -87,12 +86,11 @@ class MessageService(
     }
 
     fun findBySyncId(syncId: String): StoredMessage? {
-        val cacheKey = "entity:$syncId"
-        val cached = cache.get(cacheKey) as? StoredMessage
+        val cached = cache.getMessage(syncId)
         if (cached != null) return cached
 
         val message = repository.findBySyncId(syncId) ?: throw MessageNotFoundException(syncId)
-        cache.put(cacheKey, message)
+        cache.putMessage(syncId, message)
         return message
     }
 
@@ -138,7 +136,7 @@ class MessageService(
                 detail = "author=$author",
             )
         )
-        cache.put("entity:${message.syncId}", message)
+        cache.putMessage(message.syncId, message)
         cache.invalidateNamespace("list")
         eventPublisher.publishRefresh("message-list-panel")
         return message
@@ -164,7 +162,7 @@ class MessageService(
                 detail = "author=$author",
             )
         )
-        cache.put("entity:${message.syncId}", message)
+        cache.putMessage(message.syncId, message)
         cache.invalidateNamespace("list")
         eventPublisher.publishRefresh("message-list-panel")
         return message
@@ -210,7 +208,7 @@ class MessageService(
         val applied =
             if (toApply.isNotEmpty()) {
                 val upserted = repository.batchUpsertSyncedMessages(toApply, dirty = false)
-                upserted.forEach { cache.put("entity:${it.syncId}", it) }
+                upserted.forEach { cache.putMessage(it.syncId, it) }
                 upserted.size
             } else 0
 
@@ -294,7 +292,7 @@ class MessageService(
                 detail = null,
             )
         )
-        cache.put("entity:${updated.syncId}", updated)
+        cache.putMessage(updated.syncId, updated)
         cache.invalidateNamespace("list")
         eventPublisher.publishRefresh("message-list-panel")
         return updated

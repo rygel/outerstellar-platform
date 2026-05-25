@@ -1,11 +1,19 @@
 package io.github.rygel.outerstellar.platform.persistence
 
+import io.github.rygel.outerstellar.platform.model.MessageSummary
+import io.github.rygel.outerstellar.platform.model.PagedResult
+import io.github.rygel.outerstellar.platform.model.StoredMessage
+
 interface MessageCache {
-    fun get(key: String): Any?
+    fun getMessage(syncId: String): StoredMessage?
 
-    fun put(key: String, value: Any)
+    fun putMessage(syncId: String, message: StoredMessage)
 
-    fun getOrPut(key: String, loader: () -> Any): Any = get(key) ?: loader().also { put(key, it) }
+    fun getMessageList(key: String): PagedResult<MessageSummary>?
+
+    fun putMessageList(key: String, result: PagedResult<MessageSummary>)
+
+    fun getMessageListOrPut(key: String, loader: () -> PagedResult<MessageSummary>): PagedResult<MessageSummary>
 
     fun invalidate(key: String)
 
@@ -17,25 +25,24 @@ interface MessageCache {
 }
 
 object NoOpMessageCache : MessageCache {
-    override fun get(key: String): Any? = null
+    override fun getMessage(syncId: String): StoredMessage? = null
 
-    override fun put(key: String, value: Any) {
-        // No-op
-    }
+    override fun putMessage(syncId: String, message: StoredMessage) = Unit
 
-    override fun getOrPut(key: String, loader: () -> Any): Any = loader()
+    override fun getMessageList(key: String): PagedResult<MessageSummary>? = null
 
-    override fun invalidate(key: String) {
-        // No-op
-    }
+    override fun putMessageList(key: String, result: PagedResult<MessageSummary>) = Unit
 
-    override fun invalidateAll() {
-        // No-op
-    }
+    override fun getMessageListOrPut(
+        key: String,
+        loader: () -> PagedResult<MessageSummary>,
+    ): PagedResult<MessageSummary> = loader()
 
-    override fun invalidateNamespace(namespace: String) {
-        // No-op
-    }
+    override fun invalidate(key: String) = Unit
+
+    override fun invalidateAll() = Unit
+
+    override fun invalidateNamespace(namespace: String) = Unit
 
     override fun getStats(): Map<String, Any> = emptyMap()
 }
