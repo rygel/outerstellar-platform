@@ -5,12 +5,14 @@ on:
     branches: [main, develop]
     paths:
       - 'docker/**'
+      - 'jte-extensions/**'
       - 'platform-web/**'
       - 'pom.xml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'docker/**'
+      - 'jte-extensions/**'
       - 'platform-web/**'
       - 'pom.xml'
 
@@ -119,7 +121,7 @@ jobs:
         run: |
           mvn install -N -q
           mvn install \
-            -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web \
+            -pl jte-extensions,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web \
             -DskipTests -Dexec.skip=true -q \
             -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
             -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true \
