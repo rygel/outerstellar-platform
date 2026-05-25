@@ -1,6 +1,5 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.security.OAuthConnection
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals

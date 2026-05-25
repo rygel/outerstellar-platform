@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.persistence.OAuthUserInfo
 import org.slf4j.LoggerFactory
 
 class AppleOAuthProvider(
