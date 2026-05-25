@@ -70,32 +70,7 @@ fun createServerComponents(plugin: PlatformPlugin? = null): ServerComponents {
         )
 
     val polyHandler =
-        app(
-            messageService = core.messageService,
-            contactService = core.contactService,
-            outboxRepository = persistence.outboxRepository,
-            cache = web.messageCache,
-            jteRenderer = web.templateRenderer,
-            pageFactory = web.pageFactory,
-            config = config,
-            apiKeyService = security.apiKeyService,
-            passwordResetService = security.passwordResetService,
-            oauthService = security.oauthService,
-            authService = security.authService,
-            accountService = security.accountService,
-            userAdminService = security.userAdminService,
-            sessionService = security.sessionService,
-            userRepository = persistence.userRepository,
-            analytics = web.analyticsService,
-            notificationService = web.notificationService,
-            jwtService = security.jwtService,
-            plugin = plugin,
-            activityUpdater = security.asyncActivityUpdater,
-            syncWebSocket = web.syncWebSocket,
-            totpService = security.totpService,
-            voteService = web.voteService,
-            pollService = web.pollService,
-        )
+        app(config = config, persistence = persistence, security = security, core = core, web = web, plugin = plugin)
 
     return ServerComponents(
         config = config,

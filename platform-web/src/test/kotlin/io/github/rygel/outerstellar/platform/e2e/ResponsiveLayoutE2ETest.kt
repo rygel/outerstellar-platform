@@ -117,29 +117,7 @@ class ResponsiveLayoutE2ETest {
         persistence.contactRepository.seedContacts()
 
         val polyHandler: PolyHandler =
-            app(
-                messageService = core.messageService,
-                contactService = core.contactService,
-                outboxRepository = persistence.outboxRepository,
-                cache = web.messageCache,
-                jteRenderer = web.templateRenderer,
-                pageFactory = web.pageFactory,
-                config = testConfig,
-                apiKeyService = security.apiKeyService,
-                passwordResetService = security.passwordResetService,
-                oauthService = security.oauthService,
-                authService = security.authService,
-                accountService = security.accountService,
-                userAdminService = security.userAdminService,
-                sessionService = security.sessionService,
-                userRepository = persistence.userRepository,
-                analytics = web.analyticsService,
-                notificationService = web.notificationService,
-                jwtService = security.jwtService,
-                syncWebSocket = web.syncWebSocket,
-                voteService = web.voteService,
-                pollService = web.pollService,
-            )
+            app(config = testConfig, persistence = persistence, security = security, core = core, web = web)
         server = polyHandler.asServer(Netty(0)).start()
         baseUrl = "http://localhost:${server.port()}"
     }

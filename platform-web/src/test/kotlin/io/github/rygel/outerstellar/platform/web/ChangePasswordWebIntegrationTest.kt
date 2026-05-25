@@ -99,14 +99,15 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `POST change-password without session returns 401`() {
+    fun `POST change-password without session redirects to auth`() {
         val response =
             app(
                 Request(POST, "/auth/components/change-password")
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body("currentPassword=old&newPassword=new&confirmPassword=new")
             )
-        assertThat(response, hasStatus(Status.UNAUTHORIZED))
+        assertThat(response, hasStatus(Status.FOUND))
+        assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
     @Test
