@@ -4,7 +4,6 @@ import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import java.util.UUID
 import kotlin.test.Test
@@ -46,7 +45,6 @@ class PlatformPageRenderingTest : WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var adminUser: User
     private lateinit var regularUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var adminToken: String
     private lateinit var userToken: String
 
@@ -71,16 +69,11 @@ class PlatformPageRenderingTest : WebTest() {
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService = createSecurityService()
         adminToken = sessionSvc.createSession(adminUser.id)
         userToken = sessionSvc.createSession(regularUser.id)
 
         val notificationService = NotificationService(JdbiNotificationRepository(testJdbi))
-        app =
-            buildApp(
-                securityService = securityService,
-                overrides = TestOverrides(notificationService = notificationService),
-            )
+        app = buildApp(overrides = TestOverrides(notificationService = notificationService))
     }
 
     private fun adminSession() = Cookie(RequestContext.SESSION_COOKIE, adminToken)

@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform
 
 import io.github.rygel.outerstellar.platform.infra.NativeStartupCheck
 import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
+import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -48,7 +49,7 @@ fun main() {
                 logger.warn("Set ADMIN_PASSWORD to a secure value before deploying to production.")
             }
     if (components.persistence.userRepository.findByUsername("admin") == null) {
-        components.persistence.userRepository.seedAdminUser(components.security.passwordEncoder.encode(adminPassword))
+        components.persistence.userRepository.seedAdminUser(BCryptPasswordEncoder().encode(adminPassword))
     }
 
     val outboxScheduler = Executors.newSingleThreadScheduledExecutor { r ->

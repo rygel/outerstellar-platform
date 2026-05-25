@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertNotEquals
@@ -35,7 +34,6 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var adminUser: User
     private lateinit var regularUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var adminToken: String
     private lateinit var regularToken: String
 
@@ -60,11 +58,10 @@ class AdminHtmlRoutesIntegrationTest : WebTest() {
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService = createSecurityService()
         adminToken = sessionSvc.createSession(adminUser.id)
         regularToken = sessionSvc.createSession(regularUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun adminCookie() = Cookie(RequestContext.SESSION_COOKIE, adminToken)

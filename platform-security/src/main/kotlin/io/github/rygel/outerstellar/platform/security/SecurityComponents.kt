@@ -9,13 +9,13 @@ import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.service.EmailService
 
 class SecurityComponents(
-    val passwordEncoder: PasswordEncoder,
     val jwtService: JwtService,
     val asyncActivityUpdater: AsyncActivityUpdater,
-    val securityService: SecurityService,
     val authService: AuthService,
     val accountService: AccountService,
-    val permissionResolver: PermissionResolver,
+    val apiKeyService: ApiKeyService,
+    val passwordResetService: PasswordResetService,
+    val oauthService: OAuthService,
     val authRealms: List<AuthRealm>,
     val totpService: TOTPService,
     val sessionService: SessionService,
@@ -69,27 +69,39 @@ fun createSecurityComponents(
             auditRepository = auditRepository,
         )
 
-    val securityService =
-        SecurityService(
+    val apiKeyService =
+        ApiKeyService(
+            userRepository = userRepository,
+            apiKeyRepository = apiKeyRepository,
+            auditRepository = auditRepository,
+        )
+    val passwordResetService =
+        PasswordResetService(
             userRepository = userRepository,
             passwordEncoder = passwordEncoder,
-            auditRepository = auditRepository,
             resetRepository = resetRepository,
-            apiKeyRepository = apiKeyRepository,
+            auditRepository = auditRepository,
+            sessionRepository = sessionRepository,
             emailService = emailService,
+            appBaseUrl = config.appBaseUrl,
+        )
+    val oauthService =
+        OAuthService(
+            userRepository = userRepository,
+            passwordEncoder = passwordEncoder,
             oauthRepository = oauthRepository,
-            config = securityConfig,
+            auditRepository = auditRepository,
         )
     val permissionResolver = RoleBasedPermissionResolver()
-    val authRealms = listOf(SessionRealm(sessionService), ApiKeyRealm(securityService))
+    val authRealms = listOf(SessionRealm(sessionService), ApiKeyRealm(apiKeyService))
     return SecurityComponents(
-        passwordEncoder = passwordEncoder,
         jwtService = jwtService,
         asyncActivityUpdater = asyncActivityUpdater,
-        securityService = securityService,
+        apiKeyService = apiKeyService,
+        passwordResetService = passwordResetService,
+        oauthService = oauthService,
         authService = authService,
         accountService = accountService,
-        permissionResolver = permissionResolver,
         authRealms = authRealms,
         totpService = totpService,
         sessionService = sessionService,

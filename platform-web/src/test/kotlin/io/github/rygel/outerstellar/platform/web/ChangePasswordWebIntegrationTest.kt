@@ -4,7 +4,6 @@ import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.AuthService
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -36,7 +35,6 @@ class ChangePasswordWebIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var authService: AuthService
     private lateinit var testToken: String
 
@@ -52,12 +50,11 @@ class ChangePasswordWebIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        securityService = createSecurityService()
         authService = AuthService(userRepository, encoder, auditRepository)
 
         testToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, testToken)
@@ -140,7 +137,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     @Test
     fun `POST change-password with wrong current password returns error`() {
         val response = changePasswordRequest("WrongCurrentPass!", "NewPass456!", "NewPass456!")
-        // SecurityService.changePassword with wrong current password should result in an error
+        // AccountService.changePassword with wrong current password should result in an error
         val body = response.bodyString()
         assertTrue(
             body.contains("panel-danger") ||

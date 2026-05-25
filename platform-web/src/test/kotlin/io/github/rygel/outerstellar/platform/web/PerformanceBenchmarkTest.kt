@@ -5,7 +5,6 @@ import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.mockk.mockk
 import java.nio.file.Path
@@ -180,16 +179,13 @@ class PerformanceBenchmarkTest : WebTest() {
 
     @BeforeEach
     fun setupBenchmark() {
-        val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
-
         app =
             buildApp(
-                securityService = securityService,
                 overrides =
                     TestOverrides(
                         messageCache = CaffeineMessageCache(),
                         contactService = mockk<ContactService>(relaxed = true),
-                    ),
+                    )
             )
 
         val registerLens = Body.auto<RegisterRequest>().toLens()
@@ -306,15 +302,14 @@ class PerformanceBenchmarkTest : WebTest() {
     }
 
     /**
-     * BCrypt login latency at production strength (logRounds=10). Intentionally uses a separate SecurityService
-     * instance so it doesn't affect the main app or other benchmarks.
+     * BCrypt login latency at production strength (logRounds=10). Intentionally uses a separate AuthService instance so
+     * it doesn't affect the main app or other benchmarks.
      *
      * Runs fewer iterations because each call takes ~100 ms.
      */
     @Test
     fun `POST login latency (BCrypt logRounds=10)`() {
         val prodEncoder = BCryptPasswordEncoder(logRounds = 10)
-        val prodSecurityService = SecurityService(userRepository, prodEncoder, sessionRepository = sessionRepository)
 
         userRepository.save(
             io.github.rygel.outerstellar.platform.model.User(
@@ -329,12 +324,11 @@ class PerformanceBenchmarkTest : WebTest() {
         val loginLens = Body.auto<LoginRequest>().toLens()
         val prodApp =
             buildApp(
-                securityService = prodSecurityService,
                 overrides =
                     TestOverrides(
                         messageCache = CaffeineMessageCache(),
                         contactService = mockk<ContactService>(relaxed = true),
-                    ),
+                    )
             )
 
         val req = Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))

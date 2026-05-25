@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform.security
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
-import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.RegistrationDisabledException
 import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
 import io.github.rygel.outerstellar.platform.model.User
@@ -36,18 +35,26 @@ class AuthService(
             userRepository.findByUsername(username)
                 ?: run {
                     logger.warn("Authentication failed: User ${sanitize(username)} not found")
-                    audit("AUTHENTICATION_FAILED", detail = "User not found", targetUsername = sanitize(username))
+                    auditRepository?.logAction(
+                        "AUTHENTICATION_FAILED",
+                        detail = "User not found",
+                        targetUsername = sanitize(username),
+                    )
                     return null
                 }
         if (!user.enabled) {
             logger.warn("Authentication failed: User ${sanitize(username)} is disabled")
-            audit("AUTHENTICATION_FAILED", actor = user, detail = "Account disabled")
+            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Account disabled")
             return null
         }
         val lockedUntil = user.lockedUntil
         if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
             logger.warn("Authentication failed: User ${sanitize(username)} is locked until $lockedUntil")
-            audit("AUTHENTICATION_FAILED", actor = user, detail = "Account locked until $lockedUntil")
+            auditRepository?.logAction(
+                "AUTHENTICATION_FAILED",
+                actor = user,
+                detail = "Account locked until $lockedUntil",
+            )
             return null
         }
         if (passwordEncoder.matches(password, user.passwordHash)) {
@@ -62,7 +69,7 @@ class AuthService(
         }
         val attempts = userRepository.incrementFailedLoginAttempts(user.id)
         logger.warn("Authentication failed: Invalid password for user ${sanitize(username)} (attempt $attempts)")
-        audit("AUTHENTICATION_FAILED", actor = user, detail = "Invalid password")
+        auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid password")
         if (attempts >= config.maxFailedLoginAttempts) {
             val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
             userRepository.updateLockedUntil(user.id, until)
@@ -90,7 +97,7 @@ class AuthService(
             )
         userRepository.save(created)
         logger.info("Registration successful for user {}", sanitize(username))
-        audit("USER_REGISTERED", actor = created)
+        auditRepository?.logAction("USER_REGISTERED", actor = created)
         return created
     }
 
@@ -140,30 +147,5 @@ class AuthService(
         val token = "pt_" + bytes.joinToString("") { "%02x".format(it) }
         partialAuthStore.put(token, PartialAuth(userId = userId))
         return token
-    }
-
-    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
-
-    private fun audit(
-        action: String,
-        actor: User? = null,
-        target: User? = null,
-        detail: String? = null,
-        targetUsername: String? = null,
-    ) {
-        auditRepository?.log(
-            AuditEntry(
-                actorId = actor?.id?.toString(),
-                actorUsername = actor?.username,
-                targetId = target?.id?.toString(),
-                targetUsername = targetUsername ?: target?.username,
-                action = action,
-                detail = detail,
-            )
-        )
-    }
-
-    companion object {
-        private const val MAX_LOG_ID_LENGTH = 80
     }
 }

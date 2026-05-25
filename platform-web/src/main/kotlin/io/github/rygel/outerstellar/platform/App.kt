@@ -8,12 +8,14 @@ import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.AccountService
 import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.AppleOAuthProvider
 import io.github.rygel.outerstellar.platform.security.AuthRealm
 import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.AuthService
+import io.github.rygel.outerstellar.platform.security.OAuthService
+import io.github.rygel.outerstellar.platform.security.PasswordResetService
 import io.github.rygel.outerstellar.platform.security.SecurityRules
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionRealm
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
@@ -95,7 +97,13 @@ private class OptionalServices(
     val pollService: io.github.rygel.outerstellar.platform.service.PollService?,
 )
 
-private class AuthServices(val security: SecurityService, val auth: AuthService, val account: AccountService)
+private class AuthServices(
+    val apiKeyService: ApiKeyService,
+    val passwordResetService: PasswordResetService,
+    val oauthService: OAuthService,
+    val auth: AuthService,
+    val account: AccountService,
+)
 
 private class AppContext(
     val config: AppConfig,
@@ -109,8 +117,14 @@ private class AppContext(
     val services: OptionalServices,
     val totpService: TOTPService? = null,
 ) {
-    val securityService
-        get() = authServices.security
+    val apiKeyService
+        get() = authServices.apiKeyService
+
+    val passwordResetService
+        get() = authServices.passwordResetService
+
+    val oauthService
+        get() = authServices.oauthService
 
     val authService
         get() = authServices.auth
@@ -158,7 +172,16 @@ private class AppContext(
         get() = plugin?.excludeDefaultRoutes ?: emptySet()
 
     fun pluginContext(): PluginContext =
-        PluginContext(jteRenderer, config, securityService, userRepository, analytics, notificationService, pageFactory)
+        PluginContext(
+            jteRenderer,
+            config,
+            apiKeyService,
+            oauthService,
+            userRepository,
+            analytics,
+            notificationService,
+            pageFactory,
+        )
 }
 
 @Suppress("LongParameterList", "DEPRECATION")
@@ -170,7 +193,9 @@ fun app(
     jteRenderer: TemplateRenderer,
     pageFactory: WebPageFactory,
     config: AppConfig,
-    securityService: SecurityService,
+    apiKeyService: ApiKeyService,
+    passwordResetService: PasswordResetService,
+    oauthService: OAuthService,
     authService: AuthService,
     accountService: AccountService,
     userAdminService: UserAdminService,
@@ -192,7 +217,7 @@ fun app(
     val ctx =
         AppContext(
             config = config,
-            authServices = AuthServices(securityService, authService, accountService),
+            authServices = AuthServices(apiKeyService, passwordResetService, oauthService, authService, accountService),
             userAdminService = userAdminService,
             sessionService = sessionService,
             userRepository = userRepository,
@@ -221,7 +246,7 @@ fun app(
 }
 
 private fun assembleHttpHandler(ctx: AppContext): HttpHandler {
-    val realms: List<AuthRealm> = listOf(SessionRealm(ctx.sessionService), ApiKeyRealm(ctx.securityService))
+    val realms: List<AuthRealm> = listOf(SessionRealm(ctx.sessionService), ApiKeyRealm(ctx.apiKeyService))
     val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(realms)
     val apiRoutes = buildApiRoutes(ctx, bearerSecurity, bearerAdminSecurity)
     val uiRoutes = buildUiRoutes(ctx)
@@ -276,7 +301,8 @@ private fun buildApiRoutes(
     bearerSecurity: org.http4k.security.Security,
     bearerAdminSecurity: org.http4k.security.Security,
 ): List<org.http4k.routing.RoutingHttpHandler> {
-    val securityService = ctx.securityService
+    val apiKeyService = ctx.apiKeyService
+    val passwordResetService = ctx.passwordResetService
     val userAdminService = ctx.userAdminService
     val messageService = ctx.messageService
     val contactService = ctx.contactService
@@ -291,7 +317,16 @@ private fun buildApiRoutes(
     val apiRoutes = contract {
         renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
-        routes += AuthApi(securityService, ctx.authService, ctx.accountService, ctx.sessionService, ctx.config).routes
+        routes +=
+            AuthApi(
+                    apiKeyService,
+                    passwordResetService,
+                    ctx.authService,
+                    ctx.accountService,
+                    ctx.sessionService,
+                    ctx.config,
+                )
+                .routes
         if (voteService != null) {
             routes += VoteApi(voteService).routes
         }
@@ -308,7 +343,15 @@ private fun buildApiRoutes(
             routes += SyncApi(messageService, contactService, analytics).routes
         }
         routes +=
-            AuthApi(securityService, ctx.authService, ctx.accountService, ctx.sessionService, ctx.config).bearerRoutes
+            AuthApi(
+                    apiKeyService,
+                    passwordResetService,
+                    ctx.authService,
+                    ctx.accountService,
+                    ctx.sessionService,
+                    ctx.config,
+                )
+                .bearerRoutes
         if (deviceTokenRepository != null) {
             routes += DeviceRegistrationApi(deviceTokenRepository).routes
         }
@@ -342,7 +385,9 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
     val notificationService = ctx.notificationService
     val plugin = ctx.plugin
     val excludedRoutes = ctx.excludedRoutes
-    val securityService = ctx.securityService
+    val apiKeyService = ctx.apiKeyService
+    val passwordResetService = ctx.passwordResetService
+    val oauthService = ctx.oauthService
     val sessionCookieSecure = ctx.config.sessionCookieSecure
     val analytics = ctx.analytics
     val pageFactory = ctx.pageFactory
@@ -362,7 +407,8 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
             AuthRoutes(
                     pageFactory,
                     jteRenderer,
-                    securityService,
+                    apiKeyService,
+                    passwordResetService,
                     ctx.authService,
                     ctx.accountService,
                     ctx.sessionService,
@@ -385,7 +431,7 @@ private fun buildUiRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHandle
         routes +=
             OAuthRoutes(
                     providers = oauthProviders,
-                    securityService = securityService,
+                    oauthService = oauthService,
                     sessionService = ctx.sessionService,
                     sessionCookieSecure = sessionCookieSecure,
                     appBaseUrl = ctx.config.appBaseUrl,
@@ -439,7 +485,6 @@ private fun buildAdminRoutes(ctx: AppContext): org.http4k.routing.RoutingHttpHan
     val pageFactory = ctx.pageFactory
     val jteRenderer = ctx.jteRenderer
     val devDashboardEnabled = ctx.config.devDashboardEnabled
-    val securityService = ctx.securityService
     val userAdminService = ctx.userAdminService
     val appLabel = ctx.appLabel
     val adminSecurity =
@@ -639,7 +684,6 @@ private fun buildHealthResponse(userRepository: UserRepository): Response {
 private fun buildFilterChain(ctx: AppContext): Filter {
     val config = ctx.config
     val userRepository = ctx.userRepository
-    val securityService = ctx.securityService
     val jwtService = ctx.jwtService
     val plugin = ctx.plugin
     val pageFactory = ctx.pageFactory

@@ -41,8 +41,6 @@ class ConcurrentSyncIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService = createSecurityService()
-
         userA =
             User(
                 id = UUID.randomUUID(),
@@ -64,7 +62,7 @@ class ConcurrentSyncIntegrationTest : WebTest() {
         tokenA = sessionSvc.createSession(userA.id)
         tokenB = sessionSvc.createSession(userB.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun pushBatch(token: String, syncIds: List<String>, author: String): List<org.http4k.core.Response> {

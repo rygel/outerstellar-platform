@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -32,7 +31,6 @@ class DevDashboardAccessIntegrationTest : WebTest() {
     private lateinit var appWithDashboardDisabled: HttpHandler
     private lateinit var adminUser: User
     private lateinit var regularUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var adminToken: String
     private lateinit var userToken: String
 
@@ -57,14 +55,12 @@ class DevDashboardAccessIntegrationTest : WebTest() {
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService = createSecurityService()
         adminToken = sessionSvc.createSession(adminUser.id)
         userToken = sessionSvc.createSession(regularUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
 
-        appWithDashboardDisabled =
-            buildApp(securityService = securityService, config = testConfig.copy(devDashboardEnabled = false))
+        appWithDashboardDisabled = buildApp(config = testConfig.copy(devDashboardEnabled = false))
     }
 
     private fun adminSession() = Cookie(RequestContext.SESSION_COOKIE, adminToken)

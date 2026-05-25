@@ -6,7 +6,6 @@ import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach
 class UserManagementWebUiIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var securityService: SecurityService
 
     private val loginLens = Body.auto<LoginRequest>().toLens()
     private val registerLens = Body.auto<RegisterRequest>().toLens()
@@ -41,9 +39,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        securityService = createSecurityService()
-
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private data class RegisteredUser(val id: UUID, val token: String, val sessionToken: String)

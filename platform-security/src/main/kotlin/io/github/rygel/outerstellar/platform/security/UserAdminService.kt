@@ -38,7 +38,7 @@ class UserAdminService(
         userRepository.updateEnabled(targetId, enabled)
         logger.info("User {} enabled set to {} by admin {}", sanitize(target.username), enabled, adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
-        audit(action, actor = admin, target = target)
+        auditRepository?.logAction(action, actor = admin, target = target)
     }
 
     fun unlockAccount(adminId: UUID, targetId: UUID) {
@@ -49,7 +49,7 @@ class UserAdminService(
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.resetFailedLoginAttempts(targetId)
         logger.info("User {} unlocked by admin {}", sanitize(target.username), sanitize(admin.username))
-        audit("USER_UNLOCKED", actor = admin, target = target)
+        auditRepository?.logAction("USER_UNLOCKED", actor = admin, target = target)
     }
 
     fun setUserRole(adminId: UUID, targetId: UUID, role: UserRole) {
@@ -63,7 +63,12 @@ class UserAdminService(
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateRole(targetId, role)
         logger.info("User {} role set to {} by admin {}", sanitize(target.username), role, adminId)
-        audit("USER_ROLE_CHANGED", actor = admin, target = target, detail = "from ${target.role} to $role")
+        auditRepository?.logAction(
+            "USER_ROLE_CHANGED",
+            actor = admin,
+            target = target,
+            detail = "from ${target.role} to $role",
+        )
     }
 
     fun countAuditEntries(): Long = auditRepository?.countAll() ?: 0L
@@ -71,27 +76,6 @@ class UserAdminService(
     fun getAuditLog(limit: Int = 50): List<AuditEntry> = auditRepository?.findRecent(limit) ?: emptyList()
 
     fun getAuditLog(limit: Int, offset: Int): List<AuditEntry> = auditRepository?.findPage(limit, offset) ?: emptyList()
-
-    private fun audit(
-        action: String,
-        actor: User? = null,
-        target: User? = null,
-        detail: String? = null,
-        targetUsername: String? = null,
-    ) {
-        auditRepository?.log(
-            AuditEntry(
-                actorId = actor?.id?.toString(),
-                actorUsername = actor?.username,
-                targetId = target?.id?.toString(),
-                targetUsername = targetUsername ?: target?.username,
-                action = action,
-                detail = detail,
-            )
-        )
-    }
-
-    private fun sanitize(value: String): String = value.take(MAX_LOG_ID_LENGTH).replace('\n', ' ').replace('\r', ' ')
 
     private fun User.toSummary() =
         UserSummary(
@@ -106,6 +90,5 @@ class UserAdminService(
 
     companion object {
         private const val MAX_PAGE_LIMIT = 1000
-        private const val MAX_LOG_ID_LENGTH = 80
     }
 }

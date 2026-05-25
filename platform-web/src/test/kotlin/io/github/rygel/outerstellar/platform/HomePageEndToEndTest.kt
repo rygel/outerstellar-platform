@@ -22,7 +22,6 @@ class HomePageEndToEndTest : WebTest() {
 
     @BeforeEach
     fun setupUser() {
-        val sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),

@@ -7,9 +7,10 @@ import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.security.AccountService
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.AuthService
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.PasswordResetService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -28,7 +29,8 @@ import org.slf4j.LoggerFactory
 class AuthRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
-    private val securityService: SecurityService,
+    private val apiKeyService: ApiKeyService,
+    private val passwordResetService: PasswordResetService,
     private val authService: AuthService,
     private val accountService: AccountService,
     private val sessionService: SessionService,
@@ -154,7 +156,7 @@ class AuthRoutes(
                         val ctx = request.requestContext
                         val shellRenderer = request.shellRenderer
                         if (email.isNotBlank()) {
-                            securityService.requestPasswordReset(email)
+                            passwordResetService.requestPasswordReset(email)
                         }
                         renderer.render(
                             AuthResultFragment(
@@ -262,7 +264,7 @@ class AuthRoutes(
                         )
                     } else {
                         try {
-                            securityService.resetPassword(token, newPassword)
+                            passwordResetService.resetPassword(token, newPassword)
                             renderer.render(
                                 AuthResultFragment(
                                     title = shellRenderer.i18n.translate("web.reset.success.title"),
@@ -442,7 +444,7 @@ class AuthRoutes(
                         if (name.isBlank()) {
                             renderer.render(pageFactory.buildApiKeysPage(ctx, shellRenderer))
                         } else {
-                            val result = securityService.createApiKey(user.id, name)
+                            val result = apiKeyService.createApiKey(user.id, name)
                             renderer.render(
                                 pageFactory.buildApiKeysPage(
                                     ctx,
@@ -467,7 +469,7 @@ class AuthRoutes(
                         if (user == null) {
                             Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
                         } else {
-                            securityService.deleteApiKey(user.id, id)
+                            apiKeyService.deleteApiKey(user.id, id)
                             Response(Status.FOUND).header("location", shellRenderer.url("/auth/api-keys"))
                         }
                     }

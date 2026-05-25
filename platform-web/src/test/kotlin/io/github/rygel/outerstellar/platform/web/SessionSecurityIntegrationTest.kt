@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -46,12 +45,10 @@ class SessionSecurityIntegrationTest : WebTest() {
     private lateinit var regularUser: User
     private lateinit var adminUser: User
     private lateinit var disabledUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var sessionTokens: MutableMap<UUID, String>
 
     @BeforeEach
     fun setupTest() {
-        securityService = createSecurityService()
         sessionTokens = mutableMapOf()
 
         regularUser =
@@ -88,7 +85,7 @@ class SessionSecurityIntegrationTest : WebTest() {
         sessionTokens[disabledUser.id] = sessionSvc.createSession(disabledUser.id)
         userRepository.updateEnabled(disabledUser.id, false)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun sessionFor(user: User): Cookie {

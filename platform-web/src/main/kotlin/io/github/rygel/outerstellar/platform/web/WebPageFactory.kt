@@ -26,7 +26,7 @@ open class WebPageFactory(
     private val repository: MessageRepository? = null,
     private val messageService: MessageService? = null,
     private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? = null,
-    private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
+    private val apiKeyService: io.github.rygel.outerstellar.platform.security.ApiKeyService? = null,
     private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
     private val appleOAuthEnabled: Boolean = false,
     private val userAdminService: io.github.rygel.outerstellar.platform.security.UserAdminService? = null,
@@ -131,7 +131,7 @@ open class WebPageFactory(
     ): Page<DevDashboardPage> =
         devDashboardPageFactory.buildDevDashboardPage(shellRenderer, metrics, cacheStats, outboxStats, telemetryStatus)
 
-    private val adminPageFactory by lazy { AdminPageFactory(securityService, notificationService, userAdminService) }
+    private val adminPageFactory by lazy { AdminPageFactory(apiKeyService, notificationService, userAdminService) }
     private val authPageFactory by lazy { AuthPageFactory(appleOAuthEnabled) }
     private val errorPageFactory by lazy { ErrorPageFactory() }
     private val sidebarFactory by lazy { SidebarFactory() }

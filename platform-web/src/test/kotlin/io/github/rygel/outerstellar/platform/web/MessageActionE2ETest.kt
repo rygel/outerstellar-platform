@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.mockk.mockk
 import java.util.UUID
@@ -21,11 +20,9 @@ import org.junit.jupiter.api.BeforeEach
 
 class MessageActionE2ETest : WebTest() {
     private lateinit var sessionCookie: Cookie
-    private lateinit var sec: SecurityService
 
     @BeforeEach
     fun setupUser() {
-        sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),
@@ -39,10 +36,7 @@ class MessageActionE2ETest : WebTest() {
     }
 
     private fun buildTestApp() =
-        buildApp(
-            securityService = sec,
-            overrides = TestOverrides(contactService = mockk<ContactService>(relaxed = true)),
-        )
+        buildApp(overrides = TestOverrides(contactService = mockk<ContactService>(relaxed = true)))
 
     @Test
     fun `can create a message via form`() {

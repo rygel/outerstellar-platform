@@ -6,8 +6,10 @@ import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.AccountService
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.AuthService
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.OAuthService
+import io.github.rygel.outerstellar.platform.security.PasswordResetService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.MessageService
@@ -33,7 +35,9 @@ class PlatformAppTest {
         val pageFactory = WebPageFactory(repository, messageService, null, null)
         val config = AppConfig(port = 8080, jdbcUrl = "jdbc:postgresql://localhost/test", devDashboardEnabled = true)
 
-        val securityService = mockk<SecurityService>(relaxed = true)
+        val apiKeyService = mockk<ApiKeyService>(relaxed = true)
+        val passwordResetService = mockk<PasswordResetService>(relaxed = true)
+        val oauthService = mockk<OAuthService>(relaxed = true)
         val authService = mockk<AuthService>(relaxed = true)
         val accountService = mockk<AccountService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
@@ -52,7 +56,9 @@ class PlatformAppTest {
                 createRenderer(),
                 pageFactory,
                 config,
-                securityService,
+                apiKeyService,
+                passwordResetService,
+                oauthService,
                 authService,
                 accountService,
                 userAdminService,

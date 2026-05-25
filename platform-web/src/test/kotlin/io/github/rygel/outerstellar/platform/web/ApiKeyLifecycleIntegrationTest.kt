@@ -5,7 +5,6 @@ import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.BeforeEach
 class ApiKeyLifecycleIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var securityService: SecurityService
     private lateinit var testUser: User
     private lateinit var testUserPassword: String
     private lateinit var otherUser: User
@@ -49,14 +47,6 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        securityService =
-            SecurityService(
-                userRepository = userRepository,
-                passwordEncoder = encoder,
-                apiKeyRepository = apiKeyRepository,
-                sessionRepository = sessionRepository,
-            )
-
         testUserPassword = testPassword()
         testUser =
             User(
@@ -79,7 +69,7 @@ class ApiKeyLifecycleIntegrationTest : WebTest() {
         testToken = sessionSvc.createSession(testUser.id)
         otherToken = sessionSvc.createSession(otherUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun bearerFor(user: User) = if (user == testUser) "Bearer $testToken" else "Bearer $otherToken"

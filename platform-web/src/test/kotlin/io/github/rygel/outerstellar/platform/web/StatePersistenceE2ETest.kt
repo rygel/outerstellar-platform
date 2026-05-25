@@ -20,7 +20,6 @@ class StatePersistenceE2ETest : WebTest() {
 
     @BeforeEach
     fun setupUser() {
-        val sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),

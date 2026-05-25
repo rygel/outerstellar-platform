@@ -3,7 +3,7 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.OAuthService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,33 +34,30 @@ import org.junit.jupiter.api.BeforeEach
  * - POST /auth/oauth/apple/callback (Apple form_post) follows the same state checks
  * - GET /auth/oauth/apple/not-configured returns 503 with HTML body
  * - Sign-in page includes "Sign in with Apple" button
- * - SecurityService.findOrCreateOAuthUser creates user + OAuthConnection on first call
- * - SecurityService.findOrCreateOAuthUser returns same user on repeated call with same identity
+ * - OAuthService.findOrCreateOAuthUser creates user + OAuthConnection on first call
+ * - OAuthService.findOrCreateOAuthUser returns same user on repeated call with same identity
  * - ensureUniqueUsername generates numeric suffix when base username is taken
  */
 class OAuthIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var localOAuthRepository: InMemoryOAuthRepository
-    private lateinit var securityService: SecurityService
-    private lateinit var authService: AuthService
+    private lateinit var testOAuthService: OAuthService
+    private lateinit var localAuthService: AuthService
 
     @BeforeEach
     fun setupTest() {
         localOAuthRepository = InMemoryOAuthRepository()
-        securityService =
-            SecurityService(
+        testOAuthService =
+            OAuthService(
                 userRepository = userRepository,
                 passwordEncoder = encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
                 oauthRepository = localOAuthRepository,
+                auditRepository = auditRepository,
             )
-        authService = AuthService(userRepository, encoder, auditRepository)
+        localAuthService = AuthService(userRepository, encoder, auditRepository)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     @AfterEach
@@ -274,11 +271,11 @@ class OAuthIntegrationTest : WebTest() {
         )
     }
 
-    // ---- SecurityService.findOrCreateOAuthUser (unit-style, via real DB) ----
+    // ---- OAuthService.findOrCreateOAuthUser (unit-style, via real DB) ----
 
     @Test
     fun `findOrCreateOAuthUser creates a new user on first call`() {
-        val user = securityService.findOrCreateOAuthUser("apple", "apple.sub.001", "newuser@example.com")
+        val user = testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.001", "newuser@example.com")
 
         assertNotNull(user)
         assertEquals("newuser", user.username)
@@ -287,7 +284,7 @@ class OAuthIntegrationTest : WebTest() {
 
     @Test
     fun `findOrCreateOAuthUser creates an OAuthConnection record on first call`() {
-        securityService.findOrCreateOAuthUser("apple", "apple.sub.002", "linked@example.com")
+        testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.002", "linked@example.com")
 
         val connections = localOAuthRepository.findByProviderSubject("apple", "apple.sub.002")
         assertNotNull(connections, "OAuthConnection should be saved for the new user")
@@ -296,8 +293,8 @@ class OAuthIntegrationTest : WebTest() {
 
     @Test
     fun `findOrCreateOAuthUser returns same user on repeated call with identical identity`() {
-        val first = securityService.findOrCreateOAuthUser("apple", "apple.sub.003", "same@example.com")
-        val second = securityService.findOrCreateOAuthUser("apple", "apple.sub.003", "same@example.com")
+        val first = testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.003", "same@example.com")
+        val second = testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.003", "same@example.com")
 
         assertEquals(first.id, second.id, "Repeated OAuth login must return the same user")
         assertEquals(first.username, second.username)
@@ -305,8 +302,8 @@ class OAuthIntegrationTest : WebTest() {
 
     @Test
     fun `findOrCreateOAuthUser returns different users for different subjects`() {
-        val user1 = securityService.findOrCreateOAuthUser("apple", "apple.sub.A", "a@example.com")
-        val user2 = securityService.findOrCreateOAuthUser("apple", "apple.sub.B", "b@example.com")
+        val user1 = testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.A", "a@example.com")
+        val user2 = testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.B", "b@example.com")
 
         assertTrue(user1.id != user2.id, "Different OAuth subjects must produce different users")
     }
@@ -314,18 +311,16 @@ class OAuthIntegrationTest : WebTest() {
     @Test
     fun `findOrCreateOAuthUser generates unique username when base is already taken`() {
         // Create a user whose username will collide with the derived OAuth username
-        authService.register("alice", testPassword())
+        localAuthService.register("alice", testPassword())
 
-        // Now sign in with Apple as alice@example.com → username 'alice' is taken → should be
-        // alice2
-        val oauthUser = securityService.findOrCreateOAuthUser("apple", "apple.sub.alice", "alice@example.com")
+        val oauthUser = testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.alice", "alice@example.com")
 
         assertEquals("alice2", oauthUser.username, "Username should get numeric suffix when taken")
     }
 
     @Test
     fun `findOrCreateOAuthUser uses provider prefix when email is null`() {
-        val user = securityService.findOrCreateOAuthUser("apple", "apple.sub.noemail", null)
+        val user = testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.noemail", null)
 
         assertNotNull(user)
         assertTrue(
@@ -337,7 +332,7 @@ class OAuthIntegrationTest : WebTest() {
     @Test
     fun `findOrCreateOAuthUser throws when oauthRepository is not configured`() {
         val serviceWithoutOAuth =
-            SecurityService(
+            OAuthService(
                 userRepository = userRepository,
                 passwordEncoder = BCryptPasswordEncoder(logRounds = 4),
                 oauthRepository = null,

@@ -53,11 +53,11 @@ class SessionRealm(private val sessionService: SessionService) : AuthRealm {
 }
 
 /** Authenticates API key tokens (prefixed `osk_`) via the [ApiKeyRepository]. */
-class ApiKeyRealm(private val securityService: SecurityService) : AuthRealm {
+class ApiKeyRealm(private val apiKeyService: ApiKeyService) : AuthRealm {
     override val name = "api-key"
 
     override fun authenticate(token: String): AuthResult {
-        val user = securityService.authenticateApiKey(token)
+        val user = apiKeyService.authenticateApiKey(token)
         return if (user != null) AuthResult.Authenticated(user) else AuthResult.Skipped
     }
 }

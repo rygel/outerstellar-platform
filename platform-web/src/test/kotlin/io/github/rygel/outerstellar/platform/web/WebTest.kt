@@ -18,10 +18,12 @@ import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.AccountService
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
+import io.github.rygel.outerstellar.platform.security.OAuthService
+import io.github.rygel.outerstellar.platform.security.PasswordResetService
 import io.github.rygel.outerstellar.platform.security.SecurityConfig
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.ContactService
@@ -90,15 +92,11 @@ abstract class WebTest {
     val userAdminService by lazy { UserAdminService(userRepository, auditRepository) }
     val sessionSvc by lazy { SessionService(sessionRepository, userRepository, SecurityConfig()) }
 
-    fun createSecurityService(userRepository: UserRepository = this.userRepository): SecurityService =
-        SecurityService(
-            userRepository,
-            encoder,
-            sessionRepository = sessionRepository,
-            apiKeyRepository = apiKeyRepository,
-            resetRepository = passwordResetRepository,
-            auditRepository = auditRepository,
-        )
+    val apiKeyService by lazy { ApiKeyService(userRepository, apiKeyRepository, auditRepository) }
+    val passwordResetService by lazy {
+        PasswordResetService(userRepository, encoder, passwordResetRepository, auditRepository, sessionRepository)
+    }
+    val oauthService by lazy { OAuthService(userRepository, encoder, oauthRepository, auditRepository) }
 
     fun withAuthenticatedUser(
         username: String = "testuser_" + UUID.randomUUID().toString().take(8),
@@ -121,7 +119,6 @@ abstract class WebTest {
 
     fun buildApp(
         config: AppConfig = testConfig,
-        securityService: SecurityService = createSecurityService(),
         overrides: TestOverrides = TestOverrides(),
         plugin: PlatformPlugin? = null,
     ): HttpHandler {
@@ -138,7 +135,7 @@ abstract class WebTest {
                 messageRepository,
                 messageService,
                 resolvedContactService,
-                securityService,
+                apiKeyService,
                 appleOAuthEnabled = true,
             )
 
@@ -153,7 +150,9 @@ abstract class WebTest {
                 renderer,
                 pageFactory,
                 config,
-                securityService,
+                apiKeyService,
+                passwordResetService,
+                oauthService,
                 authService,
                 accountService,
                 userAdminService,

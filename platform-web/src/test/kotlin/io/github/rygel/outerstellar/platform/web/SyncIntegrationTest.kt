@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.mockk.mockk
@@ -19,8 +18,6 @@ import org.http4k.hamkrest.hasStatus
 class SyncIntegrationTest : WebTest() {
     @Test
     fun `can pull changes from api`() {
-        val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
-
         val adminId = UUID.randomUUID()
         userRepository.save(
             User(
@@ -33,11 +30,7 @@ class SyncIntegrationTest : WebTest() {
         )
         val adminToken = sessionSvc.createSession(adminId)
 
-        val app =
-            buildApp(
-                securityService = securityService,
-                overrides = TestOverrides(contactService = mockk<ContactService>(relaxed = true)),
-            )
+        val app = buildApp(overrides = TestOverrides(contactService = mockk<ContactService>(relaxed = true)))
 
         messageRepository.createServerMessage("Alice", "Hello")
         messageRepository.createServerMessage("Bob", "Hi")
