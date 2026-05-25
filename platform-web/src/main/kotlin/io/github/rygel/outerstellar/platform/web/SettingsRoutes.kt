@@ -5,8 +5,6 @@ import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
 import org.http4k.core.Method.GET
-import org.http4k.core.Response
-import org.http4k.core.Status
 import org.http4k.template.TemplateRenderer
 
 class SettingsRoutes(private val pageFactory: WebPageFactory, private val renderer: TemplateRenderer) : ServerRoutes {
@@ -21,16 +19,12 @@ class SettingsRoutes(private val pageFactory: WebPageFactory, private val render
                 { request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    if (ctx.user == null) {
-                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
+                    val tab = request.query("tab") ?: "profile"
+                    val isHtmx = request.header("HX-Request") == "true"
+                    if (isHtmx) {
+                        renderer.render(pageFactory.buildSettingsFragment(ctx, shellRenderer, tab))
                     } else {
-                        val tab = request.query("tab") ?: "profile"
-                        val isHtmx = request.header("HX-Request") == "true"
-                        if (isHtmx) {
-                            renderer.render(pageFactory.buildSettingsFragment(ctx, shellRenderer, tab))
-                        } else {
-                            renderer.render(pageFactory.buildSettingsPage(shellRenderer, tab))
-                        }
+                        renderer.render(pageFactory.buildSettingsPage(shellRenderer, tab))
                     }
                 }
         )

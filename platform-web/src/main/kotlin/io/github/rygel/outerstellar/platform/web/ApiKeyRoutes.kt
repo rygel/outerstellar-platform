@@ -32,11 +32,7 @@ class ApiKeyRoutes(
                 { request: org.http4k.core.Request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    if (ctx.user == null) {
-                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                    } else {
-                        renderer.render(pageFactory.buildApiKeysPage(ctx, shellRenderer))
-                    }
+                    renderer.render(pageFactory.buildApiKeysPage(ctx, shellRenderer))
                 },
             "/auth/api-keys/create" meta
                 {
@@ -46,24 +42,20 @@ class ApiKeyRoutes(
                 { request: org.http4k.core.Request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    val user = ctx.user
-                    if (user == null) {
-                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
+                    val user = ctx.user!!
+                    val name = request.form("name").orEmpty()
+                    if (name.isBlank()) {
+                        renderer.render(pageFactory.buildApiKeysPage(ctx, shellRenderer))
                     } else {
-                        val name = request.form("name").orEmpty()
-                        if (name.isBlank()) {
-                            renderer.render(pageFactory.buildApiKeysPage(ctx, shellRenderer))
-                        } else {
-                            val result = apiKeyService.createApiKey(user.id, name)
-                            renderer.render(
-                                pageFactory.buildApiKeysPage(
-                                    ctx,
-                                    shellRenderer,
-                                    newKey = result.key,
-                                    newKeyName = result.name,
-                                )
+                        val result = apiKeyService.createApiKey(user.id, name)
+                        renderer.render(
+                            pageFactory.buildApiKeysPage(
+                                ctx,
+                                shellRenderer,
+                                newKey = result.key,
+                                newKeyName = result.name,
                             )
-                        }
+                        )
                     }
                 },
             "/auth/api-keys" / apiKeyIdPath / "delete" meta
@@ -73,15 +65,10 @@ class ApiKeyRoutes(
                 POST to
                 { id, _ ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.requestContext
                         val shellRenderer = request.shellRenderer
-                        val user = ctx.user
-                        if (user == null) {
-                            Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                        } else {
-                            apiKeyService.deleteApiKey(user.id, id)
-                            Response(Status.FOUND).header("location", shellRenderer.url("/auth/api-keys"))
-                        }
+                        val user = request.requestContext.user!!
+                        apiKeyService.deleteApiKey(user.id, id)
+                        Response(Status.FOUND).header("location", shellRenderer.url("/auth/api-keys"))
                     }
                 },
         )

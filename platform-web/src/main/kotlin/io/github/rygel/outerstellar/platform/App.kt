@@ -98,11 +98,11 @@ private fun assembleHttpHandler(
     val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(realms)
     val apiRoutes =
         buildApiRoutes(config, persistence, security, core, web, plugin, bearerSecurity, bearerAdminSecurity)
-    val uiRoutes = buildUiRoutes(config, persistence, security, core, web, plugin)
+    val uiRouteSet = buildUiRoutes(config, persistence, security, core, web, plugin)
+    val componentRouteSet = buildComponentRoutes(web, plugin)
     val adminRoutes = buildAdminRoutes(config, persistence, security, web, plugin)
-    val componentRoutes = buildComponentRoutes(web, plugin)
     val baseApp =
-        buildBaseApp(config, persistence, security, web, plugin, adminRoutes, apiRoutes, uiRoutes, componentRoutes)
+        buildBaseApp(config, persistence, security, web, plugin, adminRoutes, apiRoutes, uiRouteSet, componentRouteSet)
     return buildFilterChain(config, persistence, security, web, plugin).then(baseApp)
 }
 
@@ -213,6 +213,10 @@ private fun buildApiRoutes(
     return listOf(bearerAdminApiContract, apiRoutes, syncContract)
 }
 
+private data class UiRouteSet(val publicRoutes: RoutingHttpHandler, val protectedRoutes: RoutingHttpHandler)
+
+private data class ComponentRouteSet(val publicRoutes: RoutingHttpHandler, val protectedRoutes: RoutingHttpHandler)
+
 @Suppress("LongMethod")
 private fun buildUiRoutes(
     config: AppConfig,
@@ -221,7 +225,7 @@ private fun buildUiRoutes(
     core: CoreComponents,
     web: WebComponents,
     plugin: PlatformPlugin?,
-): RoutingHttpHandler {
+): UiRouteSet {
     val sec = security
     val excludedRoutes = plugin?.excludeDefaultRoutes ?: emptySet()
     val sessionCookieSecure = config.sessionCookieSecure
@@ -229,16 +233,15 @@ private fun buildUiRoutes(
     val jteRenderer = web.templateRenderer
     val appLabel = plugin?.appLabel ?: "Outerstellar"
     val pluginCtx = plugin?.let { buildPluginContext(jteRenderer, config, persistence, security, web) }
+    val passwordRoutes = PasswordRoutes(pageFactory, jteRenderer, sec.accountService, sec.passwordResetService)
+    val homeRoutes = if ("/" !in excludedRoutes) HomeRoutes(core.messageService, pageFactory, jteRenderer) else null
+    val contactsRoutes =
+        if ("/contacts" !in excludedRoutes) ContactsRoutes(pageFactory, jteRenderer, core.contactService) else null
+    val notificationRoutes = NotificationRoutes(pageFactory, jteRenderer, web.notificationService)
 
-    return contract {
+    val publicContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel UI", "v1.0"), KotlinxSerialization)
         descriptionPath = "/ui/openapi.json"
-        if ("/" !in excludedRoutes) {
-            routes += HomeRoutes(core.messageService, pageFactory, jteRenderer).routes
-        }
-        if ("/contacts" !in excludedRoutes) {
-            routes += ContactsRoutes(pageFactory, jteRenderer, core.contactService).routes
-        }
         routes +=
             AuthRoutes(
                     pageFactory,
@@ -250,9 +253,7 @@ private fun buildUiRoutes(
                     config,
                 )
                 .routes
-        routes += PasswordRoutes(pageFactory, jteRenderer, sec.accountService, sec.passwordResetService).routes
-        routes += ProfileRoutes(pageFactory, jteRenderer, sec.accountService, sessionCookieSecure).routes
-        routes += ApiKeyRoutes(pageFactory, jteRenderer, sec.apiKeyService).routes
+        routes += passwordRoutes.publicRoutes
         val oauthProviders = mutableMapOf<String, io.github.rygel.outerstellar.platform.security.OAuthProvider>()
         val appleConfig = config.appleOAuth
         if (appleConfig.enabled && appleConfig.clientId.isNotBlank()) {
@@ -280,8 +281,26 @@ private fun buildUiRoutes(
                 io.github.rygel.outerstellar.platform.search.ContactSearchProvider(core.contactService),
             )
         routes += SearchRoutes(pageFactory, jteRenderer, searchProviders).routes
+        if (homeRoutes != null) {
+            routes += homeRoutes.publicRoutes
+        }
+        routes += notificationRoutes.publicRoutes
+    }
+
+    val protectedContract = contract {
+        renderer = OpenApi3(ApiInfo("$appLabel Protected UI", "v1.0"), KotlinxSerialization)
+        descriptionPath = "/ui-protected/openapi.json"
+        if (homeRoutes != null) {
+            routes += homeRoutes.protectedRoutes
+        }
+        if (contactsRoutes != null) {
+            routes += contactsRoutes.routes
+        }
+        routes += passwordRoutes.protectedRoutes
+        routes += ProfileRoutes(pageFactory, jteRenderer, sec.accountService, sessionCookieSecure).routes
+        routes += ApiKeyRoutes(pageFactory, jteRenderer, sec.apiKeyService).routes
         routes += SettingsRoutes(pageFactory, jteRenderer).routes
-        routes += NotificationRoutes(pageFactory, jteRenderer, web.notificationService).routes
+        routes += notificationRoutes.protectedRoutes
         if (plugin != null && pluginCtx != null) {
             routes += plugin.routes(pluginCtx)
         }
@@ -300,15 +319,24 @@ private fun buildUiRoutes(
                     )
             }
     }
+
+    return UiRouteSet(publicRoutes = publicContract, protectedRoutes = protectedContract)
 }
 
-private fun buildComponentRoutes(web: WebComponents, plugin: PlatformPlugin?): RoutingHttpHandler {
+private fun buildComponentRoutes(web: WebComponents, plugin: PlatformPlugin?): ComponentRouteSet {
     val appLabel = plugin?.appLabel ?: "Outerstellar"
-    return contract {
+    val componentRoutes = ComponentRoutes(web.pageFactory, web.templateRenderer, web.voteService, web.pollService)
+    val publicContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), KotlinxSerialization)
         descriptionPath = "/components/openapi.json"
-        routes += ComponentRoutes(web.pageFactory, web.templateRenderer, web.voteService, web.pollService).routes
+        routes += componentRoutes.publicRoutes
     }
+    val protectedContract = contract {
+        renderer = OpenApi3(ApiInfo("$appLabel Protected Components", "v1.0"), KotlinxSerialization)
+        descriptionPath = "/components-protected/openapi.json"
+        routes += componentRoutes.protectedRoutes
+    }
+    return ComponentRouteSet(publicRoutes = publicContract, protectedRoutes = protectedContract)
 }
 
 private fun buildAdminRoutes(
@@ -431,12 +459,14 @@ private fun buildBaseApp(
     plugin: PlatformPlugin?,
     adminContract: RoutingHttpHandler,
     apiRoutes: List<RoutingHttpHandler>,
-    uiRoutes: RoutingHttpHandler,
-    componentRoutes: RoutingHttpHandler,
+    uiRouteSet: UiRouteSet,
+    componentRouteSet: ComponentRouteSet,
 ): HttpHandler {
     val sec = security
     val userRepository = persistence.userRepository
     val excludedRoutes = plugin?.excludeDefaultRoutes ?: emptySet()
+
+    val authenticatedFilter = Filter { next -> SecurityRules.authenticated(next) }
 
     val filteredAdminHandler =
         Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }.then(adminContract)
@@ -454,7 +484,11 @@ private fun buildBaseApp(
             "/sitemap.xml" bind GET to { buildSitemapResponse(config.appBaseUrl) },
         )
 
-    val appRoutes = mutableListOf(uiRoutes, componentRoutes)
+    val appRoutes = mutableListOf<RoutingHttpHandler>()
+    appRoutes += uiRouteSet.publicRoutes
+    appRoutes += componentRouteSet.publicRoutes
+    appRoutes += authenticatedFilter.then(uiRouteSet.protectedRoutes)
+    appRoutes += authenticatedFilter.then(componentRouteSet.protectedRoutes)
     sec.totpService.let { totpService ->
         appRoutes +=
             TOTPRoutes(

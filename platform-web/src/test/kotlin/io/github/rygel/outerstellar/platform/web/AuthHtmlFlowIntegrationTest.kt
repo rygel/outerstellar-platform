@@ -312,7 +312,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `POST auth-components-change-password without session returns 401`() {
+    fun `POST auth-components-change-password without session redirects to auth`() {
         val response =
             app(
                 Request(POST, "/auth/components/change-password")
@@ -326,6 +326,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     )
             )
 
-        assertThat(response, hasStatus(Status.UNAUTHORIZED))
+        assertThat(response, hasStatus(Status.FOUND))
+        assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 }

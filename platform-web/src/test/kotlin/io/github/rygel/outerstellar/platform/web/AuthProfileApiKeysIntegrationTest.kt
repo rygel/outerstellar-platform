@@ -83,14 +83,15 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `POST profile-update without session returns 401`() {
+    fun `POST profile-update without session redirects to auth`() {
         val response =
             app(
                 Request(POST, "/auth/components/profile-update")
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("email" to "noauth@test.com"))
             )
-        assertThat(response, hasStatus(Status.UNAUTHORIZED))
+        assertThat(response, hasStatus(Status.FOUND))
+        assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
     @Test
@@ -168,14 +169,15 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `POST notification-preferences without session returns 401`() {
+    fun `POST notification-preferences without session redirects to auth`() {
         val response =
             app(
                 Request(POST, "/auth/notification-preferences")
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("emailNotifications" to "on"))
             )
-        assertThat(response, hasStatus(Status.UNAUTHORIZED))
+        assertThat(response, hasStatus(Status.FOUND))
+        assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
     // ---- Delete account ----
@@ -195,14 +197,15 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `POST account-delete without session returns 401`() {
+    fun `POST account-delete without session redirects to auth`() {
         val response =
             app(
                 Request(POST, "/auth/account/delete")
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(formBody("currentPassword" to "correct-password"))
             )
-        assertThat(response, hasStatus(Status.UNAUTHORIZED))
+        assertThat(response, hasStatus(Status.FOUND))
+        assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
     @Test

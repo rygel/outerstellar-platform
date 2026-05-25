@@ -10,8 +10,6 @@ import org.http4k.contract.div
 import org.http4k.contract.meta
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
-import org.http4k.core.Response
-import org.http4k.core.Status
 import org.http4k.core.body.form
 import org.http4k.lens.Path
 import org.http4k.lens.string
@@ -27,68 +25,8 @@ class PasswordRoutes(
     private val logger = LoggerFactory.getLogger(PasswordRoutes::class.java)
     private val tokenPath = Path.string().of("token")
 
-    override val routes: List<ContractRoute> =
+    val publicRoutes: List<ContractRoute> =
         listOf(
-            "/auth/change-password" meta
-                {
-                    summary = "Change password page"
-                } bindContract
-                GET to
-                { request: org.http4k.core.Request ->
-                    val ctx = request.requestContext
-                    val shellRenderer = request.shellRenderer
-                    if (ctx.user == null) {
-                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                    } else {
-                        renderer.render(pageFactory.buildChangePasswordPage(shellRenderer))
-                    }
-                },
-            "/auth/components/change-password" meta
-                {
-                    summary = "Process password change form"
-                } bindContract
-                POST to
-                { request: org.http4k.core.Request ->
-                    val ctx = request.requestContext
-                    val shellRenderer = request.shellRenderer
-                    val user = ctx.user
-                    if (user == null) {
-                        Response(Status.UNAUTHORIZED).body("Not logged in")
-                    } else {
-                        val currentPassword = request.form("currentPassword").orEmpty()
-                        val newPassword = request.form("newPassword").orEmpty()
-                        val confirmPassword = request.form("confirmPassword").orEmpty()
-
-                        if (newPassword != confirmPassword) {
-                            renderer.render(
-                                AuthResultFragment(
-                                    title = shellRenderer.i18n.translate("web.password.error.title"),
-                                    message = shellRenderer.i18n.translate("web.password.error.mismatch"),
-                                    toneClass = "bg-error/10 border-error/30 text-error",
-                                )
-                            )
-                        } else {
-                            try {
-                                accountService.changePassword(user.id, currentPassword, newPassword)
-                                renderer.render(
-                                    AuthResultFragment(
-                                        title = shellRenderer.i18n.translate("web.password.success.title"),
-                                        message = shellRenderer.i18n.translate("web.password.success.body"),
-                                        toneClass = "bg-success/10 border-success/30 text-success",
-                                    )
-                                )
-                            } catch (e: WeakPasswordException) {
-                                renderer.render(
-                                    AuthResultFragment(
-                                        title = shellRenderer.i18n.translate("web.password.error.title"),
-                                        message = e.message ?: "Password change failed",
-                                        toneClass = "bg-error/10 border-error/30 text-error",
-                                    )
-                                )
-                            }
-                        }
-                    }
-                },
             "/auth/reset" / tokenPath meta
                 {
                     summary = "Password reset page"
@@ -96,7 +34,6 @@ class PasswordRoutes(
                 GET to
                 { token ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.requestContext
                         val shellRenderer = request.shellRenderer
                         renderer.render(pageFactory.buildResetPasswordPage(shellRenderer, token))
                     }
@@ -107,7 +44,6 @@ class PasswordRoutes(
                 } bindContract
                 POST to
                 { request: org.http4k.core.Request ->
-                    val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
                     val token = request.form("token").orEmpty()
                     val newPassword = request.form("newPassword").orEmpty()
@@ -161,4 +97,60 @@ class PasswordRoutes(
                     }
                 },
         )
+
+    val protectedRoutes: List<ContractRoute> =
+        listOf(
+            "/auth/change-password" meta
+                {
+                    summary = "Change password page"
+                } bindContract
+                GET to
+                { request: org.http4k.core.Request ->
+                    val shellRenderer = request.shellRenderer
+                    renderer.render(pageFactory.buildChangePasswordPage(shellRenderer))
+                },
+            "/auth/components/change-password" meta
+                {
+                    summary = "Process password change form"
+                } bindContract
+                POST to
+                { request: org.http4k.core.Request ->
+                    val shellRenderer = request.shellRenderer
+                    val user = request.requestContext.user!!
+                    val currentPassword = request.form("currentPassword").orEmpty()
+                    val newPassword = request.form("newPassword").orEmpty()
+                    val confirmPassword = request.form("confirmPassword").orEmpty()
+
+                    if (newPassword != confirmPassword) {
+                        renderer.render(
+                            AuthResultFragment(
+                                title = shellRenderer.i18n.translate("web.password.error.title"),
+                                message = shellRenderer.i18n.translate("web.password.error.mismatch"),
+                                toneClass = "bg-error/10 border-error/30 text-error",
+                            )
+                        )
+                    } else {
+                        try {
+                            accountService.changePassword(user.id, currentPassword, newPassword)
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = shellRenderer.i18n.translate("web.password.success.title"),
+                                    message = shellRenderer.i18n.translate("web.password.success.body"),
+                                    toneClass = "bg-success/10 border-success/30 text-success",
+                                )
+                            )
+                        } catch (e: WeakPasswordException) {
+                            renderer.render(
+                                AuthResultFragment(
+                                    title = shellRenderer.i18n.translate("web.password.error.title"),
+                                    message = e.message ?: "Password change failed",
+                                    toneClass = "bg-error/10 border-error/30 text-error",
+                                )
+                            )
+                        }
+                    }
+                },
+        )
+
+    override val routes: List<ContractRoute> = publicRoutes + protectedRoutes
 }

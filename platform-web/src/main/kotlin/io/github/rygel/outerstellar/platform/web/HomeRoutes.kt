@@ -32,7 +32,19 @@ class HomeRoutes(
     private val yearLens = Query.int().optional("year")
     private val syncIdPath = Path.string().of("syncId")
 
-    override val routes =
+    val publicRoutes =
+        listOf(
+            "/components/footer-status" meta
+                {
+                    summary = "Footer status fragment"
+                } bindContract
+                GET to
+                { request ->
+                    renderer.render(pageFactory.buildFooterStatus(request.shellRenderer))
+                }
+        )
+
+    val protectedRoutes =
         listOf(
             "/" meta
                 {
@@ -46,9 +58,6 @@ class HomeRoutes(
                 { request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    if (ctx.user == null) {
-                        return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                    }
                     val query = queryLens(request)
                     val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
                     val offset = offsetLens(request).coerceAtLeast(0)
@@ -63,9 +72,6 @@ class HomeRoutes(
                 { request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    if (ctx.user == null) {
-                        return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                    }
                     renderer.render(pageFactory.buildTrashPage(ctx, shellRenderer))
                 },
             "/messages" meta
@@ -76,9 +82,6 @@ class HomeRoutes(
                 { request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    if (ctx.user == null) {
-                        return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                    }
                     val author = request.form("author").orEmpty()
                     val content = request.form("content").orEmpty()
                     messageService.createServerMessage(author, content)
@@ -91,11 +94,7 @@ class HomeRoutes(
                 POST to
                 { syncId ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.requestContext
                         val shellRenderer = request.shellRenderer
-                        if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                        }
                         messageService.restore(syncId)
                         Response(Status.FOUND).header("location", shellRenderer.url("/messages/trash"))
                     }
@@ -107,12 +106,7 @@ class HomeRoutes(
                 GET to
                 { syncId ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.requestContext
-                        val shellRenderer = request.shellRenderer
-                        if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                        }
-                        val viewModel = pageFactory.buildConflictResolveModal(shellRenderer, syncId)
+                        val viewModel = pageFactory.buildConflictResolveModal(request.shellRenderer, syncId)
                         renderer.render(viewModel)
                     }
                 },
@@ -123,11 +117,6 @@ class HomeRoutes(
                 POST to
                 { syncId ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.requestContext
-                        val shellRenderer = request.shellRenderer
-                        if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                        }
                         val strategy = ConflictStrategy.fromString(request.form("strategy") ?: "server")
                         messageService.resolveConflict(syncId, strategy)
                         Response(Status.OK).header("HX-Trigger", "refresh")
@@ -140,11 +129,6 @@ class HomeRoutes(
                 POST to
                 { syncId: String, _ ->
                     { request: Request ->
-                        val ctx = request.requestContext
-                        val shellRenderer = request.shellRenderer
-                        if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                        }
                         messageService.deleteMessage(syncId)
                         Response(Status.OK)
                     }
@@ -156,12 +140,7 @@ class HomeRoutes(
                 GET to
                 { syncId: String, _ ->
                     { request: Request ->
-                        val ctx = request.requestContext
-                        val shellRenderer = request.shellRenderer
-                        if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                        }
-                        renderer.render(pageFactory.buildMessageEditForm(shellRenderer, syncId))
+                        renderer.render(pageFactory.buildMessageEditForm(request.shellRenderer, syncId))
                     }
                 },
             "/messages" / syncIdPath / "update" meta
@@ -173,9 +152,6 @@ class HomeRoutes(
                     { request: Request ->
                         val ctx = request.requestContext
                         val shellRenderer = request.shellRenderer
-                        if (ctx.user == null) {
-                            return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                        }
                         val msg = messageService.findBySyncId(syncId)
                         val author = request.form("author").orEmpty()
                         val content = request.form("content").orEmpty()
@@ -183,13 +159,7 @@ class HomeRoutes(
                         renderer.render(pageFactory.buildMessageList(ctx, shellRenderer))
                     }
                 },
-            "/components/footer-status" meta
-                {
-                    summary = "Footer status fragment"
-                } bindContract
-                GET to
-                { request ->
-                    renderer.render(pageFactory.buildFooterStatus(request.shellRenderer))
-                },
         )
+
+    override val routes = publicRoutes + protectedRoutes
 }

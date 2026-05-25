@@ -30,11 +30,7 @@ class ProfileRoutes(
                 { request: org.http4k.core.Request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    if (ctx.user == null) {
-                        Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
-                    } else {
-                        renderer.render(pageFactory.buildProfilePage(ctx, shellRenderer))
-                    }
+                    renderer.render(pageFactory.buildProfilePage(ctx, shellRenderer))
                 },
             "/auth/components/profile-update" meta
                 {
@@ -44,39 +40,35 @@ class ProfileRoutes(
                 { request: org.http4k.core.Request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    val user = ctx.user
-                    if (user == null) {
-                        Response(Status.UNAUTHORIZED).body("Not logged in")
-                    } else {
-                        val newEmail = request.form("email").orEmpty()
-                        val newUsername = request.form("username")?.takeIf { it.isNotBlank() }
-                        val newAvatarUrl = request.form("avatarUrl")
-                        try {
-                            accountService.updateProfile(user.id, newEmail, newUsername, newAvatarUrl)
-                            renderer.render(
-                                AuthResultFragment(
-                                    title = shellRenderer.i18n.translate("web.profile.success.title"),
-                                    message = shellRenderer.i18n.translate("web.profile.success.body"),
-                                    toneClass = "bg-success/10 border-success/30 text-success",
-                                )
+                    val user = ctx.user!!
+                    val newEmail = request.form("email").orEmpty()
+                    val newUsername = request.form("username")?.takeIf { it.isNotBlank() }
+                    val newAvatarUrl = request.form("avatarUrl")
+                    try {
+                        accountService.updateProfile(user.id, newEmail, newUsername, newAvatarUrl)
+                        renderer.render(
+                            AuthResultFragment(
+                                title = shellRenderer.i18n.translate("web.profile.success.title"),
+                                message = shellRenderer.i18n.translate("web.profile.success.body"),
+                                toneClass = "bg-success/10 border-success/30 text-success",
                             )
-                        } catch (e: UsernameAlreadyExistsException) {
-                            renderer.render(
-                                AuthResultFragment(
-                                    title = shellRenderer.i18n.translate("web.profile.error.title"),
-                                    message = e.message ?: "Update failed",
-                                    toneClass = "bg-error/10 border-error/30 text-error",
-                                )
+                        )
+                    } catch (e: UsernameAlreadyExistsException) {
+                        renderer.render(
+                            AuthResultFragment(
+                                title = shellRenderer.i18n.translate("web.profile.error.title"),
+                                message = e.message ?: "Update failed",
+                                toneClass = "bg-error/10 border-error/30 text-error",
                             )
-                        } catch (e: IllegalArgumentException) {
-                            renderer.render(
-                                AuthResultFragment(
-                                    title = shellRenderer.i18n.translate("web.profile.error.title"),
-                                    message = e.message ?: "Update failed",
-                                    toneClass = "bg-error/10 border-error/30 text-error",
-                                )
+                        )
+                    } catch (e: IllegalArgumentException) {
+                        renderer.render(
+                            AuthResultFragment(
+                                title = shellRenderer.i18n.translate("web.profile.error.title"),
+                                message = e.message ?: "Update failed",
+                                toneClass = "bg-error/10 border-error/30 text-error",
                             )
-                        }
+                        )
                     }
                 },
             "/auth/notification-preferences" meta
@@ -87,21 +79,17 @@ class ProfileRoutes(
                 { request: org.http4k.core.Request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    val user = ctx.user
-                    if (user == null) {
-                        Response(Status.UNAUTHORIZED).body("Not logged in")
-                    } else {
-                        val emailEnabled = request.form("emailNotifications") == "on"
-                        val pushEnabled = request.form("pushNotifications") == "on"
-                        accountService.updateNotificationPreferences(user.id, emailEnabled, pushEnabled)
-                        renderer.render(
-                            AuthResultFragment(
-                                title = shellRenderer.i18n.translate("web.profile.notif.success.title"),
-                                message = shellRenderer.i18n.translate("web.profile.notif.success.body"),
-                                toneClass = "bg-success/10 border-success/30 text-success",
-                            )
+                    val user = ctx.user!!
+                    val emailEnabled = request.form("emailNotifications") == "on"
+                    val pushEnabled = request.form("pushNotifications") == "on"
+                    accountService.updateNotificationPreferences(user.id, emailEnabled, pushEnabled)
+                    renderer.render(
+                        AuthResultFragment(
+                            title = shellRenderer.i18n.translate("web.profile.notif.success.title"),
+                            message = shellRenderer.i18n.translate("web.profile.notif.success.body"),
+                            toneClass = "bg-success/10 border-success/30 text-success",
                         )
-                    }
+                    )
                 },
             "/auth/account/delete" meta
                 {
@@ -111,28 +99,24 @@ class ProfileRoutes(
                 { request: org.http4k.core.Request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    val user = ctx.user
-                    if (user == null) {
-                        Response(Status.UNAUTHORIZED).body("Not logged in")
-                    } else {
-                        try {
-                            val currentPassword = request.form("currentPassword").orEmpty()
-                            if (currentPassword.isBlank()) {
-                                return@to Response(Status.BAD_REQUEST).body("Current password is required")
-                            }
-                            accountService.deleteAccount(user.id, currentPassword)
-                            Response(Status.FOUND)
-                                .header("location", shellRenderer.url("/auth?deleted=true"))
-                                .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
-                        } catch (e: InsufficientPermissionException) {
-                            renderer.render(
-                                AuthResultFragment(
-                                    title = shellRenderer.i18n.translate("web.profile.delete.error.title"),
-                                    message = e.message ?: "Cannot delete account",
-                                    toneClass = "bg-error/10 border-error/30 text-error",
-                                )
-                            )
+                    val user = ctx.user!!
+                    try {
+                        val currentPassword = request.form("currentPassword").orEmpty()
+                        if (currentPassword.isBlank()) {
+                            return@to Response(Status.BAD_REQUEST).body("Current password is required")
                         }
+                        accountService.deleteAccount(user.id, currentPassword)
+                        Response(Status.FOUND)
+                            .header("location", shellRenderer.url("/auth?deleted=true"))
+                            .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
+                    } catch (e: InsufficientPermissionException) {
+                        renderer.render(
+                            AuthResultFragment(
+                                title = shellRenderer.i18n.translate("web.profile.delete.error.title"),
+                                message = e.message ?: "Cannot delete account",
+                                toneClass = "bg-error/10 border-error/30 text-error",
+                            )
+                        )
                     }
                 },
         )
