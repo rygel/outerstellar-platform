@@ -400,23 +400,23 @@ platform-web/src/main/resources/META-INF/native-image/io.github.rygel/outerstell
 
 ### Drift Prevention
 
-The metadata must stay in sync with actual classpath files. Three mechanisms prevent drift:
+The metadata must stay in sync with actual classpath files. Two mechanisms prevent drift:
 
-1. **Build-time test** — `NativeResourceDriftTest` validates that all migrations, i18n bundles, and config files are listed. It fails the build if any are missing or stale.
+1. **Auto-fixing drift test** — `NativeResourceDriftTest` scans project resources from the source tree and compares them against the `resources` section of `reachability-metadata.json`. When drift is detected (missing or stale entries), the test **rewrites the resources section automatically** and fails with a commit prompt. Run the test again to confirm the fix.
 
-2. **Generation script** — `scripts/generate-reachability-resources.ps1` scans classpath files and outputs JSON entries for pasting into `reachability-metadata.json`.
+2. **Runtime self-check** — `NativeStartupCheck` runs on native-image startup and verifies critical resources are accessible. It fails fast with actionable error messages if anything is missing.
 
-3. **Runtime self-check** — `NativeStartupCheck` runs on native-image startup and verifies critical resources are accessible. It fails fast with actionable error messages if anything is missing.
+The test covers: Flyway migrations, i18n bundles, application config YAML, static web assets, and logback config. Dependency resources (from third-party JARs) are maintained as a constant in the test class. Reflection entries (168) are hand-maintained and stable.
 
 ### When to Update
 
 Update the metadata when:
 
-- Adding new JTE templates (add the generated class to both `JteClassRegistry` and `reachability-metadata.json`)
-- Adding new Flyway migrations (the drift test will catch it, then run `scripts/generate-reachability-resources.ps1`)
+- Adding new Flyway migrations (the drift test auto-fixes on next run)
 - Adding new dependencies that use reflection (run the tracing agent to detect them)
 - Changing logging configuration (Logback classes may differ)
-- Adding new i18n resource bundles
+- Adding new i18n resource bundles (the drift test auto-fixes on next run)
+- Adding new static web assets (the drift test auto-fixes on next run)
 
 ### Format
 
