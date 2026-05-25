@@ -9,7 +9,6 @@ import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.service.EmailService
 
 class SecurityComponents(
-    val passwordEncoder: PasswordEncoder,
     val jwtService: JwtService,
     val asyncActivityUpdater: AsyncActivityUpdater,
     val authService: AuthService,
@@ -17,7 +16,6 @@ class SecurityComponents(
     val apiKeyService: ApiKeyService,
     val passwordResetService: PasswordResetService,
     val oauthService: OAuthService,
-    val permissionResolver: PermissionResolver,
     val authRealms: List<AuthRealm>,
     val totpService: TOTPService,
     val sessionService: SessionService,
@@ -97,7 +95,6 @@ fun createSecurityComponents(
     val permissionResolver = RoleBasedPermissionResolver()
     val authRealms = listOf(SessionRealm(sessionService), ApiKeyRealm(apiKeyService))
     return SecurityComponents(
-        passwordEncoder = passwordEncoder,
         jwtService = jwtService,
         asyncActivityUpdater = asyncActivityUpdater,
         apiKeyService = apiKeyService,
@@ -105,7 +102,6 @@ fun createSecurityComponents(
         oauthService = oauthService,
         authService = authService,
         accountService = accountService,
-        permissionResolver = permissionResolver,
         authRealms = authRealms,
         totpService = totpService,
         sessionService = sessionService,
