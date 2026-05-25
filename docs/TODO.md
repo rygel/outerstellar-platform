@@ -6,10 +6,8 @@
 - [ ] DesktopSyncEngine interface for testability
 - [ ] TOTP two-factor authentication
 - [ ] Unified Settings page with tabs
-- [ ] Search SPI (SearchProvider interface)
 - [ ] Export SPI (CSV/JSON export)
 - [ ] Jazzer fuzz tests
-- [ ] SecurityService can shrink further — callers could bypass delegation and use AuthService/AccountService directly, leaving SecurityService as just API key + OAuth + password reset
 
 ## Completed
 
@@ -28,3 +26,5 @@
 - [x] Remove WebContext facade, use RequestContext + ShellRenderer directly (PR #355)
 - [x] Remove SecurityService session delegation, callers use SessionService directly (PR #355)
 - [x] Extract AuthService + AccountService from SecurityService (PR #357)
+- [x] Search SPI — SearchProvider interface + plugin registration (PR #352)
+- [x] SecurityService delegation removed — callers use AuthService/AccountService directly (PR #359)

@@ -16,14 +16,14 @@ class SecurityIntegrationTest : WebTest() {
 
     private lateinit var localUserRepository: JdbiUserRepository
     private lateinit var passwordEncoder: PasswordEncoder
-    private lateinit var securityService: SecurityService
+    private lateinit var authService: AuthService
 
     @BeforeEach
     fun setupTest() {
         localUserRepository = JdbiUserRepository(testJdbi)
-        passwordEncoder = BCryptPasswordEncoder(logRounds = 4) // Fast for tests
-        securityService =
-            SecurityService(
+        passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
+        authService =
+            AuthService(
                 userRepository = localUserRepository,
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
@@ -35,7 +35,6 @@ class SecurityIntegrationTest : WebTest() {
         val username = "testuser"
         val password = testPassword()
 
-        // 1. Register
         val newUser =
             User(
                 id = UUID.randomUUID(),
@@ -46,8 +45,7 @@ class SecurityIntegrationTest : WebTest() {
             )
         localUserRepository.save(newUser)
 
-        // 2. Authenticate
-        val result = securityService.authenticate(username, password)
+        val result = authService.authenticate(username, password)
 
         assertTrue(result is AuthResult.Authenticated, "Should authenticate successfully")
         val auth = result as AuthResult.Authenticated
@@ -70,14 +68,14 @@ class SecurityIntegrationTest : WebTest() {
             )
         )
 
-        val result = securityService.authenticate(username, "wrongpassword")
+        val result = authService.authenticate(username, "wrongpassword")
 
         assertNull(result)
     }
 
     @Test
     fun `should fail authentication for non-existent user`() {
-        val result = securityService.authenticate("ghost", "anypassword")
+        val result = authService.authenticate("ghost", "anypassword")
         assertNull(result)
     }
 }
