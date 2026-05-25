@@ -6,6 +6,10 @@ on:
     paths:
       - 'docker/Dockerfile.build'
       - 'platform-web/**'
+      - 'platform-core/**'
+      - 'platform-security/**'
+      - 'platform-persistence-jdbi/**'
+      - 'platform-sync-client/**'
       - 'platform-persistence-jdbi/src/main/resources/db/migration/**'
       - 'pom.xml'
   pull_request:
@@ -13,6 +17,10 @@ on:
     paths:
       - 'docker/Dockerfile.build'
       - 'platform-web/**'
+      - 'platform-core/**'
+      - 'platform-security/**'
+      - 'platform-persistence-jdbi/**'
+      - 'platform-sync-client/**'
       - 'platform-persistence-jdbi/src/main/resources/db/migration/**'
       - 'pom.xml'
   workflow_dispatch:
