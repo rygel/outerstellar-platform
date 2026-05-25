@@ -1,7 +1,5 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.security.OAuthConnection
-import io.github.rygel.outerstellar.platform.security.OAuthRepository
 import java.sql.ResultSet
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi

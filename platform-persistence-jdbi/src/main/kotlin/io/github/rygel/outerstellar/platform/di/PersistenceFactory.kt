@@ -25,6 +25,7 @@ import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
 import io.github.rygel.outerstellar.platform.persistence.JdbiVoteRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.NotificationRepository
+import io.github.rygel.outerstellar.platform.persistence.OAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.PollRepository
@@ -33,7 +34,6 @@ import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.persistence.VoteRepository
 import io.github.rygel.outerstellar.platform.security.CachingUserRepository
-import io.github.rygel.outerstellar.platform.security.OAuthRepository
 import io.micrometer.core.instrument.Metrics
 import javax.sql.DataSource
 import org.jdbi.v3.core.Jdbi

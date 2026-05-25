@@ -1,33 +1,6 @@
 package io.github.rygel.outerstellar.platform.security
 
-import java.util.UUID
-
-/** Represents the user information returned after a successful OAuth handshake. */
-data class OAuthUserInfo(val subject: String, val email: String?, val displayName: String?)
-
-/** An OAuth connection record stored in the database. */
-data class OAuthConnection(
-    val id: Long = 0,
-    val userId: UUID,
-    val provider: String,
-    val subject: String,
-    val email: String?,
-)
-
-/** Repository for persisting OAuth provider↔user linkages. */
-interface OAuthRepository {
-    /** Find an existing connection by provider name and provider-issued subject ID. */
-    fun findByProviderSubject(provider: String, subject: String): OAuthConnection?
-
-    /** Create a new connection linking a provider identity to a local user. */
-    fun save(connection: OAuthConnection)
-
-    /** List all OAuth connections for a given user. */
-    fun findByUserId(userId: UUID): List<OAuthConnection>
-
-    /** Remove a specific connection (e.g. user unlinks a provider). */
-    fun delete(id: Long, userId: UUID)
-}
+import io.github.rygel.outerstellar.platform.persistence.OAuthUserInfo
 
 /**
  * Strategy interface for OAuth 2.0 identity providers.

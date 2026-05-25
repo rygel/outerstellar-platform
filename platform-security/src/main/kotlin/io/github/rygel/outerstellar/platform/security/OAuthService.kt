@@ -3,6 +3,8 @@ package io.github.rygel.outerstellar.platform.security
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
+import io.github.rygel.outerstellar.platform.persistence.OAuthConnection
+import io.github.rygel.outerstellar.platform.persistence.OAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory

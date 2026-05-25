@@ -3,6 +3,7 @@ package io.github.rygel.outerstellar.platform.security
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
+import io.github.rygel.outerstellar.platform.persistence.OAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
