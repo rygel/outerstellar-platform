@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.ApiKey
+import java.time.Instant
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 
@@ -20,7 +21,7 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
                 .bind("keyPrefix", apiKey.keyPrefix)
                 .bind("name", apiKey.name)
                 .bind("enabled", apiKey.enabled)
-                .bind("createdAt", java.sql.Timestamp.from(apiKey.createdAt))
+                .bind("createdAt", apiKey.createdAt)
                 .execute()
         }
     }
@@ -64,15 +65,13 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_api_keys SET last_used_at = :lastUsedAt WHERE id = :id")
-                .bind("lastUsedAt", java.sql.Timestamp.from(java.time.Instant.now()))
+                .bind("lastUsedAt", Instant.now())
                 .bind("id", id)
                 .execute()
         }
     }
 
     private fun mapApiKey(rs: java.sql.ResultSet): ApiKey {
-        val createdAt = rs.getTimestamp("created_at")
-        val lastUsedAt = rs.getTimestamp("last_used_at")
         return ApiKey(
             id = rs.getLong("id"),
             userId = rs.getObject("user_id", UUID::class.java),
@@ -80,8 +79,8 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
             keyPrefix = rs.getString("key_prefix"),
             name = rs.getString("name"),
             enabled = rs.getBoolean("enabled"),
-            createdAt = createdAt?.toInstant() ?: java.time.Instant.now(),
-            lastUsedAt = lastUsedAt?.toInstant(),
+            createdAt = rs.getInstantOrDefault("created_at"),
+            lastUsedAt = rs.getNullableInstant("last_used_at"),
         )
     }
 

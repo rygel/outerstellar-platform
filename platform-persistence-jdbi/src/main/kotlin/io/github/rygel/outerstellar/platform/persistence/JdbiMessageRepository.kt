@@ -381,8 +381,6 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         return requireNotNull(findBySyncId(syncId))
     }
 
-    private data class FilterClause(val sql: String, val binder: (org.jdbi.v3.core.statement.Query) -> Unit)
-
     private fun buildFilterClause(query: String?, year: Int?, includeDeleted: Boolean): FilterClause {
         val conditions = mutableListOf<String>()
         val bindings = mutableMapOf<String, Any>()
@@ -427,5 +425,3 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
         private const val LAST_SYNC_STATE_KEY = "last_sync_epoch_ms"
     }
 }
-
-private fun String.escapeLike(): String = replace("!", "!!").replace("%", "!%").replace("_", "!_")

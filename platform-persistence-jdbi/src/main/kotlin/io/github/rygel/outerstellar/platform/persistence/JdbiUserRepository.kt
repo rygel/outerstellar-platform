@@ -140,7 +140,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_users SET last_activity_at = :lastActivity WHERE id = :id")
-                .bind("lastActivity", java.sql.Timestamp.from(java.time.Instant.now()))
+                .bind("lastActivity", Instant.now())
                 .bind("id", userId)
                 .execute()
         }
@@ -295,7 +295,6 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     }
 
     private fun mapUser(rs: java.sql.ResultSet): User {
-        val lastActivity = rs.getTimestamp("last_activity_at")
         return User(
             id = rs.getObject("id", UUID::class.java),
             username = rs.getString("username"),
@@ -304,8 +303,8 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             role = UserRole.valueOf(rs.getString("role")),
             enabled = rs.getBoolean("enabled"),
             failedLoginAttempts = rs.getInt("failed_login_attempts"),
-            lockedUntil = rs.getTimestamp("locked_until")?.toInstant(),
-            lastActivityAt = lastActivity?.toInstant(),
+            lockedUntil = rs.getNullableInstant("locked_until"),
+            lastActivityAt = rs.getNullableInstant("last_activity_at"),
             avatarUrl = rs.getString("avatar_url"),
             emailNotificationsEnabled = rs.getBoolean("email_notifications_enabled"),
             pushNotificationsEnabled = rs.getBoolean("push_notifications_enabled"),

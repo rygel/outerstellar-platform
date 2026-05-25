@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.Session
-import java.sql.Timestamp
 import java.time.Instant
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
@@ -19,8 +18,8 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
                 )
                 .bind("tokenHash", session.tokenHash)
                 .bind("userId", session.userId)
-                .bind("createdAt", Timestamp.from(session.createdAt))
-                .bind("expiresAt", Timestamp.from(session.expiresAt))
+                .bind("createdAt", session.createdAt)
+                .bind("expiresAt", session.expiresAt)
                 .execute()
         }
     }
@@ -35,7 +34,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
                     """
                 )
                 .bind("tokenHash", tokenHash)
-                .bind("now", Timestamp.from(Instant.now()))
+                .bind("now", Instant.now())
                 .map { rs, _ -> mapSession(rs) }
                 .findOne()
                 .orElse(null)
@@ -59,7 +58,7 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_sessions SET expires_at = :expiresAt WHERE token_hash = :tokenHash")
-                .bind("expiresAt", Timestamp.from(expiresAt))
+                .bind("expiresAt", expiresAt)
                 .bind("tokenHash", tokenHash)
                 .execute()
         }
@@ -84,20 +83,18 @@ class JdbiSessionRepository(private val jdbi: Jdbi) : SessionRepository {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("DELETE FROM plt_sessions WHERE expires_at <= :now")
-                .bind("now", Timestamp.from(Instant.now()))
+                .bind("now", Instant.now())
                 .execute()
         }
     }
 
     private fun mapSession(rs: java.sql.ResultSet): Session {
-        val createdAt = rs.getTimestamp("created_at")
-        val expiresAt = rs.getTimestamp("expires_at")
         return Session(
             id = rs.getLong("id"),
             tokenHash = rs.getString("token_hash"),
             userId = rs.getObject("user_id", UUID::class.java),
-            createdAt = createdAt?.toInstant() ?: error("plt_sessions.created_at is unexpectedly null"),
-            expiresAt = expiresAt?.toInstant() ?: error("plt_sessions.expires_at is unexpectedly null"),
+            createdAt = rs.getRequiredInstant("created_at"),
+            expiresAt = rs.getRequiredInstant("expires_at"),
         )
     }
 }

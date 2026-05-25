@@ -21,6 +21,13 @@
         <dependency>
             <groupId>io.github.rygel</groupId>
             <artifactId>outerstellar-platform-core</artifactId>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.mockk</groupId>
+            <artifactId>mockk-jvm</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>

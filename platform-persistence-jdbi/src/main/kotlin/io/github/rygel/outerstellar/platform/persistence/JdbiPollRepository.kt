@@ -2,7 +2,7 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.Poll
 import io.github.rygel.outerstellar.platform.model.PollOption
-import java.sql.Timestamp
+import java.time.Instant
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 
@@ -22,10 +22,10 @@ class JdbiPollRepository(private val jdbi: Jdbi) : PollRepository {
                     .bind("creatorId", poll.creatorId)
                     .bind("question", poll.question)
                     .bind("multiChoice", poll.multiChoice)
-                    .bind("closedAt", poll.closedAt?.let { Timestamp.from(it) })
-                    .bind("deadline", poll.deadline?.let { Timestamp.from(it) })
-                    .bind("createdAt", Timestamp.from(poll.createdAt))
-                    .bind("updatedAt", Timestamp.from(poll.updatedAt))
+                    .bind("closedAt", poll.closedAt)
+                    .bind("deadline", poll.deadline)
+                    .bind("createdAt", poll.createdAt)
+                    .bind("updatedAt", poll.updatedAt)
                     .executeAndReturnGeneratedKeys("id")
                     .map { rs, _ -> rs.getLong("id") }
                     .one()
@@ -96,7 +96,7 @@ class JdbiPollRepository(private val jdbi: Jdbi) : PollRepository {
                 .bind("pollId", pollId)
                 .bind("optionId", optionId)
                 .bind("userId", userId)
-                .bind("createdAt", Timestamp.from(java.time.Instant.now()))
+                .bind("createdAt", Instant.now())
                 .execute()
         }
     }
@@ -145,8 +145,8 @@ class JdbiPollRepository(private val jdbi: Jdbi) : PollRepository {
                 .createUpdate(
                     "UPDATE plt_polls SET closed_at = :closedAt, updated_at = :updatedAt WHERE sync_id = :syncId"
                 )
-                .bind("closedAt", Timestamp.from(java.time.Instant.now()))
-                .bind("updatedAt", Timestamp.from(java.time.Instant.now()))
+                .bind("closedAt", Instant.now())
+                .bind("updatedAt", Instant.now())
                 .bind("syncId", syncId)
                 .execute()
         }
@@ -186,20 +186,16 @@ class JdbiPollRepository(private val jdbi: Jdbi) : PollRepository {
     }
 
     private fun mapPoll(rs: java.sql.ResultSet): Poll {
-        val closedAt = rs.getTimestamp("closed_at")
-        val deadline = rs.getTimestamp("deadline")
-        val createdAt = rs.getTimestamp("created_at")
-        val updatedAt = rs.getTimestamp("updated_at")
         return Poll(
             id = rs.getLong("id"),
             syncId = rs.getString("sync_id"),
             creatorId = rs.getObject("creator_id", UUID::class.java),
             question = rs.getString("question"),
             multiChoice = rs.getBoolean("multi_choice"),
-            closedAt = closedAt?.toInstant(),
-            deadline = deadline?.toInstant(),
-            createdAt = createdAt?.toInstant() ?: error("plt_polls.created_at is unexpectedly null"),
-            updatedAt = updatedAt?.toInstant() ?: error("plt_polls.updated_at is unexpectedly null"),
+            closedAt = rs.getNullableInstant("closed_at"),
+            deadline = rs.getNullableInstant("deadline"),
+            createdAt = rs.getRequiredInstant("created_at"),
+            updatedAt = rs.getRequiredInstant("updated_at"),
         )
     }
 

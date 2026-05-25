@@ -316,6 +316,15 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [x] **Accessibility: aria-hidden, aria-live, skip-to-content** (PR #238)
 - [x] **App.kt refactor: AppContext + OptionalServices extraction** (PR #239)
 - [x] **Input size validation for message and contact fields** (PR #240)
+- [x] **Remove Koin from server runtime, unified Dockerfile.build, native-image hardening** (PR #351)
+- [x] **Banner SPI — BannerProvider interface, server-side banner rendering** (PR #352)
+- [x] **Search SPI — SearchProvider interface + plugin registration** (PR #352)
+- [x] **Decompose SecurityService into SessionService + UserAdminService** (PR #353)
+- [x] **Split WebContext into RequestContext + ShellRenderer** (PR #354)
+- [x] **Remove WebContext facade, use RequestContext + ShellRenderer directly** (PR #355)
+- [x] **Remove SecurityService session delegation, callers use SessionService directly** (PR #355)
+- [x] **Extract AuthService + AccountService from SecurityService** (PR #357)
+- [x] **SecurityService delegation removed — callers use AuthService/AccountService directly** (PR #359)
 
 ---
 
@@ -359,8 +368,8 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Fixed in PR #292 — global search box in topbar, type filters on search page.
   — `platform-web/src/main/jte/.../layouts/TopbarLayout.kte`, `platform-web/src/main/jte/.../SearchPage.kte`
 
-- [ ] **Complete TOTP setup UX**
-  TOTP setup uses hardcoded English labels/errors, raw text responses, and lacks backup-code regeneration/copy/download affordances. Localize the flow, return styled fragments/status codes, and improve backup-code management.
+- [x] ~~**Complete TOTP setup UX**~~
+  Fixed — all labels i18n'd via `shellRenderer.i18n.translate("web.totp.*")`. Backup-code copy/download buttons in `TotpSetupFragment.kte`. Styled fragments throughout.
   — `platform-web/.../web/TOTPRoutes.kt`, `platform-web/src/main/jte/.../TotpSetupFragment.kte`, `platform-web/src/main/jte/.../TotpChallengeForm.kte`
 
 - [x] ~~**Hide or finish Sign in with Apple**~~
@@ -415,12 +424,13 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [x] ~~**Unified Settings page — `/settings` with tabs**~~
   Fixed in PR #294 — all 6 tabs with inline content via HTMX fragments.
 
-- [ ] **Search SPI — `SearchProvider` interface**
-  Define a `SearchProvider` interface and aggregate results across plugins on `/search?q=`. Currently search uses a hardcoded empty list.
-  — `platform-web/.../web/SearchRoutes.kt`
+- [x] ~~**Search SPI — `SearchProvider` interface**~~
+  Fixed — `SearchProvider` interface in `platform-core`, `MessageSearchProvider` + `ContactSearchProvider` implementations, aggregated in `SearchRoutes` and `App.kt`.
+  — `platform-core/.../search/SearchProvider.kt`, `platform-web/.../search/*SearchProvider.kt`, `platform-web/.../web/SearchRoutes.kt`
 
-- [ ] **Export SPI — CSV/JSON export for any entity**
-  Generic export framework that can serialize lists of entities (messages, contacts, etc.) to CSV or JSON. Useful for admin dashboard and user data portability.
+- [x] ~~**Export SPI — CSV/JSON export for any entity**~~
+  Fixed — `ExportProvider` interface in `platform-core`, `MessageExportProvider` + `ContactExportProvider` implementations, `ExportRoutes` wired in `App.kt` with CSV + JSON per entity.
+  — `platform-core/.../export/ExportService.kt`, `platform-web/.../export/*ExportProvider.kt`, `platform-web/.../web/ExportRoutes.kt`
 
 - [x] ~~**Mobile responsive layout**~~
   `SidebarLayout` and `TopbarLayout` are desktop-oriented. Add responsive breakpoints, hamburger navigation, touch-friendly controls.

@@ -41,7 +41,7 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
                         targetUsername = rs.getString("target_username"),
                         action = rs.getString("action"),
                         detail = rs.getString("detail"),
-                        createdAt = rs.getTimestamp("created_at")?.toInstant() ?: java.time.Instant.now(),
+                        createdAt = rs.getInstantOrDefault("created_at"),
                     )
                 }
                 .list()
@@ -65,7 +65,7 @@ class JdbiAuditRepository(private val jdbi: Jdbi) : AuditRepository {
                         targetUsername = rs.getString("target_username"),
                         action = rs.getString("action"),
                         detail = rs.getString("detail"),
-                        createdAt = rs.getTimestamp("created_at")?.toInstant() ?: java.time.Instant.now(),
+                        createdAt = rs.getInstantOrDefault("created_at"),
                     )
                 }
                 .list()

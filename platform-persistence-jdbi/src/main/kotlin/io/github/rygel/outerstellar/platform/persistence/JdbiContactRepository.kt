@@ -538,8 +538,6 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
             .findOne()
             .orElse(null)
 
-    private data class FilterClause(val sql: String, val binder: (org.jdbi.v3.core.statement.Query) -> Unit)
-
     private fun buildFilterClause(query: String?, includeDeleted: Boolean): FilterClause {
         val conditions = mutableListOf<String>()
         val bindings = mutableMapOf<String, Any>()
@@ -640,5 +638,3 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
         private const val LAST_SYNC_STATE_KEY = "last_contact_sync_epoch_ms"
     }
 }
-
-private fun String.escapeLike(): String = replace("!", "!!").replace("%", "!%").replace("_", "!_")
