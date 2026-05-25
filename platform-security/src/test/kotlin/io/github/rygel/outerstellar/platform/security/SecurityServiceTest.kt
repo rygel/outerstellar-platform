@@ -22,10 +22,9 @@ import org.junit.jupiter.api.assertThrows
 class SecurityServiceTest {
 
     private lateinit var userRepository: UserRepository
-    private lateinit var passwordEncoder: PasswordEncoder
     private lateinit var auditRepository: AuditRepository
     private lateinit var apiKeyRepository: ApiKeyRepository
-    private lateinit var service: SecurityService
+    private lateinit var apiKeyService: ApiKeyService
     private lateinit var userAdminService: UserAdminService
 
     private val testUser =
@@ -49,15 +48,13 @@ class SecurityServiceTest {
     @BeforeEach
     fun setup() {
         userRepository = mockk(relaxed = true)
-        passwordEncoder = mockk(relaxed = true)
         auditRepository = mockk(relaxed = true)
         apiKeyRepository = mockk(relaxed = true)
-        service =
-            SecurityService(
+        apiKeyService =
+            ApiKeyService(
                 userRepository = userRepository,
-                passwordEncoder = passwordEncoder,
-                auditRepository = auditRepository,
                 apiKeyRepository = apiKeyRepository,
+                auditRepository = auditRepository,
             )
         userAdminService = UserAdminService(userRepository, auditRepository)
     }
@@ -133,7 +130,7 @@ class SecurityServiceTest {
 
     @Test
     fun `createApiKey returns key with osk prefix`() {
-        val response = service.createApiKey(testUser.id, "my-key")
+        val response = apiKeyService.createApiKey(testUser.id, "my-key")
 
         assertTrue(response.key.startsWith("osk_"), "Key should start with osk_ prefix")
         assertEquals("my-key", response.name)
@@ -143,7 +140,7 @@ class SecurityServiceTest {
 
     @Test
     fun `createApiKey throws on blank name`() {
-        assertThrows<IllegalArgumentException> { service.createApiKey(testUser.id, "") }
+        assertThrows<IllegalArgumentException> { apiKeyService.createApiKey(testUser.id, "") }
     }
 
     @Test
@@ -158,7 +155,7 @@ class SecurityServiceTest {
         every { apiKeyRepository.findByKeyHash(expectedHash) } returns apiKey
         every { userRepository.findById(testUser.id) } returns testUser
 
-        val result = service.authenticateApiKey(rawKey)
+        val result = apiKeyService.authenticateApiKey(rawKey)
 
         assertNotNull(result)
         assertEquals(testUser.id, result.id)
@@ -183,7 +180,7 @@ class SecurityServiceTest {
 
         every { apiKeyRepository.findByKeyHash(expectedHash) } returns disabledKey
 
-        val result = service.authenticateApiKey(rawKey)
+        val result = apiKeyService.authenticateApiKey(rawKey)
 
         assertNull(result)
     }
@@ -201,7 +198,7 @@ class SecurityServiceTest {
         every { apiKeyRepository.findByKeyHash(expectedHash) } returns apiKey
         every { userRepository.findById(testUser.id) } returns disabledUser
 
-        val result = service.authenticateApiKey(rawKey)
+        val result = apiKeyService.authenticateApiKey(rawKey)
 
         assertNull(result)
     }
@@ -210,7 +207,7 @@ class SecurityServiceTest {
     fun `authenticateApiKey returns null for unknown key`() {
         every { apiKeyRepository.findByKeyHash(any()) } returns null
 
-        val result = service.authenticateApiKey("osk_nonexistent")
+        val result = apiKeyService.authenticateApiKey("osk_nonexistent")
 
         assertNull(result)
     }
@@ -219,7 +216,7 @@ class SecurityServiceTest {
     fun `createApiKey logs API_KEY_CREATED to audit`() {
         every { userRepository.findById(testUser.id) } returns testUser
 
-        service.createApiKey(testUser.id, "my-audit-key")
+        apiKeyService.createApiKey(testUser.id, "my-audit-key")
 
         verify {
             auditRepository.log(
@@ -236,7 +233,7 @@ class SecurityServiceTest {
     fun `deleteApiKey logs API_KEY_DELETED to audit`() {
         every { userRepository.findById(testUser.id) } returns testUser
 
-        service.deleteApiKey(testUser.id, 42L)
+        apiKeyService.deleteApiKey(testUser.id, 42L)
 
         verify {
             auditRepository.log(

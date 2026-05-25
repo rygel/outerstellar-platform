@@ -39,8 +39,6 @@ class SecurityHeadersIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService = createSecurityService()
-
         testUser =
             User(
                 id = UUID.randomUUID(),
@@ -52,7 +50,7 @@ class SecurityHeadersIntegrationTest : WebTest() {
         userRepository.save(testUser)
         sessionToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     // ---- X-Content-Type-Options ----

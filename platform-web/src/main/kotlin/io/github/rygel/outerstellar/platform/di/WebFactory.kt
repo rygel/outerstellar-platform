@@ -16,7 +16,9 @@ import io.github.rygel.outerstellar.platform.persistence.PollRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.persistence.VoteRepository
 import io.github.rygel.outerstellar.platform.security.AdminStatsService
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
+import io.github.rygel.outerstellar.platform.security.OAuthService
+import io.github.rygel.outerstellar.platform.security.PasswordResetService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.ContactService
@@ -60,7 +62,9 @@ class WebComponents(
 fun createWebComponents(
     config: AppConfig,
     plugin: PlatformPlugin? = null,
-    securityService: SecurityService,
+    apiKeyService: ApiKeyService,
+    passwordResetService: PasswordResetService,
+    oauthService: OAuthService,
     sessionService: SessionService,
     userAdminService: UserAdminService,
     messageRepository: MessageRepository,
@@ -85,7 +89,7 @@ fun createWebComponents(
             messageRepository,
             messageService,
             contactService,
-            securityService,
+            apiKeyService,
             appleOAuthEnabled = config.appleOAuth.enabled,
             userAdminService = userAdminService,
         )
@@ -129,7 +133,7 @@ fun createWebComponents(
     val pollService = PollService(pollRepository)
     val notificationService = NotificationService(notificationRepository)
     val adminStatsService = AdminStatsService(userRepository)
-    val adminPageFactory = AdminPageFactory(securityService, notificationService, userAdminService)
+    val adminPageFactory = AdminPageFactory(apiKeyService, notificationService, userAdminService)
     val pluginMigrationSource: PluginMigrationSource = plugin ?: NoOpPluginMigrationSource
 
     return WebComponents(

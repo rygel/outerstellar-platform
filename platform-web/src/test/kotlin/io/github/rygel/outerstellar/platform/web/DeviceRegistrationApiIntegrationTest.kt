@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,7 +40,6 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
         deviceTokenRepository = InMemoryDeviceTokenRepository()
 
         testUser =
@@ -55,11 +53,7 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
         userRepository.save(testUser)
         sessionToken = sessionSvc.createSession(testUser.id)
 
-        app =
-            buildApp(
-                securityService = securityService,
-                overrides = TestOverrides(deviceTokenRepository = deviceTokenRepository),
-            )
+        app = buildApp(overrides = TestOverrides(deviceTokenRepository = deviceTokenRepository))
     }
 
     @AfterEach

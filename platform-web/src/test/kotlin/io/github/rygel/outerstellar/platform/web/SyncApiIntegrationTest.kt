@@ -46,8 +46,6 @@ class SyncApiIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService = createSecurityService()
-
         testUser =
             User(
                 id = UUID.randomUUID(),
@@ -59,7 +57,7 @@ class SyncApiIntegrationTest : WebTest() {
         userRepository.save(testUser)
         sessionToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun bearerHeader() = "Bearer $sessionToken"

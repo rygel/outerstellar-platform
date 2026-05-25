@@ -1,7 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
+import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.mockk.mockk
 import kotlin.test.assertTrue
 import org.http4k.template.TemplateRenderer
@@ -13,7 +14,8 @@ class PluginRenderShellTest {
         val renderer: TemplateRenderer = { "" }
         return PluginContext.forTesting(
             renderer = renderer,
-            securityService = mockk<SecurityService>(relaxed = true),
+            apiKeyService = mockk<ApiKeyService>(relaxed = true),
+            oauthService = mockk<OAuthService>(relaxed = true),
             userRepository = mockk<UserRepository>(relaxed = true),
         )
     }

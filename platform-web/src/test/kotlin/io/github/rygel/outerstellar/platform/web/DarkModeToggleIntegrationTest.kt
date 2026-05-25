@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -33,12 +32,10 @@ import org.junit.jupiter.api.BeforeEach
 class DarkModeToggleIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var securityService: SecurityService
     private lateinit var sessionCookie: Cookie
 
     @BeforeEach
     fun setupTest() {
-        securityService = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),
@@ -49,7 +46,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
             )
         userRepository.save(user)
         sessionCookie = Cookie(RequestContext.SESSION_COOKIE, sessionSvc.createSession(user.id))
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun seedAdmin(): String {

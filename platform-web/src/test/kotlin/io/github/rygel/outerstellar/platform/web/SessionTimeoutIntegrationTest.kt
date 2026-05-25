@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -23,12 +22,9 @@ class SessionTimeoutIntegrationTest : WebTest() {
     private lateinit var expiredUser: User
     private lateinit var activeToken: String
     private lateinit var expiredToken: String
-    private lateinit var securityService: SecurityService
 
     @BeforeEach
     fun setupTest() {
-        securityService = createSecurityService()
-
         activeUser = createTestUser("activeuser", "active@test.com")
         expiredUser = createTestUser("expireduser", "expired@test.com")
 
@@ -44,7 +40,7 @@ class SessionTimeoutIntegrationTest : WebTest() {
             )
         }
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun createTestUser(name: String, email: String): User =

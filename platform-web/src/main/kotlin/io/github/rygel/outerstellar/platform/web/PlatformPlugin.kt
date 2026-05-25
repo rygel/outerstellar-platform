@@ -12,7 +12,8 @@ import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
+import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import org.http4k.contract.ContractRoute
 import org.http4k.core.Filter
@@ -43,7 +44,8 @@ data class PluginOptions(
 data class PluginContext(
     val renderer: TemplateRenderer,
     val config: AppConfig,
-    val securityService: SecurityService,
+    val apiKeyService: ApiKeyService,
+    val oauthService: OAuthService,
     val userRepository: UserRepository,
     val analytics: AnalyticsService,
     val notificationService: NotificationService?,
@@ -95,13 +97,15 @@ data class PluginContext(
          */
         fun forTesting(
             renderer: TemplateRenderer,
-            securityService: SecurityService,
+            apiKeyService: ApiKeyService,
+            oauthService: OAuthService,
             userRepository: UserRepository,
         ): PluginContext =
             PluginContext(
                 renderer = renderer,
                 config = AppConfig(),
-                securityService = securityService,
+                apiKeyService = apiKeyService,
+                oauthService = oauthService,
                 userRepository = userRepository,
                 analytics = NoOpAnalyticsService(),
                 notificationService = null,

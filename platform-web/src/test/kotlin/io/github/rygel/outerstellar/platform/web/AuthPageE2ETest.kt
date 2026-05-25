@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.mockk.mockk
 import org.http4k.core.Method.GET
@@ -16,12 +15,11 @@ class AuthPageE2ETest : WebTest() {
     fun `auth page renders correctly`() {
         val app =
             buildApp(
-                securityService = mockk<SecurityService>(relaxed = true),
                 overrides =
                     TestOverrides(
                         userRepository = mockk<UserRepository>(relaxed = true),
                         contactService = mockk<ContactService>(relaxed = true),
-                    ),
+                    )
             )
         val response = app(Request(GET, "/auth"))
 

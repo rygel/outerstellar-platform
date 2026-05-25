@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.MessageService
 import java.util.UUID
 import kotlin.test.Test
@@ -32,11 +31,9 @@ class MessageRestoreIntegrationTest : WebTest() {
 
     private lateinit var messageService: MessageService
     private lateinit var sessionCookie: Cookie
-    private lateinit var sec: SecurityService
 
     @BeforeEach
     fun setupTest() {
-        sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),
@@ -53,7 +50,7 @@ class MessageRestoreIntegrationTest : WebTest() {
         messageService = MessageService(messageRepository, outbox, txManager, cache)
     }
 
-    private fun buildTestApp() = buildApp(securityService = sec)
+    private fun buildTestApp() = buildApp()
 
     /** Creates a server message and returns its syncId. */
     private fun createAndSoftDelete(author: String, content: String): String {

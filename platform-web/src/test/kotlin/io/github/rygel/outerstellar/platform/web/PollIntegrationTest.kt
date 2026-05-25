@@ -4,7 +4,6 @@ import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.PollWithResults
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,7 +46,6 @@ class PollIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var sessionToken: String
 
     private val pollResultsLens = Body.auto<PollWithResults>().toLens()
@@ -64,10 +62,9 @@ class PollIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        securityService = createSecurityService()
         sessionToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, sessionToken)

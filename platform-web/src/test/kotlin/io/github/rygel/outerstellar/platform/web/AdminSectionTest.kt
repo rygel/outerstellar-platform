@@ -1,7 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
+import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.mockk.mockk
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -23,9 +24,10 @@ class AdminSectionTest {
                 override val id: String = "test-plugin"
             }
         val renderer = mockk<TemplateRenderer>(relaxed = true)
-        val securityService = mockk<SecurityService>(relaxed = true)
+        val apiKeyService = mockk<ApiKeyService>(relaxed = true)
+        val oauthService = mockk<OAuthService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
-        val context = PluginContext.forTesting(renderer, securityService, userRepository)
+        val context = PluginContext.forTesting(renderer, apiKeyService, oauthService, userRepository)
         assertTrue(plugin.adminSections(context).isEmpty())
     }
 

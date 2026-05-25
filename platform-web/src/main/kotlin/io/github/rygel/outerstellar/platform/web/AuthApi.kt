@@ -18,10 +18,11 @@ import io.github.rygel.outerstellar.platform.model.UserProfileResponse
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.security.AccountService
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.AuthService
+import io.github.rygel.outerstellar.platform.security.PasswordResetService
 import io.github.rygel.outerstellar.platform.security.SecurityRules
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
@@ -41,7 +42,8 @@ import org.http4k.lens.Path
 import org.http4k.lens.long
 
 class AuthApi(
-    private val securityService: SecurityService,
+    private val apiKeyService: ApiKeyService,
+    private val passwordResetService: PasswordResetService,
     private val authService: AuthService,
     private val accountService: AccountService,
     private val sessionService: SessionService,
@@ -95,7 +97,7 @@ class AuthApi(
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
                         val body = createApiKeyLens(request)
-                        val response = securityService.createApiKey(user.id, body.name)
+                        val response = apiKeyService.createApiKey(user.id, body.name)
                         Response(Status.OK).with(createApiKeyResponseLens of response)
                     } catch (e: IllegalArgumentException) {
                         Response(Status.BAD_REQUEST).body(e.message ?: "Invalid request")
@@ -109,7 +111,7 @@ class AuthApi(
                 GET to
                 { request ->
                     val user = SecurityRules.USER_KEY(request)!!
-                    val keys = securityService.listApiKeys(user.id)
+                    val keys = apiKeyService.listApiKeys(user.id)
                     Response(Status.OK).with(apiKeySummaryListLens of keys)
                 },
             "/api/v1/auth/api-keys" / apiKeyIdPath meta
@@ -121,7 +123,7 @@ class AuthApi(
                 { id ->
                     { request ->
                         val user = SecurityRules.USER_KEY(request)!!
-                        securityService.deleteApiKey(user.id, id)
+                        apiKeyService.deleteApiKey(user.id, id)
                         Response(Status.OK).body("API key deleted")
                     }
                 },
@@ -293,7 +295,7 @@ class AuthApi(
                 POST to
                 { request ->
                     val body = resetRequestLens(request)
-                    securityService.requestPasswordReset(body.email)
+                    passwordResetService.requestPasswordReset(body.email)
                     Response(Status.OK).body("Reset request accepted")
                 },
             "/api/v1/auth/reset-confirm" meta
@@ -307,7 +309,7 @@ class AuthApi(
                 { request ->
                     val body = resetConfirmLens(request)
                     try {
-                        securityService.resetPassword(body.token, body.newPassword)
+                        passwordResetService.resetPassword(body.token, body.newPassword)
                         Response(Status.OK).body("Password has been reset")
                     } catch (e: IllegalArgumentException) {
                         Response(Status.BAD_REQUEST).body(e.message ?: "Invalid or expired token")

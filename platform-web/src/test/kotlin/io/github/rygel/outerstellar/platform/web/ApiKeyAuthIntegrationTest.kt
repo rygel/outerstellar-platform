@@ -4,7 +4,6 @@ import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,14 +38,6 @@ class ApiKeyAuthIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                apiKeyRepository = apiKeyRepository,
-                sessionRepository = sessionRepository,
-            )
-
         testUser =
             User(
                 id = UUID.randomUUID(),
@@ -58,7 +49,7 @@ class ApiKeyAuthIntegrationTest : WebTest() {
         userRepository.save(testUser)
         sessionToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun uuidBearer() = "Bearer $sessionToken"

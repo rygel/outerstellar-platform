@@ -5,7 +5,6 @@ import io.github.rygel.outerstellar.platform.model.AuditEntry
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,7 +40,6 @@ class AdminExportIntegrationTest : WebTest() {
     private lateinit var app: HttpHandler
     private lateinit var adminUser: User
     private lateinit var regularUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var adminToken: String
     private lateinit var userToken: String
 
@@ -66,11 +64,10 @@ class AdminExportIntegrationTest : WebTest() {
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService = createSecurityService()
         adminToken = sessionSvc.createSession(adminUser.id)
         userToken = sessionSvc.createSession(regularUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun adminSession() = Cookie(RequestContext.SESSION_COOKIE, adminToken)

@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -34,7 +33,6 @@ class LogoutIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var user: User
-    private lateinit var securityService: SecurityService
     private lateinit var userToken: String
 
     @BeforeEach
@@ -49,10 +47,9 @@ class LogoutIntegrationTest : WebTest() {
             )
         userRepository.save(user)
 
-        securityService = createSecurityService()
         userToken = sessionSvc.createSession(user.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, userToken)

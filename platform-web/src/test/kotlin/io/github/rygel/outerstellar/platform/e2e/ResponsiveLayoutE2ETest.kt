@@ -91,7 +91,9 @@ class ResponsiveLayoutE2ETest {
         val web =
             createWebComponents(
                 config = testConfig,
-                securityService = security.securityService,
+                apiKeyService = security.apiKeyService,
+                passwordResetService = security.passwordResetService,
+                oauthService = security.oauthService,
                 sessionService = security.sessionService,
                 userAdminService = security.userAdminService,
                 messageRepository = persistence.messageRepository,
@@ -125,7 +127,9 @@ class ResponsiveLayoutE2ETest {
                 jteRenderer = web.templateRenderer,
                 pageFactory = web.pageFactory,
                 config = testConfig,
-                securityService = security.securityService,
+                apiKeyService = security.apiKeyService,
+                passwordResetService = security.passwordResetService,
+                oauthService = security.oauthService,
                 authService = security.authService,
                 accountService = security.accountService,
                 userAdminService = security.userAdminService,

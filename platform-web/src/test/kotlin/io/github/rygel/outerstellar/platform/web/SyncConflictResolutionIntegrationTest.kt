@@ -36,8 +36,6 @@ class SyncConflictResolutionIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService = createSecurityService()
-
         testUser =
             User(
                 id = UUID.randomUUID(),
@@ -49,7 +47,7 @@ class SyncConflictResolutionIntegrationTest : WebTest() {
         userRepository.save(testUser)
         sessionToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun bearer() = "Bearer $sessionToken"

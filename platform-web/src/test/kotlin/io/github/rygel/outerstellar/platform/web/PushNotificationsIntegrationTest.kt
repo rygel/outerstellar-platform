@@ -52,7 +52,6 @@ class PushNotificationsIntegrationTest : WebTest() {
     @BeforeEach
     fun setupTest() {
         deviceTokenRepository = InMemoryDeviceTokenRepository()
-        val securityService = createSecurityService()
 
         testUser =
             User(
@@ -65,11 +64,7 @@ class PushNotificationsIntegrationTest : WebTest() {
         userRepository.save(testUser)
         sessionToken = sessionSvc.createSession(testUser.id)
 
-        app =
-            buildApp(
-                securityService = securityService,
-                overrides = TestOverrides(deviceTokenRepository = deviceTokenRepository),
-            )
+        app = buildApp(overrides = TestOverrides(deviceTokenRepository = deviceTokenRepository))
     }
 
     @AfterEach

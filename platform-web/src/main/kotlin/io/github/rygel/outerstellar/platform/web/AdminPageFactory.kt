@@ -8,7 +8,7 @@ private const val ADMIN_SECONDS_PER_HOUR = 3600
 private const val ADMIN_SECONDS_PER_DAY = 86400
 
 class AdminPageFactory(
-    private val securityService: io.github.rygel.outerstellar.platform.security.SecurityService? = null,
+    private val apiKeyService: io.github.rygel.outerstellar.platform.security.ApiKeyService? = null,
     private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
     private val userAdminService: UserAdminService? = null,
 ) {
@@ -129,7 +129,7 @@ class AdminPageFactory(
         val i18n = shellRenderer.i18n
         val shell = shellRenderer.shell(i18n.translate("web.apikeys.title"), "/auth/api-keys")
         val userId = checkNotNull(ctx.user?.id) { "User not logged in" }
-        val keys = securityService?.listApiKeys(userId) ?: emptyList()
+        val keys = apiKeyService?.listApiKeys(userId) ?: emptyList()
 
         return Page(
             shell = shell,

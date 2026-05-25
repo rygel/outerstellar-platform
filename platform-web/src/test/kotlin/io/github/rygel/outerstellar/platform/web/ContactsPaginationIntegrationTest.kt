@@ -51,7 +51,6 @@ class ContactsPaginationIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val sec = createSecurityService()
         val user =
             User(
                 id = UUID.randomUUID(),
@@ -62,7 +61,7 @@ class ContactsPaginationIntegrationTest : WebTest() {
             )
         userRepository.save(user)
         sessionCookie = Cookie(RequestContext.SESSION_COOKIE, sessionSvc.createSession(user.id))
-        app = buildApp(securityService = sec)
+        app = buildApp()
     }
 
     // ---- Page rendering ----

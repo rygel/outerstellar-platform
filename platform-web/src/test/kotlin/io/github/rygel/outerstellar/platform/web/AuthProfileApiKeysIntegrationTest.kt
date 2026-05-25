@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,7 +28,6 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var testToken: String
 
     @BeforeEach
@@ -44,10 +42,9 @@ class AuthProfileApiKeysIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        securityService = createSecurityService()
         testToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
     private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, testToken)

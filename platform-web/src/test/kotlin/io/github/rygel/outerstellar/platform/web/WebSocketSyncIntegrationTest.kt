@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.mockk.mockk
 import io.mockk.verify
@@ -20,7 +19,6 @@ class WebSocketSyncIntegrationTest : WebTest() {
     private lateinit var testUser: User
     private lateinit var testToken: String
     private lateinit var syncWebSocket: SyncWebSocket
-    private lateinit var securityService: SecurityService
     private lateinit var sessionService: SessionService
 
     @BeforeEach
@@ -34,7 +32,6 @@ class WebSocketSyncIntegrationTest : WebTest() {
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        securityService = createSecurityService()
         sessionService = sessionSvc
         testToken = sessionService.createSession(testUser.id)
         syncWebSocket = SyncWebSocket(sessionService)
