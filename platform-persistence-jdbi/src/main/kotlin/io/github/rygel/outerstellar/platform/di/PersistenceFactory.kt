@@ -72,11 +72,15 @@ fun createPersistenceComponents(
         throw e
     }
     if (config.devMode) {
-        JdbiUserRepository(Jdbi.create(ds)).seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
+        val seedJdbi = Jdbi.create(ds)
+        seedJdbi.registerArgument(io.github.rygel.outerstellar.platform.persistence.InstantArgumentFactory())
+        JdbiUserRepository(seedJdbi).seedAdminUser(DEV_ADMIN_PLACEHOLDER_HASH)
     }
 
     val jdbi =
         Jdbi.create(ds).also {
+            it.registerArgument(io.github.rygel.outerstellar.platform.persistence.InstantArgumentFactory())
+            it.registerColumnMapper(io.github.rygel.outerstellar.platform.persistence.InstantColumnMapper())
             if (Metrics.globalRegistry.find("database.connections.active").gauge() == null) {
                 Metrics.globalRegistry.gauge("database.connections.active", 1)
             }

@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.MessageVote
 import io.github.rygel.outerstellar.platform.model.VoteScore
-import java.sql.Timestamp
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 
@@ -20,7 +19,7 @@ class JdbiVoteRepository(private val jdbi: Jdbi) : VoteRepository {
                 .bind("messageSyncId", vote.messageSyncId)
                 .bind("userId", vote.userId)
                 .bind("direction", vote.direction)
-                .bind("createdAt", Timestamp.from(vote.createdAt))
+                .bind("createdAt", vote.createdAt)
                 .execute()
         }
     }
@@ -136,13 +135,12 @@ class JdbiVoteRepository(private val jdbi: Jdbi) : VoteRepository {
     }
 
     private fun mapVote(rs: java.sql.ResultSet): MessageVote {
-        val createdAt = rs.getTimestamp("created_at")
         return MessageVote(
             id = rs.getLong("id"),
             messageSyncId = rs.getString("message_sync_id"),
             userId = rs.getObject("user_id", UUID::class.java),
             direction = rs.getInt("direction"),
-            createdAt = createdAt?.toInstant() ?: error("plt_message_votes.created_at is unexpectedly null"),
+            createdAt = rs.getRequiredInstant("created_at"),
         )
     }
 
