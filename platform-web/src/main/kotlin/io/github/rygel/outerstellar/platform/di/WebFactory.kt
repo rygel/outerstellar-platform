@@ -30,7 +30,6 @@ import io.github.rygel.outerstellar.platform.service.ResilientEmailService
 import io.github.rygel.outerstellar.platform.service.SmtpConfig
 import io.github.rygel.outerstellar.platform.service.SmtpEmailService
 import io.github.rygel.outerstellar.platform.service.VoteService
-import io.github.rygel.outerstellar.platform.web.AdminPageFactory
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
@@ -51,7 +50,6 @@ class WebComponents(
     val voteService: VoteService,
     val pollService: PollService,
     val notificationService: NotificationService,
-    val adminPageFactory: AdminPageFactory,
     val adminStatsService: AdminStatsService,
     val pluginMigrationSource: PluginMigrationSource,
 )
@@ -129,7 +127,6 @@ fun createWebComponents(
     val pollService = PollService(pollRepository)
     val notificationService = NotificationService(notificationRepository)
     val adminStatsService = AdminStatsService(userRepository)
-    val adminPageFactory = AdminPageFactory(apiKeyService, notificationService, userAdminService)
     val pluginMigrationSource: PluginMigrationSource = plugin ?: NoOpPluginMigrationSource
 
     return WebComponents(
@@ -144,7 +141,6 @@ fun createWebComponents(
         voteService = voteService,
         pollService = pollService,
         notificationService = notificationService,
-        adminPageFactory = adminPageFactory,
         adminStatsService = adminStatsService,
         pluginMigrationSource = pluginMigrationSource,
     )

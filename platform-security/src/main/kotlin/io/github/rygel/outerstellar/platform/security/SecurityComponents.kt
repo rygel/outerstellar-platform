@@ -59,6 +59,7 @@ fun createSecurityComponents(
             passwordEncoder = passwordEncoder,
             auditRepository = auditRepository,
             config = securityConfig,
+            totpService = totpService,
         )
 
     val accountService =

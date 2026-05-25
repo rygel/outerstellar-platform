@@ -3,9 +3,17 @@ package io.github.rygel.outerstellar.platform
 import io.github.rygel.outerstellar.platform.di.CoreComponents
 import io.github.rygel.outerstellar.platform.di.PersistenceComponents
 import io.github.rygel.outerstellar.platform.di.WebComponents
+import io.github.rygel.outerstellar.platform.export.ContactExportProvider
+import io.github.rygel.outerstellar.platform.export.MessageExportProvider
 import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.search.ContactSearchProvider
+import io.github.rygel.outerstellar.platform.search.MessageSearchProvider
 import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
+import io.github.rygel.outerstellar.platform.security.AppleOAuthProvider
+import io.github.rygel.outerstellar.platform.security.AuthRealm
 import io.github.rygel.outerstellar.platform.security.AuthResult
+import io.github.rygel.outerstellar.platform.security.OAuthProvider
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SessionRealm
@@ -21,6 +29,7 @@ import io.github.rygel.outerstellar.platform.web.ErrorRoutes
 import io.github.rygel.outerstellar.platform.web.ExportRoutes
 import io.github.rygel.outerstellar.platform.web.Filters
 import io.github.rygel.outerstellar.platform.web.HomeRoutes
+import io.github.rygel.outerstellar.platform.web.Metrics
 import io.github.rygel.outerstellar.platform.web.NotificationApi
 import io.github.rygel.outerstellar.platform.web.NotificationRoutes
 import io.github.rygel.outerstellar.platform.web.OAuthRoutes
@@ -32,8 +41,12 @@ import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.PluginOptions
 import io.github.rygel.outerstellar.platform.web.PollApi
 import io.github.rygel.outerstellar.platform.web.ProfileRoutes
+import io.github.rygel.outerstellar.platform.web.RequestContext
 import io.github.rygel.outerstellar.platform.web.SearchRoutes
+import io.github.rygel.outerstellar.platform.web.SessionCookie
 import io.github.rygel.outerstellar.platform.web.SettingsRoutes
+import io.github.rygel.outerstellar.platform.web.ShellConfig
+import io.github.rygel.outerstellar.platform.web.ShellRenderer
 import io.github.rygel.outerstellar.platform.web.SyncApi
 import io.github.rygel.outerstellar.platform.web.TOTPApiRoutes
 import io.github.rygel.outerstellar.platform.web.TOTPRoutes
@@ -45,6 +58,8 @@ import io.github.rygel.outerstellar.platform.web.etagCachingFilter
 import io.github.rygel.outerstellar.platform.web.rateLimitFilter
 import io.github.rygel.outerstellar.platform.web.shellRenderer
 import io.github.rygel.outerstellar.platform.web.staticCacheControlFilter
+import java.time.Instant
+import java.time.LocalDate
 import org.http4k.contract.bindContract
 import org.http4k.contract.contract
 import org.http4k.contract.openapi.ApiInfo
@@ -54,6 +69,7 @@ import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
 import org.http4k.core.PolyHandler
+import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.cookie.cookie
@@ -67,6 +83,8 @@ import org.http4k.routing.routes
 import org.http4k.routing.static
 import org.http4k.routing.websocket.bind as wsBind
 import org.http4k.routing.websockets
+import org.http4k.security.Security
+import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.App")
@@ -106,9 +124,7 @@ private fun assembleHttpHandler(
     return buildFilterChain(config, persistence, security, web, plugin).then(baseApp)
 }
 
-private fun buildBearerSecurityPair(
-    realms: List<io.github.rygel.outerstellar.platform.security.AuthRealm>
-): Pair<org.http4k.security.Security, org.http4k.security.Security> {
+private fun buildBearerSecurityPair(realms: List<AuthRealm>): Pair<Security, Security> {
     val bearerAuthFilter = Filter { next ->
         { req ->
             val token = req.header("Authorization")?.removePrefix("Bearer ")
@@ -134,11 +150,11 @@ private fun buildBearerSecurityPair(
         }
     }
     val bearerSecurity =
-        object : org.http4k.security.Security {
+        object : Security {
             override val filter = bearerAuthFilter
         }
     val bearerAdminSecurity =
-        object : org.http4k.security.Security {
+        object : Security {
             override val filter = Filter { next ->
                 bearerAuthFilter.then(Filter { inner -> SecurityRules.hasRole(UserRole.ADMIN, inner) })(next)
             }
@@ -153,8 +169,8 @@ private fun buildApiRoutes(
     core: CoreComponents,
     web: WebComponents,
     plugin: PlatformPlugin?,
-    bearerSecurity: org.http4k.security.Security,
-    bearerAdminSecurity: org.http4k.security.Security,
+    bearerSecurity: Security,
+    bearerAdminSecurity: Security,
 ): List<RoutingHttpHandler> {
     val sec = security
     val appLabel = plugin?.appLabel ?: "Outerstellar"
@@ -201,10 +217,7 @@ private fun buildApiRoutes(
         this.security = bearerAdminSecurity
         routes += UserAdminApi(sec.userAdminService).routes
         val exportProviders =
-            listOfNotNull(
-                io.github.rygel.outerstellar.platform.export.MessageExportProvider(core.messageService),
-                io.github.rygel.outerstellar.platform.export.ContactExportProvider(core.contactService),
-            )
+            listOfNotNull(MessageExportProvider(core.messageService), ContactExportProvider(core.contactService))
         if (exportProviders.isNotEmpty()) {
             routes += ExportRoutes(exportProviders).routes
         }
@@ -254,11 +267,11 @@ private fun buildUiRoutes(
                 )
                 .routes
         routes += passwordRoutes.publicRoutes
-        val oauthProviders = mutableMapOf<String, io.github.rygel.outerstellar.platform.security.OAuthProvider>()
+        val oauthProviders = mutableMapOf<String, OAuthProvider>()
         val appleConfig = config.appleOAuth
         if (appleConfig.enabled && appleConfig.clientId.isNotBlank()) {
             oauthProviders["apple"] =
-                io.github.rygel.outerstellar.platform.security.AppleOAuthProvider(
+                AppleOAuthProvider(
                     teamId = appleConfig.teamId,
                     clientId = appleConfig.clientId,
                     keyId = appleConfig.keyId,
@@ -276,10 +289,7 @@ private fun buildUiRoutes(
                 .routes
         routes += ErrorRoutes(pageFactory, jteRenderer).routes
         val searchProviders =
-            listOfNotNull(
-                io.github.rygel.outerstellar.platform.search.MessageSearchProvider(core.messageService),
-                io.github.rygel.outerstellar.platform.search.ContactSearchProvider(core.contactService),
-            )
+            listOfNotNull(MessageSearchProvider(core.messageService), ContactSearchProvider(core.contactService))
         routes += SearchRoutes(pageFactory, jteRenderer, searchProviders).routes
         if (homeRoutes != null) {
             routes += homeRoutes.publicRoutes
@@ -305,18 +315,14 @@ private fun buildUiRoutes(
             routes += plugin.routes(pluginCtx)
         }
         routes +=
-            ("/logout" bindContract POST).to { request: org.http4k.core.Request ->
-                val rawToken =
-                    request.cookie(io.github.rygel.outerstellar.platform.web.RequestContext.SESSION_COOKIE)?.value
+            ("/logout" bindContract POST).to { request: Request ->
+                val rawToken = request.cookie(RequestContext.SESSION_COOKIE)?.value
                 if (rawToken != null) {
                     sec.sessionService.deleteSession(rawToken)
                 }
                 Response(Status.FOUND)
                     .header("location", request.shellRenderer.url("/"))
-                    .header(
-                        "Set-Cookie",
-                        io.github.rygel.outerstellar.platform.web.SessionCookie.clear(sessionCookieSecure),
-                    )
+                    .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
             }
     }
 
@@ -352,7 +358,7 @@ private fun buildAdminRoutes(
     val devDashboardEnabled = config.devDashboardEnabled
     val appLabel = plugin?.appLabel ?: "Outerstellar"
     val adminSecurity =
-        object : org.http4k.security.Security {
+        object : Security {
             override val filter = Filter { next ->
                 SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
             }
@@ -389,16 +395,12 @@ private fun buildAdminRoutes(
                 "/admin/plugins" bind
                     GET to
                     { req ->
-                        val pluginRequestContext =
-                            io.github.rygel.outerstellar.platform.web.RequestContext(
-                                req,
-                                sessionService = sec.sessionService,
-                            )
+                        val pluginRequestContext = RequestContext(req, sessionService = sec.sessionService)
                         val pluginShellRenderer =
-                            io.github.rygel.outerstellar.platform.web.ShellRenderer(
+                            ShellRenderer(
                                 pluginRequestContext,
                                 shellConfig =
-                                    io.github.rygel.outerstellar.platform.web.ShellConfig(
+                                    ShellConfig(
                                         pluginOptions =
                                             PluginOptions(
                                                 adminNavItems =
@@ -420,7 +422,7 @@ private fun buildAdminRoutes(
 }
 
 private fun buildPluginContext(
-    jteRenderer: org.http4k.template.TemplateRenderer,
+    jteRenderer: TemplateRenderer,
     config: AppConfig,
     persistence: PersistenceComponents,
     security: SecurityComponents,
@@ -473,7 +475,7 @@ private fun buildBaseApp(
 
     val metricsHandler =
         Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
-            .then { Response(Status.OK).body(io.github.rygel.outerstellar.platform.web.Metrics.registry.scrape()) }
+            .then { Response(Status.OK).body(Metrics.registry.scrape()) }
 
     val unfiltered =
         mutableListOf(
@@ -489,18 +491,16 @@ private fun buildBaseApp(
     appRoutes += componentRouteSet.publicRoutes
     appRoutes += authenticatedFilter.then(uiRouteSet.protectedRoutes)
     appRoutes += authenticatedFilter.then(componentRouteSet.protectedRoutes)
-    sec.totpService.let { totpService ->
-        appRoutes +=
-            TOTPRoutes(
-                    sec.authService,
-                    web.templateRenderer,
-                    config.sessionCookieSecure,
-                    totpService,
-                    sec.sessionService,
-                )
-                .routes
-        appRoutes += TOTPApiRoutes(sec.authService, totpService, sec.sessionService).routes
-    }
+    appRoutes +=
+        TOTPRoutes(
+                sec.authService,
+                web.templateRenderer,
+                config.sessionCookieSecure,
+                sec.totpService,
+                sec.sessionService,
+            )
+            .routes
+    appRoutes += TOTPApiRoutes(sec.authService, sec.totpService, sec.sessionService).routes
     appRoutes.addAll(apiRoutes)
     if ("/" !in excludedRoutes) {
         appRoutes += "/" bind filteredAdminHandler
@@ -535,7 +535,7 @@ private fun buildRobotsTxtResponse(): Response =
 
 private fun buildSitemapResponse(appBaseUrl: String): Response {
     val base = appBaseUrl.ifBlank { "http://localhost:8080" }
-    val today = java.time.LocalDate.now().toString()
+    val today = LocalDate.now().toString()
     return Response(Status.OK)
         .header("content-type", "application/xml; charset=utf-8")
         .body(
@@ -565,9 +565,7 @@ private fun buildSitemapResponse(appBaseUrl: String): Response {
 }
 
 @Suppress("TooGenericExceptionCaught", "SwallowedException")
-private fun buildHealthResponse(
-    userRepository: io.github.rygel.outerstellar.platform.persistence.UserRepository
-): Response {
+private fun buildHealthResponse(userRepository: UserRepository): Response {
     val checks = mutableMapOf<String, Any>("status" to "UP")
     try {
         userRepository.countAll()
@@ -576,7 +574,7 @@ private fun buildHealthResponse(
         checks["status"] = "DOWN"
         checks["database"] = mapOf("status" to "DOWN", "error" to "Database connection failed")
     }
-    checks["timestamp"] = java.time.Instant.now().toString()
+    checks["timestamp"] = Instant.now().toString()
     val status = if (checks["status"] == "UP") Status.OK else Status.SERVICE_UNAVAILABLE
     return Response(status)
         .header("content-type", "application/json; charset=utf-8")
@@ -627,8 +625,6 @@ private fun buildFilterChain(
                         navItems = plugin?.navItems ?: emptyList(),
                         textResolver = plugin?.textResolver,
                         adminNavItems = adminNavItems,
-                        bannerProviders =
-                            if (plugin != null && pluginCtx != null) plugin.bannerProviders(pluginCtx) else emptyList(),
                     ),
                     cookieSecure = config.sessionCookieSecure,
                     appBaseUrl = config.appBaseUrl,

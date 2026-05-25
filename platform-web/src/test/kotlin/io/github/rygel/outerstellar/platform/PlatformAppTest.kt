@@ -11,7 +11,6 @@ import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
-import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.web.StubMessageCache
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
 import io.github.rygel.outerstellar.platform.web.bodyContains
@@ -35,7 +34,7 @@ class PlatformAppTest {
         val persistence = buildMockPersistence(repository, userRepository)
         val security = buildMockSecurity()
         val core = buildMockCore()
-        val web = buildMockWeb(repository, security.apiKeyService, security.sessionService, security.userAdminService)
+        val web = buildMockWeb(repository, security.apiKeyService, security.sessionService)
 
         val handler = app(config = config, persistence = persistence, security = security, core = core, web = web).http
         assertNotNull(handler)
@@ -97,9 +96,8 @@ class PlatformAppTest {
     @Suppress("LongParameterList")
     private fun buildMockWeb(
         repository: MessageRepository,
-        apiKeyService: ApiKeyService,
+        @Suppress("UNUSED_PARAMETER") apiKeyService: ApiKeyService,
         sessionService: SessionService,
-        userAdminService: UserAdminService,
     ): WebComponents {
         val notificationService =
             mockk<io.github.rygel.outerstellar.platform.service.NotificationService>(relaxed = true)
@@ -117,12 +115,6 @@ class PlatformAppTest {
             voteService = io.github.rygel.outerstellar.platform.service.VoteService(voteRepo, repository),
             pollService = io.github.rygel.outerstellar.platform.service.PollService(pollRepo),
             notificationService = notificationService,
-            adminPageFactory =
-                io.github.rygel.outerstellar.platform.web.AdminPageFactory(
-                    apiKeyService,
-                    notificationService,
-                    userAdminService,
-                ),
             adminStatsService = io.github.rygel.outerstellar.platform.security.AdminStatsService(mockk(relaxed = true)),
             pluginMigrationSource = object : PluginMigrationSource {},
         )

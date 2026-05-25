@@ -4,6 +4,7 @@ import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.OAuthService
+import io.github.rygel.outerstellar.platform.security.TOTPService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -55,7 +56,7 @@ class OAuthIntegrationTest : WebTest() {
                 oauthRepository = localOAuthRepository,
                 auditRepository = auditRepository,
             )
-        localAuthService = AuthService(userRepository, encoder, auditRepository)
+        localAuthService = AuthService(userRepository, encoder, auditRepository, totpService = TOTPService())
 
         app = buildApp()
     }
