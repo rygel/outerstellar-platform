@@ -1,6 +1,10 @@
 package io.github.rygel.outerstellar.platform.nativeimage
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
 import java.io.File
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Test
@@ -13,106 +17,132 @@ class NativeResourceDriftTest {
                 "io.github.rygel/outerstellar-platform-web/reachability-metadata.json"
         )
 
-    private val mapper = ObjectMapper()
+    private val mapper = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
 
-    private fun resourceGlobs(): Set<String> {
+    private val dependencyGlobs =
+        listOf(
+            "META-INF/org/http4k/core/mime.types",
+            "META-INF/services/ch.qos.logback.classic.spi.Configurator",
+            "META-INF/services/io.opentelemetry.context.ContextStorageProvider",
+            "META-INF/services/java.net.spi.InetAddressResolverProvider",
+            "META-INF/services/java.net.spi.URLStreamHandlerProvider",
+            "META-INF/services/java.nio.channels.spi.SelectorProvider",
+            "META-INF/services/java.sql.Driver",
+            "META-INF/services/java.time.zone.ZoneRulesProvider",
+            "META-INF/services/javax.xml.parsers.SAXParserFactory",
+            "META-INF/services/org.flywaydb.core.extensibility.Plugin",
+            "META-INF/services/org.slf4j.spi.SLF4JServiceProvider",
+            "ch/qos/logback/classic/logback-classic-version.properties",
+            "ch/qos/logback/core/logback-core-version.properties",
+            "org/flywaydb/core/internal/version.txt",
+            "org/postgresql/driverconfig.properties",
+            "prometheus.properties",
+        )
+
+    private fun scanProjectGlobs(): Set<String> {
+        val globs = sortedSetOf<String>()
+        scanMigrations(globs)
+        scanI18nBundles(globs)
+        scanConfigFiles(globs)
+        scanStaticAssets(globs)
+        scanLogback(globs)
+        return globs
+    }
+
+    private fun scanMigrations(globs: MutableSet<String>) {
+        globs.add("db/migration")
+        globs.add("db/migration/migrations.index")
+        val dir = File("../platform-persistence-jdbi/src/main/resources/db/migration")
+        assertTrue(dir.isDirectory, "Migration directory must exist")
+        dir.listFiles()
+            ?.filter { it.name.endsWith(".sql") && it.name.startsWith("V") }
+            ?.forEach { globs.add("db/migration/${it.name}") }
+    }
+
+    private fun scanI18nBundles(globs: MutableSet<String>) {
+        val dir = File("../platform-core/src/main/resources")
+        assertTrue(dir.isDirectory, "platform-core resources must exist")
+        dir.listFiles()?.filter { it.name.matches(Regex("messages.*\\.properties")) }?.forEach { globs.add(it.name) }
+    }
+
+    private fun scanConfigFiles(globs: MutableSet<String>) {
+        globs.add("application.yaml")
+        globs.add("application-*.yaml")
+    }
+
+    private fun scanStaticAssets(globs: MutableSet<String>) {
+        val staticDir = File("src/main/resources/static")
+        if (!staticDir.isDirectory) return
+        scanDirectory(staticDir, "static", globs)
+    }
+
+    private fun scanDirectory(dir: File, prefix: String, globs: MutableSet<String>) {
+        dir.listFiles()
+            ?.sortedBy { it.name }
+            ?.forEach { file ->
+                val path = "$prefix/${file.name}"
+                if (file.isDirectory) {
+                    scanDirectory(file, path, globs)
+                } else {
+                    globs.add(path)
+                }
+            }
+    }
+
+    private fun scanLogback(globs: MutableSet<String>) {
+        if (File("../platform-core/src/main/resources/logback.xml").isFile) {
+            globs.add("logback.xml")
+        }
+    }
+
+    private fun buildExpectedResources(): ArrayNode {
+        val resources = mapper.createArrayNode()
+
+        for (glob in scanProjectGlobs()) {
+            resources.add(mapper.createObjectNode().put("glob", glob))
+        }
+
+        for (glob in dependencyGlobs.sorted()) {
+            resources.add(mapper.createObjectNode().put("glob", glob))
+        }
+
+        resources.add(
+            mapper
+                .createObjectNode()
+                .put("module", "java.logging")
+                .put("glob", "sun/util/logging/resources/logging_en.properties")
+        )
+        resources.add(
+            mapper
+                .createObjectNode()
+                .put("module", "java.logging")
+                .put("glob", "sun/util/logging/resources/logging_en_GB.properties")
+        )
+        resources.add(
+            mapper.createObjectNode().put("module", "jdk.jfr").put("glob", "jdk/jfr/internal/types/metadata.bin")
+        )
+        resources.add(mapper.createObjectNode().put("bundle", "sun.util.logging.resources.logging"))
+
+        return resources
+    }
+
+    @Test
+    fun `resources section matches classpath`() {
         assertTrue(metadataFile.isFile, "reachability-metadata.json must exist")
+
+        val expected = buildExpectedResources()
         val tree = mapper.readTree(metadataFile)
-        val resources = tree["resources"]
-        assertTrue(resources != null && resources.isArray, "resources array must exist")
-        return resources.map { it["glob"]?.asText() ?: "" }.filter { it.isNotEmpty() }.toSet()
-    }
+        val current = tree["resources"]
+        assertTrue(current != null && current.isArray, "resources array must exist")
 
-    @Test
-    fun `all migration sql files are listed in reachability metadata`() {
-        val migrationDir = File("../platform-persistence-jdbi/src/main/resources/db/migration")
-        assertTrue(migrationDir.isDirectory, "Migration directory must exist")
+        val expectedSet = expected.map { it.toString() }.toSet()
+        val currentSet = current.map { it.toString() }.toSet()
 
-        val sqlFiles =
-            migrationDir
-                .listFiles()
-                ?.filter { it.name.endsWith(".sql") && it.name.startsWith("V") }
-                ?.map { "db/migration/${it.name}" } ?: emptyList()
-
-        assertTrue(sqlFiles.isNotEmpty(), "There should be at least one migration")
-
-        val globs = resourceGlobs()
-        val missing = sqlFiles.filter { it !in globs }
-
-        assertTrue(
-            missing.isEmpty(),
-            "These migration files are not in reachability-metadata.json resources:\n" +
-                missing.joinToString("\n  ") +
-                "\nRun: scripts/generate-reachability-resources.ps1 to regenerate",
-        )
-    }
-
-    @Test
-    fun `i18n bundles are listed in reachability metadata`() {
-        val messagesDir = File("../platform-core/src/main/resources")
-        assertTrue(messagesDir.isDirectory, "platform-core resources must exist")
-
-        val bundles =
-            messagesDir.listFiles()?.filter { it.name.matches(Regex("messages.*\\.properties")) }?.map { it.name }
-                ?: emptyList()
-
-        assertTrue(bundles.isNotEmpty(), "There should be at least one messages bundle")
-
-        val globs = resourceGlobs()
-        val missing = bundles.filter { it !in globs }
-
-        assertTrue(
-            missing.isEmpty(),
-            "These i18n bundles are not in reachability-metadata.json resources:\n" +
-                missing.joinToString("\n  ") +
-                "\nRun: scripts/generate-reachability-resources.ps1 to regenerate",
-        )
-    }
-
-    @Test
-    fun `logback xml is listed in reachability metadata`() {
-        val globs = resourceGlobs()
-        assertTrue("logback.xml" in globs, "logback.xml must be listed in reachability-metadata.json resources")
-    }
-
-    @Test
-    fun `migration manifest is listed in reachability metadata`() {
-        val globs = resourceGlobs()
-        assertTrue(
-            "db/migration/migrations.index" in globs,
-            "db/migration/migrations.index must be listed in reachability-metadata.json resources",
-        )
-    }
-
-    @Test
-    fun `application yaml is listed in reachability metadata`() {
-        val globs = resourceGlobs()
-        assertTrue(
-            "application.yaml" in globs,
-            "application.yaml must be listed in reachability-metadata.json resources",
-        )
-    }
-
-    @Test
-    fun `no stale migration entries exist in reachability metadata`() {
-        val migrationDir = File("../platform-persistence-jdbi/src/main/resources/db/migration")
-        val actualSqlFiles =
-            migrationDir
-                .listFiles()
-                ?.filter { it.name.endsWith(".sql") && it.name.startsWith("V") }
-                ?.map { "db/migration/${it.name}" }
-                ?.toSet() ?: emptySet()
-
-        val globs = resourceGlobs()
-        val metadataMigrations = globs.filter { it.startsWith("db/migration/V") && it.endsWith(".sql") }
-
-        val stale = metadataMigrations.filter { it !in actualSqlFiles }
-
-        assertTrue(
-            stale.isEmpty(),
-            "These migration entries in reachability-metadata.json don't match actual files:\n" +
-                stale.joinToString("\n  ") +
-                "\nRemove them from reachability-metadata.json",
-        )
+        if (expectedSet != currentSet) {
+            val fixed = mapper.readTree(metadataFile) as ObjectNode
+            fixed.set<JsonNode>("resources", expected)
+            mapper.writeValue(metadataFile, fixed)
+            assertTrue(false, "Resource entries regenerated — review diff and commit")
+        }
     }
 }
