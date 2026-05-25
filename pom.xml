@@ -37,6 +37,7 @@
     </scm>
 
     <modules>
+        <module>jte-extensions</module>
         <module>platform-core</module>
         <module>platform-persistence-jdbi</module>
         <module>platform-sync-client</module>

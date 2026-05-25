@@ -7,6 +7,7 @@ import gg.jte.resolve.DirectoryCodeResolver
 import gg.jte.resolve.ResourceCodeResolver
 import gg.jte.runtime.Template
 import io.github.rygel.outerstellar.platform.RuntimeConfig
+import io.github.rygel.outerstellar.platform.web.JteClassRegistry
 import java.nio.file.Files
 import java.nio.file.Path
 import org.http4k.core.ContentType

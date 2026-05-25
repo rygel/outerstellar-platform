@@ -282,6 +282,11 @@
                         <artifactId>jte-native-resources</artifactId>
                         <version>${jte.version}</version>
                     </dependency>
+                    <dependency>
+                        <groupId>io.github.rygel</groupId>
+                        <artifactId>jte-extensions</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
                 </dependencies>
                 <executions>
                     <execution>
@@ -298,6 +303,9 @@
                             <extensions>
                                 <extension>
                                     <className>gg.jte.nativeimage.NativeResourcesExtension</className>
+                                </extension>
+                                <extension>
+                                    <className>io.github.rygel.outerstellar.jte.JteClassRegistryExtension</className>
                                 </extension>
                             </extensions>
                         </configuration>
