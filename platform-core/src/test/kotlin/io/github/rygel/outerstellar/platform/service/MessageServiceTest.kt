@@ -57,7 +57,7 @@ class MessageServiceTest {
         serviceWithCache.createServerMessage("Alice", "hello")
 
         // Entity key must still be present — not nuked by invalidateAll
-        assertEquals(msg, cache.get("entity:$syncId"))
+        assertEquals(msg, cache.getMessage(syncId))
     }
 
     @Test
@@ -69,12 +69,12 @@ class MessageServiceTest {
         every { repository.resolveConflict(syncId, any()) } just Runs
 
         val cache = CaffeineMessageCache()
-        cache.put("entity:$syncId", existing)
+        cache.putMessage(syncId, existing)
         val serviceWithCache = MessageService(repository, cache = cache)
 
         serviceWithCache.resolveConflict(syncId, ConflictStrategy.SERVER)
 
-        assertNull(cache.get("entity:$syncId"))
+        assertNull(cache.getMessage(syncId))
     }
 
     @Test
@@ -84,12 +84,13 @@ class MessageServiceTest {
         every { repository.createServerMessage("Alice", "hello") } returns msg
 
         val cache = CaffeineMessageCache()
-        cache.put("list:null:null:10:0", "stale-result")
+        val staleResult = PagedResult(emptyList<MessageSummary>(), PaginationMetadata(1, 10, 0L))
+        cache.putMessageList("list:null:null:10:0", staleResult)
 
         val serviceWithCache = MessageService(repository, cache = cache)
         serviceWithCache.createServerMessage("Alice", "hello")
 
-        assertNull(cache.get("list:null:null:10:0"))
+        assertNull(cache.getMessageList("list:null:null:10:0"))
     }
 
     @Test

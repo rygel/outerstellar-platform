@@ -1,7 +1,10 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.DeviceToken
+import io.github.rygel.outerstellar.platform.model.MessageSummary
+import io.github.rygel.outerstellar.platform.model.PagedResult
 import io.github.rygel.outerstellar.platform.model.Session
+import io.github.rygel.outerstellar.platform.model.StoredMessage
 import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxEntry
@@ -34,23 +37,24 @@ class StubOutboxRepository : OutboxRepository {
 }
 
 class StubMessageCache : MessageCache {
-    override fun get(key: String): Any? = null
+    override fun getMessage(syncId: String): StoredMessage? = null
 
-    override fun put(key: String, value: Any) {
-        // Stub implementation
-    }
+    override fun putMessage(syncId: String, message: StoredMessage) = Unit
 
-    override fun invalidate(key: String) {
-        // Stub implementation
-    }
+    override fun getMessageList(key: String): PagedResult<MessageSummary>? = null
 
-    override fun invalidateAll() {
-        // Stub implementation
-    }
+    override fun putMessageList(key: String, result: PagedResult<MessageSummary>) = Unit
 
-    override fun invalidateNamespace(namespace: String) {
-        // test stub — no-op
-    }
+    override fun getMessageListOrPut(
+        key: String,
+        loader: () -> PagedResult<MessageSummary>,
+    ): PagedResult<MessageSummary> = loader()
+
+    override fun invalidate(key: String) = Unit
+
+    override fun invalidateAll() = Unit
+
+    override fun invalidateNamespace(namespace: String) = Unit
 
     override fun getStats(): Map<String, Any> = emptyMap()
 }
