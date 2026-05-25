@@ -10,6 +10,7 @@ import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SessionRealm
 import io.github.rygel.outerstellar.platform.web.AdminNavItem
+import io.github.rygel.outerstellar.platform.web.ApiKeyRoutes
 import io.github.rygel.outerstellar.platform.web.AuthApi
 import io.github.rygel.outerstellar.platform.web.AuthRoutes
 import io.github.rygel.outerstellar.platform.web.ComponentRoutes
@@ -24,11 +25,13 @@ import io.github.rygel.outerstellar.platform.web.NotificationApi
 import io.github.rygel.outerstellar.platform.web.NotificationRoutes
 import io.github.rygel.outerstellar.platform.web.OAuthRoutes
 import io.github.rygel.outerstellar.platform.web.Page
+import io.github.rygel.outerstellar.platform.web.PasswordRoutes
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
 import io.github.rygel.outerstellar.platform.web.PluginAdminDashboardPage
 import io.github.rygel.outerstellar.platform.web.PluginContext
 import io.github.rygel.outerstellar.platform.web.PluginOptions
 import io.github.rygel.outerstellar.platform.web.PollApi
+import io.github.rygel.outerstellar.platform.web.ProfileRoutes
 import io.github.rygel.outerstellar.platform.web.SearchRoutes
 import io.github.rygel.outerstellar.platform.web.SettingsRoutes
 import io.github.rygel.outerstellar.platform.web.SyncApi
@@ -240,16 +243,16 @@ private fun buildUiRoutes(
             AuthRoutes(
                     pageFactory,
                     jteRenderer,
-                    sec.apiKeyService,
-                    sec.passwordResetService,
                     sec.authService,
-                    sec.accountService,
                     sec.sessionService,
-                    sessionCookieSecure,
+                    sec.passwordResetService,
                     web.analyticsService,
                     config,
                 )
                 .routes
+        routes += PasswordRoutes(pageFactory, jteRenderer, sec.accountService, sec.passwordResetService).routes
+        routes += ProfileRoutes(pageFactory, jteRenderer, sec.accountService, sessionCookieSecure).routes
+        routes += ApiKeyRoutes(pageFactory, jteRenderer, sec.apiKeyService).routes
         val oauthProviders = mutableMapOf<String, io.github.rygel.outerstellar.platform.security.OAuthProvider>()
         val appleConfig = config.appleOAuth
         if (appleConfig.enabled && appleConfig.clientId.isNotBlank()) {
