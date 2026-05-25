@@ -1,15 +1,18 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.model.DeviceToken
+import io.github.rygel.outerstellar.platform.model.MessageSummary
+import io.github.rygel.outerstellar.platform.model.PagedResult
+import io.github.rygel.outerstellar.platform.model.Session
+import io.github.rygel.outerstellar.platform.model.StoredMessage
+import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
+import io.github.rygel.outerstellar.platform.persistence.OAuthConnection
+import io.github.rygel.outerstellar.platform.persistence.OAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxEntry
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxStatus
-import io.github.rygel.outerstellar.platform.security.DeviceToken
-import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
-import io.github.rygel.outerstellar.platform.security.OAuthConnection
-import io.github.rygel.outerstellar.platform.security.OAuthRepository
-import io.github.rygel.outerstellar.platform.security.Session
-import io.github.rygel.outerstellar.platform.security.SessionRepository
+import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import java.time.Instant
 import java.util.UUID
 
@@ -34,23 +37,24 @@ class StubOutboxRepository : OutboxRepository {
 }
 
 class StubMessageCache : MessageCache {
-    override fun get(key: String): Any? = null
+    override fun getMessage(syncId: String): StoredMessage? = null
 
-    override fun put(key: String, value: Any) {
-        // Stub implementation
-    }
+    override fun putMessage(syncId: String, message: StoredMessage) = Unit
 
-    override fun invalidate(key: String) {
-        // Stub implementation
-    }
+    override fun getMessageList(key: String): PagedResult<MessageSummary>? = null
 
-    override fun invalidateAll() {
-        // Stub implementation
-    }
+    override fun putMessageList(key: String, result: PagedResult<MessageSummary>) = Unit
 
-    override fun invalidateByPrefix(prefix: String) {
-        // test stub — no-op
-    }
+    override fun getMessageListOrPut(
+        key: String,
+        loader: () -> PagedResult<MessageSummary>,
+    ): PagedResult<MessageSummary> = loader()
+
+    override fun invalidate(key: String) = Unit
+
+    override fun invalidateAll() = Unit
+
+    override fun invalidateNamespace(namespace: String) = Unit
 
     override fun getStats(): Map<String, Any> = emptyMap()
 }
@@ -127,6 +131,15 @@ class InMemoryDeviceTokenRepository : DeviceTokenRepository {
         tokens.remove(token)
     }
 
+    override fun deleteByTokenAndUserId(token: String, userId: UUID): Boolean {
+        val existing = tokens[token]
+        return if (existing != null && existing.userId == userId) {
+            tokens.remove(token) != null
+        } else {
+            false
+        }
+    }
+
     override fun findByUserId(userId: UUID): List<DeviceToken> = tokens.values.filter { it.userId == userId }
 
     override fun deleteAllForUser(userId: UUID) {
@@ -138,5 +151,14 @@ class InMemoryDeviceTokenRepository : DeviceTokenRepository {
     fun all(): Collection<DeviceToken> = tokens.values
 }
 
-/** Generates a dynamic test password to avoid hardcoded credentials in source. */
-fun testPassword(): String = "test-" + java.util.UUID.randomUUID().toString().take(12)
+/** Generates a dynamic test password that meets complexity requirements (8+ chars, upper, lower, digit, special). */
+fun testPassword(): String = "T3st@" + java.util.UUID.randomUUID().toString().take(12)
+
+fun formBody(vararg pairs: Pair<String, String>): String =
+    pairs.joinToString("&") { (k, v) -> "$k=${java.net.URLEncoder.encode(v, "UTF-8")}" }
+
+fun formPost(url: String, vararg pairs: Pair<String, String>): org.http4k.core.Request =
+    org.http4k.core
+        .Request(org.http4k.core.Method.POST, url)
+        .header("content-type", "application/x-www-form-urlencoded")
+        .body(formBody(*pairs))

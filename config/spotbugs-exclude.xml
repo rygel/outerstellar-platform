@@ -14,10 +14,75 @@
         <Bug pattern="MS_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.web.RequestContext$Companion"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.web.ShellRenderer$Companion"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.web.WebContext"/>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+    </Match>
+    <Match>
         <Class name="~.*\$\$serializer"/>
         <Bug pattern="MS_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.security.PasswordResetService$Companion"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.model(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.CoreComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.PersistenceComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.security.SecurityComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.ServerComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.WebComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.sync(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.service.PushNotification"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.security.SecurityRules"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.web(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.infra(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.export.ContactExportProvider$ContactExportRow"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>
@@ -65,5 +130,93 @@
     <Match>
         <Class name="io.github.rygel.outerstellar.platform.fx.service.FxTrayNotifier"/>
         <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.app.JavaFxApp"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.app.JavaFxApp"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_MIGHT_BE_INFEASIBLE"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.app.JavaFxApp"/>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>
+        <Bug pattern="BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"/>
+    </Match>
+    <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+    </Match>
+    <Match>
+        <Class name="~io\.github\.rygel\.outerstellar\.platform\.di\.SyncClientComponents.*"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    <Match>
+        <Class name="~io\.github\.rygel\.outerstellar\.platform\.di\.SyncClientComponents.*"/>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.SyncClientComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="~io\.github\.rygel\.outerstellar\.platform\.di\.DesktopComponentsKt"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    <Match>
+        <Class name="~io\.github\.rygel\.outerstellar\.platform\.di\.DesktopComponentsKt"/>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.DesktopComponents"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.HttpClients"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.di.SyncModules"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="MS_PKGPROTECT"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="PA_PUBLIC_PRIMITIVE_ATTRIBUTE"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.FxAppContext"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel"/>
+        <Bug pattern="URF_UNREAD_FIELD"/>
     </Match>
 </FindBugsFilter>

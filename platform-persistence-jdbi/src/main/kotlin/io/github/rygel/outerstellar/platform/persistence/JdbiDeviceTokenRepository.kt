@@ -1,10 +1,8 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.security.DeviceToken
-import io.github.rygel.outerstellar.platform.security.DeviceTokenRepository
+import io.github.rygel.outerstellar.platform.model.DeviceToken
 import java.sql.ResultSet
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time.Instant
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 
@@ -28,7 +26,7 @@ class JdbiDeviceTokenRepository(private val jdbi: Jdbi) : DeviceTokenRepository 
                 .bind("platform", deviceToken.platform)
                 .bind("token", deviceToken.token)
                 .bind("appBundle", deviceToken.appBundle)
-                .bind("now", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("now", Instant.now())
                 .execute()
         }
     }
@@ -38,6 +36,11 @@ class JdbiDeviceTokenRepository(private val jdbi: Jdbi) : DeviceTokenRepository 
             handle.createUpdate("DELETE FROM plt_device_tokens WHERE token = :token").bind("token", token).execute()
         }
     }
+
+    override fun deleteByTokenAndUserId(token: String, userId: UUID): Boolean =
+        jdbi.withHandle<Boolean, Exception> { handle ->
+            handle.execute("DELETE FROM plt_device_tokens WHERE token = ? AND user_id = ?", token, userId) > 0
+        }
 
     override fun findByUserId(userId: UUID): List<DeviceToken> =
         jdbi.withHandle<List<DeviceToken>, Exception> { handle ->

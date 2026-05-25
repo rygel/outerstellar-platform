@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.6.1</version>
+        <version>1.6.2</version>
 
     </parent>
 
@@ -40,10 +40,6 @@
             <artifactId>snakeyaml-engine</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-core-jvm</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.http4k</groupId>
             <artifactId>http4k-ops-resilience4j</artifactId>
         </dependency>
@@ -56,14 +52,13 @@
             <artifactId>resilience4j-retry</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-test-junit5</artifactId>
-            <version>${koin.version}</version>
+            <groupId>io.mockk</groupId>
+            <artifactId>mockk-jvm</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.mockk</groupId>
-            <artifactId>mockk-jvm</artifactId>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-test-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

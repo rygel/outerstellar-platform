@@ -1,54 +1,68 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.infra.createDataSource
-import io.github.rygel.outerstellar.platform.infra.migrate
+import io.github.rygel.outerstellar.platform.model.User
+import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.testing.SharedPostgres
+import io.github.rygel.outerstellar.platform.testing.sanitizeDbName
+import java.util.UUID
 import org.jdbi.v3.core.Jdbi
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.testcontainers.containers.PostgreSQLContainer
+import org.junit.jupiter.api.TestInstance
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class JdbiTest {
-    protected lateinit var jdbi: Jdbi
+    private val testDb = SharedPostgres.createDatabase(sanitizeDbName(this::class.simpleName!!))
 
-    @BeforeEach
-    fun setupDatabase() {
-        jdbi = sharedJdbi
-    }
+    protected val jdbi: Jdbi by lazy { testDb.jdbi }
+
+    private val tablesToDelete =
+        listOf(
+            "plt_sessions",
+            "plt_notifications",
+            "plt_device_tokens",
+            "plt_oauth_connections",
+            "plt_api_keys",
+            "plt_password_reset_tokens",
+            "plt_audit_log",
+            "plt_outbox",
+            "plt_contact_emails",
+            "plt_contact_phones",
+            "plt_contact_socials",
+            "plt_contacts",
+            "plt_messages",
+            "plt_poll_votes",
+            "plt_poll_options",
+            "plt_polls",
+            "plt_sync_state",
+            "plt_users",
+        )
 
     @AfterEach
     fun cleanDatabase() {
-        jdbi.useHandle<Exception> { handle ->
-            handle.execute("DELETE FROM plt_sessions")
-            handle.execute("DELETE FROM plt_notifications")
-            handle.execute("DELETE FROM plt_device_tokens")
-            handle.execute("DELETE FROM plt_oauth_connections")
-            handle.execute("DELETE FROM plt_api_keys")
-            handle.execute("DELETE FROM plt_password_reset_tokens")
-            handle.execute("DELETE FROM plt_audit_log")
-            handle.execute("DELETE FROM plt_outbox")
-            handle.execute("DELETE FROM plt_contact_emails")
-            handle.execute("DELETE FROM plt_contact_phones")
-            handle.execute("DELETE FROM plt_contact_socials")
-            handle.execute("DELETE FROM plt_contacts")
-            handle.execute("DELETE FROM plt_messages")
-            handle.execute("DELETE FROM plt_sync_state")
-            handle.execute("DELETE FROM plt_users")
-        }
+        jdbi.useHandle<Exception> { handle -> tablesToDelete.forEach { table -> handle.execute("DELETE FROM $table") } }
     }
 
-    companion object {
-        private val container =
-            PostgreSQLContainer<Nothing>("postgres:18").apply {
-                withDatabaseName("outerstellar")
-                withUsername("outerstellar")
-                withPassword("outerstellar")
-                start()
-            }
+    protected fun createUser(
+        username: String = "user_${UUID.randomUUID().toString().take(6)}",
+        role: UserRole = UserRole.USER,
+    ): UUID {
+        val id = UUID.randomUUID()
+        JdbiUserRepository(jdbi)
+            .save(
+                User(
+                    id = id,
+                    username = username,
+                    email = "${id.toString().take(6)}@example.com",
+                    passwordHash = "hash",
+                    role = role,
+                )
+            )
+        return id
+    }
 
-        private val sharedJdbi: Jdbi by lazy {
-            val dataSource = createDataSource(container.jdbcUrl, container.username, container.password)
-            migrate(dataSource)
-            Jdbi.create(dataSource)
-        }
+    @AfterAll
+    fun tearDown() {
+        testDb.drop()
     }
 }

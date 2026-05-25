@@ -9,16 +9,17 @@ import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRepository
+import io.github.rygel.outerstellar.platform.banner.BannerProvider
+import io.github.rygel.outerstellar.platform.model.User
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
+import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import org.http4k.contract.ContractRoute
 import org.http4k.core.Filter
 import org.http4k.core.Request
 import org.http4k.lens.LensFailure
 import org.http4k.template.TemplateRenderer
-import org.koin.core.module.Module
 import org.slf4j.LoggerFactory
 
 /**
@@ -42,7 +43,8 @@ data class PluginOptions(
 data class PluginContext(
     val renderer: TemplateRenderer,
     val config: AppConfig,
-    val securityService: SecurityService,
+    val apiKeyService: ApiKeyService,
+    val oauthService: OAuthService,
     val userRepository: UserRepository,
     val analytics: AnalyticsService,
     val notificationService: NotificationService?,
@@ -54,7 +56,7 @@ data class PluginContext(
      */
     fun currentUser(request: Request): User? =
         try {
-            request.webContext.user
+            request.requestContext.user
         } catch (e: LensFailure) {
             logger.debug("Lens extraction failed for current user check: {}", e.message)
             null
@@ -62,11 +64,11 @@ data class PluginContext(
 
     /**
      * Renders [bodyHtml] wrapped inside the platform's standardized layout shell defined by [shell]. The [ShellView] is
-     * obtained from [WebContext.shell()].
+     * obtained from [ShellRenderer.shell()].
      *
      * Usage:
      * ```kotlin
-     * val shell = request.webContext.shell("Page Title", "/section")
+     * val shell = request.shellRenderer.shell("Page Title", "/section")
      * val html = context.renderShell(shell, "<div>...</div>")
      * ```
      *
@@ -94,13 +96,15 @@ data class PluginContext(
          */
         fun forTesting(
             renderer: TemplateRenderer,
-            securityService: SecurityService,
+            apiKeyService: ApiKeyService,
+            oauthService: OAuthService,
             userRepository: UserRepository,
         ): PluginContext =
             PluginContext(
                 renderer = renderer,
                 config = AppConfig(),
-                securityService = securityService,
+                apiKeyService = apiKeyService,
+                oauthService = oauthService,
                 userRepository = userRepository,
                 analytics = NoOpAnalyticsService(),
                 notificationService = null,
@@ -112,16 +116,15 @@ data class PluginContext(
 /**
  * Single-plugin contract. One outerstellar-platform host accepts exactly one plugin.
  *
- * Implement this interface and register it as a Koin `single` in your plugin's Koin module. The host will
- * automatically:
+ * Implement this interface and pass your plugin instance to [createServerComponents]:
+ * ```kotlin
+ * val components = createServerComponents(plugin = MyPlugin())
+ * ```
+ *
+ * The host will automatically:
  * - Include your routes in the web app
  * - Inject your nav items into the shell nav bar (replacing the defaults when non-empty)
  * - Run your Flyway migrations in a dedicated history table
- *
- * Register your Koin module by passing it to `startKoin` **before** the host modules are resolved:
- * ```kotlin
- * startKoin { modules(myPluginModule, persistenceModule, coreModule, webModule, securityModule) }
- * ```
  */
 interface PlatformPlugin : PluginMigrationSource {
     /** Unique identifier for this plugin (used in logging). */
@@ -169,6 +172,5 @@ interface PlatformPlugin : PluginMigrationSource {
 
     fun adminSections(context: PluginContext): List<AdminSection> = emptyList()
 
-    /** Koin modules this plugin needs. Register in `startKoin` rather than relying on this. */
-    fun koinModules(): List<Module> = emptyList()
+    fun bannerProviders(context: PluginContext): List<BannerProvider> = emptyList()
 }

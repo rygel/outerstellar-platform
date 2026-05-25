@@ -1,75 +1,75 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
+import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
-import javafx.application.Platform
+import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
-import javafx.fxml.FXML
+import javafx.scene.Parent
+import javafx.scene.control.Button
 import javafx.scene.control.TableColumn
 import javafx.scene.control.TableView
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
+import javafx.scene.layout.HBox
+import javafx.scene.layout.VBox
 import org.slf4j.LoggerFactory
 
-class UsersController : KoinComponent {
+class UsersController {
 
     private val logger = LoggerFactory.getLogger(UsersController::class.java)
-    private val engine: DesktopSyncEngine by inject()
+    private val viewModel: FxSyncViewModel
+        get() = FxAppContext.viewModel
 
-    @FXML private lateinit var usersTable: TableView<UserSummary>
-    @FXML private lateinit var usernameColumn: TableColumn<UserSummary, String>
-    @FXML private lateinit var emailColumn: TableColumn<UserSummary, String>
-    @FXML private lateinit var roleColumn: TableColumn<UserSummary, String>
-    @FXML private lateinit var enabledColumn: TableColumn<UserSummary, String>
+    fun createView(): Parent {
+        val usernameColumn = TableColumn<UserSummary, String>("Username")
+        val emailColumn = TableColumn<UserSummary, String>("Email")
+        val roleColumn = TableColumn<UserSummary, String>("Role")
+        val enabledColumn = TableColumn<UserSummary, String>("Enabled")
 
-    @FXML
-    fun initialize() {
+        val usersTable = TableView<UserSummary>()
+        usersTable.columns.addAll(usernameColumn, emailColumn, roleColumn, enabledColumn)
+        usersTable.itemsProperty().bind(SimpleObjectProperty(viewModel.adminUsers))
+
         usernameColumn.setCellValueFactory { SimpleStringProperty(it.value.username) }
         emailColumn.setCellValueFactory { SimpleStringProperty(it.value.email) }
         roleColumn.setCellValueFactory { SimpleStringProperty(it.value.role.name) }
         enabledColumn.setCellValueFactory { SimpleStringProperty(it.value.enabled.toString()) }
-        loadUsers()
-    }
 
-    @FXML
-    fun onRefresh() {
-        loadUsers()
-    }
+        val toggleEnabledBtn = Button("Toggle Enabled")
+        toggleEnabledBtn.setOnAction {
+            val selected = usersTable.selectionModel.selectedItem ?: return@setOnAction
+            viewModel
+                .setUserEnabled(selected.id, !selected.enabled)
+                .also { task ->
+                    task.setOnSucceeded {
+                        task.value
+                            .onSuccess { viewModel.loadUsers().runInBackground() }
+                            .onFailure { logger.warn("Toggle user enabled failed: {}", it.message) }
+                    }
+                }
+                .runInBackground()
+        }
 
-    @FXML
-    fun onToggleEnabled() {
-        val selected = usersTable.selectionModel.selectedItem ?: return
-        Thread {
-                engine
-                    .setUserEnabled(selected.id, !selected.enabled)
-                    .onSuccess { Platform.runLater { loadUsers() } }
-                    .onFailure { logger.warn("Toggle user enabled failed: {}", it.message) }
-            }
-            .also { it.isDaemon = true }
-            .start()
-    }
+        val toggleRoleBtn = Button("Toggle Role")
+        toggleRoleBtn.setOnAction {
+            val selected = usersTable.selectionModel.selectedItem ?: return@setOnAction
+            val newRole = if (selected.role == UserRole.ADMIN) UserRole.USER.name else UserRole.ADMIN.name
+            viewModel
+                .setUserRole(selected.id, newRole)
+                .also { task ->
+                    task.setOnSucceeded {
+                        task.value
+                            .onSuccess { viewModel.loadUsers().runInBackground() }
+                            .onFailure { logger.warn("Toggle user role failed: {}", it.message) }
+                    }
+                }
+                .runInBackground()
+        }
 
-    @FXML
-    fun onToggleRole() {
-        val selected = usersTable.selectionModel.selectedItem ?: return
-        val newRole = if (selected.role == UserRole.ADMIN) UserRole.USER.name else UserRole.ADMIN.name
-        Thread {
-                engine
-                    .setUserRole(selected.id, newRole)
-                    .onSuccess { Platform.runLater { loadUsers() } }
-                    .onFailure { logger.warn("Toggle user role failed: {}", it.message) }
-            }
-            .also { it.isDaemon = true }
-            .start()
-    }
-
-    private fun loadUsers() {
-        Thread {
-                engine.loadUsers()
-                Platform.runLater { usersTable.items.setAll(engine.state.adminUsers) }
-            }
-            .also { it.isDaemon = true }
-            .start()
+        val buttons = HBox(10.0, toggleEnabledBtn, toggleRoleBtn)
+        val root = VBox(10.0, usersTable, buttons)
+        viewModel.loadUsers().runInBackground()
+        return root
     }
 }

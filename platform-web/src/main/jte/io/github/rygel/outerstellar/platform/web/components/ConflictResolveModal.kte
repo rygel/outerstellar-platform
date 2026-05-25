@@ -6,7 +6,7 @@
     <div class="modal-box w-full max-w-3xl" onclick="event.stopPropagation()">
         <header class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-bold">${model.modalTitle}</h2>
-            <button class="btn btn-ghost btn-sm btn-square" onclick="document.getElementById('modal-container').remove()">
+            <button class="btn btn-ghost btn-sm btn-square" aria-label="Close" onclick="document.getElementById('modal-container').remove()">
                 <i aria-hidden="true" class="ri-close-line"></i>
             </button>
         </header>

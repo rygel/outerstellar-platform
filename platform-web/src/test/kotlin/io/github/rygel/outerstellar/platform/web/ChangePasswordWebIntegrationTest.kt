@@ -1,11 +1,12 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
+import io.github.rygel.outerstellar.platform.security.AuthService
+import io.github.rygel.outerstellar.platform.security.TOTPService
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
@@ -15,7 +16,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -35,7 +36,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
-    private lateinit var securityService: SecurityService
+    private lateinit var authService: AuthService
     private lateinit var testToken: String
 
     @BeforeEach
@@ -50,24 +51,14 @@ class ChangePasswordWebIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
+        authService = AuthService(userRepository, encoder, auditRepository, totpService = TOTPService())
 
-        testToken = securityService.createSession(testUser.id)
+        testToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
-    @AfterEach fun teardown() = cleanup()
-
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
+    private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, testToken)
 
     private fun changePasswordRequest(
         currentPassword: String,
@@ -90,7 +81,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     @Test
     fun `GET change-password redirects unauthenticated to auth`() {
         val response = app(Request(GET, "/auth/change-password"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location") ?: ""
         assertTrue(location.contains("/auth"), "Should redirect to /auth, got: $location")
     }
@@ -98,7 +89,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     @Test
     fun `GET change-password returns 200 for authenticated user`() {
         val response = app(Request(GET, "/auth/change-password").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -109,20 +100,21 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `POST change-password without session returns 401`() {
+    fun `POST change-password without session redirects to auth`() {
         val response =
             app(
                 Request(POST, "/auth/components/change-password")
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body("currentPassword=old&newPassword=new&confirmPassword=new")
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
+        assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 
     @Test
     fun `POST change-password with correct passwords returns success fragment`() {
         val response = changePasswordRequest("OldPass123!", "NewPass456!", "NewPass456!")
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         // Should render a success fragment (not an error)
         assertTrue(
@@ -134,7 +126,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     @Test
     fun `POST change-password with mismatched confirm returns error fragment`() {
         val response = changePasswordRequest("OldPass123!", "NewPass456!", "DifferentPass!")
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(
             body.contains("mismatch", ignoreCase = true) ||
@@ -147,7 +139,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     @Test
     fun `POST change-password with wrong current password returns error`() {
         val response = changePasswordRequest("WrongCurrentPass!", "NewPass456!", "NewPass456!")
-        // SecurityService.changePassword with wrong current password should result in an error
+        // AccountService.changePassword with wrong current password should result in an error
         val body = response.bodyString()
         assertTrue(
             body.contains("panel-danger") ||
@@ -161,7 +153,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
     @Test
     fun `POST change-password with weak new password returns error fragment`() {
         val response = changePasswordRequest("OldPass123!", "weak", "weak")
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(
             body.contains("panel-danger") || body.contains("error", ignoreCase = true),
@@ -175,7 +167,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
 
         // Change the password
         val changeResponse = changePasswordRequest("OldPass123!", newPassword, newPassword)
-        assertEquals(Status.OK, changeResponse.status)
+        assertThat(changeResponse, hasStatus(Status.OK))
         val changeBody = changeResponse.bodyString()
         assertTrue(
             changeBody.contains("success", ignoreCase = true) || changeBody.contains("panel-success"),
@@ -183,11 +175,11 @@ class ChangePasswordWebIntegrationTest : WebTest() {
         )
 
         // Verify old password no longer works
-        val oldAuth = securityService.authenticate(testUser.email, "OldPass123!")
+        val oldAuth = authService.authenticate(testUser.email, "OldPass123!")
         assertTrue(oldAuth == null, "Old password should no longer authenticate")
 
         // Verify new password works
-        val newAuth = securityService.authenticate(testUser.email, newPassword)
+        val newAuth = authService.authenticate(testUser.email, newPassword)
         assertNotNull(newAuth, "New password should authenticate successfully")
     }
 }

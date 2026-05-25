@@ -2,7 +2,8 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.security.OAuthException
 import io.github.rygel.outerstellar.platform.security.OAuthProvider
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.OAuthService
+import io.github.rygel.outerstellar.platform.security.SessionService
 import org.http4k.contract.bindContract
 import org.http4k.contract.meta
 import org.http4k.core.Method.GET
@@ -26,8 +27,10 @@ import org.slf4j.LoggerFactory
  */
 class OAuthRoutes(
     private val providers: Map<String, OAuthProvider>,
-    private val securityService: SecurityService,
+    private val oauthService: OAuthService,
+    private val sessionService: SessionService,
     private val sessionCookieSecure: Boolean = false,
+    private val appBaseUrl: String = "http://localhost:8080",
 ) : ServerRoutes {
 
     private val logger = LoggerFactory.getLogger(OAuthRoutes::class.java)
@@ -39,8 +42,8 @@ class OAuthRoutes(
                     summary = "Initiate $providerName OAuth sign-in"
                 } bindContract
                 GET to
-                { request: Request ->
-                    initiateOAuth(request, providerName, provider)
+                { _: Request ->
+                    initiateOAuth(providerName, provider)
                 },
             "/auth/oauth/$providerName/callback" meta
                 {
@@ -76,9 +79,9 @@ class OAuthRoutes(
         )
     }
 
-    private fun initiateOAuth(request: Request, providerName: String, provider: OAuthProvider): Response {
+    private fun initiateOAuth(providerName: String, provider: OAuthProvider): Response {
         val state = java.util.UUID.randomUUID().toString()
-        val redirectUri = "${request.uri.scheme}://${request.uri.authority}/auth/oauth/$providerName/callback"
+        val redirectUri = "$appBaseUrl/auth/oauth/$providerName/callback"
 
         val stateCookie =
             Cookie(
@@ -120,12 +123,12 @@ class OAuthRoutes(
         val validated =
             validateCallback(request, providerName) ?: return badCallbackResponse("Invalid callback parameters")
 
-        val redirectUri = "${request.uri.scheme}://${request.uri.authority}/auth/oauth/$providerName/callback"
+        val redirectUri = "$appBaseUrl/auth/oauth/$providerName/callback"
 
         return try {
             val userInfo = provider.exchangeCode(validated.code, validated.state, redirectUri)
-            val user = securityService.findOrCreateOAuthUser(providerName, userInfo.subject, userInfo.email)
-            val sessionToken = securityService.createSession(user.id)
+            val user = oauthService.findOrCreateOAuthUser(providerName, userInfo.subject, userInfo.email)
+            val sessionToken = sessionService.createSession(user.id)
 
             logger.info("OAuth sign-in successful: user={} provider={}", user.username, providerName)
             Response(Status.FOUND)

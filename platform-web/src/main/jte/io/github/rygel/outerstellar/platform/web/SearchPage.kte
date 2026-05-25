@@ -13,11 +13,22 @@
             <button type="submit" class="btn btn-primary">${model.data.searchLabel}</button>
         </form>
 
-        @if(model.data.results.isEmpty())
-            @if(model.data.query.isNotBlank())
-                <p class="opacity-50 text-center py-8">${model.data.emptyLabel}</p>
-            @endif
-        @else
+@if(model.data.typeFilters.isNotEmpty())
+    <nav class="tabs tabs-bordered mb-6">
+        @for(filter in model.data.typeFilters)
+            <a href="${filter.url}"
+               class="tab ${if (filter.active) "tab-active" else ""}">
+                ${filter.label}
+            </a>
+        @endfor
+    </nav>
+@endif
+
+@if(model.data.results.isEmpty())
+    @if(model.data.query.isNotBlank())
+        <p class="opacity-50 text-center py-8">${model.data.emptyLabel}</p>
+    @endif
+@else
             <div class="flex flex-col gap-3">
                 @for(result in model.data.results)
                     <div class="card bg-base-200 border border-base-300">

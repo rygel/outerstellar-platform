@@ -1,11 +1,10 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -17,7 +16,7 @@ import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
 import org.http4k.core.cookie.cookies
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -34,7 +33,6 @@ class LogoutIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var user: User
-    private lateinit var securityService: SecurityService
     private lateinit var userToken: String
 
     @BeforeEach
@@ -44,34 +42,23 @@ class LogoutIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "logoutuser",
                 email = "logout@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(user)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
-        userToken = securityService.createSession(user.id)
+        userToken = sessionSvc.createSession(user.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
-    @AfterEach fun teardown() = cleanup()
-
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, userToken)
+    private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, userToken)
 
     @Test
     fun `POST logout redirects to home`() {
         val response = app(Request(POST, "/logout").cookie(sessionCookie()))
 
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(response.header("location")?.contains("/") == true)
     }
 
@@ -79,7 +66,7 @@ class LogoutIntegrationTest : WebTest() {
     fun `POST logout clears the session cookie`() {
         val response = app(Request(POST, "/logout").cookie(sessionCookie()))
 
-        val sessionCookieInResponse = response.cookies().find { it.name == WebContext.SESSION_COOKIE }
+        val sessionCookieInResponse = response.cookies().find { it.name == RequestContext.SESSION_COOKIE }
         assertNotNull(sessionCookieInResponse, "Session cookie should be present in Set-Cookie to clear it")
         // A cleared cookie has maxAge 0 or a past expiry
         assertTrue(
@@ -92,21 +79,21 @@ class LogoutIntegrationTest : WebTest() {
     fun `POST logout without a session still redirects cleanly`() {
         val response = app(Request(POST, "/logout"))
 
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
     }
 
     @Test
     fun `home page is accessible before logout`() {
         val response = app(Request(GET, "/").cookie(sessionCookie()))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
     fun `after logout the old session cookie no longer authenticates protected pages`() {
         // Simulate a "stale" cookie by using an ID that has no matching user
         val staleId = UUID.randomUUID().toString()
-        val staleSession = Cookie(WebContext.SESSION_COOKIE, staleId)
+        val staleSession = Cookie(RequestContext.SESSION_COOKIE, staleId)
 
         // Protected page should not return 200
         val response = app(Request(GET, "/admin/users").cookie(staleSession))

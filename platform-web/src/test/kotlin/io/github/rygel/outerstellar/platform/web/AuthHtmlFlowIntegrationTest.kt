@@ -1,11 +1,10 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
@@ -15,7 +14,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -48,39 +47,26 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var testToken: String
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "htmltestuser",
                 email = "htmltestuser@test.com",
-                passwordHash = encoder.encode("correct-password"),
+                passwordHash = encoder.encode("C0rr3ct-P@ss"),
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
-        testToken = securityService.createSession(testUser.id)
+        testToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
 
-    @AfterEach fun teardown() = cleanup()
-
-    private fun sessionCookie() = Cookie(WebContext.SESSION_COOKIE, testToken)
+    private fun sessionCookie() = Cookie(RequestContext.SESSION_COOKIE, testToken)
 
     private fun formBody(vararg pairs: Pair<String, String>): String =
         pairs.joinToString("&") { (k, v) -> "$k=${java.net.URLEncoder.encode(v, "UTF-8")}" }
@@ -90,7 +76,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
     @Test
     fun `GET auth-components-forms-sign-in renders the sign-in form`() {
         val response = app(Request(GET, "/auth/components/forms/sign-in"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(
             body.contains("email") || body.contains("password"),
@@ -101,7 +87,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
     @Test
     fun `GET auth-components-forms-register renders the register form`() {
         val response = app(Request(GET, "/auth/components/forms/register"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.contains("password"), "Register form should contain password field")
     }
@@ -109,7 +95,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
     @Test
     fun `GET auth-components-forms-recover renders the recover form`() {
         val response = app(Request(GET, "/auth/components/forms/recover"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.isNotBlank(), "Recover form should render content")
     }
@@ -122,16 +108,16 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
             app(
                 Request(POST, "/auth/components/result")
                     .header("content-type", "application/x-www-form-urlencoded")
-                    .body(formBody("mode" to "sign-in", "email" to testUser.username, "password" to "correct-password"))
+                    .body(formBody("mode" to "sign-in", "email" to testUser.username, "password" to "C0rr3ct-P@ss"))
             )
 
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
         assertTrue(location.isNotBlank(), "Successful sign-in should redirect")
 
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
-            setCookie.contains(WebContext.SESSION_COOKIE),
+            setCookie.contains(RequestContext.SESSION_COOKIE),
             "Successful sign-in must set session cookie, got: $setCookie",
         )
     }
@@ -145,7 +131,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     .body(formBody("mode" to "sign-in", "email" to testUser.username, "password" to "wrong-password"))
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(
             body.contains("Invalid") || body.contains("invalid") || body.contains("error"),
@@ -164,7 +150,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
             )
 
         val setCookie = response.header("Set-Cookie").orEmpty()
-        assertFalse(setCookie.contains(WebContext.SESSION_COOKIE), "Failed sign-in must not set a session cookie")
+        assertFalse(setCookie.contains(RequestContext.SESSION_COOKIE), "Failed sign-in must not set a session cookie")
     }
 
     // ---- Register ----
@@ -178,7 +164,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     .body(formBody("mode" to "register", "email" to "newuser@test.com", "password" to testPassword()))
             )
 
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         val location = response.header("location").orEmpty()
         assertTrue(location.contains("registered=true"), "Register should redirect to ?registered=true, got: $location")
     }
@@ -193,12 +179,12 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                         formBody(
                             "mode" to "register",
                             "email" to testUser.username, // already registered
-                            "password" to "anotherpassword",
+                            "password" to "An0ther-P@ss1",
                         )
                     )
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(
             body.contains("already") || body.contains("exist") || body.contains("taken"),
@@ -215,7 +201,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     .body(formBody("mode" to "register", "email" to "weak@test.com", "password" to "abc"))
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.isNotBlank(), "Weak password error should have body content")
     }
@@ -232,7 +218,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     .body(formBody("mode" to "recover", "email" to "doesnotexist@nowhere.com"))
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertFalse(response.header("location") != null, "Recovery should not redirect")
     }
 
@@ -241,7 +227,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
     @Test
     fun `GET auth-change-password without session redirects to auth`() {
         val response = app(Request(GET, "/auth/change-password"))
-        assertEquals(Status.FOUND, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
         assertTrue(
             response.header("location").orEmpty().contains("/auth"),
             "Unauthenticated change-password should redirect to /auth",
@@ -251,7 +237,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
     @Test
     fun `GET auth-change-password with valid session returns 200`() {
         val response = app(Request(GET, "/auth/change-password").cookie(sessionCookie()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     // ---- Change password form handler ----
@@ -265,14 +251,14 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(
                         formBody(
-                            "currentPassword" to "correct-password",
-                            "newPassword" to "new-strong-password",
-                            "confirmPassword" to "new-strong-password",
+                            "currentPassword" to "C0rr3ct-P@ss",
+                            "newPassword" to "N3w-Str0ng@Pw",
+                            "confirmPassword" to "N3w-Str0ng@Pw",
                         )
                     )
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(
             body.contains("success") || body.contains("Success") || body.contains("changed"),
@@ -296,7 +282,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     )
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.isNotBlank(), "Wrong current password should return error content")
     }
@@ -310,14 +296,14 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     .header("content-type", "application/x-www-form-urlencoded")
                     .body(
                         formBody(
-                            "currentPassword" to "correct-password",
-                            "newPassword" to "new-pass-one",
-                            "confirmPassword" to "new-pass-two",
+                            "currentPassword" to "C0rr3ct-P@ss",
+                            "newPassword" to "N3w-P@ss-One1",
+                            "confirmPassword" to "N3w-P@ss-Two2",
                         )
                     )
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(
             body.contains("mismatch") || body.contains("match") || body.contains("error"),
@@ -326,7 +312,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `POST auth-components-change-password without session returns 401`() {
+    fun `POST auth-components-change-password without session redirects to auth`() {
         val response =
             app(
                 Request(POST, "/auth/components/change-password")
@@ -340,6 +326,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
                     )
             )
 
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.FOUND))
+        assertTrue(response.header("location").orEmpty().contains("/auth"))
     }
 }

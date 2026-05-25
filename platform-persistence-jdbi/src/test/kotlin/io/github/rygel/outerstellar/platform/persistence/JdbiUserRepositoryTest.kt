@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.User
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.Test
@@ -190,5 +190,43 @@ class JdbiUserRepositoryTest : JdbiTest() {
         val partial = repo.findById(u.id)!!
         assertTrue(partial.emailNotificationsEnabled)
         assertFalse(partial.pushNotificationsEnabled)
+    }
+
+    @Test
+    fun `find methods hydrate lockout and TOTP fields`() {
+        val u = user("locktotp")
+        repo.save(u)
+        val lockedUntil = Instant.parse("2030-01-02T03:04:05Z")
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate(
+                    """
+                    UPDATE plt_users
+                    SET failed_login_attempts = 4,
+                        locked_until = :lockedUntil,
+                        totp_secret = :totpSecret,
+                        totp_enabled = TRUE,
+                        totp_backup_codes = :totpBackupCodes
+                    WHERE id = :id
+                    """
+                        .trimIndent()
+                )
+                .bind("lockedUntil", java.sql.Timestamp.from(lockedUntil))
+                .bind("totpSecret", "secret")
+                .bind("totpBackupCodes", """["code1","code2"]""")
+                .bind("id", u.id)
+                .execute()
+        }
+
+        val byId = repo.findById(u.id)!!
+        val byUsername = repo.findByUsername("locktotp")!!
+
+        listOf(byId, byUsername).forEach { found ->
+            assertEquals(4, found.failedLoginAttempts)
+            assertEquals(lockedUntil, found.lockedUntil)
+            assertEquals("secret", found.totpSecret)
+            assertTrue(found.totpEnabled)
+            assertEquals("""["code1","code2"]""", found.totpBackupCodes)
+        }
     }
 }

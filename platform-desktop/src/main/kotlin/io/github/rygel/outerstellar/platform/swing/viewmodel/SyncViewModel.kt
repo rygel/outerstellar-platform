@@ -2,36 +2,44 @@ package io.github.rygel.outerstellar.platform.swing.viewmodel
 
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
-import io.github.rygel.outerstellar.platform.model.ContactNotFoundException
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.ValidationException
-import io.github.rygel.outerstellar.platform.service.ContactService
-import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
-import io.github.rygel.outerstellar.platform.sync.engine.EngineListener
-import io.github.rygel.outerstellar.platform.sync.engine.EngineState
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.swing.SwingWorker
+import javax.swing.Timer
 
 @Suppress("TooManyFunctions")
 class SyncViewModel(
-    private val engine: DesktopSyncEngine,
+    private val authModule: AuthModule,
+    private val syncDataModule: SyncDataModule,
+    private val profileModule: ProfileModule,
+    private val adminModule: AdminModule,
+    private val notificationModule: NotificationModule,
     private var i18nService: I18nService,
-    private val contactService: ContactService? = null,
 ) {
     private val observers = CopyOnWriteArrayList<() -> Unit>()
 
     @Volatile
-    var isOnline: Boolean = engine.state.isOnline
+    var isOnline: Boolean = syncDataModule.syncDataState.isOnline
         private set
 
     @Volatile
-    var messages = engine.state.messages
+    var messages = syncDataModule.syncDataState.messages
         private set
 
     @Volatile
-    var contacts = engine.state.contacts
+    var contacts = syncDataModule.syncDataState.contacts
         private set
 
     @Volatile
@@ -39,78 +47,91 @@ class SyncViewModel(
         private set
 
     @Volatile
-    var isSyncing: Boolean = engine.state.isSyncing
+    var isSyncing: Boolean = syncDataModule.syncDataState.isSyncing
         private set
 
     @Volatile
-    var userName: String = engine.state.userName
+    var userName: String = authModule.authState.userName
         private set
 
     @Volatile
-    var isLoggedIn: Boolean = engine.state.isLoggedIn
+    var isLoggedIn: Boolean = authModule.authState.isLoggedIn
         private set
 
     @Volatile
-    var userRole: String? = engine.state.userRole
+    var userRole: String? = authModule.authState.userRole
         private set
 
     @Volatile
-    var adminUsers = engine.state.adminUsers
+    var adminUsers = adminModule.adminState.adminUsers
         private set
 
     @Volatile
-    var notifications = engine.state.notifications
+    var notifications = notificationModule.notificationState.notifications
         private set
 
     val unreadNotificationCount: Int
         get() = notifications.count { !it.read }
 
     @Volatile
-    var userEmail: String = engine.state.userEmail
+    var userEmail: String = profileModule.profileState.userEmail
         private set
 
     @Volatile
-    var userAvatarUrl: String? = engine.state.userAvatarUrl
+    var userAvatarUrl: String? = profileModule.profileState.userAvatarUrl
         private set
 
     @Volatile
-    var emailNotificationsEnabled: Boolean = engine.state.emailNotificationsEnabled
+    var emailNotificationsEnabled: Boolean = profileModule.profileState.emailNotificationsEnabled
         private set
 
     @Volatile
-    var pushNotificationsEnabled: Boolean = engine.state.pushNotificationsEnabled
+    var pushNotificationsEnabled: Boolean = profileModule.profileState.pushNotificationsEnabled
         private set
 
     var author: String = i18nService.translate("swing.author.default")
     var content: String = ""
     var searchQuery: String = ""
         set(value) {
+            if (field == value) return
             field = value
-            loadMessages()
+            searchDebounceTimer?.stop()
+            searchDebounceTimer =
+                Timer(300) { loadMessages() }
+                    .apply {
+                        isRepeats = false
+                        start()
+                    }
         }
 
-    val connectivityChecker: ConnectivityChecker? = null
+    private var searchDebounceTimer: Timer? = null
 
     init {
-        engine.addListener(
-            object : EngineListener {
-                override fun onStateChanged(newState: EngineState) {
-                    isOnline = newState.isOnline
-                    messages = newState.messages
-                    contacts = newState.contacts
-                    isSyncing = newState.isSyncing
-                    userName = newState.userName
-                    isLoggedIn = newState.isLoggedIn
-                    userRole = newState.userRole
-                    adminUsers = newState.adminUsers
-                    notifications = newState.notifications
-                    userEmail = newState.userEmail
-                    userAvatarUrl = newState.userAvatarUrl
-                    emailNotificationsEnabled = newState.emailNotificationsEnabled
-                    pushNotificationsEnabled = newState.pushNotificationsEnabled
-                    if (newState.status.isNotBlank()) {
-                        status = newState.status
+        syncDataModule.addListener(
+            object : SyncDataListener {
+                override fun onSyncDataStateChanged(
+                    state: io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataState
+                ) {
+                    isOnline = state.isOnline
+                    messages = state.messages
+                    contacts = state.contacts
+                    isSyncing = state.isSyncing
+                    if (state.syncStatus.isNotBlank()) {
+                        status = state.syncStatus
                     }
+                    notifyObservers()
+                }
+            }
+        )
+
+        authModule.addListener(
+            object : AuthListener {
+                override fun onAuthStateChanged(
+                    state: io.github.rygel.outerstellar.platform.sync.engine.module.AuthState
+                ) {
+                    isLoggedIn = state.isLoggedIn
+                    userName = state.userName
+                    userRole = state.userRole
                     notifyObservers()
                 }
 
@@ -123,6 +144,42 @@ class SyncViewModel(
                 }
             }
         )
+
+        profileModule.addListener(
+            object : ProfileListener {
+                override fun onProfileStateChanged(
+                    state: io.github.rygel.outerstellar.platform.sync.engine.module.ProfileState
+                ) {
+                    userEmail = state.userEmail
+                    userAvatarUrl = state.userAvatarUrl
+                    emailNotificationsEnabled = state.emailNotificationsEnabled
+                    pushNotificationsEnabled = state.pushNotificationsEnabled
+                    notifyObservers()
+                }
+            }
+        )
+
+        adminModule.addListener(
+            object : AdminListener {
+                override fun onAdminStateChanged(
+                    state: io.github.rygel.outerstellar.platform.sync.engine.module.AdminState
+                ) {
+                    adminUsers = state.adminUsers
+                    notifyObservers()
+                }
+            }
+        )
+
+        notificationModule.addListener(
+            object : NotificationListener {
+                override fun onNotificationStateChanged(
+                    state: io.github.rygel.outerstellar.platform.sync.engine.module.NotificationState
+                ) {
+                    notifications = state.notifications
+                    notifyObservers()
+                }
+            }
+        )
     }
 
     fun addObserver(observer: () -> Unit) {
@@ -130,6 +187,7 @@ class SyncViewModel(
     }
 
     private fun notifyObservers() {
+        syncFromModules()
         observers.forEach { it() }
     }
 
@@ -140,11 +198,33 @@ class SyncViewModel(
     }
 
     fun loadMessages() {
-        engine.loadMessages()
+        syncDataModule.loadMessages()
+    }
+
+    private fun syncFromModules() {
+        val sd = syncDataModule.syncDataState
+        isOnline = sd.isOnline
+        messages = sd.messages
+        contacts = sd.contacts
+        isSyncing = sd.isSyncing
+
+        val auth = authModule.authState
+        isLoggedIn = auth.isLoggedIn
+        userName = auth.userName
+        userRole = auth.userRole
+
+        adminUsers = adminModule.adminState.adminUsers
+        notifications = notificationModule.notificationState.notifications
+
+        val prof = profileModule.profileState
+        userEmail = prof.userEmail
+        userAvatarUrl = prof.userAvatarUrl
+        emailNotificationsEnabled = prof.emailNotificationsEnabled
+        pushNotificationsEnabled = prof.pushNotificationsEnabled
     }
 
     fun createMessage(onValidationError: (String) -> Unit) {
-        val result = engine.createLocalMessage(author, content)
+        val result = syncDataModule.createLocalMessage(author, content)
         if (result.isSuccess) {
             content = ""
             status = i18nService.translate("swing.status.created")
@@ -170,7 +250,8 @@ class SyncViewModel(
         department: String,
         onValidationError: (String) -> Unit,
     ) {
-        val result = engine.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
+        val result =
+            syncDataModule.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
         if (result.isSuccess) {
             status = i18nService.translate("swing.status.created")
         } else {
@@ -189,31 +270,19 @@ class SyncViewModel(
         department: String,
         onValidationError: (String) -> Unit,
     ) {
-        try {
-            val svc = contactService ?: throw ContactNotFoundException(syncId)
-            val stored = svc.getContactBySyncId(syncId) ?: throw ContactNotFoundException(syncId)
-            val updated =
-                stored.copy(
-                    name = name,
-                    emails = emails,
-                    phones = phones,
-                    socialMedia = socialMedia,
-                    company = company,
-                    companyAddress = companyAddress,
-                    department = department,
-                    dirty = true,
-                )
-            svc.updateContact(updated)
+        val result =
+            syncDataModule.updateContact(syncId, name, emails, phones, socialMedia, company, companyAddress, department)
+        if (result.isSuccess) {
             status = i18nService.translate("swing.status.contactUpdated")
             loadMessages()
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            onValidationError(e.message ?: "Action failed")
+        } else {
+            onValidationError(result.exceptionOrNull()?.message ?: "Action failed")
         }
     }
 
     fun login(user: String, pass: String, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Result<Unit>, Unit>() {
-                override fun doInBackground(): Result<Unit> = engine.login(user, pass)
+                override fun doInBackground(): Result<Unit> = authModule.login(user, pass)
 
                 override fun done() {
                     val result = get()
@@ -230,7 +299,7 @@ class SyncViewModel(
 
     fun register(user: String, pass: String, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Result<Unit>, Unit>() {
-                override fun doInBackground(): Result<Unit> = engine.register(user, pass)
+                override fun doInBackground(): Result<Unit> = authModule.register(user, pass)
 
                 override fun done() {
                     val result = get()
@@ -246,18 +315,18 @@ class SyncViewModel(
     }
 
     fun logout() {
-        engine.logout()
+        authModule.logout()
         author = i18nService.translate("swing.author.default")
         status = i18nService.translate("swing.status.loggedOut")
         notifyObservers()
     }
 
     fun startAutoSync() {
-        engine.startAutoSync()
+        syncDataModule.startAutoSync()
     }
 
     fun stopAutoSync() {
-        engine.stopAutoSync()
+        syncDataModule.stopAutoSync()
     }
 
     fun sync(isAuto: Boolean = false) {
@@ -269,12 +338,12 @@ class SyncViewModel(
         }
 
         object : SwingWorker<Result<Unit>, Unit>() {
-                override fun doInBackground(): Result<Unit> = engine.sync(isAuto)
+                override fun doInBackground(): Result<Unit> = syncDataModule.sync(isAuto)
 
                 override fun done() {
                     val result = get()
                     if (result.isSuccess) {
-                        status = engine.state.status
+                        status = syncDataModule.syncDataState.syncStatus
                     } else {
                         val msg = result.exceptionOrNull()?.message ?: "unknown error"
                         status = i18nService.translate("swing.status.failed", msg)
@@ -287,7 +356,7 @@ class SyncViewModel(
 
     fun changePassword(currentPassword: String, newPassword: String, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Result<Unit>, Unit>() {
-                override fun doInBackground(): Result<Unit> = engine.changePassword(currentPassword, newPassword)
+                override fun doInBackground(): Result<Unit> = authModule.changePassword(currentPassword, newPassword)
 
                 override fun done() {
                     val result = get()
@@ -301,7 +370,7 @@ class SyncViewModel(
     fun loadUsers() {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    engine.loadUsers()
+                    adminModule.loadUsers()
                 }
 
                 override fun done() {
@@ -314,7 +383,7 @@ class SyncViewModel(
     fun toggleUserEnabled(userId: String, currentEnabled: Boolean) {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    engine.setUserEnabled(userId, !currentEnabled)
+                    adminModule.setUserEnabled(userId, !currentEnabled)
                 }
 
                 override fun done() {
@@ -328,7 +397,7 @@ class SyncViewModel(
         val newRole = if (currentRole == UserRole.ADMIN.name) UserRole.USER.name else UserRole.ADMIN.name
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    engine.setUserRole(userId, newRole)
+                    adminModule.setUserRole(userId, newRole)
                 }
 
                 override fun done() {
@@ -341,7 +410,7 @@ class SyncViewModel(
     fun loadNotifications() {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    engine.loadNotifications()
+                    notificationModule.loadNotifications()
                 }
 
                 override fun done() {
@@ -354,7 +423,7 @@ class SyncViewModel(
     fun markNotificationRead(notificationId: String) {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    engine.markNotificationRead(notificationId)
+                    notificationModule.markNotificationRead(notificationId)
                 }
 
                 override fun done() {
@@ -367,7 +436,7 @@ class SyncViewModel(
     fun markAllNotificationsRead() {
         object : SwingWorker<Unit, Unit>() {
                 override fun doInBackground() {
-                    engine.markAllNotificationsRead()
+                    notificationModule.markAllNotificationsRead()
                 }
 
                 override fun done() {
@@ -382,20 +451,19 @@ class SyncViewModel(
                 override fun doInBackground(): Pair<Boolean, String?> {
                     var errorMessage: String? = null
                     val listener =
-                        object : EngineListener {
-                            override fun onError(operation: String, message: String) {
+                        object : SyncDataListener {
+                            override fun onSyncError(operation: String, message: String) {
                                 if (operation == "loadProfile") errorMessage = message
                             }
                         }
-                    engine.addListener(listener)
+                    syncDataModule.addListener(listener)
                     try {
-                        engine.loadProfile()
+                        profileModule.loadProfile()
                     } finally {
-                        engine.removeListener(listener)
+                        syncDataModule.removeListener(listener)
                     }
-                    val loggedIn = engine.state.isLoggedIn
-                    return if (!loggedIn) false to engine.state.status
-                    else errorMessage?.let { false to it } ?: true to null
+                    val loggedIn = authModule.authState.isLoggedIn
+                    return if (!loggedIn) false to status else errorMessage?.let { false to it } ?: true to null
                 }
 
                 override fun done() {
@@ -414,7 +482,7 @@ class SyncViewModel(
 
     fun updateProfile(email: String, username: String?, avatarUrl: String?, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Result<Unit>, Unit>() {
-                override fun doInBackground(): Result<Unit> = engine.updateProfile(email, username, avatarUrl)
+                override fun doInBackground(): Result<Unit> = profileModule.updateProfile(email, username, avatarUrl)
 
                 override fun done() {
                     val result = get()
@@ -432,7 +500,7 @@ class SyncViewModel(
     ) {
         object : SwingWorker<Result<Unit>, Unit>() {
                 override fun doInBackground(): Result<Unit> =
-                    engine.updateNotificationPreferences(emailEnabled, pushEnabled)
+                    profileModule.updateNotificationPreferences(emailEnabled, pushEnabled)
 
                 override fun done() {
                     val result = get()
@@ -443,9 +511,9 @@ class SyncViewModel(
             .execute()
     }
 
-    fun deleteAccount(onResult: (Boolean, String?) -> Unit) {
+    fun deleteAccount(currentPassword: String, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Result<Unit>, Unit>() {
-                override fun doInBackground(): Result<Unit> = engine.deleteAccount()
+                override fun doInBackground(): Result<Unit> = profileModule.deleteAccount(currentPassword)
 
                 override fun done() {
                     val result = get()
@@ -458,7 +526,7 @@ class SyncViewModel(
 
     fun requestPasswordReset(email: String, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Result<Unit>, Unit>() {
-                override fun doInBackground(): Result<Unit> = engine.requestPasswordReset(email)
+                override fun doInBackground(): Result<Unit> = authModule.requestPasswordReset(email)
 
                 override fun done() {
                     val result = get()
@@ -471,7 +539,7 @@ class SyncViewModel(
 
     fun resetPassword(token: String, newPassword: String, onResult: (Boolean, String?) -> Unit) {
         object : SwingWorker<Result<Unit>, Unit>() {
-                override fun doInBackground(): Result<Unit> = engine.resetPassword(token, newPassword)
+                override fun doInBackground(): Result<Unit> = authModule.resetPassword(token, newPassword)
 
                 override fun done() {
                     val result = get()
@@ -483,7 +551,7 @@ class SyncViewModel(
     }
 
     fun resolveConflict(syncId: String, strategy: ConflictStrategy) {
-        engine.resolveConflict(syncId, strategy)
+        syncDataModule.resolveConflict(syncId, strategy)
         status = i18nService.translate("swing.status.conflictResolved", strategy.name)
         notifyObservers()
     }

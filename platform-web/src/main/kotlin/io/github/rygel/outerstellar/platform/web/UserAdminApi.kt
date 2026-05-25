@@ -7,7 +7,7 @@ import io.github.rygel.outerstellar.platform.model.UserNotFoundException
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.security.SecurityRules
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.UserAdminService
 import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
@@ -23,7 +23,7 @@ import org.http4k.format.KotlinxSerialization.auto
 import org.http4k.lens.Path
 import org.http4k.lens.string
 
-class UserAdminApi(private val securityService: SecurityService) : ServerRoutes {
+class UserAdminApi(private val userAdminService: UserAdminService) : ServerRoutes {
     private val logger = org.slf4j.LoggerFactory.getLogger(UserAdminApi::class.java)
     private val userSummaryListLens = Body.auto<List<UserSummary>>().toLens()
     private val setUserEnabledLens = Body.auto<SetUserEnabledRequest>().toLens()
@@ -39,7 +39,7 @@ class UserAdminApi(private val securityService: SecurityService) : ServerRoutes 
                 } bindContract
                 GET to
                 { request ->
-                    val users = securityService.listUsers()
+                    val users = userAdminService.listUsers()
                     Response(Status.OK).with(userSummaryListLens of users)
                 },
             "/api/v1/admin/users" / userIdPath / "enabled" meta
@@ -53,7 +53,7 @@ class UserAdminApi(private val securityService: SecurityService) : ServerRoutes 
                         val admin = SecurityRules.USER_KEY(request)!!
                         try {
                             val body = setUserEnabledLens(request)
-                            securityService.setUserEnabled(admin.id, UUID.fromString(userId), body.enabled)
+                            userAdminService.setUserEnabled(admin.id, UUID.fromString(userId), body.enabled)
                             Response(Status.OK).body("User updated")
                         } catch (e: UserNotFoundException) {
                             Response(Status.NOT_FOUND).body(e.message ?: "User not found")
@@ -74,7 +74,7 @@ class UserAdminApi(private val securityService: SecurityService) : ServerRoutes 
                         try {
                             val body = setUserRoleLens(request)
                             val role = UserRole.valueOf(body.role.uppercase())
-                            securityService.setUserRole(admin.id, UUID.fromString(userId), role)
+                            userAdminService.setUserRole(admin.id, UUID.fromString(userId), role)
                             Response(Status.OK).body("User role updated")
                         } catch (e: UserNotFoundException) {
                             Response(Status.NOT_FOUND).body(e.message ?: "User not found")

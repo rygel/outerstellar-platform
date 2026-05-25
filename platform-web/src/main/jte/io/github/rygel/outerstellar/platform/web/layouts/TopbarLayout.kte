@@ -31,6 +31,15 @@
                     ${link.label}
                 </a>
             @endfor
+            <form action="/search" method="get" class="flex items-center px-4 lg:px-2 py-3 lg:py-0 lg:ml-auto">
+                <div class="join w-full lg:w-auto">
+                    <input type="text" name="q" placeholder="${shell.searchPlaceholder}"
+                           class="input input-bordered input-sm join-item w-full lg:w-48">
+                    <button type="submit" class="btn btn-ghost btn-sm join-item" aria-label="${shell.searchLabel}">
+                        <i aria-hidden="true" class="ri-search-line"></i>
+                    </button>
+                </div>
+            </form>
         </div>
         <div class="flex items-center gap-3 ml-auto">
             @if(shell.notificationsUrl != null)
@@ -44,10 +53,10 @@
                 <div class="flex items-center gap-2 text-sm">
                     <span class="opacity-70">${shell.username}</span>
                     @if(shell.profileUrl != null)
-                        <a href="${shell.profileUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i aria-hidden="true" class="ri-user-settings-line"></i></a>
+                        <a href="${shell.profileUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline" aria-label="${shell.profileLabel}"><i aria-hidden="true" class="ri-user-settings-line"></i></a>
                     @endif
                     @if(shell.changePasswordUrl != null)
-                        <a href="${shell.changePasswordUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline"><i aria-hidden="true" class="ri-lock-password-line"></i></a>
+                        <a href="${shell.changePasswordUrl}" class="text-xs opacity-60 hover:opacity-100 hover:text-accent underline" aria-label="${shell.changePasswordLabel}"><i aria-hidden="true" class="ri-lock-password-line"></i></a>
                     @endif
                     <form method="post" action="${shell.logoutUrl}" class="inline">
                         <input type="hidden" name="_csrf" value="${shell.csrfToken}">
@@ -58,6 +67,9 @@
         </div>
     </nav>
     <div class="flex-1 flex flex-col overflow-hidden">
+        @if(!shell.banners.isEmpty())
+            @template.io.github.rygel.outerstellar.platform.web.components.Banners(banners = shell.banners)
+        @endif
         <main id="main-content" class="flex-1 p-6 overflow-y-auto">
             <div id="ws-updates" ws-subscribe aria-live="polite"></div>
             ${content}

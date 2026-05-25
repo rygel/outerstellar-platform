@@ -1,9 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.DeviceToken
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.DeviceToken
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.service.ApnsPushNotificationService
 import io.github.rygel.outerstellar.platform.service.ConsolePushNotificationService
 import io.github.rygel.outerstellar.platform.service.FcmPushNotificationService
@@ -18,6 +18,7 @@ import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -51,38 +52,24 @@ class PushNotificationsIntegrationTest : WebTest() {
     @BeforeEach
     fun setupTest() {
         deviceTokenRepository = InMemoryDeviceTokenRepository()
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
 
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "pushtest",
                 email = "pushtest@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        sessionToken = securityService.createSession(testUser.id)
+        sessionToken = sessionSvc.createSession(testUser.id)
 
-        app =
-            buildApp(
-                securityService = securityService,
-                overrides = TestOverrides(deviceTokenRepository = deviceTokenRepository),
-            )
+        app = buildApp(overrides = TestOverrides(deviceTokenRepository = deviceTokenRepository))
     }
 
     @AfterEach
     fun teardown() {
         deviceTokenRepository.clear()
-        cleanup()
     }
 
     // ---- POST /api/v1/devices/register ----
@@ -96,7 +83,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"platform":"android","token":"fcm-token-abc123"}""")
             )
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
     }
 
     @Test
@@ -108,7 +95,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"platform":"ios","token":"apns-token-xyz789"}""")
             )
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
     }
 
     @Test
@@ -120,7 +107,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"platform":"ios","token":"apns-bundle-token","appBundle":"com.example.app"}""")
             )
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
     }
 
     @Test
@@ -131,7 +118,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"platform":"android","token":"fcm-token-noauth"}""")
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -143,7 +130,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"platform":"windows","token":"some-token"}""")
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
         assertTrue(
             response.bodyString().contains("platform"),
             "400 response should mention 'platform' in the error message",
@@ -159,7 +146,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"platform":"android","token":""}""")
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
         assertTrue(response.bodyString().contains("token"), "400 response should mention 'token'")
     }
 
@@ -172,7 +159,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("not-valid-json{{{")
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     // ---- Repository state after POST ----
@@ -241,7 +228,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"token":"$tokenValue"}""")
             )
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
     }
 
     @Test
@@ -280,7 +267,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                 Request(DELETE, "/api/v1/devices/register?token=$tokenValue")
                     .header("Authorization", "Bearer $sessionToken")
             )
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
     }
 
     @Test
@@ -291,7 +278,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"token":"some-token"}""")
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -303,7 +290,7 @@ class PushNotificationsIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("{}")
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     // ---- ConsolePushNotificationService ----

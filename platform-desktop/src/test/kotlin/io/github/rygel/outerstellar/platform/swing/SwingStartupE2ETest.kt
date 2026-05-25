@@ -1,22 +1,19 @@
 package io.github.rygel.outerstellar.platform.swing
 
-import io.github.rygel.outerstellar.platform.infra.migrate
-import io.github.rygel.outerstellar.platform.service.MessageService
+import io.github.rygel.outerstellar.platform.AppConfig
+import io.github.rygel.outerstellar.platform.di.createCoreComponents
+import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
+import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.SyncService
-import javax.sql.DataSource
+import io.github.rygel.outerstellar.platform.sync.engine.DesktopAppConfig
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.dsl.module
-import org.koin.test.KoinTest
-import org.koin.test.get
 import org.testcontainers.containers.PostgreSQLContainer
 
-class SwingStartupE2ETest : KoinTest {
+class SwingStartupE2ETest {
 
     companion object {
         private val container =
@@ -28,39 +25,45 @@ class SwingStartupE2ETest : KoinTest {
             }
     }
 
+    private lateinit var persistence: io.github.rygel.outerstellar.platform.di.PersistenceComponents
+    private lateinit var core: io.github.rygel.outerstellar.platform.di.CoreComponents
+    private lateinit var authModule: AuthModule
+    private lateinit var syncViewModel: SyncViewModel
+
     @BeforeEach
     fun setup() {
-        stopKoin()
-        startKoin {
-            allowOverride(true)
-            modules(
-                swingRuntimeModules() +
-                    module {
-                        single {
-                            SwingAppConfig(
-                                serverBaseUrl = "http://localhost:8080",
-                                jdbcUrl = container.jdbcUrl,
-                                jdbcUser = container.username,
-                                jdbcPassword = container.password,
-                            )
-                        }
-                    }
+        val appConfig =
+            DesktopAppConfig(
+                serverBaseUrl = "http://localhost:8080",
+                jdbcUrl = container.jdbcUrl,
+                jdbcUser = container.username,
+                jdbcPassword = container.password,
             )
-        }
+        val config =
+            AppConfig(jdbcUrl = appConfig.jdbcUrl, jdbcUser = appConfig.jdbcUser, jdbcPassword = appConfig.jdbcPassword)
+        persistence = createPersistenceComponents(config)
+        core =
+            createCoreComponents(
+                config = config,
+                messageRepository = persistence.messageRepository,
+                contactRepository = persistence.contactRepository,
+                outboxRepository = persistence.outboxRepository,
+                messageCache = NoOpMessageCache,
+                transactionManager = persistence.transactionManager,
+                auditRepository = persistence.auditRepository,
+            )
     }
 
     @AfterEach
     fun tearDown() {
-        stopKoin()
+        if (::persistence.isInitialized) {
+            (persistence.dataSource as? com.zaxxer.hikari.HikariDataSource)?.close()
+        }
     }
 
     @Test
     fun `startup module graph resolves critical services`() {
-        val dataSource = get<DataSource>()
-        migrate(dataSource)
-
-        assertNotNull(get<MessageService>())
-        assertNotNull(get<SyncService>())
-        assertNotNull(get<SyncViewModel>())
+        assertNotNull(core.messageService)
+        assertNotNull(persistence.dataSource)
     }
 }

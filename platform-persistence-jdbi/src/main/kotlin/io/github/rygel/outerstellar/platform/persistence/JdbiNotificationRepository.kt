@@ -1,8 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 
@@ -22,7 +20,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
                 .bind("title", notification.title)
                 .bind("body", notification.body)
                 .bind("type", notification.type)
-                .bind("createdAt", notification.createdAt.atOffset(ZoneOffset.UTC).toLocalDateTime())
+                .bind("createdAt", notification.createdAt)
                 .execute()
         }
     }
@@ -54,7 +52,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_notifications SET read_at = :readAt WHERE id = :id AND user_id = :userId")
-                .bind("readAt", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("readAt", Instant.now())
                 .bind("id", id)
                 .bind("userId", userId)
                 .execute()
@@ -67,7 +65,7 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
                 .createUpdate(
                     "UPDATE plt_notifications SET read_at = :readAt WHERE user_id = :userId AND read_at IS NULL"
                 )
-                .bind("readAt", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("readAt", Instant.now())
                 .bind("userId", userId)
                 .execute()
         }
@@ -84,16 +82,14 @@ class JdbiNotificationRepository(private val jdbi: Jdbi) : NotificationRepositor
     }
 
     private fun mapNotification(rs: java.sql.ResultSet): Notification {
-        val readAt = rs.getTimestamp("read_at")?.toInstant()
-        val createdAt = rs.getTimestamp("created_at")?.toInstant() ?: Instant.now()
         return Notification(
             id = rs.getObject("id", UUID::class.java),
             userId = rs.getObject("user_id", UUID::class.java),
             title = rs.getString("title"),
             body = rs.getString("body"),
             type = rs.getString("type") ?: "info",
-            readAt = readAt,
-            createdAt = createdAt,
+            readAt = rs.getNullableInstant("read_at"),
+            createdAt = rs.getInstantOrDefault("created_at"),
         )
     }
 }

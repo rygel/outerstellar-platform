@@ -1,0 +1,148 @@
+package io.github.rygel.outerstellar.platform.nativeimage
+
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import java.io.File
+import kotlin.test.assertTrue
+import org.junit.jupiter.api.Test
+
+class NativeResourceDriftTest {
+
+    private val metadataFile =
+        File(
+            "src/main/resources/META-INF/native-image/" +
+                "io.github.rygel/outerstellar-platform-web/reachability-metadata.json"
+        )
+
+    private val mapper = ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
+
+    private val dependencyGlobs =
+        listOf(
+            "META-INF/org/http4k/core/mime.types",
+            "META-INF/services/ch.qos.logback.classic.spi.Configurator",
+            "META-INF/services/io.opentelemetry.context.ContextStorageProvider",
+            "META-INF/services/java.net.spi.InetAddressResolverProvider",
+            "META-INF/services/java.net.spi.URLStreamHandlerProvider",
+            "META-INF/services/java.nio.channels.spi.SelectorProvider",
+            "META-INF/services/java.sql.Driver",
+            "META-INF/services/java.time.zone.ZoneRulesProvider",
+            "META-INF/services/javax.xml.parsers.SAXParserFactory",
+            "META-INF/services/org.flywaydb.core.extensibility.Plugin",
+            "META-INF/services/org.slf4j.spi.SLF4JServiceProvider",
+            "ch/qos/logback/classic/logback-classic-version.properties",
+            "ch/qos/logback/core/logback-core-version.properties",
+            "org/flywaydb/core/internal/version.txt",
+            "org/postgresql/driverconfig.properties",
+            "prometheus.properties",
+        )
+
+    private fun scanProjectGlobs(): Set<String> {
+        val globs = sortedSetOf<String>()
+        scanMigrations(globs)
+        scanI18nBundles(globs)
+        scanConfigFiles(globs)
+        scanStaticAssets(globs)
+        scanLogback(globs)
+        return globs
+    }
+
+    private fun scanMigrations(globs: MutableSet<String>) {
+        globs.add("db/migration")
+        globs.add("db/migration/migrations.index")
+        val dir = File("../platform-persistence-jdbi/src/main/resources/db/migration")
+        assertTrue(dir.isDirectory, "Migration directory must exist")
+        dir.listFiles()
+            ?.filter { it.name.endsWith(".sql") && it.name.startsWith("V") }
+            ?.forEach { globs.add("db/migration/${it.name}") }
+    }
+
+    private fun scanI18nBundles(globs: MutableSet<String>) {
+        val dir = File("../platform-core/src/main/resources")
+        assertTrue(dir.isDirectory, "platform-core resources must exist")
+        dir.listFiles()?.filter { it.name.matches(Regex("messages.*\\.properties")) }?.forEach { globs.add(it.name) }
+    }
+
+    private fun scanConfigFiles(globs: MutableSet<String>) {
+        globs.add("application.yaml")
+        globs.add("application-*.yaml")
+    }
+
+    private fun scanStaticAssets(globs: MutableSet<String>) {
+        val staticDir = File("src/main/resources/static")
+        if (!staticDir.isDirectory) return
+        scanDirectory(staticDir, "static", globs)
+    }
+
+    private fun scanDirectory(dir: File, prefix: String, globs: MutableSet<String>) {
+        dir.listFiles()
+            ?.sortedBy { it.name }
+            ?.forEach { file ->
+                val path = "$prefix/${file.name}"
+                if (file.isDirectory) {
+                    scanDirectory(file, path, globs)
+                } else {
+                    globs.add(path)
+                }
+            }
+    }
+
+    private fun scanLogback(globs: MutableSet<String>) {
+        if (File("../platform-core/src/main/resources/logback.xml").isFile) {
+            globs.add("logback.xml")
+        }
+    }
+
+    private fun buildExpectedResources(): ArrayNode {
+        val resources = mapper.createArrayNode()
+
+        for (glob in scanProjectGlobs()) {
+            resources.add(mapper.createObjectNode().put("glob", glob))
+        }
+
+        for (glob in dependencyGlobs.sorted()) {
+            resources.add(mapper.createObjectNode().put("glob", glob))
+        }
+
+        resources.add(
+            mapper
+                .createObjectNode()
+                .put("module", "java.logging")
+                .put("glob", "sun/util/logging/resources/logging_en.properties")
+        )
+        resources.add(
+            mapper
+                .createObjectNode()
+                .put("module", "java.logging")
+                .put("glob", "sun/util/logging/resources/logging_en_GB.properties")
+        )
+        resources.add(
+            mapper.createObjectNode().put("module", "jdk.jfr").put("glob", "jdk/jfr/internal/types/metadata.bin")
+        )
+        resources.add(mapper.createObjectNode().put("bundle", "sun.util.logging.resources.logging"))
+
+        return resources
+    }
+
+    @Test
+    fun `resources section matches classpath`() {
+        assertTrue(metadataFile.isFile, "reachability-metadata.json must exist")
+
+        val expected = buildExpectedResources()
+        val tree = mapper.readTree(metadataFile)
+        val current = tree["resources"]
+        assertTrue(current != null && current.isArray, "resources array must exist")
+
+        val expectedSet = expected.map { it.toString() }.toSet()
+        val currentSet = current.map { it.toString() }.toSet()
+
+        if (expectedSet != currentSet) {
+            val fixed = mapper.readTree(metadataFile) as ObjectNode
+            fixed.set<JsonNode>("resources", expected)
+            mapper.writeValue(metadataFile, fixed)
+            assertTrue(false, "Resource entries regenerated — review diff and commit")
+        }
+    }
+}

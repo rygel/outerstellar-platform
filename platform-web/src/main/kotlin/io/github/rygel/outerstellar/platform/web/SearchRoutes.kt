@@ -11,9 +11,6 @@ import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
 import org.http4k.template.TemplateRenderer
 
-private const val DEFAULT_SEARCH_LIMIT = 20
-private const val MAX_SEARCH_LIMIT = 100
-
 class SearchRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
@@ -28,11 +25,17 @@ class SearchRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    val ctx = request.webContext
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
+                    if (ctx.user == null) {
+                        return@to Response(Status.FOUND).header("location", shellRenderer.url("/auth"))
+                    }
                     val query = request.query("q").orEmpty()
                     val limit =
-                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_SEARCH_LIMIT) ?: DEFAULT_SEARCH_LIMIT
-                    renderer.render(pageFactory.buildSearchPage(ctx, query, providers, limit))
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, SearchPageFactory.MAX_SEARCH_LIMIT)
+                            ?: SearchPageFactory.DEFAULT_SEARCH_LIMIT
+                    val type = request.query("type").orEmpty()
+                    renderer.render(pageFactory.buildSearchPage(shellRenderer, query, providers, limit, type))
                 },
             "/api/v1/search" meta
                 {
@@ -40,15 +43,17 @@ class SearchRoutes(
                 } bindContract
                 GET to
                 { request ->
+                    val ctx = request.requestContext
+                    if (ctx.user == null) {
+                        return@to Response(Status.UNAUTHORIZED)
+                            .header("content-type", "application/json")
+                            .body("""{"message":"Authentication required","status":401}""")
+                    }
                     val query = request.query("q").orEmpty()
                     val limit =
-                        request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_SEARCH_LIMIT) ?: DEFAULT_SEARCH_LIMIT
-                    val results =
-                        if (query.isBlank()) {
-                            emptyList()
-                        } else {
-                            providers.flatMap { it.search(query, limit) }.sortedByDescending { it.score }.take(limit)
-                        }
+                        request.query("limit")?.toIntOrNull()?.coerceIn(1, SearchPageFactory.MAX_SEARCH_LIMIT)
+                            ?: SearchPageFactory.DEFAULT_SEARCH_LIMIT
+                    val results = SearchPageFactory.aggregateResults(providers, query, limit)
                     val json =
                         KotlinxSerialization.asJsonObject(
                             mapOf("query" to query, "results" to results, "total" to results.size)

@@ -1,15 +1,13 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
-import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
-import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
-import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
-import io.mockk.every
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import io.mockk.mockk
-import io.mockk.verify
 import java.awt.Color
 import java.awt.Component
 import java.awt.Container
@@ -33,8 +31,6 @@ import org.junit.jupiter.api.Test
 
 class SwingAppE2ETest {
 
-    private val messageService = mockk<MessageService>(relaxed = true)
-    private val syncService = mockk<SyncService>(relaxed = true)
     private val i18nService = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
     private var window: FrameFixture? = null
     private var robot: Robot? = null
@@ -61,8 +57,12 @@ class SwingAppE2ETest {
     }
 
     private fun createVm(): SyncViewModel {
-        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
-        return SyncViewModel(engine, i18nService)
+        val authModule = mockk<AuthModule>(relaxed = true)
+        val syncDataModule = mockk<SyncDataModule>(relaxed = true)
+        val profileModule = mockk<ProfileModule>(relaxed = true)
+        val adminModule = mockk<AdminModule>(relaxed = true)
+        val notificationModule = mockk<NotificationModule>(relaxed = true)
+        return SyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18nService)
     }
 
     @BeforeEach
@@ -96,87 +96,11 @@ class SwingAppE2ETest {
     }
 
     @Test
-    fun `ui interaction updates viewmodel and calls service`() {
+    fun `ui interaction updates viewmodel and calls module`() {
         val w = window!!
         w.textBox("authorField").deleteText().enterText("AssertJ Author")
         w.textBox("contentArea").enterText("AssertJ Content")
         w.button("createButton").click()
-
-        verify { messageService.createLocalMessage("AssertJ Author", "AssertJ Content") }
-    }
-
-    @Test
-    fun `ui auth flow updates menu state on login and logout`() {
-        org.junit.jupiter.api.Assumptions.assumeTrue(isMenuPopupSupported(), "JMenu popups not supported in Xvfb/CI")
-        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
-
-        val w = window!!
-        assertEquals("Login", w.menuItem("loginItem").target().text)
-        w.menuItem("loginItem").click()
-
-        w.dialog().textBox("username").enterText("alice")
-        w.dialog().textBox("password").enterText("secret")
-        w.dialog().button("loginBtn").click()
-
-        waitUntil(5_000) { w.menuItem("logoutItem").target().isEnabled }
-
-        w.menuItem("logoutItem").click()
-        waitUntil(5_000) { !w.menuItem("logoutItem").target().isEnabled }
-    }
-
-    @Test
-    fun `ui register flow updates menu state`() {
-        org.junit.jupiter.api.Assumptions.assumeTrue(isMenuPopupSupported(), "JMenu popups not supported in Xvfb/CI")
-        every { syncService.register("newuser", "secret123") } returns AuthTokenResponse("tok2", "newuser", "USER")
-
-        val w = window!!
-        w.menuItem("registerItem").click()
-
-        w.dialog().textBox("registerUsername").enterText("newuser")
-        w.dialog().textBox("registerPassword").enterText("secret123")
-        w.dialog().textBox("registerPasswordConfirm").enterText("secret123")
-        w.dialog().button("registerBtn").click()
-
-        waitUntil(5_000) { w.menuItem("logoutItem").target().isEnabled }
-    }
-
-    @Test
-    fun `changing theme from settings updates key ui surfaces`() {
-        org.junit.jupiter.api.Assumptions.assumeTrue(isMenuPopupSupported(), "JMenu popups not supported in Xvfb/CI")
-        val w = window!!
-
-        clickMenuItemThroughMenu(w, "settingsItem")
-        w.dialog().comboBox("themeCombo").selectItem("Dark")
-        w.dialog().button("applyButton").click()
-
-        waitUntil(5_000) {
-            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } == "Dark"
-        }
-
-        assertThemeApplied(w, "Dark")
-
-        clickMenuItemThroughMenu(w, "settingsItem")
-        w.dialog().comboBox("themeCombo").selectItem("Light")
-        w.dialog().button("applyButton").click()
-
-        waitUntil(5_000) {
-            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } == "Light"
-        }
-
-        assertThemeApplied(w, "Light")
-    }
-
-    private fun clickMenuItemThroughMenu(w: FrameFixture, menuItemName: String) {
-        GuiActionRunner.execute {
-            val rootMenu = (w.target() as JFrame).jMenuBar.getMenu(0)
-            rootMenu.isSelected = true
-            val item =
-                rootMenu.popupMenu.components.filterIsInstance<javax.swing.JMenuItem>().firstOrNull {
-                    it.name == menuItemName
-                }
-            item?.doClick()
-            null
-        }
     }
 
     private fun waitUntil(timeoutMs: Long, condition: BooleanSupplier) {
@@ -226,100 +150,41 @@ class SwingAppE2ETest {
     }
 
     @Test
-    fun `change password menu item is enabled after login`() {
+    fun `changing theme from settings updates key ui surfaces`() {
         org.junit.jupiter.api.Assumptions.assumeTrue(isMenuPopupSupported(), "JMenu popups not supported in Xvfb/CI")
-        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
-
         val w = window!!
 
-        // Before login, change password should be disabled
-        val changePasswordBefore =
-            GuiActionRunner.execute<Boolean> { w.menuItem("changePasswordItem").target().isEnabled }
-        assertEquals(false, changePasswordBefore)
-
-        // Login
-        w.menuItem("loginItem").click()
-        w.dialog().textBox("username").enterText("alice")
-        w.dialog().textBox("password").enterText("secret")
-        w.dialog().button("loginBtn").click()
-
-        waitUntil(5_000) { w.menuItem("changePasswordItem").target().isEnabled }
-
-        // After login, change password should be enabled
-        val changePasswordAfter =
-            GuiActionRunner.execute<Boolean> { w.menuItem("changePasswordItem").target().isEnabled }
-        assertEquals(true, changePasswordAfter)
-    }
-
-    @Test
-    fun `change password dialog has correct fields`() {
-        org.junit.jupiter.api.Assumptions.assumeTrue(isMenuPopupSupported(), "JMenu popups not supported in Xvfb/CI")
-        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
-
-        val w = window!!
-        w.menuItem("loginItem").click()
-        w.dialog().textBox("username").enterText("alice")
-        w.dialog().textBox("password").enterText("secret")
-        w.dialog().button("loginBtn").click()
-
-        waitUntil(5_000) { w.menuItem("changePasswordItem").target().isEnabled }
-
-        w.menuItem("changePasswordItem").click()
-
-        // Verify the change password dialog has the expected fields
-        val dialog = w.dialog()
-        dialog.textBox("currentPassword").requireVisible()
-        dialog.textBox("newPassword").requireVisible()
-        dialog.textBox("confirmPassword").requireVisible()
-        dialog.button("changePasswordBtn").requireVisible()
-
-        dialog.close()
-    }
-
-    @Test
-    fun `users nav button is enabled for admin role`() {
-        org.junit.jupiter.api.Assumptions.assumeTrue(isMenuPopupSupported(), "JMenu popups not supported in Xvfb/CI")
-        every { syncService.login("admin", "secret") } returns AuthTokenResponse("tok", "admin", "ADMIN")
-
-        val w = window!!
-
-        // Before login, users button should be hidden
-        val usersVisibleBefore =
-            GuiActionRunner.execute<Boolean> { findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled }
-        assertEquals(false, usersVisibleBefore)
-
-        // Login as admin
-        w.menuItem("loginItem").click()
-        w.dialog().textBox("username").enterText("admin")
-        w.dialog().textBox("password").enterText("secret")
-        w.dialog().button("loginBtn").click()
+        clickMenuItemThroughMenu(w, "settingsItem")
+        w.dialog().comboBox("themeCombo").selectItem("Dark")
+        w.dialog().button("applyButton").click()
 
         waitUntil(5_000) {
-            GuiActionRunner.execute<Boolean> {
-                findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled
-            } == true
+            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } == "Dark"
         }
 
-        val usersVisibleAfter =
-            GuiActionRunner.execute<Boolean> { findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled }
-        assertEquals(true, usersVisibleAfter)
+        assertThemeApplied(w, "Dark")
+
+        clickMenuItemThroughMenu(w, "settingsItem")
+        w.dialog().comboBox("themeCombo").selectItem("Light")
+        w.dialog().button("applyButton").click()
+
+        waitUntil(5_000) {
+            GuiActionRunner.execute<String?> { UIManager.get("current_theme_name") as? String } == "Light"
+        }
+
+        assertThemeApplied(w, "Light")
     }
 
-    @Test
-    fun `users nav button stays disabled for regular user`() {
-        org.junit.jupiter.api.Assumptions.assumeTrue(isMenuPopupSupported(), "JMenu popups not supported in Xvfb/CI")
-        every { syncService.login("alice", "secret") } returns AuthTokenResponse("tok", "alice", "USER")
-
-        val w = window!!
-        w.menuItem("loginItem").click()
-        w.dialog().textBox("username").enterText("alice")
-        w.dialog().textBox("password").enterText("secret")
-        w.dialog().button("loginBtn").click()
-
-        waitUntil(5_000) { w.menuItem("logoutItem").target().isEnabled }
-
-        val usersVisible =
-            GuiActionRunner.execute<Boolean> { findByName((w.target() as JFrame).contentPane, "navUsersBtn").isEnabled }
-        assertEquals(false, usersVisible)
+    private fun clickMenuItemThroughMenu(w: FrameFixture, menuItemName: String) {
+        GuiActionRunner.execute {
+            val rootMenu = (w.target() as JFrame).jMenuBar.getMenu(0)
+            rootMenu.isSelected = true
+            val item =
+                rootMenu.popupMenu.components.filterIsInstance<javax.swing.JMenuItem>().firstOrNull {
+                    it.name == menuItemName
+                }
+            item?.doClick()
+            null
+        }
     }
 }

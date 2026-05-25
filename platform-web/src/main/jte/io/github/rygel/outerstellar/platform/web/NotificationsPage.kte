@@ -52,7 +52,7 @@
                         @if(!n.read)
                             <form method="post" action="${n.markReadUrl}" class="shrink-0">
                                 <input type="hidden" name="_csrf" value="${model.shell.csrfToken}">
-                                <button type="submit" class="btn btn-ghost btn-xs" title="${model.data.markReadLabel}">
+                                <button type="submit" class="btn btn-ghost btn-xs" title="${model.data.markReadLabel}" aria-label="${model.data.markReadLabel}">
                                     <i aria-hidden="true" class="ri-check-line"></i>
                                 </button>
                             </form>

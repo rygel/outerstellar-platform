@@ -1,25 +1,25 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.app.FxAppConfig
-import javafx.fxml.FXML
-import javafx.scene.control.Label
+import javafx.scene.control.Alert
 import javafx.stage.Stage
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
-class AboutController : KoinComponent {
+object AboutController {
+    private val appConfig: FxAppConfig
+        get() = FxAppContext.appConfig
 
-    private val appConfig: FxAppConfig by inject()
-
-    @FXML private lateinit var versionLabel: Label
-
-    @FXML
-    fun initialize() {
-        versionLabel.text = "Version: ${appConfig.version}"
-    }
-
-    @FXML
-    fun onClose() {
-        (versionLabel.scene.window as? Stage)?.close()
+    fun show(owner: Stage) {
+        val alert = Alert(Alert.AlertType.INFORMATION)
+        alert.initOwner(owner)
+        alert.title = "About"
+        alert.headerText = "Outerstellar"
+        alert.contentText = buildString {
+            appendLine("Version: ${appConfig.version}")
+            appendLine()
+            appendLine("Licensed under the MIT License.")
+            append("Built with Kotlin, JavaFX, and AtlantaFX.")
+        }
+        alert.showAndWait()
     }
 }

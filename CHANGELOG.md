@@ -9,6 +9,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.6.2] – 2026-05-25
+
+### Architecture
+
+- **App.kt decoupling** — Replaced `app()` 25-parameter signature with 6 component groups (`PersistenceComponents`, `SecurityComponents`, `CoreComponents`, `WebComponents`). Deleted `OptionalServices`, `AuthServices`, `AppContext` intermediate classes.
+- **AuthRoutes decomposition** — Split AuthRoutes (487 lines, 10 params) into AuthRoutes (login/register/recover), PasswordRoutes, ProfileRoutes, and ApiKeyRoutes.
+- **Auth guard consolidation** — Applied `SecurityRules.authenticated` filter to all protected UI routes. Removed ~25 inline null-check guards. Introduced `UiRouteSet(publicRoutes, protectedRoutes)` pattern for default-authenticated routing.
+- **JDBI shared infrastructure** — Created `JdbiSupport.kt` with `InstantArgumentFactory`, `InstantColumnMapper`, `FilterClause`, `escapeLike()`, and `ResultSet` extension helpers (`getNullableInstant`, `getRequiredInstant`, `getInstantOrDefault`). Removed ~40 lines of manual `Timestamp.from()`/`.toInstant()` boilerplate across 10 repositories.
+- **DeviceTokenService extraction** — New service layer between `DeviceRegistrationApi` and `DeviceTokenRepository`. Moves platform validation, token construction, ownership checks, and audit logging out of route handlers.
+- **OAuthRepository relocation** — Moved `OAuthRepository`, `OAuthConnection`, `OAuthUserInfo` from `platform-security` to `platform-core`. Fixes inverted dependency where `platform-persistence-jdbi` depended on `platform-security`.
+- **VoteService/PollService wiring** — Moved service creation from `WebFactory` (platform-web) to `CoreComponents` (platform-core), consistent with `MessageService`/`ContactService` pattern.
+- **MessageCache type safety** — Replaced untyped `get/put/getOrPut` (`Any`/`Any?`) with typed accessor methods (`getMessage`/`putMessage`, `getMessageList`/`putMessageList`, `getMessageListOrPut`). Eliminated all `@Suppress("UNCHECKED_CAST")` and unsafe casts from `MessageService`.
+
+### Changed
+
+- **TOTPService constructor injection** — Changed from hidden internal instantiation to constructor parameter in `AuthService`. Improves testability and ensures single instance via `SecurityComponents`.
+- **FQCN cleanup** — Replaced 35+ fully-qualified class names with proper imports in `App.kt` and `WebTest.kt`.
+- Removed dead `AdminPageFactory` from `WebComponents` (WebPageFactory has its own lazy instance).
+- Removed duplicate `bannerProviders` parameter from `stateFilter` call.
+- Removed unnecessary `.let {}` wrapper on non-nullable `totpService`.
+
+### Internal
+
+- Consolidated duplicate `docs/TODO.md` into root `TODO.md`. Marked 3 already-implemented items (TOTP UX, Search SPI, Export SPI) as done.
+- Added `JdbiSupportTest` with 12 unit tests covering `escapeLike`, `InstantArgumentFactory`, `InstantColumnMapper`.
+- Registered `InstantArgumentFactory`/`InstantColumnMapper` on both production and test JDBi instances.
+
+---
+
 ## [1.6.0] – 2026-05-08
 
 ### Breaking

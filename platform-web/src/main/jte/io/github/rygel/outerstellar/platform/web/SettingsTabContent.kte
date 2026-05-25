@@ -1,0 +1,220 @@
+@import io.github.rygel.outerstellar.platform.web.SettingsTabContent
+@param model: SettingsTabContent
+
+@if(model.activeTab == "profile")
+    <section class="card bg-base-200 border border-base-300 p-4">
+        <h2 class="mt-0">${model.profileUsernameLabel}</h2>
+        <div style="display:flex; align-items:center; gap:1.25rem; margin-bottom:1.25rem;">
+            <img src="${model.profileAvatarUrl}"
+                 alt="${model.profileAvatarAlt}"
+                 loading="lazy"
+                 style="width:72px; height:72px; border-radius:50%; object-fit:cover; border:2px solid var(--color-border, #333);">
+        </div>
+        <form hx-post="${model.profileSubmitUrl}" hx-target="#profile-result" hx-swap="innerHTML" class="flex flex-col gap-4">
+            <input type="hidden" name="_csrf" value="${model.csrfToken}">
+            <div class="flex flex-col gap-1.5">
+                <label for="username" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.profileUsernameLabel}</label>
+                <input type="text" id="username" name="username" value="${model.profileUsername}" placeholder="${model.profileUsernamePlaceholder}" maxlength="50" required class="input input-bordered w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label for="email" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.profileEmailLabel}</label>
+                <input type="email" id="email" name="email" value="${model.profileEmail}" placeholder="${model.profileEmailPlaceholder}" required class="input input-bordered w-full">
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label for="avatarUrl" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.profileAvatarLabel}</label>
+                <input type="url" id="avatarUrl" name="avatarUrl" value="${model.profileAvatarUrl}" placeholder="${model.profileAvatarPlaceholder}" class="input input-bordered w-full">
+                <small class="opacity-50 text-xs">${model.profileGravatarHint}</small>
+            </div>
+            <button type="submit" class="btn btn-primary">${model.profileSubmitLabel}</button>
+        </form>
+        <div id="profile-result" class="mt-4"></div>
+    </section>
+
+    <section class="card bg-base-200 border border-base-300 p-4 mt-4">
+        <h3 class="mt-0">${model.profileNotifPrefsLabel}</h3>
+        <form hx-post="${model.profileNotifPrefsUrl}" hx-target="#notif-result" hx-swap="innerHTML" class="flex flex-col gap-4">
+            <input type="hidden" name="_csrf" value="${model.csrfToken}">
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="emailNotifications" checked="${model.profileEmailNotificationsEnabled}" class="checkbox checkbox-sm">
+                <span>${model.profileEmailNotifLabel}</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="pushNotifications" checked="${model.profilePushNotificationsEnabled}" class="checkbox checkbox-sm">
+                <span>${model.profilePushNotifLabel}</span>
+            </label>
+            <button type="submit" class="btn btn-ghost btn-sm w-fit">${model.profileSavePrefsLabel}</button>
+        </form>
+        <div id="notif-result" class="mt-4"></div>
+    </section>
+
+    <section class="card bg-base-200 border border-error/30 p-4 mt-4">
+        <h3 class="text-error mt-0">${model.profileDangerZoneLabel}</h3>
+        <p class="opacity-60 text-sm mb-4">${model.profileDeleteAccountDescription}</p>
+        <button type="button" class="btn btn-error btn-sm" onclick="document.getElementById('delete-confirm-dialog').showModal()">${model.profileDeleteAccountLabel}</button>
+        <dialog id="delete-confirm-dialog" class="modal">
+            <div class="modal-box">
+                <h3 class="text-lg font-bold">${model.profileDeleteAccountConfirmLabel}</h3>
+                <p class="py-4 opacity-60">${model.profileDeleteAccountDescription}</p>
+                <div class="flex gap-3 justify-end">
+                    <form method="post" action="${model.profileDeleteAccountUrl}">
+                        <input type="hidden" name="_csrf" value="${model.csrfToken}">
+                        <button type="submit" class="btn btn-error">${model.profileDeleteAccountLabel}</button>
+                    </form>
+                    <button type="button" class="btn btn-ghost" onclick="document.getElementById('delete-confirm-dialog').close()">${model.profileDeleteAccountCancelLabel}</button>
+                </div>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+    </section>
+
+@elseif(model.activeTab == "password")
+    <form class="flex flex-col gap-4 card bg-base-200 border border-base-300 p-4"
+          hx-post="${model.passwordSubmitUrl}"
+          hx-target="#auth-result-slot"
+          hx-swap="innerHTML">
+        <h3 class="text-xl font-bold mt-0">${model.passwordTitle}</h3>
+        <div class="flex flex-col gap-1.5">
+            <label for="currentPassword" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.passwordCurrentPasswordLabel}</label>
+            <input type="password" id="currentPassword" name="currentPassword" placeholder="${model.passwordCurrentPasswordPlaceholder}" required class="input input-bordered w-full">
+        </div>
+        <div class="flex flex-col gap-1.5">
+            <label for="newPassword" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.passwordNewPasswordLabel}</label>
+            <input type="password" id="newPassword" name="newPassword" placeholder="${model.passwordNewPasswordPlaceholder}" required class="input input-bordered w-full">
+        </div>
+        <div class="flex flex-col gap-1.5">
+            <label for="confirmPassword" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.passwordConfirmPasswordLabel}</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="${model.passwordConfirmPasswordPlaceholder}" required class="input input-bordered w-full">
+        </div>
+        <button type="submit" class="btn btn-primary w-full mt-2">${model.passwordSubmitLabel}</button>
+    </form>
+    <div id="auth-result-slot"></div>
+
+@elseif(model.activeTab == "api-keys")
+    <section class="card bg-base-200 border border-base-300 p-4">
+        <h2 class="mt-0">${model.apiKeysCreateLabel}</h2>
+        <form method="post" action="${model.apiKeysCreateUrl}" class="flex gap-3 items-end flex-wrap mt-4">
+            <div class="flex flex-col gap-1.5 flex-1" style="min-width: 250px;">
+                <label for="key-name" class="text-[0.7rem] uppercase tracking-widest font-extrabold opacity-40">${model.apiKeysKeyNameLabel}</label>
+                <input type="text" id="key-name" name="name" placeholder="${model.apiKeysKeyNamePlaceholder}" required class="input input-bordered w-full">
+            </div>
+            <button type="submit" class="btn btn-primary">${model.apiKeysCreateLabel}</button>
+        </form>
+    </section>
+
+    <section class="card bg-base-200 border border-base-300 p-4 mt-4">
+        <h2 class="mt-0">${model.apiKeysYourKeysHeading}</h2>
+        @if(model.apiKeys.isEmpty())
+            <p class="opacity-50">${model.apiKeysEmptyLabel}</p>
+        @else
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>${model.apiKeysHeaderPrefix}</th>
+                        <th>${model.apiKeysHeaderName}</th>
+                        <th>${model.apiKeysHeaderCreated}</th>
+                        <th>${model.apiKeysHeaderLastUsed}</th>
+                        <th class="text-center">${model.apiKeysHeaderActions}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (key in model.apiKeys)
+                        <tr>
+                            <td class="font-mono">${key.keyPrefix}...</td>
+                            <td>${key.name}</td>
+                            <td>${key.createdAt}</td>
+                            <td>${key.lastUsedAt ?: model.apiKeysNeverLabel}</td>
+                            <td class="text-center">
+                                <form method="post" action="/auth/api-keys/${key.id}/delete" style="display: inline;"
+                                      onsubmit="return confirm('${model.apiKeysDeleteConfirm}');">
+                                    <button type="submit" class="btn btn-ghost" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
+                                        ${model.apiKeysDeleteLabel}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @endfor
+                </tbody>
+            </table>
+        @endif
+    </section>
+
+@elseif(model.activeTab == "notifications")
+    <div>
+        <div class="flex items-center justify-between mb-6">
+            <p class="opacity-60 text-sm mt-1">Notifications</p>
+            @if(model.notifUnreadCount > 0)
+                <form method="post" action="${model.notifMarkAllReadUrl}">
+                    <input type="hidden" name="_csrf" value="${model.csrfToken}">
+                    <button type="submit" class="btn btn-ghost btn-sm">
+                        <i aria-hidden="true" class="ri-check-double-line"></i> ${model.notifMarkAllReadLabel}
+                    </button>
+                </form>
+            @endif
+        </div>
+
+        @if(model.notifications.isEmpty())
+            <div class="card bg-base-100 text-center py-12">
+                <i aria-hidden="true" class="ri-notification-off-line text-4xl opacity-30"></i>
+                <p class="opacity-50 mt-3">${model.notifEmptyLabel}</p>
+            </div>
+        @else
+            <div class="flex flex-col gap-3">
+                @for(n in model.notifications)
+                    <div class="card@if(!n.read) bg-accent/10 border border-accent/30@else bg-base-200 border border-base-300@endif flex items-start gap-3 p-4">
+                        <div class="pt-0.5 shrink-0">
+                            @if(n.type == "success")
+                                <i aria-hidden="true" class="ri-checkbox-circle-line text-success text-xl"></i>
+                            @elseif(n.type == "warning")
+                                <i aria-hidden="true" class="ri-alert-line text-warning text-xl"></i>
+                            @elseif(n.type == "danger")
+                                <i aria-hidden="true" class="ri-error-warning-line text-error text-xl"></i>
+                            @else
+                                <i aria-hidden="true" class="ri-information-line text-accent text-xl"></i>
+                            @endif
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <strong class="text-sm">${n.title}</strong>
+                                @if(!n.read)
+                                    <span class="badge badge-xs">${model.notifNewLabel}</span>
+                                @endif
+                                <span class="opacity-40 text-xs ml-auto">${n.timeAgo}</span>
+                            </div>
+                            <p class="text-sm opacity-70 mt-0.5">${n.body}</p>
+                        </div>
+                        @if(!n.read)
+                            <form method="post" action="${n.markReadUrl}" class="shrink-0">
+                                <input type="hidden" name="_csrf" value="${model.csrfToken}">
+                                <button type="submit" class="btn btn-ghost btn-xs" title="${model.notifMarkReadLabel}" aria-label="${model.notifMarkReadLabel}">
+                                    <i aria-hidden="true" class="ri-check-line"></i>
+                                </button>
+                            </form>
+                        @else
+                            <span class="opacity-30 text-xs shrink-0">${model.notifReadLabel}</span>
+                        @endif
+                    </div>
+                @endfor
+            </div>
+        @endif
+    </div>
+
+@elseif(model.activeTab == "appearance")
+    <div class="flex flex-col gap-6">
+        @if(model.themeSelector != null)
+            @template.io.github.rygel.outerstellar.platform.web.components.SidebarSelector(model = model.themeSelector)
+        @endif
+        @if(model.languageSelector != null)
+            @template.io.github.rygel.outerstellar.platform.web.components.SidebarSelector(model = model.languageSelector)
+        @endif
+        @if(model.layoutSelector != null)
+            @template.io.github.rygel.outerstellar.platform.web.components.SidebarSelector(model = model.layoutSelector)
+        @endif
+    </div>
+
+@elseif(model.activeTab == "security")
+    <div id="totp-setup" hx-trigger="load" hx-get="/auth/components/totp-setup-status" hx-target="#totp-setup" hx-swap="outerHTML">
+        <div class="flex justify-center">
+            <span class="loading loading-spinner"></span>
+        </div>
+    </div>
+@endif

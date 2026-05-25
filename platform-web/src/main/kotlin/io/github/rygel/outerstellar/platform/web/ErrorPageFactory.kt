@@ -7,9 +7,9 @@ class ErrorPageFactory {
         private const val HTTP_STATUS_SERVER_ERROR = 500
     }
 
-    fun buildErrorPage(ctx: WebContext, kind: String): Page<ErrorPage> {
-        val i18n = ctx.i18n
-        val shell = ctx.shell(i18n.translate("web.nav.errors"), "/errors")
+    fun buildErrorPage(shellRenderer: ShellRenderer, kind: String): Page<ErrorPage> {
+        val i18n = shellRenderer.i18n
+        val shell = shellRenderer.shell(i18n.translate("web.nav.errors"), "/errors")
         val normalizedKind = if (kind == "server-error") "server-error" else "not-found"
         val statusCode =
             if (normalizedKind == "server-error") {
@@ -26,18 +26,18 @@ class ErrorPageFactory {
                     heading = i18n.translate("web.error.$normalizedKind.title"),
                     message = i18n.translate("web.error.$normalizedKind.message"),
                     primaryActionLabel = i18n.translate("web.error.primary"),
-                    primaryActionUrl = ctx.url("/"),
+                    primaryActionUrl = shellRenderer.url("/"),
                     secondaryActionLabel = i18n.translate("web.error.secondary"),
-                    secondaryActionUrl = ctx.url("/auth"),
+                    secondaryActionUrl = shellRenderer.url("/auth"),
                     helpButtonLabel = i18n.translate("web.error.help"),
-                    helpUrl = ctx.url("/errors/components/help/$normalizedKind"),
+                    helpUrl = shellRenderer.url("/errors/components/help/$normalizedKind"),
                     errorLabel = i18n.translate("web.error.label"),
                 ),
         )
     }
 
-    fun buildErrorHelp(ctx: WebContext, kind: String): ErrorHelpFragment {
-        val i18n = ctx.i18n
+    fun buildErrorHelp(shellRenderer: ShellRenderer, kind: String): ErrorHelpFragment {
+        val i18n = shellRenderer.i18n
         val normalizedKind = if (kind == "server-error") "server-error" else "not-found"
 
         return ErrorHelpFragment(

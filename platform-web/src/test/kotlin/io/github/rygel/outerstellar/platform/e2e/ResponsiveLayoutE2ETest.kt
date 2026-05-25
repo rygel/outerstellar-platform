@@ -5,10 +5,11 @@ import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
 import com.microsoft.playwright.options.LoadState
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.di.coreModule
-import io.github.rygel.outerstellar.platform.di.persistenceModule
-import io.github.rygel.outerstellar.platform.di.webModule
-import io.github.rygel.outerstellar.platform.security.securityModule
+import io.github.rygel.outerstellar.platform.app
+import io.github.rygel.outerstellar.platform.di.createCoreComponents
+import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
+import io.github.rygel.outerstellar.platform.di.createWebComponents
+import io.github.rygel.outerstellar.platform.security.createSecurityComponents
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.http4k.core.PolyHandler
@@ -21,18 +22,11 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.koin.core.context.startKoin
-import org.koin.core.context.stopKoin
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
-import org.koin.test.KoinTest
-import org.koin.test.get
 import org.testcontainers.containers.PostgreSQLContainer
 
 @Tag("e2e")
-class ResponsiveLayoutE2ETest : KoinTest {
+class ResponsiveLayoutE2ETest {
 
-    private val app: PolyHandler by lazy { get<PolyHandler>(named("webServer")) }
     private lateinit var server: Http4kServer
     private lateinit var browserContext: com.microsoft.playwright.BrowserContext
     private lateinit var page: Page
@@ -75,30 +69,56 @@ class ResponsiveLayoutE2ETest : KoinTest {
 
     @BeforeEach
     fun setup() {
-        stopKoin()
-        startKoin {
-            modules(
-                module {
-                    single {
-                        AppConfig(
-                            jdbcUrl = container.jdbcUrl,
-                            jdbcUser = container.username,
-                            jdbcPassword = container.password,
-                            devMode = true,
-                        )
-                    }
-                },
-                persistenceModule,
-                coreModule,
-                securityModule,
-                webModule,
+        val testConfig =
+            AppConfig(
+                jdbcUrl = container.jdbcUrl,
+                jdbcUser = container.username,
+                jdbcPassword = container.password,
+                devMode = true,
             )
-        }
-        val ds = getKoin().get<javax.sql.DataSource>()
-        io.github.rygel.outerstellar.platform.infra.migrate(ds)
-        getKoin().get<io.github.rygel.outerstellar.platform.persistence.MessageRepository>().seedMessages()
-        getKoin().get<io.github.rygel.outerstellar.platform.persistence.ContactRepository>().seedContacts()
-        server = app.asServer(Netty(0)).start()
+
+        val persistence = createPersistenceComponents(testConfig)
+        val security =
+            createSecurityComponents(
+                config = testConfig,
+                userRepository = persistence.userRepository,
+                auditRepository = persistence.auditRepository,
+                resetRepository = persistence.passwordResetRepository,
+                apiKeyRepository = persistence.apiKeyRepository,
+                oauthRepository = persistence.oAuthRepository,
+                sessionRepository = persistence.sessionRepository,
+            )
+        val web =
+            createWebComponents(
+                config = testConfig,
+                apiKeyService = security.apiKeyService,
+                sessionService = security.sessionService,
+                userAdminService = security.userAdminService,
+                messageRepository = persistence.messageRepository,
+                userRepository = persistence.userRepository,
+                voteRepository = persistence.voteRepository,
+                pollRepository = persistence.pollRepository,
+                notificationRepository = persistence.notificationRepository,
+            )
+        val core =
+            createCoreComponents(
+                config = testConfig,
+                messageRepository = persistence.messageRepository,
+                contactRepository = persistence.contactRepository,
+                outboxRepository = persistence.outboxRepository,
+                messageCache = web.messageCache,
+                transactionManager = persistence.transactionManager,
+                auditRepository = persistence.auditRepository,
+                eventPublisher = web.eventPublisher,
+                emailService = web.emailService,
+            )
+
+        persistence.messageRepository.seedMessages()
+        persistence.contactRepository.seedContacts()
+
+        val polyHandler: PolyHandler =
+            app(config = testConfig, persistence = persistence, security = security, core = core, web = web)
+        server = polyHandler.asServer(Netty(0)).start()
         baseUrl = "http://localhost:${server.port()}"
     }
 
@@ -107,7 +127,6 @@ class ResponsiveLayoutE2ETest : KoinTest {
         page.close()
         browserContext.close()
         server.stop()
-        stopKoin()
     }
 
     private fun openPage(width: Int, height: Int, path: String = "/"): Page {

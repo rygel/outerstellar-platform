@@ -1,8 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.Session
-import io.github.rygel.outerstellar.platform.security.User
+import io.github.rygel.outerstellar.platform.model.Session
+import io.github.rygel.outerstellar.platform.security.TokenHashing
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -15,32 +14,12 @@ import kotlin.test.assertTrue
 class JdbiSessionRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiSessionRepository(jdbi) }
-    private val userRepo by lazy { JdbiUserRepository(jdbi) }
-
-    private fun createUser(): UUID {
-        val id = UUID.randomUUID()
-        userRepo.save(
-            User(
-                id = id,
-                username = "user_${id.toString().take(6)}",
-                email = "${id.toString().take(6)}@example.com",
-                passwordHash = "hash",
-                role = UserRole.USER,
-            )
-        )
-        return id
-    }
-
-    private fun hashToken(token: String): String {
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        return digest.digest(token.toByteArray()).joinToString("") { "%02x".format(it) }
-    }
 
     @Test
     fun `save and findByTokenHash round-trips`() {
         val userId = createUser()
         val rawToken = "oss_test_token_${UUID.randomUUID()}"
-        val tokenHash = hashToken(rawToken)
+        val tokenHash = TokenHashing.hash(rawToken)
         val session =
             Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES))
         repo.save(session)
@@ -58,7 +37,7 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `findByTokenHash returns null for expired session`() {
         val userId = createUser()
-        val tokenHash = hashToken("expired_token")
+        val tokenHash = TokenHashing.hash("expired_token")
         val session =
             Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().minus(1, ChronoUnit.HOURS))
         repo.save(session)
@@ -68,7 +47,7 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `updateExpiresAt extends session`() {
         val userId = createUser()
-        val tokenHash = hashToken("extend_token")
+        val tokenHash = TokenHashing.hash("extend_token")
         val session =
             Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().plus(5, ChronoUnit.MINUTES))
         repo.save(session)
@@ -83,7 +62,7 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `deleteByTokenHash removes session`() {
         val userId = createUser()
-        val tokenHash = hashToken("delete_token")
+        val tokenHash = TokenHashing.hash("delete_token")
         val session =
             Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES))
         repo.save(session)
@@ -94,8 +73,8 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `deleteByUserId removes all sessions for user`() {
         val userId = createUser()
-        val hash1 = hashToken("token1")
-        val hash2 = hashToken("token2")
+        val hash1 = TokenHashing.hash("token1")
+        val hash2 = TokenHashing.hash("token2")
         repo.save(Session(tokenHash = hash1, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES)))
         repo.save(Session(tokenHash = hash2, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES)))
         repo.deleteByUserId(userId)
@@ -106,8 +85,8 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `deleteExpired removes only expired sessions`() {
         val userId = createUser()
-        val expiredHash = hashToken("expired")
-        val activeHash = hashToken("active")
+        val expiredHash = TokenHashing.hash("expired")
+        val activeHash = TokenHashing.hash("active")
         repo.save(
             Session(tokenHash = expiredHash, userId = userId, expiresAt = Instant.now().minus(1, ChronoUnit.HOURS))
         )

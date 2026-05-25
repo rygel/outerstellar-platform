@@ -6,14 +6,14 @@
     <parent>
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
-        <version>1.6.1</version>
+        <version>1.6.2</version>
     </parent>
 
     <artifactId>outerstellar-platform-desktop-javafx</artifactId>
     <name>Platform Desktop JavaFX</name>
 
     <properties>
-        <javafx.version>21</javafx.version>
+        <javafx.version>26.0.1</javafx.version>
         <atlantafx.version>2.1.0</atlantafx.version>
         <testfx.version>4.0.18</testfx.version>
     </properties>
@@ -21,7 +21,7 @@
     <dependencies>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-persistence-jooq</artifactId>
+            <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
@@ -38,10 +38,6 @@
         <dependency>
             <groupId>io.github.rygel</groupId>
             <artifactId>outerstellar-i18n</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-core-jvm</artifactId>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
@@ -94,12 +90,6 @@
             <artifactId>logback-classic</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-test-junit5</artifactId>
-            <version>${koin.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>io.mockk</groupId>
             <artifactId>mockk-jvm</artifactId>
             <scope>test</scope>
@@ -108,6 +98,11 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>3.27.7</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-test-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

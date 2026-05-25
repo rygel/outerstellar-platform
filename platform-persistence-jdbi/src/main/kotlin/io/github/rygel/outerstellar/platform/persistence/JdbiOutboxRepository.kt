@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.persistence
 
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time.Instant
 import java.util.*
 import org.jdbi.v3.core.Jdbi
 
@@ -41,7 +40,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
                         payloadType = rs.getString("payload_type"),
                         payload = rs.getString("payload"),
                         status = OutboxStatus.valueOf(rs.getString("status")),
-                        createdAt = rs.getTimestamp("created_at").toInstant(),
+                        createdAt = rs.getRequiredInstant("created_at"),
                     )
                 }
                 .list()
@@ -58,7 +57,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
                     """
                 )
                 .bind("id", id)
-                .bind("processedAt", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("processedAt", Instant.now())
                 .execute()
         }
     }
@@ -101,7 +100,7 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
                         payloadType = rs.getString("payload_type"),
                         payload = rs.getString("payload"),
                         status = OutboxStatus.valueOf(rs.getString("status")),
-                        createdAt = rs.getTimestamp("created_at").toInstant(),
+                        createdAt = rs.getRequiredInstant("created_at"),
                     )
                 }
                 .list()

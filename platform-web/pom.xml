@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.6.1</version>
+        <version>1.6.2</version>
 
     </parent>
 
@@ -26,7 +26,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-persistence-jooq</artifactId>
+            <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
@@ -67,6 +67,10 @@
             <artifactId>jte-runtime</artifactId>
         </dependency>
         <dependency>
+            <groupId>gg.jte</groupId>
+            <artifactId>jte-native-resources</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.github.rygel</groupId>
             <artifactId>outerstellar-theme</artifactId>
         </dependency>
@@ -83,8 +87,8 @@
             <artifactId>logback-classic</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
+            <groupId>org.jdbi</groupId>
+            <artifactId>jdbi3-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -92,24 +96,19 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-postgresql</artifactId>
+            <groupId>io.github.rygel</groupId>
+            <artifactId>outerstellar-platform-test-infrastructure</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-test-junit5</artifactId>
-            <version>${koin.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -120,10 +119,6 @@
             <groupId>io.mockk</groupId>
             <artifactId>mockk-jvm</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-core-jvm</artifactId>
         </dependency>
         <dependency>
             <groupId>org.http4k</groupId>
@@ -170,6 +165,32 @@
         <dependency>
             <groupId>com.microsoft.playwright</groupId>
             <artifactId>playwright</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.code-intelligence</groupId>
+            <artifactId>jazzer-junit</artifactId>
+            <version>0.30.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-hamkrest</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-webdriver</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-chaos</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-testing-approval</artifactId>
             <scope>test</scope>
         </dependency>
         
@@ -255,6 +276,18 @@
             <plugin>
                 <groupId>gg.jte</groupId>
                 <artifactId>jte-maven-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>gg.jte</groupId>
+                        <artifactId>jte-native-resources</artifactId>
+                        <version>${jte.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>io.github.rygel</groupId>
+                        <artifactId>jte-extensions</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>jte-generate</id>
@@ -266,6 +299,15 @@
                             <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
                             <contentType>Html</contentType>
                             <packageName>gg.jte.generated.precompiled.outerstellar</packageName>
+                            <targetResourceDirectory>${project.build.outputDirectory}</targetResourceDirectory>
+                            <extensions>
+                                <extension>
+                                    <className>gg.jte.nativeimage.NativeResourcesExtension</className>
+                                </extension>
+                                <extension>
+                                    <className>io.github.rygel.outerstellar.jte.JteClassRegistryExtension</className>
+                                </extension>
+                            </extensions>
                         </configuration>
                     </execution>
                 </executions>
@@ -308,12 +350,13 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Web tests share a PostgreSQL database — parallel execution would cause races -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <parallel>none</parallel>
+                    <parallel>classes</parallel>
+                    <threadCount>4</threadCount>
+                    <useUnlimitedThreads>false</useUnlimitedThreads>
                     <systemPropertyVariables>
                         <jte.production>true</jte.production>
                     </systemPropertyVariables>

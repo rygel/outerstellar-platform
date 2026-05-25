@@ -63,7 +63,6 @@ The system has **two completely independent authentication mechanisms**:
 | `platform-security/src/main/kotlin/.../security/SecurityService.kt:250-285` | Session token creation and lookup |
 | `platform-security/src/main/kotlin/.../security/Models.kt:90-114` | `Session` data class and `SessionRepository` interface |
 | `platform-persistence-jdbi/.../JdbiSessionRepository.kt` | JDBI session repository |
-| `platform-persistence-jooq/.../JooqSessionRepository.kt` | jOOQ session repository |
 
 ### Database Schema (`V3__sessions_table.sql`)
 

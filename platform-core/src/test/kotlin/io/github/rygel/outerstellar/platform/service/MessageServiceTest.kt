@@ -28,8 +28,8 @@ class MessageServiceTest {
         val items = listOf(summary)
         val paged = PagedResult(items, PaginationMetadata(1, 10, 1L))
 
-        every { repository.listMessages("test", null, 10, 0) } returns items
-        every { repository.countMessages("test", null) } returns 1L
+        every { repository.listMessagesWithTotal("test", null, 10, 0, false) } returns
+            io.github.rygel.outerstellar.platform.model.PagedQueryResult(items, 1L)
 
         val result = service.listMessages("test", limit = 10, offset = 0)
         assertEquals(paged, result)
@@ -39,7 +39,7 @@ class MessageServiceTest {
     fun `listDirtyMessages returns dirty items from repository`() {
         val msg = StoredMessage("id-1", "author", "content", 1000L, true, false, 1L)
         val items = listOf(msg)
-        every { repository.listDirtyMessages() } returns items
+        every { repository.listDirtyMessages(any()) } returns items
 
         val result = service.listDirtyMessages()
         assertEquals(items, result)
@@ -57,7 +57,7 @@ class MessageServiceTest {
         serviceWithCache.createServerMessage("Alice", "hello")
 
         // Entity key must still be present — not nuked by invalidateAll
-        assertEquals(msg, cache.get("entity:$syncId"))
+        assertEquals(msg, cache.getMessage(syncId))
     }
 
     @Test
@@ -69,12 +69,12 @@ class MessageServiceTest {
         every { repository.resolveConflict(syncId, any()) } just Runs
 
         val cache = CaffeineMessageCache()
-        cache.put("entity:$syncId", existing)
+        cache.putMessage(syncId, existing)
         val serviceWithCache = MessageService(repository, cache = cache)
 
         serviceWithCache.resolveConflict(syncId, ConflictStrategy.SERVER)
 
-        assertNull(cache.get("entity:$syncId"))
+        assertNull(cache.getMessage(syncId))
     }
 
     @Test
@@ -84,12 +84,13 @@ class MessageServiceTest {
         every { repository.createServerMessage("Alice", "hello") } returns msg
 
         val cache = CaffeineMessageCache()
-        cache.put("list:null:null:10:0", "stale-result")
+        val staleResult = PagedResult(emptyList<MessageSummary>(), PaginationMetadata(1, 10, 0L))
+        cache.putMessageList("list:null:null:10:0", staleResult)
 
         val serviceWithCache = MessageService(repository, cache = cache)
         serviceWithCache.createServerMessage("Alice", "hello")
 
-        assertNull(cache.get("list:null:null:10:0"))
+        assertNull(cache.getMessageList("list:null:null:10:0"))
     }
 
     @Test
