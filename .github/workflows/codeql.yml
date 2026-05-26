@@ -58,7 +58,18 @@ jobs:
           build-mode: manual
 
       - name: Build
-        run: mvn compile -q -Denforcer.skip -T 4
+        run: >
+          mvn install -q -DskipTests -T 1C
+          -Djacoco.skip=true
+          -Denforcer.skip=true
+          -Ddetekt.skip=true
+          -Dcheckstyle.skip=true
+          -Dpmd.skip=true
+          -Dcpd.skip=true
+          -Dspotbugs.skip=true
+          -Dspotless.apply.skip=true
+          -Dspotless.check.skip=true
+          -Dexec.skip=true
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
