@@ -1,0 +1,23 @@
+@import io.github.rygel.outerstellar.platform.model.VoteScore
+@param score: VoteScore
+@param messageSyncId: String
+
+<div class="vote-container flex flex-col items-center gap-0.5">
+    <button class="btn btn-ghost btn-xs btn-square @if(score.userVote == 1) text-success @endif"
+            hx-post="/components/messages/${messageSyncId}/vote"
+            hx-vals='{"direction": "1"}'
+            hx-target="closest .vote-container"
+            hx-swap="outerHTML"
+            aria-label="Upvote">
+        <i aria-hidden="true" class="ri-arrow-up-s-line text-lg"></i>
+    </button>
+    <span class="text-sm font-bold tabular-nums @if(score.netScore > 0) text-success @elseif(score.netScore < 0) text-error @else opacity-50 @endif">${score.netScore}</span>
+    <button class="btn btn-ghost btn-xs btn-square @if(score.userVote == -1) text-error @endif"
+            hx-post="/components/messages/${messageSyncId}/vote"
+            hx-vals='{"direction": "-1"}'
+            hx-target="closest .vote-container"
+            hx-swap="outerHTML"
+            aria-label="Downvote">
+        <i aria-hidden="true" class="ri-arrow-down-s-line text-lg"></i>
+    </button>
+</div>

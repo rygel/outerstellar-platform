@@ -1,11 +1,10 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -13,7 +12,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -32,7 +31,6 @@ class DevDashboardAccessIntegrationTest : WebTest() {
     private lateinit var appWithDashboardDisabled: HttpHandler
     private lateinit var adminUser: User
     private lateinit var regularUser: User
-    private lateinit var securityService: SecurityService
     private lateinit var adminToken: String
     private lateinit var userToken: String
 
@@ -43,7 +41,7 @@ class DevDashboardAccessIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "devdash_admin",
                 email = "devdash_admin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         regularUser =
@@ -51,41 +49,29 @@ class DevDashboardAccessIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "devdash_user",
                 email = "devdash_user@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)
         userRepository.save(regularUser)
 
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
-        adminToken = securityService.createSession(adminUser.id)
-        userToken = securityService.createSession(regularUser.id)
+        adminToken = sessionSvc.createSession(adminUser.id)
+        userToken = sessionSvc.createSession(regularUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
 
-        appWithDashboardDisabled =
-            buildApp(securityService = securityService, config = testConfig.copy(devDashboardEnabled = false))
+        appWithDashboardDisabled = buildApp(config = testConfig.copy(devDashboardEnabled = false))
     }
 
-    @AfterEach fun teardown() = cleanup()
+    private fun adminSession() = Cookie(RequestContext.SESSION_COOKIE, adminToken)
 
-    private fun adminSession() = Cookie(WebContext.SESSION_COOKIE, adminToken)
-
-    private fun userSession() = Cookie(WebContext.SESSION_COOKIE, userToken)
+    private fun userSession() = Cookie(RequestContext.SESSION_COOKIE, userToken)
 
     @Test
     fun `admin can access dev dashboard`() {
         val response = app(Request(GET, "/admin/dev").cookie(adminSession()))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -121,6 +107,6 @@ class DevDashboardAccessIntegrationTest : WebTest() {
     fun `dev dashboard returns 404 when disabled`() {
         val response = appWithDashboardDisabled(Request(GET, "/admin/dev").cookie(adminSession()))
 
-        assertEquals(Status.NOT_FOUND, response.status)
+        assertThat(response, hasStatus(Status.NOT_FOUND))
     }
 }

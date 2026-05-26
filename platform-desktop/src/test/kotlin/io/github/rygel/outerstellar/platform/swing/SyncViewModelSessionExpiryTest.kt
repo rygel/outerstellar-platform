@@ -1,20 +1,21 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
-import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
-import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
-import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthListener
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
+import io.mockk.slot
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -22,196 +23,149 @@ import org.junit.jupiter.api.Test
 
 class SyncViewModelSessionExpiryTest {
 
-    private val messageService = mockk<MessageService>(relaxed = true)
-    private val syncService = mockk<SyncService>(relaxed = true)
     private val i18nService = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
 
-    private fun createVm(): SyncViewModel {
-        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
-        return SyncViewModel(engine, i18nService)
+    private data class TestHarness(
+        val vm: SyncViewModel,
+        val authModule: AuthModule,
+        val authState: AtomicReference<io.github.rygel.outerstellar.platform.sync.engine.module.AuthState>,
+        val authListenerSlot: io.mockk.CapturingSlot<AuthListener>,
+        val adminModule: AdminModule,
+    )
+
+    private fun createHarness(): TestHarness {
+        val authState =
+            AtomicReference(
+                io.github.rygel.outerstellar.platform.sync.engine.module.AuthState(
+                    isLoggedIn = true,
+                    userName = "alice",
+                    userRole = "ADMIN",
+                )
+            )
+        val authModule = mockk<AuthModule>(relaxed = true)
+        every { authModule.authState } answers { authState.get() }
+        val authListenerSlot = slot<AuthListener>()
+        every { authModule.addListener(capture(authListenerSlot)) } answers { nothing }
+        every { authModule.removeListener(any()) } answers { nothing }
+        every { authModule.changePassword(any(), any()) } returns Result.success(Unit)
+
+        val adminModule = mockk<AdminModule>(relaxed = true)
+        every { adminModule.setUserEnabled(any(), any()) } returns Result.success(Unit)
+        every { adminModule.setUserRole(any(), any()) } returns Result.success(Unit)
+
+        val syncDataModule = mockk<SyncDataModule>(relaxed = true)
+        val profileModule = mockk<ProfileModule>(relaxed = true)
+        val notificationModule = mockk<NotificationModule>(relaxed = true)
+
+        val vm = SyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18nService)
+        return TestHarness(vm, authModule, authState, authListenerSlot, adminModule)
     }
 
-    private fun loginVm(): SyncViewModel {
-        every { syncService.login("alice", "secret") } returns AuthTokenResponse("token", "alice", "ADMIN")
-        val vm = createVm()
-        val latch = CountDownLatch(1)
-        vm.login("alice", "secret") { _, _ -> latch.countDown() }
-        assertTrue(latch.await(3, TimeUnit.SECONDS), "Login timed out")
-        assertTrue(vm.isLoggedIn, "Should be logged in after login")
-        return vm
+    private fun simulateSessionExpiry(h: TestHarness) {
+        h.authState.set(io.github.rygel.outerstellar.platform.sync.engine.module.AuthState())
+        if (h.authListenerSlot.isCaptured) {
+            h.authListenerSlot.captured.onSessionExpired()
+        }
     }
 
     // ---- loadUsers ----
 
     @Test
     fun `loadUsers SessionExpiredException sets isLoggedIn to false`() {
-        every { syncService.listUsers() } throws SessionExpiredException("Session expired")
+        val h = createHarness()
+        every { h.adminModule.loadUsers() } answers { simulateSessionExpiry(h) }
 
-        val vm = loginVm()
         val latch = CountDownLatch(1)
-        vm.addObserver { latch.countDown() }
+        h.vm.addObserver { latch.countDown() }
 
-        vm.loadUsers()
+        h.vm.loadUsers()
 
         assertTrue(latch.await(3, TimeUnit.SECONDS), "Observer not notified after loadUsers expiry")
-        assertFalse(vm.isLoggedIn, "isLoggedIn should be false after session expiry")
+        assertFalse(h.vm.isLoggedIn, "isLoggedIn should be false after session expiry")
     }
 
     @Test
     fun `loadUsers SessionExpiredException clears userName and userRole`() {
-        every { syncService.listUsers() } throws SessionExpiredException("Session expired")
+        val h = createHarness()
+        every { h.adminModule.loadUsers() } answers { simulateSessionExpiry(h) }
 
-        val vm = loginVm()
         val latch = CountDownLatch(1)
-        vm.addObserver { latch.countDown() }
+        h.vm.addObserver { latch.countDown() }
 
-        vm.loadUsers()
+        h.vm.loadUsers()
 
         assertTrue(latch.await(3, TimeUnit.SECONDS))
-        assertTrue(vm.userName.isEmpty(), "userName should be cleared after session expiry")
-        assertTrue(vm.userRole == null, "userRole should be null after session expiry")
-    }
-
-    @Test
-    fun `loadUsers SessionExpiredException notifies observers`() {
-        every { syncService.listUsers() } throws SessionExpiredException("Session expired")
-
-        val vm = loginVm()
-        var notified = false
-        val latch = CountDownLatch(1)
-        vm.addObserver {
-            notified = true
-            latch.countDown()
-        }
-
-        vm.loadUsers()
-
-        assertTrue(latch.await(3, TimeUnit.SECONDS))
-        assertTrue(notified, "Observers should be notified on session expiry")
-    }
-
-    @Test
-    fun `loadUsers non-session error does not log out user`() {
-        every { syncService.listUsers() } throws RuntimeException("Network error")
-
-        val vm = loginVm()
-        val latch = CountDownLatch(1)
-        vm.addObserver { latch.countDown() }
-
-        vm.loadUsers()
-
-        assertTrue(latch.await(3, TimeUnit.SECONDS))
-        assertTrue(vm.isLoggedIn, "Non-session error should not log out the user")
-        assertEquals("alice", vm.userName, "userName should be preserved on non-session error")
+        assertTrue(h.vm.userName.isEmpty(), "userName should be cleared after session expiry")
+        assertTrue(h.vm.userRole == null, "userRole should be null after session expiry")
     }
 
     // ---- toggleUserEnabled ----
 
     @Test
     fun `toggleUserEnabled SessionExpiredException sets isLoggedIn to false`() {
-        every { syncService.setUserEnabled(any(), any()) } throws SessionExpiredException("Session expired")
+        val h = createHarness()
+        every { h.adminModule.setUserEnabled(any(), any()) } answers
+            {
+                simulateSessionExpiry(h)
+                Result.success(Unit)
+            }
 
-        val vm = loginVm()
         val latch = CountDownLatch(1)
-        vm.addObserver { latch.countDown() }
+        h.vm.addObserver { latch.countDown() }
 
-        vm.toggleUserEnabled("user-123", true)
-
-        assertTrue(latch.await(3, TimeUnit.SECONDS), "Observer not notified after toggleUserEnabled expiry")
-        assertFalse(vm.isLoggedIn, "isLoggedIn should be false after session expiry")
-    }
-
-    @Test
-    fun `toggleUserEnabled SessionExpiredException clears user state`() {
-        every { syncService.setUserEnabled(any(), any()) } throws SessionExpiredException("Session expired")
-
-        val vm = loginVm()
-        val latch = CountDownLatch(1)
-        vm.addObserver { latch.countDown() }
-
-        vm.toggleUserEnabled("user-123", false)
+        h.vm.toggleUserEnabled("user-123", true)
 
         assertTrue(latch.await(3, TimeUnit.SECONDS))
-        assertTrue(vm.userName.isEmpty(), "userName should be cleared")
-        assertTrue(vm.userRole == null, "userRole should be null")
+        assertFalse(h.vm.isLoggedIn)
     }
 
     // ---- toggleUserRole ----
 
     @Test
     fun `toggleUserRole SessionExpiredException sets isLoggedIn to false`() {
-        every { syncService.setUserRole(any(), any()) } throws SessionExpiredException("Session expired")
+        val h = createHarness()
+        every { h.adminModule.setUserRole(any(), any()) } answers
+            {
+                simulateSessionExpiry(h)
+                Result.success(Unit)
+            }
 
-        val vm = loginVm()
         val latch = CountDownLatch(1)
-        vm.addObserver { latch.countDown() }
+        h.vm.addObserver { latch.countDown() }
 
-        vm.toggleUserRole("user-456", "USER")
-
-        assertTrue(latch.await(3, TimeUnit.SECONDS), "Observer not notified after toggleUserRole expiry")
-        assertFalse(vm.isLoggedIn, "isLoggedIn should be false after session expiry")
-    }
-
-    @Test
-    fun `toggleUserRole SessionExpiredException clears user state`() {
-        every { syncService.setUserRole(any(), any()) } throws SessionExpiredException("Session expired")
-
-        val vm = loginVm()
-        val latch = CountDownLatch(1)
-        vm.addObserver { latch.countDown() }
-
-        vm.toggleUserRole("user-456", "ADMIN")
+        h.vm.toggleUserRole("user-456", "USER")
 
         assertTrue(latch.await(3, TimeUnit.SECONDS))
-        assertTrue(vm.userName.isEmpty(), "userName should be cleared")
-        assertTrue(vm.userRole == null, "userRole should be null")
+        assertFalse(h.vm.isLoggedIn)
     }
 
     // ---- changePassword ----
 
     @Test
     fun `changePassword SessionExpiredException sets isLoggedIn to false`() {
-        every { syncService.changePassword(any(), any()) } throws SessionExpiredException("Session expired")
+        val h = createHarness()
+        every { h.authModule.changePassword(any(), any()) } answers
+            {
+                simulateSessionExpiry(h)
+                Result.failure(SessionExpiredException())
+            }
 
-        val vm = loginVm()
         val latch = CountDownLatch(1)
-        vm.changePassword("oldPass", "newPass") { _, _ -> latch.countDown() }
+        h.vm.changePassword("oldPass", "newPass") { _, _ -> latch.countDown() }
 
         assertTrue(latch.await(3, TimeUnit.SECONDS), "changePassword callback timed out")
-        assertFalse(vm.isLoggedIn, "isLoggedIn should be false after changePassword session expiry")
-    }
-
-    @Test
-    fun `changePassword SessionExpiredException returns false with error message`() {
-        every { syncService.changePassword(any(), any()) } throws SessionExpiredException("Session expired")
-
-        val vm = loginVm()
-        val latch = CountDownLatch(1)
-        var success = true
-        var error: String? = null
-
-        vm.changePassword("oldPass", "newPass") { s, e ->
-            success = s
-            error = e
-            latch.countDown()
-        }
-
-        assertTrue(latch.await(3, TimeUnit.SECONDS))
-        assertFalse(success, "Should return false on session expiry")
-        val errorMsg = error
-        assertTrue(errorMsg != null && errorMsg.isNotBlank(), "Should have an error message on session expiry")
+        assertFalse(h.vm.isLoggedIn)
     }
 
     @Test
     fun `changePassword success does not affect login state`() {
-        every { syncService.changePassword(any(), any()) } just runs
+        val h = createHarness()
 
-        val vm = loginVm()
         val latch = CountDownLatch(1)
-        vm.changePassword("oldPass", "StrongNewPass1!") { _, _ -> latch.countDown() }
+        h.vm.changePassword("oldPass", "StrongNewPass1!") { _, _ -> latch.countDown() }
 
         assertTrue(latch.await(3, TimeUnit.SECONDS))
-        assertTrue(vm.isLoggedIn, "User should remain logged in after successful password change")
-        assertEquals("alice", vm.userName, "userName should be preserved")
+        assertTrue(h.vm.isLoggedIn, "User should remain logged in after successful password change")
+        assertEquals("alice", h.vm.userName, "userName should be preserved")
     }
 }

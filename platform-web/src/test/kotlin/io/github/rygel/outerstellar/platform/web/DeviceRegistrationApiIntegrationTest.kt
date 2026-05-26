@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -13,6 +13,7 @@ import org.http4k.core.Method.DELETE
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -39,7 +40,6 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
         deviceTokenRepository = InMemoryDeviceTokenRepository()
 
         testUser =
@@ -47,23 +47,18 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "deviceuser",
                 email = "device@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        sessionToken = securityService.createSession(testUser.id)
+        sessionToken = sessionSvc.createSession(testUser.id)
 
-        app =
-            buildApp(
-                securityService = securityService,
-                overrides = TestOverrides(deviceTokenRepository = deviceTokenRepository),
-            )
+        app = buildApp(overrides = TestOverrides(deviceTokenRepository = deviceTokenRepository))
     }
 
     @AfterEach
     fun teardown() {
         deviceTokenRepository.clear()
-        cleanup()
     }
 
     private fun bearer() = "Bearer $sessionToken"
@@ -89,25 +84,25 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
     @Test
     fun `POST register with android platform returns 204`() {
         val response = registerRequest("android", "fcm-token-abc123")
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
     }
 
     @Test
     fun `POST register with ios platform returns 204`() {
         val response = registerRequest("ios", "apns-token-xyz789")
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
     }
 
     @Test
     fun `POST register with unsupported platform returns 400`() {
         val response = registerRequest("windows", "some-token")
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test
     fun `POST register with blank token returns 400`() {
         val response = registerRequest("android", "")
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test
@@ -118,7 +113,7 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"platform":"android","token":"some-token"}""")
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -127,7 +122,7 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
         registerRequest("android", token)
 
         val response = deregisterRequest(token)
-        assertEquals(Status.NO_CONTENT, response.status)
+        assertThat(response, hasStatus(Status.NO_CONTENT))
     }
 
     @Test
@@ -138,7 +133,7 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"token":"some-token"}""")
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -171,8 +166,8 @@ class DeviceRegistrationApiIntegrationTest : WebTest() {
         val first = registerRequest("android", token)
         val second = registerRequest("android", token)
 
-        assertEquals(Status.NO_CONTENT, first.status)
-        assertEquals(Status.NO_CONTENT, second.status)
+        assertThat(first, hasStatus(Status.NO_CONTENT))
+        assertThat(second, hasStatus(Status.NO_CONTENT))
 
         // Should only have one entry for this token
         val count = deviceTokenRepository.all().count { it.token == token }

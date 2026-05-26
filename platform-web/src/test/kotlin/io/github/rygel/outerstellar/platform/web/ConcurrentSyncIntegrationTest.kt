@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
@@ -18,7 +18,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -41,22 +41,12 @@ class ConcurrentSyncIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
-
         userA =
             User(
                 id = UUID.randomUUID(),
                 username = "concurrent_user_a",
                 email = "concurrent_a@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userB =
@@ -64,18 +54,16 @@ class ConcurrentSyncIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "concurrent_user_b",
                 email = "concurrent_b@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(userA)
         userRepository.save(userB)
-        tokenA = securityService.createSession(userA.id)
-        tokenB = securityService.createSession(userB.id)
+        tokenA = sessionSvc.createSession(userA.id)
+        tokenB = sessionSvc.createSession(userB.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun pushBatch(token: String, syncIds: List<String>, author: String): List<org.http4k.core.Response> {
         return syncIds.map { syncId ->
@@ -94,7 +82,7 @@ class ConcurrentSyncIntegrationTest : WebTest() {
 
     private fun pullMessages(token: String): SyncPullResponse {
         val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", "Bearer $token"))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         return KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
     }
 

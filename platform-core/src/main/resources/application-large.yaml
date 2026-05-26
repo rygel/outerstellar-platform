@@ -1,0 +1,16 @@
+# Large profile: high-throughput deployment
+# Use for: multi-user applications, high-traffic production, dedicated database
+runtime:
+  hikariMaximumPoolSize: 50
+  hikariMinimumIdle: 5
+  hikariIdleTimeoutMs: 300000
+  hikariMaxLifetimeMs: 1800000
+  flywayEnabled: false
+  jtePreloadEnabled: true
+  cacheMessageMaxSize: 10000
+  cacheMessageExpireMinutes: 30
+  cacheGravatarMaxSize: 50000
+  rateLimitIpCapacity: 10
+  rateLimitIpRefillPerMinute: 10
+  rateLimitAccountCapacity: 20
+  rateLimitAccountWindowMs: 900000

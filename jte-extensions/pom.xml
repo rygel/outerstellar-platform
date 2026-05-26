@@ -1,0 +1,22 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.rygel</groupId>
+        <artifactId>outerstellar-platform-parent</artifactId>
+        <version>1.6.2</version>
+    </parent>
+
+    <artifactId>jte-extensions</artifactId>
+    <name>JTE Extensions</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>gg.jte</groupId>
+            <artifactId>jte-extension-api</artifactId>
+            <version>${jte.version}</version>
+        </dependency>
+    </dependencies>
+</project>

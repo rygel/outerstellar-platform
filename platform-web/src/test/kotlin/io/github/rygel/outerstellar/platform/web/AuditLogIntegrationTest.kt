@@ -1,18 +1,16 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.http4k.core.HttpHandler
 import org.http4k.core.Method.PUT
 import org.http4k.core.Request
 import org.http4k.core.Status
-import org.jooq.impl.DSL
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -27,48 +25,42 @@ import org.junit.jupiter.api.BeforeEach
  */
 class AuditLogIntegrationTest : WebTest() {
 
-    private lateinit var app: HttpHandler
+    private val app by lazy { buildApp() }
+
     private lateinit var adminUser: User
     private lateinit var targetUser: User
     private lateinit var adminToken: String
     private lateinit var targetToken: String
 
-    private val auditTable = DSL.table("plt_audit_log")
-    private val actionCol = DSL.field("action", String::class.java)
-    private val targetUsernameCol = DSL.field("target_username", String::class.java)
-
-    private fun auditCount() = testDsl.fetchCount(testDsl.selectFrom(auditTable))
+    private fun auditCount(): Int =
+        testJdbi.withHandle<Int, Exception> {
+            it.createQuery("SELECT COUNT(*) FROM plt_audit_log").mapTo(Int::class.java).first()
+        }
 
     private fun latestAction(): String? =
-        testDsl
-            .select(actionCol)
-            .from(auditTable)
-            .orderBy(DSL.field("created_at").desc())
-            .limit(1)
-            .fetchOne()
-            ?.get(actionCol)
+        testJdbi.withHandle<String?, Exception> {
+            it.createQuery("SELECT action FROM plt_audit_log ORDER BY created_at DESC LIMIT 1")
+                .mapTo(String::class.java)
+                .findFirst()
+                .orElse(null)
+        }
 
     private fun latestTargetUsername(): String? =
-        testDsl
-            .select(targetUsernameCol)
-            .from(auditTable)
-            .orderBy(DSL.field("created_at").desc())
-            .limit(1)
-            .fetchOne()
-            ?.get(targetUsernameCol)
+        testJdbi.withHandle<String?, Exception> {
+            it.createQuery("SELECT target_username FROM plt_audit_log ORDER BY created_at DESC LIMIT 1")
+                .mapTo(String::class.java)
+                .findFirst()
+                .orElse(null)
+        }
 
     @BeforeEach
     fun setupTest() {
-        cleanup()
-        val securityService =
-            SecurityService(userRepository, encoder, auditRepository, sessionRepository = sessionRepository)
-
         adminUser =
             User(
                 id = UUID.randomUUID(),
                 username = "auditadmin",
                 email = "auditadmin@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.ADMIN,
             )
         targetUser =
@@ -76,18 +68,14 @@ class AuditLogIntegrationTest : WebTest() {
                 id = UUID.randomUUID(),
                 username = "audittarget",
                 email = "audittarget@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(adminUser)
         userRepository.save(targetUser)
-        adminToken = securityService.createSession(adminUser.id)
-        targetToken = securityService.createSession(targetUser.id)
-
-        app = buildApp(securityService = securityService)
+        adminToken = sessionSvc.createSession(adminUser.id)
+        targetToken = sessionSvc.createSession(targetUser.id)
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun bearerHeader(user: User) = if (user == adminUser) "Bearer $adminToken" else "Bearer $targetToken"
 
@@ -194,7 +182,7 @@ class AuditLogIntegrationTest : WebTest() {
             )
 
         // InsufficientPermissionException → BAD_REQUEST in UserAdminApi
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
         assertEquals(countBefore, auditCount(), "No audit entry for self-action")
     }
 }

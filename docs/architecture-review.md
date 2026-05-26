@@ -6,15 +6,15 @@ Last reviewed: 2026-03-14
 
 ### Clean module boundaries
 
-The project enforces proper dependency inversion across its multi-module structure. Domain interfaces live in `platform-core/`, implementation details live in `platform-persistence-jooq/`, and this separation is enforced at build time by ArchUnit tests. The `platform-core` module has no dependency on `platform-web`, `platform-desktop`, or jOOQ implementation classes.
+The project enforces proper dependency inversion across its multi-module structure. Domain interfaces live in `platform-core/`, implementation details live in `platform-persistence-jdbi/`, and this separation is enforced at build time by ArchUnit tests. The `platform-core` module has no dependency on `platform-web`, `platform-desktop`, or JDBI implementation classes.
 
 ### Repository interface pattern
 
-All persistence contracts are defined as interfaces in `platform-core/persistence/` (`MessageRepository`, `ContactRepository`, `OutboxRepository`). The jOOQ implementations in `platform-persistence-jooq/` are the only classes that touch SQL or jOOQ directly. This means any module depending on `platform-core` can work against the interface without pulling in database dependencies.
+All persistence contracts are defined as interfaces in `platform-core/persistence/` (`MessageRepository`, `ContactRepository`, `OutboxRepository`). The JDBI implementations in `platform-persistence-jdbi/` are the only classes that touch SQL or JDBI directly. This means any module depending on `platform-core` can work against the interface without pulling in database dependencies.
 
 ### Optional dependency wiring
 
-Koin's `getOrNull<TransactionManager>()` pattern lets services like `MessageService` and `OutboxProcessor` function in both transactional contexts (web with a real `JooqTransactionManager`) and non-transactional contexts (desktop with a stub). This avoids conditional logic in the service layer and makes the same business logic reusable across deployment targets.
+Koin's `getOrNull<TransactionManager>()` pattern lets services like `MessageService` and `OutboxProcessor` function in both transactional contexts (web with a real `JdbiTransactionManager`) and non-transactional contexts (desktop with a stub). This avoids conditional logic in the service layer and makes the same business logic reusable across deployment targets.
 
 ### Quality tooling
 
@@ -26,7 +26,7 @@ The bidirectional sync between desktop and web demonstrates dirty tracking, time
 
 ### PostgreSQL as the persistence engine
 
-PostgreSQL is the sole database engine for this platform. It provides robust production-grade persistence, works identically for both web server and Swing desktop (via Testcontainers for tests), integrates cleanly with Flyway and jOOQ, and keeps the platform runnable with a simple `podman-compose up` for local development.
+PostgreSQL is the sole database engine for this platform. It provides robust production-grade persistence, works identically for both web server and Swing desktop (via Testcontainers for tests), integrates cleanly with Flyway and JDBI, and keeps the platform runnable with a simple `podman-compose up` for local development.
 
 ## Package root convention
 
@@ -66,7 +66,7 @@ Recommendation: introduce typed events (e.g., `MessageCreated`, `ContactUpdated`
 
 ### Seed data runs unconditionally
 
-`SeedData` and `JooqUserRepository.seedAdminUser()` execute on every application startup, including production. While the seed methods are idempotent (they check for existing data), having default credentials attempted on every boot is a security concern.
+`SeedData` and `JdbiUserRepository.seedAdminUser()` execute on every application startup, including production. While the seed methods are idempotent (they check for existing data), having default credentials attempted on every boot is a security concern.
 
 Recommendation: gate seed data behind a profile flag (e.g., `runtime-dev`) so it never runs in production.
 
@@ -87,23 +87,23 @@ The `PersistenceModule` previously registered two named `DSLContext` instances (
 **What changed:**
 
 - `PersistenceModule` now registers a single `DSLContext` (no named qualifiers)
-- `JooqMessageRepository`, `JooqContactRepository`, and `JooqOutboxRepository` now take a single `dsl: DSLContext` constructor parameter
-- `JooqUserRepository` and `JooqTransactionManager` were already using a single `dsl` parameter and required no changes
+- `JdbiMessageRepository`, `JdbiContactRepository`, and `JdbiOutboxRepository` now take a single `jdbi: Jdbi` constructor parameter
+- `JdbiUserRepository` and `JdbiTransactionManager` were already using a single `jdbi` parameter and required no changes
 
 If read/write splitting is needed in the future, it should be introduced when a real replica datasource exists, not as a premature abstraction.
 
-### Replaced dynamic jOOQ field lookups with generated references
+### Replaced dynamic field lookups with generated references
 
-Repository code previously used `MESSAGES.field("DELETED_AT", LocalDateTime::class.java)` with null-checks on every query, treating generated fields as optional. Since the jOOQ generated code includes typed fields for `DELETED_AT`, `SYNC_CONFLICT`, `UPDATED_AT_EPOCH_MS`, and all other columns, these dynamic lookups were unnecessary.
+Repository code previously used dynamic field lookups with null-checks on every query, treating fields as optional. Since the generated code includes typed fields for `DELETED_AT`, `SYNC_CONFLICT`, `UPDATED_AT_EPOCH_MS`, and all other columns, these dynamic lookups were unnecessary.
 
 **What changed:**
 
-- All `MESSAGES.field("...", Type::class.java)` calls replaced with direct field references like `MESSAGES.DELETED_AT`, `MESSAGES.SYNC_CONFLICT`
-- Removed null-check guard clauses around fields that always exist in the generated schema
-- Extracted `notSoftDeleted()` and `softDeleted()` helper methods in `JooqMessageRepository` to eliminate the repeated deleted-field condition pattern
-- Same cleanup applied to `JooqContactRepository`
+- All dynamic field lookups replaced with direct column references
+- Removed null-check guard clauses around fields that always exist in the schema
+- Extracted `notSoftDeleted()` and `softDeleted()` helper methods in `JdbiMessageRepository` to eliminate the repeated deleted-field condition pattern
+- Same cleanup applied to `JdbiContactRepository`
 
-**Why:** The purpose of jOOQ code generation is type-safe SQL. Dynamic string-based field lookups defeat this — schema changes cause runtime failures instead of compile errors. The null-checks also created a false impression that fields might not exist, obscuring the actual schema contract.
+**Why:** Dynamic string-based field lookups defeat type safety — schema changes cause runtime failures instead of compile errors. The null-checks also created a false impression that fields might not exist, obscuring the actual schema contract.
 
 ### Fixed SyncWebSocket concurrent modification
 
@@ -144,7 +144,7 @@ The `AuthRoutes` form-based registration path directly called `userRepository.sa
 
 ### Introduced OptimisticLockException
 
-Both `JooqMessageRepository.updateMessage()` and `JooqContactRepository.updateContact()` used `check(rows != 0)` to detect version conflicts. `check()` throws `IllegalStateException`, which semantically means "programming error" — but a version conflict is an expected business condition that callers should handle.
+Both `JdbiMessageRepository.updateMessage()` and `JdbiContactRepository.updateContact()` used `check(rows != 0)` to detect version conflicts. `check()` throws `IllegalStateException`, which semantically means "programming error" — but a version conflict is an expected business condition that callers should handle.
 
 **What changed:**
 
@@ -281,15 +281,15 @@ The `/logout` route was bound to `GET`, making it vulnerable to cross-site logou
 
 ### Moved seedAdminUser onto the UserRepository interface
 
-`Main.kt` called `seedAdminUser` by casting `userRepository` to `JooqUserRepository`:
+`Main.kt` called `seedAdminUser` by casting `userRepository` to `JdbiUserRepository`:
 
 ```kotlin
-(main.userRepository as JooqUserRepository).seedAdminUser(...)
+(main.userRepository as JdbiUserRepository).seedAdminUser(...)
 ```
 
 This breaks the interface abstraction — any alternative `UserRepository` implementation would throw `ClassCastException` at startup.
 
-**What changed:** `seedAdminUser(passwordHash: String)` is now declared on the `UserRepository` interface. `JooqUserRepository.seedAdminUser` is annotated with `override`. `Main.kt` calls it directly on the `UserRepository` without a cast.
+**What changed:** `seedAdminUser(passwordHash: String)` is now declared on the `UserRepository` interface. `JdbiUserRepository.seedAdminUser` is annotated with `override`. `Main.kt` calls it directly on the `UserRepository` without a cast.
 
 ### Added WebSocket refresh events to ContactService
 
@@ -323,7 +323,7 @@ This breaks the interface abstraction — any alternative `UserRepository` imple
 
 ### Made contact collection updates atomic
 
-`JooqContactRepository.insertCollections` (which replaces emails, phones, and social links for a contact with DELETE + INSERT) was called outside any database transaction in `updateContact`, `upsertSyncedContact`, and `resolveConflict`. A crash or exception between the DELETE and INSERT would leave the collections empty while the parent contact row remained updated — a partial, inconsistent state.
+`JdbiContactRepository.insertCollections` (which replaces emails, phones, and social links for a contact with DELETE + INSERT) was called outside any database transaction in `updateContact`, `upsertSyncedContact`, and `resolveConflict`. A crash or exception between the DELETE and INSERT would leave the collections empty while the parent contact row remained updated — a partial, inconsistent state.
 
 **What changed:** `insertCollections` now accepts a `DSLContext` parameter instead of using the class-level `dsl` field. Each caller (`updateContact`, `upsertSyncedContact`, `resolveConflict`, and `insertContact`) wraps its work in `dsl.transaction { config -> val txDsl = using(config); ... }` so the contact row update and the collection replacement execute atomically.
 

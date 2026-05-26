@@ -11,3 +11,5 @@ data class PaginationMetadata(val currentPage: Int, val pageSize: Int, val total
 }
 
 data class PagedResult<T>(val items: List<T>, val metadata: PaginationMetadata)
+
+data class PagedQueryResult<T>(val items: List<T>, val totalItems: Long)

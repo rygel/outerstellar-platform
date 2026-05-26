@@ -2,7 +2,9 @@ package io.github.rygel.outerstellar.platform.security
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -68,5 +70,23 @@ class CachingUserRepository(private val delegate: UserRepository, maximumSize: L
     override fun updateLastActivity(userId: UUID) {
         cache.invalidate(userId)
         delegate.updateLastActivity(userId)
+    }
+
+    override fun findTotpSecretByUserId(userId: UUID): Triple<String?, Boolean, String?>? =
+        delegate.findTotpSecretByUserId(userId)
+
+    override fun updateTotpSecret(userId: UUID, secret: String?, backupCodes: String?) {
+        delegate.updateTotpSecret(userId, secret, backupCodes)
+        cache.invalidate(userId)
+    }
+
+    override fun enableTotp(userId: UUID) {
+        delegate.enableTotp(userId)
+        cache.invalidate(userId)
+    }
+
+    override fun disableTotp(userId: UUID) {
+        delegate.disableTotp(userId)
+        cache.invalidate(userId)
     }
 }

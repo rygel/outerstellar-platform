@@ -5,7 +5,6 @@ import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.mockk.mockk
 import java.nio.file.Path
@@ -22,7 +21,6 @@ import org.http4k.core.Request
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
@@ -181,18 +179,13 @@ class PerformanceBenchmarkTest : WebTest() {
 
     @BeforeEach
     fun setupBenchmark() {
-        cleanup()
-
-        val securityService = SecurityService(userRepository, encoder, sessionRepository = sessionRepository)
-
         app =
             buildApp(
-                securityService = securityService,
                 overrides =
                     TestOverrides(
                         messageCache = CaffeineMessageCache(),
                         contactService = mockk<ContactService>(relaxed = true),
-                    ),
+                    )
             )
 
         val registerLens = Body.auto<RegisterRequest>().toLens()
@@ -203,8 +196,6 @@ class PerformanceBenchmarkTest : WebTest() {
         val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("perfuser", password)))
         bearerToken = tokenLens(loginResp).token
     }
-
-    @AfterEach fun teardownBenchmark() = cleanup()
 
     // ---------------------------------------------------------------------------
     // Benchmarks
@@ -290,7 +281,7 @@ class PerformanceBenchmarkTest : WebTest() {
         val coldRec = LatencyRecorder("GET /api/v1/sync?since=0 (cold)")
         repeat(WARMUP) { app(req) }
         repeat(ITERATIONS) {
-            testDsl.execute("DELETE FROM plt_sync_state")
+            testJdbi.useHandle<Exception> { handle -> handle.execute("DELETE FROM plt_sync_state") }
             coldRec.record { app(req) }
         }
 
@@ -311,18 +302,17 @@ class PerformanceBenchmarkTest : WebTest() {
     }
 
     /**
-     * BCrypt login latency at production strength (logRounds=10). Intentionally uses a separate SecurityService
-     * instance so it doesn't affect the main app or other benchmarks.
+     * BCrypt login latency at production strength (logRounds=10). Intentionally uses a separate AuthService instance so
+     * it doesn't affect the main app or other benchmarks.
      *
      * Runs fewer iterations because each call takes ~100 ms.
      */
     @Test
     fun `POST login latency (BCrypt logRounds=10)`() {
         val prodEncoder = BCryptPasswordEncoder(logRounds = 10)
-        val prodSecurityService = SecurityService(userRepository, prodEncoder, sessionRepository = sessionRepository)
 
         userRepository.save(
-            io.github.rygel.outerstellar.platform.security.User(
+            io.github.rygel.outerstellar.platform.model.User(
                 id = java.util.UUID.randomUUID(),
                 username = "prodperfuser",
                 email = "prodperf@example.com",
@@ -334,12 +324,11 @@ class PerformanceBenchmarkTest : WebTest() {
         val loginLens = Body.auto<LoginRequest>().toLens()
         val prodApp =
             buildApp(
-                securityService = prodSecurityService,
                 overrides =
                     TestOverrides(
                         messageCache = CaffeineMessageCache(),
                         contactService = mockk<ContactService>(relaxed = true),
-                    ),
+                    )
             )
 
         val req = Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))

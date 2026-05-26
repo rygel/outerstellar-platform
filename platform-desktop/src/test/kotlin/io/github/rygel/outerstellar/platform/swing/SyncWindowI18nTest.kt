@@ -1,11 +1,12 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
-import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
-import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import io.mockk.mockk
 import java.awt.Component
 import java.awt.Container
@@ -23,8 +24,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 class SyncWindowI18nTest {
-    private val messageService = mockk<MessageService>(relaxed = true)
-    private val syncService = mockk<SyncService>(relaxed = true)
 
     companion object {
         @JvmStatic
@@ -37,12 +36,20 @@ class SyncWindowI18nTest {
         }
     }
 
+    private fun createVm(i18n: I18nService): SyncViewModel {
+        val authModule = mockk<AuthModule>(relaxed = true)
+        val syncDataModule = mockk<SyncDataModule>(relaxed = true)
+        val profileModule = mockk<ProfileModule>(relaxed = true)
+        val adminModule = mockk<AdminModule>(relaxed = true)
+        val notificationModule = mockk<NotificationModule>(relaxed = true)
+        return SyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18n)
+    }
+
     @Test
     fun `refreshTranslations updates primary window labels and menus`() {
         val en = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
         val fr = I18nService.create("messages").also { it.setLocale(Locale.FRENCH) }
-        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
-        val viewModel = SyncViewModel(engine, en)
+        val viewModel = createVm(en)
         lateinit var window: SyncWindow
         runOnEdt { window = SyncWindow(viewModel, ThemeManager(), en) }
 

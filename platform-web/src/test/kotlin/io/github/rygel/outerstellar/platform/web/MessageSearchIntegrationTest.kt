@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushResponse
 import java.util.UUID
@@ -16,7 +16,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -38,31 +38,19 @@ class MessageSearchIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
-
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "searchuser",
                 email = "search@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        sessionToken = securityService.createSession(testUser.id)
+        sessionToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun bearer() = "Bearer $sessionToken"
 
@@ -85,7 +73,7 @@ class MessageSearchIntegrationTest : WebTest() {
 
     private fun pullMessages(since: Long = 0L): SyncPullResponse {
         val response = app(Request(GET, "/api/v1/sync?since=$since").header("Authorization", bearer()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         return KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
     }
 
@@ -159,7 +147,7 @@ class MessageSearchIntegrationTest : WebTest() {
         val syncId = UUID.randomUUID().toString()
         val pushResponse = pushMessage(syncId, "Count test", timestamp = 1000L)
 
-        assertEquals(Status.OK, pushResponse.status)
+        assertThat(pushResponse, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(pushResponse.bodyString(), SyncPushResponse::class)
         assertEquals(1, body.appliedCount, "One message should be applied")
     }

@@ -1,5 +1,8 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.model.SessionLookup
+import io.github.rygel.outerstellar.platform.model.User
+
 /** Result of an [AuthRealm] authentication attempt. */
 sealed class AuthResult {
     /** Token was recognised and the user is authenticated. */
@@ -10,6 +13,9 @@ sealed class AuthResult {
 
     /** This realm does not recognise the token — try the next realm. */
     data object Skipped : AuthResult()
+
+    /** Password was valid but TOTP verification is required. */
+    data class TotpRequired(val token: String) : AuthResult()
 }
 
 /**
@@ -35,11 +41,11 @@ interface AuthRealm {
 }
 
 /** Authenticates session tokens (prefixed `oss_`) via the [SessionRepository]. */
-class SessionRealm(private val securityService: SecurityService) : AuthRealm {
+class SessionRealm(private val sessionService: SessionService) : AuthRealm {
     override val name = "session"
 
     override fun authenticate(token: String): AuthResult =
-        when (val result = securityService.lookupSession(token)) {
+        when (val result = sessionService.lookupSession(token)) {
             is SessionLookup.Active -> AuthResult.Authenticated(result.user)
             is SessionLookup.Expired -> AuthResult.Expired
             is SessionLookup.NotFound -> AuthResult.Skipped
@@ -47,11 +53,11 @@ class SessionRealm(private val securityService: SecurityService) : AuthRealm {
 }
 
 /** Authenticates API key tokens (prefixed `osk_`) via the [ApiKeyRepository]. */
-class ApiKeyRealm(private val securityService: SecurityService) : AuthRealm {
+class ApiKeyRealm(private val apiKeyService: ApiKeyService) : AuthRealm {
     override val name = "api-key"
 
     override fun authenticate(token: String): AuthResult {
-        val user = securityService.authenticateApiKey(token)
+        val user = apiKeyService.authenticateApiKey(token)
         return if (user != null) AuthResult.Authenticated(user) else AuthResult.Skipped
     }
 }

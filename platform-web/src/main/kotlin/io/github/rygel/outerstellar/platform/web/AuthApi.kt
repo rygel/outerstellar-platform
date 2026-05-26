@@ -1,10 +1,12 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.ChangePasswordRequest
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyRequest
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
+import io.github.rygel.outerstellar.platform.model.DeleteAccountRequest
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.PasswordResetConfirm
@@ -15,8 +17,13 @@ import io.github.rygel.outerstellar.platform.model.UpdateProfileRequest
 import io.github.rygel.outerstellar.platform.model.UserProfileResponse
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
+import io.github.rygel.outerstellar.platform.security.AccountService
+import io.github.rygel.outerstellar.platform.security.ApiKeyService
+import io.github.rygel.outerstellar.platform.security.AuthResult
+import io.github.rygel.outerstellar.platform.security.AuthService
+import io.github.rygel.outerstellar.platform.security.PasswordResetService
 import io.github.rygel.outerstellar.platform.security.SecurityRules
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.SessionService
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
@@ -30,10 +37,18 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
+import org.http4k.lens.LensFailure
 import org.http4k.lens.Path
 import org.http4k.lens.long
 
-class AuthApi(private val securityService: SecurityService) : ServerRoutes {
+class AuthApi(
+    private val apiKeyService: ApiKeyService,
+    private val passwordResetService: PasswordResetService,
+    private val authService: AuthService,
+    private val accountService: AccountService,
+    private val sessionService: SessionService,
+    private val appConfig: AppConfig,
+) : ServerRoutes {
     private val loginRequestLens = Body.auto<LoginRequest>().toLens()
     private val registerRequestLens = Body.auto<RegisterRequest>().toLens()
     private val tokenResponseLens = Body.auto<AuthTokenResponse>().toLens()
@@ -43,6 +58,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
     private val createApiKeyLens = Body.auto<CreateApiKeyRequest>().toLens()
     private val createApiKeyResponseLens = Body.auto<CreateApiKeyResponse>().toLens()
     private val apiKeySummaryListLens = Body.auto<List<ApiKeySummary>>().toLens()
+    private val deleteAccountLens = Body.auto<DeleteAccountRequest>().toLens()
     private val apiKeyIdPath = Path.long().of("id")
     private val updateProfileLens = Body.auto<UpdateProfileRequest>().toLens()
     private val userProfileResponseLens = Body.auto<UserProfileResponse>().toLens()
@@ -63,7 +79,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
                         val body = changePasswordLens(request)
-                        securityService.changePassword(user.id, body.currentPassword, body.newPassword)
+                        accountService.changePassword(user.id, body.currentPassword, body.newPassword)
                         Response(Status.OK).body("Password changed successfully")
                     } catch (e: WeakPasswordException) {
                         Response(Status.BAD_REQUEST).body(e.message ?: "Invalid password")
@@ -81,7 +97,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
                         val body = createApiKeyLens(request)
-                        val response = securityService.createApiKey(user.id, body.name)
+                        val response = apiKeyService.createApiKey(user.id, body.name)
                         Response(Status.OK).with(createApiKeyResponseLens of response)
                     } catch (e: IllegalArgumentException) {
                         Response(Status.BAD_REQUEST).body(e.message ?: "Invalid request")
@@ -95,7 +111,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 GET to
                 { request ->
                     val user = SecurityRules.USER_KEY(request)!!
-                    val keys = securityService.listApiKeys(user.id)
+                    val keys = apiKeyService.listApiKeys(user.id)
                     Response(Status.OK).with(apiKeySummaryListLens of keys)
                 },
             "/api/v1/auth/api-keys" / apiKeyIdPath meta
@@ -107,7 +123,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 { id ->
                     { request ->
                         val user = SecurityRules.USER_KEY(request)!!
-                        securityService.deleteApiKey(user.id, id)
+                        apiKeyService.deleteApiKey(user.id, id)
                         Response(Status.OK).body("API key deleted")
                     }
                 },
@@ -144,7 +160,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
                         val body = updateProfileLens(request)
-                        securityService.updateProfile(user.id, body.email, body.username, body.avatarUrl)
+                        accountService.updateProfile(user.id, body.email, body.username, body.avatarUrl)
                         Response(Status.OK).body("Profile updated")
                     } catch (e: UsernameAlreadyExistsException) {
                         Response(Status.CONFLICT).body(e.message ?: "Username already taken")
@@ -162,23 +178,42 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 { request ->
                     val user = SecurityRules.USER_KEY(request)!!
                     val body = updateNotifPrefsLens(request)
-                    securityService.updateNotificationPreferences(user.id, body.emailEnabled, body.pushEnabled)
+                    accountService.updateNotificationPreferences(user.id, body.emailEnabled, body.pushEnabled)
                     Response(Status.OK).body("Preferences updated")
+                },
+            "/api/v1/auth/logout" meta
+                {
+                    summary = "Revoke the current bearer session"
+                    returning(Status.NO_CONTENT to "Logged out")
+                } bindContract
+                POST to
+                { request ->
+                    request.header("Authorization")?.removePrefix("Bearer ")?.let { token ->
+                        sessionService.deleteSession(token)
+                    }
+                    Response(Status.NO_CONTENT)
                 },
             "/api/v1/auth/account" meta
                 {
                     summary = "Delete own account"
+                    receiving(deleteAccountLens)
                     returning(Status.OK to "Account deleted")
+                    returning(Status.BAD_REQUEST to "Current password is required")
                     returning(Status.FORBIDDEN to "Cannot delete the only admin")
                 } bindContract
                 DELETE to
                 { request ->
                     val user = SecurityRules.USER_KEY(request)!!
                     try {
-                        securityService.deleteAccount(user.id)
+                        val body = deleteAccountLens(request)
+                        accountService.deleteAccount(user.id, body.currentPassword)
                         Response(Status.OK).body("Account deleted")
                     } catch (e: InsufficientPermissionException) {
                         Response(Status.FORBIDDEN).body(e.message ?: "Cannot delete the only admin")
+                    } catch (e: WeakPasswordException) {
+                        Response(Status.BAD_REQUEST).body(e.message ?: "Current password is incorrect")
+                    } catch (_: LensFailure) {
+                        Response(Status.BAD_REQUEST).body("Current password is required")
                     }
                 },
         )
@@ -196,10 +231,11 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 POST to
                 { request ->
                     val login = loginRequestLens(request)
-                    val user = securityService.authenticate(login.username, login.password)
+                    val authResult = authService.authenticate(login.username, login.password)
 
-                    if (user != null) {
-                        val sessionToken = securityService.createSession(user.id)
+                    if (authResult is AuthResult.Authenticated) {
+                        val user = authResult.user
+                        val sessionToken = sessionService.createSession(user.id)
                         Response(Status.OK)
                             .with(
                                 tokenResponseLens of
@@ -209,6 +245,8 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                                         role = user.role.name,
                                     )
                             )
+                    } else if (authResult is AuthResult.TotpRequired) {
+                        Response(Status.UNAUTHORIZED).body("TOTP required")
                     } else {
                         Response(Status.UNAUTHORIZED).body("Invalid credentials")
                     }
@@ -223,25 +261,29 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 } bindContract
                 POST to
                 { request ->
-                    val register = registerRequestLens(request)
-                    try {
-                        val user = securityService.register(register.username, register.password)
-                        val sessionToken = securityService.createSession(user.id)
-                        Response(Status.OK)
-                            .with(
-                                tokenResponseLens of
-                                    AuthTokenResponse(
-                                        token = sessionToken,
-                                        username = user.username,
-                                        role = user.role.name,
-                                    )
-                            )
-                    } catch (e: UsernameAlreadyExistsException) {
-                        Response(Status.CONFLICT).body(e.message ?: "Username already taken")
-                    } catch (e: WeakPasswordException) {
-                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
-                    } catch (e: IllegalArgumentException) {
-                        Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
+                    if (!appConfig.registrationEnabled) {
+                        Response(Status.FORBIDDEN).body("Registration is disabled")
+                    } else {
+                        val register = registerRequestLens(request)
+                        try {
+                            val user = authService.register(register.username, register.password)
+                            val sessionToken = sessionService.createSession(user.id)
+                            Response(Status.OK)
+                                .with(
+                                    tokenResponseLens of
+                                        AuthTokenResponse(
+                                            token = sessionToken,
+                                            username = user.username,
+                                            role = user.role.name,
+                                        )
+                                )
+                        } catch (e: UsernameAlreadyExistsException) {
+                            Response(Status.CONFLICT).body(e.message ?: "Username already taken")
+                        } catch (e: WeakPasswordException) {
+                            Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
+                        } catch (e: IllegalArgumentException) {
+                            Response(Status.BAD_REQUEST).body(e.message ?: "Invalid registration request")
+                        }
                     }
                 },
             "/api/v1/auth/reset-request" meta
@@ -253,7 +295,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 POST to
                 { request ->
                     val body = resetRequestLens(request)
-                    securityService.requestPasswordReset(body.email)
+                    passwordResetService.requestPasswordReset(body.email)
                     Response(Status.OK).body("Reset request accepted")
                 },
             "/api/v1/auth/reset-confirm" meta
@@ -267,7 +309,7 @@ class AuthApi(private val securityService: SecurityService) : ServerRoutes {
                 { request ->
                     val body = resetConfirmLens(request)
                     try {
-                        securityService.resetPassword(body.token, body.newPassword)
+                        passwordResetService.resetPassword(body.token, body.newPassword)
                         Response(Status.OK).body("Password has been reset")
                     } catch (e: IllegalArgumentException) {
                         Response(Status.BAD_REQUEST).body(e.message ?: "Invalid or expired token")

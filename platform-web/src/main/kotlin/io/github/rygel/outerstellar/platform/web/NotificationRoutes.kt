@@ -24,7 +24,22 @@ class NotificationRoutes(
     private val notificationIdPath = Path.string().of("notificationId")
     private val logger = LoggerFactory.getLogger(NotificationRoutes::class.java)
 
-    override val routes: List<ContractRoute> =
+    val publicRoutes: List<ContractRoute> =
+        listOf(
+            "/components/notification-bell" meta
+                {
+                    summary = "Notification bell fragment (unread count)"
+                } bindContract
+                GET to
+                { request ->
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
+                    val fragment = pageFactory.buildNotificationBell(ctx, shellRenderer)
+                    Response(Status.OK).header("content-type", "text/html; charset=utf-8").body(renderer(fragment))
+                }
+        )
+
+    val protectedRoutes: List<ContractRoute> =
         listOf(
             "/notifications" meta
                 {
@@ -32,12 +47,9 @@ class NotificationRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    val ctx = request.webContext
-                    if (ctx.user == null) {
-                        Response(Status.FOUND).header("location", "/auth")
-                    } else {
-                        renderer.render(pageFactory.buildNotificationsPage(ctx))
-                    }
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
+                    renderer.render(pageFactory.buildNotificationsPage(ctx, shellRenderer))
                 },
             "/notifications/read-all" meta
                 {
@@ -45,15 +57,9 @@ class NotificationRoutes(
                 } bindContract
                 POST to
                 { request ->
-                    val ctx = request.webContext
-                    val user = ctx.user
-                    if (user == null) {
-                        Response(Status.FORBIDDEN)
-                    } else {
-                        notificationService.markAllRead(user.id)
-                        // Re-render the page via HTMX redirect
-                        Response(Status.FOUND).header("location", "/notifications")
-                    }
+                    val user = request.requestContext.user!!
+                    notificationService.markAllRead(user.id)
+                    Response(Status.FOUND).header("location", "/notifications")
                 },
             "/notifications" / notificationIdPath / "read" meta
                 {
@@ -62,29 +68,16 @@ class NotificationRoutes(
                 POST to
                 { notificationId, _ ->
                     { request ->
-                        val ctx = request.webContext
-                        val user = ctx.user
-                        if (user == null) {
-                            Response(Status.FORBIDDEN)
-                        } else {
-                            try {
-                                notificationService.markRead(UUID.fromString(notificationId), user.id)
-                            } catch (e: IllegalArgumentException) {
-                                logger.debug("Invalid notification UUID: {}", e.message)
-                            }
-                            Response(Status.FOUND).header("location", "/notifications")
+                        val user = request.requestContext.user!!
+                        try {
+                            notificationService.markRead(UUID.fromString(notificationId), user.id)
+                        } catch (e: IllegalArgumentException) {
+                            logger.debug("Invalid notification UUID: {}", e.message)
                         }
+                        Response(Status.FOUND).header("location", "/notifications")
                     }
                 },
-            "/components/notification-bell" meta
-                {
-                    summary = "Notification bell fragment (unread count)"
-                } bindContract
-                GET to
-                { request ->
-                    val ctx = request.webContext
-                    val fragment = pageFactory.buildNotificationBell(ctx)
-                    Response(Status.OK).header("content-type", "text/html; charset=utf-8").body(renderer(fragment))
-                },
         )
+
+    override val routes: List<ContractRoute> = publicRoutes + protectedRoutes
 }

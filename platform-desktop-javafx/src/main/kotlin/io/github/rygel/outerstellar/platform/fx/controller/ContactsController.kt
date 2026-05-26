@@ -1,73 +1,84 @@
 package io.github.rygel.outerstellar.platform.fx.controller
 
+import io.github.rygel.outerstellar.platform.fx.FxAppContext
 import io.github.rygel.outerstellar.platform.fx.service.FxThemeManager
+import io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel
+import io.github.rygel.outerstellar.platform.fx.viewmodel.runInBackground
 import io.github.rygel.outerstellar.platform.model.ContactSummary
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
-import javafx.fxml.FXML
-import javafx.fxml.FXMLLoader
-import javafx.scene.Scene
+import javafx.geometry.Insets
+import javafx.geometry.Pos
+import javafx.scene.Parent
+import javafx.scene.control.Button
+import javafx.scene.control.Label
 import javafx.scene.control.TableColumn
 import javafx.scene.control.TableView
-import javafx.stage.Modality
-import javafx.stage.Stage
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
-import org.slf4j.LoggerFactory
+import javafx.scene.layout.BorderPane
+import javafx.scene.layout.HBox
 
-class ContactsController : KoinComponent {
+class ContactsController {
 
-    private val logger = LoggerFactory.getLogger(ContactsController::class.java)
-    private val engine: DesktopSyncEngine by inject()
-    private val themeManager: FxThemeManager by inject()
+    private val viewModel: FxSyncViewModel
+        get() = FxAppContext.viewModel
 
-    @FXML private lateinit var contactsTable: TableView<ContactSummary>
-    @FXML private lateinit var nameColumn: TableColumn<ContactSummary, String>
-    @FXML private lateinit var emailColumn: TableColumn<ContactSummary, String>
-    @FXML private lateinit var companyColumn: TableColumn<ContactSummary, String>
+    private val themeManager: FxThemeManager
+        get() = FxAppContext.themeManager
 
-    @FXML
-    fun initialize() {
-        nameColumn.setCellValueFactory { SimpleStringProperty(it.value.name) }
-        emailColumn.setCellValueFactory { SimpleStringProperty(it.value.emails.joinToString(", ")) }
-        companyColumn.setCellValueFactory { SimpleStringProperty(it.value.company) }
-        contactsTable.setOnMouseClicked { event ->
-            if (event.clickCount == 2) {
-                val selected = contactsTable.selectionModel.selectedItem
-                if (selected != null) {
-                    showContactFormDialog(selected.syncId)
-                }
+    fun createView(): Parent {
+        val header =
+            HBox(12.0).apply {
+                padding = Insets(10.0)
+                alignment = Pos.CENTER_LEFT
+
+                val title = Label("Contacts").apply { style = "-fx-font-size: 18px; -fx-font-weight: bold;" }
+
+                val createBtn = Button("Create Contact").apply { setOnAction { showContactFormDialog(null) } }
+
+                children.addAll(title, createBtn)
             }
-        }
-        loadContacts()
-    }
 
-    @FXML
-    fun onCreateContact() {
-        showContactFormDialog(null)
-    }
+        val nameCol = TableColumn<ContactSummary, String>("Name")
+        nameCol.setCellValueFactory { SimpleStringProperty(it.value.name) }
 
-    private fun loadContacts() {
-        try {
-            engine.loadContacts()
-            contactsTable.items.setAll(engine.state.contacts)
-        } catch (e: Exception) {
-            logger.warn("Load contacts failed: {}", e.message)
+        val emailCol = TableColumn<ContactSummary, String>("Emails")
+        emailCol.setCellValueFactory { SimpleStringProperty(it.value.emails.joinToString(", ")) }
+
+        val phoneCol = TableColumn<ContactSummary, String>("Phones")
+        phoneCol.setCellValueFactory { SimpleStringProperty(it.value.phones.joinToString(", ")) }
+
+        val companyCol = TableColumn<ContactSummary, String>("Company")
+        companyCol.setCellValueFactory { SimpleStringProperty(it.value.company) }
+
+        val deptCol = TableColumn<ContactSummary, String>("Department")
+        deptCol.setCellValueFactory { SimpleStringProperty(it.value.department) }
+
+        val table =
+            TableView<ContactSummary>().apply {
+                itemsProperty().bind(SimpleObjectProperty(viewModel.contacts))
+                columns.addAll(nameCol, emailCol, phoneCol, companyCol, deptCol)
+                setOnMouseClicked { event ->
+                    if (event.clickCount == 2) {
+                        val selected = selectionModel.selectedItem
+                        if (selected != null) {
+                            showContactFormDialog(selected.syncId)
+                        }
+                    }
+                }
+                BorderPane.setMargin(this, Insets(0.0, 10.0, 10.0, 10.0))
+            }
+
+        viewModel.loadContacts().runInBackground()
+
+        return BorderPane().apply {
+            top = header
+            center = table
         }
     }
 
     private fun showContactFormDialog(syncId: String?) {
-        val loader = FXMLLoader(javaClass.getResource("/fxml/ContactFormDialog.fxml"))
-        val root = loader.load<javafx.scene.Parent>()
-        val controller = loader.getController<ContactFormController>()
-        controller.setSyncId(syncId)
-        val stage = Stage()
-        stage.initModality(Modality.APPLICATION_MODAL)
-        stage.title = if (syncId != null) "Edit Contact" else "Create Contact"
-        val scene = Scene(root)
-        themeManager.setScene(scene)
-        stage.scene = scene
-        stage.showAndWait()
-        loadContacts()
+        val controller = ContactFormController(syncId, viewModel, themeManager)
+        controller.showAndWait()
+        viewModel.loadContacts().runInBackground()
     }
 }

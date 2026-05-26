@@ -1,14 +1,16 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
+import io.github.rygel.outerstellar.platform.model.DeleteAccountRequest
 import io.github.rygel.outerstellar.platform.model.LoginRequest
 import io.github.rygel.outerstellar.platform.model.RegisterRequest
 import io.github.rygel.outerstellar.platform.model.UpdateNotificationPrefsRequest
 import io.github.rygel.outerstellar.platform.model.UpdateProfileRequest
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserProfileResponse
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,7 +28,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 class ProfileApiIntegrationTest : WebTest() {
@@ -39,19 +41,16 @@ class ProfileApiIntegrationTest : WebTest() {
     private val updateProfileLens = Body.auto<UpdateProfileRequest>().toLens()
     private val updateNotifPrefsLens = Body.auto<UpdateNotificationPrefsRequest>().toLens()
     private val userProfileLens = Body.auto<UserProfileResponse>().toLens()
+    private val deleteAccountLens = Body.auto<DeleteAccountRequest>().toLens()
 
-    @BeforeEach
-    fun setupTest() {
-        cleanup()
-        app = buildApp()
-    }
-
-    @AfterEach fun teardown() = cleanup()
+    @BeforeEach fun setupTest() = resetApp()
 
     // ---- Helpers ----
 
-    private fun registerAndLogin(username: String = "profuser${UUID.randomUUID().toString().take(6)}"): String {
-        val password = testPassword()
+    private fun registerAndLogin(
+        username: String = "profuser${UUID.randomUUID().toString().take(6)}",
+        password: String = testPassword(),
+    ): String {
         app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, password)))
         val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest(username, password)))
         return tokenLens(loginResp).token
@@ -60,6 +59,10 @@ class ProfileApiIntegrationTest : WebTest() {
     private fun bearer(method: org.http4k.core.Method, path: String, token: String) =
         Request(method, path).header("Authorization", "Bearer $token")
 
+    private fun resetApp() {
+        app = buildApp()
+    }
+
     // ---- GET /api/v1/auth/profile ----
 
     @Test
@@ -67,7 +70,7 @@ class ProfileApiIntegrationTest : WebTest() {
         val token = registerAndLogin("alice")
         val response = app(bearer(GET, "/api/v1/auth/profile", token))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val profile = userProfileLens(response)
         assertEquals("alice", profile.username)
         assertTrue(profile.email.isNotBlank())
@@ -79,7 +82,7 @@ class ProfileApiIntegrationTest : WebTest() {
     @Test
     fun `GET profile requires authentication`() {
         val response = app(Request(GET, "/api/v1/auth/profile"))
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     // ---- PUT /api/v1/auth/profile ----
@@ -95,7 +98,7 @@ class ProfileApiIntegrationTest : WebTest() {
                     .with(updateProfileLens of UpdateProfileRequest(email = "bob_new@example.com"))
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertEquals("bob_new@example.com", userRepository.findById(user.id)?.email)
     }
 
@@ -110,7 +113,7 @@ class ProfileApiIntegrationTest : WebTest() {
                     .with(updateProfileLens of UpdateProfileRequest(email = user.email, username = "carol_v2"))
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertNotNull(userRepository.findByUsername("carol_v2"))
         assertNull(userRepository.findByUsername("carol"))
     }
@@ -129,7 +132,7 @@ class ProfileApiIntegrationTest : WebTest() {
                     )
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertEquals("https://example.com/avatar.png", userRepository.findById(user.id)?.avatarUrl)
     }
 
@@ -145,7 +148,7 @@ class ProfileApiIntegrationTest : WebTest() {
                     .with(updateProfileLens of UpdateProfileRequest(email = user.email, username = "frank"))
             )
 
-        assertEquals(Status.CONFLICT, response.status)
+        assertThat(response, hasStatus(Status.CONFLICT))
         // original username unchanged
         assertNotNull(userRepository.findByUsername("eve"))
     }
@@ -157,7 +160,7 @@ class ProfileApiIntegrationTest : WebTest() {
                 Request(PUT, "/api/v1/auth/profile")
                     .with(updateProfileLens of UpdateProfileRequest(email = "x@example.com"))
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     // ---- PUT /api/v1/auth/notification-preferences ----
@@ -176,7 +179,7 @@ class ProfileApiIntegrationTest : WebTest() {
                     )
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val saved = userRepository.findById(user.id)!!
         assertFalse(saved.emailNotificationsEnabled)
         assertFalse(saved.pushNotificationsEnabled)
@@ -211,26 +214,54 @@ class ProfileApiIntegrationTest : WebTest() {
                             UpdateNotificationPrefsRequest(emailEnabled = false, pushEnabled = false)
                     )
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     // ---- DELETE /api/v1/auth/account ----
 
     @Test
     fun `DELETE account removes the user`() {
-        val token = registerAndLogin("ivan")
+        val password = testPassword()
+        val token = registerAndLogin("ivan", password)
         val user = userRepository.findByUsername("ivan")!!
+
+        val response =
+            app(bearer(DELETE, "/api/v1/auth/account", token).with(deleteAccountLens of DeleteAccountRequest(password)))
+
+        assertThat(response, hasStatus(Status.OK))
+        assertNull(userRepository.findById(user.id))
+    }
+
+    @Test
+    fun `DELETE account rejects missing current password`() {
+        val token = registerAndLogin("ian")
+        val user = userRepository.findByUsername("ian")!!
 
         val response = app(bearer(DELETE, "/api/v1/auth/account", token))
 
-        assertEquals(Status.OK, response.status)
-        assertNull(userRepository.findById(user.id))
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
+        assertNotNull(userRepository.findById(user.id))
+    }
+
+    @Test
+    fun `DELETE account rejects incorrect current password`() {
+        val token = registerAndLogin("isla")
+        val user = userRepository.findByUsername("isla")!!
+
+        val response =
+            app(
+                bearer(DELETE, "/api/v1/auth/account", token)
+                    .with(deleteAccountLens of DeleteAccountRequest("wrong-password"))
+            )
+
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
+        assertNotNull(userRepository.findById(user.id))
     }
 
     @Test
     fun `DELETE account returns 403 when user is the only admin`() {
         val adminId = UUID.randomUUID()
-        val password = "adminpass1"
+        val password = "Adm1nP@ss!"
         userRepository.save(
             User(
                 id = adminId,
@@ -243,9 +274,13 @@ class ProfileApiIntegrationTest : WebTest() {
         val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("soleadmin", password)))
         val adminToken = tokenLens(loginResp).token
 
-        val response = app(bearer(DELETE, "/api/v1/auth/account", adminToken))
+        val response =
+            app(
+                bearer(DELETE, "/api/v1/auth/account", adminToken)
+                    .with(deleteAccountLens of DeleteAccountRequest(password))
+            )
 
-        assertEquals(Status.FORBIDDEN, response.status)
+        assertThat(response, hasStatus(Status.FORBIDDEN))
         assertNotNull(userRepository.findById(adminId))
     }
 
@@ -259,7 +294,7 @@ class ProfileApiIntegrationTest : WebTest() {
                 id = id1,
                 username = "admin1",
                 email = "admin1@test.com",
-                passwordHash = enc.encode("adminpass1"),
+                passwordHash = enc.encode("Adm1nP@ss!"),
                 role = UserRole.ADMIN,
             )
         )
@@ -268,16 +303,20 @@ class ProfileApiIntegrationTest : WebTest() {
                 id = id2,
                 username = "admin2",
                 email = "admin2@test.com",
-                passwordHash = enc.encode("adminpass2"),
+                passwordHash = enc.encode("Adm2nP@ss!"),
                 role = UserRole.ADMIN,
             )
         )
-        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1", "adminpass1")))
+        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1", "Adm1nP@ss!")))
         val token1 = tokenLens(loginResp).token
 
-        val response = app(bearer(DELETE, "/api/v1/auth/account", token1))
+        val response =
+            app(
+                bearer(DELETE, "/api/v1/auth/account", token1)
+                    .with(deleteAccountLens of DeleteAccountRequest("Adm1nP@ss!"))
+            )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         assertNull(userRepository.findById(id1))
         assertNotNull(userRepository.findById(id2))
     }
@@ -285,7 +324,7 @@ class ProfileApiIntegrationTest : WebTest() {
     @Test
     fun `DELETE account requires authentication`() {
         val response = app(Request(DELETE, "/api/v1/auth/account"))
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     // ---- GET profile reflects changes from PUT ----

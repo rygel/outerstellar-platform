@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushContactResponse
@@ -18,7 +18,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -46,31 +46,19 @@ class SyncApiIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
-
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "syncuser",
                 email = "sync@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        sessionToken = securityService.createSession(testUser.id)
+        sessionToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun bearerHeader() = "Bearer $sessionToken"
 
@@ -79,13 +67,13 @@ class SyncApiIntegrationTest : WebTest() {
     @Test
     fun `GET sync without bearer returns 401`() {
         val response = app(Request(GET, "/api/v1/sync"))
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
     fun `GET sync with valid bearer returns 200`() {
         val response = app(Request(GET, "/api/v1/sync").header("Authorization", bearerHeader()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -101,7 +89,7 @@ class SyncApiIntegrationTest : WebTest() {
     @Test
     fun `GET sync with since=0 returns all messages`() {
         val response = app(Request(GET, "/api/v1/sync?since=0").header("Authorization", bearerHeader()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
         assertNotNull(body.messages)
     }
@@ -110,7 +98,7 @@ class SyncApiIntegrationTest : WebTest() {
     fun `GET sync with since= large timestamp returns empty list`() {
         val response =
             app(Request(GET, "/api/v1/sync?since=${Long.MAX_VALUE - 1}").header("Authorization", bearerHeader()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPullResponse::class)
         assertTrue(body.messages.isEmpty(), "No messages should exist after max timestamp")
     }
@@ -121,7 +109,7 @@ class SyncApiIntegrationTest : WebTest() {
     fun `POST sync without bearer returns 401`() {
         val response =
             app(Request(POST, "/api/v1/sync").header("content-type", "application/json").body("""{"messages":[]}"""))
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -133,7 +121,7 @@ class SyncApiIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"messages":[]}""")
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPushResponse::class)
         assertEquals(0, body.appliedCount)
         assertTrue(body.conflicts.isEmpty())
@@ -153,7 +141,7 @@ class SyncApiIntegrationTest : WebTest() {
                             """"updatedAtEpochMs":1000}]}"""
                     )
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPushResponse::class)
         assertEquals(1, body.appliedCount, "One message should be applied")
     }
@@ -188,13 +176,13 @@ class SyncApiIntegrationTest : WebTest() {
     @Test
     fun `GET sync-contacts without bearer returns 401`() {
         val response = app(Request(GET, "/api/v1/sync/contacts"))
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
     fun `GET sync-contacts with valid bearer returns 200`() {
         val response = app(Request(GET, "/api/v1/sync/contacts").header("Authorization", bearerHeader()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -208,7 +196,7 @@ class SyncApiIntegrationTest : WebTest() {
     @Test
     fun `GET sync-contacts since param returns results filtered by timestamp`() {
         val response = app(Request(GET, "/api/v1/sync/contacts?since=999").header("Authorization", bearerHeader()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPullContactResponse::class)
         assertNotNull(body.contacts)
     }
@@ -223,7 +211,7 @@ class SyncApiIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"contacts":[]}""")
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -235,7 +223,7 @@ class SyncApiIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"contacts":[]}""")
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPushContactResponse::class)
         assertEquals(0, body.appliedCount)
     }
@@ -249,7 +237,7 @@ class SyncApiIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"contacts":[]}""")
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPushContactResponse::class)
         // Verify delegation by checking that a valid response was returned
         assertNotNull(body, "Contact push should return a valid response")

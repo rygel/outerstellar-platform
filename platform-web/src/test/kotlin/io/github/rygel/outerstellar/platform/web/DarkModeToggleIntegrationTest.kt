@@ -1,11 +1,10 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.http4k.core.HttpHandler
@@ -14,7 +13,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookie
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -33,47 +32,46 @@ import org.junit.jupiter.api.BeforeEach
 class DarkModeToggleIntegrationTest : WebTest() {
 
     private lateinit var app: HttpHandler
-    private lateinit var securityService: SecurityService
+    private lateinit var sessionCookie: Cookie
 
     @BeforeEach
     fun setupTest() {
-        securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
+        val user =
+            User(
+                id = UUID.randomUUID(),
+                username = "themetest",
+                email = "theme@test.com",
+                passwordHash = encoder.encode("testpass1"),
+                role = UserRole.USER,
             )
-        app = buildApp(securityService = securityService)
+        userRepository.save(user)
+        sessionCookie = Cookie(RequestContext.SESSION_COOKIE, sessionSvc.createSession(user.id))
+        app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun seedAdmin(): String {
         val id = UUID.randomUUID()
-        userRepository.save(User(id, "admin", "admin@test.com", encoder.encode(testPassword()), UserRole.ADMIN))
-        return securityService.createSession(id)
+        userRepository.save(User(id, "admin", "admin@test.com", testPasswordHash, UserRole.ADMIN))
+        return sessionSvc.createSession(id)
     }
 
     // ---- data-theme attribute ----
 
     @Test
     fun `html element has data-theme attribute set to dark by default`() {
-        val body = app(Request(GET, "/")).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("data-theme=\"dark\""), "Default theme should be dark")
     }
 
     @Test
     fun `html element has data-theme attribute set to light when requested`() {
-        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "light"))).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie).cookie(Cookie("app_theme", "light"))).bodyString()
         assertTrue(body.contains("data-theme=\"light\""), "Light theme cookie should set data-theme=light")
     }
 
     @Test
     fun `html element has data-theme attribute set to nord when requested`() {
-        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "nord"))).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie).cookie(Cookie("app_theme", "nord"))).bodyString()
         assertTrue(body.contains("data-theme=\"nord\""), "Nord theme cookie should set data-theme=nord")
     }
 
@@ -81,13 +79,13 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `sidebar contains theme selector dropdown`() {
-        val body = app(Request(GET, "/")).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("id=\"theme-selector\""), "Sidebar must contain theme-selector element")
     }
 
     @Test
     fun `theme selector is a select element with theme options`() {
-        val body = app(Request(GET, "/")).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("name=\"theme\""), "Theme selector must have a select with name=theme")
     }
 
@@ -95,9 +93,9 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `requesting with theme=dark sets app_theme cookie to dark`() {
-        val response = app(Request(GET, "/?theme=dark"))
+        val response = app(Request(GET, "/?theme=dark").cookie(sessionCookie))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
             setCookie.contains("app_theme=dark") || setCookie.contains("app_theme=\"dark\""),
@@ -107,9 +105,9 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `requesting with theme=light sets app_theme cookie to light`() {
-        val response = app(Request(GET, "/?theme=light"))
+        val response = app(Request(GET, "/?theme=light").cookie(sessionCookie))
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertTrue(
             setCookie.contains("app_theme=light") || setCookie.contains("app_theme=\"light\""),
@@ -119,7 +117,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `theme cookie is persistent (max-age is a full year)`() {
-        val response = app(Request(GET, "/?theme=dark"))
+        val response = app(Request(GET, "/?theme=dark").cookie(sessionCookie))
         val setCookie = response.header("Set-Cookie").orEmpty()
 
         // 365 days in seconds = 31536000
@@ -131,7 +129,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `invalid theme value is ignored and cookie is not set`() {
-        val response = app(Request(GET, "/?theme=invalid_theme_xyz"))
+        val response = app(Request(GET, "/?theme=invalid_theme_xyz").cookie(sessionCookie))
 
         val setCookie = response.header("Set-Cookie").orEmpty()
         assertFalse(setCookie.contains("app_theme=invalid_theme_xyz"), "Invalid theme should not be set in cookie")
@@ -141,19 +139,19 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `page respects dark theme cookie`() {
-        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "dark"))).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie).cookie(Cookie("app_theme", "dark"))).bodyString()
         assertTrue(body.contains("data-theme=\"dark\""), "Dark theme cookie should produce data-theme=dark")
     }
 
     @Test
     fun `page respects light theme cookie`() {
-        val body = app(Request(GET, "/").cookie(Cookie("app_theme", "light"))).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie).cookie(Cookie("app_theme", "light"))).bodyString()
         assertTrue(body.contains("data-theme=\"light\""), "Light theme cookie should produce data-theme=light")
     }
 
     @Test
     fun `no inline theme style block is present`() {
-        val body = app(Request(GET, "/")).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie)).bodyString()
         assertFalse(body.contains("id=\"theme-style\""), "DaisyUI themes should not use inline style blocks")
     }
 
@@ -161,13 +159,13 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `every page includes platform js`() {
-        val body = app(Request(GET, "/")).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("platform.js"), "Page should include platform.js")
     }
 
     @Test
     fun `page references toast data attributes`() {
-        val body = app(Request(GET, "/")).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie)).bodyString()
         assertTrue(
             body.contains("data-toast-error") || body.contains("platform.js"),
             "Page should reference platform.js or data attributes for toast/theme handling",
@@ -176,7 +174,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `platform js is loaded for theme cookie detection`() {
-        val body = app(Request(GET, "/")).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("platform.js"), "Page should load platform.js which handles theme cookie detection")
     }
 
@@ -200,7 +198,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
 
     @Test
     fun `sidebar theme selector is present`() {
-        val body = app(Request(GET, "/")).bodyString()
+        val body = app(Request(GET, "/").cookie(sessionCookie)).bodyString()
         assertTrue(body.contains("theme-selector"), "Sidebar theme selector component should still be rendered")
     }
 }

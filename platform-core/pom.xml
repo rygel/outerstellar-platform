@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.6.1</version>
+        <version>1.6.2</version>
 
     </parent>
 
@@ -48,10 +48,6 @@
             <artifactId>resilience4j-circuitbreaker</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-core-jvm</artifactId>
-        </dependency>
-<dependency>
             <groupId>org.http4k</groupId>
             <artifactId>http4k-core</artifactId>
         </dependency>
@@ -83,17 +79,6 @@
         <dependency>
             <groupId>io.mockk</groupId>
             <artifactId>mockk-jvm</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.tngtech.archunit</groupId>
-            <artifactId>archunit-junit5</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-test-junit5</artifactId>
-            <version>${koin.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

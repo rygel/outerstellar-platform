@@ -48,7 +48,7 @@
         <button type="submit" class="btn btn-primary w-full mt-2">${model.submitLabel}</button>
     </form>
 
-    @if (model.mode == "sign-in")
+    @if (model.mode == "sign-in" && model.showAppleOAuth)
         <div class="divider my-6">${model.oauthSeparator}</div>
         <a href="/auth/oauth/apple"
            class="btn btn-outline w-full gap-2">

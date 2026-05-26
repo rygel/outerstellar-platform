@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.6.1</version>
+        <version>1.6.2</version>
 
     </parent>
 
@@ -25,7 +25,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-persistence-jooq</artifactId>
+            <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
@@ -35,10 +35,6 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.insert-koin</groupId>
-            <artifactId>koin-core-jvm</artifactId>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

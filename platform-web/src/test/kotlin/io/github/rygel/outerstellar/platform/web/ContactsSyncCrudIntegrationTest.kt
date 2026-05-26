@@ -1,8 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import io.github.rygel.outerstellar.platform.sync.SyncPullContactResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushContactResponse
 import java.util.UUID
@@ -15,7 +15,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -38,31 +38,19 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                sessionRepository = sessionRepository,
-                apiKeyRepository = apiKeyRepository,
-                resetRepository = passwordResetRepository,
-                auditRepository = auditRepository,
-            )
-
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "contactsyncuser",
                 email = "contactsync@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        sessionToken = securityService.createSession(testUser.id)
+        sessionToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun bearer() = "Bearer $sessionToken"
 
@@ -96,7 +84,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
                     .body(contactJson(syncId, "Alice Smith"))
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPushContactResponse::class)
         assertEquals(1, body.appliedCount, "One contact should be applied")
         assertTrue(body.conflicts.isEmpty(), "No conflicts expected")
@@ -116,7 +104,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
 
         // Pull contacts
         val response = app(Request(GET, "/api/v1/sync/contacts?since=0").header("Authorization", bearer()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
 
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPullContactResponse::class)
         val found = body.contacts.any { it.syncId == syncId }
@@ -203,7 +191,7 @@ class ContactsSyncCrudIntegrationTest : WebTest() {
                     .body("""{"contacts":[]}""")
             )
 
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = KotlinxSerialization.asA(response.bodyString(), SyncPushContactResponse::class)
         assertEquals(0, body.appliedCount)
         assertTrue(body.conflicts.isEmpty())

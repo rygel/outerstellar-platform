@@ -1,9 +1,9 @@
 package io.github.rygel.outerstellar.platform.web
 
+import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.SecurityService
-import io.github.rygel.outerstellar.platform.security.User
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,7 +15,7 @@ import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.format.KotlinxSerialization
-import org.junit.jupiter.api.AfterEach
+import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
 /**
@@ -38,29 +38,19 @@ class ApiKeyAuthIntegrationTest : WebTest() {
 
     @BeforeEach
     fun setupTest() {
-        val securityService =
-            SecurityService(
-                userRepository,
-                encoder,
-                apiKeyRepository = apiKeyRepository,
-                sessionRepository = sessionRepository,
-            )
-
         testUser =
             User(
                 id = UUID.randomUUID(),
                 username = "apikeyuser",
                 email = "apikey@test.com",
-                passwordHash = encoder.encode(testPassword()),
+                passwordHash = testPasswordHash,
                 role = UserRole.USER,
             )
         userRepository.save(testUser)
-        sessionToken = securityService.createSession(testUser.id)
+        sessionToken = sessionSvc.createSession(testUser.id)
 
-        app = buildApp(securityService = securityService)
+        app = buildApp()
     }
-
-    @AfterEach fun teardown() = cleanup()
 
     private fun uuidBearer() = "Bearer $sessionToken"
 
@@ -73,7 +63,7 @@ class ApiKeyAuthIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"name":"$name"}""")
             )
-        assertEquals(Status.OK, response.status, "Key creation should succeed")
+        assertThat(response, hasStatus(Status.OK))
         return KotlinxSerialization.asA(response.bodyString(), CreateApiKeyResponse::class)
     }
 
@@ -85,7 +75,7 @@ class ApiKeyAuthIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"name":"test-key"}""")
             )
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
@@ -97,7 +87,7 @@ class ApiKeyAuthIntegrationTest : WebTest() {
                     .header("content-type", "application/json")
                     .body("""{"name":""}""")
             )
-        assertEquals(Status.BAD_REQUEST, response.status)
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
     }
 
     @Test
@@ -112,7 +102,7 @@ class ApiKeyAuthIntegrationTest : WebTest() {
         val result = createApiKey("sync-key")
 
         val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${result.key}"))
-        assertEquals(Status.OK, response.status, "Named API key should authenticate sync endpoint")
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -130,7 +120,7 @@ class ApiKeyAuthIntegrationTest : WebTest() {
                             """"content":"via api key","updatedAtEpochMs":1000}]}"""
                     )
             )
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
     }
 
     @Test
@@ -138,7 +128,7 @@ class ApiKeyAuthIntegrationTest : WebTest() {
         createApiKey("list-key")
 
         val response = app(Request(GET, "/api/v1/auth/api-keys").header("Authorization", uuidBearer()))
-        assertEquals(Status.OK, response.status)
+        assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.contains("list-key"), "Key list should include created key name")
     }
@@ -158,12 +148,12 @@ class ApiKeyAuthIntegrationTest : WebTest() {
 
         // Now the key should be rejected
         val syncResponse = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer ${result.key}"))
-        assertEquals(Status.UNAUTHORIZED, syncResponse.status, "Deleted API key should be rejected")
+        assertThat(syncResponse, hasStatus(Status.UNAUTHORIZED))
     }
 
     @Test
     fun `invalid random string as Bearer is rejected`() {
         val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer totally-not-a-valid-key"))
-        assertEquals(Status.UNAUTHORIZED, response.status)
+        assertThat(response, hasStatus(Status.UNAUTHORIZED))
     }
 }

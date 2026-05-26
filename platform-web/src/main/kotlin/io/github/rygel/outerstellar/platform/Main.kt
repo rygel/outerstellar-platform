@@ -1,60 +1,46 @@
 package io.github.rygel.outerstellar.platform
 
-import io.github.rygel.outerstellar.platform.di.coreModule
-import io.github.rygel.outerstellar.platform.di.persistenceModule
-import io.github.rygel.outerstellar.platform.di.webModule
-import io.github.rygel.outerstellar.platform.persistence.MessageRepository
+import io.github.rygel.outerstellar.platform.infra.NativeStartupCheck
 import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
-import io.github.rygel.outerstellar.platform.security.PasswordEncoder
-import io.github.rygel.outerstellar.platform.security.UserRepository
-import io.github.rygel.outerstellar.platform.security.securityModule
-import io.github.rygel.outerstellar.platform.service.OutboxProcessor
+import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
 import org.http4k.server.Netty
 import org.http4k.server.asServer
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
-import org.koin.core.context.startKoin
-import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
 
+private const val MILLIS_PER_SECOND = 1000L
 private const val OUTBOX_INTERVAL_SECONDS = 30L
 private const val SHUTDOWN_TIMEOUT_SECONDS = 5L
 
 private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.Main")
 
-object MainComponent : KoinComponent {
-    val config: AppConfig = get()
-    val repository: MessageRepository = get()
-    val contactRepository: io.github.rygel.outerstellar.platform.persistence.ContactRepository = get()
-    val userRepository: UserRepository = get()
-    val passwordEncoder: PasswordEncoder = get()
-    val outboxProcessor: OutboxProcessor = get()
-    val activityUpdater: AsyncActivityUpdater = get()
-    val app: PolyHandler = get(named("webServer"))
-}
+private fun elapsed(from: Long, phase: String) = "Startup — $phase: ${System.currentTimeMillis() - from}ms"
 
 fun main() {
-    startKoin { modules(configModule, persistenceModule, coreModule, webModule, securityModule) }
+    NativeStartupCheck.run()
+    val t0 = System.currentTimeMillis()
 
-    val main = MainComponent
+    val components = createServerComponents()
+    logger.info(elapsed(t0, "Components created"))
 
     if (
-        main.config.jdbcPassword == AppConfig.DEFAULT_JDBC_PASSWORD &&
-            main.config.profile != "default" &&
-            main.config.profile != "test"
+        components.config.jdbcPassword == AppConfig.DEFAULT_JDBC_PASSWORD &&
+            components.config.profile != "default" &&
+            components.config.profile != "test"
     ) {
         logger.error(
             "FATAL: JDBC_PASSWORD is still the default '{}' with profile '{}'. " +
                 "Set JDBC_PASSWORD to a secure value before deploying.",
             AppConfig.DEFAULT_JDBC_PASSWORD,
-            main.config.profile,
+            components.config.profile,
         )
     }
+
+    val server = components.app.asServer(Netty(components.config.port)).start()
+    logger.info(elapsed(t0, "Server ready on :${server.port()}"))
 
     val adminPassword =
         System.getenv("ADMIN_PASSWORD")
@@ -62,36 +48,44 @@ fun main() {
                 logger.warn("ADMIN_PASSWORD env var not set. A random password was generated for first-boot admin.")
                 logger.warn("Set ADMIN_PASSWORD to a secure value before deploying to production.")
             }
-    if (main.userRepository.findByUsername("admin") == null) {
-        main.userRepository.seedAdminUser(main.passwordEncoder.encode(adminPassword))
+    if (components.persistence.userRepository.findByUsername("admin") == null) {
+        components.persistence.userRepository.seedAdminUser(BCryptPasswordEncoder().encode(adminPassword))
     }
 
     val outboxScheduler = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "outbox-processor").also { it.isDaemon = true }
     }
-    outboxScheduler.scheduleWithFixedDelay(
-        {
-            main.outboxProcessor.processPending()
-            main.activityUpdater.flush()
-        },
-        OUTBOX_INTERVAL_SECONDS,
-        OUTBOX_INTERVAL_SECONDS,
-        TimeUnit.SECONDS,
-    )
-    val server = main.app.asServer(Netty(main.config.port)).start()
-    logger.info("Outerstellar platform running on http://localhost:{}", server.port())
+    val outboxTask =
+        object : Runnable {
+            override fun run() {
+                try {
+                    components.core.outboxProcessor.processPending()
+                    components.security.asyncActivityUpdater.flush()
+                } finally {
+                    val delay =
+                        maxOf(components.core.outboxProcessor.backoffMs, OUTBOX_INTERVAL_SECONDS * MILLIS_PER_SECOND)
+                    outboxScheduler.schedule(this, delay, TimeUnit.MILLISECONDS)
+                }
+            }
+        }
+    outboxScheduler.schedule(outboxTask, 0, TimeUnit.MILLISECONDS)
+    logger.info(elapsed(t0, "Background jobs started"))
 
-    registerShutdownHook(main, outboxScheduler, server)
+    registerShutdownHook(components.security.asyncActivityUpdater, outboxScheduler, server)
 }
 
-private fun registerShutdownHook(main: MainComponent, outboxScheduler: ScheduledExecutorService, server: Http4kServer) {
+private fun registerShutdownHook(
+    activityUpdater: AsyncActivityUpdater,
+    outboxScheduler: ScheduledExecutorService,
+    server: Http4kServer,
+) {
     Runtime.getRuntime()
         .addShutdownHook(
             Thread(
                 {
                     logger.info("Graceful shutdown initiated")
                     logger.info("Flushing pending activity updates...")
-                    main.activityUpdater.flush()
+                    activityUpdater.flush()
                     logger.info("Stopping outbox scheduler...")
                     outboxScheduler.shutdown()
                     try {

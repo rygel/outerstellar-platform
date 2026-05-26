@@ -1,11 +1,9 @@
 package io.github.rygel.outerstellar.platform.persistence
 
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.security.User
-import io.github.rygel.outerstellar.platform.security.UserRepository
 import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneOffset
 import java.util.UUID
 import org.jdbi.v3.core.Jdbi
 import org.slf4j.LoggerFactory
@@ -16,9 +14,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findById(id: UUID): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users WHERE id = :id"
-                )
+                .createQuery(USER_SELECT + " WHERE id = :id")
                 .bind("id", id)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -29,9 +25,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findByUsername(username: String): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users WHERE username = :username"
-                )
+                .createQuery(USER_SELECT + " WHERE username = :username")
                 .bind("username", username)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -42,9 +36,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
     override fun findByEmail(email: String): User? {
         return jdbi.withHandle<User?, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users WHERE email = :email"
-                )
+                .createQuery(USER_SELECT + " WHERE email = :email")
                 .bind("email", email)
                 .map { rs, _ -> mapUser(rs) }
                 .findOne()
@@ -57,14 +49,15 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             handle
                 .createUpdate(
                     """
-                    INSERT INTO plt_users (id, username, email, password_hash, role, enabled)
-                    VALUES (:id, :username, :email, :passwordHash, :role, :enabled)
+                    INSERT INTO plt_users (id, username, email, password_hash, role, enabled, avatar_url)
+                    VALUES (:id, :username, :email, :passwordHash, :role, :enabled, :avatarUrl)
                     ON CONFLICT (id) DO UPDATE SET
                         username = EXCLUDED.username,
                         email = EXCLUDED.email,
                         password_hash = EXCLUDED.password_hash,
                         role = EXCLUDED.role,
-                        enabled = EXCLUDED.enabled
+                        enabled = EXCLUDED.enabled,
+                        avatar_url = EXCLUDED.avatar_url
                     """
                 )
                 .bind("id", user.id)
@@ -73,6 +66,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
                 .bind("passwordHash", user.passwordHash)
                 .bind("role", user.role.name)
                 .bind("enabled", user.enabled)
+                .bind("avatarUrl", user.avatarUrl)
                 .execute()
         }
     }
@@ -94,21 +88,14 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
 
     override fun findAll(): List<User> {
         return jdbi.withHandle<List<User>, Exception> { handle ->
-            handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users ORDER BY username"
-                )
-                .map { rs, _ -> mapUser(rs) }
-                .list()
+            handle.createQuery("$USER_SELECT ORDER BY username").map { rs, _ -> mapUser(rs) }.list()
         }
     }
 
     override fun findPage(limit: Int, offset: Int): List<User> =
         jdbi.withHandle<List<User>, Exception> { handle ->
             handle
-                .createQuery(
-                    "SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url, email_notifications_enabled, push_notifications_enabled, language, theme, layout FROM plt_users ORDER BY username LIMIT :limit OFFSET :offset"
-                )
+                .createQuery("$USER_SELECT ORDER BY username LIMIT :limit OFFSET :offset")
                 .bind("limit", limit)
                 .bind("offset", offset)
                 .map { rs, _ -> mapUser(rs) }
@@ -153,7 +140,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         jdbi.useHandle<Exception> { handle ->
             handle
                 .createUpdate("UPDATE plt_users SET last_activity_at = :lastActivity WHERE id = :id")
-                .bind("lastActivity", LocalDateTime.now(ZoneOffset.UTC))
+                .bind("lastActivity", Instant.now())
                 .bind("id", userId)
                 .execute()
         }
@@ -265,8 +252,49 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
                 .one()
         }
 
+    override fun findTotpSecretByUserId(userId: UUID): Triple<String?, Boolean, String?>? {
+        return jdbi.withHandle<Triple<String?, Boolean, String?>?, Exception> { handle ->
+            handle
+                .createQuery("SELECT totp_secret, totp_enabled, totp_backup_codes FROM plt_users WHERE id = :id")
+                .bind("id", userId)
+                .map { rs, _ ->
+                    Triple(
+                        rs.getString("totp_secret"),
+                        rs.getBoolean("totp_enabled"),
+                        rs.getString("totp_backup_codes"),
+                    )
+                }
+                .findOne()
+                .orElse(null)
+        }
+    }
+
+    override fun updateTotpSecret(userId: UUID, secret: String?, backupCodes: String?) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate(
+                    "UPDATE plt_users SET totp_secret = :secret, totp_backup_codes = :backupCodes WHERE id = :id"
+                )
+                .bind("secret", secret)
+                .bind("backupCodes", backupCodes)
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
+    override fun enableTotp(userId: UUID) {
+        jdbi.useHandle<Exception> { handle ->
+            handle.createUpdate("UPDATE plt_users SET totp_enabled = TRUE WHERE id = :id").bind("id", userId).execute()
+        }
+    }
+
+    override fun disableTotp(userId: UUID) {
+        jdbi.useHandle<Exception> { handle ->
+            handle.createUpdate("UPDATE plt_users SET totp_enabled = FALSE WHERE id = :id").bind("id", userId).execute()
+        }
+    }
+
     private fun mapUser(rs: java.sql.ResultSet): User {
-        val lastActivity = rs.getTimestamp("last_activity_at")
         return User(
             id = rs.getObject("id", UUID::class.java),
             username = rs.getString("username"),
@@ -274,13 +302,28 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             passwordHash = rs.getString("password_hash"),
             role = UserRole.valueOf(rs.getString("role")),
             enabled = rs.getBoolean("enabled"),
-            lastActivityAt = lastActivity?.toInstant(),
+            failedLoginAttempts = rs.getInt("failed_login_attempts"),
+            lockedUntil = rs.getNullableInstant("locked_until"),
+            lastActivityAt = rs.getNullableInstant("last_activity_at"),
             avatarUrl = rs.getString("avatar_url"),
             emailNotificationsEnabled = rs.getBoolean("email_notifications_enabled"),
             pushNotificationsEnabled = rs.getBoolean("push_notifications_enabled"),
             language = rs.getString("language"),
             theme = rs.getString("theme"),
             layout = rs.getString("layout"),
+            totpSecret = rs.getString("totp_secret"),
+            totpEnabled = rs.getBoolean("totp_enabled"),
+            totpBackupCodes = rs.getString("totp_backup_codes"),
         )
+    }
+
+    companion object {
+        private const val USER_SELECT =
+            """
+            SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url,
+                   email_notifications_enabled, push_notifications_enabled, language, theme, layout,
+                   failed_login_attempts, locked_until, totp_secret, totp_enabled, totp_backup_codes
+            FROM plt_users
+            """
     }
 }

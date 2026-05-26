@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.security
 
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 

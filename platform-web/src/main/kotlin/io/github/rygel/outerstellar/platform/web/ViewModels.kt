@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.TextResolver
+import io.github.rygel.outerstellar.platform.banner.Banner
 import org.http4k.template.ViewModel
 
 data class ShellLink(val label: String, val url: String, val icon: String, val active: Boolean)
@@ -42,12 +43,15 @@ data class ShellView(
     val toggleMenuLabel: String = "Toggle menu",
     val profileLabel: String = "Profile",
     val notificationBellTitle: String = "Notifications",
+    val searchPlaceholder: String = "Search...",
+    val searchLabel: String = "Search",
     val pageDescription: String = "",
     val canonicalUrl: String = "",
     val noIndex: Boolean = false,
     val supportedLocales: List<String> = listOf("en"),
     val appBaseUrl: String = "",
     val ogImage: String = "",
+    val banners: List<Banner> = emptyList(),
 ) {
     fun text(key: String, vararg args: Any?): String = textResolver?.resolve(key, *args) ?: key
 }
@@ -73,7 +77,32 @@ data class HomePage(
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/HomePage"
 }
 
-data class TrashPage(val title: String, val description: String, val messageList: MessageListViewModel) : ViewModel {
+data class ContactTrashItemViewModel(
+    val syncId: String,
+    val name: String,
+    val emails: List<String>,
+    val phones: List<String>,
+    val company: String,
+    val department: String,
+    val restoreUrl: String,
+)
+
+data class ContactTrashListViewModel(
+    val contacts: List<ContactTrashItemViewModel>,
+    val emptyMessage: String,
+    val refreshUrl: String,
+    val title: String = "Deleted Contacts",
+    val restoreTitle: String = "Restore contact",
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/ContactTrashList"
+}
+
+data class TrashPage(
+    val title: String,
+    val description: String,
+    val messageList: MessageListViewModel,
+    val contactList: ContactTrashListViewModel? = null,
+) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/TrashPage"
 }
 
@@ -125,9 +154,41 @@ data class AuthFormFragment(
     val includeRememberField: Boolean,
     val oauthSeparator: String = "or continue with",
     val signInWithApple: String = "Sign in with Apple",
+    val showAppleOAuth: Boolean = false,
 ) : ViewModel
 
 data class AuthResultFragment(val title: String, val message: String, val toneClass: String) : ViewModel
+
+data class TotpChallengeForm(
+    val partialToken: String,
+    val title: String = "Two-Factor Authentication",
+    val description: String = "Enter the 6-digit code from your authenticator app.",
+    val codeLabel: String = "Authentication Code",
+    val verifyLabel: String = "Verify",
+    val backLinkLabel: String = "Back to login",
+    val error: String? = null,
+) : ViewModel
+
+data class TotpSetupFragment(
+    val totpEnabled: Boolean = false,
+    val totpQrDataUri: String? = null,
+    val totpSecret: String? = null,
+    val totpBackupCodes: List<String>? = null,
+    val totpRemainingBackupCodes: Int = 0,
+    val enabledLabel: String = "Two-factor authentication is enabled.",
+    val passwordLabel: String = "Enter your password to disable",
+    val disableLabel: String = "Disable Two-Factor Auth",
+    val backupCodesLabel: String = "Backup Codes",
+    val backupCodesHint: String = "Save these codes in a safe place. Each code can be used once.",
+    val backupCodesRemainingLabel: String = "%s backup codes remaining",
+    val copyLabel: String = "Copy Codes",
+    val downloadLabel: String = "Download Codes",
+    val disabledLabel: String = "Scan the QR code below with your authenticator app, then enter the 6-digit code.",
+    val manualKeyLabel: String = "Or enter this key manually:",
+    val codeLabel: String = "Authentication Code",
+    val setupLabel: String = "Enable Two-Factor Auth",
+    val verifyLabel: String = "Verify and Enable",
+) : ViewModel
 
 data class ErrorPage(
     val statusCode: Int,
@@ -147,6 +208,20 @@ data class ErrorPage(
 data class ErrorHelpFragment(val title: String, val items: List<String>) : ViewModel
 
 data class FooterStatusFragment(val text: String) : ViewModel
+
+data class VoteFragmentViewModel(
+    val score: io.github.rygel.outerstellar.platform.model.VoteScore,
+    val messageSyncId: String,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/VoteFragment"
+}
+
+data class PollFragmentViewModel(
+    val results: io.github.rygel.outerstellar.platform.model.PollWithResults,
+    val syncId: String,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/PollCard"
+}
 
 data class DevDashboardPage(
     val metrics: String,
@@ -188,6 +263,20 @@ data class ModalViewModel(
     val targetId: String,
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/Modal"
+}
+
+data class MessageEditFormFragment(
+    val syncId: String,
+    val author: String,
+    val content: String,
+    val submitUrl: String,
+    val titleLabel: String = "Edit message",
+    val authorLabel: String = "Author",
+    val contentLabel: String = "Content",
+    val saveLabel: String = "Save",
+    val cancelLabel: String = "Cancel",
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/components/MessageEdit"
 }
 
 data class ConflictResolveViewModel(
@@ -457,6 +546,8 @@ data class SearchResultViewModel(
     val type: String,
 )
 
+data class SearchTypeFilter(val key: String, val label: String, val url: String, val active: Boolean)
+
 data class SearchPage(
     val title: String,
     val query: String,
@@ -464,23 +555,91 @@ data class SearchPage(
     val emptyLabel: String,
     val searchPlaceholder: String,
     val searchLabel: String,
+    val typeFilter: String = "",
+    val typeFilters: List<SearchTypeFilter> = emptyList(),
 ) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/SearchPage"
 }
 
 data class SettingsTab(val key: String, val label: String, val url: String, val active: Boolean)
 
-data class SettingsPage(
-    val title: String,
-    val tabs: List<SettingsTab>,
-    val activeTab: String,
-    val profileDescription: String = "",
-    val passwordDescription: String = "",
-    val apiKeysDescription: String = "",
-    val notificationsDescription: String = "",
-    val appearanceDescription: String = "",
-) : ViewModel {
+data class SettingsPage(val title: String, val tabs: List<SettingsTab>, val activeTab: String) : ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/SettingsPage"
+}
+
+data class SettingsTabContent(
+    val activeTab: String,
+    val csrfToken: String = "",
+    // Profile tab
+    val profileUsername: String = "",
+    val profileEmail: String = "",
+    val profileAvatarUrl: String = "",
+    val profileAvatarAlt: String = "",
+    val profileSubmitUrl: String = "",
+    val profileUsernameLabel: String = "",
+    val profileUsernamePlaceholder: String = "",
+    val profileEmailLabel: String = "",
+    val profileEmailPlaceholder: String = "",
+    val profileAvatarLabel: String = "",
+    val profileAvatarPlaceholder: String = "",
+    val profileSubmitLabel: String = "",
+    val profileGravatarHint: String = "",
+    val profileNotifPrefsUrl: String = "",
+    val profileNotifPrefsLabel: String = "",
+    val profileEmailNotifLabel: String = "",
+    val profilePushNotifLabel: String = "",
+    val profileSavePrefsLabel: String = "",
+    val profileEmailNotificationsEnabled: Boolean = false,
+    val profilePushNotificationsEnabled: Boolean = false,
+    val profileDangerZoneLabel: String = "",
+    val profileDeleteAccountUrl: String = "",
+    val profileDeleteAccountLabel: String = "",
+    val profileDeleteAccountDescription: String = "",
+    val profileDeleteAccountConfirmLabel: String = "",
+    val profileDeleteAccountCancelLabel: String = "",
+    // Password tab
+    val passwordTitle: String = "",
+    val passwordCurrentPasswordLabel: String = "",
+    val passwordNewPasswordLabel: String = "",
+    val passwordConfirmPasswordLabel: String = "",
+    val passwordSubmitLabel: String = "",
+    val passwordSubmitUrl: String = "",
+    val passwordCurrentPasswordPlaceholder: String = "",
+    val passwordNewPasswordPlaceholder: String = "",
+    val passwordConfirmPasswordPlaceholder: String = "",
+    // API Keys tab
+    val apiKeys: List<io.github.rygel.outerstellar.platform.model.ApiKeySummary> = emptyList(),
+    val apiKeysCreateUrl: String = "",
+    val apiKeysNewKey: String? = null,
+    val apiKeysNewKeyName: String? = null,
+    val apiKeysCreateLabel: String = "",
+    val apiKeysKeyNameLabel: String = "",
+    val apiKeysKeyNamePlaceholder: String = "",
+    val apiKeysYourKeysHeading: String = "",
+    val apiKeysEmptyLabel: String = "",
+    val apiKeysHeaderPrefix: String = "",
+    val apiKeysHeaderName: String = "",
+    val apiKeysHeaderCreated: String = "",
+    val apiKeysHeaderLastUsed: String = "",
+    val apiKeysHeaderActions: String = "",
+    val apiKeysNeverLabel: String = "",
+    val apiKeysDeleteConfirm: String = "",
+    val apiKeysDeleteLabel: String = "",
+    // Notifications tab
+    val notifications: List<NotificationViewModel> = emptyList(),
+    val notifUnreadCount: Int = 0,
+    val notifMarkAllReadUrl: String = "",
+    val notifMarkAllReadLabel: String = "",
+    val notifMarkReadLabel: String = "",
+    val notifReadLabel: String = "",
+    val notifNewLabel: String = "",
+    val notifEmptyLabel: String = "",
+    // Appearance tab
+    val themeSelector: SidebarSelector? = null,
+    val languageSelector: SidebarSelector? = null,
+    val layoutSelector: SidebarSelector? = null,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/SettingsTabContent"
 }
 
 data class ContactsPage(
@@ -493,6 +652,9 @@ data class ContactsPage(
     val previousUrl: String = "",
     val nextUrl: String = "",
     val totalCount: Long = 0,
+    val currentQuery: String = "",
+    val currentOffset: Int = 0,
+    val currentLimit: Int = 12,
     val createLabel: String = "Create Contact",
     val editTitle: String = "Edit contact",
     val deleteTitle: String = "Delete contact",

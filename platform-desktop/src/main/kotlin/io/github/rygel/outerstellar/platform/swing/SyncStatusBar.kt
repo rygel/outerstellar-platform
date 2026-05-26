@@ -5,12 +5,9 @@ import java.awt.Dimension
 import java.awt.Font
 import javax.swing.Box
 import javax.swing.JLabel
-import javax.swing.JPanel
 import javax.swing.JToolBar
 
-class SyncStatusBar(
-    private val i18nService: I18nService,
-) {
+class SyncStatusBar(private val i18nService: I18nService) {
     val statusLabel =
         JLabel(i18nService.translate("swing.status.ready")).apply {
             name = "statusLabel"

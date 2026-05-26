@@ -33,12 +33,12 @@ class ContactsRoutes(
                 } bindContract
                 GET to
                 { request: Request ->
-                    val ctx = request.webContext
+                    val shellRenderer = request.shellRenderer
                     val query = request.query("q")
                     val limit =
                         request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT) ?: DEFAULT_CONTACTS_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(pageFactory.buildContactsPage(ctx, query, limit, offset))
+                    renderer.render(pageFactory.buildContactsPage(shellRenderer, query, limit, offset))
                 },
             "/contacts/new" meta
                 {
@@ -46,7 +46,8 @@ class ContactsRoutes(
                 } bindContract
                 GET to
                 { request: Request ->
-                    renderer.render(pageFactory.buildContactForm(request.webContext))
+                    val shellRenderer = request.shellRenderer
+                    renderer.render(pageFactory.buildContactForm(shellRenderer))
                 },
             "/contacts" meta
                 {
@@ -54,7 +55,7 @@ class ContactsRoutes(
                 } bindContract
                 POST to
                 { request: Request ->
-                    val ctx = request.webContext
+                    val shellRenderer = request.shellRenderer
                     val params = request.bodyAsForm()
                     val name = params.findSingle("name") ?: return@to Response(Status.BAD_REQUEST).body("name required")
                     contactService?.createContact(
@@ -66,7 +67,12 @@ class ContactsRoutes(
                         companyAddress = params.findSingle("companyAddress").orEmpty(),
                         department = params.findSingle("department").orEmpty(),
                     )
-                    renderer.render(pageFactory.buildContactsPage(ctx))
+                    val query = params.findSingle("q")
+                    val limit =
+                        params.findSingle("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
+                            ?: DEFAULT_CONTACTS_LIMIT
+                    val offset = params.findSingle("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+                    renderer.render(pageFactory.buildContactsPage(shellRenderer, query, limit, offset))
                 },
             "/contacts" / syncIdPath / "edit" meta
                 {
@@ -74,7 +80,10 @@ class ContactsRoutes(
                 } bindContract
                 GET to
                 { syncId: String, _ ->
-                    { request: Request -> renderer.render(pageFactory.buildContactForm(request.webContext, syncId)) }
+                    { request: Request ->
+                        val shellRenderer = request.shellRenderer
+                        renderer.render(pageFactory.buildContactForm(shellRenderer, syncId))
+                    }
                 },
             "/contacts" / syncIdPath / "update" meta
                 {
@@ -83,7 +92,7 @@ class ContactsRoutes(
                 POST to
                 { syncId: String, _ ->
                     { request: Request ->
-                        val ctx = request.webContext
+                        val shellRenderer = request.shellRenderer
                         val params = request.bodyAsForm()
                         val existing =
                             contactService?.getContactBySyncId(syncId)
@@ -101,7 +110,12 @@ class ContactsRoutes(
                                 dirty = true,
                             )
                         )
-                        renderer.render(pageFactory.buildContactsPage(ctx))
+                        val query = params.findSingle("q")
+                        val limit =
+                            params.findSingle("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
+                                ?: DEFAULT_CONTACTS_LIMIT
+                        val offset = params.findSingle("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+                        renderer.render(pageFactory.buildContactsPage(shellRenderer, query, limit, offset))
                     }
                 },
             "/contacts" / syncIdPath / "delete" meta
@@ -110,10 +124,38 @@ class ContactsRoutes(
                 } bindContract
                 POST to
                 { syncId: String, _ ->
-                    { _: Request ->
+                    { request: Request ->
+                        val shellRenderer = request.shellRenderer
                         contactService?.deleteContact(syncId)
-                        Response(Status.OK).body("")
+                        val params = request.bodyAsForm()
+                        val query = params.findSingle("q")
+                        val limit =
+                            params.findSingle("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
+                                ?: DEFAULT_CONTACTS_LIMIT
+                        val offset = params.findSingle("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+                        renderer.render(pageFactory.buildContactsPage(shellRenderer, query, limit, offset))
                     }
+                },
+            "/contacts" / syncIdPath / "restore" meta
+                {
+                    summary = "Restore deleted contact"
+                } bindContract
+                POST to
+                { syncId: String, _ ->
+                    { request: Request ->
+                        val shellRenderer = request.shellRenderer
+                        contactService?.restoreContact(syncId)
+                        Response(Status.FOUND).header("location", "/messages/trash")
+                    }
+                },
+            "/contacts/trash/list" meta
+                {
+                    summary = "Contact trash list fragment (HTMX)"
+                } bindContract
+                GET to
+                { request: Request ->
+                    val shellRenderer = request.shellRenderer
+                    renderer.render(pageFactory.buildContactTrashList(shellRenderer))
                 },
         )
 

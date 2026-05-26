@@ -8,6 +8,7 @@ import org.http4k.contract.div
 import org.http4k.contract.meta
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
+import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.body.form
@@ -31,7 +32,19 @@ class HomeRoutes(
     private val yearLens = Query.int().optional("year")
     private val syncIdPath = Path.string().of("syncId")
 
-    override val routes =
+    val publicRoutes =
+        listOf(
+            "/components/footer-status" meta
+                {
+                    summary = "Footer status fragment"
+                } bindContract
+                GET to
+                { request ->
+                    renderer.render(pageFactory.buildFooterStatus(request.shellRenderer))
+                }
+        )
+
+    val protectedRoutes =
         listOf(
             "/" meta
                 {
@@ -43,11 +56,13 @@ class HomeRoutes(
                 } bindContract
                 GET to
                 { request ->
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     val query = queryLens(request)
                     val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
                     val offset = offsetLens(request).coerceAtLeast(0)
                     val year = yearLens(request)
-                    renderer.render(pageFactory.buildHomePage(request.webContext, query, limit, offset, year))
+                    renderer.render(pageFactory.buildHomePage(ctx, shellRenderer, query, limit, offset, year))
                 },
             "/messages/trash" meta
                 {
@@ -55,7 +70,9 @@ class HomeRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    renderer.render(pageFactory.buildTrashPage(request.webContext))
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
+                    renderer.render(pageFactory.buildTrashPage(ctx, shellRenderer))
                 },
             "/messages" meta
                 {
@@ -63,10 +80,12 @@ class HomeRoutes(
                 } bindContract
                 POST to
                 { request ->
+                    val ctx = request.requestContext
+                    val shellRenderer = request.shellRenderer
                     val author = request.form("author").orEmpty()
                     val content = request.form("content").orEmpty()
                     messageService.createServerMessage(author, content)
-                    Response(Status.FOUND).header("location", request.webContext.url("/"))
+                    renderer.render(pageFactory.buildMessageList(ctx, shellRenderer))
                 },
             "/messages/restore" / syncIdPath meta
                 {
@@ -75,8 +94,9 @@ class HomeRoutes(
                 POST to
                 { syncId ->
                     { request: org.http4k.core.Request ->
+                        val shellRenderer = request.shellRenderer
                         messageService.restore(syncId)
-                        Response(Status.FOUND).header("location", request.webContext.url("/messages/trash"))
+                        Response(Status.FOUND).header("location", shellRenderer.url("/messages/trash"))
                     }
                 },
             "/messages/resolve" / syncIdPath meta
@@ -86,7 +106,7 @@ class HomeRoutes(
                 GET to
                 { syncId ->
                     { request: org.http4k.core.Request ->
-                        val viewModel = pageFactory.buildConflictResolveModal(request.webContext, syncId)
+                        val viewModel = pageFactory.buildConflictResolveModal(request.shellRenderer, syncId)
                         renderer.render(viewModel)
                     }
                 },
@@ -102,13 +122,44 @@ class HomeRoutes(
                         Response(Status.OK).header("HX-Trigger", "refresh")
                     }
                 },
-            "/components/footer-status" meta
+            "/messages" / syncIdPath / "delete" meta
                 {
-                    summary = "Footer status fragment"
+                    summary = "Delete a message"
+                } bindContract
+                POST to
+                { syncId: String, _ ->
+                    { request: Request ->
+                        messageService.deleteMessage(syncId)
+                        Response(Status.OK)
+                    }
+                },
+            "/messages" / syncIdPath / "edit" meta
+                {
+                    summary = "Show message edit form"
                 } bindContract
                 GET to
-                { request ->
-                    renderer.render(pageFactory.buildFooterStatus(request.webContext))
+                { syncId: String, _ ->
+                    { request: Request ->
+                        renderer.render(pageFactory.buildMessageEditForm(request.shellRenderer, syncId))
+                    }
+                },
+            "/messages" / syncIdPath / "update" meta
+                {
+                    summary = "Update a message"
+                } bindContract
+                POST to
+                { syncId: String, _ ->
+                    { request: Request ->
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
+                        val msg = messageService.findBySyncId(syncId)
+                        val author = request.form("author").orEmpty()
+                        val content = request.form("content").orEmpty()
+                        messageService.updateMessage(msg!!.copy(author = author, content = content))
+                        renderer.render(pageFactory.buildMessageList(ctx, shellRenderer))
+                    }
                 },
         )
+
+    override val routes = publicRoutes + protectedRoutes
 }

@@ -3,7 +3,14 @@ target/
 .git/
 .github/
 .claude/
+.opencode/
+.idea/
+*.iml
+docs/
+scripts/
+!scripts/generate-migration-manifest.sh
 *.md
-doc/
+!AGENTS.md
 data/
 node_modules/
+*.log

@@ -1,8 +1,11 @@
 package io.github.rygel.outerstellar.platform.security
 
-import io.github.rygel.outerstellar.platform.model.AuditEntry
+import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
+import io.github.rygel.outerstellar.platform.persistence.OAuthConnection
+import io.github.rygel.outerstellar.platform.persistence.OAuthRepository
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory
 
@@ -47,8 +50,8 @@ class OAuthService(
         repo.save(
             OAuthConnection(id = 0L, userId = user.id, provider = providerName, subject = oauthSubject, email = email)
         )
-        logger.info("Created new user {} via OAuth provider {}", username, providerName)
-        audit("OAUTH_USER_CREATED", actor = user, detail = "provider=$providerName")
+        logger.info("Created new user {} via OAuth provider {}", sanitize(username), providerName)
+        auditRepository?.logAction("OAUTH_USER_CREATED", actor = user, detail = "provider=$providerName")
         return user
     }
 
@@ -57,18 +60,5 @@ class OAuthService(
         var i = 2
         while (userRepository.findByUsername("$base$i") != null) i++
         return "$base$i"
-    }
-
-    private fun audit(action: String, actor: User? = null, target: User? = null, detail: String? = null) {
-        auditRepository?.log(
-            AuditEntry(
-                actorId = actor?.id?.toString(),
-                actorUsername = actor?.username,
-                targetId = target?.id?.toString(),
-                targetUsername = target?.username,
-                action = action,
-                detail = detail,
-            )
-        )
     }
 }

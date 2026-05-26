@@ -1,11 +1,12 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
-import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
-import io.github.rygel.outerstellar.platform.service.MessageService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
+import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
+import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 import io.mockk.mockk
 import java.awt.GraphicsEnvironment
 import java.util.Locale
@@ -25,16 +26,7 @@ private const val MIN_BUTTON_WIDTH = 60
 private const val MIN_NAV_BUTTON_SIZE = 60
 private const val MIN_TABLE_WIDTH = 200
 
-/**
- * Layout tests that verify Swing components have usable minimum sizes.
- *
- * These tests work headless by checking preferred sizes (computed by the layout manager without a display) rather than
- * actual rendered widths. Preferred size is what pack() uses to determine dialog dimensions, so if preferred size is
- * too small, the actual dialog will be too small.
- */
 class UiLayoutTest {
-    private val messageService = mockk<MessageService>(relaxed = true)
-    private val syncService = mockk<SyncService>(relaxed = true)
     private val i18n = I18nService.create("messages").also { it.setLocale(Locale.ENGLISH) }
 
     companion object {
@@ -46,6 +38,15 @@ class UiLayoutTest {
                 "Test requires a display (SyncWindow creates JFrame)",
             )
         }
+    }
+
+    private fun createVm(): SyncViewModel {
+        val authModule = mockk<AuthModule>(relaxed = true)
+        val syncDataModule = mockk<SyncDataModule>(relaxed = true)
+        val profileModule = mockk<ProfileModule>(relaxed = true)
+        val adminModule = mockk<AdminModule>(relaxed = true)
+        val notificationModule = mockk<NotificationModule>(relaxed = true)
+        return SyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18n)
     }
 
     @Test
@@ -162,7 +163,6 @@ class UiLayoutTest {
     @Test
     fun `text fields have reasonable preferred width for data entry`() {
         runOnEdt {
-            // A JTextField with 20 columns (Swing default) should be at least 150px wide
             val field = JTextField(20)
             assertTrue(
                 field.preferredSize.width >= MIN_FIELD_WIDTH,
@@ -198,7 +198,6 @@ class UiLayoutTest {
         val (_, frame) = createWindow()
         try {
             runOnEdt {
-                // Verify all key components exist
                 findByName<JButton>(frame, "syncButton")
                 findByName<JButton>(frame, "createButton")
                 findByName<JButton>(frame, "navMessagesBtn")
@@ -224,7 +223,6 @@ class UiLayoutTest {
                 val btn = findByName<JButton>(frame, "navProfileBtn")
                 assertTrue(btn.preferredSize.width >= MIN_NAV_BUTTON_SIZE, "Profile nav too narrow")
                 assertTrue(btn.preferredSize.height >= MIN_NAV_BUTTON_SIZE, "Profile nav too short")
-                // not logged in → should be disabled
                 assertTrue(!btn.isEnabled, "Profile nav should be disabled before login")
             }
         } finally {
@@ -252,8 +250,7 @@ class UiLayoutTest {
     }
 
     private fun createWindow(): Pair<SyncWindow, javax.swing.JFrame> {
-        val engine = DesktopSyncEngine(syncService, messageService, null, NoOpAnalyticsService())
-        val vm = SyncViewModel(engine, i18n)
+        val vm = createVm()
         val sw = runOnEdtResult {
             val w = SyncWindow(vm, ThemeManager(), i18n)
             w.configureForTest()

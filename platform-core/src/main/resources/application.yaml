@@ -23,3 +23,11 @@ pushNotifications:
   apnsKeyId: ""
   apnsPrivateKeyPem: ""
   apnsBundleId: ""
+
+runtime:
+  hikariMaximumPoolSize: 20
+  hikariMinimumIdle: 2
+  flywayEnabled: true
+  jtePreloadEnabled: false
+  cacheMessageMaxSize: 1000
+  cacheMessageExpireMinutes: 10

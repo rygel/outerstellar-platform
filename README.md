@@ -6,7 +6,7 @@ A modern, full-stack Kotlin application designed as a platform template for buil
 
 ### Key Architectural Features
 
-- **Multi-Module Architecture**: Split into `platform-core`, `platform-persistence-jooq`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, and `platform-desktop` modules for clear separation of concerns.
+- **Multi-Module Architecture**: Split into `platform-core`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, and `platform-desktop` modules for clear separation of concerns.
 - **Transactional Outbox Pattern**: Ensures atomicity and reliability for background tasks and data synchronization.
 - **Dependency Injection**: Powered by **Koin** for flexible and testable component wiring.
 - **Observability**: Fully integrated with **OpenTelemetry** for distributed tracing and **Micrometer** for real-time metrics.
@@ -21,8 +21,7 @@ A modern, full-stack Kotlin application designed as a platform template for buil
 ### Project Structure
 
 - `platform-core`: Domain models, service interfaces, and shared business logic.
-- `platform-persistence-jooq`: Database implementation using jOOQ, Flyway migrations, and Caffeine caching. This is the default persistence module.
-- `platform-persistence-jdbi`: Alternative database implementation using JDBI. Drop-in replacement — implements the same repository interfaces and Koin module as `platform-persistence-jooq`. Has zero jOOQ dependency. Swap the Maven artifact to switch.
+- `platform-persistence-jdbi`: Database implementation using JDBI and Flyway migrations.
 - `platform-sync-client`: Shared DTOs and client logic for synchronization between components.
 - `platform-security`: Authentication models, role-based access control, fine-grained permissions, multi-realm auth, and security filters.
 - `platform-web`: The main http4k server, JTE templates, and web-specific infrastructure.
@@ -67,26 +66,6 @@ mvn -pl platform-desktop -Ptests-headful test
 # Run web in dev runtime mode
 mvn -pl platform-web -Pruntime-dev compile exec:java
 ```
-
-#### Regenerate jOOQ Sources (Manual + Version Controlled)
-
-Generated jOOQ sources are checked in under:
-
-- `platform-persistence-jooq/src/main/generated/jooq`
-
-Regenerate them manually when migrations change:
-
-```bash
-mvn -pl platform-persistence-jooq -Pjooq-codegen generate-sources
-```
-
-PowerShell shortcut:
-
-```bash
-./generate-jooq.ps1
-```
-
-Then commit the updated generated files together with your migration changes.
 
 #### Run Web Application
 ```bash

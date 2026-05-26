@@ -5,8 +5,11 @@ import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
-import io.github.rygel.outerstellar.platform.security.SecurityService
+import io.github.rygel.outerstellar.platform.security.UserAdminService
 import java.util.UUID
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -20,11 +23,12 @@ import org.http4k.template.TemplateRenderer
 
 private const val DEFAULT_PAGE_LIMIT = 20
 private const val MAX_PAGE_LIMIT = 100
+private const val MAX_AUDIT_EXPORT_ROWS = 10_000
 
 class UserAdminRoutes(
     private val pageFactory: WebPageFactory,
     private val renderer: TemplateRenderer,
-    private val securityService: SecurityService,
+    private val userAdminService: UserAdminService,
 ) : ServerRoutes {
     private val userIdPath = Path.string().of("userId")
 
@@ -38,7 +42,9 @@ class UserAdminRoutes(
                 { request: org.http4k.core.Request ->
                     val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT) ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(pageFactory.buildUserAdminPage(request.webContext, limit, offset))
+                    renderer.render(
+                        pageFactory.buildUserAdminPage(request.requestContext, request.shellRenderer, limit, offset)
+                    )
                 },
             "/admin/users/export" meta
                 {
@@ -46,11 +52,51 @@ class UserAdminRoutes(
                 } bindContract
                 GET to
                 { _: org.http4k.core.Request ->
-                    val users = securityService.listUsers()
+                    val sb = StringBuilder()
+                    sb.appendLine(CsvUtils.toCsvRow(listOf("Username", "Email", "Role", "Enabled")))
+                    var offset = 0
+                    val pageSize = 100
+                    do {
+                        val page = userAdminService.listUsers(pageSize, offset)
+                        page.forEach { u ->
+                            sb.appendLine(
+                                CsvUtils.toCsvRow(listOf(u.username, u.email, u.role.name, u.enabled.toString()))
+                            )
+                        }
+                        offset += pageSize
+                    } while (page.size == pageSize)
                     Response(Status.OK)
                         .header("Content-Type", "text/csv; charset=utf-8")
                         .header("Content-Disposition", "attachment; filename=\"users.csv\"")
-                        .body(usersAsCsv(users))
+                        .body(sb.toString())
+                },
+            "/admin/users/export/json" meta
+                {
+                    summary = "Export users as JSON"
+                } bindContract
+                GET to
+                { _: org.http4k.core.Request ->
+                    val allUsers = mutableListOf<UserExportRow>()
+                    var offset = 0
+                    val pageSize = 100
+                    do {
+                        val page = userAdminService.listUsers(pageSize, offset)
+                        page.forEach { u ->
+                            allUsers.add(
+                                UserExportRow(
+                                    username = u.username,
+                                    email = u.email,
+                                    role = u.role.name,
+                                    enabled = u.enabled,
+                                )
+                            )
+                        }
+                        offset += pageSize
+                    } while (page.size == pageSize)
+                    Response(Status.OK)
+                        .header("Content-Type", "application/json; charset=utf-8")
+                        .header("Content-Disposition", "attachment; filename=\"users.json\"")
+                        .body(Json.encodeToString(allUsers))
                 },
             "/admin/users" / userIdPath / "toggle-enabled" meta
                 {
@@ -59,14 +105,14 @@ class UserAdminRoutes(
                 POST to
                 { userId, _ ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
-                        val users = securityService.listUsers()
-                        val target = users.find { it.id == userId }
+                        val target = userAdminService.findUserSummary(UUID.fromString(userId))
                         if (target != null) {
-                            securityService.setUserEnabled(admin.id, UUID.fromString(userId), !target.enabled)
+                            userAdminService.setUserEnabled(admin.id, UUID.fromString(userId), !target.enabled)
                         }
-                        renderer.render(pageFactory.buildUserAdminPage(ctx))
+                        renderer.render(pageFactory.buildUserAdminPage(ctx, shellRenderer))
                     }
                 },
             "/admin/audit" meta
@@ -77,7 +123,7 @@ class UserAdminRoutes(
                 { request: org.http4k.core.Request ->
                     val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT) ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(pageFactory.buildAuditLogPage(request.webContext, limit, offset))
+                    renderer.render(pageFactory.buildAuditLogPage(request.shellRenderer, limit, offset))
                 },
             "/admin/audit/export" meta
                 {
@@ -85,11 +131,66 @@ class UserAdminRoutes(
                 } bindContract
                 GET to
                 { _: org.http4k.core.Request ->
-                    val entries = securityService.getAuditLog(limit = Int.MAX_VALUE)
+                    val sb = StringBuilder()
+                    sb.appendLine(CsvUtils.toCsvRow(listOf("Timestamp", "Actor", "Action", "Target", "Detail")))
+                    var offset = 0
+                    val pageSize = 500
+                    val maxRows = MAX_AUDIT_EXPORT_ROWS
+                    var totalRows = 0
+                    do {
+                        val page = userAdminService.getAuditLog(pageSize, offset)
+                        page.forEach { e ->
+                            sb.appendLine(
+                                CsvUtils.toCsvRow(
+                                    listOf(
+                                        e.createdAt.toString(),
+                                        e.actorUsername ?: "",
+                                        e.action,
+                                        e.targetUsername ?: "",
+                                        e.detail ?: "",
+                                    )
+                                )
+                            )
+                        }
+                        totalRows += page.size
+                        offset += pageSize
+                    } while (page.size == pageSize && totalRows < maxRows)
                     Response(Status.OK)
                         .header("Content-Type", "text/csv; charset=utf-8")
                         .header("Content-Disposition", "attachment; filename=\"audit.csv\"")
-                        .body(auditAsCsv(entries))
+                        .body(sb.toString())
+                },
+            "/admin/audit/export/json" meta
+                {
+                    summary = "Export audit log as JSON"
+                } bindContract
+                GET to
+                { _: org.http4k.core.Request ->
+                    val allEntries = mutableListOf<AuditExportRow>()
+                    var offset = 0
+                    val pageSize = 500
+                    val maxRows = MAX_AUDIT_EXPORT_ROWS
+                    var totalRows = 0
+                    do {
+                        val page = userAdminService.getAuditLog(pageSize, offset)
+                        page.forEach { e ->
+                            allEntries.add(
+                                AuditExportRow(
+                                    timestamp = e.createdAt.toString(),
+                                    actor = e.actorUsername ?: "",
+                                    action = e.action,
+                                    target = e.targetUsername ?: "",
+                                    detail = e.detail ?: "",
+                                )
+                            )
+                        }
+                        totalRows += page.size
+                        offset += pageSize
+                    } while (page.size == pageSize && totalRows < maxRows)
+                    Response(Status.OK)
+                        .header("Content-Type", "application/json; charset=utf-8")
+                        .header("Content-Disposition", "attachment; filename=\"audit.json\"")
+                        .body(Json.encodeToString(allEntries))
                 },
             "/admin/users" / userIdPath / "toggle-role" meta
                 {
@@ -98,15 +199,15 @@ class UserAdminRoutes(
                 POST to
                 { userId, _ ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
-                        val users = securityService.listUsers()
-                        val target = users.find { it.id == userId }
+                        val target = userAdminService.findUserSummary(UUID.fromString(userId))
                         if (target != null) {
                             val newRole = if (target.role == UserRole.ADMIN) UserRole.USER else UserRole.ADMIN
-                            securityService.setUserRole(admin.id, UUID.fromString(userId), newRole)
+                            userAdminService.setUserRole(admin.id, UUID.fromString(userId), newRole)
                         }
-                        renderer.render(pageFactory.buildUserAdminPage(ctx))
+                        renderer.render(pageFactory.buildUserAdminPage(ctx, shellRenderer))
                     }
                 },
             "/admin/users" / userIdPath / "unlock" meta
@@ -116,13 +217,26 @@ class UserAdminRoutes(
                 POST to
                 { userId, _ ->
                     { request: org.http4k.core.Request ->
-                        val ctx = request.webContext
+                        val ctx = request.requestContext
+                        val shellRenderer = request.shellRenderer
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
-                        securityService.unlockAccount(admin.id, java.util.UUID.fromString(userId))
-                        renderer.render(pageFactory.buildUserAdminPage(ctx))
+                        userAdminService.unlockAccount(admin.id, java.util.UUID.fromString(userId))
+                        renderer.render(pageFactory.buildUserAdminPage(ctx, shellRenderer))
                     }
                 },
         )
+
+    @Serializable
+    data class UserExportRow(val username: String, val email: String, val role: String, val enabled: Boolean)
+
+    @Serializable
+    data class AuditExportRow(
+        val timestamp: String,
+        val actor: String,
+        val action: String,
+        val target: String,
+        val detail: String,
+    )
 
     companion object {
         fun usersAsCsv(users: List<UserSummary>): String {

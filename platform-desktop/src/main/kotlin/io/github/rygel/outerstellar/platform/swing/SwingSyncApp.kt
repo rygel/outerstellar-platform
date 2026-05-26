@@ -1,21 +1,11 @@
 package io.github.rygel.outerstellar.platform.swing
 
 import io.github.rygel.outerstellar.i18n.I18nService
-import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
-import io.github.rygel.outerstellar.platform.di.coreModule
-import io.github.rygel.outerstellar.platform.di.desktopModule
-import io.github.rygel.outerstellar.platform.di.persistenceModule
+import io.github.rygel.outerstellar.platform.di.DesktopComponents
+import io.github.rygel.outerstellar.platform.di.createDesktopComponents
 import io.github.rygel.outerstellar.platform.model.MessageSummary
-import io.github.rygel.outerstellar.platform.persistence.MessageCache
-import io.github.rygel.outerstellar.platform.persistence.NoOpMessageCache
-import io.github.rygel.outerstellar.platform.service.MessageService
-import io.github.rygel.outerstellar.platform.service.SyncProvider
 import io.github.rygel.outerstellar.platform.swing.analytics.PersistentBatchingAnalyticsService
 import io.github.rygel.outerstellar.platform.swing.viewmodel.SyncViewModel
-import io.github.rygel.outerstellar.platform.sync.SyncService
-import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
-import io.github.rygel.outerstellar.platform.sync.engine.DesktopSyncEngine
 import io.github.rygel.outerstellar.platform.sync.engine.HttpConnectivityChecker
 import java.awt.BorderLayout
 import java.awt.CardLayout
@@ -26,7 +16,6 @@ import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
-import java.nio.file.Path
 import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -53,22 +42,9 @@ import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 import javax.swing.table.DefaultTableModel
 import net.miginfocom.swing.MigLayout
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.get
-import org.koin.core.context.startKoin
-import org.koin.core.module.Module
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
 
 private const val FRAME_WIDTH = 1000
 private const val FRAME_HEIGHT = 750
-
-object DesktopComponent : KoinComponent {
-    val config: SwingAppConfig = get()
-    val messageService: MessageService = get()
-    val contactService: io.github.rygel.outerstellar.platform.service.ContactService = get()
-    val syncService: SyncService = get()
-}
 
 fun main() {
     System.setProperty("swing.aatext", "true")
@@ -76,27 +52,13 @@ fun main() {
 
     val splash = showSplash()
 
-    startKoin { modules(swingRuntimeModules()) }
+    val components = createDesktopComponents()
 
-    val desktop = DesktopComponent
+    val analytics = components.analyticsService as? PersistentBatchingAnalyticsService
 
-    val analytics =
-        if (desktop.config.analyticsEnabled && desktop.config.segmentWriteKey.isNotBlank()) {
-            PersistentBatchingAnalyticsService(
-                writeKey = desktop.config.segmentWriteKey,
-                dataDir = Path.of("./data"),
-                maxFileSizeBytes = desktop.config.analyticsMaxFileSizeKb * 1024,
-                maxEventAgeDays = desktop.config.analyticsMaxEventAgeDays,
-            )
-        } else {
-            null
-        }
-
-    // Start connectivity checker early so analytics scheduler can skip flush when offline
     val connectivityChecker =
-        HttpConnectivityChecker(healthUrl = "${desktop.config.serverBaseUrl}/health").also { it.start() }
+        HttpConnectivityChecker(healthUrl = "${components.appConfig.serverBaseUrl}/health").also { it.start() }
 
-    // Flush any events left over from the previous session, then schedule daily flushes
     val analyticsScheduler =
         if (analytics != null) {
             Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "analytics-flush").also { it.isDaemon = true } }
@@ -104,8 +66,8 @@ fun main() {
                     scheduler.execute { if (connectivityChecker.isOnline) analytics.flush() }
                     scheduler.scheduleAtFixedRate(
                         { if (connectivityChecker.isOnline) analytics.flush() },
-                        desktop.config.analyticsFlushIntervalHours,
-                        desktop.config.analyticsFlushIntervalHours,
+                        components.appConfig.analyticsFlushIntervalHours,
+                        components.appConfig.analyticsFlushIntervalHours,
                         TimeUnit.HOURS,
                     )
                 }
@@ -128,19 +90,12 @@ fun main() {
     val savedState = DesktopStateProvider.loadState()
     val initialLocale = savedState?.language?.let { Locale.of(it) } ?: Locale.getDefault()
     Locale.setDefault(initialLocale)
+    components.i18nService.setLocale(initialLocale)
 
-    val i18nService = I18nService.create("messages").also { it.setLocale(initialLocale) }
-
-    SwingUtilities.invokeLater { initializeUi(splash, analytics, connectivityChecker, savedState, i18nService) }
+    SwingUtilities.invokeLater { initializeUi(splash, savedState, components) }
 }
 
-private fun initializeUi(
-    splash: JWindow,
-    analytics: PersistentBatchingAnalyticsService?,
-    connectivityChecker: ConnectivityChecker,
-    savedState: DesktopState?,
-    i18nService: I18nService,
-) {
+private fun initializeUi(splash: JWindow, savedState: DesktopState?, components: DesktopComponents) {
     val themeManager = ThemeManager()
     val startupTheme =
         savedState?.themeId?.let { themeId ->
@@ -148,24 +103,14 @@ private fun initializeUi(
         } ?: DesktopTheme.DARK
     themeManager.applyTheme(startupTheme)
 
-    val notifier = SystemTrayNotifier(i18nService)
-    val engine =
-        DesktopSyncEngine(
-            DesktopComponent.syncService,
-            DesktopComponent.messageService,
-            DesktopComponent.contactService,
-            analytics ?: NoOpAnalyticsService(),
-            connectivityChecker,
-            notifier,
-        )
-    val viewModel = SyncViewModel(engine, i18nService, DesktopComponent.contactService)
+    val viewModel = components.syncViewModel
     val window =
         SyncWindow(
             viewModel,
             themeManager,
-            i18nService,
-            DesktopComponent.config.version,
-            DesktopComponent.config.updateUrl,
+            components.i18nService,
+            components.appConfig.version,
+            components.appConfig.updateUrl,
         )
 
     DeepLinkHandler.setup(
@@ -182,11 +127,11 @@ private fun initializeUi(
     splash.dispose()
 
     if (
-        DesktopComponent.config.devMode &&
-            DesktopComponent.config.devUsername.isNotBlank() &&
-            DesktopComponent.config.devPassword.isNotBlank()
+        components.appConfig.devMode &&
+            components.appConfig.devUsername.isNotBlank() &&
+            components.appConfig.devPassword.isNotBlank()
     ) {
-        viewModel.login(DesktopComponent.config.devUsername, DesktopComponent.config.devPassword) { success, error ->
+        viewModel.login(components.appConfig.devUsername, components.appConfig.devPassword) { success, error ->
             if (!success) {
                 println("Dev auto-login failed: $error")
             }
@@ -647,21 +592,3 @@ class SyncWindow(
         views.updateI18n(i18nService)
     }
 }
-
-internal fun swingRuntimeModules(): List<Module> =
-    listOf(
-        desktopModule,
-        module {
-            single {
-                val cfg = get<SwingAppConfig>()
-                AppConfig(jdbcUrl = cfg.jdbcUrl, jdbcUser = cfg.jdbcUser, jdbcPassword = cfg.jdbcPassword)
-            }
-            single<MessageCache> { NoOpMessageCache }
-            single<SyncService> {
-                SyncService(baseUrl = get(named("serverBaseUrl")), repository = get(), transactionManager = get())
-            }
-            single<SyncProvider> { get<SyncService>() }
-        },
-        persistenceModule,
-        coreModule,
-    )
