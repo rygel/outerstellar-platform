@@ -12,6 +12,10 @@
     <artifactId>jte-extensions</artifactId>
     <name>JTE Extensions</name>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>gg.jte</groupId>
