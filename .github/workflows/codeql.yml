@@ -1,18 +1,20 @@
 name: CodeQL
 
 on:
-  # PRs are covered by Semgrep (fast). CodeQL runs weekly for deep taint analysis.
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
   schedule:
     - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 permissions: {}
 
 jobs:
   analyze:
     name: CodeQL Analysis
-    # Requires GitHub Team/Enterprise for the 4-core runner.
-    # Fall back to ubuntu-latest if not available on your plan.
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest
     environment: ci
     permissions:
       contents: read
@@ -32,6 +34,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
+          cache-dependency-path: '**/pom.xml'
           server-id: github-rygel
           server-username: GITHUB_ACTOR
           server-password: GH_PACKAGES_TOKEN

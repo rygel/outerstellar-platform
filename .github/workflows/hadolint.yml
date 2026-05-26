@@ -3,10 +3,15 @@ name: Hadolint
 on:
   push:
     branches: [main, develop]
-    paths: ['**/Dockerfile*']
+    paths:
+      - '**/Dockerfile*'
+      - '.dockerignore'
   pull_request:
     branches: [main, develop]
-    paths: ['**/Dockerfile*']
+    paths:
+      - '**/Dockerfile*'
+      - '.dockerignore'
+  workflow_dispatch:
 
 permissions: {}
 
@@ -29,12 +34,53 @@ jobs:
         with:
           dockerfile: docker/Dockerfile.build
           format: sarif
-          output-file: hadolint-build.sarif
-          no-fail: true
+          output-file: hadolint-docker.sarif
 
-      - name: Upload Hadolint SARIF (build)
+      - name: Run Hadolint on platform-web/Dockerfile
+        uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+        with:
+          dockerfile: platform-web/Dockerfile
+          format: sarif
+          output-file: hadolint-platform-web.sarif
+
+      - name: Generate empty SARIF for removed desktop Dockerfile
+        run: |
+          cat > hadolint-test-desktop.sarif <<'EOF'
+          {
+            "version": "2.1.0",
+            "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+            "runs": [
+              {
+                "tool": {
+                  "driver": {
+                    "name": "Hadolint",
+                    "informationUri": "https://github.com/hadolint/hadolint",
+                    "rules": []
+                  }
+                },
+                "results": []
+              }
+            ]
+          }
+          EOF
+
+      - name: Upload Hadolint SARIF (docker)
         if: always()
         uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
-          sarif_file: hadolint-build.sarif
-          category: hadolint-build
+          sarif_file: hadolint-docker.sarif
+          category: hadolint-docker
+
+      - name: Upload Hadolint SARIF (test-desktop legacy)
+        if: always()
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+        with:
+          sarif_file: hadolint-test-desktop.sarif
+          category: hadolint-test-desktop
+
+      - name: Upload Hadolint SARIF (platform-web)
+        if: always()
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+        with:
+          sarif_file: hadolint-platform-web.sarif
+          category: hadolint-platform-web

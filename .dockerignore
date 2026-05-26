@@ -8,6 +8,7 @@ target/
 *.iml
 docs/
 scripts/
+!scripts/generate-migration-manifest.sh
 *.md
 !AGENTS.md
 data/
