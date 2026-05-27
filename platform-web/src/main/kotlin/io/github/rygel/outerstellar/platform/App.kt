@@ -240,16 +240,14 @@ private fun buildUiRoutes(
     plugin: PlatformPlugin?,
 ): UiRouteSet {
     val sec = security
-    val excludedRoutes = plugin?.excludeDefaultRoutes ?: emptySet()
     val sessionCookieSecure = config.sessionCookieSecure
     val pageFactory = web.pageFactory
     val jteRenderer = web.templateRenderer
     val appLabel = plugin?.appLabel ?: "Outerstellar"
     val pluginCtx = plugin?.let { buildPluginContext(jteRenderer, config, persistence, security, web) }
     val passwordRoutes = PasswordRoutes(pageFactory, jteRenderer, sec.accountService, sec.passwordResetService)
-    val homeRoutes = if ("/" !in excludedRoutes) HomeRoutes(core.messageService, pageFactory, jteRenderer) else null
-    val contactsRoutes =
-        if ("/contacts" !in excludedRoutes) ContactsRoutes(pageFactory, jteRenderer, core.contactService) else null
+    val homeRoutes = HomeRoutes(core.messageService, pageFactory, jteRenderer)
+    val contactsRoutes = ContactsRoutes(pageFactory, jteRenderer, core.contactService)
     val notificationRoutes = NotificationRoutes(pageFactory, jteRenderer, web.notificationService)
 
     val publicContract = contract {
@@ -291,28 +289,22 @@ private fun buildUiRoutes(
         val searchProviders =
             listOfNotNull(MessageSearchProvider(core.messageService), ContactSearchProvider(core.contactService))
         routes += SearchRoutes(pageFactory, jteRenderer, searchProviders).routes
-        if (homeRoutes != null) {
-            routes += homeRoutes.publicRoutes
-        }
+        routes += homeRoutes.publicRoutes
         routes += notificationRoutes.publicRoutes
     }
 
     val protectedContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel Protected UI", "v1.0"), KotlinxSerialization)
         descriptionPath = "/ui-protected/openapi.json"
-        if (homeRoutes != null) {
-            routes += homeRoutes.protectedRoutes
-        }
-        if (contactsRoutes != null) {
-            routes += contactsRoutes.routes
-        }
+        routes += homeRoutes.protectedRoutes
+        routes += contactsRoutes.routes
         routes += passwordRoutes.protectedRoutes
         routes += ProfileRoutes(pageFactory, jteRenderer, sec.accountService, sessionCookieSecure).routes
         routes += ApiKeyRoutes(pageFactory, jteRenderer, sec.apiKeyService).routes
         routes += SettingsRoutes(pageFactory, jteRenderer).routes
         routes += notificationRoutes.protectedRoutes
         if (plugin != null && pluginCtx != null) {
-            routes += plugin.routes(pluginCtx)
+            routes += plugin.routeRegistrations(pluginCtx).map { it.route }
         }
         routes +=
             ("/logout" bindContract POST).to { request: Request ->
@@ -466,7 +458,6 @@ private fun buildBaseApp(
 ): HttpHandler {
     val sec = security
     val userRepository = persistence.userRepository
-    val excludedRoutes = plugin?.excludeDefaultRoutes ?: emptySet()
 
     val authenticatedFilter = Filter { next -> SecurityRules.authenticated(next) }
 
@@ -502,9 +493,7 @@ private fun buildBaseApp(
             .routes
     appRoutes += TOTPApiRoutes(sec.authService, sec.totpService, sec.sessionService).routes
     appRoutes.addAll(apiRoutes)
-    if ("/" !in excludedRoutes) {
-        appRoutes += "/" bind filteredAdminHandler
-    }
+    appRoutes += "/" bind filteredAdminHandler
 
     return routes(unfiltered + appRoutes)
 }
@@ -622,7 +611,7 @@ private fun buildFilterChain(
                     config.version,
                     jwtService,
                     PluginOptions(
-                        navItems = plugin?.navItems ?: emptyList(),
+                        navItems = emptyList(),
                         textResolver = plugin?.textResolver,
                         adminNavItems = adminNavItems,
                     ),
