@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform
 
+import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import org.slf4j.LoggerFactory
 import org.snakeyaml.engine.v2.api.Load
 import org.snakeyaml.engine.v2.api.LoadSettings
@@ -83,6 +84,7 @@ data class AppConfig(
     val appleOAuth: AppleOAuthConfig = AppleOAuthConfig(),
     val pushNotifications: PushNotificationConfig = PushNotificationConfig(),
     val runtime: RuntimeConfig = RuntimeConfig(),
+    val platformMode: PlatformMode = PlatformMode.FullPlatformApp,
 ) {
     companion object {
         const val DEFAULT_APP_BASE_URL = "http://localhost:8080"
@@ -173,6 +175,9 @@ data class AppConfig(
                 appleOAuth = buildAppleOAuthConfig(yaml["appleOAuth"] as? Map<String, Any>, env),
                 pushNotifications = buildPushNotificationConfig(yaml["pushNotifications"] as? Map<String, Any>, env),
                 runtime = buildRuntimeConfig(yaml["runtime"] as? Map<String, Any>, env),
+                platformMode =
+                    PlatformMode.entries.firstOrNull { it.name.equals(env["PLATFORM_MODE"], ignoreCase = true) }
+                        ?: PlatformMode.FullPlatformApp,
             )
         }
 

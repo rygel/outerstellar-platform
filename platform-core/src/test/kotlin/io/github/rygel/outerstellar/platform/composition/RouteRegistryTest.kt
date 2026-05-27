@@ -16,7 +16,8 @@ class RouteRegistryTest {
         val registry = RouteRegistry()
         val route = registeredRoute("GET", "/", "Home page")
         registry.register(route)
-        assert(registry.all().containsExactly(route)) { "Expected exactly one route" }
+        val all = registry.all()
+        assert(all.size == 1 && all[0] == route) { "Expected exactly one route" }
     }
 
     @Test
@@ -88,7 +89,7 @@ class RouteRegistryTest {
         val registry = RouteRegistry()
         registry.register(registeredRoute("GET", "/", owner = RouteOwner.PlatformUi))
         registry.register(registeredRoute("GET", "/", owner = RouteOwner.Plugin))
-        assertThrows<IllegalStateException> { registry.requireNoConflicts() }
+        assertThrows<IllegalArgumentException> { registry.requireNoConflicts() }
     }
 
     @Test
