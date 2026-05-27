@@ -1,5 +1,10 @@
 package io.github.rygel.outerstellar.platform
 
+import io.github.rygel.outerstellar.platform.composition.PlatformMode
+import io.github.rygel.outerstellar.platform.composition.RegisteredRoute
+import io.github.rygel.outerstellar.platform.composition.RouteGroup
+import io.github.rygel.outerstellar.platform.composition.RouteOwner
+import io.github.rygel.outerstellar.platform.composition.RouteRegistry
 import io.github.rygel.outerstellar.platform.di.CoreComponents
 import io.github.rygel.outerstellar.platform.di.PersistenceComponents
 import io.github.rygel.outerstellar.platform.di.WebComponents
@@ -54,10 +59,13 @@ import io.github.rygel.outerstellar.platform.web.UserAdminApi
 import io.github.rygel.outerstellar.platform.web.UserAdminRoutes
 import io.github.rygel.outerstellar.platform.web.VoteApi
 import io.github.rygel.outerstellar.platform.web.analyticsPageViewFilter
+import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 import io.github.rygel.outerstellar.platform.web.etagCachingFilter
 import io.github.rygel.outerstellar.platform.web.rateLimitFilter
 import io.github.rygel.outerstellar.platform.web.shellRenderer
 import io.github.rygel.outerstellar.platform.web.staticCacheControlFilter
+import io.github.rygel.outerstellar.platform.web.theme.DaisyUITheme
+import io.github.rygel.outerstellar.platform.web.theme.PlatformTheme
 import java.time.Instant
 import java.time.LocalDate
 import org.http4k.contract.bindContract
@@ -96,9 +104,10 @@ fun app(
     core: CoreComponents,
     web: WebComponents,
     plugin: PlatformPlugin? = null,
+    theme: PlatformTheme = DaisyUITheme(),
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
-    val httpHandler = assembleHttpHandler(config, persistence, security, core, web, plugin)
+    val httpHandler = assembleHttpHandler(config, persistence, security, core, web, plugin, theme)
     val wsHandler = web.syncWebSocket.let { websockets("/ws/sync" wsBind it.handler) }
     return PolyHandler(httpHandler, wsHandler)
 }
@@ -110,18 +119,23 @@ private fun assembleHttpHandler(
     core: CoreComponents,
     web: WebComponents,
     plugin: PlatformPlugin?,
+    theme: PlatformTheme,
 ): HttpHandler {
+    val registry = RouteRegistry()
+    val pluginMode = plugin?.mode ?: config.platformMode
     val sec = security
     val realms = listOf(SessionRealm(sec.sessionService), ApiKeyRealm(sec.apiKeyService))
     val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(realms)
-    val apiRoutes =
-        buildApiRoutes(config, persistence, security, core, web, plugin, bearerSecurity, bearerAdminSecurity)
-    val uiRouteSet = buildUiRoutes(config, persistence, security, core, web, plugin)
-    val componentRouteSet = buildComponentRoutes(web, plugin)
-    val adminRoutes = buildAdminRoutes(config, persistence, security, web, plugin)
-    val baseApp =
-        buildBaseApp(config, persistence, security, web, plugin, adminRoutes, apiRoutes, uiRouteSet, componentRouteSet)
-    return buildFilterChain(config, persistence, security, web, plugin).then(baseApp)
+    registerApiRoutes(registry, config, persistence, security, core, web, plugin, bearerSecurity, bearerAdminSecurity)
+    registerUiRoutes(registry, config, persistence, security, core, web, plugin, pluginMode)
+    registerComponentRoutes(registry, web, plugin)
+    registerAdminRoutes(registry, config, persistence, security, web, plugin)
+    registerKernelRoutes(registry, config, persistence, security, web, plugin)
+    registerTotpRoutes(registry, security, web, config)
+    registerPluginRoutes(registry, plugin, config, persistence, security, web)
+    registry.requireNoConflicts()
+    logger.info(registry.formatTable())
+    return buildFromRegistry(registry, config, persistence, security, web, plugin)
 }
 
 private fun buildBearerSecurityPair(realms: List<AuthRealm>): Pair<Security, Security> {
@@ -162,7 +176,8 @@ private fun buildBearerSecurityPair(realms: List<AuthRealm>): Pair<Security, Sec
     return bearerSecurity to bearerAdminSecurity
 }
 
-private fun buildApiRoutes(
+private fun registerApiRoutes(
+    registry: RouteRegistry,
     config: AppConfig,
     persistence: PersistenceComponents,
     security: SecurityComponents,
@@ -171,11 +186,10 @@ private fun buildApiRoutes(
     plugin: PlatformPlugin?,
     bearerSecurity: Security,
     bearerAdminSecurity: Security,
-): List<RoutingHttpHandler> {
+) {
     val sec = security
     val appLabel = plugin?.appLabel ?: "Outerstellar"
-
-    val apiRoutes = contract {
+    val apiContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
         routes +=
@@ -191,6 +205,16 @@ private fun buildApiRoutes(
         routes += VoteApi(web.voteService).routes
         routes += PollApi(web.pollService).routes
     }
+    registry.register(
+        RegisteredRoute(
+            apiContract,
+            RouteOwner.PlatformKernel,
+            RouteGroup.Api,
+            "/api/openapi.json",
+            "GET",
+            "API routes",
+        )
+    )
 
     val syncContract = contract {
         renderer = OpenApi3(ApiInfo("Sync", "v1.0"), KotlinxSerialization)
@@ -210,6 +234,16 @@ private fun buildApiRoutes(
         routes += DeviceRegistrationApi(persistence.deviceTokenRepository).routes
         routes += NotificationApi(web.notificationService).routes
     }
+    registry.register(
+        RegisteredRoute(
+            syncContract,
+            RouteOwner.PlatformKernel,
+            RouteGroup.Api,
+            "/api/v1/sync/openapi.json",
+            "GET",
+            "Sync API",
+        )
+    )
 
     val bearerAdminApiContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel Admin API", "v1.0"), KotlinxSerialization)
@@ -222,39 +256,43 @@ private fun buildApiRoutes(
             routes += ExportRoutes(exportProviders).routes
         }
     }
-
-    return listOf(bearerAdminApiContract, apiRoutes, syncContract)
+    registry.register(
+        RegisteredRoute(
+            bearerAdminApiContract,
+            RouteOwner.PlatformKernel,
+            RouteGroup.Api,
+            "/api/v1/admin/api-openapi.json",
+            "GET",
+            "Admin API",
+        )
+    )
 }
 
-private data class UiRouteSet(val publicRoutes: RoutingHttpHandler, val protectedRoutes: RoutingHttpHandler)
-
-private data class ComponentRouteSet(val publicRoutes: RoutingHttpHandler, val protectedRoutes: RoutingHttpHandler)
-
 @Suppress("LongMethod")
-private fun buildUiRoutes(
+private fun registerUiRoutes(
+    registry: RouteRegistry,
     config: AppConfig,
     persistence: PersistenceComponents,
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
     plugin: PlatformPlugin?,
-): UiRouteSet {
+    pluginMode: PlatformMode,
+) {
     val sec = security
     val sessionCookieSecure = config.sessionCookieSecure
     val pageFactory = web.pageFactory
     val jteRenderer = web.templateRenderer
     val appLabel = plugin?.appLabel ?: "Outerstellar"
     val pluginCtx = plugin?.let { buildPluginContext(jteRenderer, config, persistence, security, web) }
-    val passwordRoutes = PasswordRoutes(pageFactory, jteRenderer, sec.accountService, sec.passwordResetService)
-    val homeRoutes = HomeRoutes(core.messageService, pageFactory, jteRenderer)
-    val contactsRoutes = ContactsRoutes(pageFactory, jteRenderer, core.contactService)
-    val notificationRoutes = NotificationRoutes(pageFactory, jteRenderer, web.notificationService)
 
-    val publicContract = contract {
-        renderer = OpenApi3(ApiInfo("$appLabel UI", "v1.0"), KotlinxSerialization)
-        descriptionPath = "/ui/openapi.json"
-        routes +=
-            AuthRoutes(
+    val publicContractRoutes = mutableListOf<org.http4k.contract.ContractRoute>()
+    val protectedContractRoutes = mutableListOf<org.http4k.contract.ContractRoute>()
+
+    when (pluginMode) {
+        PlatformMode.FullPlatformApp -> {
+            val authRoutes =
+                AuthRoutes(
                     pageFactory,
                     jteRenderer,
                     sec.authService,
@@ -263,65 +301,453 @@ private fun buildUiRoutes(
                     web.analyticsService,
                     config,
                 )
-                .routes
-        routes += passwordRoutes.publicRoutes
-        val oauthProviders = mutableMapOf<String, OAuthProvider>()
-        val appleConfig = config.appleOAuth
-        if (appleConfig.enabled && appleConfig.clientId.isNotBlank()) {
-            oauthProviders["apple"] =
-                AppleOAuthProvider(
-                    teamId = appleConfig.teamId,
-                    clientId = appleConfig.clientId,
-                    keyId = appleConfig.keyId,
-                    privateKeyPem = appleConfig.privateKeyPem,
+            authRoutes.routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformKernel, RouteGroup.PublicUi, "/auth", "*", "Auth")
                 )
-        }
-        routes +=
-            OAuthRoutes(
+            }
+            publicContractRoutes += authRoutes.routes
+
+            val passwordRoutes = PasswordRoutes(pageFactory, jteRenderer, sec.accountService, sec.passwordResetService)
+            passwordRoutes.publicRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformKernel,
+                        RouteGroup.PublicUi,
+                        "/auth/reset",
+                        "GET",
+                        "Password reset",
+                    )
+                )
+            }
+            publicContractRoutes += passwordRoutes.publicRoutes
+            passwordRoutes.protectedRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformKernel,
+                        RouteGroup.ProtectedUi,
+                        "/password",
+                        "*",
+                        "Password change",
+                    )
+                )
+            }
+            protectedContractRoutes += passwordRoutes.protectedRoutes
+
+            val oauthProviders = mutableMapOf<String, OAuthProvider>()
+            val appleConfig = config.appleOAuth
+            if (appleConfig.enabled && appleConfig.clientId.isNotBlank()) {
+                oauthProviders["apple"] =
+                    AppleOAuthProvider(
+                        teamId = appleConfig.teamId,
+                        clientId = appleConfig.clientId,
+                        keyId = appleConfig.keyId,
+                        privateKeyPem = appleConfig.privateKeyPem,
+                    )
+            }
+            val oauthRoutes =
+                OAuthRoutes(
                     providers = oauthProviders,
                     oauthService = sec.oauthService,
                     sessionService = sec.sessionService,
                     sessionCookieSecure = sessionCookieSecure,
                     appBaseUrl = config.appBaseUrl,
                 )
-                .routes
-        routes += ErrorRoutes(pageFactory, jteRenderer).routes
-        val searchProviders =
-            listOfNotNull(MessageSearchProvider(core.messageService), ContactSearchProvider(core.contactService))
-        routes += SearchRoutes(pageFactory, jteRenderer, searchProviders).routes
-        routes += homeRoutes.publicRoutes
-        routes += notificationRoutes.publicRoutes
+            oauthRoutes.routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformKernel, RouteGroup.PublicUi, "/auth/oauth", "*", "OAuth")
+                )
+            }
+            publicContractRoutes += oauthRoutes.routes
+
+            ErrorRoutes(pageFactory, jteRenderer).routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformKernel,
+                        RouteGroup.PublicUi,
+                        "/errors",
+                        "GET",
+                        "Error pages",
+                    )
+                )
+            }
+            publicContractRoutes += ErrorRoutes(pageFactory, jteRenderer).routes
+
+            val searchProviders =
+                listOfNotNull(MessageSearchProvider(core.messageService), ContactSearchProvider(core.contactService))
+            SearchRoutes(pageFactory, jteRenderer, searchProviders).routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.PublicUi, "/search", "GET", "Search")
+                )
+            }
+            publicContractRoutes += SearchRoutes(pageFactory, jteRenderer, searchProviders).routes
+
+            val homeRoutes = HomeRoutes(core.messageService, pageFactory, jteRenderer)
+            homeRoutes.publicRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.PublicUi, "/", "GET", "Home (public)")
+                )
+            }
+            publicContractRoutes += homeRoutes.publicRoutes
+            homeRoutes.protectedRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformUi,
+                        RouteGroup.ProtectedUi,
+                        "/",
+                        "GET",
+                        "Home (protected)",
+                    )
+                )
+            }
+            protectedContractRoutes += homeRoutes.protectedRoutes
+
+            val notificationRoutes = NotificationRoutes(pageFactory, jteRenderer, web.notificationService)
+            notificationRoutes.publicRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformUi,
+                        RouteGroup.PublicUi,
+                        "/components/notification-bell",
+                        "GET",
+                        "Notification bell",
+                    )
+                )
+            }
+            publicContractRoutes += notificationRoutes.publicRoutes
+            notificationRoutes.protectedRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformUi,
+                        RouteGroup.ProtectedUi,
+                        "/notifications",
+                        "*",
+                        "Notifications",
+                    )
+                )
+            }
+            protectedContractRoutes += notificationRoutes.protectedRoutes
+
+            ContactsRoutes(pageFactory, jteRenderer, core.contactService).routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.ProtectedUi, "/contacts", "*", "Contacts")
+                )
+            }
+            protectedContractRoutes += ContactsRoutes(pageFactory, jteRenderer, core.contactService).routes
+
+            ProfileRoutes(pageFactory, jteRenderer, sec.accountService, sessionCookieSecure).routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.ProtectedUi, "/profile", "*", "Profile")
+                )
+            }
+            protectedContractRoutes +=
+                ProfileRoutes(pageFactory, jteRenderer, sec.accountService, sessionCookieSecure).routes
+
+            ApiKeyRoutes(pageFactory, jteRenderer, sec.apiKeyService).routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformUi,
+                        RouteGroup.ProtectedUi,
+                        "/settings/api-keys",
+                        "*",
+                        "API keys",
+                    )
+                )
+            }
+            protectedContractRoutes += ApiKeyRoutes(pageFactory, jteRenderer, sec.apiKeyService).routes
+
+            SettingsRoutes(pageFactory, jteRenderer).routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.ProtectedUi, "/settings", "*", "Settings")
+                )
+            }
+            protectedContractRoutes += SettingsRoutes(pageFactory, jteRenderer).routes
+        }
+
+        PlatformMode.PluginHostedApp -> {
+            val authRoutes =
+                AuthRoutes(
+                    pageFactory,
+                    jteRenderer,
+                    sec.authService,
+                    sec.sessionService,
+                    sec.passwordResetService,
+                    web.analyticsService,
+                    config,
+                )
+            authRoutes.routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformKernel, RouteGroup.PublicUi, "/auth", "*", "Auth")
+                )
+            }
+            publicContractRoutes += authRoutes.routes
+
+            val passwordRoutes = PasswordRoutes(pageFactory, jteRenderer, sec.accountService, sec.passwordResetService)
+            passwordRoutes.publicRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformKernel,
+                        RouteGroup.PublicUi,
+                        "/auth/reset",
+                        "GET",
+                        "Password reset",
+                    )
+                )
+            }
+            publicContractRoutes += passwordRoutes.publicRoutes
+            passwordRoutes.protectedRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformKernel,
+                        RouteGroup.ProtectedUi,
+                        "/password",
+                        "*",
+                        "Password change",
+                    )
+                )
+            }
+            protectedContractRoutes += passwordRoutes.protectedRoutes
+
+            val oauthProviders = mutableMapOf<String, OAuthProvider>()
+            val appleConfig = config.appleOAuth
+            if (appleConfig.enabled && appleConfig.clientId.isNotBlank()) {
+                oauthProviders["apple"] =
+                    AppleOAuthProvider(
+                        teamId = appleConfig.teamId,
+                        clientId = appleConfig.clientId,
+                        keyId = appleConfig.keyId,
+                        privateKeyPem = appleConfig.privateKeyPem,
+                    )
+            }
+            val oauthRoutes =
+                OAuthRoutes(
+                    providers = oauthProviders,
+                    oauthService = sec.oauthService,
+                    sessionService = sec.sessionService,
+                    sessionCookieSecure = sessionCookieSecure,
+                    appBaseUrl = config.appBaseUrl,
+                )
+            oauthRoutes.routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformKernel, RouteGroup.PublicUi, "/auth/oauth", "*", "OAuth")
+                )
+            }
+            publicContractRoutes += oauthRoutes.routes
+
+            ErrorRoutes(pageFactory, jteRenderer).routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformKernel,
+                        RouteGroup.PublicUi,
+                        "/errors",
+                        "GET",
+                        "Error pages",
+                    )
+                )
+            }
+            publicContractRoutes += ErrorRoutes(pageFactory, jteRenderer).routes
+
+            val mounted = plugin?.mountPlatformPages() ?: emptySet()
+            for (pageSet in mounted) {
+                registerPageSet(
+                    pageSet,
+                    registry,
+                    publicContractRoutes,
+                    protectedContractRoutes,
+                    config,
+                    core,
+                    web,
+                    pageFactory,
+                    jteRenderer,
+                    sessionCookieSecure,
+                    sec,
+                )
+            }
+        }
+
+        PlatformMode.HeadlessKernel -> {
+            // No UI routes
+        }
     }
+
+    protectedContractRoutes +=
+        ("/logout" bindContract POST).to { request: Request ->
+            val rawToken = request.cookie(RequestContext.SESSION_COOKIE)?.value
+            if (rawToken != null) {
+                sec.sessionService.deleteSession(rawToken)
+            }
+            Response(Status.FOUND)
+                .header("location", request.shellRenderer.url("/"))
+                .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
+        }
+    registry.register(
+        RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.ProtectedUi, "/logout", "POST", "Logout")
+    )
+
+    val publicContract = contract {
+        renderer = OpenApi3(ApiInfo("$appLabel UI", "v1.0"), KotlinxSerialization)
+        descriptionPath = "/ui/openapi.json"
+        routes += publicContractRoutes
+    }
+    registry.register(
+        RegisteredRoute(
+            publicContract,
+            RouteOwner.PlatformKernel,
+            RouteGroup.PublicUi,
+            "/ui/openapi.json",
+            "GET",
+            "Public UI",
+        )
+    )
 
     val protectedContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel Protected UI", "v1.0"), KotlinxSerialization)
         descriptionPath = "/ui-protected/openapi.json"
-        routes += homeRoutes.protectedRoutes
-        routes += contactsRoutes.routes
-        routes += passwordRoutes.protectedRoutes
-        routes += ProfileRoutes(pageFactory, jteRenderer, sec.accountService, sessionCookieSecure).routes
-        routes += ApiKeyRoutes(pageFactory, jteRenderer, sec.apiKeyService).routes
-        routes += SettingsRoutes(pageFactory, jteRenderer).routes
-        routes += notificationRoutes.protectedRoutes
-        if (plugin != null && pluginCtx != null) {
-            routes += plugin.routeRegistrations(pluginCtx).map { it.route }
-        }
-        routes +=
-            ("/logout" bindContract POST).to { request: Request ->
-                val rawToken = request.cookie(RequestContext.SESSION_COOKIE)?.value
-                if (rawToken != null) {
-                    sec.sessionService.deleteSession(rawToken)
-                }
-                Response(Status.FOUND)
-                    .header("location", request.shellRenderer.url("/"))
-                    .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
-            }
+        routes += protectedContractRoutes
     }
-
-    return UiRouteSet(publicRoutes = publicContract, protectedRoutes = protectedContract)
+    registry.register(
+        RegisteredRoute(
+            protectedContract,
+            RouteOwner.PlatformKernel,
+            RouteGroup.ProtectedUi,
+            "/ui-protected/openapi.json",
+            "GET",
+            "Protected UI",
+        )
+    )
 }
 
-private fun buildComponentRoutes(web: WebComponents, plugin: PlatformPlugin?): ComponentRouteSet {
+@Suppress("LongParameterList")
+private fun registerPageSet(
+    pageSet: PlatformPageSets,
+    registry: RouteRegistry,
+    publicRoutes: MutableList<org.http4k.contract.ContractRoute>,
+    protectedRoutes: MutableList<org.http4k.contract.ContractRoute>,
+    config: AppConfig,
+    core: CoreComponents,
+    web: WebComponents,
+    pageFactory: io.github.rygel.outerstellar.platform.web.WebPageFactory,
+    jteRenderer: org.http4k.template.TemplateRenderer,
+    sessionCookieSecure: Boolean,
+    sec: SecurityComponents,
+) {
+    when (pageSet) {
+        PlatformPageSets.HOME -> {
+            val homeRoutes = HomeRoutes(core.messageService, pageFactory, jteRenderer)
+            homeRoutes.publicRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.PublicUi, "/", "GET", "Home (public)")
+                )
+            }
+            publicRoutes += homeRoutes.publicRoutes
+            homeRoutes.protectedRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformUi,
+                        RouteGroup.ProtectedUi,
+                        "/",
+                        "GET",
+                        "Home (protected)",
+                    )
+                )
+            }
+            protectedRoutes += homeRoutes.protectedRoutes
+        }
+
+        PlatformPageSets.CONTACTS -> {
+            val contactsRoutes = ContactsRoutes(pageFactory, jteRenderer, core.contactService)
+            contactsRoutes.routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.ProtectedUi, "/contacts", "*", "Contacts")
+                )
+            }
+            protectedRoutes += contactsRoutes.routes
+        }
+
+        PlatformPageSets.SETTINGS -> {
+            val settingsRoutes = SettingsRoutes(pageFactory, jteRenderer)
+            settingsRoutes.routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.ProtectedUi, "/settings", "*", "Settings")
+                )
+            }
+            protectedRoutes += settingsRoutes.routes
+        }
+
+        PlatformPageSets.SEARCH -> {
+            val searchProviders =
+                listOfNotNull(MessageSearchProvider(core.messageService), ContactSearchProvider(core.contactService))
+            val searchRoutes = SearchRoutes(pageFactory, jteRenderer, searchProviders)
+            searchRoutes.routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.PublicUi, "/search", "GET", "Search")
+                )
+            }
+            publicRoutes += searchRoutes.routes
+        }
+
+        PlatformPageSets.NOTIFICATIONS -> {
+            val notificationRoutes = NotificationRoutes(pageFactory, jteRenderer, web.notificationService)
+            notificationRoutes.publicRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformUi,
+                        RouteGroup.PublicUi,
+                        "/components/notification-bell",
+                        "GET",
+                        "Notification bell",
+                    )
+                )
+            }
+            publicRoutes += notificationRoutes.publicRoutes
+            notificationRoutes.protectedRoutes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(
+                        route,
+                        RouteOwner.PlatformUi,
+                        RouteGroup.ProtectedUi,
+                        "/notifications",
+                        "*",
+                        "Notifications",
+                    )
+                )
+            }
+            protectedRoutes += notificationRoutes.protectedRoutes
+        }
+
+        PlatformPageSets.PROFILE -> {
+            val profileRoutes = ProfileRoutes(pageFactory, jteRenderer, sec.accountService, sessionCookieSecure)
+            profileRoutes.routes.forEach { route ->
+                registry.register(
+                    RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.ProtectedUi, "/profile", "*", "Profile")
+                )
+            }
+            protectedRoutes += profileRoutes.routes
+        }
+
+        PlatformPageSets.ADMIN -> {
+            // Admin routes are registered separately via registerAdminRoutes
+        }
+
+        PlatformPageSets.DEV_DASHBOARD -> {
+            // Dev dashboard routes are registered separately via registerAdminRoutes
+        }
+    }
+}
+
+private fun registerComponentRoutes(registry: RouteRegistry, web: WebComponents, plugin: PlatformPlugin?) {
     val appLabel = plugin?.appLabel ?: "Outerstellar"
     val componentRoutes = ComponentRoutes(web.pageFactory, web.templateRenderer, web.voteService, web.pollService)
     val publicContract = contract {
@@ -329,21 +755,42 @@ private fun buildComponentRoutes(web: WebComponents, plugin: PlatformPlugin?): C
         descriptionPath = "/components/openapi.json"
         routes += componentRoutes.publicRoutes
     }
+    registry.register(
+        RegisteredRoute(
+            publicContract,
+            RouteOwner.PlatformKernel,
+            RouteGroup.PublicUi,
+            "/components/openapi.json",
+            "GET",
+            "Public components",
+        )
+    )
     val protectedContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel Protected Components", "v1.0"), KotlinxSerialization)
         descriptionPath = "/components-protected/openapi.json"
         routes += componentRoutes.protectedRoutes
     }
-    return ComponentRouteSet(publicRoutes = publicContract, protectedRoutes = protectedContract)
+    registry.register(
+        RegisteredRoute(
+            protectedContract,
+            RouteOwner.PlatformKernel,
+            RouteGroup.ProtectedUi,
+            "/components-protected/openapi.json",
+            "GET",
+            "Protected components",
+        )
+    )
 }
 
-private fun buildAdminRoutes(
+@Suppress("LongParameterList")
+private fun registerAdminRoutes(
+    registry: RouteRegistry,
     config: AppConfig,
     persistence: PersistenceComponents,
     security: SecurityComponents,
     web: WebComponents,
     plugin: PlatformPlugin?,
-): RoutingHttpHandler {
+) {
     val sec = security
     val pageFactory = web.pageFactory
     val jteRenderer = web.templateRenderer
@@ -378,39 +825,166 @@ private fun buildAdminRoutes(
         routes += UserAdminRoutes(pageFactory, jteRenderer, sec.userAdminService).routes
         pluginSections.forEach { section -> routes += section.route }
     }
-    return if (pluginSections.isNotEmpty()) {
-        val adminAuthFilter = Filter { next ->
-            SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
+    val adminHandler: RoutingHttpHandler =
+        if (pluginSections.isNotEmpty()) {
+            val adminAuthFilter = Filter { next ->
+                SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
+            }
+            val pluginDashboardRoute =
+                adminAuthFilter.then(
+                    "/admin/plugins" bind
+                        GET to
+                        { req ->
+                            val pluginRequestContext = RequestContext(req, sessionService = sec.sessionService)
+                            val pluginShellRenderer =
+                                ShellRenderer(
+                                    pluginRequestContext,
+                                    shellConfig =
+                                        ShellConfig(
+                                            pluginOptions =
+                                                PluginOptions(
+                                                    adminNavItems =
+                                                        pluginSections.map {
+                                                            AdminNavItem(
+                                                                it.navLabel,
+                                                                it.summaryCard.linkUrl,
+                                                                it.navIcon,
+                                                            )
+                                                        }
+                                                )
+                                        ),
+                                )
+                            val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
+                            val page = Page(shell, PluginAdminDashboardPage(pluginSections.map { it.summaryCard }))
+                            Response(Status.OK).body(jteRenderer(page) ?: "")
+                        }
+                )
+            routes(adminContract, pluginDashboardRoute)
+        } else {
+            adminContract
         }
-        val pluginDashboardRoute =
-            adminAuthFilter.then(
-                "/admin/plugins" bind
-                    GET to
-                    { req ->
-                        val pluginRequestContext = RequestContext(req, sessionService = sec.sessionService)
-                        val pluginShellRenderer =
-                            ShellRenderer(
-                                pluginRequestContext,
-                                shellConfig =
-                                    ShellConfig(
-                                        pluginOptions =
-                                            PluginOptions(
-                                                adminNavItems =
-                                                    pluginSections.map {
-                                                        AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon)
-                                                    }
-                                            )
-                                    ),
-                            )
-                        val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
-                        val page = Page(shell, PluginAdminDashboardPage(pluginSections.map { it.summaryCard }))
-                        Response(Status.OK).body(jteRenderer(page) ?: "")
-                    }
+    registry.register(
+        RegisteredRoute(adminHandler, RouteOwner.PlatformKernel, RouteGroup.Admin, "/admin", "GET", "Admin dashboard")
+    )
+}
+
+private fun registerKernelRoutes(
+    registry: RouteRegistry,
+    config: AppConfig,
+    persistence: PersistenceComponents,
+    security: SecurityComponents,
+    web: WebComponents,
+    plugin: PlatformPlugin?,
+) {
+    val userRepository = persistence.userRepository
+    registry.register(
+        RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Static, "/static", "GET", "Static assets")
+    )
+    registry.register(
+        RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Health, "/health", "GET", "Health check")
+    )
+    registry.register(RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Health, "/metrics", "GET", "Metrics"))
+    registry.register(
+        RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Static, "/robots.txt", "GET", "Robots.txt")
+    )
+    registry.register(
+        RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Static, "/sitemap.xml", "GET", "Sitemap")
+    )
+}
+
+private fun registerTotpRoutes(
+    registry: RouteRegistry,
+    security: SecurityComponents,
+    web: WebComponents,
+    config: AppConfig,
+) {
+    val sec = security
+    registry.register(RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.ProtectedUi, "/totp", "*", "TOTP UI"))
+    registry.register(RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Api, "/api/totp", "*", "TOTP API"))
+}
+
+private fun registerPluginRoutes(
+    registry: RouteRegistry,
+    plugin: PlatformPlugin?,
+    config: AppConfig,
+    persistence: PersistenceComponents,
+    security: SecurityComponents,
+    web: WebComponents,
+) {
+    if (plugin == null) return
+    val jteRenderer = web.templateRenderer
+    val pluginCtx = buildPluginContext(jteRenderer, config, persistence, security, web)
+    plugin.routeRegistrations(pluginCtx).forEach { registration ->
+        registry.register(
+            RegisteredRoute(
+                registration.route,
+                RouteOwner.Plugin,
+                registration.group,
+                registration.description,
+                "*",
+                registration.description,
             )
-        routes(adminContract, pluginDashboardRoute)
-    } else {
-        adminContract
+        )
     }
+}
+
+private fun buildFromRegistry(
+    registry: RouteRegistry,
+    config: AppConfig,
+    persistence: PersistenceComponents,
+    security: SecurityComponents,
+    web: WebComponents,
+    plugin: PlatformPlugin?,
+): HttpHandler {
+    val sec = security
+    val userRepository = persistence.userRepository
+    val authenticatedFilter = Filter { next -> SecurityRules.authenticated(next) }
+
+    val publicUiRoutes = registry.byGroup(RouteGroup.PublicUi)
+    val protectedUiRoutes = registry.byGroup(RouteGroup.ProtectedUi)
+    val apiRoutes = registry.byGroup(RouteGroup.Api)
+    val adminRoutes = registry.byGroup(RouteGroup.Admin)
+
+    val publicUiHandlers = publicUiRoutes.mapNotNull { it.httpRoute as? RoutingHttpHandler }
+    val protectedUiHandlers = protectedUiRoutes.mapNotNull { it.httpRoute as? RoutingHttpHandler }
+    val apiHandlers = apiRoutes.mapNotNull { it.httpRoute as? RoutingHttpHandler }
+    val adminHandlers = adminRoutes.mapNotNull { it.httpRoute as? RoutingHttpHandler }
+
+    val filteredAdminHandler =
+        Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
+            .then(routes(adminHandlers))
+
+    val metricsHandler =
+        Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
+            .then { Response(Status.OK).body(Metrics.registry.scrape()) }
+
+    val unfiltered =
+        mutableListOf(
+            static(ResourceLoader.Classpath("static")),
+            "/health" bind GET to localhostOnly.then { buildHealthResponse(userRepository) },
+            "/metrics" bind GET to metricsHandler,
+            "/robots.txt" bind GET to { buildRobotsTxtResponse() },
+            "/sitemap.xml" bind GET to { buildSitemapResponse(config.appBaseUrl) },
+        )
+
+    val appRoutes = mutableListOf<RoutingHttpHandler>()
+    appRoutes += routes(publicUiHandlers)
+    appRoutes += authenticatedFilter.then(routes(protectedUiHandlers))
+    appRoutes +=
+        TOTPRoutes(
+                sec.authService,
+                web.templateRenderer,
+                config.sessionCookieSecure,
+                sec.totpService,
+                sec.sessionService,
+            )
+            .routes
+    appRoutes += TOTPApiRoutes(sec.authService, sec.totpService, sec.sessionService).routes
+    appRoutes += apiHandlers
+    appRoutes += "/" bind filteredAdminHandler
+
+    val baseApp = routes(unfiltered + appRoutes)
+    return buildFilterChain(config, persistence, security, web, plugin).then(baseApp)
 }
 
 private fun buildPluginContext(
@@ -444,59 +1018,6 @@ private val localhostOnly = Filter { next ->
 
 private fun String.isLocalhostHost(): Boolean =
     startsWith("localhost") || startsWith("127.0.0.1") || startsWith("[::1]")
-
-private fun buildBaseApp(
-    config: AppConfig,
-    persistence: PersistenceComponents,
-    security: SecurityComponents,
-    web: WebComponents,
-    plugin: PlatformPlugin?,
-    adminContract: RoutingHttpHandler,
-    apiRoutes: List<RoutingHttpHandler>,
-    uiRouteSet: UiRouteSet,
-    componentRouteSet: ComponentRouteSet,
-): HttpHandler {
-    val sec = security
-    val userRepository = persistence.userRepository
-
-    val authenticatedFilter = Filter { next -> SecurityRules.authenticated(next) }
-
-    val filteredAdminHandler =
-        Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }.then(adminContract)
-
-    val metricsHandler =
-        Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
-            .then { Response(Status.OK).body(Metrics.registry.scrape()) }
-
-    val unfiltered =
-        mutableListOf(
-            static(ResourceLoader.Classpath("static")),
-            "/health" bind GET to localhostOnly.then { buildHealthResponse(userRepository) },
-            "/metrics" bind GET to metricsHandler,
-            "/robots.txt" bind GET to { buildRobotsTxtResponse() },
-            "/sitemap.xml" bind GET to { buildSitemapResponse(config.appBaseUrl) },
-        )
-
-    val appRoutes = mutableListOf<RoutingHttpHandler>()
-    appRoutes += uiRouteSet.publicRoutes
-    appRoutes += componentRouteSet.publicRoutes
-    appRoutes += authenticatedFilter.then(uiRouteSet.protectedRoutes)
-    appRoutes += authenticatedFilter.then(componentRouteSet.protectedRoutes)
-    appRoutes +=
-        TOTPRoutes(
-                sec.authService,
-                web.templateRenderer,
-                config.sessionCookieSecure,
-                sec.totpService,
-                sec.sessionService,
-            )
-            .routes
-    appRoutes += TOTPApiRoutes(sec.authService, sec.totpService, sec.sessionService).routes
-    appRoutes.addAll(apiRoutes)
-    appRoutes += "/" bind filteredAdminHandler
-
-    return routes(unfiltered + appRoutes)
-}
 
 private fun buildRobotsTxtResponse(): Response =
     Response(Status.OK)

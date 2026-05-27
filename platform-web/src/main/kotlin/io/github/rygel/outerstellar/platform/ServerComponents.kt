@@ -10,6 +10,8 @@ import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
 import io.github.rygel.outerstellar.platform.web.PlatformPlugin
+import io.github.rygel.outerstellar.platform.web.theme.DaisyUITheme
+import io.github.rygel.outerstellar.platform.web.theme.PlatformTheme
 import org.http4k.core.PolyHandler
 
 class ServerComponents(
@@ -21,7 +23,7 @@ class ServerComponents(
     val app: PolyHandler,
 )
 
-fun createServerComponents(plugin: PlatformPlugin? = null): ServerComponents {
+fun createServerComponents(plugin: PlatformPlugin? = null, theme: PlatformTheme = DaisyUITheme()): ServerComponents {
     val config = AppConfig.fromEnvironment()
 
     val persistence = createPersistenceComponents(config = config, pluginMigrationSource = plugin)
@@ -70,7 +72,15 @@ fun createServerComponents(plugin: PlatformPlugin? = null): ServerComponents {
         )
 
     val polyHandler =
-        app(config = config, persistence = persistence, security = security, core = core, web = web, plugin = plugin)
+        app(
+            config = config,
+            persistence = persistence,
+            security = security,
+            core = core,
+            web = web,
+            plugin = plugin,
+            theme = theme,
+        )
 
     return ServerComponents(
         config = config,
