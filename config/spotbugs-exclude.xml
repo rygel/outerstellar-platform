@@ -120,6 +120,10 @@
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.AppKt"/>
+        <Bug pattern="SF_SWITCH_FALLTHROUGH"/>
+    </Match>
+    <Match>
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH"/>
     </Match>
