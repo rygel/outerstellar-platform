@@ -203,96 +203,94 @@ class PluginHostedAppTest {
 
     private fun registerPageSet(registry: RouteRegistry, pageSet: PlatformPageSets) {
         when (pageSet) {
-            PlatformPageSets.HOME -> {
-                registry.register(
-                    route(
-                        path = "/",
-                        owner = RouteOwner.PlatformUi,
-                        group = RouteGroup.PublicUi,
-                        description = "Home (public)",
-                    )
-                )
-                registry.register(
-                    route(
-                        path = "/",
-                        owner = RouteOwner.PlatformUi,
-                        group = RouteGroup.ProtectedUi,
-                        description = "Home (protected)",
-                    )
-                )
-            }
-            PlatformPageSets.CONTACTS -> {
-                registry.register(
-                    route(
-                        path = "/contacts",
-                        method = "*",
-                        owner = RouteOwner.PlatformUi,
-                        group = RouteGroup.ProtectedUi,
-                        description = "Contacts",
-                    )
-                )
-            }
-            PlatformPageSets.SETTINGS -> {
-                registry.register(
-                    route(
-                        path = "/settings",
-                        method = "*",
-                        owner = RouteOwner.PlatformUi,
-                        group = RouteGroup.ProtectedUi,
-                        description = "Settings",
-                    )
-                )
-            }
-            PlatformPageSets.SEARCH -> {
-                registry.register(
-                    route(
-                        path = "/search",
-                        owner = RouteOwner.PlatformUi,
-                        group = RouteGroup.PublicUi,
-                        description = "Search",
-                    )
-                )
-            }
-            PlatformPageSets.NOTIFICATIONS -> {
-                registry.register(
-                    route(
-                        path = "/notifications",
-                        method = "*",
-                        owner = RouteOwner.PlatformUi,
-                        group = RouteGroup.ProtectedUi,
-                        description = "Notifications",
-                    )
-                )
-                registry.register(
-                    route(
-                        path = "/components/notification-bell",
-                        owner = RouteOwner.PlatformUi,
-                        group = RouteGroup.PublicUi,
-                        description = "Notification bell",
-                    )
-                )
-            }
-            PlatformPageSets.PROFILE -> {
-                registry.register(
-                    route(
-                        path = "/profile",
-                        method = "*",
-                        owner = RouteOwner.PlatformUi,
-                        group = RouteGroup.ProtectedUi,
-                        description = "Profile",
-                    )
-                )
-            }
+            PlatformPageSets.HOME -> registerTestHomePages(registry)
+            PlatformPageSets.CONTACTS -> registerTestContactsPages(registry)
+            PlatformPageSets.SETTINGS -> registerTestSettingsPages(registry)
+            PlatformPageSets.SEARCH -> registerTestSearchPages(registry)
+            PlatformPageSets.NOTIFICATIONS -> registerTestNotificationPages(registry)
+            PlatformPageSets.PROFILE -> registerTestProfilePages(registry)
             PlatformPageSets.ADMIN -> {}
             PlatformPageSets.DEV_DASHBOARD -> {}
         }
     }
 
-    private fun simulateMode(mode: PlatformMode, mountedPages: Set<PlatformPageSets> = emptySet()): RouteRegistry {
-        val registry = RouteRegistry()
-        registerKernelRoutes(registry)
-        registerAuthRoutes(registry)
-        registerApiRoutes(registry)
+    private fun registerTestHomePages(registry: RouteRegistry) {
+        registry.register(
+            route(path = "/", owner = RouteOwner.PlatformUi, group = RouteGroup.PublicUi, description = "Home (public)")
+        )
+        registry.register(
+            route(
+                path = "/",
+                owner = RouteOwner.PlatformUi,
+                group = RouteGroup.ProtectedUi,
+                description = "Home (protected)",
+            )
+        )
+    }
+
+    private fun registerTestContactsPages(registry: RouteRegistry) {
+        registry.register(
+            route(
+                path = "/contacts",
+                method = "*",
+                owner = RouteOwner.PlatformUi,
+                group = RouteGroup.ProtectedUi,
+                description = "Contacts",
+            )
+        )
+    }
+
+    private fun registerTestSettingsPages(registry: RouteRegistry) {
+        registry.register(
+            route(
+                path = "/settings",
+                method = "*",
+                owner = RouteOwner.PlatformUi,
+                group = RouteGroup.ProtectedUi,
+                description = "Settings",
+            )
+        )
+    }
+
+    private fun registerTestSearchPages(registry: RouteRegistry) {
+        registry.register(
+            route(path = "/search", owner = RouteOwner.PlatformUi, group = RouteGroup.PublicUi, description = "Search")
+        )
+    }
+
+    private fun registerTestNotificationPages(registry: RouteRegistry) {
+        registry.register(
+            route(
+                path = "/notifications",
+                method = "*",
+                owner = RouteOwner.PlatformUi,
+                group = RouteGroup.ProtectedUi,
+                description = "Notifications",
+            )
+        )
+        registry.register(
+            route(
+                path = "/components/notification-bell",
+                owner = RouteOwner.PlatformUi,
+                group = RouteGroup.PublicUi,
+                description = "Notification bell",
+            )
+        )
+    }
+
+    private fun registerTestProfilePages(registry: RouteRegistry) {
+        registry.register(
+            route(
+                path = "/profile",
+                method = "*",
+                owner = RouteOwner.PlatformUi,
+                group = RouteGroup.ProtectedUi,
+                description = "Profile",
+            )
+        )
+    }
+
+    private fun registerSharedKernelUiRoutes(registry: RouteRegistry) {
         registry.register(
             route(
                 path = "/logout",
@@ -360,6 +358,14 @@ class PluginHostedAppTest {
                 description = "Protected UI",
             )
         )
+    }
+
+    private fun simulateMode(mode: PlatformMode, mountedPages: Set<PlatformPageSets> = emptySet()): RouteRegistry {
+        val registry = RouteRegistry()
+        registerKernelRoutes(registry)
+        registerAuthRoutes(registry)
+        registerApiRoutes(registry)
+        registerSharedKernelUiRoutes(registry)
 
         when (mode) {
             PlatformMode.FullPlatformApp -> registerFullPlatformUiRoutes(registry)
