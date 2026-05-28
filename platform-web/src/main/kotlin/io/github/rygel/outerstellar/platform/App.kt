@@ -956,15 +956,14 @@ private fun buildPluginContext(
     security: SecurityComponents,
     web: WebComponents,
 ): HostedAppContext =
-    HostedAppContext(
-        jteRenderer,
-        config,
-        security.apiKeyService,
-        security.oauthService,
-        persistence.userRepository,
-        web.analyticsService,
-        web.notificationService,
-        web.pageFactory,
+    HostedAppContext.fromHostServices(
+        renderer = jteRenderer,
+        config = config,
+        apiKeyService = security.apiKeyService,
+        oauthService = security.oauthService,
+        userRepository = persistence.userRepository,
+        analytics = web.analyticsService,
+        notificationService = web.notificationService,
     )
 
 private val localhostOnly = Filter { next ->
