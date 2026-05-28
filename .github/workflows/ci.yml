@@ -420,7 +420,7 @@ jobs:
       - name: OWASP dependency check
         run: >
           mvn org.owasp:dependency-check-maven:aggregate -DskipTests
-          -DnvdDatafeedUrl=https://dependency-check.github.io/DependencyCheck_Builder/nvd_cache/nvdcve-{0}.json.gz
+          "-DnvdDatafeedUrl=https://dependency-check.github.io/DependencyCheck_Builder/nvd_cache/nvdcve-{0}.json.gz"
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
 
