@@ -30,7 +30,7 @@ class HostedAppContextFacadeTest {
     fun `forTesting projects safe app info and rendering facade`() {
         val renderer: TemplateRenderer = { "rendered" }
         val context =
-            HostedAppContext.forTesting(
+            hostedAppContextForTesting(
                 renderer = renderer,
                 apiKeyService = mockk(relaxed = true),
                 oauthService = mockk(relaxed = true),
@@ -60,7 +60,7 @@ class HostedAppContextFacadeTest {
         val userRepository = mockk<UserRepository>()
         val jwtService = mockk<JwtService>()
         val context =
-            HostedAppContext.forTesting(
+            hostedAppContextForTesting(
                 renderer = mockk(relaxed = true),
                 apiKeyService = mockk(relaxed = true),
                 oauthService = mockk(relaxed = true),
@@ -98,7 +98,7 @@ class HostedAppContextFacadeTest {
         val notificationService = mockk<NotificationService>()
         val user = User(userId, "alex", "alex@example.com", "hash", UserRole.USER)
         val context =
-            HostedAppContext.forTesting(
+            hostedAppContextForTesting(
                 renderer = mockk(relaxed = true),
                 apiKeyService = apiKeyService,
                 oauthService = oauthService,

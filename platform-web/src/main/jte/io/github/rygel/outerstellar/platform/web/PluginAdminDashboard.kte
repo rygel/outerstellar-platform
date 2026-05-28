@@ -83,19 +83,19 @@
                         <div class="space-y-3 text-sm">
                             <div>
                                 <p class="font-semibold">UI</p>
-                                <p class="opacity-70">${model.data.diagnostics.ownership.uiPrefixes.joinToString(", ")}</p>
+                                <p class="opacity-70">${model.data.diagnostics.ownership!!.uiPrefixes.joinToString(", ")}</p>
                             </div>
                             <div>
                                 <p class="font-semibold">API</p>
-                                <p class="opacity-70">${model.data.diagnostics.ownership.apiPrefixes.joinToString(", ")}</p>
+                                <p class="opacity-70">${model.data.diagnostics.ownership!!.apiPrefixes.joinToString(", ")}</p>
                             </div>
                             <div>
                                 <p class="font-semibold">Admin</p>
-                                <p class="opacity-70">${model.data.diagnostics.ownership.adminPrefixes.joinToString(", ")}</p>
+                                <p class="opacity-70">${model.data.diagnostics.ownership!!.adminPrefixes.joinToString(", ")}</p>
                             </div>
                             <div>
                                 <p class="font-semibold">Assets</p>
-                                <p class="opacity-70">${model.data.diagnostics.ownership.assetPrefixes.joinToString(", ")}</p>
+                                <p class="opacity-70">${model.data.diagnostics.ownership!!.assetPrefixes.joinToString(", ")}</p>
                             </div>
                         </div>
                     @else

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Hosted apps extend the platform via the `HostedApp` interface. `PlatformPlugin` remains as a compatibility alias for older integrations, but `HostedApp` and `HostedAppContext` are the primary API names.
+Hosted apps extend the platform via the `HostedApp` interface. `PlatformPlugin` remains as a compatibility alias for older integrations, but `HostedApp` and `HostedAppContext` are the primary API names. The public SPI now ships in the `outerstellar-platform-plugin-api` module so hosted apps do not need to depend on `platform-web`.
 
 Hosted apps can contribute:
 - routes and filters
@@ -42,7 +42,6 @@ interface HostedApp : PluginMigrationSource {
 Convenience helpers remain on the context itself:
 - `currentUser(request)` — authenticated user
 - `renderShell(shell, bodyHtml)` — wrap plugin HTML in the platform shell
-- `forTesting(...)` — construct a test context with mocked host services
 
 ## Template Overrides
 

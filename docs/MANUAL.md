@@ -31,6 +31,7 @@ The web app starts on `http://localhost:8080`. A first-boot admin user is create
 
 ```
 platform-core              Domain models, services, configuration
+platform-plugin-api        Hosted-app SPI and plugin-facing shell/admin DTOs
 platform-persistence-jdbi  JDBI repositories + Flyway migrations
 platform-security          Auth, permissions, OAuth, API keys
 platform-sync-client       Sync DTOs and client sync service
@@ -114,6 +115,9 @@ The platform uses JDBI as its persistence layer, implementing repository interfa
 ## Plugin Development
 
 ### PlatformPlugin Interface
+
+Hosted app integrations should depend on `outerstellar-platform-plugin-api`. That module contains `HostedApp`,
+`HostedAppContext`, `HostedAppContributionContext`, and the compatibility aliases under `io.github...platform.web`.
 
 Plugins implement `PlatformPlugin` and register as a Koin `single`:
 

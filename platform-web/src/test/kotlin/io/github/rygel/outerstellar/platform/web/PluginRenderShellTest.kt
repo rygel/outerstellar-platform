@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.plugin.HostedAppContext
 import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.mockk.mockk
@@ -12,7 +13,7 @@ class PluginRenderShellTest {
 
     private fun createContext(): HostedAppContext {
         val renderer: TemplateRenderer = { "" }
-        return HostedAppContext.forTesting(
+        return hostedAppContextForTesting(
             renderer = renderer,
             apiKeyService = mockk<ApiKeyService>(relaxed = true),
             oauthService = mockk<OAuthService>(relaxed = true),

@@ -39,6 +39,7 @@
     <modules>
         <module>jte-extensions</module>
         <module>platform-core</module>
+        <module>platform-plugin-api</module>
         <module>platform-persistence-jdbi</module>
         <module>platform-sync-client</module>
         <module>platform-web</module>
@@ -192,6 +193,11 @@
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-platform-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.rygel</groupId>
+                <artifactId>outerstellar-platform-plugin-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
