@@ -1087,7 +1087,7 @@
             </build>
         </profile>
 
-        <!-- mvn -Ptest-desktop verify — runs Swing tests inside Docker with Xvfb -->
+        <!-- mvn -Ptest-desktop verify — runs Swing tests inside Podman with Xvfb -->
         <!-- Reports are copied to platform-desktop/target/surefire-reports-docker/ -->
         <profile>
             <id>test-desktop</id>
@@ -1101,7 +1101,7 @@
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>docker-test-desktop</id>
+                                <id>podman-test-desktop</id>
                                 <phase>verify</phase>
                                 <goals>
                                     <goal>exec</goal>

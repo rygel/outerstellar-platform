@@ -213,6 +213,9 @@ class ShellRenderer(
             supportedLocales = listOf("en", "fr"),
             appBaseUrl = appBaseUrl,
             banners = banners,
+            pluginLayoutRenderer = pluginOptions.layoutRenderer,
+            pluginStylesheets = pluginOptions.assets.stylesheets,
+            pluginScripts = pluginOptions.assets.scripts,
         )
     }
 }

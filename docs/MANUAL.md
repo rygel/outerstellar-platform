@@ -295,8 +295,18 @@ Web tests run sequentially (`parallel=none`) to avoid database races.
 Desktop/Swing tests run in a Podman container with Xvfb:
 
 ```bash
-podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
-podman run --rm --network host outerstellar-test-desktop
+pwsh scripts/test-desktop.ps1
+
+# Bash equivalent:
+bash docker/run-desktop-tests.sh
+
+# Manual equivalent:
+podman build --target desktop-test -t outerstellar-test-desktop -f docker/Dockerfile.build .
+podman run --rm --network host \
+  -v "$HOME/.m2/settings.xml:/root/.m2/settings.xml:ro" \
+  -e "DOCKER_HOST=unix:///var/run/docker.sock" \
+  -v "/var/run/docker.sock:/var/run/docker.sock" \
+  outerstellar-test-desktop
 ```
 
 **Never run desktop tests on the host** — they capture mouse and keyboard.
@@ -308,7 +318,7 @@ podman run --rm --network host outerstellar-test-desktop
 | `-Pcoverage` | JaCoCo coverage |
 | `-Ptests-headless` | Swing tests in headless mode |
 | `-Ptests-headful` | Swing tests with real UI |
-| `-Ptest-desktop` | Desktop tests in Docker container |
+| `-Ptest-desktop` | Desktop tests in Podman/Xvfb container |
 | `-Pfast` | Compile only, skip all quality checks |
 
 ## Quality Gates

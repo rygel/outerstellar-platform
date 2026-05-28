@@ -7,9 +7,9 @@ import io.github.rygel.outerstellar.platform.di.createCoreComponents
 import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
 import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
+import io.github.rygel.outerstellar.platform.plugin.HostedApp
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
-import io.github.rygel.outerstellar.platform.web.PlatformPlugin
 import org.http4k.core.PolyHandler
 
 class ServerComponents(
@@ -21,7 +21,7 @@ class ServerComponents(
     val app: PolyHandler,
 )
 
-fun createServerComponents(plugin: PlatformPlugin? = null): ServerComponents {
+fun createServerComponents(plugin: HostedApp? = null): ServerComponents {
     val config = AppConfig.fromEnvironment()
 
     val persistence = createPersistenceComponents(config = config, pluginMigrationSource = plugin)

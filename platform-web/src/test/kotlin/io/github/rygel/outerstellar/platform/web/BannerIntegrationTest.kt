@@ -25,7 +25,7 @@ class BannerIntegrationTest : WebTest() {
         PlatformPlugin, PluginMigrationSource {
         override val id: String = "test-banner-plugin"
 
-        override fun bannerProviders(context: PluginContext): List<BannerProvider> = providers
+        override fun bannerProviders(context: HostedAppContext): List<BannerProvider> = providers
     }
 
     private val testBanner =

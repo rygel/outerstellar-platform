@@ -360,7 +360,7 @@ class PluginHostedAppTest {
         )
     }
 
-    private fun simulateMode(mode: PlatformMode, mountedPages: Set<PlatformPageSets> = emptySet()): RouteRegistry {
+    private fun simulateMode(mode: PlatformMode, includedPages: Set<PlatformPageSets> = emptySet()): RouteRegistry {
         val registry = RouteRegistry()
         registerKernelRoutes(registry)
         registerAuthRoutes(registry)
@@ -370,11 +370,15 @@ class PluginHostedAppTest {
         when (mode) {
             PlatformMode.FullPlatformApp -> registerFullPlatformUiRoutes(registry)
             PlatformMode.PluginHostedApp -> {
-                for (pageSet in mountedPages) {
+                for (pageSet in includedPages) {
                     registerPageSet(registry, pageSet)
                 }
+                PlatformPageSets.entries
+                    .filter { it !in includedPages }
+                    .forEach { registry.registerExcludedPageSet(it.pageSet.id) }
             }
-            PlatformMode.HeadlessKernel -> {}
+            PlatformMode.HeadlessKernel ->
+                PlatformPageSets.entries.forEach { registry.registerExcludedPageSet(it.pageSet.id) }
         }
         return registry
     }
@@ -451,10 +455,10 @@ class PluginHostedAppTest {
     @Nested
     inner class PluginHostedAppNoPages {
         @Test
-        fun `has no PlatformUi routes when no pages mounted`() {
+        fun `has no PlatformUi routes when no pages included`() {
             val registry = simulateMode(PlatformMode.PluginHostedApp, emptySet())
             val uiRoutes = registry.byOwner(RouteOwner.PlatformUi)
-            assertTrue(uiRoutes.isEmpty()) { "PluginHostedApp with no mounted pages should have no PlatformUi routes" }
+            assertTrue(uiRoutes.isEmpty()) { "PluginHostedApp with no included pages should have no PlatformUi routes" }
         }
 
         @Test
@@ -483,7 +487,7 @@ class PluginHostedAppTest {
     }
 
     @Nested
-    inner class PluginHostedAppWithMountedPages {
+    inner class PluginHostedAppWithIncludedPages {
         @Test
         fun `settings page set adds PlatformUi settings route`() {
             val registry = simulateMode(PlatformMode.PluginHostedApp, setOf(PlatformPageSets.SETTINGS))
@@ -561,7 +565,7 @@ class PluginHostedAppTest {
         }
 
         @Test
-        fun `mounted pages do not conflict with kernel routes`() {
+        fun `included pages do not conflict with kernel routes`() {
             val registry =
                 simulateMode(
                     PlatformMode.PluginHostedApp,
@@ -626,6 +630,9 @@ class PluginHostedAppTest {
             val ex = assertThrows<IllegalArgumentException> { registry.requireNoConflicts() }
             assertTrue(ex.message!!.contains("Route conflicts detected"))
             assertTrue(ex.message!!.contains("/dashboard"))
+            assertTrue(ex.message!!.contains("existing: PlatformUi [ProtectedUi] Platform dashboard"))
+            assertTrue(ex.message!!.contains("challenger: Plugin [ProtectedUi] Plugin dashboard"))
+            assertTrue(ex.message!!.contains("manifest-owned prefix"))
         }
 
         @Test
@@ -744,7 +751,7 @@ class PluginHostedAppTest {
         }
 
         @Test
-        fun `PluginHostedApp route count grows with mounted pages`() {
+        fun `PluginHostedApp route count grows with included pages`() {
             val empty = simulateMode(PlatformMode.PluginHostedApp, emptySet())
             val withOne = simulateMode(PlatformMode.PluginHostedApp, setOf(PlatformPageSets.SETTINGS))
             val withMany =
@@ -757,13 +764,13 @@ class PluginHostedAppTest {
         }
 
         @Test
-        fun `PlatformUi routes only present in FullPlatformApp or mounted pages`() {
+        fun `PlatformUi routes only present in FullPlatformApp or included pages`() {
             val full = simulateMode(PlatformMode.FullPlatformApp)
             val pluginEmpty = simulateMode(PlatformMode.PluginHostedApp, emptySet())
-            val pluginMounted = simulateMode(PlatformMode.PluginHostedApp, setOf(PlatformPageSets.SETTINGS))
+            val pluginIncluded = simulateMode(PlatformMode.PluginHostedApp, setOf(PlatformPageSets.SETTINGS))
             assertTrue(full.byOwner(RouteOwner.PlatformUi).isNotEmpty())
             assertTrue(pluginEmpty.byOwner(RouteOwner.PlatformUi).isEmpty())
-            assertTrue(pluginMounted.byOwner(RouteOwner.PlatformUi).isNotEmpty())
+            assertTrue(pluginIncluded.byOwner(RouteOwner.PlatformUi).isNotEmpty())
         }
     }
 }

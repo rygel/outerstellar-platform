@@ -107,11 +107,11 @@ Navigation: `MainController` holds center `StackPane`. Sidebar buttons swap view
 
 ### Layer 3: Integration Tests (TestFX + Testcontainers)
 - Full app with real PostgreSQL database
-- Run in Docker container only
+- Run in Podman container only
 - Login, create messages, sync, contacts CRUD
 
 ### CI
-- Same Docker container pattern as existing desktop tests
+- Same Podman/Xvfb container pattern as existing desktop tests
 - Monocle means no Xvfb dependency — tests run purely headless
 
 ## Build & Packaging

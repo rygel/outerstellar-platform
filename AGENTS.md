@@ -163,14 +163,18 @@ mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastru
 **Desktop/Swing tests must NEVER run directly on the host machine.** They capture mouse and keyboard. Always use Podman:
 
 ```powershell
-# Build the image (slow, only when dependencies change)
-podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
+# Preferred wrapper: builds docker/Dockerfile.build --target desktop-test,
+# runs Swing tests under Xvfb, and copies reports back.
+pwsh scripts/test-desktop.ps1
 
-# Run tests (mount Maven cache + Docker socket for Testcontainers)
-# NOTE: On Windows, OMIT the :Z flag (SELinux-specific)
+# Bash equivalent:
+bash docker/run-desktop-tests.sh
+
+# Manual equivalent, if the wrapper is unavailable:
+podman build --target desktop-test -t outerstellar-test-desktop -f docker/Dockerfile.build .
 podman run --rm --network host `
-  -v "${env:USERPROFILE}\.m2\repository:/root/.m2/repository" `
-  -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml" `
+  -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml:ro" `
+  -e "DOCKER_HOST=unix:///var/run/docker.sock" `
   -v "/var/run/docker.sock:/var/run/docker.sock" `
   outerstellar-test-desktop
 ```
@@ -386,8 +390,7 @@ Before every commit, the following MUST be true:
 
 2. **Desktop/UI tests must run in Podman containers.** Desktop/Swing tests must NEVER run directly on the host machine — they capture mouse and keyboard. Use:
    ```powershell
-   podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
-   podman run --rm --network host -v "${env:USERPROFILE}\.m2\repository:/root/.m2/repository" -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml" -v "/var/run/docker.sock:/var/run/docker.sock" outerstellar-test-desktop
+   pwsh scripts/test-desktop.ps1
    ```
 
 **Do not commit if either of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
