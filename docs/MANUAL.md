@@ -118,48 +118,41 @@ The platform uses JDBI as its persistence layer, implementing repository interfa
 Plugins implement `PlatformPlugin` and register as a Koin `single`:
 
 ```kotlin
-class MyPlugin : PlatformPlugin {
+class MyPlugin : HostedApp {
     override val id = "my-plugin"
     override val appLabel = "My App"
 
-    override fun navItems() = listOf(
-        PluginNavItem("Dashboard", "/dashboard", "dashboard-3-line")
-    )
-
-    override fun routes(context: PluginContext) = listOf(
-        myDashboardRoute(context)
-    )
-
-    override fun koinModules() = listOf(myPluginModule)
+    override fun contribute(context: HostedAppContributionContext) {
+        context.navigation.item("Dashboard", "/dashboard", "dashboard-3-line")
+        context.routes.protectedUi(myDashboardRoute(), "Dashboard", "/dashboard")
+    }
 }
 ```
-
-Pass the plugin to `startKoin` **before** host modules.
 
 ### What Plugins Can Do
 
 | Capability | Override | Description |
 |---|---|---|
-| Routes | `routes(context)` | Add HTTP routes (http4k `ContractRoute`) |
+| Routes | `contribute(context)` / `routeRegistrations(context)` | Add HTTP routes (public, protected, API, admin, static assets) |
 | Filters | `filters(context)` | Add filters before route dispatch |
-| Nav items | `navItems()` | Replace sidebar navigation |
-| Koin modules | `koinModules()` | Register additional services |
+| Navigation | `contribute(context)` | Add shell navigation items |
+| Admin | `contribute(context)` / `adminSections(context)` | Add admin summary cards and routes |
+| Layout & assets | `layoutRenderer(context)` / `contribute(context)` | Replace the shell layout and contribute styles/scripts/static assets |
 | Migrations | `PluginMigrationSource` | Separate Flyway instance with own history table |
 | Text overrides | `textResolver` | Custom translations |
 | Template overrides | `templateOverrides()` | Override JTE templates from plugin classpath |
-| Route exclusion | `excludeDefaultRoutes` | Remove specific host routes |
 
 ### PluginContext
 
-Passed to `routes()` and `filters()`, provides access to:
+Passed to hosted-app hooks, provides access to:
 
-- `renderer` — JTE template renderer
-- `config` — AppConfig
-- `securityService` — auth operations
-- `userRepository` — user data access
-- `analytics` — tracking service
-- `notificationService` — push notifications
-- `pageFactory` — web page construction
+- `app` (`config` compatibility alias) — safe app info: `version`, `appBaseUrl`, `devMode`, `registrationEnabled`
+- `users` (`userRepository` alias) — current user lookup plus `findById`, `findByUsername`, `findByEmail`
+- `analytics` — identify/track/page events
+- `notifications` (`notificationService` alias) — create/list/count/mark/delete notifications
+- `rendering` (`renderer` alias) — template renderer plus shell rendering
+- `security` (`apiKeyService` / `oauthService` aliases) — API key CRUD and OAuth user resolution
+- `currentUser(request)` / `renderShell(shell, bodyHtml)` convenience helpers
 
 ### Plugin Migrations
 

@@ -550,9 +550,13 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   platform-page, text-resolver, and ownership metadata. `/admin/plugins` renders the collected contribution including
   capability flags, routes, included platform pages, shell assets, and ownership prefixes.
 
-- [ ] **Slim `PluginContext` behind plugin-facing facades**
-  Replace raw host services with narrower plugin facades such as users, analytics, notifications, rendering, and
-  security. Keep host internals behind adapters so plugins depend on a stable interface.
+- [x] ~~**Slim `PluginContext` behind plugin-facing facades**~~
+  Fixed — `HostedAppContext` now exposes safe `app`, `users`, `analytics`, `notifications`, `rendering`, and
+  `security` facades. Raw host internals such as full `AppConfig` and `WebPageFactory` are no longer plugin-facing;
+  compatibility aliases remain for the narrowed surfaces (`config`, `userRepository`, `apiKeyService`, `oauthService`,
+  `notificationService`, `renderer`).
+  — `platform-web/.../plugin/HostedAppApi.kt`, `platform-web/.../App.kt`,
+    `platform-web/.../HostedAppContextFacadeTest.kt`
 
 - [ ] **Extract plugin SPI package into `platform-plugin-api` module**
   The plugin-facing package is isolated but still compiled inside `platform-web`. Move it into a small standalone module
