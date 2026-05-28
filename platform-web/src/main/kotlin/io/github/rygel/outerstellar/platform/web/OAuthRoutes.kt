@@ -101,10 +101,18 @@ class OAuthRoutes(
 
     private data class ValidatedCallback(val code: String, val state: String)
 
-    private fun validateCallback(request: Request, providerName: String): ValidatedCallback? {
-        val code = request.query("code") ?: request.bodyString().parseFormField("code")
+    private fun Request.callbackField(name: String, providerName: String): String? =
+        query(name)
+            ?: try {
+                bodyString().parseFormField(name)
+            } catch (e: IllegalArgumentException) {
+                logger.warn("OAuth callback parse failure for provider={} field={}: {}", providerName, name, e.message)
+                null
+            }
 
-        val returnedState = request.query("state") ?: request.bodyString().parseFormField("state")
+    private fun validateCallback(request: Request, providerName: String): ValidatedCallback? {
+        val code = request.callbackField("code", providerName)
+        val returnedState = request.callbackField("state", providerName)
         val expectedState = request.cookie("oauth_state")?.value
         val stateValid = returnedState != null && returnedState == expectedState
 

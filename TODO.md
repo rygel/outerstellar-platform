@@ -572,8 +572,10 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
 - [x] ~~**Mobile responsive layout**~~
   `SidebarLayout` and `TopbarLayout` are desktop-oriented. Add responsive breakpoints, hamburger navigation, touch-friendly controls.
 
-- [ ] **Jazzer fuzz tests for high-risk surfaces**
-  Add Jazzer (JVM fuzzing) tests for: CSP parsing, JWT validation, OAuth callback parsing, rate limiter token bucket math, input validation.
+- [x] ~~**Jazzer fuzz tests for high-risk surfaces**~~
+  Fixed — strengthened `WebFuzzTest` coverage for CSP headers, JWT validation, OAuth callback parsing,
+  rate limiter parsing, token bucket behavior, and URL validation, plus added deterministic regression
+  tests so malformed percent-encoded OAuth and rate-limiter form inputs fail safely instead of throwing.
 
 ### Low Priority
 
