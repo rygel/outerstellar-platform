@@ -418,7 +418,18 @@ jobs:
           restore-keys: nvd-
 
       - name: OWASP dependency check
-        run: mvn org.owasp:dependency-check-maven:aggregate -DskipTests
+        run: |
+          for attempt in $(seq 1 3); do
+            if mvn org.owasp:dependency-check-maven:aggregate -DskipTests; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "OWASP dependency check failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "Attempt ${attempt}/3 failed; waiting 90s for NVD rate limits to cool down..."
+            sleep 90
+          done
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
 
