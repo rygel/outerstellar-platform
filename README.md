@@ -1,31 +1,34 @@
-### Outerstellar Platform Project
+### Outerstellar Platform
 
-A modern, full-stack Kotlin application designed as a platform template for building robust and scalable systems. This project showcases a clean, multi-module architecture with a focus on reliability, performance, and observability.
+A Kotlin application platform for building plugin-hosted web and desktop products. The platform provides configuration, database migrations, authentication, session management, routing, and template rendering — plugins provide the product UI and business logic.
 
 ---
 
 ### Key Architectural Features
 
-- **Multi-Module Architecture**: Split into `platform-core`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, and `platform-desktop` modules for clear separation of concerns.
+- **Plugin Composition Model**: Plugins control what platform UI to include via `PlatformMode` (`FullPlatformApp`, `PluginHostedApp`, `HeadlessKernel`). Route ownership, conflict detection, and startup diagnostics come built-in.
+- **Multi-Module Architecture**: `platform-core`, `platform-plugin-api`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, `platform-desktop`, and `platform-seed` for clear separation of concerns.
 - **Transactional Outbox Pattern**: Ensures atomicity and reliability for background tasks and data synchronization.
-- **Dependency Injection**: Powered by **Koin** for flexible and testable component wiring.
-- **Observability**: Fully integrated with **OpenTelemetry** for distributed tracing and **Micrometer** for real-time metrics.
-- **Type-Safe Configuration**: Uses **Hoplite** for robust, multi-environment configuration management.
-- **Contract-First API**: synchronization API is defined using **http4k-contract**, providing automatic OpenAPI documentation and type-safe routing.
-- **Caching Layer**: Implements a **Caffeine-based caching** system with integrated metrics.
-- **Swing Desktop MVVM**: The desktop client uses the **Model-View-ViewModel** pattern for better UI/logic separation.
-- **Managed Database Migrations**: Uses **Flyway** for reliable schema versioning and management.
+- **Observability**: Integrated with **OpenTelemetry** for distributed tracing and **Micrometer** for real-time metrics.
+- **Type-Safe Configuration**: Uses **Hoplite** for multi-environment configuration from YAML + env vars.
+- **Contract-First API**: Synchronization API defined using **http4k-contract** with automatic OpenAPI documentation.
+- **Caching Layer**: **Caffeine-based caching** with integrated metrics.
+- **Swing Desktop MVVM**: Desktop client uses **Model-View-ViewModel** with **FlatLaf** theming.
+- **Managed Database Migrations**: **Flyway** for schema versioning with plugin-isolated migration history tables.
 
 ---
 
 ### Project Structure
 
-- `platform-core`: Domain models, service interfaces, and shared business logic.
+- `platform-core`: Domain models, service interfaces, shared business logic, composition model types.
+- `platform-plugin-api`: Hosted-app SPI and plugin-facing DTOs for the composition model.
 - `platform-persistence-jdbi`: Database implementation using JDBI and Flyway migrations.
 - `platform-sync-client`: Shared DTOs and client logic for synchronization between components.
 - `platform-security`: Authentication models, role-based access control, fine-grained permissions, multi-realm auth, and security filters.
-- `platform-web`: The main http4k server, JTE templates, and web-specific infrastructure.
+- `platform-web`: The main http4k server, JTE templates, route registry, and web-specific infrastructure.
 - `platform-desktop`: A Swing-based desktop application implementing the MVVM pattern.
+- `platform-seed`: Database seeding utility.
+- `platform-desktop-javafx`: JavaFX desktop module (scaffolded, not production-ready).
 
 ---
 
@@ -96,28 +99,62 @@ mvn test
 
 ### Web Architecture & Adding Routes
 
-The web application uses **http4k** with **JTE** templates and **HTMX** for interactivity. Routes are organized into three logical groups in `App.kt`:
+The web application uses **http4k** with **JTE** templates and **HTMX** for interactivity. Routes are organized by ownership through the `RouteRegistry`:
 
-1. **UI Routes**: Full HTML pages (e.g., Home, Auth).
-2. **Component Routes**: HTMX fragments (e.g., `/components/message-list`).
-3. **API Routes**: JSON-based synchronization API.
+1. **Kernel routes**: Always present — auth, static assets, health, metrics.
+2. **Platform UI routes**: Opt-in via `includePlatformPages()` — home, contacts, settings, search, notifications, profile, admin, dev-dashboard.
+3. **Plugin routes**: Registered by the plugin via `routeRegistrations()` in any route group.
+4. **API routes**: JSON-based synchronization and bearer-token API.
+
+#### Platform Modes
+
+```kotlin
+enum class PlatformMode {
+    FullPlatformApp,   // Default — all platform UI routes mounted, zero config
+    PluginHostedApp,   // Plugin opts into specific platform pages via includePlatformPages()
+    HeadlessKernel     // API-only, no HTML UI at all
+}
+```
+
+#### Creating a Plugin
+
+```kotlin
+class MyPlugin : PlatformPlugin {
+    override val id = "my-app"
+    override val mode = PlatformMode.PluginHostedApp
+
+    override fun includePlatformPages() = setOf(
+        PlatformPageSets.SETTINGS,
+        PlatformPageSets.SEARCH,
+    )
+
+    override fun routeRegistrations(context: PluginContext) = listOf(
+        PluginRouteRegistration(myHomeRoute, RouteGroup.PublicUi, "Home page"),
+    )
+}
+
+// Start the server
+val components = createServerComponents(plugin = MyPlugin())
+```
+
+At startup, the route registry logs a table showing all routes, their owners, and any conflicts. If two owners claim the same path, the server fails fast with a descriptive error.
 
 #### How to Add a New Page:
 
 1. **Create a ViewModel**: Define a Kotlin `data class` implementing `ViewModel` in `WebPageFactory.kt`.
-2. **Create a Template**: Add a corresponding `.kte` file in `platform-web/src/main/jte`. Wrap your content using the `Page<T>` wrapper to inherit the global shell:
+2. **Create a Template**: Add a corresponding `.kte` file in `platform-web/src/main/jte`. Wrap your content using the `Page<T>` wrapper to inherit the global layout:
    ```html
    @import io.github.rygel.outerstellar.platform.web.MyPage
    @import io.github.rygel.outerstellar.platform.web.Page
    @param model: Page<MyPage>
    
-   @template.io.github.rygel.outerstellar.platform.web.Layout(shell = model.shell, content = @`
+   @template.io.github.rygel.outerstellar.platform.web.LayoutRouter(shell = model.shell, content = @`
        <h1>${model.data.title}</h1>
    `)
    ```
-3. **Update the Factory**: Add a `buildMyPage` method to `WebPageFactory.kt` that returns `Page<MyPage>`.
-4. **Register the Route**: Add the route to the appropriate route class (e.g., `HomeRoutes.kt`) and bind it in `App.kt`.
-5. **Access State**: Use `WebContext.KEY(request)` or the helper property `request.webContext` to access the current theme, language, and layout state without manual extraction.
+3. **Update the Factory**: Add a `buildMyPage` method to the appropriate domain factory (e.g., `HomePageFactory`, `SettingsPageFactory`).
+4. **Register the Route**: Add the route to the appropriate route class (e.g., `HomeRoutes.kt`) and register it in the `RouteRegistry` in `App.kt`.
+5. **Access State**: Use `request.shellRenderer` to build `ShellView` with nav links, CSRF token, theme, and user info.
 
 #### Fine-Grained Permissions
 
@@ -132,7 +169,7 @@ The default `RoleBasedPermissionResolver` maps roles to permission sets (admins 
 
 #### Multi-Realm Authentication
 
-Bearer token authentication is resolved through a chain of `AuthRealm` instances. The default chain tries session tokens first, then API keys. To add a custom auth source (e.g. LDAP, external OAuth tokens):
+Bearer token authentication is resolved through a chain of `AuthRealm` instances. The default chain tries session tokens first, then API keys. To add a custom auth source:
 
 ```kotlin
 class LdapRealm(private val ldapClient: LdapClient) : AuthRealm {
@@ -142,9 +179,6 @@ class LdapRealm(private val ldapClient: LdapClient) : AuthRealm {
         return AuthResult.Authenticated(user)
     }
 }
-
-// Register in your Koin module:
-single<List<AuthRealm>> { listOf(SessionRealm(get()), ApiKeyRealm(get()), LdapRealm(get())) }
 ```
 
 #### Native Image Support (GraalVM)
