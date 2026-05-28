@@ -72,6 +72,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-plugin-api/target/
             platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
@@ -122,6 +123,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-plugin-api/target/
             platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
@@ -132,7 +134,7 @@ jobs:
       - name: Install parent POM and dependencies
         run: >
           mvn install -N -q
-          && mvn install -pl jte-extensions,platform-core,platform-security,platform-test-infrastructure,platform-sync-client,platform-persistence-jdbi
+          && mvn install -pl jte-extensions,platform-core,platform-plugin-api,platform-security,platform-test-infrastructure,platform-sync-client,platform-persistence-jdbi
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -186,6 +188,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-plugin-api/target/
             platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
@@ -200,7 +203,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security
+          -pl platform-core,platform-plugin-api,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -247,6 +250,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-plugin-api/target/
             platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
@@ -258,7 +262,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
+          -pl platform-core,platform-plugin-api,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
           -DskipTests -Dexec.skip=true -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -331,6 +335,7 @@ jobs:
         with:
           path: |
             platform-core/target/
+            platform-plugin-api/target/
             platform-test-infrastructure/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
