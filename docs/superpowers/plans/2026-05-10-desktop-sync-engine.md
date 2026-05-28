@@ -1102,8 +1102,14 @@ Expected: BUILD SUCCESS, all 546+ tests pass
 
 Rebuild image and run:
 ```powershell
-podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
-podman run --rm --network host -v "${HOME}/.m2/settings.xml:/root/.m2/settings.xml:Z" -v "${HOME}/.m2/repository:/root/.m2/repository:Z" -v "/var/run/docker.sock:/var/run/docker.sock:Z" outerstellar-test-desktop
+pwsh scripts/test-desktop.ps1
+
+# Bash equivalent:
+bash docker/run-desktop-tests.sh
+
+# Manual equivalent:
+podman build --target desktop-test -t outerstellar-test-desktop -f docker/Dockerfile.build .
+podman run --rm --network host -v "${HOME}/.m2/settings.xml:/root/.m2/settings.xml:ro" -e "DOCKER_HOST=unix:///var/run/docker.sock" -v "/var/run/docker.sock:/var/run/docker.sock" outerstellar-test-desktop
 ```
 Expected: BUILD SUCCESS, all 126+ desktop tests pass
 

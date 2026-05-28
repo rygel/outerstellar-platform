@@ -78,7 +78,7 @@ Bring the JavaFX desktop module to feature parity with the Swing application for
 
 - Compile check: `mvn -pl platform-desktop-javafx compile -q`
 - No automated UI tests in this phase (JavaFX headless testing is complex)
-- Manual verification via Podman/Docker with Xvfb
+- Manual verification via Podman with Xvfb
 
 ## Out of Scope (Phase 1)
 

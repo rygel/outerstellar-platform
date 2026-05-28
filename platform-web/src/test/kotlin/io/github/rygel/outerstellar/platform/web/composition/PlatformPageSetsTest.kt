@@ -27,8 +27,8 @@ class PlatformPageSetsTest {
     }
 
     @Test
-    fun `page sets can be collected into a Set for mountPlatformPages`() {
-        val mounted = setOf(PlatformPageSets.SETTINGS, PlatformPageSets.SEARCH)
-        assertEquals(2, mounted.size)
+    fun `page sets can be collected into a Set for includePlatformPages`() {
+        val included = setOf(PlatformPageSets.SETTINGS, PlatformPageSets.SEARCH)
+        assertEquals(2, included.size)
     }
 }

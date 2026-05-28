@@ -77,19 +77,25 @@ class RouteRegistryTest {
     @Test
     fun `conflict message identifies both owners`() {
         val registry = RouteRegistry()
-        registry.register(registeredRoute("GET", "/settings", owner = RouteOwner.PlatformUi))
-        registry.register(registeredRoute("GET", "/settings", owner = RouteOwner.Plugin))
+        registry.register(registeredRoute("GET", "/settings", "Settings page", owner = RouteOwner.PlatformUi))
+        registry.register(registeredRoute("GET", "/settings", "Hosted settings", owner = RouteOwner.Plugin))
         val conflict = registry.conflicts().first()
         assert(conflict.existing == RouteOwner.PlatformUi) { "Expected PlatformUi as existing" }
         assert(conflict.challenger == RouteOwner.Plugin) { "Expected Plugin as challenger" }
+        assert(conflict.existingRoute?.description == "Settings page") { "Expected existing route details" }
+        assert(conflict.challengerRoute?.description == "Hosted settings") { "Expected challenger route details" }
     }
 
     @Test
     fun `requireNoConflicts throws on conflicts`() {
         val registry = RouteRegistry()
-        registry.register(registeredRoute("GET", "/", owner = RouteOwner.PlatformUi))
-        registry.register(registeredRoute("GET", "/", owner = RouteOwner.Plugin))
-        assertThrows<IllegalArgumentException> { registry.requireNoConflicts() }
+        registry.register(registeredRoute("GET", "/", "Platform home", owner = RouteOwner.PlatformUi))
+        registry.register(registeredRoute("GET", "/", "Hosted app home", owner = RouteOwner.Plugin))
+        val error = assertThrows<IllegalArgumentException> { registry.requireNoConflicts() }
+        val message = error.message.orEmpty()
+        assert(message.contains("existing: PlatformUi [ProtectedUi] Platform home")) { message }
+        assert(message.contains("challenger: Plugin [ProtectedUi] Hosted app home")) { message }
+        assert(message.contains("Remediation: move the hosted app route")) { message }
     }
 
     @Test
@@ -115,6 +121,19 @@ class RouteRegistryTest {
         assert(table.contains("/auth/login")) { "Expected /auth/login" }
         assert(table.contains("PlatformUi")) { "Expected PlatformUi" }
         assert(table.contains("PlatformKernel")) { "Expected PlatformKernel" }
+    }
+
+    @Test
+    fun `excluded page sets are listed in formatTable`() {
+        val registry = RouteRegistry()
+        registry.register(registeredRoute("GET", "/", "Home page", RouteOwner.PlatformUi, RouteGroup.PublicUi))
+        registry.registerExcludedPageSet("settings")
+        registry.registerExcludedPageSet("contacts")
+
+        val table = registry.formatTable()
+
+        assert(table.contains("Excluded page sets: contacts, settings")) { "Expected excluded page sets" }
+        assert(registry.excludedPageSets() == listOf("settings", "contacts")) { "Expected insertion order" }
     }
 
     private fun registeredRoute(

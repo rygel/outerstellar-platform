@@ -12,6 +12,9 @@ import io.github.rygel.outerstellar.platform.export.ContactExportProvider
 import io.github.rygel.outerstellar.platform.export.MessageExportProvider
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.plugin.HostedApp
+import io.github.rygel.outerstellar.platform.plugin.HostedAppContext
+import io.github.rygel.outerstellar.platform.plugin.HostedAppContribution
 import io.github.rygel.outerstellar.platform.search.ContactSearchProvider
 import io.github.rygel.outerstellar.platform.search.MessageSearchProvider
 import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
@@ -22,7 +25,6 @@ import io.github.rygel.outerstellar.platform.security.OAuthProvider
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SessionRealm
-import io.github.rygel.outerstellar.platform.web.AdminNavItem
 import io.github.rygel.outerstellar.platform.web.ApiKeyRoutes
 import io.github.rygel.outerstellar.platform.web.AuthApi
 import io.github.rygel.outerstellar.platform.web.AuthRoutes
@@ -40,10 +42,7 @@ import io.github.rygel.outerstellar.platform.web.NotificationRoutes
 import io.github.rygel.outerstellar.platform.web.OAuthRoutes
 import io.github.rygel.outerstellar.platform.web.Page
 import io.github.rygel.outerstellar.platform.web.PasswordRoutes
-import io.github.rygel.outerstellar.platform.web.PlatformPlugin
 import io.github.rygel.outerstellar.platform.web.PluginAdminDashboardPage
-import io.github.rygel.outerstellar.platform.web.PluginContext
-import io.github.rygel.outerstellar.platform.web.PluginOptions
 import io.github.rygel.outerstellar.platform.web.PollApi
 import io.github.rygel.outerstellar.platform.web.ProfileRoutes
 import io.github.rygel.outerstellar.platform.web.RequestContext
@@ -101,7 +100,7 @@ fun app(
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
-    plugin: PlatformPlugin? = null,
+    plugin: HostedApp? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
     val httpHandler = assembleHttpHandler(config, persistence, security, core, web, plugin)
@@ -115,23 +114,34 @@ private fun assembleHttpHandler(
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
-    plugin: PlatformPlugin?,
+    plugin: HostedApp?,
 ): HttpHandler {
     val registry = RouteRegistry()
-    val pluginMode = plugin?.mode ?: config.platformMode
+    val pluginContext = plugin?.let { buildPluginContext(web.templateRenderer, config, persistence, security, web) }
+    val pluginContribution = HostedAppContribution.from(plugin, config.platformMode, pluginContext)
     val sec = security
     val realms = listOf(SessionRealm(sec.sessionService), ApiKeyRealm(sec.apiKeyService))
     val (bearerSecurity, bearerAdminSecurity) = buildBearerSecurityPair(realms)
-    registerApiRoutes(registry, config, persistence, security, core, web, plugin, bearerSecurity, bearerAdminSecurity)
-    registerUiRoutes(registry, config, security, core, web, plugin, pluginMode)
-    registerComponentRoutes(registry, web, plugin)
-    registerAdminRoutes(registry, config, persistence, security, web, plugin)
+    registerApiRoutes(
+        registry,
+        config,
+        persistence,
+        security,
+        core,
+        web,
+        pluginContribution,
+        bearerSecurity,
+        bearerAdminSecurity,
+    )
+    registerUiRoutes(registry, config, security, core, web, pluginContribution)
+    registerComponentRoutes(registry, web, pluginContribution)
+    registerAdminRoutes(registry, config, persistence, security, web, pluginContribution)
     registerKernelRoutes(registry)
     registerTotpRoutes(registry)
-    registerPluginRoutes(registry, plugin, config, persistence, security, web)
+    registerPluginRoutes(registry, pluginContribution)
     registry.requireNoConflicts()
     logger.info(registry.formatTable())
-    return buildFromRegistry(registry, config, persistence, security, web, plugin)
+    return buildFromRegistry(registry, config, persistence, security, web, pluginContribution)
 }
 
 private fun buildBearerSecurityPair(realms: List<AuthRealm>): Pair<Security, Security> {
@@ -179,12 +189,12 @@ private fun registerApiRoutes(
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
-    plugin: PlatformPlugin?,
+    pluginContribution: HostedAppContribution,
     bearerSecurity: Security,
     bearerAdminSecurity: Security,
 ) {
     val sec = security
-    val appLabel = plugin?.appLabel ?: "Outerstellar"
+    val appLabel = pluginContribution.appLabel
     val apiContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel API", "v1.0"), KotlinxSerialization)
         descriptionPath = "/api/openapi.json"
@@ -270,14 +280,13 @@ private fun registerUiRoutes(
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
-    plugin: PlatformPlugin?,
-    pluginMode: PlatformMode,
+    pluginContribution: HostedAppContribution,
 ) {
     val sec = security
     val sessionCookieSecure = config.sessionCookieSecure
     val pageFactory = web.pageFactory
     val jteRenderer = web.templateRenderer
-    val appLabel = plugin?.appLabel ?: "Outerstellar"
+    val appLabel = pluginContribution.appLabel
 
     val publicContractRoutes = mutableListOf<org.http4k.contract.ContractRoute>()
     val protectedContractRoutes = mutableListOf<org.http4k.contract.ContractRoute>()
@@ -294,7 +303,7 @@ private fun registerUiRoutes(
         sessionCookieSecure,
     )
 
-    when (pluginMode) {
+    when (pluginContribution.mode) {
         PlatformMode.FullPlatformApp -> {
             registerFullPlatformUiRoutes(
                 registry,
@@ -310,8 +319,8 @@ private fun registerUiRoutes(
         }
 
         PlatformMode.PluginHostedApp -> {
-            val mounted = plugin?.mountPlatformPages() ?: emptySet()
-            for (pageSet in mounted) {
+            val included = pluginContribution.includedPlatformPages
+            for (pageSet in included) {
                 registerPageSet(
                     pageSet,
                     registry,
@@ -323,13 +332,18 @@ private fun registerUiRoutes(
                     sec,
                 )
             }
+            registerExcludedPageSets(registry, included)
         }
 
-        PlatformMode.HeadlessKernel -> {}
+        PlatformMode.HeadlessKernel -> registerExcludedPageSets(registry, emptySet())
     }
 
     registerLogoutRoute(protectedContractRoutes, registry, sec, sessionCookieSecure)
     assembleUiContracts(registry, publicContractRoutes, protectedContractRoutes, appLabel)
+}
+
+private fun registerExcludedPageSets(registry: RouteRegistry, included: Set<PlatformPageSets>) {
+    PlatformPageSets.entries.filter { it !in included }.forEach { registry.registerExcludedPageSet(it.pageSet.id) }
 }
 
 private fun registerLogoutRoute(
@@ -724,8 +738,12 @@ private fun registerProfilePages(
     protectedRoutes += profileRoutes.routes
 }
 
-private fun registerComponentRoutes(registry: RouteRegistry, web: WebComponents, plugin: PlatformPlugin?) {
-    val appLabel = plugin?.appLabel ?: "Outerstellar"
+private fun registerComponentRoutes(
+    registry: RouteRegistry,
+    web: WebComponents,
+    pluginContribution: HostedAppContribution,
+) {
+    val appLabel = pluginContribution.appLabel
     val componentRoutes = ComponentRoutes(web.pageFactory, web.templateRenderer, web.voteService, web.pollService)
     val publicContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), KotlinxSerialization)
@@ -766,26 +784,20 @@ private fun registerAdminRoutes(
     persistence: PersistenceComponents,
     security: SecurityComponents,
     web: WebComponents,
-    plugin: PlatformPlugin?,
+    pluginContribution: HostedAppContribution,
 ) {
     val sec = security
     val pageFactory = web.pageFactory
     val jteRenderer = web.templateRenderer
     val devDashboardEnabled = config.devDashboardEnabled
-    val appLabel = plugin?.appLabel ?: "Outerstellar"
+    val appLabel = pluginContribution.appLabel
     val adminSecurity =
         object : Security {
             override val filter = Filter { next ->
                 SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
             }
         }
-    val pluginCtx = plugin?.let { buildPluginContext(jteRenderer, config, persistence, security, web) }
-    val pluginSections =
-        if (plugin != null && pluginCtx != null) {
-            plugin.adminSections(pluginCtx)
-        } else {
-            emptyList()
-        }
+    val pluginSections = pluginContribution.adminSections
     val adminContract = contract {
         renderer = OpenApi3(ApiInfo("$appLabel Admin", "v1.0"), KotlinxSerialization)
         descriptionPath = "/admin/openapi.json"
@@ -816,24 +828,18 @@ private fun registerAdminRoutes(
                             val pluginShellRenderer =
                                 ShellRenderer(
                                     pluginRequestContext,
-                                    shellConfig =
-                                        ShellConfig(
-                                            pluginOptions =
-                                                PluginOptions(
-                                                    adminNavItems =
-                                                        pluginSections.map {
-                                                            AdminNavItem(
-                                                                it.navLabel,
-                                                                it.summaryCard.linkUrl,
-                                                                it.navIcon,
-                                                            )
-                                                        }
-                                                )
-                                        ),
+                                    shellConfig = ShellConfig(pluginOptions = pluginContribution.options),
                                 )
                             val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
-                            val page = Page(shell, PluginAdminDashboardPage(pluginSections.map { it.summaryCard }))
-                            Response(Status.OK).body(jteRenderer(page) ?: "")
+                            val page =
+                                Page(
+                                    shell,
+                                    PluginAdminDashboardPage(
+                                        cards = pluginSections.map { it.summaryCard },
+                                        diagnostics = pluginContribution.diagnostics(),
+                                    ),
+                                )
+                            Response(Status.OK).body(jteRenderer(page))
                         }
                 )
             routes(adminContract, pluginDashboardRoute)
@@ -866,25 +872,15 @@ private fun registerTotpRoutes(registry: RouteRegistry) {
     registry.register(RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Api, "/api/totp", "*", "TOTP API"))
 }
 
-private fun registerPluginRoutes(
-    registry: RouteRegistry,
-    plugin: PlatformPlugin?,
-    config: AppConfig,
-    persistence: PersistenceComponents,
-    security: SecurityComponents,
-    web: WebComponents,
-) {
-    if (plugin == null) return
-    val jteRenderer = web.templateRenderer
-    val pluginCtx = buildPluginContext(jteRenderer, config, persistence, security, web)
-    plugin.routeRegistrations(pluginCtx).forEach { registration ->
+private fun registerPluginRoutes(registry: RouteRegistry, pluginContribution: HostedAppContribution) {
+    pluginContribution.routeRegistrations.forEach { registration ->
         registry.register(
             RegisteredRoute(
-                registration.route,
+                registration.httpRoute,
                 RouteOwner.Plugin,
                 registration.group,
-                registration.description,
-                "*",
+                registration.pathPattern,
+                registration.method,
                 registration.description,
             )
         )
@@ -897,7 +893,7 @@ private fun buildFromRegistry(
     persistence: PersistenceComponents,
     security: SecurityComponents,
     web: WebComponents,
-    plugin: PlatformPlugin?,
+    pluginContribution: HostedAppContribution,
 ): HttpHandler {
     val sec = security
     val userRepository = persistence.userRepository
@@ -907,11 +903,13 @@ private fun buildFromRegistry(
     val protectedUiRoutes = registry.byGroup(RouteGroup.ProtectedUi)
     val apiRoutes = registry.byGroup(RouteGroup.Api)
     val adminRoutes = registry.byGroup(RouteGroup.Admin)
+    val staticRoutes = registry.byGroup(RouteGroup.Static)
 
     val publicUiHandlers = publicUiRoutes.mapNotNull { it.httpRoute as? RoutingHttpHandler }
     val protectedUiHandlers = protectedUiRoutes.mapNotNull { it.httpRoute as? RoutingHttpHandler }
     val apiHandlers = apiRoutes.mapNotNull { it.httpRoute as? RoutingHttpHandler }
     val adminHandlers = adminRoutes.mapNotNull { it.httpRoute as? RoutingHttpHandler }
+    val staticHandlers = staticRoutes.mapNotNull { it.httpRoute as? RoutingHttpHandler }
 
     val filteredAdminHandler =
         Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
@@ -929,6 +927,7 @@ private fun buildFromRegistry(
             "/robots.txt" bind GET to { buildRobotsTxtResponse() },
             "/sitemap.xml" bind GET to { buildSitemapResponse(config.appBaseUrl) },
         )
+    unfiltered += staticHandlers
 
     val appRoutes = mutableListOf<RoutingHttpHandler>()
     appRoutes += routes(publicUiHandlers)
@@ -947,7 +946,7 @@ private fun buildFromRegistry(
     appRoutes += "/" bind filteredAdminHandler
 
     val baseApp = routes(unfiltered + appRoutes)
-    return buildFilterChain(config, persistence, security, web, plugin).then(baseApp)
+    return buildFilterChain(config, persistence, security, web, pluginContribution).then(baseApp)
 }
 
 private fun buildPluginContext(
@@ -956,8 +955,8 @@ private fun buildPluginContext(
     persistence: PersistenceComponents,
     security: SecurityComponents,
     web: WebComponents,
-): PluginContext =
-    PluginContext(
+): HostedAppContext =
+    HostedAppContext(
         jteRenderer,
         config,
         security.apiKeyService,
@@ -1059,7 +1058,7 @@ private fun buildFilterChain(
     persistence: PersistenceComponents,
     security: SecurityComponents,
     web: WebComponents,
-    plugin: PlatformPlugin?,
+    pluginContribution: HostedAppContribution,
 ): Filter {
     val sec = security
     val userRepository = persistence.userRepository
@@ -1067,13 +1066,6 @@ private fun buildFilterChain(
     val pageFactory = web.pageFactory
     val jteRenderer = web.templateRenderer
     val analytics = web.analyticsService
-    val pluginCtx = plugin?.let { buildPluginContext(jteRenderer, config, persistence, security, web) }
-    val adminNavItems =
-        if (plugin != null && pluginCtx != null) {
-            plugin.adminSections(pluginCtx).map { AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon) }
-        } else {
-            emptyList()
-        }
     var chain =
         Filters.correlationId
             .then(Filters.cors(config.corsOrigins))
@@ -1094,23 +1086,16 @@ private fun buildFilterChain(
                     userRepository,
                     config.version,
                     jwtService,
-                    PluginOptions(
-                        navItems = emptyList(),
-                        textResolver = plugin?.textResolver,
-                        adminNavItems = adminNavItems,
-                    ),
+                    pluginContribution.options,
                     cookieSecure = config.sessionCookieSecure,
                     appBaseUrl = config.appBaseUrl,
-                    bannerProviders =
-                        if (plugin != null && pluginCtx != null) plugin.bannerProviders(pluginCtx) else emptyList(),
+                    bannerProviders = pluginContribution.bannerProviders,
                     sessionService = sec.sessionService,
                 )
             )
 
-    if (plugin != null && pluginCtx != null) {
-        for (filter in plugin.filters(pluginCtx)) {
-            chain = chain.then(filter)
-        }
+    for (filter in pluginContribution.filters) {
+        chain = chain.then(filter)
     }
 
     return chain

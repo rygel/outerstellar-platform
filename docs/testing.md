@@ -250,13 +250,18 @@ fun `health check reports database connectivity`() {
 Desktop/Swing tests must **never** run directly on the host machine — they capture the mouse and keyboard. Always use Podman:
 
 ```powershell
-# Build the test image (only when dependencies change)
-podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
+# Preferred wrapper: builds the desktop-test image, runs under Xvfb,
+# and copies reports to platform-desktop/target/surefire-reports-docker.
+pwsh scripts/test-desktop.ps1
 
-# Run tests
+# Bash equivalent:
+bash docker/run-desktop-tests.sh
+
+# Manual equivalent, if the wrapper is unavailable:
+podman build --target desktop-test -t outerstellar-test-desktop -f docker/Dockerfile.build .
 podman run --rm --network host `
-    -v "${env:USERPROFILE}\.m2\repository:/root/.m2/repository" `
-    -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml" `
+    -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml:ro" `
+    -e "DOCKER_HOST=unix:///var/run/docker.sock" `
     -v "/var/run/docker.sock:/var/run/docker.sock" `
     outerstellar-test-desktop
 ```

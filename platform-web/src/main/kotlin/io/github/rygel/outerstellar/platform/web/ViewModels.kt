@@ -52,6 +52,9 @@ data class ShellView(
     val appBaseUrl: String = "",
     val ogImage: String = "",
     val banners: List<Banner> = emptyList(),
+    val pluginLayoutRenderer: PluginLayoutRenderer? = null,
+    val pluginStylesheets: List<String> = emptyList(),
+    val pluginScripts: List<String> = emptyList(),
 ) {
     fun text(key: String, vararg args: Any?): String = textResolver?.resolve(key, *args) ?: key
 }
@@ -247,7 +250,8 @@ data class DevDashboardPage(
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/DevDashboard"
 }
 
-data class PluginAdminDashboardPage(val cards: List<AdminSummaryCard>) : ViewModel {
+data class PluginAdminDashboardPage(val cards: List<AdminSummaryCard>, val diagnostics: HostedAppDiagnostics? = null) :
+    ViewModel {
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/PluginAdminDashboard"
 }
 
