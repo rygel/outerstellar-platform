@@ -60,6 +60,7 @@ import io.github.rygel.outerstellar.platform.web.VoteApi
 import io.github.rygel.outerstellar.platform.web.analyticsPageViewFilter
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 import io.github.rygel.outerstellar.platform.web.etagCachingFilter
+import io.github.rygel.outerstellar.platform.web.hostedAppContextFromHostServices
 import io.github.rygel.outerstellar.platform.web.rateLimitFilter
 import io.github.rygel.outerstellar.platform.web.shellRenderer
 import io.github.rygel.outerstellar.platform.web.staticCacheControlFilter
@@ -956,7 +957,7 @@ private fun buildPluginContext(
     security: SecurityComponents,
     web: WebComponents,
 ): HostedAppContext =
-    HostedAppContext.fromHostServices(
+    hostedAppContextFromHostServices(
         renderer = jteRenderer,
         config = config,
         apiKeyService = security.apiKeyService,

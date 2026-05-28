@@ -4,7 +4,7 @@
 @param content: Content
 
 @if(shell.pluginLayoutRenderer != null)
-    ${shell.pluginLayoutRenderer.render(shell, content)}
+    ${shell.pluginLayoutRenderer!!.render(shell, content)}
 @elseif(shell.layoutStyle == "topbar")
     @template.io.github.rygel.outerstellar.platform.web.layouts.TopbarLayout(shell = shell, content = content)
 @else

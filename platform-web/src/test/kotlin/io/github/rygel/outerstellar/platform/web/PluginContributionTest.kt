@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.composition.RouteGroup
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.plugin.HostedAppContext
 import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
@@ -298,7 +299,7 @@ class PluginContributionTest {
 
     private fun pluginContext(): HostedAppContext {
         val context =
-            HostedAppContext.forTesting(
+            hostedAppContextForTesting(
                 renderer = mockk<TemplateRenderer>(relaxed = true),
                 apiKeyService = mockk<ApiKeyService>(relaxed = true),
                 oauthService = mockk<OAuthService>(relaxed = true),

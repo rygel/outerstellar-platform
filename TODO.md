@@ -558,9 +558,12 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   — `platform-web/.../plugin/HostedAppApi.kt`, `platform-web/.../App.kt`,
     `platform-web/.../HostedAppContextFacadeTest.kt`
 
-- [ ] **Extract plugin SPI package into `platform-plugin-api` module**
-  The plugin-facing package is isolated but still compiled inside `platform-web`. Move it into a small standalone module
-  once the facades above are in place so hosted apps can depend on the SPI without taking the full web module.
+- [x] ~~**Extract plugin SPI package into `platform-plugin-api` module**~~
+  Fixed — the hosted-app SPI now lives in `platform-plugin-api`, including `HostedAppContext`,
+  `HostedAppContribution`, compatibility aliases under `io.github...platform.web`, and the plugin-facing shell/admin DTOs.
+  `platform-web` now depends on that module and keeps only host-side context construction adapters/tests.
+  — `platform-plugin-api/.../plugin/HostedAppApi.kt`, `platform-plugin-api/.../plugin/HostedAppContribution*.kt`,
+    `platform-plugin-api/.../web/*.kt`, `platform-web/.../HostedAppContexts.kt`, `platform-web/pom.xml`, `pom.xml`
 
 - [x] ~~**Improve plugin route conflict reporting**~~
   Fixed — route conflicts now retain both conflicting route registrations and startup failures include method, path,
