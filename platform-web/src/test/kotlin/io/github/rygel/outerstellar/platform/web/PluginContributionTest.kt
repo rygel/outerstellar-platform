@@ -308,7 +308,7 @@ class PluginContributionTest {
 
     private fun pluginContext(): HostedAppContext {
         val context =
-            hostedAppContextForTesting(
+            PluginContext.forTesting(
                 renderer = mockk<TemplateRenderer>(relaxed = true),
                 apiKeyService = mockk<ApiKeyService>(relaxed = true),
                 oauthService = mockk<OAuthService>(relaxed = true),

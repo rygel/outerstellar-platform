@@ -6,7 +6,7 @@ import io.github.rygel.outerstellar.platform.composition.RouteGroup
 import io.github.rygel.outerstellar.platform.composition.RouteOwner
 import io.github.rygel.outerstellar.platform.composition.RouteRegistry
 import io.github.rygel.outerstellar.platform.di.CoreComponents
-import io.github.rygel.outerstellar.platform.di.PersistenceComponents
+import io.github.rygel.outerstellar.platform.di.PlatformPersistence
 import io.github.rygel.outerstellar.platform.di.WebComponents
 import io.github.rygel.outerstellar.platform.export.ContactExportProvider
 import io.github.rygel.outerstellar.platform.export.MessageExportProvider
@@ -97,7 +97,7 @@ private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platf
 
 fun app(
     config: AppConfig,
-    persistence: PersistenceComponents,
+    persistence: PlatformPersistence,
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
@@ -111,7 +111,7 @@ fun app(
 
 private fun assembleHttpHandler(
     config: AppConfig,
-    persistence: PersistenceComponents,
+    persistence: PlatformPersistence,
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
@@ -186,7 +186,7 @@ private fun buildBearerSecurityPair(realms: List<AuthRealm>): Pair<Security, Sec
 private fun registerApiRoutes(
     registry: RouteRegistry,
     config: AppConfig,
-    persistence: PersistenceComponents,
+    persistence: PlatformPersistence,
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
@@ -782,7 +782,7 @@ private fun registerComponentRoutes(
 private fun registerAdminRoutes(
     registry: RouteRegistry,
     config: AppConfig,
-    persistence: PersistenceComponents,
+    persistence: PlatformPersistence,
     security: SecurityComponents,
     web: WebComponents,
     pluginContribution: HostedAppContribution,
@@ -829,7 +829,7 @@ private fun registerAdminRoutes(
                             val pluginShellRenderer =
                                 ShellRenderer(
                                     pluginRequestContext,
-                                    shellConfig = ShellConfig(pluginOptions = pluginContribution.options.toWebOptions()),
+                                    shellConfig = ShellConfig(pluginOptions = pluginContribution.options),
                                 )
                             val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
                             val page =
@@ -891,7 +891,7 @@ private fun registerPluginRoutes(registry: RouteRegistry, pluginContribution: Ho
 private fun buildFromRegistry(
     registry: RouteRegistry,
     config: AppConfig,
-    persistence: PersistenceComponents,
+    persistence: PlatformPersistence,
     security: SecurityComponents,
     web: WebComponents,
     pluginContribution: HostedAppContribution,
@@ -953,7 +953,7 @@ private fun buildFromRegistry(
 private fun buildPluginContext(
     jteRenderer: TemplateRenderer,
     config: AppConfig,
-    persistence: PersistenceComponents,
+    persistence: PlatformPersistence,
     security: SecurityComponents,
     web: WebComponents,
 ): HostedAppContext =
@@ -1055,7 +1055,7 @@ private fun buildHealthResponse(userRepository: UserRepository): Response {
 
 private fun buildFilterChain(
     config: AppConfig,
-    persistence: PersistenceComponents,
+    persistence: PlatformPersistence,
     security: SecurityComponents,
     web: WebComponents,
     pluginContribution: HostedAppContribution,
@@ -1086,7 +1086,7 @@ private fun buildFilterChain(
                     userRepository,
                     config.version,
                     jwtService,
-                    pluginContribution.options.toWebOptions(),
+                    pluginContribution.options,
                     cookieSecure = config.sessionCookieSecure,
                     appBaseUrl = config.appBaseUrl,
                     bannerProviders = pluginContribution.bannerProviders,
@@ -1106,17 +1106,3 @@ private fun buildFilterChain(
         .then(Filters.serverMetrics)
         .then(Filters.globalErrorHandler(pageFactory, jteRenderer))
 }
-
-private fun io.github.rygel.outerstellar.platform.plugin.PluginOptions.toWebOptions():
-    io.github.rygel.outerstellar.platform.web.PluginOptions =
-    io.github.rygel.outerstellar.platform.web.PluginOptions(
-        navItems =
-            navItems.map {
-                io.github.rygel.outerstellar.platform.web.PluginNavItem(it.label, it.url, it.icon, it.activeSection)
-            },
-        textResolver = textResolver,
-        adminNavItems =
-            adminNavItems.map { io.github.rygel.outerstellar.platform.web.AdminNavItem(it.label, it.url, it.icon) },
-        layoutRenderer = layoutRenderer,
-        assets = assets,
-    )

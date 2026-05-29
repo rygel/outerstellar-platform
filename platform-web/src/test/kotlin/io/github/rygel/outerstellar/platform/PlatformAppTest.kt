@@ -2,7 +2,7 @@ package io.github.rygel.outerstellar.platform
 
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.di.CoreComponents
-import io.github.rygel.outerstellar.platform.di.PersistenceComponents
+import io.github.rygel.outerstellar.platform.di.PlatformPersistence
 import io.github.rygel.outerstellar.platform.di.WebComponents
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
@@ -48,25 +48,35 @@ class PlatformAppTest {
     private fun buildMockPersistence(
         repository: MessageRepository,
         userRepository: UserRepository,
-    ): PersistenceComponents =
-        PersistenceComponents(
-            dataSource = mockk(relaxed = true),
-            jdbi = mockk(relaxed = true),
-            messageRepository = repository,
-            contactRepository = mockk(relaxed = true),
-            userRepository = userRepository,
-            outboxRepository = mockk(relaxed = true),
-            transactionManager = mockk(relaxed = true),
-            auditRepository = mockk(relaxed = true),
-            passwordResetRepository = mockk(relaxed = true),
-            apiKeyRepository = mockk(relaxed = true),
-            oAuthRepository = mockk(relaxed = true),
-            deviceTokenRepository = mockk(relaxed = true),
-            sessionRepository = mockk(relaxed = true),
-            voteRepository = mockk(relaxed = true),
-            pollRepository = mockk(relaxed = true),
-            notificationRepository = mockk(relaxed = true),
-        )
+    ): PlatformPersistence =
+        object : PlatformPersistence {
+            override val messageRepository = repository
+            override val contactRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.ContactRepository>(relaxed = true)
+            override val userRepository = userRepository
+            override val outboxRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.OutboxRepository>(relaxed = true)
+            override val transactionManager =
+                mockk<io.github.rygel.outerstellar.platform.persistence.TransactionManager>(relaxed = true)
+            override val auditRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.AuditRepository>(relaxed = true)
+            override val passwordResetRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository>(relaxed = true)
+            override val apiKeyRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository>(relaxed = true)
+            override val oAuthRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.OAuthRepository>(relaxed = true)
+            override val deviceTokenRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository>(relaxed = true)
+            override val sessionRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.SessionRepository>(relaxed = true)
+            override val voteRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.VoteRepository>(relaxed = true)
+            override val pollRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.PollRepository>(relaxed = true)
+            override val notificationRepository =
+                mockk<io.github.rygel.outerstellar.platform.persistence.NotificationRepository>(relaxed = true)
+        }
 
     private fun buildMockSecurity(): SecurityComponents =
         SecurityComponents(

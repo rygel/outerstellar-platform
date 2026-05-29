@@ -6,8 +6,8 @@ import com.microsoft.playwright.Playwright
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.di.createCoreComponents
-import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
+import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
@@ -70,7 +70,7 @@ class PlaywrightE2ETest {
                 devMode = true,
             )
 
-        val persistence = createPersistenceComponents(testConfig)
+        val persistence = loadPersistenceBootstrap().create(testConfig)
         val security =
             createSecurityComponents(
                 config = testConfig,

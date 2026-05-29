@@ -5,28 +5,17 @@ import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.AppleOAuthConfig
 import io.github.rygel.outerstellar.platform.JwtConfig
 import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.RuntimeConfig
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.di.CoreComponents
-import io.github.rygel.outerstellar.platform.di.PersistenceComponents
+import io.github.rygel.outerstellar.platform.di.PlatformPersistence
 import io.github.rygel.outerstellar.platform.di.WebComponents
+import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.DeviceTokenRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiApiKeyRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiAuditRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiContactRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiDeviceTokenRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiMessageRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiOAuthRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiOutboxRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiPasswordResetRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiPollRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiSessionRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
-import io.github.rygel.outerstellar.platform.persistence.JdbiVoteRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
@@ -86,6 +75,7 @@ abstract class WebTest {
             devDashboardEnabled = true,
             csrfEnabled = false,
             corsOrigins = "*",
+            runtime = RuntimeConfig(hikariMaximumPoolSize = 2, hikariMinimumIdle = 0),
             appleOAuth =
                 AppleOAuthConfig(
                     enabled = true,
@@ -101,19 +91,22 @@ abstract class WebTest {
     val renderer by lazy { createRenderer() }
     val encoder by lazy { BCryptPasswordEncoder(logRounds = 4) }
     val testPasswordHash by lazy { encoder.encode("Test@12345678") }
+    private val platformPersistenceDelegate = lazy { loadPersistenceBootstrap().create(testConfig) }
+    private val platformPersistence
+        get() = platformPersistenceDelegate.value
 
-    open val userRepository by lazy { JdbiUserRepository(testJdbi) }
-    val messageRepository by lazy { JdbiMessageRepository(testJdbi) }
-    val contactRepository by lazy { JdbiContactRepository(testJdbi) }
-    val sessionRepository by lazy { JdbiSessionRepository(testJdbi) }
-    val apiKeyRepository by lazy { JdbiApiKeyRepository(testJdbi) }
-    val auditRepository by lazy { JdbiAuditRepository(testJdbi) }
-    val notificationRepository by lazy { JdbiNotificationRepository(testJdbi) }
-    val passwordResetRepository by lazy { JdbiPasswordResetRepository(testJdbi) }
-    val outboxRepository by lazy { JdbiOutboxRepository(testJdbi) }
-    val voteRepository by lazy { JdbiVoteRepository(testJdbi) }
-    val pollRepository by lazy { JdbiPollRepository(testJdbi) }
-    open val oauthRepository by lazy { JdbiOAuthRepository(testJdbi) }
+    open val userRepository by lazy { platformPersistence.userRepository }
+    val messageRepository by lazy { platformPersistence.messageRepository }
+    val contactRepository by lazy { platformPersistence.contactRepository }
+    val sessionRepository by lazy { platformPersistence.sessionRepository }
+    val apiKeyRepository by lazy { platformPersistence.apiKeyRepository }
+    val auditRepository by lazy { platformPersistence.auditRepository }
+    val notificationRepository by lazy { platformPersistence.notificationRepository }
+    val passwordResetRepository by lazy { platformPersistence.passwordResetRepository }
+    val outboxRepository by lazy { platformPersistence.outboxRepository }
+    val voteRepository by lazy { platformPersistence.voteRepository }
+    val pollRepository by lazy { platformPersistence.pollRepository }
+    open val oauthRepository by lazy { platformPersistence.oAuthRepository }
     val pollService by lazy { PollService(pollRepository) }
 
     val userAdminService by lazy { UserAdminService(userRepository, auditRepository) }
@@ -192,27 +185,24 @@ abstract class WebTest {
         outbox: OutboxRepository,
         txManager: TransactionManager,
         overrides: TestOverrides,
-    ): PersistenceComponents =
-        PersistenceComponents(
-            dataSource = testDb.dataSource,
-            jdbi = testJdbi,
-            messageRepository = messageRepository,
-            contactRepository = contactRepository,
-            userRepository = resolvedUserRepo,
-            outboxRepository = outbox,
-            transactionManager = txManager,
-            auditRepository = auditRepository,
-            passwordResetRepository = passwordResetRepository,
-            apiKeyRepository = apiKeyRepository,
-            oAuthRepository = oauthRepository,
-            deviceTokenRepository =
-                overrides.deviceTokenRepository
-                    ?: io.github.rygel.outerstellar.platform.persistence.JdbiDeviceTokenRepository(testJdbi),
-            sessionRepository = sessionRepository,
-            voteRepository = voteRepository,
-            pollRepository = pollRepository,
-            notificationRepository = notificationRepository,
-        )
+    ): PlatformPersistence =
+        object : PlatformPersistence {
+            override val messageRepository = this@WebTest.messageRepository
+            override val contactRepository = this@WebTest.contactRepository
+            override val userRepository = resolvedUserRepo
+            override val outboxRepository = outbox
+            override val transactionManager = txManager
+            override val auditRepository = this@WebTest.auditRepository
+            override val passwordResetRepository = this@WebTest.passwordResetRepository
+            override val apiKeyRepository = this@WebTest.apiKeyRepository
+            override val oAuthRepository = this@WebTest.oauthRepository
+            override val deviceTokenRepository =
+                overrides.deviceTokenRepository ?: platformPersistence.deviceTokenRepository
+            override val sessionRepository = this@WebTest.sessionRepository
+            override val voteRepository = this@WebTest.voteRepository
+            override val pollRepository = this@WebTest.pollRepository
+            override val notificationRepository = this@WebTest.notificationRepository
+        }
 
     private fun buildSecurity(
         resolvedUserRepo: UserRepository,
@@ -309,6 +299,9 @@ abstract class WebTest {
 
     @AfterAll
     fun tearDown() {
+        if (platformPersistenceDelegate.isInitialized()) {
+            platformPersistence.close()
+        }
         testDb.drop()
     }
 }

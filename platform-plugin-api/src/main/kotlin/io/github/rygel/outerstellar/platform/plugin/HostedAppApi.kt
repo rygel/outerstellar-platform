@@ -207,9 +207,37 @@ class HostedAppContext(
      * The [bodyHtml] is rendered as-is with no escaping; hosted apps are trusted to produce safe HTML.
      */
     fun renderShell(shell: ShellView, bodyHtml: String): String = rendering.renderShell(shell, bodyHtml)
+
+    companion object {
+        fun forTesting(
+            rendering: PluginRendering,
+            users: PluginUsers,
+            security: PluginSecurity,
+            app: PluginAppInfo =
+                PluginAppInfo(version = "dev", appBaseUrl = "", devMode = false, registrationEnabled = true),
+            analytics: PluginAnalytics = NoOpPluginAnalytics,
+            notifications: PluginNotifications? = null,
+        ): HostedAppContext =
+            HostedAppContext(
+                app = app,
+                users = users,
+                analytics = analytics,
+                notifications = notifications,
+                rendering = rendering,
+                security = security,
+            )
+    }
 }
 
 typealias PluginContext = HostedAppContext
+
+private object NoOpPluginAnalytics : PluginAnalytics {
+    override fun identify(userId: String, traits: Map<String, Any>) = Unit
+
+    override fun track(userId: String, event: String, properties: Map<String, Any>) = Unit
+
+    override fun page(userId: String, path: String) = Unit
+}
 
 /**
  * Single hosted-app contract. One outerstellar-platform host accepts exactly one hosted app adapter.

@@ -32,6 +32,8 @@
         <dependency>
             <groupId>io.github.rygel</groupId>
             <artifactId>outerstellar-platform-persistence-jdbi</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
