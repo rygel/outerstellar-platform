@@ -829,7 +829,7 @@ private fun registerAdminRoutes(
                             val pluginShellRenderer =
                                 ShellRenderer(
                                     pluginRequestContext,
-                                    shellConfig = ShellConfig(pluginOptions = pluginContribution.options),
+                                    shellConfig = ShellConfig(pluginOptions = pluginContribution.options.toWebOptions()),
                                 )
                             val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
                             val page =
@@ -1086,7 +1086,7 @@ private fun buildFilterChain(
                     userRepository,
                     config.version,
                     jwtService,
-                    pluginContribution.options,
+                    pluginContribution.options.toWebOptions(),
                     cookieSecure = config.sessionCookieSecure,
                     appBaseUrl = config.appBaseUrl,
                     bannerProviders = pluginContribution.bannerProviders,
@@ -1106,3 +1106,17 @@ private fun buildFilterChain(
         .then(Filters.serverMetrics)
         .then(Filters.globalErrorHandler(pageFactory, jteRenderer))
 }
+
+private fun io.github.rygel.outerstellar.platform.plugin.PluginOptions.toWebOptions():
+    io.github.rygel.outerstellar.platform.web.PluginOptions =
+    io.github.rygel.outerstellar.platform.web.PluginOptions(
+        navItems =
+            navItems.map {
+                io.github.rygel.outerstellar.platform.web.PluginNavItem(it.label, it.url, it.icon, it.activeSection)
+            },
+        textResolver = textResolver,
+        adminNavItems =
+            adminNavItems.map { io.github.rygel.outerstellar.platform.web.AdminNavItem(it.label, it.url, it.icon) },
+        layoutRenderer = layoutRenderer,
+        assets = assets,
+    )

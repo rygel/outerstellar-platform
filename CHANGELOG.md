@@ -9,6 +9,39 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [1.6.3] – 2026-05-28
+
+### Added
+
+- **Plugin Composition Model** — WordPress-like plugin+theme separation with three platform modes: `FullPlatformApp` (default, zero change), `PluginHostedApp` (plugin opts into platform UI pages), `HeadlessKernel` (API only, no HTML UI).
+- **Route Registry** — Central `RouteRegistry` with ownership tracking (`RouteOwner`: PlatformKernel, PlatformUi, Plugin), route groups (PublicUi, ProtectedUi, Api, Admin, Static, Health), conflict detection, and startup diagnostics (route table logged at boot, conflicts fail fast).
+- **PlatformPageSets** — 8 bundled page sets (home, contacts, settings, search, notifications, profile, admin, dev-dashboard) that plugins opt into via `includePlatformPages()`.
+- **PlatformTheme interface** — `DaisyUITheme` default with `headInjections()`, `bodyInjections()`, and `templateOverrides()` hooks for CSS/JS customization.
+- **Hosted-app SPI** — Extracted into `platform-plugin-api` module with `HostedAppManifest`, `HostedAppLayout`, `HostedAppAssets`, `HostedAppNavigation`, typed contribution contexts, and plugin-facing facades for config, users, analytics, notifications, rendering, and security.
+- **Jazzer fuzz tests** — Regression coverage for CSP parsing, JWT validation, OAuth callback parsing, rate limiter form parsing, token bucket behavior, and URL validation.
+
+### Changed
+
+- **PlatformPlugin interface refactored** — `excludeDefaultRoutes` replaced with `includePlatformPages()` (opt-in model). Added `routeRegistrations()` returning `List<PluginRouteRegistration>` with `RouteGroup` ownership. Added `mode: PlatformMode` property.
+- **App.kt route assembly refactored** — Replaced hardcoded route lists with `RouteRegistry`-based assembly. Mode-based conditional registration: `FullPlatformApp` registers all UI routes, `PluginHostedApp` registers only included page sets, `HeadlessKernel` registers no UI routes.
+- **PluginContext narrowed behind facades** — Raw host services replaced with stable `app`, `users`, `analytics`, `notifications`, `rendering`, and `security` facades. Compatibility aliases preserved for migration.
+- **ServerComponents accepts plugin** — `createServerComponents(plugin = MyPlugin())` is the primary entry point.
+
+### Architecture
+
+- **Koin removed from server runtime** — Dependency injection replaced with explicit constructor wiring. No runtime DI framework dependency.
+- **SecurityService decomposed** — Split into `AuthService`, `AccountService`, `SessionService`, `UserAdminService`, `TOTPService`. Direct sub-service wiring replaces facade delegation.
+- **WebContext split** — Decomposed into `RequestContext` (per-request state) and `ShellRenderer` (layout data builder).
+- **AuthRoutes decomposed** — Split into `AuthRoutes`, `PasswordRoutes`, `ProfileRoutes`, `ApiKeyRoutes` with `UiRouteSet(publicRoutes, protectedRoutes)` pattern.
+- **JDBI shared infrastructure** — `JdbiSupport.kt` with `InstantArgumentFactory`, `InstantColumnMapper`, `FilterClause`, `escapeLike()`.
+- **MessageCache type safety** — Typed accessor methods replacing unsafe casts and `@Suppress("UNCHECKED_CAST")`.
+
+### New Modules
+
+- `platform-plugin-api` — Hosted-app SPI, plugin-facing DTOs, contribution contexts. Separated from `platform-web` for cleaner consumer dependencies.
+
+---
+
 ## [1.6.2] – 2026-05-25
 
 ### Architecture
