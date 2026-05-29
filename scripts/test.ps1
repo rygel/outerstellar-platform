@@ -29,7 +29,7 @@ pwsh scripts/test.ps1 -ExtraArgs "-DskipTests"
 
 param(
     [int]$TimeoutMinutes = 20,
-    [string]$Modules = "platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed",
+    [string]$Modules = "platform-core,platform-security,platform-test-infrastructure,platform-plugin-api,platform-persistence-jdbi,platform-sync-client,platform-jte-extensions,platform-web,platform-seed",
     [switch]$SkipQuality,
     [string]$ExtraArgs = ""
 )

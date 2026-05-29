@@ -15,7 +15,7 @@ class ErrorPagesApprovalTest : WebTest() {
     private val app by lazy { buildApp() }
 
     private val csrfTokenPattern = Regex("""name="csrf-token" content="[^"]+"""")
-    private val cacheBusterPattern = Regex("""\?v=\d+""")
+    private val cacheBusterPattern = Regex("""\?v=[A-Za-z0-9._-]+""")
 
     private fun normalize(response: Response): Response {
         val normalized =

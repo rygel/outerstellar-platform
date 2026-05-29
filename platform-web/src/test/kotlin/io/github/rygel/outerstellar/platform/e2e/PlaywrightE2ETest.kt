@@ -99,7 +99,6 @@ class PlaywrightE2ETest {
                 messageRepository = persistence.messageRepository,
                 contactRepository = persistence.contactRepository,
                 outboxRepository = persistence.outboxRepository,
-                messageCache = web.messageCache,
                 transactionManager = persistence.transactionManager,
                 auditRepository = persistence.auditRepository,
                 eventPublisher = web.eventPublisher,

@@ -196,7 +196,7 @@ internal class RouteRegistrar(
             routes +=
                 DevDashboardRoutes(
                         persistence.outboxRepository,
-                        web.messageCache,
+                        core.messageCache,
                         web.pageFactory,
                         web.templateRenderer,
                         config.devDashboardEnabled,
@@ -219,6 +219,7 @@ internal class RouteRegistrar(
                                 val pluginShellRenderer =
                                     ShellRenderer(
                                         pluginRequestContext,
+                                        appVersion = config.version,
                                         shellConfig = ShellConfig(pluginOptions = pluginContribution.options),
                                     )
                                 val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")

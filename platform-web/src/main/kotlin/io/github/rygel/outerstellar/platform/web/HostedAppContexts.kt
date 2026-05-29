@@ -16,6 +16,7 @@ import io.github.rygel.outerstellar.platform.plugin.HostedAppContext
 import io.github.rygel.outerstellar.platform.plugin.PluginAnalytics
 import io.github.rygel.outerstellar.platform.plugin.PluginApiKeys
 import io.github.rygel.outerstellar.platform.plugin.PluginAppInfo
+import io.github.rygel.outerstellar.platform.plugin.PluginNotification
 import io.github.rygel.outerstellar.platform.plugin.PluginNotifications
 import io.github.rygel.outerstellar.platform.plugin.PluginOAuth
 import io.github.rygel.outerstellar.platform.plugin.PluginRendering
@@ -133,8 +134,8 @@ private class DefaultPluginNotifications(private val notificationService: Notifi
         notificationService.create(userId, title, body, type)
     }
 
-    override fun listForUser(userId: UUID, limit: Int): List<Notification> =
-        notificationService.listForUser(userId, limit)
+    override fun listForUser(userId: UUID, limit: Int): List<PluginNotification> =
+        notificationService.listForUser(userId, limit).map(Notification::toPluginNotification)
 
     override fun countUnread(userId: UUID): Int = notificationService.countUnread(userId)
 
@@ -150,6 +151,16 @@ private class DefaultPluginNotifications(private val notificationService: Notifi
         notificationService.delete(id, userId)
     }
 }
+
+private fun Notification.toPluginNotification(): PluginNotification =
+    PluginNotification(
+        id = id.toString(),
+        title = title,
+        body = body,
+        type = type,
+        read = isRead,
+        createdAt = createdAt.toString(),
+    )
 
 private class DefaultPluginRendering(override val renderer: TemplateRenderer) : PluginRendering {
     override fun renderShell(shell: ShellView, bodyHtml: String): String {

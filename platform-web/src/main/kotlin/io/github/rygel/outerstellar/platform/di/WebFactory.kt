@@ -8,8 +8,6 @@ import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.SegmentAnalyticsService
 import io.github.rygel.outerstellar.platform.infra.PluginTemplateRenderer
 import io.github.rygel.outerstellar.platform.infra.createRenderer
-import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
-import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.NotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.PollRepository
@@ -41,7 +39,6 @@ private object NoOpPluginMigrationSource : PluginMigrationSource
 class WebComponents(
     val templateRenderer: TemplateRenderer,
     val pageFactory: WebPageFactory,
-    val messageCache: MessageCache,
     val analyticsService: AnalyticsService,
     val emailService: EmailService,
     val i18nService: I18nService,
@@ -89,12 +86,6 @@ fun createWebComponents(
         )
 
     val runtime = config.runtime
-    val messageCache: MessageCache =
-        CaffeineMessageCache(
-            maxSize = runtime.cacheMessageMaxSize.toLong(),
-            ttlMinutes = runtime.cacheMessageExpireMinutes.toLong(),
-        )
-
     val analyticsService: AnalyticsService =
         if (config.segment.enabled && config.segment.writeKey.isNotBlank()) {
             SegmentAnalyticsService(config.segment.writeKey)
@@ -132,7 +123,6 @@ fun createWebComponents(
     return WebComponents(
         templateRenderer = templateRenderer,
         pageFactory = pageFactory,
-        messageCache = messageCache,
         analyticsService = analyticsService,
         emailService = emailService,
         i18nService = i18nService,

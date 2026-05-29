@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import io.github.rygel.outerstellar.platform.model.ThemeCatalog
 import java.util.concurrent.TimeUnit
 
 class SidebarFactory {
@@ -34,7 +35,7 @@ class SidebarFactory {
             selectId = "theme-selector",
             selectName = "theme",
             options =
-                ThemeCatalog.allThemes.map { theme ->
+                ThemeCatalog.allThemes().map { theme ->
                     ShellOption(id = theme.id, label = theme.label, url = theme.id, active = theme.id == ctx.theme)
                 },
             hiddenFields =

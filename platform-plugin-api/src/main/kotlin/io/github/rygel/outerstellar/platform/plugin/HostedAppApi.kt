@@ -8,8 +8,8 @@ import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.composition.RouteGroup
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
+import io.github.rygel.outerstellar.platform.model.NotificationSummary
 import io.github.rygel.outerstellar.platform.model.User
-import io.github.rygel.outerstellar.platform.persistence.Notification
 import io.github.rygel.outerstellar.platform.web.AdminSection
 import io.github.rygel.outerstellar.platform.web.ShellView
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
@@ -110,6 +110,8 @@ data class PluginAppInfo(
     val registrationEnabled: Boolean,
 )
 
+typealias PluginNotification = NotificationSummary
+
 interface PluginUsers {
     fun currentUser(request: Request): User?
 
@@ -131,7 +133,7 @@ interface PluginAnalytics {
 interface PluginNotifications {
     fun create(userId: UUID, title: String, body: String, type: String = "info")
 
-    fun listForUser(userId: UUID, limit: Int = 50): List<Notification>
+    fun listForUser(userId: UUID, limit: Int = 50): List<PluginNotification>
 
     fun countUnread(userId: UUID): Int
 
