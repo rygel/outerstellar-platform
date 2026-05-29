@@ -291,7 +291,7 @@
                     </dependency>
                     <dependency>
                         <groupId>io.github.rygel</groupId>
-                        <artifactId>jte-extensions</artifactId>
+                        <artifactId>platform-jte-extensions</artifactId>
                         <version>${project.version}</version>
                     </dependency>
                 </dependencies>
