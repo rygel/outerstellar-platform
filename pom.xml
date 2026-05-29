@@ -74,7 +74,7 @@
         <jacoco.version>0.8.14</jacoco.version>
         <extra-enforcer-rules.version>1.12.0</extra-enforcer-rules.version>
         <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
-        <maven.surefire.plugin.version>3.5.5</maven.surefire.plugin.version>
+        <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
         <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
         <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
         <maven.site.plugin.version>3.22.0</maven.site.plugin.version>
