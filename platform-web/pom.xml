@@ -15,7 +15,7 @@
     <name>Platform Web</name>
 
     <properties>
-        <platform.web.css.build.skip>false</platform.web.css.build.skip>
+        <exec.skip>false</exec.skip>
         <platform.web.shade.skip>false</platform.web.shade.skip>
     </properties>
 
@@ -268,7 +268,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <skip>${platform.web.css.build.skip}</skip>
+                            <skip>${exec.skip}</skip>
                             <executable>npm</executable>
                             <workingDirectory>${project.basedir}/..</workingDirectory>
                             <arguments>
@@ -383,7 +383,7 @@
         <profile>
             <id>release</id>
             <properties>
-                <platform.web.css.build.skip>true</platform.web.css.build.skip>
+                <exec.skip>true</exec.skip>
                 <platform.web.shade.skip>true</platform.web.shade.skip>
             </properties>
         </profile>
