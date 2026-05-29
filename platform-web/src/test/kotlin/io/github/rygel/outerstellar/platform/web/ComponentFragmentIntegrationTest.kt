@@ -116,6 +116,13 @@ class ComponentFragmentIntegrationTest : WebTest() {
     }
 
     @Test
+    fun `GET sidebar-theme-selector includes shared catalog labels`() {
+        val body = app(Request(GET, "/components/sidebar/theme-selector")).bodyString()
+        assertTrue(body.contains("Lo-Fi"), "Theme selector should render shared theme labels, got: ${body.take(300)}")
+        assertTrue(body.contains("CMYK"), "Theme selector should render shared theme labels, got: ${body.take(300)}")
+    }
+
+    @Test
     fun `GET sidebar-theme-selector returns multiple theme options`() {
         val body = app(Request(GET, "/components/sidebar/theme-selector")).bodyString()
         val optionCount = body.split("<option").size - 1

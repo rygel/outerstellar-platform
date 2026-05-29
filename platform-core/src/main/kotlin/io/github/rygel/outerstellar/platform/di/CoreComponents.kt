@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
+import io.github.rygel.outerstellar.platform.persistence.createConfiguredMessageCache
 import io.github.rygel.outerstellar.platform.service.ApnsPushNotificationService
 import io.github.rygel.outerstellar.platform.service.ConsoleEmailService
 import io.github.rygel.outerstellar.platform.service.ConsolePushNotificationService
@@ -21,6 +22,7 @@ import io.github.rygel.outerstellar.platform.service.PushNotificationService
 
 class CoreComponents(
     val messageService: MessageService,
+    val messageCache: MessageCache,
     val contactService: ContactService,
     val outboxProcessor: OutboxProcessor,
     val eventPublisher: EventPublisher,
@@ -33,7 +35,7 @@ fun createCoreComponents(
     messageRepository: MessageRepository,
     contactRepository: ContactRepository,
     outboxRepository: OutboxRepository,
-    messageCache: MessageCache,
+    messageCache: MessageCache = createConfiguredMessageCache(config.runtime),
     transactionManager: TransactionManager? = null,
     auditRepository: AuditRepository? = null,
     eventPublisher: EventPublisher = NoOpEventPublisher,
@@ -75,6 +77,7 @@ fun createCoreComponents(
         }
     return CoreComponents(
         messageService = messageService,
+        messageCache = messageCache,
         contactService = contactService,
         outboxProcessor = outboxProcessor,
         eventPublisher = eventPublisher,

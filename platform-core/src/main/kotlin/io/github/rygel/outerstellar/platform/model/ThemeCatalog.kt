@@ -1,45 +1,51 @@
 package io.github.rygel.outerstellar.platform.model
 
+data class ThemeOption(val id: String, val label: String)
+
 object ThemeCatalog {
-    private val themeIds: List<String> =
+    private val themes: List<ThemeOption> =
         listOf(
-            "dark",
-            "light",
-            "cupcake",
-            "bumblebee",
-            "emerald",
-            "corporate",
-            "synthwave",
-            "retro",
-            "cyberpunk",
-            "valentine",
-            "halloween",
-            "garden",
-            "forest",
-            "aqua",
-            "lofi",
-            "pastel",
-            "fantasy",
-            "wireframe",
-            "black",
-            "luxury",
-            "dracula",
-            "cmyk",
-            "autumn",
-            "business",
-            "acid",
-            "lemonade",
-            "night",
-            "coffee",
-            "winter",
-            "dim",
-            "nord",
-            "sunset",
+            ThemeOption("dark", "Dark"),
+            ThemeOption("light", "Light"),
+            ThemeOption("cupcake", "Cupcake"),
+            ThemeOption("bumblebee", "Bumblebee"),
+            ThemeOption("emerald", "Emerald"),
+            ThemeOption("corporate", "Corporate"),
+            ThemeOption("synthwave", "Synthwave"),
+            ThemeOption("retro", "Retro"),
+            ThemeOption("cyberpunk", "Cyberpunk"),
+            ThemeOption("valentine", "Valentine"),
+            ThemeOption("halloween", "Halloween"),
+            ThemeOption("garden", "Garden"),
+            ThemeOption("forest", "Forest"),
+            ThemeOption("aqua", "Aqua"),
+            ThemeOption("lofi", "Lo-Fi"),
+            ThemeOption("pastel", "Pastel"),
+            ThemeOption("fantasy", "Fantasy"),
+            ThemeOption("wireframe", "Wireframe"),
+            ThemeOption("black", "Black"),
+            ThemeOption("luxury", "Luxury"),
+            ThemeOption("dracula", "Dracula"),
+            ThemeOption("cmyk", "CMYK"),
+            ThemeOption("autumn", "Autumn"),
+            ThemeOption("business", "Business"),
+            ThemeOption("acid", "Acid"),
+            ThemeOption("lemonade", "Lemonade"),
+            ThemeOption("night", "Night"),
+            ThemeOption("coffee", "Coffee"),
+            ThemeOption("winter", "Winter"),
+            ThemeOption("dim", "Dim"),
+            ThemeOption("nord", "Nord"),
+            ThemeOption("sunset", "Sunset"),
         )
 
-    private val themeIdSet: Set<String> = themeIds.toSet()
+    private val themesById: Map<String, ThemeOption> = themes.associateBy { it.id }
 
-    fun allThemeIds(): List<String> = themeIds
+    fun allThemes(): List<ThemeOption> = themes
 
-    fun isValidTheme(themeId: String): Boolean = themeId in themeIdSet
+    fun allThemeIds(): List<String> = themes.map { it.id }
+
+    fun isValidTheme(themeId: String): Boolean = themeId in themesById
+
+    fun findTheme(themeId: String): ThemeOption = themesById[themeId] ?: themesById.getValue("dark")
 }

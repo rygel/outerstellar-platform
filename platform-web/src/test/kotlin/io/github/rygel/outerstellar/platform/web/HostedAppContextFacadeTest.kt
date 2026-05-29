@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.Notification
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.plugin.PluginNotification
 import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.OAuthService
@@ -113,12 +114,21 @@ class HostedAppContextFacadeTest {
         every { notificationService.listForUser(userId, 10) } returns listOf(notification)
         every { notificationService.countUnread(userId) } returns 1
         every { notificationService.markAllRead(userId) } returns Unit
+        val expectedNotification =
+            PluginNotification(
+                id = notification.id.toString(),
+                title = "Build ready",
+                body = "Plugin build completed",
+                type = "info",
+                read = false,
+                createdAt = notification.createdAt.toString(),
+            )
 
         assertEquals(createdKey, context.security.apiKeys.createApiKey(userId, "CLI"))
         assertEquals(listOf(apiKey), context.apiKeyService.listApiKeys(userId))
         context.security.apiKeys.deleteApiKey(userId, 7L)
         assertEquals(user, context.security.oauth.findOrCreateOAuthUser("github", "sub-1", "alex@example.com"))
-        assertEquals(listOf(notification), context.notifications!!.listForUser(userId, 10))
+        assertEquals(listOf(expectedNotification), context.notifications!!.listForUser(userId, 10))
         assertEquals(1, context.notificationService!!.countUnread(userId))
         context.notifications!!.markAllRead(userId)
 

@@ -166,8 +166,8 @@ abstract class WebTest {
 
         val persistence = buildPersistence(resolvedUserRepo, outbox, txManager, overrides)
         val security = buildSecurity(resolvedUserRepo, authService, accountService)
-        val core = buildCore(messageService, resolvedContactService, outbox, txManager)
-        val web = buildWeb(pageFactory, resolvedMessageCache, resolvedPollService, notificationService)
+        val core = buildCore(messageService, resolvedMessageCache, resolvedContactService, outbox, txManager)
+        val web = buildWeb(pageFactory, resolvedPollService, notificationService)
 
         return app(
                 config = config,
@@ -229,12 +229,14 @@ abstract class WebTest {
 
     private fun buildCore(
         messageService: MessageService,
+        resolvedMessageCache: MessageCache,
         resolvedContactService: io.github.rygel.outerstellar.platform.service.ContactService,
         outbox: OutboxRepository,
         txManager: TransactionManager,
     ): CoreComponents =
         CoreComponents(
             messageService = messageService,
+            messageCache = resolvedMessageCache,
             contactService = resolvedContactService,
             outboxProcessor =
                 io.github.rygel.outerstellar.platform.service.OutboxProcessor(
@@ -248,14 +250,12 @@ abstract class WebTest {
 
     private fun buildWeb(
         pageFactory: WebPageFactory,
-        resolvedMessageCache: MessageCache,
         resolvedPollService: io.github.rygel.outerstellar.platform.service.PollService,
         notificationService: io.github.rygel.outerstellar.platform.service.NotificationService,
     ): WebComponents =
         WebComponents(
             templateRenderer = renderer,
             pageFactory = pageFactory,
-            messageCache = resolvedMessageCache,
             analyticsService = io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService(),
             emailService = io.github.rygel.outerstellar.platform.service.NoOpEmailService(),
             i18nService = io.github.rygel.outerstellar.i18n.I18nService.create("messages"),

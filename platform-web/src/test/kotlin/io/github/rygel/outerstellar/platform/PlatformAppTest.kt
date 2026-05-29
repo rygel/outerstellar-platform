@@ -96,6 +96,7 @@ class PlatformAppTest {
     private fun buildMockCore(): CoreComponents =
         CoreComponents(
             messageService = mockk(relaxed = true),
+            messageCache = StubMessageCache(),
             contactService = mockk(relaxed = true),
             outboxProcessor = mockk(relaxed = true),
             eventPublisher = io.github.rygel.outerstellar.platform.service.NoOpEventPublisher,
@@ -116,7 +117,6 @@ class PlatformAppTest {
         return WebComponents(
             templateRenderer = createRenderer(),
             pageFactory = WebPageFactory(repository, mockk(relaxed = true), null, null),
-            messageCache = StubMessageCache(),
             analyticsService = io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService(),
             emailService = io.github.rygel.outerstellar.platform.service.NoOpEmailService(),
             i18nService = io.github.rygel.outerstellar.i18n.I18nService.create("messages"),
