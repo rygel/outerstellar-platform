@@ -354,9 +354,9 @@ even though templates compiled.
 
 **Finding:** Swing GUI tests need a display (`JFrame` throws `HeadlessException` when `java.awt.headless=true`). But tests must not pop up windows on the developer's machine.
 
-**Decision:** Default is `java.awt.headless=true` (no windows). GUI tests run inside a Docker container with Xvfb via `mvn -Ptest-desktop verify`. CI also uses Xvfb. The `Dockerfile.test-desktop` packages the project with a virtual framebuffer.
+**Decision:** Default is `java.awt.headless=true` (no windows). GUI tests run inside a Podman container with Xvfb via `pwsh scripts/test-desktop.ps1`, `bash docker/run-desktop-tests.sh`, or `mvn -Ptest-desktop verify`. CI also uses Xvfb. The desktop test image is built from `docker/Dockerfile.build --target desktop-test`.
 
-**Why:** Both requirements are met — tests actually execute (not skipped), and no windows appear on the developer's screen. The Docker container provides an isolated virtual display.
+**Why:** Both requirements are met — tests actually execute (not skipped), and no windows appear on the developer's screen. The Podman container provides an isolated virtual display.
 
 ## Testing strategy
 
@@ -466,15 +466,16 @@ The existing `UserManagementIntegrationTest` demonstrates this pattern for admin
 
 ### Desktop test execution model
 
-The default `java.awt.headless=true` prevents `JFrame` creation, so GUI tests skip during normal local builds. **GUI tests are executed inside a Docker container with Xvfb**, ensuring they always run without popping up windows on the developer's machine.
+The default `java.awt.headless=true` prevents `JFrame` creation, so GUI tests skip during normal local builds. **GUI tests are executed inside a Podman container with Xvfb**, ensuring they always run without popping up windows on the developer's machine.
 
 | Command | What runs |
 |---------|-----------|
 | `mvn test -pl platform-desktop` | Headless tests only (ViewModel, ThemeManager, etc.) — no windows created |
-| `mvn -Ptest-desktop verify` | **All tests** including GUI — runs inside Docker with Xvfb |
+| `pwsh scripts/test-desktop.ps1` | **All Swing tests** including GUI — runs inside Podman with Xvfb and copies reports |
+| `mvn -Ptest-desktop verify` | **All Swing tests** including GUI — delegates to the same Podman/Xvfb wrapper |
 | `mvn test -pl platform-desktop -Ptests-headful` | All tests against the local display (use only if you want windows) |
 
-The Docker test image (`docker/Dockerfile.test-desktop`) packages the project with Xvfb and runs `xvfb-run mvn test -pl platform-desktop -Ddesktop.headless=false`. This gives real pixel-level rendering without a physical screen.
+The desktop test image (`docker/Dockerfile.build --target desktop-test`) packages the project with Xvfb and runs `xvfb-run mvn test -pl platform-desktop -Ddesktop.headless=false`. This gives real pixel-level rendering without a physical screen.
 
 ViewModel-level tests (e.g., `SyncViewModelAuthTest`) always run in every mode since they don't create AWT/Swing components.
 
@@ -552,7 +553,8 @@ All common operations use Maven profiles — no shell scripts needed:
 | `mvn test -Ptests-headful` | Run all tests including GUI |
 | `mvn -Pcoverage verify` | Run tests with JaCoCo coverage |
 | `mvn -Pdocker package` | Build Docker image |
-| `mvn -Ptest-desktop verify` | Run Swing GUI tests inside Docker with Xvfb |
+| `pwsh scripts/test-desktop.ps1` | Run Swing GUI tests inside Podman with Xvfb |
+| `mvn -Ptest-desktop verify` | Run Swing GUI tests via the Maven wrapper profile |
 | `mvn -Pseed compile exec:java` | Seed database with sample data |
 | `mvn -Pruntime-dev compile exec:java -pl platform-web` | Run web app in dev mode |
 

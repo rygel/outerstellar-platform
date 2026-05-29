@@ -2,31 +2,46 @@
 
 ## Overview
 
-Plugins extend the platform via the `PlatformPlugin` interface. They can add routes, filters, templates, admin sections, navigation items, i18n, and database migrations.
+Hosted apps extend the platform via the `HostedApp` interface. `PlatformPlugin` remains as a compatibility alias for older integrations, but `HostedApp` and `HostedAppContext` are the primary API names. The public SPI now ships in the `outerstellar-platform-plugin-api` module so hosted apps do not need to depend on `platform-web`.
 
-## PlatformPlugin Interface
+Hosted apps can contribute:
+- routes and filters
+- shell navigation, admin sections, banners, layout replacement, and assets
+- i18n/text overrides and template overrides
+- database migrations through `PluginMigrationSource`
+
+## HostedApp Interface
 
 ```kotlin
-interface PlatformPlugin : PluginMigrationSource {
+interface HostedApp : PluginMigrationSource {
     val id: String
     val appLabel: String
-    val excludeDefaultRoutes: Set<String>
-    val navItems: List<NavItem>
-    val textResolver: I18nTextResolver?
-    fun templateOverrides(): Map<String, String>?
-    fun routes(): List<org.http4k.routing.RoutingHttpHandler>
-    fun filters(ctx: PluginContext): List<org.http4k.routing.RoutingHttpHandler>
-    fun adminSections(ctx: PluginContext): List<AdminSection>
-    fun koinModules(): List<Module>
+    val manifest: HostedAppManifest
+    val mode: PlatformMode
+
+    fun contribute(context: HostedAppContributionContext) {}
+    fun routeRegistrations(context: HostedAppContext): List<PluginRouteRegistration> = emptyList()
+    fun filters(context: HostedAppContext): List<Filter> = emptyList()
+    fun adminSections(context: HostedAppContext): List<AdminSection> = emptyList()
+    fun bannerProviders(context: HostedAppContext): List<BannerProvider> = emptyList()
+    fun includePlatformPages(): Set<PlatformPageSets> = emptySet()
+    fun layoutRenderer(context: HostedAppContext): PluginLayoutRenderer? = null
 }
 ```
 
 ## Plugin Context
 
-`PluginContext` provides access to:
+`HostedAppContext` / `PluginContext` provides access to stable plugin-facing facades:
+- `app` (`config` compatibility alias) — safe app info only: `version`, `appBaseUrl`, `devMode`, `registrationEnabled`
+- `users` (`userRepository` alias) — `currentUser(request)`, `findById`, `findByUsername`, `findByEmail`
+- `analytics` — `identify`, `track`, `page`
+- `notifications` (`notificationService` alias) — create/list/count/mark/delete user notifications
+- `rendering` (`renderer` alias) — template renderer plus `renderShell(shell, bodyHtml)`
+- `security` (`apiKeyService` / `oauthService` aliases) — API key CRUD and OAuth user resolution
+
+Convenience helpers remain on the context itself:
 - `currentUser(request)` — authenticated user
-- `buildPage(request, title, section, data)` — wrap ViewModel in platform shell
-- `forTesting(renderer, securityService, userRepository)` — test factory
+- `renderShell(shell, bodyHtml)` — wrap plugin HTML in the platform shell
 
 ## Template Overrides
 
@@ -53,17 +68,4 @@ Or better, use the bridge already in `WebModule.kt`:
 
 ## Registration
 
-```kotlin
-startKoin {
-    modules(
-        myPluginModule,         // Plugin's own Koin module(s)
-        configModule,
-        persistenceModule,
-        coreModule,
-        webModule,
-        securityModule,
-    )
-}
-```
-
-The web module discovers the plugin via Koin and wires its routes, filters, and admin sections.
+The server wires a single hosted app into application startup and collects its contributions once. Ownership validation ensures hosted-app routes and assets stay inside the prefixes declared by `HostedAppManifest.ownership`.

@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import java.net.URLDecoder
 import java.util.concurrent.TimeUnit
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
@@ -133,13 +134,29 @@ internal fun extractAccountIdentifier(request: org.http4k.core.Request): String?
         extractJsonValue(body, "username") ?: extractJsonValue(body, "email")
     } else {
         val params =
-            body.split("&").associate {
-                val parts = it.split("=", limit = 2)
-                if (parts.size == 2) parts[0] to java.net.URLDecoder.decode(parts[1], "UTF-8") else null to null
-            }
+            body
+                .split("&")
+                .mapNotNull {
+                    val parts = it.split("=", limit = 2)
+                    if (parts.size != 2) {
+                        return@mapNotNull null
+                    }
+                    val key = decodeFormComponent(parts[0]) ?: return@mapNotNull null
+                    val value = decodeFormComponent(parts[1]) ?: return@mapNotNull null
+                    key to value
+                }
+                .toMap()
         params["email"]?.trim()?.lowercase() ?: params["username"]?.trim()?.lowercase()
     }
 }
+
+private fun decodeFormComponent(value: String): String? =
+    try {
+        URLDecoder.decode(value, "UTF-8")
+    } catch (e: IllegalArgumentException) {
+        logger.warn("Failed to decode rate-limit form field: {}", e.message)
+        null
+    }
 
 private fun extractJsonValue(json: String, key: String): String? {
     val pattern = "\"$key\"\\s*:\\s*\"([^\"]+)\""

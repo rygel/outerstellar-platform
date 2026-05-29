@@ -466,8 +466,14 @@ Expected: BUILD SUCCESS
 - [ ] **Step 2: Run desktop tests in Podman container**
 
 ```
-podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
-podman run --rm --network host -v "${env:USERPROFILE}\.m2\repository:/root/.m2/repository" -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml" -v "/var/run/docker.sock:/var/run/docker.sock" outerstellar-test-desktop
+pwsh scripts/test-desktop.ps1
+
+# Bash equivalent:
+bash docker/run-desktop-tests.sh
+
+# Manual equivalent:
+podman build --target desktop-test -t outerstellar-test-desktop -f docker/Dockerfile.build .
+podman run --rm --network host -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml:ro" -e "DOCKER_HOST=unix:///var/run/docker.sock" -v "/var/run/docker.sock:/var/run/docker.sock" outerstellar-test-desktop
 ```
 
 Expected: All tests pass

@@ -35,7 +35,7 @@
 - `pom.xml` (root) — remove jooq module, dependencyManagement, plugin, property, spinaker watch
 - `docker/Dockerfile` — remove jooq COPY line
 - `docker/Dockerfile.native` — remove jooq COPY line
-- `docker/Dockerfile.test-desktop` — remove jooq COPY line
+- `docker/Dockerfile.build` desktop-test target — remove jooq COPY line
 - `platform-core/src/test/kotlin/.../arch/ArchitectureTest.kt` — remove jooq package references
 - `AGENTS.md` — remove jooq references
 - `README.md` — remove jooq references
@@ -817,7 +817,7 @@ git commit -m "refactor: remove jooq module from reactor, dependencyManagement, 
 **Files:**
 - Modify: `docker/Dockerfile`
 - Modify: `docker/Dockerfile.native`
-- Modify: `docker/Dockerfile.test-desktop`
+- Modify: `docker/Dockerfile.build` desktop-test target
 
 - [ ] **Step 1: Update docker/Dockerfile**
 
@@ -833,7 +833,7 @@ Remove line 20:
 COPY platform-persistence-jooq/pom.xml platform-persistence-jooq/
 ```
 
-- [ ] **Step 3: Update docker/Dockerfile.test-desktop**
+- [ ] **Step 3: Update docker/Dockerfile.build desktop-test target**
 
 Remove line 14:
 ```dockerfile

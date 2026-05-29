@@ -6,6 +6,7 @@ on:
     paths:
       - 'docker/**'
       - 'jte-extensions/**'
+      - 'platform-plugin-api/**'
       - 'platform-web/**'
       - 'pom.xml'
   pull_request:
@@ -13,6 +14,7 @@ on:
     paths:
       - 'docker/**'
       - 'jte-extensions/**'
+      - 'platform-plugin-api/**'
       - 'platform-web/**'
       - 'pom.xml'
   workflow_dispatch:
@@ -119,7 +121,7 @@ jobs:
         run: |
           mvn install -N -q
           mvn install \
-            -pl jte-extensions,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web \
+            -pl jte-extensions,platform-core,platform-plugin-api,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web \
             -DskipTests -Dexec.skip=true -q \
             -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
             -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true \

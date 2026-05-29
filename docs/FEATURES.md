@@ -44,8 +44,8 @@
 ### Routing & Templates
 - **http4k** — contract-based routing with OpenAPI documentation
 - **JTE/KTE templates** — precompiled Kotlin templates with hot-reload in dev mode
-- **PlatformPlugin interface** — apps register routes, nav items, Koin modules, and migrations
-- **PluginContext** — shared services (renderer, config, security, analytics) passed to plugins
+- **HostedApp / PlatformPlugin interface** — hosted apps register routes, navigation, assets, layout, and migrations
+- **PluginContext** — safe app info plus users, security, analytics, notifications, and rendering facades passed to plugins
 - **Layout router** — sidebar and topbar layout variants with automatic dispatching
 
 ### Filters & Middleware

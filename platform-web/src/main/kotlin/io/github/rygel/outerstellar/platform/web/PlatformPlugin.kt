@@ -5,18 +5,14 @@ import gg.jte.generated.precompiled.outerstellar.io.github.rygel.outerstellar.pl
 import gg.jte.html.OwaspHtmlTemplateOutput
 import gg.jte.output.StringOutput
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
-import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.service.NotificationService
-import org.http4k.contract.ContractRoute
-import org.http4k.core.Filter
 import org.http4k.core.Request
 import org.http4k.lens.LensFailure
 import org.http4k.template.TemplateRenderer
@@ -34,6 +30,9 @@ data class PluginOptions(
     val navItems: List<PluginNavItem> = emptyList(),
     val textResolver: TextResolver? = null,
     val adminNavItems: List<AdminNavItem> = emptyList(),
+    val layoutRenderer: io.github.rygel.outerstellar.platform.plugin.PluginLayoutRenderer? = null,
+    val assets: io.github.rygel.outerstellar.platform.plugin.PluginAssets =
+        io.github.rygel.outerstellar.platform.plugin.PluginAssets(),
 )
 
 /**
@@ -126,51 +125,4 @@ data class PluginContext(
  * - Inject your nav items into the shell nav bar (replacing the defaults when non-empty)
  * - Run your Flyway migrations in a dedicated history table
  */
-interface PlatformPlugin : PluginMigrationSource {
-    /** Unique identifier for this plugin (used in logging). */
-    val id: String
-
-    /** Label used in OpenAPI info and branding. Defaults to "Outerstellar". */
-    val appLabel: String
-        get() = "Outerstellar"
-
-    /**
-     * Default route paths to exclude from the host app (e.g. `setOf("/contacts", "/")`). Routes whose path is in this
-     * set will not be registered by the host.
-     */
-    val excludeDefaultRoutes: Set<String>
-        get() = emptySet()
-
-    /**
-     * Navigation items shown in the shell sidebar. When non-empty these **replace** the host's default nav links. When
-     * empty the host's default nav links are shown unchanged.
-     */
-    val navItems: List<PluginNavItem>
-        get() = emptyList()
-
-    /**
-     * Custom text resolver for all UI strings. Override to provide plugin-specific translations. When null the host
-     * uses its default I18nService-backed resolver.
-     */
-    val textResolver: TextResolver?
-        get() = null
-
-    /**
-     * JTE template paths that this plugin overrides (e.g. `setOf("layouts/SidebarLayout.kte")`). The host resolves
-     * these templates from the plugin's classpath instead of its own.
-     */
-    fun templateOverrides(): Set<String> = emptySet()
-
-    /** HTTP routes contributed to the application. */
-    fun routes(context: PluginContext): List<ContractRoute> = emptyList()
-
-    /**
-     * Filters added to the request chain after the platform's own filters (auth, CSRF, state, etc.) but before route
-     * dispatch. Use this to set up plugin-specific request context (e.g. custom session resolution, context keys).
-     */
-    fun filters(context: PluginContext): List<Filter> = emptyList()
-
-    fun adminSections(context: PluginContext): List<AdminSection> = emptyList()
-
-    fun bannerProviders(context: PluginContext): List<BannerProvider> = emptyList()
-}
+interface PlatformPlugin : io.github.rygel.outerstellar.platform.plugin.HostedApp

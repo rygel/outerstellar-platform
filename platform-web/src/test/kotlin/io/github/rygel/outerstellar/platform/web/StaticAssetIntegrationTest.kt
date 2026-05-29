@@ -9,6 +9,7 @@ import org.http4k.core.Request
 import org.http4k.core.Status
 import org.http4k.hamkrest.hasBody
 import org.http4k.hamkrest.hasStatus
+import org.http4k.routing.ResourceLoader
 
 class StaticAssetIntegrationTest : WebTest() {
 
@@ -61,6 +62,22 @@ class StaticAssetIntegrationTest : WebTest() {
     fun `static files are served without authentication`() {
         val response = app(Request(GET, "/site.css"))
         assertThat(response, hasStatus(Status.OK))
+    }
+
+    @Test
+    fun `plugin static files are served without authentication`() {
+        val plugin =
+            object : PlatformPlugin {
+                override val id = "reports"
+
+                override fun contribute(context: HostedAppContributionContext) {
+                    context.routes.staticAssets("/plugins/reports/assets", ResourceLoader.Classpath("static"))
+                }
+            }
+        val response = buildApp(plugin = plugin)(Request(GET, "/plugins/reports/assets/site.css"))
+
+        assertThat(response, hasStatus(Status.OK))
+        assertThat(response, hasBody(containsSubstring(".")))
     }
 
     @Test

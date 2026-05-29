@@ -74,6 +74,10 @@
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.plugin(\..*)?"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.infra(\..*)?"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
@@ -118,6 +122,10 @@
     <Match>
         <Class name="io.github.rygel.outerstellar.platform.AppKt"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.AppKt"/>
+        <Bug pattern="SF_SWITCH_FALLTHROUGH"/>
     </Match>
     <Match>
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.fx\.controller(\..*)?"/>

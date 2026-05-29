@@ -4,6 +4,113 @@ Architecture, security, and maintainability improvements identified during code 
 
 ---
 
+## Current Handoff - 2026-05-28
+
+### Goal
+
+Refactor the platform composition/plugin model so a single hosted app can own its own routes, layout, assets, admin
+surface, diagnostics, and startup contribution flow. The target mental model is closer to WordPress hosting one
+installed product/site, not a multi-plugin marketplace.
+
+### Current State
+
+- The local branch is `feat/platform-composition-model`, but its upstream `origin/feat/platform-composition-model` was
+  deleted after merged PR #377. Do not reuse this branch for the next PR.
+- `origin/develop` was fetched and is currently at `747a2f96`.
+- The working tree contains the full next iteration of the composition-model work plus this handoff update.
+- There is one local commit on the old branch:
+  `5356e67f docs: add composition model improvements design spec (layout swap, disabled diagnostics, naming)`.
+- The next PR should be created from a fresh branch based on `origin/develop`, then this work should be carried onto it.
+
+### Implemented In This Iteration
+
+- Added hosted-app contribution aggregation so `App.kt` collects plugin capabilities once at startup instead of calling
+  plugin methods repeatedly during route/filter/admin assembly.
+- Added hosted-app layout replacement via `PluginLayoutRenderer`; `LayoutRouter.kte` delegates to the hosted app renderer
+  when one is provided.
+- Added plugin shell assets: contributed stylesheets/scripts are emitted by `LayoutHead.kte`.
+- Added static asset route contribution support with ownership validation.
+- Added `HostedAppManifest` and `HostedAppOwnership` so routes/assets must stay inside declared app-owned prefixes.
+- Added route conflict diagnostics that retain both conflicting routes and report method/path/owner/group/description.
+- Added excluded platform page diagnostics to the route table for `PluginHostedApp` and `HeadlessKernel`.
+- Added `/admin/plugins` diagnostics for capabilities, routes, included platform pages, shell assets, and ownership prefixes.
+- Moved the primary plugin-facing SPI into `io.github.rygel.outerstellar.platform.plugin`.
+- Kept old `io.github.rygel.outerstellar.platform.web` names as compatibility aliases/adapters, including
+  `PlatformPlugin : HostedApp`.
+- Added `scripts/test-desktop.ps1` and updated desktop testing docs to use Podman.
+
+### Key Files
+
+- Design spec: `docs/superpowers/specs/2026-05-27-composition-model-improvements-design.md`
+- Core route diagnostics: `platform-core/src/main/kotlin/io/github/rygel/outerstellar/platform/composition/`
+- Hosted app SPI: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/plugin/`
+- Compatibility aliases: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformPlugin.kt`,
+  `PluginContribution.kt`, `PluginContributionContext.kt`
+- App assembly: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt`
+- Layout and diagnostics templates: `platform-web/src/main/jte/io/github/rygel/outerstellar/platform/web/`
+- Tests: `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/web/PluginContributionTest.kt`,
+  `PluginAdminDashboardIntegrationTest.kt`, `StaticAssetIntegrationTest.kt`,
+  `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/plugin/HostedAppApiCompatibilityTest.kt`
+
+### Validation Already Run
+
+- Focused plugin/API tests:
+  `mvn -pl platform-web -am clean test "-Dtest=HostedAppApiCompatibilityTest,PluginContributionTest,PluginRenderShellTest,PluginAdminDashboardIntegrationTest,StaticAssetIntegrationTest,AdminSectionTest" "-Dexec.skip=true" "-Dsurefire.failIfNoSpecifiedTests=false"`
+  - Result: passed, 30 tests.
+- Web quality gate:
+  `mvn -pl platform-web -am verify "-DskipTests" "-Dexec.skip=true"`
+  - Result: passed.
+- Full non-desktop reactor:
+  `pwsh scripts/test.ps1`
+  - Result: passed, exit code 0, about 4 minutes.
+- Earlier desktop Podman validation was run for the broader branch:
+  `pwsh scripts/test-desktop.ps1`
+  - Result reported at the time: passed, 92 tests, 0 failures, 1 skipped.
+
+### Important Reasoning
+
+- Keep the "one hosted app per platform" assumption. The implementation uses ownership validation and diagnostics, not a
+  complex multi-plugin conflict/resolution system.
+- `HostedApp` is now the primary contract name. `PlatformPlugin` remains only for compatibility.
+- The SPI package was moved first, but not yet extracted into a standalone Maven module. This avoids forcing a module
+  split before raw host services are replaced with stable facades.
+- The `platform.plugin` SpotBugs `EI_EXPOSE_REP` exclusion mirrors the existing `platform.web` exclusion. Moving Kotlin
+  immutable value/API classes into a new package changed only their package name, not the underlying false-positive
+  profile.
+- The current local branch must not be pushed for a new PR because GitHub reports its prior PR as merged and the remote
+  branch is gone.
+
+### Next Steps
+
+- Create a fresh branch from latest upstream:
+  `git checkout -b codex/plugin-api-package-split origin/develop`
+- Carry the current working changes plus the local design-spec commit onto that fresh branch. Prefer a patch/stash-based
+  carry-over rather than reusing the merged branch.
+- Re-run at least `pwsh scripts/test.ps1` after the fresh-branch carry-over.
+- Commit with a message such as:
+  `refactor: improve hosted app composition SPI`
+- Push the new branch and open a draft PR against `develop`.
+- PR body should mention:
+  plugin layout replacement, startup contribution aggregation, ownership validation, plugin assets/static routes,
+  admin diagnostics, SPI package split, compatibility aliases, and validation commands.
+
+### Still Worth Doing Later
+
+- Slim `HostedAppContext`/`PluginContext` behind plugin-facing facades for users, analytics, notifications, rendering,
+  and security.
+- Extract `io.github.rygel.outerstellar.platform.plugin` into a real `platform-plugin-api` module after the facades exist.
+- Add a small hosted-app example fixture or template so external app authors have a canonical import path and structure.
+- Consider a startup compatibility/version check using `HostedAppManifest.requiredPlatformVersion`.
+- Add higher-level docs showing the "one hosted app owns the platform" model with route/asset ownership examples.
+
+### Suggested Skills For Next Agent
+
+- `github:yeet` to publish the fresh branch and open the draft PR.
+- `improve-codebase-architecture` if continuing the facade/module extraction work.
+- `grill-with-docs` if the hosted-app terminology or ownership model needs another design pass.
+
+---
+
 ## High Priority
 
 ### Security
@@ -432,11 +539,43 @@ Integrate [fragments4k](https://github.com/rygel/fragments4k) (v0.6.5+) for SEO 
   Fixed — `ExportProvider` interface in `platform-core`, `MessageExportProvider` + `ContactExportProvider` implementations, `ExportRoutes` wired in `App.kt` with CSV + JSON per entity.
   — `platform-core/.../export/ExportService.kt`, `platform-web/.../export/*ExportProvider.kt`, `platform-web/.../web/ExportRoutes.kt`
 
+- [x] ~~**Move plugin-facing SPI into a dedicated plugin API package/module**~~
+  Fixed — stable hosted-app contracts now live under `io.github.rygel.outerstellar.platform.plugin`, including
+  `HostedApp`, `HostedAppContext`, contribution context/registries, route/admin/nav/layout/asset contribution types,
+  and diagnostics. The old `platform.web` names remain as source-compatible aliases/adapters.
+  — `platform-web/.../platform/plugin/*`, `platform-web/.../platform/web/PlatformPlugin.kt`
+
+- [x] ~~**Add plugin capability metadata and diagnostics**~~
+  Fixed — `HostedAppContribution.diagnostics()` now exposes route, admin, layout, asset, filter, banner, navigation,
+  platform-page, text-resolver, and ownership metadata. `/admin/plugins` renders the collected contribution including
+  capability flags, routes, included platform pages, shell assets, and ownership prefixes.
+
+- [x] ~~**Slim `PluginContext` behind plugin-facing facades**~~
+  Fixed — `HostedAppContext` now exposes safe `app`, `users`, `analytics`, `notifications`, `rendering`, and
+  `security` facades. Raw host internals such as full `AppConfig` and `WebPageFactory` are no longer plugin-facing;
+  compatibility aliases remain for the narrowed surfaces (`config`, `userRepository`, `apiKeyService`, `oauthService`,
+  `notificationService`, `renderer`).
+  — `platform-web/.../plugin/HostedAppApi.kt`, `platform-web/.../App.kt`,
+    `platform-web/.../HostedAppContextFacadeTest.kt`
+
+- [x] ~~**Extract plugin SPI package into `platform-plugin-api` module**~~
+  Fixed — the hosted-app SPI now lives in `platform-plugin-api`, including `HostedAppContext`,
+  `HostedAppContribution`, compatibility aliases under `io.github...platform.web`, and the plugin-facing shell/admin DTOs.
+  `platform-web` now depends on that module and keeps only host-side context construction adapters/tests.
+  — `platform-plugin-api/.../plugin/HostedAppApi.kt`, `platform-plugin-api/.../plugin/HostedAppContribution*.kt`,
+    `platform-plugin-api/.../web/*.kt`, `platform-web/.../HostedAppContexts.kt`, `platform-web/pom.xml`, `pom.xml`
+
+- [x] ~~**Improve plugin route conflict reporting**~~
+  Fixed — route conflicts now retain both conflicting route registrations and startup failures include method, path,
+  owner, group, description, and remediation guidance.
+
 - [x] ~~**Mobile responsive layout**~~
   `SidebarLayout` and `TopbarLayout` are desktop-oriented. Add responsive breakpoints, hamburger navigation, touch-friendly controls.
 
-- [ ] **Jazzer fuzz tests for high-risk surfaces**
-  Add Jazzer (JVM fuzzing) tests for: CSP parsing, JWT validation, OAuth callback parsing, rate limiter token bucket math, input validation.
+- [x] ~~**Jazzer fuzz tests for high-risk surfaces**~~
+  Fixed — strengthened `WebFuzzTest` coverage for CSP headers, JWT validation, OAuth callback parsing,
+  rate limiter parsing, token bucket behavior, and URL validation, plus added deterministic regression
+  tests so malformed percent-encoded OAuth and rate-limiter form inputs fail safely instead of throwing.
 
 ### Low Priority
 

@@ -221,6 +221,24 @@ class OAuthIntegrationTest : WebTest() {
         )
     }
 
+    @Test
+    fun `POST callback with malformed percent encoding redirects to auth with oauth_error`() {
+        val state = UUID.randomUUID().toString()
+        val response =
+            app(
+                Request(POST, "/auth/oauth/apple/callback")
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body("code=%ZZ&state=$state")
+                    .cookie(Cookie("oauth_state", state))
+            )
+        assertThat(response, hasStatus(Status.FOUND))
+        val location = response.header("location").orEmpty()
+        assertTrue(
+            location.contains("oauth_error=true"),
+            "Malformed OAuth callback body must redirect to oauth_error, got: $location",
+        )
+    }
+
     // ---- Not-configured error page ----
 
     @Test

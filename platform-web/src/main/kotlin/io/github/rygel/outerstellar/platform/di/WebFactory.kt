@@ -15,6 +15,7 @@ import io.github.rygel.outerstellar.platform.persistence.NotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.PollRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.persistence.VoteRepository
+import io.github.rygel.outerstellar.platform.plugin.HostedApp
 import io.github.rygel.outerstellar.platform.security.AdminStatsService
 import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.SessionService
@@ -30,7 +31,6 @@ import io.github.rygel.outerstellar.platform.service.ResilientEmailService
 import io.github.rygel.outerstellar.platform.service.SmtpConfig
 import io.github.rygel.outerstellar.platform.service.SmtpEmailService
 import io.github.rygel.outerstellar.platform.service.VoteService
-import io.github.rygel.outerstellar.platform.web.PlatformPlugin
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
 import org.http4k.template.TemplateRenderer
@@ -57,7 +57,7 @@ class WebComponents(
 @Suppress("LongParameterList")
 fun createWebComponents(
     config: AppConfig,
-    plugin: PlatformPlugin? = null,
+    plugin: HostedApp? = null,
     apiKeyService: ApiKeyService,
     sessionService: SessionService,
     userAdminService: UserAdminService,

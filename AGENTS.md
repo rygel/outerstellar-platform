@@ -21,26 +21,29 @@ This project uses **synchronous blocking I/O** with a planned migration to **Jav
 ### Module Structure
 
 ```
-platform-core              Domain models, services, configuration (AppConfig, RuntimeConfig)
+platform-core              Domain models, services, configuration (AppConfig, RuntimeConfig), composition model types
+platform-plugin-api        Hosted-app SPI, plugin-facing DTOs, contribution contexts, facades
 platform-security          Auth, permissions, User/UserRepository, OAuth, API keys, JWT
 platform-persistence-jdbi  JDBI repositories + Flyway migrations
 platform-test-infrastructure SharedPostgres container, TestDatabase, testing utilities
 platform-sync-client       Sync DTOs, DesktopSyncEngine (sync client logic)
-platform-web               http4k web server, JTE templates, HTMX frontend
+platform-web               http4k web server, JTE templates, HTMX frontend, route registry
 platform-desktop           Swing desktop client with two-way sync
 platform-seed              Database seeding utility
-platform-desktop-javafx    JavaFX desktop module (scaffolded but not implemented)
+platform-desktop-javafx    JavaFX desktop module (scaffolded, not production-ready)
+jte-extensions             Custom JTE code generation (JteClassRegistry)
 ```
 
 ### Key Design Patterns
 
 - **Repository pattern**: Interfaces in `platform-core` (e.g. `MessageRepository`, `ContactRepository`), implementations in `platform-persistence-jdbi` (JdbiXxxRepository).
-- **Dependency injection**: Koin. Objects use `by inject()` for lazy resolution or `get()` for eager. MainComponent uses lazy delegates.
-- **http4k routes**: Contract-based routing via `bindContract`. Filters chain via `.then()`. All routes assembled in `App.kt`.
+- **Dependency injection**: Explicit constructor wiring. No runtime DI framework.
+- **http4k routes**: Contract-based routing via `bindContract`. Filters chain via `.then()`. Routes assembled through `RouteRegistry` in `App.kt` with mode-based conditional registration.
 - **JTE templates**: Precompiled in production (`JTE_PRODUCTION=true`), source-compiled in dev. Templates in `src/main/jte/`.
 - **Flyway migrations**: Source of truth for schema.
-- **AppConfig/RuntimeConfig**: Configuration from YAML + env vars. `AppConfig.fromEnvironment()` loads `application-{PROFILE}.yaml` then `application.yaml`. All fields support env var override.
+- **AppConfig/RuntimeConfig**: Configuration from YAML + env vars. `AppConfig.fromEnvironment()` loads `application-{PROFILE}.yaml` then `application.yaml`. All fields support env var override. `platformMode` field controls composition mode via `PLATFORM_MODE` env var.
 - **WebPageFactory → domain factories**: AuthPageFactory, ErrorPageFactory, SidebarFactory, ContactsPageFactory, HomePageFactory, InfraPageFactory, SettingsPageFactory, SearchPageFactory, DevDashboardPageFactory, AdminPageFactory. All delegate from the original WebPageFactory.
+- **Plugin composition**: `PlatformPlugin` interface with `mode` (PlatformMode), `includePlatformPages()` (Set of PlatformPageSets), `routeRegistrations()` (List of PluginRouteRegistration), `layoutTemplate()` (JTE template override), `filters()`, `bannerProviders()`. Route ownership tracked via `RouteRegistry` with startup conflict detection.
 
 ## Build and run
 
@@ -163,14 +166,18 @@ mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastru
 **Desktop/Swing tests must NEVER run directly on the host machine.** They capture mouse and keyboard. Always use Podman:
 
 ```powershell
-# Build the image (slow, only when dependencies change)
-podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
+# Preferred wrapper: builds docker/Dockerfile.build --target desktop-test,
+# runs Swing tests under Xvfb, and copies reports back.
+pwsh scripts/test-desktop.ps1
 
-# Run tests (mount Maven cache + Docker socket for Testcontainers)
-# NOTE: On Windows, OMIT the :Z flag (SELinux-specific)
+# Bash equivalent:
+bash docker/run-desktop-tests.sh
+
+# Manual equivalent, if the wrapper is unavailable:
+podman build --target desktop-test -t outerstellar-test-desktop -f docker/Dockerfile.build .
 podman run --rm --network host `
-  -v "${env:USERPROFILE}\.m2\repository:/root/.m2/repository" `
-  -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml" `
+  -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml:ro" `
+  -e "DOCKER_HOST=unix:///var/run/docker.sock" `
   -v "/var/run/docker.sock:/var/run/docker.sock" `
   outerstellar-test-desktop
 ```
@@ -229,6 +236,7 @@ All configuration is read from `application.yaml` (or `application-{profile}.yam
 | `jdbcUser` | `JDBC_USER` | `outerstellar` | Database user |
 | `jdbcPassword` | `JDBC_PASSWORD` | `outerstellar` | Database password |
 | `profile` | `APP_PROFILE` | `default` | Active config profile |
+| `platformMode` | `PLATFORM_MODE` | `FullPlatformApp` | Composition mode (`FullPlatformApp`, `PluginHostedApp`, `HeadlessKernel`) |
 | `devMode` | `DEVMODE` | false | Dev auto-login |
 | `sessionTimeoutMinutes` | `SESSIONTIMEOUTMINUTES` | 30 | Session timeout |
 | `registrationEnabled` | `REGISTRATION_ENABLED` | true | Enable or disable public user registration |
@@ -253,10 +261,16 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 
 | Pattern | Location |
 |---------|----------|
-| Route definitions | `App.kt` (`buildBaseApp`, `buildUiRoutes`, `buildApiRoutes`) |
+| Route assembly | `App.kt` (mode-based `RouteRegistry` assembly) |
+| Composition model types | `platform-core/.../composition/` (`PlatformMode`, `RouteRegistry`, `RegisteredRoute`, `RouteOwner`, `RouteGroup`) |
+| Hosted-app SPI | `platform-plugin-api/` (`HostedAppManifest`, facades, DTOs) |
+| Plugin interface | `platform-web/.../PlatformPlugin.kt` |
+| Platform page sets | `platform-web/.../composition/PlatformPageSets.kt` |
+| Theme interface | `platform-web/.../theme/PlatformTheme.kt`, `DaisyUITheme.kt` |
 | Filters | `Filters.kt` in `platform-web` |
-| Web context (per-request state) | `WebContext.kt` |
-| Shell/page rendering | `WebPageFactory.kt` (delegates to domain factories) |
+| Per-request state | `RequestContext.kt` (user, lang, theme, layout, CSRF) |
+| Layout data builder | `ShellRenderer.kt` (builds `ShellView` from request context) |
+| Page rendering | `WebPageFactory.kt` (delegates to domain factories) |
 | JTE templates | `src/main/jte/.../layouts/`, `.../pages/`, `.../components/` |
 | CSS | `input.css` (Tailwind v4 + DaisyUI v5), generates `site.css` |
 | Desktop main | `SwingSyncApp.kt` (SyncWindow, SyncWindowMenu, SyncWindowNav) |
@@ -386,8 +400,7 @@ Before every commit, the following MUST be true:
 
 2. **Desktop/UI tests must run in Podman containers.** Desktop/Swing tests must NEVER run directly on the host machine — they capture mouse and keyboard. Use:
    ```powershell
-   podman build -t outerstellar-test-desktop -f docker/Dockerfile.test-desktop .
-   podman run --rm --network host -v "${env:USERPROFILE}\.m2\repository:/root/.m2/repository" -v "${env:USERPROFILE}\.m2\settings.xml:/root/.m2/settings.xml" -v "/var/run/docker.sock:/var/run/docker.sock" outerstellar-test-desktop
+   pwsh scripts/test-desktop.ps1
    ```
 
 **Do not commit if either of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
