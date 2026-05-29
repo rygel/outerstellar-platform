@@ -87,4 +87,4 @@ Three density modes: nice (default), cozy, compact.
 
 ## Real-time Updates
 
-WebSocket at `/ws/sync` provides real-time UI refresh via HTMX `ws-subscribe`. The server pushes `HX-Trigger` events for message list, contact list, and notification bell updates.
+WebSocket at `/ws/sync` provides real-time UI refresh via HTMX `ws-subscribe`. The server pushes out-of-band HTMX fragments that trigger the shared `refresh` event on `document.body`, which the message and trash-list fragments already listen to with `hx-trigger="refresh from:body"`.

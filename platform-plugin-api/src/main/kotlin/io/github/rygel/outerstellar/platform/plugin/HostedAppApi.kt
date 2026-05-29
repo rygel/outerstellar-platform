@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.plugin
 
 import gg.jte.Content
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.PluginMigrations
 import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
@@ -248,7 +248,7 @@ private object NoOpPluginAnalytics : PluginAnalytics {
  * - Include your routes in the web app when they stay inside declared ownership prefixes
  * - Run your Flyway migrations in a dedicated history table
  */
-interface HostedApp : PluginMigrationSource {
+interface HostedApp {
     val id: String
     val appLabel: String
         get() = "Outerstellar"
@@ -261,6 +261,35 @@ interface HostedApp : PluginMigrationSource {
 
     val textResolver: TextResolver?
         get() = null
+
+    /**
+     * Flyway migrations contributed by this hosted app. Return null when the hosted app does not own schema changes.
+     *
+     * Older plugins can keep overriding the deprecated migrationLocation/migrationHistoryTable/migrationNames
+     * compatibility properties for now; the default getter adapts them into this value.
+     */
+    @Suppress("DEPRECATION")
+    val migrations: PluginMigrations?
+        get() {
+            val location = migrationLocation ?: return null
+            return PluginMigrations(
+                location = location,
+                historyTable = migrationHistoryTable,
+                migrationNames = migrationNames,
+            )
+        }
+
+    @Deprecated("Override migrations instead.", ReplaceWith("migrations"))
+    val migrationLocation: String?
+        get() = null
+
+    @Deprecated("Override migrations instead.", ReplaceWith("migrations"))
+    val migrationHistoryTable: String
+        get() = io.github.rygel.outerstellar.platform.DEFAULT_PLUGIN_MIGRATION_HISTORY_TABLE
+
+    @Deprecated("Override migrations instead.", ReplaceWith("migrations"))
+    val migrationNames: List<String>
+        get() = emptyList()
 
     fun templateOverrides(): Set<String> = emptySet()
 

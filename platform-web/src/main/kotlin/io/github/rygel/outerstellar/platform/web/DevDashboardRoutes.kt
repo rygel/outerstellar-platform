@@ -12,7 +12,7 @@ import org.http4k.template.TemplateRenderer
 class DevDashboardRoutes(
     private val outboxRepository: OutboxRepository,
     private val cache: MessageCache,
-    private val pageFactory: WebPageFactory,
+    private val devDashboardPageFactory: DevDashboardPageFactory,
     private val renderer: TemplateRenderer,
     private val enabled: Boolean,
 ) : ServerRoutes {
@@ -29,7 +29,7 @@ class DevDashboardRoutes(
                     { request: org.http4k.core.Request ->
                         val outboxStats = outboxRepository.getStats()
                         val viewModel =
-                            pageFactory.buildDevDashboardPage(
+                            devDashboardPageFactory.buildDevDashboardPage(
                                 shellRenderer = request.shellRenderer,
                                 metrics = "Prometheus export would go here",
                                 cacheStats = cache.getStats(),

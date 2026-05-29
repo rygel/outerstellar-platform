@@ -3,6 +3,8 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.SessionService
+import io.github.rygel.outerstellar.platform.service.PlatformEvent
+import io.github.rygel.outerstellar.platform.service.RefreshTarget
 import io.mockk.mockk
 import io.mockk.verify
 import java.util.UUID
@@ -10,7 +12,6 @@ import kotlin.test.Test
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.websocket.Websocket
-import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsStatus
 import org.junit.jupiter.api.BeforeEach
 
@@ -85,14 +86,14 @@ class WebSocketSyncIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `publishRefresh broadcasts to authenticated connection`() {
+    fun `publish broadcasts refresh events to authenticated connection`() {
         val request = Request(GET, "/ws/sync").header("Cookie", "${RequestContext.SESSION_COOKIE}=$testToken")
         val wsResponse = syncWebSocket.handler(request)
         val mockWs = mockk<Websocket>(relaxed = true)
 
         wsResponse(mockWs)
-        syncWebSocket.publishRefresh("messages")
+        syncWebSocket.publish(PlatformEvent.Refresh(RefreshTarget.MESSAGE_LIST_PANEL))
 
-        verify { mockWs.send(WsMessage("refresh:messages")) }
+        verify { mockWs.send(SyncWebSocketProtocol.encode(PlatformEvent.Refresh(RefreshTarget.MESSAGE_LIST_PANEL))) }
     }
 }

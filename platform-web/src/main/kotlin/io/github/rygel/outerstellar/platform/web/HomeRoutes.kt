@@ -23,7 +23,8 @@ private const val MAX_LIMIT = 100
 
 class HomeRoutes(
     private val messageService: MessageService,
-    private val pageFactory: WebPageFactory,
+    private val homePageFactory: HomePageFactory,
+    private val infraPageFactory: InfraPageFactory,
     private val renderer: TemplateRenderer,
 ) : ServerRoutes {
     private val queryLens = Query.string().optional("q")
@@ -40,7 +41,7 @@ class HomeRoutes(
                 } bindContract
                 GET to
                 { request ->
-                    renderer.render(pageFactory.buildFooterStatus(request.shellRenderer))
+                    renderer.render(infraPageFactory.buildFooterStatus(request.shellRenderer))
                 }
         )
 
@@ -62,7 +63,7 @@ class HomeRoutes(
                     val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
                     val offset = offsetLens(request).coerceAtLeast(0)
                     val year = yearLens(request)
-                    renderer.render(pageFactory.buildHomePage(ctx, shellRenderer, query, limit, offset, year))
+                    renderer.render(homePageFactory.buildHomePage(ctx, shellRenderer, query, limit, offset, year))
                 },
             "/messages/trash" meta
                 {
@@ -72,7 +73,7 @@ class HomeRoutes(
                 { request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    renderer.render(pageFactory.buildTrashPage(ctx, shellRenderer))
+                    renderer.render(homePageFactory.buildTrashPage(ctx, shellRenderer))
                 },
             "/messages" meta
                 {
@@ -85,7 +86,7 @@ class HomeRoutes(
                     val author = request.form("author").orEmpty()
                     val content = request.form("content").orEmpty()
                     messageService.createServerMessage(author, content)
-                    renderer.render(pageFactory.buildMessageList(ctx, shellRenderer))
+                    renderer.render(homePageFactory.buildMessageList(ctx, shellRenderer))
                 },
             "/messages/restore" / syncIdPath meta
                 {
@@ -106,7 +107,7 @@ class HomeRoutes(
                 GET to
                 { syncId ->
                     { request: org.http4k.core.Request ->
-                        val viewModel = pageFactory.buildConflictResolveModal(request.shellRenderer, syncId)
+                        val viewModel = infraPageFactory.buildConflictResolveModal(request.shellRenderer, syncId)
                         renderer.render(viewModel)
                     }
                 },
@@ -140,7 +141,7 @@ class HomeRoutes(
                 GET to
                 { syncId: String, _ ->
                     { request: Request ->
-                        renderer.render(pageFactory.buildMessageEditForm(request.shellRenderer, syncId))
+                        renderer.render(homePageFactory.buildMessageEditForm(request.shellRenderer, syncId))
                     }
                 },
             "/messages" / syncIdPath / "update" meta
@@ -156,7 +157,7 @@ class HomeRoutes(
                         val author = request.form("author").orEmpty()
                         val content = request.form("content").orEmpty()
                         messageService.updateMessage(msg!!.copy(author = author, content = content))
-                        renderer.render(pageFactory.buildMessageList(ctx, shellRenderer))
+                        renderer.render(homePageFactory.buildMessageList(ctx, shellRenderer))
                     }
                 },
         )

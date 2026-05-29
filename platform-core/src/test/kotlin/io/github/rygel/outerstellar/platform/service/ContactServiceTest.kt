@@ -118,7 +118,7 @@ class ContactServiceTest {
         )
 
         verify { repository.createLocalContact(any(), any(), any(), any(), any(), any(), any()) }
-        verify { eventPublisher.publishRefresh("contact-list-panel") }
+        verify { eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.CONTACT_LIST_PANEL)) }
     }
 
     @Test
@@ -158,7 +158,7 @@ class ContactServiceTest {
 
         service.updateContact(contact)
 
-        verify { eventPublisher.publishRefresh("contact-list-panel") }
+        verify { eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.CONTACT_LIST_PANEL)) }
     }
 
     @Test
@@ -166,7 +166,7 @@ class ContactServiceTest {
         service.deleteContact("sync-1")
 
         verify { repository.softDelete("sync-1") }
-        verify { eventPublisher.publishRefresh("contact-list-panel") }
+        verify { eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.CONTACT_LIST_PANEL)) }
     }
 
     @Test
@@ -245,7 +245,7 @@ class ContactServiceTest {
 
         service.processPushRequest(SyncPushContactRequest(listOf(pushed)))
 
-        verify { eventPublisher.publishRefresh("contact-list-panel") }
+        verify { eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.CONTACT_LIST_PANEL)) }
     }
 
     @Test
@@ -254,7 +254,7 @@ class ContactServiceTest {
 
         assertEquals(0, response.appliedCount)
         assertTrue(response.conflicts.isEmpty())
-        verify(exactly = 0) { eventPublisher.publishRefresh(any()) }
+        verify(exactly = 0) { eventPublisher.publish(any()) }
     }
 
     @Test

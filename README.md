@@ -141,7 +141,7 @@ At startup, the route registry logs a table showing all routes, their owners, an
 
 #### How to Add a New Page:
 
-1. **Create a ViewModel**: Define a Kotlin `data class` implementing `ViewModel` in `WebPageFactory.kt`.
+1. **Create a ViewModel**: Define a Kotlin `data class` implementing `ViewModel` alongside the domain-specific page factory that owns it.
 2. **Create a Template**: Add a corresponding `.kte` file in `platform-web/src/main/jte`. Wrap your content using the `Page<T>` wrapper to inherit the global layout:
    ```html
    @import io.github.rygel.outerstellar.platform.web.MyPage
@@ -152,7 +152,7 @@ At startup, the route registry logs a table showing all routes, their owners, an
        <h1>${model.data.title}</h1>
    `)
    ```
-3. **Update the Factory**: Add a `buildMyPage` method to the appropriate domain factory (e.g., `HomePageFactory`, `SettingsPageFactory`).
+3. **Update the Factory**: Add a `buildMyPage` method to the appropriate domain factory (e.g., `HomePageFactory`, `SettingsPageFactory`, `AdminPageFactory`).
 4. **Register the Route**: Add the route to the appropriate route class (e.g., `HomeRoutes.kt`) and register it in the `RouteRegistry` in `App.kt`.
 5. **Access State**: Use `request.shellRenderer` to build `ShellView` with nav links, CSRF token, theme, and user info.
 

@@ -8,16 +8,17 @@ Hosted apps can contribute:
 - routes and filters
 - shell navigation, admin sections, banners, layout replacement, and assets
 - i18n/text overrides and template overrides
-- database migrations through `PluginMigrationSource`
+- database migrations through `HostedApp.migrations`
 
 ## HostedApp Interface
 
 ```kotlin
-interface HostedApp : PluginMigrationSource {
+interface HostedApp {
     val id: String
     val appLabel: String
     val manifest: HostedAppManifest
     val mode: PlatformMode
+    val migrations: PluginMigrations?
 
     fun contribute(context: HostedAppContributionContext) {}
     fun routeRegistrations(context: HostedAppContext): List<PluginRouteRegistration> = emptyList()
@@ -49,22 +50,23 @@ Plugins can override JTE templates by providing a `templateOverrides()` map. The
 
 ## Database Migrations
 
-Plugins extend `PluginMigrationSource` (inherited via `PlatformPlugin`):
-- `migrationLocation: String?` — classpath location for Flyway migrations
-- `migrationHistoryTable: String` — defaults to `flyway_plugin_history`
+Plugins declare migrations with `HostedApp.migrations`:
+- `location: String` — classpath location for Flyway migrations
+- `historyTable: String` — defaults to `flyway_plugin_history`
+- `migrationNames: List<String>` — optional explicit filenames for native-image classpath extraction
 
 Plugin migrations run after host migrations in a separate Flyway instance. Baseline version is 0 so V1 migrations execute on fresh databases.
 
-**Important**: Register the plugin as `PluginMigrationSource` in Koin:
 ```kotlin
-single<PlatformPlugin> { MyPlugin() }
-// Koin doesn't resolve parent types — persistence module needs this:
-single<PluginMigrationSource> { get<PlatformPlugin>() }
+override val migrations =
+    PluginMigrations(
+        location = "classpath:db/migration/my-plugin",
+        historyTable = "flyway_my_plugin_history",
+        migrationNames = listOf("V1__init", "V2__seed"),
+    )
 ```
 
-Or better, use the bridge already in `WebModule.kt`:
-- The web module registers a bridge bean: `single<PluginMigrationSource> { getOrNull<PlatformPlugin>() ?: NoPluginMigrationSource }`
-- Apps with a plugin only need `single<PlatformPlugin> { MyPlugin() }`
+Older plugins can keep overriding `migrationLocation`, `migrationHistoryTable`, and `migrationNames` for now, but those compatibility properties are deprecated in favor of `migrations`.
 
 ## Registration
 

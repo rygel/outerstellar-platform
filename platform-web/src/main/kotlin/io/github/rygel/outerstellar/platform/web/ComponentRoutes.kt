@@ -25,7 +25,8 @@ private const val VOTE_PATH_PREFIX = "/components/messages/"
 private const val VOTE_PATH_SUFFIX = "/vote"
 
 class ComponentRoutes(
-    private val pageFactory: WebPageFactory,
+    private val sidebarFactory: SidebarFactory,
+    private val homePageFactory: HomePageFactory,
     private val renderer: TemplateRenderer,
     private val voteService: VoteService? = null,
     private val pollService: PollService? = null,
@@ -57,7 +58,7 @@ class ComponentRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    renderer.render(pageFactory.buildThemeSelector(request.requestContext, request.shellRenderer))
+                    renderer.render(sidebarFactory.buildThemeSelector(request.requestContext, request.shellRenderer))
                 },
             "/components/sidebar/language-selector" meta
                 {
@@ -65,7 +66,7 @@ class ComponentRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    renderer.render(pageFactory.buildLanguageSelector(request.requestContext, request.shellRenderer))
+                    renderer.render(sidebarFactory.buildLanguageSelector(request.requestContext, request.shellRenderer))
                 },
             "/components/sidebar/layout-selector" meta
                 {
@@ -73,7 +74,7 @@ class ComponentRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    renderer.render(pageFactory.buildLayoutSelector(request.requestContext, request.shellRenderer))
+                    renderer.render(sidebarFactory.buildLayoutSelector(request.requestContext, request.shellRenderer))
                 },
         ) + votePublicRoutes() + pollPublicRoutes()
 
@@ -95,7 +96,7 @@ class ComponentRoutes(
                     val limit = limitLens(request).coerceIn(1, MAX_LIMIT)
                     val offset = offsetLens(request).coerceAtLeast(0)
                     val year = yearLens(request)
-                    renderer.render(pageFactory.buildMessageList(ctx, shellRenderer, query, limit, offset, year))
+                    renderer.render(homePageFactory.buildMessageList(ctx, shellRenderer, query, limit, offset, year))
                 }
         ) + voteProtectedRoutes() + pollProtectedRoutes()
 

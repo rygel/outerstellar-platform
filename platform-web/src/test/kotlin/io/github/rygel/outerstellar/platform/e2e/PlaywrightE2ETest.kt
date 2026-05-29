@@ -5,12 +5,14 @@ import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.app
+import io.github.rygel.outerstellar.platform.di.createConfiguredEmailService
 import io.github.rygel.outerstellar.platform.di.createCoreComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
 import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
+import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import kotlin.test.assertTrue
 import org.http4k.core.PolyHandler
 import org.http4k.server.Http4kServer
@@ -71,6 +73,7 @@ class PlaywrightE2ETest {
             )
 
         val persistence = loadPersistenceBootstrap().create(testConfig)
+        val emailService = createConfiguredEmailService(testConfig)
         val security =
             createSecurityComponents(
                 config = testConfig,
@@ -78,17 +81,20 @@ class PlaywrightE2ETest {
                 auditRepository = persistence.auditRepository,
                 resetRepository = persistence.passwordResetRepository,
                 apiKeyRepository = persistence.apiKeyRepository,
+                emailService = emailService,
                 oauthRepository = persistence.oAuthRepository,
                 sessionRepository = persistence.sessionRepository,
             )
+        val syncWebSocket = SyncWebSocket(security.sessionService)
         val web =
             createWebComponents(
                 config = testConfig,
                 apiKeyService = security.apiKeyService,
-                sessionService = security.sessionService,
+                oauthService = security.oauthService,
+                syncWebSocket = syncWebSocket,
                 userAdminService = security.userAdminService,
-                messageRepository = persistence.messageRepository,
                 userRepository = persistence.userRepository,
+                messageRepository = persistence.messageRepository,
                 voteRepository = persistence.voteRepository,
                 pollRepository = persistence.pollRepository,
                 notificationRepository = persistence.notificationRepository,
@@ -101,8 +107,8 @@ class PlaywrightE2ETest {
                 outboxRepository = persistence.outboxRepository,
                 transactionManager = persistence.transactionManager,
                 auditRepository = persistence.auditRepository,
-                eventPublisher = web.eventPublisher,
-                emailService = web.emailService,
+                eventPublisher = syncWebSocket,
+                emailService = emailService,
             )
 
         messageRepo = persistence.messageRepository
