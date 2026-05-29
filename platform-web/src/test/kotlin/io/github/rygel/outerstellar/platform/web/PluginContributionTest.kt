@@ -129,7 +129,10 @@ class PluginContributionTest {
         assertEquals(listOf(bannerProvider), contribution.bannerProviders)
         assertSame(textResolver, contribution.options.textResolver)
         assertSame(layoutRenderer, contribution.options.layoutRenderer)
-        assertEquals(listOf(AdminNavItem("Tools", "/admin/tools", "wrench")), contribution.options.adminNavItems)
+        assertEquals(
+            listOf(io.github.rygel.outerstellar.platform.plugin.AdminNavItem("Tools", "/admin/tools", "wrench")),
+            contribution.options.adminNavItems,
+        )
         assertEquals(1, plugin.routeCalls)
         assertEquals(1, plugin.filterCalls)
         assertEquals(1, plugin.adminCalls)
@@ -219,11 +222,17 @@ class PluginContributionTest {
         assertEquals(listOf(filter), contribution.filters)
         assertEquals(listOf(adminSection), contribution.adminSections)
         assertEquals(listOf(bannerProvider), contribution.bannerProviders)
-        assertEquals(listOf(navItem), contribution.options.navItems)
+        assertEquals(
+            listOf(io.github.rygel.outerstellar.platform.plugin.PluginNavItem("Reports", "/reports", "bar-chart")),
+            contribution.options.navItems,
+        )
         assertSame(layoutRenderer, contribution.options.layoutRenderer)
         assertEquals(listOf("/plugins/reports/assets/reports.css"), contribution.options.assets.stylesheets)
         assertEquals(listOf("/plugins/reports/assets/reports.js"), contribution.options.assets.scripts)
-        assertEquals(listOf(AdminNavItem("Reports", "/admin/reports", "bar-chart")), contribution.options.adminNavItems)
+        assertEquals(
+            listOf(io.github.rygel.outerstellar.platform.plugin.AdminNavItem("Reports", "/admin/reports", "bar-chart")),
+            contribution.options.adminNavItems,
+        )
         assertEquals(1, plugin.contributeCalls)
 
         val diagnostics = contribution.diagnostics()
