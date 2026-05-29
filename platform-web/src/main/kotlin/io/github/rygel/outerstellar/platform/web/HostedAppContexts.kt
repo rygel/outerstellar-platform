@@ -73,6 +73,29 @@ internal fun hostedAppContextForTesting(
         notificationService = notificationService,
     )
 
+@Deprecated(
+    message =
+        "Use HostedAppContext.forTesting(rendering = ..., users = ..., security = ...) when testing against the SPI alone."
+)
+fun HostedAppContext.Companion.forTesting(
+    renderer: TemplateRenderer,
+    apiKeyService: ApiKeyService,
+    oauthService: OAuthService,
+    userRepository: UserRepository,
+    analytics: AnalyticsService = NoOpAnalyticsService(),
+    notificationService: NotificationService? = null,
+    config: AppConfig = AppConfig(),
+): HostedAppContext =
+    hostedAppContextForTesting(
+        renderer = renderer,
+        apiKeyService = apiKeyService,
+        oauthService = oauthService,
+        userRepository = userRepository,
+        analytics = analytics,
+        notificationService = notificationService,
+        config = config,
+    )
+
 private class DefaultPluginUsers(private val userRepository: UserRepository) : PluginUsers {
     private val log = LoggerFactory.getLogger(DefaultPluginUsers::class.java)
 

@@ -31,7 +31,7 @@ platform-web               http4k web server, JTE templates, HTMX frontend, rout
 platform-desktop           Swing desktop client with two-way sync
 platform-seed              Database seeding utility
 platform-desktop-javafx    JavaFX desktop module (scaffolded, not production-ready)
-jte-extensions             Custom JTE code generation (JteClassRegistry)
+platform-jte-extensions    Custom JTE code generation (JteClassRegistry)
 ```
 
 ### Key Design Patterns

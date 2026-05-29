@@ -146,7 +146,7 @@ class MyPlugin : HostedApp {
 | Text overrides | `textResolver` | Custom translations |
 | Template overrides | `templateOverrides()` | Override JTE templates from plugin classpath |
 
-### PluginContext
+### HostedAppContext (`PluginContext` compatibility alias)
 
 Passed to hosted-app hooks, provides access to:
 

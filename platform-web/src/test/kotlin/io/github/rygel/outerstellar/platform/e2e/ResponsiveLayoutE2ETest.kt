@@ -7,8 +7,8 @@ import com.microsoft.playwright.options.LoadState
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.app
 import io.github.rygel.outerstellar.platform.di.createCoreComponents
-import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
+import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -77,7 +77,7 @@ class ResponsiveLayoutE2ETest {
                 devMode = true,
             )
 
-        val persistence = createPersistenceComponents(testConfig)
+        val persistence = loadPersistenceBootstrap().create(testConfig)
         val security =
             createSecurityComponents(
                 config = testConfig,

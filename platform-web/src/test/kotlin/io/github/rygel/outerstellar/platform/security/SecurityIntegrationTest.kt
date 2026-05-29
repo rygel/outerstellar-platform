@@ -2,7 +2,7 @@ package io.github.rygel.outerstellar.platform.security
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.persistence.JdbiUserRepository
+import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.web.WebTest
 import io.github.rygel.outerstellar.platform.web.testPassword
 import java.util.UUID
@@ -14,13 +14,13 @@ import org.junit.jupiter.api.Test
 
 class SecurityIntegrationTest : WebTest() {
 
-    private lateinit var localUserRepository: JdbiUserRepository
+    private lateinit var localUserRepository: UserRepository
     private lateinit var passwordEncoder: PasswordEncoder
     private lateinit var authService: AuthService
 
     @BeforeEach
     fun setupTest() {
-        localUserRepository = JdbiUserRepository(testJdbi)
+        localUserRepository = userRepository
         passwordEncoder = BCryptPasswordEncoder(logRounds = 4)
         authService =
             AuthService(

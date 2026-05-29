@@ -1,11 +1,11 @@
 package io.github.rygel.outerstellar.platform
 
 import io.github.rygel.outerstellar.platform.di.CoreComponents
-import io.github.rygel.outerstellar.platform.di.PersistenceComponents
+import io.github.rygel.outerstellar.platform.di.PlatformPersistence
 import io.github.rygel.outerstellar.platform.di.WebComponents
 import io.github.rygel.outerstellar.platform.di.createCoreComponents
-import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
+import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
 import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
 import io.github.rygel.outerstellar.platform.plugin.HostedApp
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
@@ -14,7 +14,7 @@ import org.http4k.core.PolyHandler
 
 class ServerComponents(
     val config: AppConfig,
-    val persistence: PersistenceComponents,
+    val persistence: PlatformPersistence,
     val core: CoreComponents,
     val security: SecurityComponents,
     val web: WebComponents,
@@ -24,7 +24,7 @@ class ServerComponents(
 fun createServerComponents(plugin: HostedApp? = null): ServerComponents {
     val config = AppConfig.fromEnvironment()
 
-    val persistence = createPersistenceComponents(config = config, pluginMigrationSource = plugin)
+    val persistence = loadPersistenceBootstrap().create(config = config, pluginMigrationSource = plugin)
 
     val security =
         createSecurityComponents(

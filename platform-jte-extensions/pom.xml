@@ -9,7 +9,7 @@
         <version>1.6.2</version>
     </parent>
 
-    <artifactId>jte-extensions</artifactId>
+    <artifactId>platform-jte-extensions</artifactId>
     <name>JTE Extensions</name>
 
     <properties>

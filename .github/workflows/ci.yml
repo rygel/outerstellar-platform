@@ -71,6 +71,7 @@ jobs:
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
+            platform-jte-extensions/target/
             platform-core/target/
             platform-plugin-api/target/
             platform-test-infrastructure/target/
@@ -122,6 +123,7 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
+            platform-jte-extensions/target/
             platform-core/target/
             platform-plugin-api/target/
             platform-test-infrastructure/target/
@@ -134,7 +136,7 @@ jobs:
       - name: Install parent POM and dependencies
         run: >
           mvn install -N -q
-          && mvn install -pl jte-extensions,platform-core,platform-plugin-api,platform-security,platform-test-infrastructure,platform-sync-client,platform-persistence-jdbi
+          && mvn install -pl platform-jte-extensions,platform-core,platform-plugin-api,platform-security,platform-test-infrastructure,platform-sync-client,platform-persistence-jdbi
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -187,6 +189,7 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
+            platform-jte-extensions/target/
             platform-core/target/
             platform-plugin-api/target/
             platform-test-infrastructure/target/
@@ -249,6 +252,7 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
+            platform-jte-extensions/target/
             platform-core/target/
             platform-plugin-api/target/
             platform-test-infrastructure/target/
@@ -262,7 +266,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-plugin-api,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
+          -pl platform-jte-extensions,platform-core,platform-plugin-api,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
           -DskipTests -Dexec.skip=true -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -334,6 +338,7 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
+            platform-jte-extensions/target/
             platform-core/target/
             platform-plugin-api/target/
             platform-test-infrastructure/target/

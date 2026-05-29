@@ -31,7 +31,7 @@ interface HostedApp : PluginMigrationSource {
 
 ## Plugin Context
 
-`HostedAppContext` / `PluginContext` provides access to stable plugin-facing facades:
+`HostedAppContext` is the primary SPI context. `PluginContext` remains a compatibility alias to the same type and provides access to stable plugin-facing facades:
 - `app` (`config` compatibility alias) — safe app info only: `version`, `appBaseUrl`, `devMode`, `registrationEnabled`
 - `users` (`userRepository` alias) — `currentUser(request)`, `findById`, `findByUsername`, `findByEmail`
 - `analytics` — `identify`, `track`, `page`

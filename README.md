@@ -128,7 +128,7 @@ class MyPlugin : PlatformPlugin {
         PlatformPageSets.SEARCH,
     )
 
-    override fun routeRegistrations(context: PluginContext) = listOf(
+    override fun routeRegistrations(context: HostedAppContext) = listOf(
         PluginRouteRegistration(myHomeRoute, RouteGroup.PublicUi, "Home page"),
     )
 }

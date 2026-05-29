@@ -119,7 +119,7 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY pom.xml .
-COPY jte-extensions/pom.xml jte-extensions/
+COPY platform-jte-extensions/pom.xml platform-jte-extensions/
 COPY platform-core/pom.xml platform-core/
 COPY platform-security/pom.xml platform-security/
 COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/

@@ -4,6 +4,7 @@ import com.tngtech.archunit.core.importer.ClassFileImporter
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition
+import java.nio.file.Paths
 import org.junit.jupiter.api.Test
 
 class ArchitectureTest {
@@ -16,6 +17,7 @@ class ArchitectureTest {
     // because those modules are NOT on the classpath.
 
     private val allClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+    private val webProductionClasses = ClassFileImporter().importPaths(Paths.get("target", "classes"))
 
     @Test
     fun `core model and services should not depend on web or desktop`() {
@@ -70,6 +72,13 @@ class ArchitectureTest {
                 .resideInAnyPackage("..persistence.jdbi..", "..desktop..", "..web..")
 
         rule.check(allClasses)
+    }
+
+    @Test
+    fun `web production code should not depend on persistence jdbi implementation`() {
+        val rule = noClasses().should().dependOnClassesThat().resideInAPackage("..persistence.jdbi..")
+
+        rule.check(webProductionClasses)
     }
 
     @Test

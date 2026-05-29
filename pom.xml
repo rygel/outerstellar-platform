@@ -37,7 +37,7 @@
     </scm>
 
     <modules>
-        <module>jte-extensions</module>
+        <module>platform-jte-extensions</module>
         <module>platform-core</module>
         <module>platform-plugin-api</module>
         <module>platform-persistence-jdbi</module>
