@@ -12,8 +12,10 @@ import io.github.rygel.outerstellar.platform.export.ContactExportProvider
 import io.github.rygel.outerstellar.platform.export.MessageExportProvider
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.plugin.HostedAppContribution
+import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SecurityRules
+import io.github.rygel.outerstellar.platform.security.SessionRealm
 import io.github.rygel.outerstellar.platform.web.AuthApi
 import io.github.rygel.outerstellar.platform.web.ComponentRoutes
 import io.github.rygel.outerstellar.platform.web.DevDashboardRoutes
@@ -53,7 +55,16 @@ internal class RouteRegistrar(
     private val web: WebComponents,
     private val pluginContribution: HostedAppContribution,
 ) {
-    fun registerAll(registry: RouteRegistry, bearerSecurity: Security, bearerAdminSecurity: Security) {
+    fun buildRegistry(): RouteRegistry {
+        val registry = RouteRegistry()
+        val realms = listOf(SessionRealm(security.sessionService), ApiKeyRealm(security.apiKeyService))
+        val (bearerSecurity, bearerAdminSecurity) = SecurityConfigurator(realms).bearerSecurityPair()
+        registerAll(registry, bearerSecurity, bearerAdminSecurity)
+        registry.requireNoConflicts()
+        return registry
+    }
+
+    private fun registerAll(registry: RouteRegistry, bearerSecurity: Security, bearerAdminSecurity: Security) {
         registerApiRoutes(registry, bearerSecurity, bearerAdminSecurity)
         UiRouteRegistrar(config, security, core, web, pluginContribution).register(registry)
         registerComponentRoutes(registry)
@@ -97,7 +108,7 @@ internal class RouteRegistrar(
             renderer = OpenApi3(ApiInfo("Sync", "v1.0"), KotlinxSerialization)
             descriptionPath = "/api/v1/sync/openapi.json"
             this.security = bearerSecurity
-            routes += SyncApi(core.messageService, core.contactService, web.analyticsService).routes
+            routes += SyncApi(core.messageService, core.contactService, web.runtime.analyticsService).routes
             routes +=
                 AuthApi(
                         sec.apiKeyService,
@@ -147,7 +158,14 @@ internal class RouteRegistrar(
 
     private fun registerComponentRoutes(registry: RouteRegistry) {
         val appLabel = pluginContribution.appLabel
-        val componentRoutes = ComponentRoutes(web.pageFactory, web.templateRenderer, web.voteService, web.pollService)
+        val componentRoutes =
+            ComponentRoutes(
+                web.pages.sidebarFactory,
+                web.pages.homePageFactory,
+                web.runtime.templateRenderer,
+                web.voteService,
+                web.pollService,
+            )
         val publicContract = contract {
             renderer = OpenApi3(ApiInfo("$appLabel Components", "v1.0"), KotlinxSerialization)
             descriptionPath = "/components/openapi.json"
@@ -197,12 +215,13 @@ internal class RouteRegistrar(
                 DevDashboardRoutes(
                         persistence.outboxRepository,
                         core.messageCache,
-                        web.pageFactory,
-                        web.templateRenderer,
+                        web.pages.devDashboardPageFactory,
+                        web.runtime.templateRenderer,
                         config.devDashboardEnabled,
                     )
                     .routes
-            routes += UserAdminRoutes(web.pageFactory, web.templateRenderer, sec.userAdminService).routes
+            routes +=
+                UserAdminRoutes(web.pages.adminPageFactory, web.runtime.templateRenderer, sec.userAdminService).routes
             pluginSections.forEach { section -> routes += section.route }
         }
         val adminHandler: RoutingHttpHandler =
@@ -231,7 +250,7 @@ internal class RouteRegistrar(
                                             diagnostics = pluginContribution.diagnostics(),
                                         ),
                                     )
-                                Response(Status.OK).body(web.templateRenderer(page))
+                                Response(Status.OK).body(web.runtime.templateRenderer(page))
                             }
                     )
                 routes(adminContract, pluginDashboardRoute)

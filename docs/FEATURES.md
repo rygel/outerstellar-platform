@@ -64,7 +64,7 @@
 ### Real-time
 - **WebSocket sync** — `/ws/sync` for real-time UI refresh notifications
 - **Transactional outbox** — reliable event delivery with outbox pattern
-- **Event publisher** — `publishRefresh(targetId)` for triggering UI updates
+- **Event publisher** — typed `PlatformEvent` publishing for triggering UI refresh updates
 
 ## Persistence
 
@@ -80,7 +80,7 @@ The platform uses `platform-persistence-jdbi` for all repository implementations
 
 ### Plugin Migration Isolation
 
-Plugins that need their own database migrations use `PluginMigrationSource` (extended by `PlatformPlugin`). The host runs plugin migrations with a separate Flyway instance, separate classpath location, and separate history table (`flyway_plugin_history` by default). This prevents version number conflicts between platform migrations (V1–V4) and plugin migrations.
+Plugins that need their own database migrations expose `HostedApp.migrations` as a `PluginMigrations` value. The host runs plugin migrations with a separate Flyway instance, separate classpath location, and separate history table (`flyway_plugin_history` by default). This prevents version number conflicts between platform migrations (V1–V4) and plugin migrations.
 
 ### Repositories
 - Message repository (CRUD, sync, conflict tracking)

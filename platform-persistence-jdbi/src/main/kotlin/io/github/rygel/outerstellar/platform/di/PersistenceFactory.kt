@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.PluginMigrations
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
 import io.github.rygel.outerstellar.platform.infra.migratePlugin
@@ -64,13 +64,10 @@ class PersistenceComponents(
     }
 }
 
-fun createPersistenceComponents(
-    config: AppConfig,
-    pluginMigrationSource: PluginMigrationSource? = null,
-): PersistenceComponents {
+fun createPersistenceComponents(config: AppConfig, pluginMigrations: PluginMigrations? = null): PersistenceComponents {
     val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword, config.runtime)
     try {
-        runMigrations(ds, config, pluginMigrationSource)
+        runMigrations(ds, config, pluginMigrations)
     } catch (e: Exception) {
         ds.close()
         throw e
@@ -110,10 +107,9 @@ fun createPersistenceComponents(
     )
 }
 
-private fun runMigrations(ds: DataSource, config: AppConfig, pluginMigrationSource: PluginMigrationSource?) {
+private fun runMigrations(ds: DataSource, config: AppConfig, pluginMigrations: PluginMigrations?) {
     if (!config.runtime.flywayEnabled) return
     migrate(ds)
-    val plugin = pluginMigrationSource ?: return
-    val location = plugin.migrationLocation ?: return
-    migratePlugin(ds, location, plugin.migrationHistoryTable, plugin.migrationNames)
+    val plugin = pluginMigrations ?: return
+    migratePlugin(ds, plugin.location, plugin.historyTable, plugin.migrationNames)
 }

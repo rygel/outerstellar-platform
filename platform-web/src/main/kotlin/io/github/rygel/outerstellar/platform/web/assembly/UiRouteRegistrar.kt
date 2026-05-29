@@ -14,20 +14,25 @@ import io.github.rygel.outerstellar.platform.search.MessageSearchProvider
 import io.github.rygel.outerstellar.platform.security.AppleOAuthProvider
 import io.github.rygel.outerstellar.platform.security.OAuthProvider
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
+import io.github.rygel.outerstellar.platform.web.AdminPageFactory
 import io.github.rygel.outerstellar.platform.web.ApiKeyRoutes
 import io.github.rygel.outerstellar.platform.web.AuthRoutes
+import io.github.rygel.outerstellar.platform.web.ContactsPageFactory
 import io.github.rygel.outerstellar.platform.web.ContactsRoutes
 import io.github.rygel.outerstellar.platform.web.ErrorRoutes
+import io.github.rygel.outerstellar.platform.web.HomePageFactory
 import io.github.rygel.outerstellar.platform.web.HomeRoutes
+import io.github.rygel.outerstellar.platform.web.InfraPageFactory
 import io.github.rygel.outerstellar.platform.web.NotificationRoutes
 import io.github.rygel.outerstellar.platform.web.OAuthRoutes
 import io.github.rygel.outerstellar.platform.web.PasswordRoutes
 import io.github.rygel.outerstellar.platform.web.ProfileRoutes
 import io.github.rygel.outerstellar.platform.web.RequestContext
+import io.github.rygel.outerstellar.platform.web.SearchPageFactory
 import io.github.rygel.outerstellar.platform.web.SearchRoutes
 import io.github.rygel.outerstellar.platform.web.SessionCookie
+import io.github.rygel.outerstellar.platform.web.SettingsPageFactory
 import io.github.rygel.outerstellar.platform.web.SettingsRoutes
-import io.github.rygel.outerstellar.platform.web.WebPageFactory
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 import io.github.rygel.outerstellar.platform.web.shellRenderer
 import org.http4k.contract.ContractRoute
@@ -89,24 +94,37 @@ internal class UiRouteRegistrar(
         publicRoutes: MutableList<ContractRoute>,
         protectedRoutes: MutableList<ContractRoute>,
     ) {
-        registerSearchPages(registry, publicRoutes, web.pageFactory, web.templateRenderer)
-        registerHomePages(registry, publicRoutes, protectedRoutes, web.pageFactory, web.templateRenderer)
-        registerNotificationPages(registry, publicRoutes, protectedRoutes, web.pageFactory, web.templateRenderer)
-        registerContactsPages(registry, protectedRoutes, web.pageFactory, web.templateRenderer)
-        registerProfilePages(registry, protectedRoutes, web.pageFactory, web.templateRenderer)
-        registerApiKeyPages(registry, protectedRoutes, web.pageFactory, web.templateRenderer)
-        registerSettingsPages(registry, protectedRoutes, web.pageFactory, web.templateRenderer)
+        registerSearchPages(registry, publicRoutes, web.pages.searchPageFactory, web.runtime.templateRenderer)
+        registerHomePages(
+            registry,
+            publicRoutes,
+            protectedRoutes,
+            web.pages.homePageFactory,
+            web.pages.infraPageFactory,
+            web.runtime.templateRenderer,
+        )
+        registerNotificationPages(
+            registry,
+            publicRoutes,
+            protectedRoutes,
+            web.pages.adminPageFactory,
+            web.runtime.templateRenderer,
+        )
+        registerContactsPages(registry, protectedRoutes, web.pages.contactsPageFactory, web.runtime.templateRenderer)
+        registerProfilePages(registry, protectedRoutes, web.pages.adminPageFactory, web.runtime.templateRenderer)
+        registerApiKeyPages(registry, protectedRoutes, web.pages.adminPageFactory, web.runtime.templateRenderer)
+        registerSettingsPages(registry, protectedRoutes, web.pages.settingsPageFactory, web.runtime.templateRenderer)
     }
 
     private fun registerAuthRoutes(registry: RouteRegistry, publicRoutes: MutableList<ContractRoute>) {
         val authRoutes =
             AuthRoutes(
-                web.pageFactory,
-                web.templateRenderer,
+                web.pages.authPageFactory,
+                web.runtime.templateRenderer,
                 security.authService,
                 security.sessionService,
                 security.passwordResetService,
-                web.analyticsService,
+                web.runtime.analyticsService,
                 config,
             )
         authRoutes.routes.forEach { route ->
@@ -124,8 +142,8 @@ internal class UiRouteRegistrar(
     ) {
         val passwordRoutes =
             PasswordRoutes(
-                web.pageFactory,
-                web.templateRenderer,
+                web.pages.authPageFactory,
+                web.runtime.templateRenderer,
                 security.accountService,
                 security.passwordResetService,
             )
@@ -186,7 +204,7 @@ internal class UiRouteRegistrar(
     }
 
     private fun registerErrorRoutes(registry: RouteRegistry, publicRoutes: MutableList<ContractRoute>) {
-        val errorRoutes = ErrorRoutes(web.pageFactory, web.templateRenderer)
+        val errorRoutes = ErrorRoutes(web.pages.errorPageFactory, web.runtime.templateRenderer)
         errorRoutes.routes.forEach { route ->
             registry.register(
                 RegisteredRoute(route, RouteOwner.PlatformKernel, RouteGroup.PublicUi, "/errors", "GET", "Error pages")
@@ -262,23 +280,45 @@ internal class UiRouteRegistrar(
     ) {
         when (pageSet) {
             PlatformPageSets.HOME ->
-                registerHomePages(registry, publicRoutes, protectedRoutes, web.pageFactory, web.templateRenderer)
+                registerHomePages(
+                    registry,
+                    publicRoutes,
+                    protectedRoutes,
+                    web.pages.homePageFactory,
+                    web.pages.infraPageFactory,
+                    web.runtime.templateRenderer,
+                )
             PlatformPageSets.CONTACTS ->
-                registerContactsPages(registry, protectedRoutes, web.pageFactory, web.templateRenderer)
+                registerContactsPages(
+                    registry,
+                    protectedRoutes,
+                    web.pages.contactsPageFactory,
+                    web.runtime.templateRenderer,
+                )
             PlatformPageSets.SETTINGS ->
-                registerSettingsPages(registry, protectedRoutes, web.pageFactory, web.templateRenderer)
+                registerSettingsPages(
+                    registry,
+                    protectedRoutes,
+                    web.pages.settingsPageFactory,
+                    web.runtime.templateRenderer,
+                )
             PlatformPageSets.SEARCH ->
-                registerSearchPages(registry, publicRoutes, web.pageFactory, web.templateRenderer)
+                registerSearchPages(registry, publicRoutes, web.pages.searchPageFactory, web.runtime.templateRenderer)
             PlatformPageSets.NOTIFICATIONS ->
                 registerNotificationPages(
                     registry,
                     publicRoutes,
                     protectedRoutes,
-                    web.pageFactory,
-                    web.templateRenderer,
+                    web.pages.adminPageFactory,
+                    web.runtime.templateRenderer,
                 )
             PlatformPageSets.PROFILE ->
-                registerProfilePages(registry, protectedRoutes, web.pageFactory, web.templateRenderer)
+                registerProfilePages(
+                    registry,
+                    protectedRoutes,
+                    web.pages.adminPageFactory,
+                    web.runtime.templateRenderer,
+                )
             PlatformPageSets.ADMIN -> {}
             PlatformPageSets.DEV_DASHBOARD -> {}
         }
@@ -288,10 +328,11 @@ internal class UiRouteRegistrar(
         registry: RouteRegistry,
         publicRoutes: MutableList<ContractRoute>,
         protectedRoutes: MutableList<ContractRoute>,
-        pageFactory: WebPageFactory,
+        homePageFactory: HomePageFactory,
+        infraPageFactory: InfraPageFactory,
         jteRenderer: TemplateRenderer,
     ) {
-        val homeRoutes = HomeRoutes(core.messageService, pageFactory, jteRenderer)
+        val homeRoutes = HomeRoutes(core.messageService, homePageFactory, infraPageFactory, jteRenderer)
         homeRoutes.publicRoutes.forEach { route ->
             registry.register(
                 RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.PublicUi, "/", "GET", "Home (public)")
@@ -309,10 +350,10 @@ internal class UiRouteRegistrar(
     private fun registerContactsPages(
         registry: RouteRegistry,
         protectedRoutes: MutableList<ContractRoute>,
-        pageFactory: WebPageFactory,
+        contactsPageFactory: ContactsPageFactory,
         jteRenderer: TemplateRenderer,
     ) {
-        val contactsRoutes = ContactsRoutes(pageFactory, jteRenderer, core.contactService)
+        val contactsRoutes = ContactsRoutes(contactsPageFactory, jteRenderer, core.contactService)
         contactsRoutes.routes.forEach { route ->
             registry.register(
                 RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.ProtectedUi, "/contacts", "*", "Contacts")
@@ -324,10 +365,10 @@ internal class UiRouteRegistrar(
     private fun registerApiKeyPages(
         registry: RouteRegistry,
         protectedRoutes: MutableList<ContractRoute>,
-        pageFactory: WebPageFactory,
+        adminPageFactory: AdminPageFactory,
         jteRenderer: TemplateRenderer,
     ) {
-        val apiKeyRoutes = ApiKeyRoutes(pageFactory, jteRenderer, security.apiKeyService)
+        val apiKeyRoutes = ApiKeyRoutes(adminPageFactory, jteRenderer, security.apiKeyService)
         apiKeyRoutes.routes.forEach { route ->
             registry.register(
                 RegisteredRoute(
@@ -346,10 +387,10 @@ internal class UiRouteRegistrar(
     private fun registerSettingsPages(
         registry: RouteRegistry,
         protectedRoutes: MutableList<ContractRoute>,
-        pageFactory: WebPageFactory,
+        settingsPageFactory: SettingsPageFactory,
         jteRenderer: TemplateRenderer,
     ) {
-        val settingsRoutes = SettingsRoutes(pageFactory, jteRenderer)
+        val settingsRoutes = SettingsRoutes(settingsPageFactory, jteRenderer)
         settingsRoutes.routes.forEach { route ->
             registry.register(
                 RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.ProtectedUi, "/settings", "*", "Settings")
@@ -361,12 +402,12 @@ internal class UiRouteRegistrar(
     private fun registerSearchPages(
         registry: RouteRegistry,
         publicRoutes: MutableList<ContractRoute>,
-        pageFactory: WebPageFactory,
+        searchPageFactory: SearchPageFactory,
         jteRenderer: TemplateRenderer,
     ) {
         val searchProviders =
             listOfNotNull(MessageSearchProvider(core.messageService), ContactSearchProvider(core.contactService))
-        val searchRoutes = SearchRoutes(pageFactory, jteRenderer, searchProviders)
+        val searchRoutes = SearchRoutes(searchPageFactory, jteRenderer, searchProviders)
         searchRoutes.routes.forEach { route ->
             registry.register(
                 RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.PublicUi, "/search", "GET", "Search")
@@ -379,10 +420,10 @@ internal class UiRouteRegistrar(
         registry: RouteRegistry,
         publicRoutes: MutableList<ContractRoute>,
         protectedRoutes: MutableList<ContractRoute>,
-        pageFactory: WebPageFactory,
+        adminPageFactory: AdminPageFactory,
         jteRenderer: TemplateRenderer,
     ) {
-        val notificationRoutes = NotificationRoutes(pageFactory, jteRenderer, web.notificationService)
+        val notificationRoutes = NotificationRoutes(adminPageFactory, jteRenderer, web.notificationService)
         notificationRoutes.publicRoutes.forEach { route ->
             registry.register(
                 RegisteredRoute(
@@ -414,10 +455,11 @@ internal class UiRouteRegistrar(
     private fun registerProfilePages(
         registry: RouteRegistry,
         protectedRoutes: MutableList<ContractRoute>,
-        pageFactory: WebPageFactory,
+        adminPageFactory: AdminPageFactory,
         jteRenderer: TemplateRenderer,
     ) {
-        val profileRoutes = ProfileRoutes(pageFactory, jteRenderer, security.accountService, config.sessionCookieSecure)
+        val profileRoutes =
+            ProfileRoutes(adminPageFactory, jteRenderer, security.accountService, config.sessionCookieSecure)
         profileRoutes.routes.forEach { route ->
             registry.register(
                 RegisteredRoute(route, RouteOwner.PlatformUi, RouteGroup.ProtectedUi, "/profile", "*", "Profile")

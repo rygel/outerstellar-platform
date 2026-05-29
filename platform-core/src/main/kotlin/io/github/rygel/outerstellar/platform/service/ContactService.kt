@@ -99,7 +99,7 @@ class ContactService(
                 detail = null,
             )
         )
-        eventPublisher.publishRefresh("contact-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.CONTACT_LIST_PANEL))
         return contact
     }
 
@@ -137,7 +137,7 @@ class ContactService(
                 detail = null,
             )
         )
-        eventPublisher.publishRefresh("contact-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.CONTACT_LIST_PANEL))
         return result
     }
 
@@ -154,7 +154,7 @@ class ContactService(
                 detail = null,
             )
         )
-        eventPublisher.publishRefresh("contact-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.CONTACT_LIST_PANEL))
     }
 
     fun restoreContact(syncId: String) {
@@ -170,7 +170,7 @@ class ContactService(
                 detail = null,
             )
         )
-        eventPublisher.publishRefresh("contact-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.CONTACT_LIST_PANEL))
     }
 
     fun getChangesSince(
@@ -218,7 +218,7 @@ class ContactService(
         transactionManager?.inTransaction(process) ?: process()
 
         if (toApply.isNotEmpty() || conflicts.isNotEmpty()) {
-            eventPublisher.publishRefresh("contact-list-panel")
+            eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.CONTACT_LIST_PANEL))
         }
 
         return io.github.rygel.outerstellar.platform.sync.SyncPushContactResponse(

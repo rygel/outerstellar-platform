@@ -30,6 +30,26 @@ import org.http4k.core.Request
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 
+class HostedAppContextFactory(
+    private val renderer: TemplateRenderer,
+    private val apiKeyService: ApiKeyService,
+    private val oauthService: OAuthService,
+    private val userRepository: UserRepository,
+    private val analytics: AnalyticsService = NoOpAnalyticsService(),
+    private val notificationService: NotificationService? = null,
+) {
+    fun create(config: AppConfig): HostedAppContext =
+        hostedAppContextFromHostServices(
+            renderer = renderer,
+            config = config,
+            apiKeyService = apiKeyService,
+            oauthService = oauthService,
+            userRepository = userRepository,
+            analytics = analytics,
+            notificationService = notificationService,
+        )
+}
+
 internal fun hostedAppContextFromHostServices(
     renderer: TemplateRenderer,
     config: AppConfig,

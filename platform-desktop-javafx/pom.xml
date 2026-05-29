@@ -6,13 +6,15 @@
     <parent>
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
-        <version>1.6.2</version>
+        <version>3.6.4</version>
     </parent>
 
     <artifactId>outerstellar-platform-desktop-javafx</artifactId>
     <name>Platform Desktop JavaFX</name>
 
     <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <gpg.skip>true</gpg.skip>
         <javafx.version>26.0.1</javafx.version>
         <atlantafx.version>2.1.0</atlantafx.version>
         <testfx.version>4.0.18</testfx.version>

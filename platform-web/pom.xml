@@ -7,12 +7,17 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>1.6.2</version>
+        <version>3.6.4</version>
 
     </parent>
 
     <artifactId>outerstellar-platform-web</artifactId>
     <name>Platform Web</name>
+
+    <properties>
+        <exec.skip>false</exec.skip>
+        <platform.web.shade.skip>false</platform.web.shade.skip>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -263,6 +268,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
+                            <skip>${exec.skip}</skip>
                             <executable>npm</executable>
                             <workingDirectory>${project.basedir}/..</workingDirectory>
                             <arguments>
@@ -330,6 +336,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <skip>${platform.web.shade.skip}</skip>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-jar-with-dependencies.jar</outputFile>
                             <filters>
@@ -373,6 +380,13 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>release</id>
+            <properties>
+                <exec.skip>true</exec.skip>
+                <platform.web.shade.skip>true</platform.web.shade.skip>
+            </properties>
+        </profile>
         <profile>
             <id>native</id>
             <build>

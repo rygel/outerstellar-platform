@@ -29,7 +29,7 @@ fun createSecurityComponents(
     auditRepository: AuditRepository? = null,
     resetRepository: PasswordResetRepository? = null,
     apiKeyRepository: ApiKeyRepository? = null,
-    emailService: EmailService? = null,
+    emailService: EmailService,
     oauthRepository: OAuthRepository? = null,
     sessionRepository: SessionRepository? = null,
 ): SecurityComponents {

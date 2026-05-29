@@ -23,9 +23,8 @@ internal class FilterChainFactory(
     fun build(): Filter {
         val userRepository = persistence.userRepository
         val jwtService = security.jwtService
-        val pageFactory = web.pageFactory
-        val jteRenderer = web.templateRenderer
-        val analytics = web.analyticsService
+        val jteRenderer = web.runtime.templateRenderer
+        val analytics = web.runtime.analyticsService
         var chain =
             Filters.correlationId
                 .then(Filters.cors(config.corsOrigins))
@@ -71,6 +70,6 @@ internal class FilterChainFactory(
             .then(Filters.securityFilter)
             .then(Filters.requestLogging)
             .then(Filters.serverMetrics)
-            .then(Filters.globalErrorHandler(pageFactory, jteRenderer))
+            .then(Filters.globalErrorHandler(web.pages.errorPageFactory, jteRenderer))
     }
 }

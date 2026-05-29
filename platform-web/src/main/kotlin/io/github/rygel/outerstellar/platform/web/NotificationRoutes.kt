@@ -17,7 +17,7 @@ import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 
 class NotificationRoutes(
-    private val pageFactory: WebPageFactory,
+    private val adminPageFactory: AdminPageFactory,
     private val renderer: TemplateRenderer,
     private val notificationService: NotificationService,
 ) : ServerRoutes {
@@ -34,7 +34,7 @@ class NotificationRoutes(
                 { request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    val fragment = pageFactory.buildNotificationBell(ctx, shellRenderer)
+                    val fragment = adminPageFactory.buildNotificationBell(ctx, shellRenderer)
                     Response(Status.OK).header("content-type", "text/html; charset=utf-8").body(renderer(fragment))
                 }
         )
@@ -49,7 +49,7 @@ class NotificationRoutes(
                 { request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    renderer.render(pageFactory.buildNotificationsPage(ctx, shellRenderer))
+                    renderer.render(adminPageFactory.buildNotificationsPage(ctx, shellRenderer))
                 },
             "/notifications/read-all" meta
                 {

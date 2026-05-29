@@ -23,7 +23,7 @@ import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
 
 class AuthRoutes(
-    private val pageFactory: WebPageFactory,
+    private val authPageFactory: AuthPageFactory,
     private val renderer: TemplateRenderer,
     private val authService: AuthService,
     private val sessionService: SessionService,
@@ -41,7 +41,7 @@ class AuthRoutes(
                 } bindContract
                 GET to
                 { request: org.http4k.core.Request ->
-                    renderer.render(pageFactory.buildAuthPage(request.requestContext, request.shellRenderer))
+                    renderer.render(authPageFactory.buildAuthPage(request.requestContext, request.shellRenderer))
                 },
             "/auth/components/forms" / modePath meta
                 {
@@ -50,7 +50,9 @@ class AuthRoutes(
                 GET to
                 { mode ->
                     { request: org.http4k.core.Request ->
-                        renderer.render(pageFactory.buildAuthForm(request.requestContext, request.shellRenderer, mode))
+                        renderer.render(
+                            authPageFactory.buildAuthForm(request.requestContext, request.shellRenderer, mode)
+                        )
                     }
                 },
             "/auth/components/result" meta
@@ -157,7 +159,7 @@ class AuthRoutes(
                         )
                     } else {
                         val formValues = request.form().associate { it.first to it.second }
-                        renderer.render(pageFactory.buildAuthResult(request.shellRenderer, formValues))
+                        renderer.render(authPageFactory.buildAuthResult(request.shellRenderer, formValues))
                     }
                 },
         )

@@ -138,7 +138,7 @@ class MessageService(
         )
         cache.putMessage(message.syncId, message)
         cache.invalidateNamespace("list")
-        eventPublisher.publishRefresh("message-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.MESSAGE_LIST_PANEL))
         return message
     }
 
@@ -164,7 +164,7 @@ class MessageService(
         )
         cache.putMessage(message.syncId, message)
         cache.invalidateNamespace("list")
-        eventPublisher.publishRefresh("message-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.MESSAGE_LIST_PANEL))
         return message
     }
 
@@ -214,7 +214,7 @@ class MessageService(
 
         if (applied > 0 || conflicts.isNotEmpty()) {
             cache.invalidateNamespace("list")
-            eventPublisher.publishRefresh("message-list-panel")
+            eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.MESSAGE_LIST_PANEL))
         }
 
         return SyncPushResponse(appliedCount = applied, conflicts = conflicts)
@@ -224,7 +224,7 @@ class MessageService(
         repository.restore(syncId)
         cache.invalidate("entity:$syncId")
         cache.invalidateNamespace("list")
-        eventPublisher.publishRefresh("message-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.MESSAGE_LIST_PANEL))
     }
 
     fun deleteMessage(syncId: String) {
@@ -258,7 +258,7 @@ class MessageService(
         )
         cache.invalidate("entity:$syncId")
         cache.invalidateNamespace("list")
-        eventPublisher.publishRefresh("message-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.MESSAGE_LIST_PANEL))
     }
 
     fun updateMessage(message: StoredMessage): StoredMessage {
@@ -294,7 +294,7 @@ class MessageService(
         )
         cache.putMessage(updated.syncId, updated)
         cache.invalidateNamespace("list")
-        eventPublisher.publishRefresh("message-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.MESSAGE_LIST_PANEL))
         return updated
     }
 
@@ -325,6 +325,6 @@ class MessageService(
         repository.resolveConflict(syncId, resolved)
         cache.invalidate("entity:$syncId")
         cache.invalidateNamespace("list")
-        eventPublisher.publishRefresh("message-list-panel")
+        eventPublisher.publish(PlatformEvent.Refresh(RefreshTarget.MESSAGE_LIST_PANEL))
     }
 }

@@ -110,6 +110,10 @@ class PlatformPageRenderingTest : WebTest() {
         assertHtmlPage(response, "/messages/trash")
         val body = response.bodyString()
         assertTrue(body.contains("Trash") || body.contains("trash"), "/messages/trash should contain trash marker")
+        assertTrue(
+            body.contains("Deleted Contacts") || body.contains("Restore contact"),
+            "/messages/trash should render the deleted contacts section",
+        )
     }
 
     // ---- Contacts ----

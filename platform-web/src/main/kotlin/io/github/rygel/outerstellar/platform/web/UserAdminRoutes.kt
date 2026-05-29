@@ -26,7 +26,7 @@ private const val MAX_PAGE_LIMIT = 100
 private const val MAX_AUDIT_EXPORT_ROWS = 10_000
 
 class UserAdminRoutes(
-    private val pageFactory: WebPageFactory,
+    private val adminPageFactory: AdminPageFactory,
     private val renderer: TemplateRenderer,
     private val userAdminService: UserAdminService,
 ) : ServerRoutes {
@@ -43,7 +43,12 @@ class UserAdminRoutes(
                     val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT) ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
                     renderer.render(
-                        pageFactory.buildUserAdminPage(request.requestContext, request.shellRenderer, limit, offset)
+                        adminPageFactory.buildUserAdminPage(
+                            request.requestContext,
+                            request.shellRenderer,
+                            limit,
+                            offset,
+                        )
                     )
                 },
             "/admin/users/export" meta
@@ -112,7 +117,7 @@ class UserAdminRoutes(
                         if (target != null) {
                             userAdminService.setUserEnabled(admin.id, UUID.fromString(userId), !target.enabled)
                         }
-                        renderer.render(pageFactory.buildUserAdminPage(ctx, shellRenderer))
+                        renderer.render(adminPageFactory.buildUserAdminPage(ctx, shellRenderer))
                     }
                 },
             "/admin/audit" meta
@@ -123,7 +128,7 @@ class UserAdminRoutes(
                 { request: org.http4k.core.Request ->
                     val limit = request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_PAGE_LIMIT) ?: DEFAULT_PAGE_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(pageFactory.buildAuditLogPage(request.shellRenderer, limit, offset))
+                    renderer.render(adminPageFactory.buildAuditLogPage(request.shellRenderer, limit, offset))
                 },
             "/admin/audit/export" meta
                 {
@@ -207,7 +212,7 @@ class UserAdminRoutes(
                             val newRole = if (target.role == UserRole.ADMIN) UserRole.USER else UserRole.ADMIN
                             userAdminService.setUserRole(admin.id, UUID.fromString(userId), newRole)
                         }
-                        renderer.render(pageFactory.buildUserAdminPage(ctx, shellRenderer))
+                        renderer.render(adminPageFactory.buildUserAdminPage(ctx, shellRenderer))
                     }
                 },
             "/admin/users" / userIdPath / "unlock" meta
@@ -221,7 +226,7 @@ class UserAdminRoutes(
                         val shellRenderer = request.shellRenderer
                         val admin = ctx.user ?: throw InsufficientPermissionException("ADMIN role required")
                         userAdminService.unlockAccount(admin.id, java.util.UUID.fromString(userId))
-                        renderer.render(pageFactory.buildUserAdminPage(ctx, shellRenderer))
+                        renderer.render(adminPageFactory.buildUserAdminPage(ctx, shellRenderer))
                     }
                 },
         )

@@ -18,7 +18,7 @@ private const val MAX_CONTACTS_LIMIT = 50
 private const val DEFAULT_CONTACTS_LIMIT = 12
 
 class ContactsRoutes(
-    private val pageFactory: WebPageFactory,
+    private val contactsPageFactory: ContactsPageFactory,
     private val renderer: TemplateRenderer,
     private val contactService: ContactService? = null,
 ) : ServerRoutes {
@@ -38,7 +38,7 @@ class ContactsRoutes(
                     val limit =
                         request.query("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT) ?: DEFAULT_CONTACTS_LIMIT
                     val offset = request.query("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(pageFactory.buildContactsPage(shellRenderer, query, limit, offset))
+                    renderer.render(contactsPageFactory.buildContactsPage(shellRenderer, query, limit, offset))
                 },
             "/contacts/new" meta
                 {
@@ -47,7 +47,7 @@ class ContactsRoutes(
                 GET to
                 { request: Request ->
                     val shellRenderer = request.shellRenderer
-                    renderer.render(pageFactory.buildContactForm(shellRenderer))
+                    renderer.render(contactsPageFactory.buildContactForm(shellRenderer))
                 },
             "/contacts" meta
                 {
@@ -72,7 +72,7 @@ class ContactsRoutes(
                         params.findSingle("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
                             ?: DEFAULT_CONTACTS_LIMIT
                     val offset = params.findSingle("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                    renderer.render(pageFactory.buildContactsPage(shellRenderer, query, limit, offset))
+                    renderer.render(contactsPageFactory.buildContactsPage(shellRenderer, query, limit, offset))
                 },
             "/contacts" / syncIdPath / "edit" meta
                 {
@@ -82,7 +82,7 @@ class ContactsRoutes(
                 { syncId: String, _ ->
                     { request: Request ->
                         val shellRenderer = request.shellRenderer
-                        renderer.render(pageFactory.buildContactForm(shellRenderer, syncId))
+                        renderer.render(contactsPageFactory.buildContactForm(shellRenderer, syncId))
                     }
                 },
             "/contacts" / syncIdPath / "update" meta
@@ -115,7 +115,7 @@ class ContactsRoutes(
                             params.findSingle("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
                                 ?: DEFAULT_CONTACTS_LIMIT
                         val offset = params.findSingle("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                        renderer.render(pageFactory.buildContactsPage(shellRenderer, query, limit, offset))
+                        renderer.render(contactsPageFactory.buildContactsPage(shellRenderer, query, limit, offset))
                     }
                 },
             "/contacts" / syncIdPath / "delete" meta
@@ -133,7 +133,7 @@ class ContactsRoutes(
                             params.findSingle("limit")?.toIntOrNull()?.coerceIn(1, MAX_CONTACTS_LIMIT)
                                 ?: DEFAULT_CONTACTS_LIMIT
                         val offset = params.findSingle("offset")?.toIntOrNull()?.coerceAtLeast(0) ?: 0
-                        renderer.render(pageFactory.buildContactsPage(shellRenderer, query, limit, offset))
+                        renderer.render(contactsPageFactory.buildContactsPage(shellRenderer, query, limit, offset))
                     }
                 },
             "/contacts" / syncIdPath / "restore" meta
@@ -155,7 +155,7 @@ class ContactsRoutes(
                 GET to
                 { request: Request ->
                     val shellRenderer = request.shellRenderer
-                    renderer.render(pageFactory.buildContactTrashList(shellRenderer))
+                    renderer.render(contactsPageFactory.buildTrashContactList(shellRenderer))
                 },
         )
 

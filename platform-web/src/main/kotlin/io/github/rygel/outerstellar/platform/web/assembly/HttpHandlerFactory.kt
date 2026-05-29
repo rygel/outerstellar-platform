@@ -70,7 +70,7 @@ internal class HttpHandlerFactory(
         appRoutes +=
             TOTPRoutes(
                     sec.authService,
-                    web.templateRenderer,
+                    web.runtime.templateRenderer,
                     config.sessionCookieSecure,
                     sec.totpService,
                     sec.sessionService,

@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.PluginMigrations
 import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
@@ -39,7 +39,7 @@ interface PlatformPersistence : AutoCloseable {
 }
 
 interface PersistenceBootstrap {
-    fun create(config: AppConfig, pluginMigrationSource: PluginMigrationSource? = null): PlatformPersistence
+    fun create(config: AppConfig, pluginMigrations: PluginMigrations? = null): PlatformPersistence
 }
 
 fun loadPersistenceBootstrap(): PersistenceBootstrap {
