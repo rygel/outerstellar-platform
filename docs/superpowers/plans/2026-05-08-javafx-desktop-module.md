@@ -122,10 +122,6 @@ platform-desktop-javafx/
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-theme</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.rygel</groupId>
             <artifactId>outerstellar-i18n</artifactId>
         </dependency>
         <dependency>
