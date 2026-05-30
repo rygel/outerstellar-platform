@@ -95,6 +95,16 @@ To run all tests:
 mvn test
 ```
 
+### Release process
+
+Releases are now **manual and version-confirmed** to avoid publishing the wrong version.
+
+1. Merge the release commit to `main` with the exact target version in `pom.xml` and a matching `CHANGELOG.md` section like `## [1.6.4]`.
+2. Run **Release and Publish** from `main`, enter `release_version`, then type the exact same version again in `confirm_release_version`.
+3. After that succeeds, run **Publish to Maven Central** from `main` with the same two inputs.
+
+Both workflows now fail unless they run from `main`, the entered version exactly matches the root Maven version, the version is not a `-SNAPSHOT`, the changelog contains that exact release heading, and CI has already succeeded on that exact commit. Maven Central also refuses to run until the matching GitHub release tag already exists.
+
 ---
 
 ### Web Architecture & Adding Routes
