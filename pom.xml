@@ -1183,6 +1183,13 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
+                            <excludeArtifacts>
+                                <excludeArtifact>outerstellar-platform-seed</excludeArtifact>
+                                <excludeArtifact>outerstellar-platform-test-infrastructure</excludeArtifact>
+                                <excludeArtifact>outerstellar-platform-desktop</excludeArtifact>
+                                <excludeArtifact>outerstellar-platform-desktop-javafx</excludeArtifact>
+                                <excludeArtifact>platform-jte-extensions</excludeArtifact>
+                            </excludeArtifacts>
                         </configuration>
                     </plugin>
                     <plugin>
