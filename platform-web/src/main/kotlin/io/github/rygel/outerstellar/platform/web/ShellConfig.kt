@@ -21,8 +21,9 @@ data class ShellConfig(
             contribution: HostedAppContribution,
             appBaseUrl: String = "",
             sidebarFactory: SidebarFactory = SidebarFactory(),
-        ): ShellConfig =
-            ShellConfig(
+        ): ShellConfig {
+            val uiRouteGroups = setOf(RouteGroup.PublicUi, RouteGroup.ProtectedUi)
+            return ShellConfig(
                 pluginOptions = contribution.options,
                 appBaseUrl = appBaseUrl,
                 sidebarFactory = sidebarFactory,
@@ -38,7 +39,6 @@ data class ShellConfig(
                         ?: "/",
                 includedPlatformPages = contribution.includedPlatformPages,
             )
-
-        private val uiRouteGroups = setOf(RouteGroup.PublicUi, RouteGroup.ProtectedUi)
+        }
     }
 }
