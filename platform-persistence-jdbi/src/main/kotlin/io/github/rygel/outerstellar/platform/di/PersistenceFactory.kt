@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.PluginMigrations
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
 import io.github.rygel.outerstellar.platform.infra.migratePlugin
@@ -44,29 +44,30 @@ private const val DEV_ADMIN_PLACEHOLDER_HASH = "\$2a\$04\$DevPlaceholderAdminXXu
 class PersistenceComponents(
     val dataSource: DataSource,
     val jdbi: Jdbi,
-    val messageRepository: MessageRepository,
-    val contactRepository: ContactRepository,
-    val userRepository: UserRepository,
-    val outboxRepository: OutboxRepository,
-    val transactionManager: TransactionManager,
-    val auditRepository: AuditRepository,
-    val passwordResetRepository: PasswordResetRepository,
-    val apiKeyRepository: ApiKeyRepository,
-    val oAuthRepository: OAuthRepository,
-    val deviceTokenRepository: DeviceTokenRepository,
-    val sessionRepository: SessionRepository,
-    val voteRepository: VoteRepository,
-    val pollRepository: PollRepository,
-    val notificationRepository: NotificationRepository,
-)
+    override val messageRepository: MessageRepository,
+    override val contactRepository: ContactRepository,
+    override val userRepository: UserRepository,
+    override val outboxRepository: OutboxRepository,
+    override val transactionManager: TransactionManager,
+    override val auditRepository: AuditRepository,
+    override val passwordResetRepository: PasswordResetRepository,
+    override val apiKeyRepository: ApiKeyRepository,
+    override val oAuthRepository: OAuthRepository,
+    override val deviceTokenRepository: DeviceTokenRepository,
+    override val sessionRepository: SessionRepository,
+    override val voteRepository: VoteRepository,
+    override val pollRepository: PollRepository,
+    override val notificationRepository: NotificationRepository,
+) : PlatformPersistence {
+    override fun close() {
+        (dataSource as? AutoCloseable)?.close()
+    }
+}
 
-fun createPersistenceComponents(
-    config: AppConfig,
-    pluginMigrationSource: PluginMigrationSource? = null,
-): PersistenceComponents {
+fun createPersistenceComponents(config: AppConfig, pluginMigrations: PluginMigrations? = null): PersistenceComponents {
     val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword, config.runtime)
     try {
-        runMigrations(ds, config, pluginMigrationSource)
+        runMigrations(ds, config, pluginMigrations)
     } catch (e: Exception) {
         ds.close()
         throw e
@@ -106,10 +107,9 @@ fun createPersistenceComponents(
     )
 }
 
-private fun runMigrations(ds: DataSource, config: AppConfig, pluginMigrationSource: PluginMigrationSource?) {
+private fun runMigrations(ds: DataSource, config: AppConfig, pluginMigrations: PluginMigrations?) {
     if (!config.runtime.flywayEnabled) return
     migrate(ds)
-    val plugin = pluginMigrationSource ?: return
-    val location = plugin.migrationLocation ?: return
-    migratePlugin(ds, location, plugin.migrationHistoryTable, plugin.migrationNames)
+    val plugin = pluginMigrations ?: return
+    migratePlugin(ds, plugin.location, plugin.historyTable, plugin.migrationNames)
 }

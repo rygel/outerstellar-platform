@@ -31,7 +31,7 @@ platform-web               http4k web server, JTE templates, HTMX frontend, rout
 platform-desktop           Swing desktop client with two-way sync
 platform-seed              Database seeding utility
 platform-desktop-javafx    JavaFX desktop module (scaffolded, not production-ready)
-jte-extensions             Custom JTE code generation (JteClassRegistry)
+platform-jte-extensions    Custom JTE code generation (JteClassRegistry)
 ```
 
 ### Key Design Patterns
@@ -42,7 +42,7 @@ jte-extensions             Custom JTE code generation (JteClassRegistry)
 - **JTE templates**: Precompiled in production (`JTE_PRODUCTION=true`), source-compiled in dev. Templates in `src/main/jte/`.
 - **Flyway migrations**: Source of truth for schema.
 - **AppConfig/RuntimeConfig**: Configuration from YAML + env vars. `AppConfig.fromEnvironment()` loads `application-{PROFILE}.yaml` then `application.yaml`. All fields support env var override. `platformMode` field controls composition mode via `PLATFORM_MODE` env var.
-- **WebPageFactory → domain factories**: AuthPageFactory, ErrorPageFactory, SidebarFactory, ContactsPageFactory, HomePageFactory, InfraPageFactory, SettingsPageFactory, SearchPageFactory, DevDashboardPageFactory, AdminPageFactory. All delegate from the original WebPageFactory.
+- **Domain page factories**: AuthPageFactory, ErrorPageFactory, SidebarFactory, ContactsPageFactory, HomePageFactory, InfraPageFactory, SettingsPageFactory, SearchPageFactory, DevDashboardPageFactory, AdminPageFactory own page-specific rendering directly.
 - **Plugin composition**: `PlatformPlugin` interface with `mode` (PlatformMode), `includePlatformPages()` (Set of PlatformPageSets), `routeRegistrations()` (List of PluginRouteRegistration), `layoutTemplate()` (JTE template override), `filters()`, `bannerProviders()`. Route ownership tracked via `RouteRegistry` with startup conflict detection.
 
 ## Build and run
@@ -270,7 +270,7 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 | Filters | `Filters.kt` in `platform-web` |
 | Per-request state | `RequestContext.kt` (user, lang, theme, layout, CSRF) |
 | Layout data builder | `ShellRenderer.kt` (builds `ShellView` from request context) |
-| Page rendering | `WebPageFactory.kt` (delegates to domain factories) |
+| Page rendering | `HomePageFactory.kt`, `ContactsPageFactory.kt`, `AdminPageFactory.kt`, `SettingsPageFactory.kt`, `ErrorPageFactory.kt`, `SearchPageFactory.kt`, `AuthPageFactory.kt`, `InfraPageFactory.kt`, `DevDashboardPageFactory.kt` |
 | JTE templates | `src/main/jte/.../layouts/`, `.../pages/`, `.../components/` |
 | CSS | `input.css` (Tailwind v4 + DaisyUI v5), generates `site.css` |
 | Desktop main | `SwingSyncApp.kt` (SyncWindow, SyncWindowMenu, SyncWindowNav) |

@@ -12,7 +12,7 @@ import org.http4k.format.KotlinxSerialization
 import org.http4k.template.TemplateRenderer
 
 class SearchRoutes(
-    private val pageFactory: WebPageFactory,
+    private val searchPageFactory: SearchPageFactory,
     private val renderer: TemplateRenderer,
     private val providers: List<SearchProvider>,
 ) : ServerRoutes {
@@ -35,7 +35,7 @@ class SearchRoutes(
                         request.query("limit")?.toIntOrNull()?.coerceIn(1, SearchPageFactory.MAX_SEARCH_LIMIT)
                             ?: SearchPageFactory.DEFAULT_SEARCH_LIMIT
                     val type = request.query("type").orEmpty()
-                    renderer.render(pageFactory.buildSearchPage(shellRenderer, query, providers, limit, type))
+                    renderer.render(searchPageFactory.buildSearchPage(shellRenderer, query, providers, limit, type))
                 },
             "/api/v1/search" meta
                 {

@@ -15,7 +15,7 @@ import org.http4k.core.body.form
 import org.http4k.template.TemplateRenderer
 
 class ProfileRoutes(
-    private val pageFactory: WebPageFactory,
+    private val adminPageFactory: AdminPageFactory,
     private val renderer: TemplateRenderer,
     private val accountService: AccountService,
     private val sessionCookieSecure: Boolean,
@@ -30,7 +30,7 @@ class ProfileRoutes(
                 { request: org.http4k.core.Request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    renderer.render(pageFactory.buildProfilePage(ctx, shellRenderer))
+                    renderer.render(adminPageFactory.buildProfilePage(ctx, shellRenderer))
                 },
             "/auth/components/profile-update" meta
                 {

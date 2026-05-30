@@ -16,7 +16,7 @@ import org.http4k.lens.long
 import org.http4k.template.TemplateRenderer
 
 class ApiKeyRoutes(
-    private val pageFactory: WebPageFactory,
+    private val adminPageFactory: AdminPageFactory,
     private val renderer: TemplateRenderer,
     private val apiKeyService: ApiKeyService,
 ) : ServerRoutes {
@@ -32,7 +32,7 @@ class ApiKeyRoutes(
                 { request: org.http4k.core.Request ->
                     val ctx = request.requestContext
                     val shellRenderer = request.shellRenderer
-                    renderer.render(pageFactory.buildApiKeysPage(ctx, shellRenderer))
+                    renderer.render(adminPageFactory.buildApiKeysPage(ctx, shellRenderer))
                 },
             "/auth/api-keys/create" meta
                 {
@@ -45,11 +45,11 @@ class ApiKeyRoutes(
                     val user = ctx.user!!
                     val name = request.form("name").orEmpty()
                     if (name.isBlank()) {
-                        renderer.render(pageFactory.buildApiKeysPage(ctx, shellRenderer))
+                        renderer.render(adminPageFactory.buildApiKeysPage(ctx, shellRenderer))
                     } else {
                         val result = apiKeyService.createApiKey(user.id, name)
                         renderer.render(
-                            pageFactory.buildApiKeysPage(
+                            adminPageFactory.buildApiKeysPage(
                                 ctx,
                                 shellRenderer,
                                 newKey = result.key,

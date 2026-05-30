@@ -3,7 +3,6 @@ package io.github.rygel.outerstellar.platform.web
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.persistence.JdbiNotificationRepository
 import io.github.rygel.outerstellar.platform.service.NotificationService
 import java.util.UUID
 import kotlin.test.Test
@@ -72,7 +71,7 @@ class PlatformPageRenderingTest : WebTest() {
         adminToken = sessionSvc.createSession(adminUser.id)
         userToken = sessionSvc.createSession(regularUser.id)
 
-        val notificationService = NotificationService(JdbiNotificationRepository(testJdbi))
+        val notificationService = NotificationService(notificationRepository)
         app = buildApp(overrides = TestOverrides(notificationService = notificationService))
     }
 
@@ -111,6 +110,10 @@ class PlatformPageRenderingTest : WebTest() {
         assertHtmlPage(response, "/messages/trash")
         val body = response.bodyString()
         assertTrue(body.contains("Trash") || body.contains("trash"), "/messages/trash should contain trash marker")
+        assertTrue(
+            body.contains("Deleted Contacts") || body.contains("Restore contact"),
+            "/messages/trash should render the deleted contacts section",
+        )
     }
 
     // ---- Contacts ----

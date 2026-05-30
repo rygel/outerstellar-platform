@@ -6,10 +6,12 @@ import com.microsoft.playwright.Playwright
 import com.microsoft.playwright.options.LoadState
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.app
+import io.github.rygel.outerstellar.platform.di.createConfiguredEmailService
 import io.github.rygel.outerstellar.platform.di.createCoreComponents
-import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
+import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
+import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.http4k.core.PolyHandler
@@ -77,7 +79,8 @@ class ResponsiveLayoutE2ETest {
                 devMode = true,
             )
 
-        val persistence = createPersistenceComponents(testConfig)
+        val persistence = loadPersistenceBootstrap().create(testConfig)
+        val emailService = createConfiguredEmailService(testConfig)
         val security =
             createSecurityComponents(
                 config = testConfig,
@@ -85,17 +88,20 @@ class ResponsiveLayoutE2ETest {
                 auditRepository = persistence.auditRepository,
                 resetRepository = persistence.passwordResetRepository,
                 apiKeyRepository = persistence.apiKeyRepository,
+                emailService = emailService,
                 oauthRepository = persistence.oAuthRepository,
                 sessionRepository = persistence.sessionRepository,
             )
+        val syncWebSocket = SyncWebSocket(security.sessionService)
         val web =
             createWebComponents(
                 config = testConfig,
                 apiKeyService = security.apiKeyService,
-                sessionService = security.sessionService,
+                oauthService = security.oauthService,
+                syncWebSocket = syncWebSocket,
                 userAdminService = security.userAdminService,
-                messageRepository = persistence.messageRepository,
                 userRepository = persistence.userRepository,
+                messageRepository = persistence.messageRepository,
                 voteRepository = persistence.voteRepository,
                 pollRepository = persistence.pollRepository,
                 notificationRepository = persistence.notificationRepository,
@@ -106,11 +112,10 @@ class ResponsiveLayoutE2ETest {
                 messageRepository = persistence.messageRepository,
                 contactRepository = persistence.contactRepository,
                 outboxRepository = persistence.outboxRepository,
-                messageCache = web.messageCache,
                 transactionManager = persistence.transactionManager,
                 auditRepository = persistence.auditRepository,
-                eventPublisher = web.eventPublisher,
-                emailService = web.emailService,
+                eventPublisher = syncWebSocket,
+                emailService = emailService,
             )
 
         persistence.messageRepository.seedMessages()

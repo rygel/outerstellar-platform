@@ -5,7 +5,7 @@ on:
     branches: [main, develop]
     paths:
       - 'docker/**'
-      - 'jte-extensions/**'
+      - 'platform-jte-extensions/**'
       - 'platform-plugin-api/**'
       - 'platform-web/**'
       - 'pom.xml'
@@ -13,7 +13,7 @@ on:
     branches: [main, develop]
     paths:
       - 'docker/**'
-      - 'jte-extensions/**'
+      - 'platform-jte-extensions/**'
       - 'platform-plugin-api/**'
       - 'platform-web/**'
       - 'pom.xml'
@@ -75,7 +75,7 @@ jobs:
           restore-keys: maven-${{ runner.os }}-
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
       - name: Build Docker image with layer caching
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
@@ -121,7 +121,7 @@ jobs:
         run: |
           mvn install -N -q
           mvn install \
-            -pl jte-extensions,platform-core,platform-plugin-api,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web \
+            -pl platform-jte-extensions,platform-core,platform-plugin-api,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web \
             -DskipTests -Dexec.skip=true -q \
             -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
             -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true \

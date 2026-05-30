@@ -6,14 +6,15 @@
     <parent>
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
-        <version>1.6.2</version>
+        <version>3.6.4</version>
     </parent>
 
-    <artifactId>jte-extensions</artifactId>
+    <artifactId>platform-jte-extensions</artifactId>
     <name>JTE Extensions</name>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <gpg.skip>true</gpg.skip>
     </properties>
 
     <dependencies>

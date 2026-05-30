@@ -52,6 +52,7 @@ class PluginAdminDashboardIntegrationTest : WebTest() {
         assertThat(body, containsSubstring("/plugin/reports"))
         assertThat(body, containsSubstring("/plugins/reports/assets/*"))
         assertThat(body, containsSubstring("/plugins/reports/assets/reports.css"))
+        assertThat(body, containsSubstring("version dev"))
         assertThat(body, containsSubstring("Layout"))
         assertThat(body, containsSubstring("Admin sections"))
     }

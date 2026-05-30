@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import io.github.rygel.outerstellar.platform.service.EmailService
 import java.security.SecureRandom
 import java.time.Instant
 import org.slf4j.LoggerFactory
@@ -17,7 +18,7 @@ class PasswordResetService(
     private val resetRepository: PasswordResetRepository? = null,
     private val auditRepository: AuditRepository? = null,
     private val sessionRepository: SessionRepository? = null,
-    private val emailService: io.github.rygel.outerstellar.platform.service.EmailService? = null,
+    private val emailService: EmailService,
     private val appBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
@@ -39,7 +40,7 @@ class PasswordResetService(
         resetRepository?.save(resetToken)
         logger.info("Password reset token generated for user {}", sanitize(user.username))
         val resetLink = "$appBaseUrl/auth/reset/$tokenValue"
-        emailService?.send(
+        emailService.send(
             to = user.email,
             subject = "Password Reset Request",
             body = "Use this link to reset your password:\n$resetLink\n\nThis link expires in 1 hour.",

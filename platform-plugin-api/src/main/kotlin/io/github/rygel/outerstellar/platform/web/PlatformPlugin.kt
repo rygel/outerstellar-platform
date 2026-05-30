@@ -26,6 +26,8 @@ typealias PluginUsers = io.github.rygel.outerstellar.platform.plugin.PluginUsers
 
 typealias PluginAnalytics = io.github.rygel.outerstellar.platform.plugin.PluginAnalytics
 
+typealias PluginNotification = io.github.rygel.outerstellar.platform.plugin.PluginNotification
+
 typealias PluginNotifications = io.github.rygel.outerstellar.platform.plugin.PluginNotifications
 
 typealias PluginRendering = io.github.rygel.outerstellar.platform.plugin.PluginRendering

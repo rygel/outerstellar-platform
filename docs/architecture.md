@@ -102,20 +102,21 @@ When adding a new repository:
 
 ### Plugin migrations
 
-The platform supports plugin applications that have their own Flyway migrations without version conflicts. The `PluginMigrationSource` interface (in `platform-core`) provides:
+The platform supports plugin applications that have their own Flyway migrations without version conflicts. Hosted apps declare an optional `PluginMigrations` value, which provides:
 
-- **`migrationLocation`**: classpath location for the plugin's SQL files (e.g. `classpath:db/migration/plugin`). Defaults to `null` (no migrations).
-- **`migrationHistoryTable`**: separate Flyway history table name. Defaults to `"flyway_plugin_history"`.
+- **`location`**: classpath location for the plugin's SQL files (e.g. `classpath:db/migration/plugin`).
+- **`historyTable`**: separate Flyway history table name. Defaults to `"flyway_plugin_history"`.
+- **`migrationNames`**: optional explicit migration filenames for native-image classpath extraction.
 
 The host runs two separate Flyway instances:
 
 | Aspect | Host (platform) | Plugin |
 |--------|----------------|--------|
-| Migration location | `classpath:db/migration` | Configurable via `migrationLocation` |
-| History table | `flyway_schema_history` | Configurable via `migrationHistoryTable` |
+| Migration location | `classpath:db/migration` | Configurable via `PluginMigrations.location` |
+| History table | `flyway_schema_history` | Configurable via `PluginMigrations.historyTable` |
 | `baselineOnMigrate` | No | Yes |
 
-Plugins implement `PlatformPlugin` (which extends `PluginMigrationSource`) and register in Koin. The `PersistenceModule` discovers the plugin at startup and runs its migrations after the host migrations, using a separate Flyway instance. This means plugins can use **any** version numbers (including V1–V4) without conflicting with the platform's own migrations.
+Hosted apps implement `HostedApp` / `PlatformPlugin` and the server passes `plugin.migrations` into persistence startup. The persistence bootstrap runs those migrations after the host migrations in a separate Flyway instance. This means plugins can use **any** version numbers (including V1–V4) without conflicting with the platform's own migrations.
 
 ## Sync design
 

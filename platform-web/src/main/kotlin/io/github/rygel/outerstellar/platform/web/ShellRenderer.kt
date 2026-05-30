@@ -49,8 +49,6 @@ class ShellRenderer(
                 "/notifications",
             )
 
-        val assetVersion: String = System.currentTimeMillis().toString()
-
         private val i18nCache = ConcurrentHashMap<String, I18nService>()
 
         private val navLinkCache: Cache<String, List<ShellLink>> =
@@ -188,7 +186,7 @@ class ShellRenderer(
             footerCopy = i18n.translate("web.footer.copy"),
             footerVersion = i18n.translate("web.footer.version", appVersion),
             footerStatusUrl = url("/components/footer-status"),
-            version = assetVersion,
+            version = appVersion,
             username = user?.username,
             isLoggedIn = user != null,
             logoutUrl = url("/logout"),

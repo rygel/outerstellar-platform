@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>1.6.3</version>
+    <version>3.6.4</version>
 
     <packaging>pom</packaging>
 
@@ -37,7 +37,7 @@
     </scm>
 
     <modules>
-        <module>jte-extensions</module>
+        <module>platform-jte-extensions</module>
         <module>platform-core</module>
         <module>platform-plugin-api</module>
         <module>platform-persistence-jdbi</module>
@@ -56,9 +56,9 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
         <outerstellar.version>1.0.14</outerstellar.version>
-        <http4k.version>6.47.2.0</http4k.version>
+        <http4k.version>6.48.0.0</http4k.version>
         <netty.version>4.2.14.Final</netty.version>
-        <flyway.version>12.6.2</flyway.version>
+        <flyway.version>12.7.0</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
         <jdbi.version>3.53.0</jdbi.version>
         <testcontainers.version>2.0.5</testcontainers.version>
@@ -69,15 +69,15 @@
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
         <spotbugs.version>4.9.8.3</spotbugs.version>
-        <spotless.version>3.5.1</spotless.version>
+        <spotless.version>3.6.0</spotless.version>
         <ktfmt.version>0.62</ktfmt.version>
         <jacoco.version>0.8.14</jacoco.version>
         <extra-enforcer-rules.version>1.12.0</extra-enforcer-rules.version>
         <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
-        <maven.surefire.plugin.version>3.5.5</maven.surefire.plugin.version>
+        <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
         <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
         <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
-        <maven.site.plugin.version>3.21.0</maven.site.plugin.version>
+        <maven.site.plugin.version>3.22.0</maven.site.plugin.version>
         <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <bytebuddy.version>1.18.8</bytebuddy.version>
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
@@ -93,9 +93,9 @@
         <totp.version>1.7.1</totp.version>
         <zxing.version>3.5.4</zxing.version>
 
-        <jackson.version>2.21.3</jackson.version>
+        <jackson.version>2.21.4</jackson.version>
         <slf4j.version>2.0.18</slf4j.version>
-        <logback.version>1.5.32</logback.version>
+        <logback.version>1.5.33</logback.version>
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.2</java-jwt.version>
         <hikaricp.version>7.0.2</hikaricp.version>
@@ -112,7 +112,7 @@
         <miglayout.version>11.4.3</miglayout.version>
         <assertj.swing.version>4.0.0-beta-3</assertj.swing.version>
         <i18n.tools.version>1.0.14</i18n.tools.version>
-        <native.maven.plugin.version>0.10.6</native.maven.plugin.version>
+        <native.maven.plugin.version>1.1.1</native.maven.plugin.version>
         <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
         <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
         <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>

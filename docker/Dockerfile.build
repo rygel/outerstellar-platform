@@ -28,7 +28,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY pom.xml .
+COPY platform-jte-extensions/pom.xml platform-jte-extensions/
 COPY platform-core/pom.xml platform-core/
+COPY platform-plugin-api/pom.xml platform-plugin-api/
 COPY platform-security/pom.xml platform-security/
 COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
 COPY platform-test-infrastructure/pom.xml platform-test-infrastructure/
@@ -119,8 +121,9 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY pom.xml .
-COPY jte-extensions/pom.xml jte-extensions/
+COPY platform-jte-extensions/pom.xml platform-jte-extensions/
 COPY platform-core/pom.xml platform-core/
+COPY platform-plugin-api/pom.xml platform-plugin-api/
 COPY platform-security/pom.xml platform-security/
 COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
 COPY platform-test-infrastructure/pom.xml platform-test-infrastructure/

@@ -12,7 +12,6 @@ import io.mockk.mockk
 import io.mockk.verify
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import javax.swing.SwingUtilities
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -33,11 +32,13 @@ class SyncViewModelSearchTest {
         val adminModule = mockk<AdminModule>(relaxed = true)
         val notificationModule = mockk<NotificationModule>(relaxed = true)
         val viewModel = SyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18n)
-        viewModel.searchQuery = "h"
-        viewModel.searchQuery = "he"
-        viewModel.searchQuery = "hel"
-        viewModel.searchQuery = "hell"
-        viewModel.searchQuery = "hello"
+        runOnEdt {
+            viewModel.searchQuery = "h"
+            viewModel.searchQuery = "he"
+            viewModel.searchQuery = "hel"
+            viewModel.searchQuery = "hell"
+            viewModel.searchQuery = "hello"
+        }
         assertTrue(latch.await(2, TimeUnit.SECONDS))
         verify(exactly = 1) { syncDataModule.loadMessages() }
     }
@@ -56,7 +57,7 @@ class SyncViewModelSearchTest {
         val adminModule = mockk<AdminModule>(relaxed = true)
         val notificationModule = mockk<NotificationModule>(relaxed = true)
         val viewModel = SyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18n)
-        viewModel.searchQuery = "test"
+        runOnEdt { viewModel.searchQuery = "test" }
         assertTrue(latch.await(2, TimeUnit.SECONDS))
         verify(exactly = 1) { syncDataModule.loadMessages() }
     }
@@ -75,10 +76,10 @@ class SyncViewModelSearchTest {
         val adminModule = mockk<AdminModule>(relaxed = true)
         val notificationModule = mockk<NotificationModule>(relaxed = true)
         val viewModel = SyncViewModel(authModule, syncDataModule, profileModule, adminModule, notificationModule, i18n)
-        viewModel.searchQuery = "test"
+        runOnEdt { viewModel.searchQuery = "test" }
         assertTrue(latch.await(2, TimeUnit.SECONDS))
-        viewModel.searchQuery = "test"
-        SwingUtilities.invokeAndWait {}
+        runOnEdt { viewModel.searchQuery = "test" }
+        runOnEdt {}
         verify(exactly = 1) { syncDataModule.loadMessages() }
     }
 }

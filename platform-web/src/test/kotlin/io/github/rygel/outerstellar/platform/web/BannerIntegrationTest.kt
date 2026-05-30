@@ -2,7 +2,6 @@ package io.github.rygel.outerstellar.platform.web
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.containsSubstring
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
 import io.github.rygel.outerstellar.platform.banner.Banner
 import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.banner.BannerSeverity
@@ -21,8 +20,7 @@ class BannerIntegrationTest : WebTest() {
         override fun getBanners(userId: UUID, userRole: String): List<Banner> = banners
     }
 
-    private class TestBannerPlugin(private val providers: List<BannerProvider>) :
-        PlatformPlugin, PluginMigrationSource {
+    private class TestBannerPlugin(private val providers: List<BannerProvider>) : PlatformPlugin {
         override val id: String = "test-banner-plugin"
 
         override fun bannerProviders(context: HostedAppContext): List<BannerProvider> = providers

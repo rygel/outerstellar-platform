@@ -16,6 +16,7 @@ import io.github.rygel.outerstellar.platform.plugin.HostedAppContext
 import io.github.rygel.outerstellar.platform.plugin.PluginAnalytics
 import io.github.rygel.outerstellar.platform.plugin.PluginApiKeys
 import io.github.rygel.outerstellar.platform.plugin.PluginAppInfo
+import io.github.rygel.outerstellar.platform.plugin.PluginNotification
 import io.github.rygel.outerstellar.platform.plugin.PluginNotifications
 import io.github.rygel.outerstellar.platform.plugin.PluginOAuth
 import io.github.rygel.outerstellar.platform.plugin.PluginRendering
@@ -28,6 +29,26 @@ import java.util.UUID
 import org.http4k.core.Request
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
+
+class HostedAppContextFactory(
+    private val renderer: TemplateRenderer,
+    private val apiKeyService: ApiKeyService,
+    private val oauthService: OAuthService,
+    private val userRepository: UserRepository,
+    private val analytics: AnalyticsService = NoOpAnalyticsService(),
+    private val notificationService: NotificationService? = null,
+) {
+    fun create(config: AppConfig): HostedAppContext =
+        hostedAppContextFromHostServices(
+            renderer = renderer,
+            config = config,
+            apiKeyService = apiKeyService,
+            oauthService = oauthService,
+            userRepository = userRepository,
+            analytics = analytics,
+            notificationService = notificationService,
+        )
+}
 
 internal fun hostedAppContextFromHostServices(
     renderer: TemplateRenderer,
@@ -73,6 +94,29 @@ internal fun hostedAppContextForTesting(
         notificationService = notificationService,
     )
 
+@Deprecated(
+    message =
+        "Use HostedAppContext.forTesting(rendering = ..., users = ..., security = ...) when testing against the SPI alone."
+)
+fun HostedAppContext.Companion.forTesting(
+    renderer: TemplateRenderer,
+    apiKeyService: ApiKeyService,
+    oauthService: OAuthService,
+    userRepository: UserRepository,
+    analytics: AnalyticsService = NoOpAnalyticsService(),
+    notificationService: NotificationService? = null,
+    config: AppConfig = AppConfig(),
+): HostedAppContext =
+    hostedAppContextForTesting(
+        renderer = renderer,
+        apiKeyService = apiKeyService,
+        oauthService = oauthService,
+        userRepository = userRepository,
+        analytics = analytics,
+        notificationService = notificationService,
+        config = config,
+    )
+
 private class DefaultPluginUsers(private val userRepository: UserRepository) : PluginUsers {
     private val log = LoggerFactory.getLogger(DefaultPluginUsers::class.java)
 
@@ -110,8 +154,8 @@ private class DefaultPluginNotifications(private val notificationService: Notifi
         notificationService.create(userId, title, body, type)
     }
 
-    override fun listForUser(userId: UUID, limit: Int): List<Notification> =
-        notificationService.listForUser(userId, limit)
+    override fun listForUser(userId: UUID, limit: Int): List<PluginNotification> =
+        notificationService.listForUser(userId, limit).map(Notification::toPluginNotification)
 
     override fun countUnread(userId: UUID): Int = notificationService.countUnread(userId)
 
@@ -127,6 +171,16 @@ private class DefaultPluginNotifications(private val notificationService: Notifi
         notificationService.delete(id, userId)
     }
 }
+
+private fun Notification.toPluginNotification(): PluginNotification =
+    PluginNotification(
+        id = id.toString(),
+        title = title,
+        body = body,
+        type = type,
+        read = isRead,
+        createdAt = createdAt.toString(),
+    )
 
 private class DefaultPluginRendering(override val renderer: TemplateRenderer) : PluginRendering {
     override fun renderShell(shell: ShellView, bodyHtml: String): String {

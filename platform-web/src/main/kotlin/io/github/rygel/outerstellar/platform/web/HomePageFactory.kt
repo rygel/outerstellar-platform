@@ -2,7 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 class HomePageFactory(
     private val messageService: io.github.rygel.outerstellar.platform.service.MessageService?,
-    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService? = null,
+    private val contactTrashListFactory: ContactTrashListFactory? = null,
 ) {
     private val messageListComponent = messageService?.let { MessageListComponent(it) }
 
@@ -85,27 +85,7 @@ class HomePageFactory(
         val i18n = shellRenderer.i18n
         val shell = shellRenderer.shell(i18n.translate("web.trash.title"), "/messages/trash")
         val messageList = buildMessageList(ctx, shellRenderer, isTrash = true)
-        val contactList = contactService?.let {
-            val dbContacts = it.listContacts(limit = 100, offset = 0, includeDeleted = true)
-            ContactTrashListViewModel(
-                contacts =
-                    dbContacts.map { c ->
-                        ContactTrashItemViewModel(
-                            syncId = c.syncId,
-                            name = c.name,
-                            emails = c.emails,
-                            phones = c.phones,
-                            company = c.company,
-                            department = c.department,
-                            restoreUrl = shellRenderer.url("/contacts/${c.syncId}/restore"),
-                        )
-                    },
-                emptyMessage = i18n.translate("web.trash.contacts.empty"),
-                refreshUrl = shellRenderer.url("/contacts/trash/list"),
-                title = i18n.translate("web.trash.contacts"),
-                restoreTitle = i18n.translate("web.contacts.restore"),
-            )
-        }
+        val contactList = contactTrashListFactory?.build(shellRenderer)
 
         return Page(
             shell = shell,

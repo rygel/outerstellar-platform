@@ -17,7 +17,7 @@ import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 
 class PasswordRoutes(
-    private val pageFactory: WebPageFactory,
+    private val authPageFactory: AuthPageFactory,
     private val renderer: TemplateRenderer,
     private val accountService: AccountService,
     private val passwordResetService: PasswordResetService,
@@ -35,7 +35,7 @@ class PasswordRoutes(
                 { token ->
                     { request: org.http4k.core.Request ->
                         val shellRenderer = request.shellRenderer
-                        renderer.render(pageFactory.buildResetPasswordPage(shellRenderer, token))
+                        renderer.render(authPageFactory.buildResetPasswordPage(shellRenderer, token))
                     }
                 },
             "/auth/components/reset-confirm" meta
@@ -107,7 +107,7 @@ class PasswordRoutes(
                 GET to
                 { request: org.http4k.core.Request ->
                     val shellRenderer = request.shellRenderer
-                    renderer.render(pageFactory.buildChangePasswordPage(shellRenderer))
+                    renderer.render(authPageFactory.buildChangePasswordPage(shellRenderer))
                 },
             "/auth/components/change-password" meta
                 {

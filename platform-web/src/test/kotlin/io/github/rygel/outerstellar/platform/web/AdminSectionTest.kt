@@ -27,7 +27,7 @@ class AdminSectionTest {
         val apiKeyService = mockk<ApiKeyService>(relaxed = true)
         val oauthService = mockk<OAuthService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
-        val context = hostedAppContextForTesting(renderer, apiKeyService, oauthService, userRepository)
+        val context = PluginContext.forTesting(renderer, apiKeyService, oauthService, userRepository)
         assertTrue(plugin.adminSections(context).isEmpty())
     }
 

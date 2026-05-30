@@ -6,11 +6,16 @@
     <parent>
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
-        <version>1.6.2</version>
+        <version>3.6.4</version>
     </parent>
 
     <artifactId>outerstellar-platform-test-infrastructure</artifactId>
     <name>Platform Test Infrastructure</name>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <gpg.skip>true</gpg.skip>
+    </properties>
 
     <dependencies>
         <dependency>

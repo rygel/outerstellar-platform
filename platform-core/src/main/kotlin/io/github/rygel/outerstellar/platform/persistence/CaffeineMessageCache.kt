@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import io.github.rygel.outerstellar.platform.RuntimeConfig
 import io.github.rygel.outerstellar.platform.model.MessageSummary
 import io.github.rygel.outerstellar.platform.model.PagedResult
 import io.github.rygel.outerstellar.platform.model.StoredMessage
@@ -12,6 +13,13 @@ import java.util.concurrent.atomic.AtomicLong
 
 private const val DEFAULT_MAX_SIZE = 1000L
 private const val DEFAULT_TTL_MINUTES = 10L
+
+fun createConfiguredMessageCache(runtime: RuntimeConfig, meterRegistry: MeterRegistry? = null): MessageCache =
+    CaffeineMessageCache(
+        maxSize = runtime.cacheMessageMaxSize.toLong(),
+        ttlMinutes = runtime.cacheMessageExpireMinutes.toLong(),
+        meterRegistry = meterRegistry,
+    )
 
 class CaffeineMessageCache(
     maxSize: Long = DEFAULT_MAX_SIZE,

@@ -4,6 +4,8 @@ import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.PasswordResetService
+import io.github.rygel.outerstellar.platform.service.EmailService
+import io.github.rygel.outerstellar.platform.service.NoOpEmailService
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,6 +33,15 @@ import org.junit.jupiter.api.BeforeEach
  * - After successful reset, old password no longer works
  */
 class PasswordResetFlowIntegrationTest : WebTest() {
+    private class CapturingEmailService : EmailService {
+        data class Email(val to: String, val subject: String, val body: String)
+
+        val sent = mutableListOf<Email>()
+
+        override fun send(to: String, subject: String, body: String) {
+            sent += Email(to, subject, body)
+        }
+    }
 
     private lateinit var app: HttpHandler
     private lateinit var testUser: User
@@ -56,6 +67,8 @@ class PasswordResetFlowIntegrationTest : WebTest() {
             encoder,
             resetRepository = passwordResetRepository,
             auditRepository = auditRepository,
+            sessionRepository = sessionRepository,
+            emailService = NoOpEmailService(),
         )
     }
 
@@ -100,6 +113,25 @@ class PasswordResetFlowIntegrationTest : WebTest() {
         val tokensAfter =
             testJdbi.open().createQuery("SELECT COUNT(*) FROM plt_password_reset_tokens").mapTo(Int::class.java).first()
         assertEquals(tokensBefore + 1, tokensAfter, "One token should be stored in the DB")
+    }
+
+    @Test
+    fun `POST reset-request sends password reset email through shared security wiring`() {
+        val emailService = CapturingEmailService()
+        val appWithEmail = buildApp(overrides = TestOverrides(emailService = emailService))
+
+        val response =
+            appWithEmail(
+                Request(POST, "/api/v1/auth/reset-request")
+                    .header("content-type", "application/json")
+                    .body("""{"email":"${testUser.email}"}""")
+            )
+
+        assertThat(response, hasStatus(Status.OK))
+        assertEquals(1, emailService.sent.size)
+        assertEquals(testUser.email, emailService.sent.single().to)
+        assertEquals("Password Reset Request", emailService.sent.single().subject)
+        assertTrue(emailService.sent.single().body.contains("/auth/reset/"))
     }
 
     @Test

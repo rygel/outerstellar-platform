@@ -2,19 +2,19 @@ package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.model.SessionLookup
 import io.github.rygel.outerstellar.platform.security.SessionService
+import io.github.rygel.outerstellar.platform.service.EventPublisher
+import io.github.rygel.outerstellar.platform.service.PlatformEvent
 import java.util.concurrent.ConcurrentHashMap
 import org.http4k.core.Request
 import org.http4k.websocket.Websocket
 import org.http4k.websocket.WsHandler
-import org.http4k.websocket.WsMessage
 import org.http4k.websocket.WsResponse
 import org.http4k.websocket.WsStatus
 import org.slf4j.LoggerFactory
 
 private const val WS_AUTH_REQUIRED_STATUS = 4401
 
-class SyncWebSocket(private val sessionService: SessionService) :
-    io.github.rygel.outerstellar.platform.service.EventPublisher {
+class SyncWebSocket(private val sessionService: SessionService) : EventPublisher {
     private val logger = LoggerFactory.getLogger(SyncWebSocket::class.java)
     private val connections = ConcurrentHashMap.newKeySet<Websocket>()
 
@@ -57,8 +57,8 @@ class SyncWebSocket(private val sessionService: SessionService) :
         }
     }
 
-    override fun publishRefresh(targetId: String) {
-        val message = WsMessage("refresh:$targetId")
+    override fun publish(event: PlatformEvent) {
+        val message = SyncWebSocketProtocol.encode(event)
         val failed = mutableListOf<Websocket>()
         connections.forEach { ws ->
             try {

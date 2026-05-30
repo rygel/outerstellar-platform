@@ -4,6 +4,7 @@ import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
+import io.github.rygel.outerstellar.platform.model.ThemeCatalog
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.ValidationException
 import io.github.rygel.outerstellar.platform.persistence.QueryCount
@@ -434,25 +435,25 @@ object Filters {
     }
 
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
-    fun globalErrorHandler(pageFactory: WebPageFactory, renderer: TemplateRenderer): Filter =
+    fun globalErrorHandler(errorPageFactory: ErrorPageFactory, renderer: TemplateRenderer): Filter =
         Filter { next: HttpHandler ->
             { request ->
                 try {
                     val response = next(request)
                     if (response.status == Status.NOT_FOUND) {
-                        handleNotFound(request, pageFactory, renderer)
+                        handleNotFound(request, errorPageFactory, renderer)
                     } else {
                         response
                     }
                 } catch (e: Exception) {
-                    handleException(e, request, pageFactory, renderer)
+                    handleException(e, request, errorPageFactory, renderer)
                 }
             }
         }
 
     private fun handleNotFound(
         request: org.http4k.core.Request,
-        pageFactory: WebPageFactory,
+        errorPageFactory: ErrorPageFactory,
         renderer: TemplateRenderer,
     ): Response {
         return if (request.uri.path.startsWith("/api/")) {
@@ -466,7 +467,7 @@ object Filters {
                     RequestContext(request)
                 }
             val shellRenderer = runCatching { request.shellRenderer }.getOrDefault(ShellRenderer(ctx))
-            val errorPage = pageFactory.buildErrorPage(shellRenderer, "not-found")
+            val errorPage = errorPageFactory.buildErrorPage(shellRenderer, "not-found")
             Response(Status.NOT_FOUND).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
         }
     }
@@ -474,7 +475,7 @@ object Filters {
     private fun handleException(
         e: Exception,
         request: org.http4k.core.Request,
-        pageFactory: WebPageFactory,
+        errorPageFactory: ErrorPageFactory,
         renderer: TemplateRenderer,
     ): Response {
         val status =
@@ -505,7 +506,7 @@ object Filters {
                 }
             val shellRenderer = runCatching { request.shellRenderer }.getOrDefault(ShellRenderer(ctx))
             val errorKind = if (status == Status.INTERNAL_SERVER_ERROR) "server-error" else "not-found"
-            val errorPage = pageFactory.buildErrorPage(shellRenderer, errorKind)
+            val errorPage = errorPageFactory.buildErrorPage(shellRenderer, errorKind)
             Response(status).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
         }
     }

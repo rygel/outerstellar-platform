@@ -1,20 +1,21 @@
 package io.github.rygel.outerstellar.platform
 
 import io.github.rygel.outerstellar.platform.di.CoreComponents
-import io.github.rygel.outerstellar.platform.di.PersistenceComponents
+import io.github.rygel.outerstellar.platform.di.PlatformPersistence
 import io.github.rygel.outerstellar.platform.di.WebComponents
+import io.github.rygel.outerstellar.platform.di.createConfiguredEmailService
 import io.github.rygel.outerstellar.platform.di.createCoreComponents
-import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
-import io.github.rygel.outerstellar.platform.persistence.CaffeineMessageCache
+import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
 import io.github.rygel.outerstellar.platform.plugin.HostedApp
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
+import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import org.http4k.core.PolyHandler
 
 class ServerComponents(
     val config: AppConfig,
-    val persistence: PersistenceComponents,
+    val persistence: PlatformPersistence,
     val core: CoreComponents,
     val security: SecurityComponents,
     val web: WebComponents,
@@ -24,7 +25,8 @@ class ServerComponents(
 fun createServerComponents(plugin: HostedApp? = null): ServerComponents {
     val config = AppConfig.fromEnvironment()
 
-    val persistence = createPersistenceComponents(config = config, pluginMigrationSource = plugin)
+    val persistence = loadPersistenceBootstrap().create(config = config, pluginMigrations = plugin?.migrations)
+    val emailService = createConfiguredEmailService(config)
 
     val security =
         createSecurityComponents(
@@ -33,10 +35,11 @@ fun createServerComponents(plugin: HostedApp? = null): ServerComponents {
             auditRepository = persistence.auditRepository,
             resetRepository = persistence.passwordResetRepository,
             apiKeyRepository = persistence.apiKeyRepository,
-            emailService = null,
+            emailService = emailService,
             oauthRepository = persistence.oAuthRepository,
             sessionRepository = persistence.sessionRepository,
         )
+    val syncWebSocket = SyncWebSocket(security.sessionService)
 
     val core =
         createCoreComponents(
@@ -44,13 +47,10 @@ fun createServerComponents(plugin: HostedApp? = null): ServerComponents {
             messageRepository = persistence.messageRepository,
             contactRepository = persistence.contactRepository,
             outboxRepository = persistence.outboxRepository,
-            messageCache =
-                CaffeineMessageCache(
-                    maxSize = config.runtime.cacheMessageMaxSize.toLong(),
-                    ttlMinutes = config.runtime.cacheMessageExpireMinutes.toLong(),
-                ),
             transactionManager = persistence.transactionManager,
             auditRepository = persistence.auditRepository,
+            eventPublisher = syncWebSocket,
+            emailService = emailService,
         )
 
     val web =
@@ -58,12 +58,13 @@ fun createServerComponents(plugin: HostedApp? = null): ServerComponents {
             config = config,
             plugin = plugin,
             apiKeyService = security.apiKeyService,
-            sessionService = security.sessionService,
+            oauthService = security.oauthService,
+            syncWebSocket = syncWebSocket,
             userAdminService = security.userAdminService,
+            userRepository = persistence.userRepository,
             messageRepository = persistence.messageRepository,
             messageService = core.messageService,
             contactService = core.contactService,
-            userRepository = persistence.userRepository,
             voteRepository = persistence.voteRepository,
             pollRepository = persistence.pollRepository,
             notificationRepository = persistence.notificationRepository,

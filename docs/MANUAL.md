@@ -142,11 +142,11 @@ class MyPlugin : HostedApp {
 | Navigation | `contribute(context)` | Add shell navigation items |
 | Admin | `contribute(context)` / `adminSections(context)` | Add admin summary cards and routes |
 | Layout & assets | `layoutRenderer(context)` / `contribute(context)` | Replace the shell layout and contribute styles/scripts/static assets |
-| Migrations | `PluginMigrationSource` | Separate Flyway instance with own history table |
+| Migrations | `HostedApp.migrations` (`PluginMigrations`) | Separate Flyway instance with own history table |
 | Text overrides | `textResolver` | Custom translations |
 | Template overrides | `templateOverrides()` | Override JTE templates from plugin classpath |
 
-### PluginContext
+### HostedAppContext (`PluginContext` compatibility alias)
 
 Passed to hosted-app hooks, provides access to:
 
@@ -163,8 +163,11 @@ Passed to hosted-app hooks, provides access to:
 Plugins use a separate Flyway instance with configurable history table (default: `flyway_plugin_history`). This prevents version conflicts with platform migrations (V1–V4). Plugins can use any version numbers.
 
 ```kotlin
-override val migrationLocation = "classpath:db/migration/my-plugin"
-override val migrationHistoryTable = "flyway_my_plugin_history"
+override val migrations =
+    PluginMigrations(
+        location = "classpath:db/migration/my-plugin",
+        historyTable = "flyway_my_plugin_history",
+    )
 ```
 
 ## Security

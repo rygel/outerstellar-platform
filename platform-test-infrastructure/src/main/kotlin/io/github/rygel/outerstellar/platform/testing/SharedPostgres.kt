@@ -22,7 +22,10 @@ object SharedPostgres {
         val dbName = "test_${sanitizeDbName(name)}"
         synchronized(lock) {
             DriverManager.getConnection(container.jdbcUrl, container.username, container.password).use { conn ->
-                conn.createStatement().use { stmt -> stmt.execute("CREATE DATABASE \"$dbName\"") }
+                conn.createStatement().use { stmt ->
+                    stmt.execute("DROP DATABASE IF EXISTS \"$dbName\" WITH (FORCE)")
+                    stmt.execute("CREATE DATABASE \"$dbName\"")
+                }
             }
         }
         val jdbcUrl = container.jdbcUrl.replaceAfterLast('/', "$dbName")
@@ -32,7 +35,7 @@ object SharedPostgres {
     fun dropDatabase(dbName: String) {
         synchronized(lock) {
             DriverManager.getConnection(container.jdbcUrl, container.username, container.password).use { conn ->
-                conn.createStatement().use { stmt -> stmt.execute("DROP DATABASE IF EXISTS \"$dbName\"") }
+                conn.createStatement().use { stmt -> stmt.execute("DROP DATABASE IF EXISTS \"$dbName\" WITH (FORCE)") }
             }
         }
     }

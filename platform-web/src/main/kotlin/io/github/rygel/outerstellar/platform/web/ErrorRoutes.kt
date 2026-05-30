@@ -9,7 +9,8 @@ import org.http4k.lens.Path
 import org.http4k.lens.string
 import org.http4k.template.TemplateRenderer
 
-class ErrorRoutes(private val pageFactory: WebPageFactory, private val renderer: TemplateRenderer) : ServerRoutes {
+class ErrorRoutes(private val errorPageFactory: ErrorPageFactory, private val renderer: TemplateRenderer) :
+    ServerRoutes {
     private val kindPath = Path.string().of("kind")
 
     override val routes =
@@ -21,7 +22,7 @@ class ErrorRoutes(private val pageFactory: WebPageFactory, private val renderer:
                 GET to
                 { kind ->
                     { request: org.http4k.core.Request ->
-                        renderer.render(pageFactory.buildErrorPage(request.shellRenderer, kind))
+                        renderer.render(errorPageFactory.buildErrorPage(request.shellRenderer, kind))
                     }
                 },
             "/errors/components/help" / kindPath meta
@@ -31,7 +32,7 @@ class ErrorRoutes(private val pageFactory: WebPageFactory, private val renderer:
                 GET to
                 { kind ->
                     { request: org.http4k.core.Request ->
-                        val help = pageFactory.buildErrorHelp(request.shellRenderer, kind)
+                        val help = errorPageFactory.buildErrorHelp(request.shellRenderer, kind)
                         renderer.render(help)
                     }
                 },

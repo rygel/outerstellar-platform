@@ -7,7 +7,8 @@ import org.http4k.contract.meta
 import org.http4k.core.Method.GET
 import org.http4k.template.TemplateRenderer
 
-class SettingsRoutes(private val pageFactory: WebPageFactory, private val renderer: TemplateRenderer) : ServerRoutes {
+class SettingsRoutes(private val settingsPageFactory: SettingsPageFactory, private val renderer: TemplateRenderer) :
+    ServerRoutes {
 
     override val routes: List<ContractRoute> =
         listOf(
@@ -22,9 +23,9 @@ class SettingsRoutes(private val pageFactory: WebPageFactory, private val render
                     val tab = request.query("tab") ?: "profile"
                     val isHtmx = request.header("HX-Request") == "true"
                     if (isHtmx) {
-                        renderer.render(pageFactory.buildSettingsFragment(ctx, shellRenderer, tab))
+                        renderer.render(settingsPageFactory.buildSettingsFragment(ctx, shellRenderer, tab))
                     } else {
-                        renderer.render(pageFactory.buildSettingsPage(shellRenderer, tab))
+                        renderer.render(settingsPageFactory.buildSettingsPage(shellRenderer, tab))
                     }
                 }
         )

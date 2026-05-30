@@ -1,15 +1,15 @@
 package io.github.rygel.outerstellar.platform.plugin
 
 import gg.jte.Content
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.PluginMigrations
 import io.github.rygel.outerstellar.platform.TextResolver
 import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.composition.RouteGroup
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
+import io.github.rygel.outerstellar.platform.model.NotificationSummary
 import io.github.rygel.outerstellar.platform.model.User
-import io.github.rygel.outerstellar.platform.persistence.Notification
 import io.github.rygel.outerstellar.platform.web.AdminSection
 import io.github.rygel.outerstellar.platform.web.ShellView
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
@@ -110,6 +110,8 @@ data class PluginAppInfo(
     val registrationEnabled: Boolean,
 )
 
+typealias PluginNotification = NotificationSummary
+
 interface PluginUsers {
     fun currentUser(request: Request): User?
 
@@ -131,7 +133,7 @@ interface PluginAnalytics {
 interface PluginNotifications {
     fun create(userId: UUID, title: String, body: String, type: String = "info")
 
-    fun listForUser(userId: UUID, limit: Int = 50): List<Notification>
+    fun listForUser(userId: UUID, limit: Int = 50): List<PluginNotification>
 
     fun countUnread(userId: UUID): Int
 
@@ -207,9 +209,37 @@ class HostedAppContext(
      * The [bodyHtml] is rendered as-is with no escaping; hosted apps are trusted to produce safe HTML.
      */
     fun renderShell(shell: ShellView, bodyHtml: String): String = rendering.renderShell(shell, bodyHtml)
+
+    companion object {
+        fun forTesting(
+            rendering: PluginRendering,
+            users: PluginUsers,
+            security: PluginSecurity,
+            app: PluginAppInfo =
+                PluginAppInfo(version = "dev", appBaseUrl = "", devMode = false, registrationEnabled = true),
+            analytics: PluginAnalytics = NoOpPluginAnalytics,
+            notifications: PluginNotifications? = null,
+        ): HostedAppContext =
+            HostedAppContext(
+                app = app,
+                users = users,
+                analytics = analytics,
+                notifications = notifications,
+                rendering = rendering,
+                security = security,
+            )
+    }
 }
 
 typealias PluginContext = HostedAppContext
+
+private object NoOpPluginAnalytics : PluginAnalytics {
+    override fun identify(userId: String, traits: Map<String, Any>) = Unit
+
+    override fun track(userId: String, event: String, properties: Map<String, Any>) = Unit
+
+    override fun page(userId: String, path: String) = Unit
+}
 
 /**
  * Single hosted-app contract. One outerstellar-platform host accepts exactly one hosted app adapter.
@@ -218,7 +248,7 @@ typealias PluginContext = HostedAppContext
  * - Include your routes in the web app when they stay inside declared ownership prefixes
  * - Run your Flyway migrations in a dedicated history table
  */
-interface HostedApp : PluginMigrationSource {
+interface HostedApp {
     val id: String
     val appLabel: String
         get() = "Outerstellar"
@@ -231,6 +261,35 @@ interface HostedApp : PluginMigrationSource {
 
     val textResolver: TextResolver?
         get() = null
+
+    /**
+     * Flyway migrations contributed by this hosted app. Return null when the hosted app does not own schema changes.
+     *
+     * Older plugins can keep overriding the deprecated migrationLocation/migrationHistoryTable/migrationNames
+     * compatibility properties for now; the default getter adapts them into this value.
+     */
+    @Suppress("DEPRECATION")
+    val migrations: PluginMigrations?
+        get() {
+            val location = migrationLocation ?: return null
+            return PluginMigrations(
+                location = location,
+                historyTable = migrationHistoryTable,
+                migrationNames = migrationNames,
+            )
+        }
+
+    @Deprecated("Override migrations instead.", ReplaceWith("migrations"))
+    val migrationLocation: String?
+        get() = null
+
+    @Deprecated("Override migrations instead.", ReplaceWith("migrations"))
+    val migrationHistoryTable: String
+        get() = io.github.rygel.outerstellar.platform.DEFAULT_PLUGIN_MIGRATION_HISTORY_TABLE
+
+    @Deprecated("Override migrations instead.", ReplaceWith("migrations"))
+    val migrationNames: List<String>
+        get() = emptyList()
 
     fun templateOverrides(): Set<String> = emptySet()
 
