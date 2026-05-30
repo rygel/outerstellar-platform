@@ -207,6 +207,13 @@ Only the external `outerstellar-i18n` artifact still resolves from GitHub Packag
 - Database migration:
   - `-Pmigrate` runs standalone migration via `MigratorKt`.
 
+## Release workflow safeguards
+
+- `Release and Publish` is manual-only and must be dispatched from `main` with two matching inputs: `release_version` and `confirm_release_version`.
+- `Publish to Maven Central` is also manual-only and requires the same exact version confirmation from `main`.
+- Both workflows fail unless the requested version exactly matches the root `pom.xml` version, is not a `-SNAPSHOT`, has a matching `CHANGELOG.md` heading, and already passed CI on that exact `main` commit.
+- Maven Central additionally requires the matching GitHub release tag to already exist, and the GitHub release is only created after the GitHub Packages publish succeeds.
+
 ## Database schema rules
 
 - Flyway migrations are the schema source of truth.
