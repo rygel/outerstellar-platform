@@ -206,7 +206,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-core,platform-plugin-api,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security
+          -pl outerstellar-i18n-validator,outerstellar-i18n-validator-maven-plugin,platform-core,platform-plugin-api,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -214,7 +214,7 @@ jobs:
 
       - name: Run desktop tests with virtual display
         run: >
-          xvfb-run --auto-servernum mvn test -pl platform-desktop
+          xvfb-run --auto-servernum mvn test -pl platform-desktop -am
           -Ddesktop.headless=false
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
