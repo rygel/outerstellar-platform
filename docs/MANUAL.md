@@ -7,7 +7,7 @@
 - **PostgreSQL 18** (via Podman/Docker or local install)
 - **Node.js** (for Tailwind CSS build)
 
-The project uses `outerstellar-framework` artifacts from GitHub Packages. Ensure your `settings.xml` includes the `github-rygel` server entry with a Personal Access Token.
+The build still resolves the external `outerstellar-i18n` artifact from GitHub Packages. Ensure your `settings.xml` includes the `github-rygel` server entry with a Personal Access Token until that remaining dependency is migrated. The validator library and Maven plugin now build from this repository.
 
 ## Quick Start
 
@@ -227,9 +227,9 @@ The `i18n-validator-maven-plugin` validates key consistency across bundles at bu
 
 ## Theming
 
-32 built-in themes defined in `themes.json` with color palettes (background, foreground, accent, success, danger, warning, etc.). Users select themes via the settings page; preference stored in `plt_users.theme`.
+The web UI exposes 32 built-in DaisyUI theme IDs through `ThemeCatalog`. Users select themes via the settings page; the preference is stored in `plt_users.theme`.
 
-Swing desktop uses FlatLaf with `ThemeManager` applying palette colors to `UIManager` defaults.
+Swing desktop uses FlatLaf with `ThemeManager` and `DesktopTheme` (`Dark`, `Light`, `Darcula`, `IntelliJ`, `macOS Dark`, `macOS Light`).
 
 ## Native Image
 

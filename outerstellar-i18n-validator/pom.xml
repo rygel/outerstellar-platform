@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.rygel</groupId>
+        <artifactId>outerstellar-platform-parent</artifactId>
+        <version>3.6.4</version>
+        <relativePath>..</relativePath>
+    </parent>
+
+    <artifactId>outerstellar-i18n-validator</artifactId>
+    <name>Outerstellar i18n Validator</name>
+    <description>Core validation engine for i18n property files</description>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <detekt.skip>true</detekt.skip>
+        <pmd.skip>true</pmd.skip>
+        <cpd.skip>true</cpd.skip>
+        <spotbugs.skip>true</spotbugs.skip>
+    </properties>
+
+    <dependencies/>
+</project>

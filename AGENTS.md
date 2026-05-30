@@ -192,7 +192,7 @@ There are TWO `UserRole` enums — one in `platform-core` (model package) and on
 
 ### Modules that depend on external GitHub Packages
 
-`outerstellar-framework` and `fragments-seo-core` are published to GitHub Packages (`maven.pkg.github.com/rygel/outerstellar-framework`). CI resolves them via `GH_PACKAGES_TOKEN` secret. On local machines, `~/.m2/settings.xml` must have a `github-rygel` server entry with a GitHub PAT. If a dependency can't resolve, check that the release is published (not SNAPSHOT).
+Only the external `outerstellar-i18n` artifact still resolves from GitHub Packages (`maven.pkg.github.com/rygel/outerstellar-framework`). CI keeps `GH_PACKAGES_TOKEN` for that remaining dependency, and local machines still need a `github-rygel` server entry in `~/.m2/settings.xml`. The validator library and validator Maven plugin now live in this repository, so they should not be treated as external package dependencies anymore.
 
 ## Maven profile conventions
 

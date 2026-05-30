@@ -21,7 +21,7 @@ echo "Using container runtime: $RUNTIME"
 # Prevent Git Bash from mangling paths on Windows
 export MSYS_NO_PATHCONV=1
 
-# Find Maven settings.xml for GitHub Packages auth.
+# Find Maven settings.xml for the remaining GitHub Packages dependency (`outerstellar-i18n`).
 # Do NOT mount the full .m2/repository — Windows-to-Linux volume mounts hang Podman.
 SETTINGS_FILE=""
 MOUNT_SOURCE=""
@@ -49,7 +49,7 @@ if [ -n "$SETTINGS_FILE" ]; then
     MOUNT_ARGS+=("-v" "$MOUNT_SOURCE:/root/.m2/settings.xml:ro")
     echo "Mounting Maven settings from: $SETTINGS_FILE"
 else
-    echo "WARNING: No settings.xml found — GitHub Packages auth will fail inside container"
+    echo "WARNING: No settings.xml found — resolving the remaining outerstellar-i18n GitHub Packages dependency will fail inside container"
 fi
 
 CONTAINER_ARGS=(
