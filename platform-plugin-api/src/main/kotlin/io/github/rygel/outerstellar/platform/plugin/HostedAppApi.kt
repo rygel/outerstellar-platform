@@ -245,7 +245,8 @@ private object NoOpPluginAnalytics : PluginAnalytics {
  * Single hosted-app contract. One outerstellar-platform host accepts exactly one hosted app adapter.
  *
  * The host will automatically:
- * - Include your routes in the web app when they stay inside declared ownership prefixes
+ * - Include your routes in the web app when they stay inside declared ownership prefixes (in PluginHostedApp mode, the
+ *   host also grants `/` as a default UI ownership prefix)
  * - Run your Flyway migrations in a dedicated history table
  */
 interface HostedApp {
@@ -267,6 +268,10 @@ interface HostedApp {
      *
      * Older plugins can keep overriding the deprecated migrationLocation/migrationHistoryTable/migrationNames
      * compatibility properties for now; the default getter adapts them into this value.
+     *
+     * Use [PluginMigrations.location] for the classpath location, [PluginMigrations.historyTable] for a dedicated
+     * Flyway history table, and [PluginMigrations.migrationNames] when migration resources need to be enumerated
+     * explicitly for packaging.
      */
     @Suppress("DEPRECATION")
     val migrations: PluginMigrations?
@@ -279,15 +284,15 @@ interface HostedApp {
             )
         }
 
-    @Deprecated("Override migrations instead.", ReplaceWith("migrations"))
+    @Deprecated("Override migrations with PluginMigrations instead.", ReplaceWith("migrations"))
     val migrationLocation: String?
         get() = null
 
-    @Deprecated("Override migrations instead.", ReplaceWith("migrations"))
+    @Deprecated("Override migrations with PluginMigrations instead.", ReplaceWith("migrations"))
     val migrationHistoryTable: String
         get() = io.github.rygel.outerstellar.platform.DEFAULT_PLUGIN_MIGRATION_HISTORY_TABLE
 
-    @Deprecated("Override migrations instead.", ReplaceWith("migrations"))
+    @Deprecated("Override migrations with PluginMigrations instead.", ReplaceWith("migrations"))
     val migrationNames: List<String>
         get() = emptyList()
 

@@ -5,7 +5,9 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.I18nTextResolver
 import io.github.rygel.outerstellar.platform.TextResolver
+import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.model.UserRole
+import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -29,6 +31,12 @@ class ShellRenderer(
 
     private val bannerProviders
         get() = shellConfig.bannerProviders
+
+    private val mode
+        get() = shellConfig.mode
+
+    private val includedPlatformPages
+        get() = shellConfig.includedPlatformPages
 
     private val logger = LoggerFactory.getLogger(ShellRenderer::class.java)
 
@@ -62,6 +70,9 @@ class ShellRenderer(
 
     val textResolver: TextResolver by lazy { pluginOptions.textResolver ?: I18nTextResolver(i18n) }
 
+    private val isPluginHostedApp: Boolean
+        get() = mode == PlatformMode.PluginHostedApp
+
     fun url(path: String): String = path
 
     fun componentUrl(path: String, pagePath: String): String =
@@ -69,8 +80,10 @@ class ShellRenderer(
 
     private fun buildNavLinks(activeSection: String): List<ShellLink> {
         val role = ctx.user?.role?.name ?: "ANONYMOUS"
-        val pluginKey = if (pluginOptions.navItems.isNotEmpty()) pluginOptions.navItems.hashCode() else 0
-        val cacheKey = "${ctx.lang}:$role:$activeSection:$devDashboardEnabled:$pluginKey"
+        val navKey = if (pluginOptions.navItems.isNotEmpty()) pluginOptions.navItems.hashCode() else 0
+        val adminNavKey = if (pluginOptions.adminNavItems.isNotEmpty()) pluginOptions.adminNavItems.hashCode() else 0
+        val includedKey = includedPlatformPages.map { it.name }.sorted().joinToString(",")
+        val cacheKey = "${ctx.lang}:$role:$activeSection:$devDashboardEnabled:$mode:$navKey:$adminNavKey:$includedKey"
         return navLinkCache.get(cacheKey) { buildNavLinksUncached(activeSection) }
     }
 
@@ -84,64 +97,122 @@ class ShellRenderer(
                     }
                     .toMutableList()
             } else {
-                mutableListOf(
-                        ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
-                        ShellLink(
-                            i18n.translate("web.nav.search"),
-                            url("/search"),
-                            "ri-search-line",
-                            activeSection == "/search",
-                        ),
-                        ShellLink(
-                            i18n.translate("web.nav.contacts"),
-                            url("/contacts"),
-                            "ri-user-3-line",
-                            activeSection == "/contacts",
-                        ),
-                        ShellLink(
-                            i18n.translate("web.nav.trash"),
-                            url("/messages/trash"),
-                            "ri-delete-bin-7-line",
-                            activeSection == "/messages/trash",
-                        ),
-                    )
-                    .also { navLinks ->
-                        if (ctx.user != null) {
-                            navLinks.add(
-                                ShellLink(
-                                    i18n.translate("web.nav.settings"),
-                                    url("/settings"),
-                                    "ri-settings-3-line",
-                                    activeSection == "/settings",
-                                )
-                            )
-                        }
-                    }
+                defaultPlatformNavLinks(activeSection)
             }
 
         appendAdminLinks(links, activeSection)
         return links
     }
 
+    private fun defaultPlatformNavLinks(activeSection: String): MutableList<ShellLink> =
+        if (isPluginHostedApp) {
+            buildPluginHostedNavLinks(activeSection)
+        } else {
+            buildFullPlatformNavLinks(activeSection)
+        }
+
+    private fun buildFullPlatformNavLinks(activeSection: String): MutableList<ShellLink> =
+        mutableListOf(
+                ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"),
+                ShellLink(
+                    i18n.translate("web.nav.search"),
+                    url("/search"),
+                    "ri-search-line",
+                    activeSection == "/search",
+                ),
+                ShellLink(
+                    i18n.translate("web.nav.contacts"),
+                    url("/contacts"),
+                    "ri-user-3-line",
+                    activeSection == "/contacts",
+                ),
+                ShellLink(
+                    i18n.translate("web.nav.trash"),
+                    url("/messages/trash"),
+                    "ri-delete-bin-7-line",
+                    activeSection == "/messages/trash",
+                ),
+            )
+            .also { navLinks ->
+                if (ctx.user != null) {
+                    navLinks.add(
+                        ShellLink(
+                            i18n.translate("web.nav.settings"),
+                            url("/settings"),
+                            "ri-settings-3-line",
+                            activeSection == "/settings",
+                        )
+                    )
+                }
+            }
+
+    private fun buildPluginHostedNavLinks(activeSection: String): MutableList<ShellLink> {
+        val links = mutableListOf<ShellLink>()
+        if (includes(PlatformPageSets.HOME)) {
+            links.add(ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"))
+            links.add(
+                ShellLink(
+                    i18n.translate("web.nav.trash"),
+                    url("/messages/trash"),
+                    "ri-delete-bin-7-line",
+                    activeSection == "/messages/trash",
+                )
+            )
+        }
+        if (includes(PlatformPageSets.SEARCH)) {
+            links.add(
+                ShellLink(
+                    i18n.translate("web.nav.search"),
+                    url("/search"),
+                    "ri-search-line",
+                    activeSection == "/search",
+                )
+            )
+        }
+        if (includes(PlatformPageSets.CONTACTS)) {
+            links.add(
+                ShellLink(
+                    i18n.translate("web.nav.contacts"),
+                    url("/contacts"),
+                    "ri-user-3-line",
+                    activeSection == "/contacts",
+                )
+            )
+        }
+        if (ctx.user != null && includes(PlatformPageSets.SETTINGS)) {
+            links.add(
+                ShellLink(
+                    i18n.translate("web.nav.settings"),
+                    url("/settings"),
+                    "ri-settings-3-line",
+                    activeSection == "/settings",
+                )
+            )
+        }
+        return links
+    }
+
     private fun appendAdminLinks(links: MutableList<ShellLink>, activeSection: String) {
         if (ctx.user?.role != UserRole.ADMIN) return
-        links.add(
-            ShellLink(
-                i18n.translate("web.nav.users"),
-                url("/admin/users"),
-                "ri-group-line",
-                activeSection == "/admin/users",
+        if (!isPluginHostedApp || includes(PlatformPageSets.ADMIN)) {
+            links.add(
+                ShellLink(
+                    i18n.translate("web.nav.users"),
+                    url("/admin/users"),
+                    "ri-group-line",
+                    activeSection == "/admin/users",
+                )
             )
-        )
-        links.add(
-            ShellLink(
-                i18n.translate("web.nav.audit"),
-                url("/admin/audit"),
-                "ri-file-list-3-line",
-                activeSection == "/admin/audit",
+            links.add(
+                ShellLink(
+                    i18n.translate("web.nav.audit"),
+                    url("/admin/audit"),
+                    "ri-file-list-3-line",
+                    activeSection == "/admin/audit",
+                )
             )
-        )
-        if (devDashboardEnabled) {
+        }
+        if (devDashboardEnabled && (!isPluginHostedApp || includes(PlatformPageSets.DEV_DASHBOARD))) {
             links.add(
                 ShellLink(
                     i18n.translate("web.nav.dev"),
@@ -155,6 +226,21 @@ class ShellRenderer(
             links.add(ShellLink(item.label, url(item.url), item.icon, activeSection == item.url))
         }
     }
+
+    private fun includes(pageSet: PlatformPageSets): Boolean = pageSet in includedPlatformPages
+
+    private fun appTitle(): String =
+        if (isPluginHostedApp) {
+            shellConfig.appLabel.ifBlank { i18n.translate("web.app.title") }
+        } else {
+            i18n.translate("web.app.title")
+        }
+
+    private fun footerVersion(): String =
+        if (isPluginHostedApp) "v$appVersion" else i18n.translate("web.footer.version", appVersion)
+
+    private fun searchUrl(): String? =
+        if (!isPluginHostedApp || includes(PlatformPageSets.SEARCH)) url("/search") else null
 
     @Suppress("LongMethod")
     fun shell(pageTitle: String, activeSection: String): ShellView {
@@ -172,8 +258,8 @@ class ShellRenderer(
 
         return ShellView(
             pageTitle = pageTitle,
-            appTitle = i18n.translate("web.app.title"),
-            appTagline = i18n.translate("web.app.tagline"),
+            appTitle = appTitle(),
+            appTagline = if (isPluginHostedApp) appTitle() else i18n.translate("web.app.tagline"),
             currentPath = currentPath,
             localeTag = ctx.lang,
             themeName = ctx.theme,
@@ -183,23 +269,31 @@ class ShellRenderer(
             themeSelector = sidebarFactory.buildThemeSelector(ctx, this),
             languageSelector = sidebarFactory.buildLanguageSelector(ctx, this),
             layoutSelector = sidebarFactory.buildLayoutSelector(ctx, this),
-            footerCopy = i18n.translate("web.footer.copy"),
-            footerVersion = i18n.translate("web.footer.version", appVersion),
+            footerCopy = if (isPluginHostedApp) appTitle() else i18n.translate("web.footer.copy"),
+            footerVersion = footerVersion(),
             footerStatusUrl = url("/components/footer-status"),
             version = appVersion,
             username = user?.username,
             isLoggedIn = user != null,
             logoutUrl = url("/logout"),
-            changePasswordUrl = if (user != null) url("/auth/change-password") else null,
-            profileUrl = if (user != null) url("/auth/profile") else null,
+            changePasswordUrl = if (user != null && !isPluginHostedApp) url("/auth/change-password") else null,
+            profileUrl =
+                if (user != null && (!isPluginHostedApp || includes(PlatformPageSets.PROFILE))) url("/auth/profile")
+                else null,
             toastErrorLabel = i18n.translate("web.layout.toast.error"),
             toastSuccessLabel = i18n.translate("web.layout.toast.success"),
             changePasswordLabel = i18n.translate("web.layout.change.password"),
             signOutLabel = i18n.translate("web.layout.sign.out"),
             csrfToken = ctx.csrfToken,
+            searchUrl = searchUrl(),
             searchPlaceholder = i18n.translate("web.search.placeholder"),
             searchLabel = i18n.translate("web.search.label"),
-            notificationsUrl = if (user != null) url("/notifications") else null,
+            notificationsUrl =
+                if (user != null && (!isPluginHostedApp || includes(PlatformPageSets.NOTIFICATIONS))) {
+                    url("/notifications")
+                } else {
+                    null
+                },
             textResolver = textResolver,
             pageDescription =
                 i18n
@@ -210,6 +304,7 @@ class ShellRenderer(
             noIndex = activeSection in NO_INDEX_SECTIONS,
             supportedLocales = listOf("en", "fr"),
             appBaseUrl = appBaseUrl,
+            appHomeUrl = if (isPluginHostedApp) shellConfig.appHomeUrl else url("/"),
             banners = banners,
             pluginLayoutRenderer = pluginOptions.layoutRenderer,
             pluginStylesheets = pluginOptions.assets.stylesheets,

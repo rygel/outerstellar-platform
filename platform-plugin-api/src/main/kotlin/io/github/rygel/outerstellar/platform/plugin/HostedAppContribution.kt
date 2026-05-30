@@ -11,6 +11,7 @@ data class HostedAppContribution(
     val mode: PlatformMode,
     val appLabel: String,
     val manifest: HostedAppManifest? = null,
+    val effectiveOwnership: HostedAppOwnership? = null,
     val includedPlatformPages: Set<PlatformPageSets> = emptySet(),
     val routeRegistrations: List<PluginRouteRegistration> = emptyList(),
     val filters: List<Filter> = emptyList(),
@@ -69,7 +70,7 @@ data class HostedAppContribution(
             includedPlatformPages = includedPlatformPages.map { it.pageSet.id }.sorted(),
             stylesheets = options.assets.stylesheets,
             scripts = options.assets.scripts,
-            ownership = manifest?.ownership?.toDiagnostics(),
+            ownership = effectiveOwnership?.toDiagnostics(),
         )
 
     companion object {
@@ -90,14 +91,16 @@ data class HostedAppContribution(
 
             val adminSections = contributionContext.adminRegistry.snapshot()
             val manifest = plugin.manifest
+            val effectiveOwnership = manifest.ownership.withMode(plugin.mode)
             val routeRegistrations = contributionContext.routeRegistry.snapshot()
             val assets = contributionContext.assetRegistry.snapshot()
-            validateHostedAppContribution(manifest, routeRegistrations, assets)
+            validateHostedAppContribution(manifest, effectiveOwnership, routeRegistrations, assets)
 
             return HostedAppContribution(
                 mode = plugin.mode,
                 appLabel = manifest.appLabel,
                 manifest = manifest,
+                effectiveOwnership = effectiveOwnership,
                 includedPlatformPages = contributionContext.platformPageRegistry.snapshot(),
                 routeRegistrations = routeRegistrations,
                 filters = contributionContext.filterRegistry.snapshot(),
@@ -119,16 +122,17 @@ data class HostedAppContribution(
 
         private fun validateHostedAppContribution(
             manifest: HostedAppManifest,
+            effectiveOwnership: HostedAppOwnership,
             routeRegistrations: List<PluginRouteRegistration>,
             assets: PluginAssets,
         ) {
             routeRegistrations.forEach { registration ->
                 val prefixes =
                     when (registration.group) {
-                        RouteGroup.Api -> manifest.ownership.apiPrefixes
-                        RouteGroup.Admin -> manifest.ownership.adminPrefixes
-                        RouteGroup.Static -> manifest.ownership.assetPrefixes
-                        else -> manifest.ownership.uiPrefixes
+                        RouteGroup.Api -> effectiveOwnership.apiPrefixes
+                        RouteGroup.Admin -> effectiveOwnership.adminPrefixes
+                        RouteGroup.Static -> effectiveOwnership.assetPrefixes
+                        else -> effectiveOwnership.uiPrefixes
                     }
                 requirePathOwnedByManifest(manifest, registration.pathPattern, prefixes) {
                     "Route ${registration.method} ${registration.pathPattern} (${registration.description})"
@@ -136,7 +140,7 @@ data class HostedAppContribution(
             }
 
             (assets.stylesheets + assets.scripts).forEach { asset ->
-                requirePathOwnedByManifest(manifest, asset, manifest.ownership.assetPrefixes) { "Asset $asset" }
+                requirePathOwnedByManifest(manifest, asset, effectiveOwnership.assetPrefixes) { "Asset $asset" }
             }
         }
 
@@ -150,7 +154,9 @@ data class HostedAppContribution(
                 "${subject()} must provide a pathPattern starting with '/' so hosted app ownership can be validated."
             }
             require(
-                prefixes.any { prefix -> path == prefix || path.startsWith("$prefix/") || path.startsWith("$prefix/*") }
+                prefixes.any { prefix ->
+                    prefix == "/" || path == prefix || path.startsWith("$prefix/") || path.startsWith("$prefix/*")
+                }
             ) {
                 "${subject()} is outside hosted app '${manifest.id}' ownership. Allowed prefixes: ${prefixes.joinToString()}"
             }
@@ -197,6 +203,12 @@ private fun HostedAppOwnership.toDiagnostics(): HostedAppOwnershipDiagnostics =
         adminPrefixes = adminPrefixes,
         assetPrefixes = assetPrefixes,
     )
+
+private fun HostedAppOwnership.withMode(mode: PlatformMode): HostedAppOwnership =
+    when (mode) {
+        PlatformMode.PluginHostedApp -> copy(uiPrefixes = listOf("/") + uiPrefixes.filterNot { it == "/" })
+        else -> this
+    }
 
 private fun PluginAssets.hasAssets(): Boolean = stylesheets.isNotEmpty() || scripts.isNotEmpty()
 

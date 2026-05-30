@@ -39,6 +39,12 @@ interface PlatformPersistence : AutoCloseable {
 }
 
 interface PersistenceBootstrap {
+    /**
+     * Creates the platform persistence adapters for the given application config.
+     *
+     * [pluginMigrations] should come from `HostedApp.migrations` when the host is starting a hosted app. The bootstrap
+     * runs those migrations in a separate Flyway history table after the platform migrations.
+     */
     fun create(config: AppConfig, pluginMigrations: PluginMigrations? = null): PlatformPersistence
 }
 

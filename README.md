@@ -2,6 +2,8 @@
 
 A Kotlin application platform for building plugin-hosted web and desktop products. The platform provides configuration, database migrations, authentication, session management, routing, and template rendering — plugins provide the product UI and business logic.
 
+If you are upgrading an existing hosted app, see **[MIGRATION.md](MIGRATION.md)** for the 1.6.x -> 3.6.4 migration path.
+
 ---
 
 ### Key Architectural Features

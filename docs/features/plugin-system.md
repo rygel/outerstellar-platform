@@ -4,6 +4,8 @@
 
 Hosted apps extend the platform via the `HostedApp` interface. `PlatformPlugin` remains as a compatibility alias for older integrations, but `HostedApp` and `HostedAppContext` are the primary API names. The public SPI now ships in the `outerstellar-platform-plugin-api` module so hosted apps do not need to depend on `platform-web`.
 
+For step-by-step upgrade notes, see the repository's [migration guide](../../MIGRATION.md).
+
 Hosted apps can contribute:
 - routes and filters
 - shell navigation, admin sections, banners, layout replacement, and assets
@@ -67,6 +69,18 @@ override val migrations =
 ```
 
 Older plugins can keep overriding `migrationLocation`, `migrationHistoryTable`, and `migrationNames` for now, but those compatibility properties are deprecated in favor of `migrations`.
+
+## Route ownership in PluginHostedApp
+
+`HostedAppManifest.ownership` still defines the hosted app's declared route prefixes, but in `PlatformMode.PluginHostedApp` the platform grants `/` as a default UI ownership prefix. That lets a hosted app own root-facing UI routes such as `/`, `/dashboard`, and `/about` without forcing everything under `/<plugin-id>`.
+
+API, admin, and asset ownership remain explicit and continue to use their declared prefixes unless the manifest overrides them.
+
+## Testing hosted apps
+
+For SPI-only tests, use `HostedAppContext.forTesting(...)` from the plugin API module.
+
+For full-stack integration coverage, prefer the platform test harnesses such as `WebTest`, or boot the real app through `createServerComponents(plugin = ...)` instead of manually wiring each lower-level `createXxxComponents(...)` helper.
 
 ## Registration
 

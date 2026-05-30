@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web.assembly
 
 import io.github.rygel.outerstellar.platform.AppConfig
+import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.composition.RegisteredRoute
 import io.github.rygel.outerstellar.platform.composition.RouteGroup
 import io.github.rygel.outerstellar.platform.composition.RouteOwner
@@ -32,6 +33,8 @@ import io.github.rygel.outerstellar.platform.web.SyncApi
 import io.github.rygel.outerstellar.platform.web.UserAdminApi
 import io.github.rygel.outerstellar.platform.web.UserAdminRoutes
 import io.github.rygel.outerstellar.platform.web.VoteApi
+import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
+import org.http4k.contract.ContractRoute
 import org.http4k.contract.contract
 import org.http4k.contract.openapi.ApiInfo
 import org.http4k.contract.openapi.v3.OpenApi3
@@ -200,6 +203,11 @@ internal class RouteRegistrar(
 
     private fun registerAdminRoutes(registry: RouteRegistry) {
         val sec = security
+        val includedPages = pluginContribution.includedPlatformPages
+        val mountPlatformAdmin =
+            pluginContribution.mode != PlatformMode.PluginHostedApp || PlatformPageSets.ADMIN in includedPages
+        val mountDevDashboard =
+            pluginContribution.mode != PlatformMode.PluginHostedApp || PlatformPageSets.DEV_DASHBOARD in includedPages
         val adminSecurity =
             object : Security {
                 override val filter = Filter { next ->
@@ -207,11 +215,9 @@ internal class RouteRegistrar(
                 }
             }
         val pluginSections = pluginContribution.adminSections
-        val adminContract = contract {
-            renderer = OpenApi3(ApiInfo("${pluginContribution.appLabel} Admin", "v1.0"), KotlinxSerialization)
-            descriptionPath = "/admin/openapi.json"
-            this.security = adminSecurity
-            routes +=
+        val contractRoutes = mutableListOf<ContractRoute>()
+        if (mountDevDashboard) {
+            contractRoutes +=
                 DevDashboardRoutes(
                         persistence.outboxRepository,
                         core.messageCache,
@@ -220,9 +226,18 @@ internal class RouteRegistrar(
                         config.devDashboardEnabled,
                     )
                     .routes
-            routes +=
+        }
+        if (mountPlatformAdmin) {
+            contractRoutes +=
                 UserAdminRoutes(web.pages.adminPageFactory, web.runtime.templateRenderer, sec.userAdminService).routes
-            pluginSections.forEach { section -> routes += section.route }
+        }
+        pluginSections.forEach { section -> contractRoutes += section.route }
+        if (contractRoutes.isEmpty()) return
+        val adminContract = contract {
+            renderer = OpenApi3(ApiInfo("${pluginContribution.appLabel} Admin", "v1.0"), KotlinxSerialization)
+            descriptionPath = "/admin/openapi.json"
+            this.security = adminSecurity
+            routes += contractRoutes
         }
         val adminHandler: RoutingHttpHandler =
             if (pluginSections.isNotEmpty()) {
@@ -239,7 +254,12 @@ internal class RouteRegistrar(
                                     ShellRenderer(
                                         pluginRequestContext,
                                         appVersion = config.version,
-                                        shellConfig = ShellConfig(pluginOptions = pluginContribution.options),
+                                        shellConfig =
+                                            ShellConfig.from(
+                                                pluginContribution,
+                                                appBaseUrl = config.appBaseUrl,
+                                                sidebarFactory = web.pages.sidebarFactory,
+                                            ),
                                     )
                                 val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
                                 val page =
@@ -298,9 +318,14 @@ internal class RouteRegistrar(
 
     private fun registerPluginRoutes(registry: RouteRegistry) {
         pluginContribution.routeRegistrations.forEach { registration ->
+            val httpRoute =
+                when (val route = registration.httpRoute) {
+                    is ContractRoute -> contract { routes += route }
+                    else -> route
+                }
             registry.register(
                 RegisteredRoute(
-                    registration.httpRoute,
+                    httpRoute,
                     RouteOwner.Plugin,
                     registration.group,
                     registration.pathPattern,
