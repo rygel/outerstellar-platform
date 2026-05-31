@@ -17,6 +17,7 @@ import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SessionRealm
+import io.github.rygel.outerstellar.platform.web.AdminSection
 import io.github.rygel.outerstellar.platform.web.AuthApi
 import io.github.rygel.outerstellar.platform.web.ComponentRoutes
 import io.github.rygel.outerstellar.platform.web.DevDashboardRoutes
@@ -239,44 +240,7 @@ internal class RouteRegistrar(
             this.security = adminSecurity
             routes += contractRoutes
         }
-        val adminHandler: RoutingHttpHandler =
-            if (pluginSections.isNotEmpty()) {
-                val adminAuthFilter = Filter { next ->
-                    SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
-                }
-                val pluginDashboardRoute =
-                    adminAuthFilter.then(
-                        "/admin/plugins" bind
-                            GET to
-                            { req ->
-                                val pluginRequestContext = RequestContext(req, sessionService = sec.sessionService)
-                                val pluginShellRenderer =
-                                    ShellRenderer(
-                                        pluginRequestContext,
-                                        appVersion = config.version,
-                                        shellConfig =
-                                            ShellConfig.from(
-                                                pluginContribution,
-                                                appBaseUrl = config.appBaseUrl,
-                                                sidebarFactory = web.pages.sidebarFactory,
-                                            ),
-                                    )
-                                val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
-                                val page =
-                                    Page(
-                                        shell,
-                                        PluginAdminDashboardPage(
-                                            cards = pluginSections.map { it.summaryCard },
-                                            diagnostics = pluginContribution.diagnostics(),
-                                        ),
-                                    )
-                                Response(Status.OK).body(web.runtime.templateRenderer(page))
-                            }
-                    )
-                routes(adminContract, pluginDashboardRoute)
-            } else {
-                adminContract
-            }
+        val adminHandler = buildAdminHandler(adminContract, sec, pluginSections)
         registry.register(
             RegisteredRoute(
                 adminHandler,
@@ -287,6 +251,47 @@ internal class RouteRegistrar(
                 "Admin dashboard",
             )
         )
+    }
+
+    private fun buildAdminHandler(
+        adminContract: RoutingHttpHandler,
+        sec: SecurityComponents,
+        pluginSections: List<AdminSection>,
+    ): RoutingHttpHandler {
+        if (pluginSections.isEmpty()) return adminContract
+        val adminAuthFilter = Filter { next ->
+            SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
+        }
+        val pluginDashboardRoute =
+            adminAuthFilter.then(
+                "/admin/plugins" bind
+                    GET to
+                    { req ->
+                        val pluginRequestContext = RequestContext(req, sessionService = sec.sessionService)
+                        val pluginShellRenderer =
+                            ShellRenderer(
+                                pluginRequestContext,
+                                appVersion = config.version,
+                                shellConfig =
+                                    ShellConfig.from(
+                                        pluginContribution,
+                                        appBaseUrl = config.appBaseUrl,
+                                        sidebarFactory = web.pages.sidebarFactory,
+                                    ),
+                            )
+                        val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
+                        val page =
+                            Page(
+                                shell,
+                                PluginAdminDashboardPage(
+                                    cards = pluginSections.map { it.summaryCard },
+                                    diagnostics = pluginContribution.diagnostics(),
+                                ),
+                            )
+                        Response(Status.OK).body(web.runtime.templateRenderer(page))
+                    }
+            )
+        return routes(adminContract, pluginDashboardRoute)
     }
 
     private fun registerKernelRoutes(registry: RouteRegistry) {
