@@ -297,11 +297,10 @@ class PluginContributionTest {
                 HostedAppContribution.from(plugin, PlatformMode.FullPlatformApp, pluginContext())
             }
 
-        assertEquals(
-            "Route * /other (Other route) is outside hosted app 'reports' ownership. " +
-                "Allowed prefixes: /reports, /plugin/reports",
-            error.message,
-        )
+        val message = error.message.orEmpty()
+        assert(message.contains("Route * /other (Other route) is outside hosted app 'reports' ownership")) { message }
+        assert(message.contains("Allowed prefixes: /reports, /plugin/reports")) { message }
+        assert(message.contains("Fix the pathPattern, update HostedAppManifest.ownership")) { message }
     }
 
     @Test
@@ -325,11 +324,10 @@ class PluginContributionTest {
                 HostedAppContribution.from(plugin, PlatformMode.FullPlatformApp, pluginContext())
             }
 
-        assertEquals(
-            "Route * / (Reports home) is outside hosted app 'reports' ownership. " +
-                "Allowed prefixes: /reports, /plugin/reports",
-            error.message,
-        )
+        val message = error.message.orEmpty()
+        assert(message.contains("Route * / (Reports home) is outside hosted app 'reports' ownership")) { message }
+        assert(message.contains("Allowed prefixes: /reports, /plugin/reports")) { message }
+        assert(message.contains("In PluginHostedApp mode, UI routes also get '/' ownership automatically")) { message }
     }
 
     @Test

@@ -2,7 +2,8 @@
 
 A Kotlin application platform for building plugin-hosted web and desktop products. The platform provides configuration, database migrations, authentication, session management, routing, and template rendering — plugins provide the product UI and business logic.
 
-If you are upgrading an existing hosted app, see **[MIGRATION.md](MIGRATION.md)** for the 1.6.x -> 3.6.4 migration path.
+If you are building a hosted app, start with the **[Plugin Author Guide](docs/features/plugin-system.md)**. If you are
+upgrading an existing hosted app, see **[MIGRATION.md](MIGRATION.md)** for the 1.6.x -> 3.6.4 migration path.
 
 ---
 
@@ -129,25 +130,30 @@ enum class PlatformMode {
 }
 ```
 
-#### Creating a Plugin
+#### Creating a Hosted App
 
 ```kotlin
-class MyPlugin : PlatformPlugin {
+class MyHostedApp : HostedApp {
     override val id = "my-app"
     override val mode = PlatformMode.PluginHostedApp
 
-    override fun includePlatformPages() = setOf(
-        PlatformPageSets.SETTINGS,
-        PlatformPageSets.SEARCH,
-    )
+    override fun contribute(context: HostedAppContributionContext) {
+        context.platformPages.include(PlatformPageSets.SETTINGS, PlatformPageSets.SEARCH)
+        context.routes.publicUi(myHomeRoute, "Home page", "/")
+        context.navigation.item("Home", "/", "home-line")
+    }
+}
 
-    override fun routeRegistrations(context: HostedAppContext) = listOf(
-        PluginRouteRegistration(myHomeRoute, RouteGroup.PublicUi, "Home page"),
-    )
+class MyHostedAppContractTest {
+    @Test
+    fun `contribution is valid`() {
+        val diagnostics = HostedAppContract.diagnostics(MyHostedApp(), testHostedAppContext())
+        assertEquals(listOf("/"), diagnostics.routes.map { it.pathPattern })
+    }
 }
 
 // Start the server
-val components = createServerComponents(plugin = MyPlugin())
+val components = createServerComponents(plugin = MyHostedApp())
 ```
 
 At startup, the route registry logs a table showing all routes, their owners, and any conflicts. If two owners claim the same path, the server fails fast with a descriptive error.
