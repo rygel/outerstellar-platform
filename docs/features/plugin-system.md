@@ -80,7 +80,7 @@ API, admin, and asset ownership remain explicit and continue to use their declar
 
 For SPI-only tests, use `HostedAppContext.forTesting(...)` from the plugin API module.
 
-For full-stack integration coverage, prefer the platform test harnesses such as `WebTest`, or boot the real app through `createServerComponents(plugin = ...)` instead of manually wiring each lower-level `createXxxComponents(...)` helper.
+For full-stack integration coverage, prefer the platform test harnesses such as `WebTest`, or boot the real app through `createServerComponents(plugin = ...)` instead of manually wiring each lower-level `createXxxComponents(...)` helper. Tests that own their config or database can use `createServerComponents(config = testConfig, plugin = ...)` so hosted-app migrations, route contribution, filters, and shell context all use the production assembly path.
 
 ## Registration
 
