@@ -219,6 +219,7 @@ class PluginContributionTest {
         assertEquals("Reports static assets", contribution.routeRegistrations[1].description)
         assertEquals("/plugins/reports/assets/*", contribution.routeRegistrations[1].pathPattern)
         assertEquals("GET", contribution.routeRegistrations[1].method)
+        assertEquals(listOf("/", "/reports", "/plugin/reports"), contribution.effectiveOwnership?.uiPrefixes)
         assertEquals(listOf(filter), contribution.filters)
         assertEquals(listOf(adminSection), contribution.adminSections)
         assertEquals(listOf(bannerProvider), contribution.bannerProviders)
@@ -245,7 +246,37 @@ class PluginContributionTest {
         assertEquals(2, diagnostics.capabilities.single { it.id == "routes" }.count)
         assertEquals(1, diagnostics.capabilities.single { it.id == "layout" }.count)
         assertEquals(2, diagnostics.capabilities.single { it.id == "assets" }.count)
-        assertEquals(listOf("/reports", "/plugin/reports"), diagnostics.ownership?.uiPrefixes)
+        assertEquals(listOf("/", "/reports", "/plugin/reports"), diagnostics.ownership?.uiPrefixes)
+        assertEquals("/reports", ShellConfig.from(contribution).appHomeUrl)
+    }
+
+    @Test
+    fun `plugin hosted app grants root ui ownership by default`() {
+        val plugin =
+            object : PlatformPlugin {
+                override val id = "reports"
+                override val appLabel = "Reports App"
+                override val mode = PlatformMode.PluginHostedApp
+
+                override fun contribute(context: HostedAppContributionContext) {
+                    context.routes.protectedUi(
+                        ("/" bindContract GET).to { _ -> Response(Status.OK) },
+                        "Reports home",
+                        "/",
+                    )
+                    context.routes.protectedUi(
+                        ("/dashboard" bindContract GET).to { _ -> Response(Status.OK) },
+                        "Reports dashboard",
+                        "/dashboard",
+                    )
+                }
+            }
+
+        val contribution = HostedAppContribution.from(plugin, PlatformMode.FullPlatformApp, pluginContext())
+
+        assertEquals(listOf("/", "/dashboard"), contribution.routeRegistrations.map { it.pathPattern })
+        assertEquals(listOf("/", "/reports", "/plugin/reports"), contribution.effectiveOwnership?.uiPrefixes)
+        assertEquals("/", ShellConfig.from(contribution).appHomeUrl)
     }
 
     @Test
@@ -266,11 +297,37 @@ class PluginContributionTest {
                 HostedAppContribution.from(plugin, PlatformMode.FullPlatformApp, pluginContext())
             }
 
-        assertEquals(
-            "Route * /other (Other route) is outside hosted app 'reports' ownership. " +
-                "Allowed prefixes: /reports, /plugin/reports",
-            error.message,
-        )
+        val message = error.message.orEmpty()
+        assert(message.contains("Route * /other (Other route) is outside hosted app 'reports' ownership")) { message }
+        assert(message.contains("Allowed prefixes: /reports, /plugin/reports")) { message }
+        assert(message.contains("Fix the pathPattern, update HostedAppManifest.ownership")) { message }
+    }
+
+    @Test
+    fun `full platform app still rejects root route without custom ownership`() {
+        val plugin =
+            object : PlatformPlugin {
+                override val id = "reports"
+                override val appLabel = "Reports App"
+
+                override fun contribute(context: HostedAppContributionContext) {
+                    context.routes.protectedUi(
+                        ("/" bindContract GET).to { _ -> Response(Status.OK) },
+                        "Reports home",
+                        "/",
+                    )
+                }
+            }
+
+        val error =
+            assertFailsWith<IllegalArgumentException> {
+                HostedAppContribution.from(plugin, PlatformMode.FullPlatformApp, pluginContext())
+            }
+
+        val message = error.message.orEmpty()
+        assert(message.contains("Route * / (Reports home) is outside hosted app 'reports' ownership")) { message }
+        assert(message.contains("Allowed prefixes: /reports, /plugin/reports")) { message }
+        assert(message.contains("In PluginHostedApp mode, UI routes also get '/' ownership automatically")) { message }
     }
 
     @Test

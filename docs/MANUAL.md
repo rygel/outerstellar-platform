@@ -7,7 +7,7 @@
 - **PostgreSQL 18** (via Podman/Docker or local install)
 - **Node.js** (for Tailwind CSS build)
 
-The project uses `outerstellar-framework` artifacts from GitHub Packages. Ensure your `settings.xml` includes the `github-rygel` server entry with a Personal Access Token.
+All Outerstellar-owned runtime modules, including `outerstellar-i18n`, build from this repository. GitHub Packages credentials are only needed for publishing workflows, not for normal local dependency resolution.
 
 ## Quick Start
 
@@ -31,6 +31,7 @@ The web app starts on `http://localhost:8080`. A first-boot admin user is create
 
 ```
 platform-core              Domain models, services, configuration
+outerstellar-i18n          ResourceBundle-backed runtime translation service
 platform-plugin-api        Hosted-app SPI and plugin-facing shell/admin DTOs
 platform-persistence-jdbi  JDBI repositories + Flyway migrations
 platform-security          Auth, permissions, OAuth, API keys
@@ -114,12 +115,12 @@ The platform uses JDBI as its persistence layer, implementing repository interfa
 
 ## Plugin Development
 
-### PlatformPlugin Interface
+### HostedApp Interface
 
 Hosted app integrations should depend on `outerstellar-platform-plugin-api`. That module contains `HostedApp`,
 `HostedAppContext`, `HostedAppContributionContext`, and the compatibility aliases under `io.github...platform.web`.
 
-Plugins implement `PlatformPlugin` and register as a Koin `single`:
+Plugins implement `HostedApp` and are passed to the platform launcher or tests through `createServerComponents`:
 
 ```kotlin
 class MyPlugin : HostedApp {
@@ -131,7 +132,12 @@ class MyPlugin : HostedApp {
         context.routes.protectedUi(myDashboardRoute(), "Dashboard", "/dashboard")
     }
 }
+
+val components = createServerComponents(plugin = MyPlugin())
 ```
+
+See the [Plugin Author Guide](features/plugin-system.md) for route ownership rules, `HostedAppContract` tests,
+full-stack hosted-app tests, and diagnostics.
 
 ### What Plugins Can Do
 
@@ -223,13 +229,13 @@ Message bundles in `platform-core/src/main/resources/`:
 
 Key convention: `web.*` for web UI, `swing.*` for desktop UI. Use `{0}` or `{name}` for parameter injection.
 
-The `i18n-validator-maven-plugin` validates key consistency across bundles at build time.
+The `outerstellar-i18n` module provides the runtime `I18nService`. The `i18n-validator-maven-plugin` validates key consistency across bundles at build time.
 
 ## Theming
 
-32 built-in themes defined in `themes.json` with color palettes (background, foreground, accent, success, danger, warning, etc.). Users select themes via the settings page; preference stored in `plt_users.theme`.
+The web UI exposes 32 built-in DaisyUI theme IDs through `ThemeCatalog`. Users select themes via the settings page; the preference is stored in `plt_users.theme`.
 
-Swing desktop uses FlatLaf with `ThemeManager` applying palette colors to `UIManager` defaults.
+Swing desktop uses FlatLaf with `ThemeManager` and `DesktopTheme` (`Dark`, `Light`, `Darcula`, `IntelliJ`, `macOS Dark`, `macOS Light`).
 
 ## Native Image
 
@@ -333,6 +339,8 @@ All enforced at `verify` phase:
 | SpotBugs | Bug detection |
 | Detekt | Kotlin static analysis |
 | Maven Enforcer | Dependency convergence, Java version |
+
+Kotlin companion objects can produce SpotBugs `MS_EXPOSE_REP` false positives on generated `...$Companion` classes. Fix real representation exposure first. If the warning remains on generated companion bytecode, add a narrow class-specific entry to `config/spotbugs-exclude.xml`; do not add package-wide exclusions for new code.
 
 Run all checks:
 

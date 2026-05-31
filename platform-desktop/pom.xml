@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>3.6.4</version>
+        <version>3.6.5</version>
 
     </parent>
 
@@ -45,10 +45,6 @@
             <groupId>com.miglayout</groupId>
             <artifactId>miglayout-swing</artifactId>
             <version>${miglayout.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-theme</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>

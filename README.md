@@ -2,12 +2,15 @@
 
 A Kotlin application platform for building plugin-hosted web and desktop products. The platform provides configuration, database migrations, authentication, session management, routing, and template rendering — plugins provide the product UI and business logic.
 
+If you are building a hosted app, start with the **[Plugin Author Guide](docs/features/plugin-system.md)**. If you are
+upgrading an existing hosted app, see **[MIGRATION.md](MIGRATION.md)** for the 1.6.x -> 3.6.4 migration path.
+
 ---
 
 ### Key Architectural Features
 
 - **Plugin Composition Model**: Plugins control what platform UI to include via `PlatformMode` (`FullPlatformApp`, `PluginHostedApp`, `HeadlessKernel`). Route ownership, conflict detection, and startup diagnostics come built-in.
-- **Multi-Module Architecture**: `platform-core`, `platform-plugin-api`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, `platform-desktop`, and `platform-seed` for clear separation of concerns.
+- **Multi-Module Architecture**: `outerstellar-i18n`, `platform-core`, `platform-plugin-api`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, `platform-desktop`, and `platform-seed` for clear separation of concerns.
 - **Transactional Outbox Pattern**: Ensures atomicity and reliability for background tasks and data synchronization.
 - **Observability**: Integrated with **OpenTelemetry** for distributed tracing and **Micrometer** for real-time metrics.
 - **Type-Safe Configuration**: Uses **Hoplite** for multi-environment configuration from YAML + env vars.
@@ -21,6 +24,7 @@ A Kotlin application platform for building plugin-hosted web and desktop product
 ### Project Structure
 
 - `platform-core`: Domain models, service interfaces, shared business logic, composition model types.
+- `outerstellar-i18n`: ResourceBundle-backed runtime translation service.
 - `platform-plugin-api`: Hosted-app SPI and plugin-facing DTOs for the composition model.
 - `platform-persistence-jdbi`: Database implementation using JDBI and Flyway migrations.
 - `platform-sync-client`: Shared DTOs and client logic for synchronization between components.
@@ -95,6 +99,16 @@ To run all tests:
 mvn test
 ```
 
+### Release process
+
+Releases are now **manual and version-confirmed** to avoid publishing the wrong version.
+
+1. Merge the release commit to `main` with the exact target version in `pom.xml` and a matching `CHANGELOG.md` section like `## [1.6.4]`.
+2. Run **Release and Publish** from `main`, enter `release_version`, then type the exact same version again in `confirm_release_version`.
+3. After that succeeds, run **Publish to Maven Central** from `main` with the same two inputs.
+
+Both workflows now fail unless they run from `main`, the entered version exactly matches the root Maven version, the version is not a `-SNAPSHOT`, the changelog contains that exact release heading, and CI has already succeeded on that exact commit. Maven Central also refuses to run until the matching GitHub release tag already exists.
+
 ---
 
 ### Web Architecture & Adding Routes
@@ -116,25 +130,30 @@ enum class PlatformMode {
 }
 ```
 
-#### Creating a Plugin
+#### Creating a Hosted App
 
 ```kotlin
-class MyPlugin : PlatformPlugin {
+class MyHostedApp : HostedApp {
     override val id = "my-app"
     override val mode = PlatformMode.PluginHostedApp
 
-    override fun includePlatformPages() = setOf(
-        PlatformPageSets.SETTINGS,
-        PlatformPageSets.SEARCH,
-    )
+    override fun contribute(context: HostedAppContributionContext) {
+        context.platformPages.include(PlatformPageSets.SETTINGS, PlatformPageSets.SEARCH)
+        context.routes.publicUi(myHomeRoute, "Home page", "/")
+        context.navigation.item("Home", "/", "home-line")
+    }
+}
 
-    override fun routeRegistrations(context: HostedAppContext) = listOf(
-        PluginRouteRegistration(myHomeRoute, RouteGroup.PublicUi, "Home page"),
-    )
+class MyHostedAppContractTest {
+    @Test
+    fun `contribution is valid`() {
+        val diagnostics = HostedAppContract.diagnostics(MyHostedApp(), testHostedAppContext())
+        assertEquals(listOf("/"), diagnostics.routes.map { it.pathPattern })
+    }
 }
 
 // Start the server
-val components = createServerComponents(plugin = MyPlugin())
+val components = createServerComponents(plugin = MyHostedApp())
 ```
 
 At startup, the route registry logs a table showing all routes, their owners, and any conflicts. If two owners claim the same path, the server fails fast with a descriptive error.

@@ -84,7 +84,7 @@
 
         </main>
         <footer class="flex items-center justify-between px-6 py-4 border-t border-base-content/5 bg-base-content/5 text-sm opacity-80">
-            <span>Powered by http4k, jOOQ, Flyway, Outerstellar i18n/theme, and HTMX.</span>
+            <span>Powered by http4k, jOOQ, Flyway, Outerstellar i18n, DaisyUI, and HTMX.</span>
             <div class="flex items-center gap-3 ml-auto">
                 <span class="opacity-60 text-xs">v%s</span>
                 <div id="footer-status"
@@ -281,6 +281,5 @@
 <script src="/platform.js?v=[CACHE-BUSTER]"></script>
 </body>
 </html>
-
 
 

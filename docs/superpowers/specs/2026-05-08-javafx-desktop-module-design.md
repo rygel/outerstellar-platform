@@ -48,7 +48,7 @@ platform-desktop-javafx/
 - `platform-sync-client`
 - `org.openjfx:javafx-controls:21`, `javafx-fxml:21`, `javafx-web:21`
 - `AtlantaFX` (CSS theme library)
-- `outerstellar-theme`, `outerstellar-i18n` (shared with Swing)
+- `outerstellar-i18n` (shared with Swing)
 - `koin-core-jvm`
 - `kotlinx-serialization-json-jvm`
 - `snakeyaml-engine`

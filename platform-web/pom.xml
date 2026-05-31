@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>3.6.4</version>
+        <version>3.6.5</version>
 
     </parent>
 
@@ -81,10 +81,6 @@
         <dependency>
             <groupId>gg.jte</groupId>
             <artifactId>jte-native-resources</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-theme</artifactId>
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>

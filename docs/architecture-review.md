@@ -30,14 +30,14 @@ PostgreSQL is the sole database engine for this platform. It provides robust pro
 
 ## Package root convention
 
-The project uses two package roots:
+The project uses:
 
 - `io.github.rygel.outerstellar.platform` — the project's own code
-- `com.outerstellar` — external Outerstellar libraries, consumed as Maven dependencies
+- `io.github.rygel.outerstellar.i18n` — the i18n runtime API package, preserved for compatibility after moving the artifact into this repository
 
-The `com.outerstellar` packages (`com.outerstellar:outerstellar-i18n` and `com.outerstellar:outerstellar-theme`) are external dependencies declared in the POM and resolved from the Maven repository. They are not vendored — no source copies exist in this project. The `com.outerstellar` package root should never contain project-owned source files.
+The `io.github.rygel.outerstellar.i18n` classes now live in the local `outerstellar-i18n` module. This package root is an intentional compatibility exception documented in ADR-0003.
 
-**Rule:** all project-owned code uses `io.github.rygel.outerstellar.platform`. The `com.outerstellar` namespace belongs to the external Outerstellar libraries and must not be used for project-owned classes.
+**Rule:** all new project-owned code uses `io.github.rygel.outerstellar.platform`, except for source that intentionally belongs to the compatibility-preserving `outerstellar-i18n` module.
 
 ## Areas for improvement
 

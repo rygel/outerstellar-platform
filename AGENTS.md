@@ -22,6 +22,7 @@ This project uses **synchronous blocking I/O** with a planned migration to **Jav
 
 ```
 platform-core              Domain models, services, configuration (AppConfig, RuntimeConfig), composition model types
+outerstellar-i18n          ResourceBundle-backed I18nService runtime module
 platform-plugin-api        Hosted-app SPI, plugin-facing DTOs, contribution contexts, facades
 platform-security          Auth, permissions, User/UserRepository, OAuth, API keys, JWT
 platform-persistence-jdbi  JDBI repositories + Flyway migrations
@@ -132,7 +133,7 @@ pwsh scripts/test.ps1 -TimeoutMinutes 10 -Modules platform-core
 # Full build excluding desktop modules (PowerShell)
 # NOTE: `-pl,!platform-desktop,!platform-desktop-javafx` does NOT work via PowerShell + cmd.exe
 # Use explicit module list instead:
-mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 
 # Run a specific test in a specific module (ALWAYS use -am to rebuild upstream modules)
 mvn -pl platform-web -am test -Dtest=HealthCheckIntegrationTest
@@ -158,7 +159,7 @@ mvn -pl platform-web test
 mvn -pl platform-web -am test
 
 # Full reactor build (always safe, no -am needed)
-mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 ```
 
 ### Desktop Tests in Podman
@@ -182,6 +183,15 @@ podman run --rm --network host `
   outerstellar-test-desktop
 ```
 
+### Dockerfile module list maintenance
+
+`docker/Dockerfile.build` has dependency-cache stages that copy only `pom.xml` files before the full source tree. Whenever the parent `pom.xml` module list changes, update **both** partial-POM copy lists in `Dockerfile.build`:
+
+- `deps` stage for web/JVM/native builds
+- `desktop-deps` stage for desktop test builds
+
+If a declared child module is missing from these partial copy lists, Maven fails during the cache warmup stage with `Child module /app/<module> does not exist`. Do not ignore that as harmless cache noise; fix the Dockerfile so the wrapper scripts stay clean and future builds use the intended dependency cache.
+
 ### Common Issue: Stale Bytecode
 
 After any `mvn clean install -DskipTests` that changes compiled production code in a dependency module, the dependent module's test classpath may hold stale classes. Always do `mvn clean test` when cross-module changes are involved.
@@ -190,9 +200,17 @@ After any `mvn clean install -DskipTests` that changes compiled production code 
 
 There are TWO `UserRole` enums — one in `platform-core` (model package) and one in `platform-security` (security package). Module dependencies cause `platform-web` and `platform-desktop` to sometimes resolve the wrong one during incremental compilation. Clean build (`mvn clean compile`) resolves this.
 
-### Modules that depend on external GitHub Packages
+### Common Issue: Kotlin companion SpotBugs false positives
 
-`outerstellar-framework` and `fragments-seo-core` are published to GitHub Packages (`maven.pkg.github.com/rygel/outerstellar-framework`). CI resolves them via `GH_PACKAGES_TOKEN` secret. On local machines, `~/.m2/settings.xml` must have a `github-rygel` server entry with a GitHub PAT. If a dependency can't resolve, check that the release is published (not SNAPSHOT).
+SpotBugs can report `MS_EXPOSE_REP` on Kotlin `Companion` classes even when a method returns a defensive copy. First fix the API if it really exposes mutable state. If the warning remains attached to a generated `...$Companion` class, add a narrow class-specific match to `config/spotbugs-exclude.xml`, following the existing `WebContext$Companion`, `RequestContext$Companion`, and `PasswordResetService$Companion` examples. Do not add package-wide SpotBugs exclusions for new code.
+
+### Common Issue: PowerShell UTF8NoBOM
+
+Windows PowerShell 5 does not support `Set-Content -Encoding UTF8NoBOM`. Scripts that need UTF-8 without BOM must use `[System.Text.UTF8Encoding]::new($false)` with `System.IO.File` APIs so they work in both Windows PowerShell and PowerShell 7.
+
+### External GitHub Packages
+
+All Outerstellar-owned runtime artifacts now build from this repository, including `outerstellar-i18n`, the validator library, and the validator Maven plugin. GitHub Packages credentials are only needed for publish workflows, not for normal local dependency resolution.
 
 ## Maven profile conventions
 
@@ -206,6 +224,13 @@ There are TWO `UserRole` enums — one in `platform-core` (model package) and on
   - `-Pruntime-prod` for production-like launch commands.
 - Database migration:
   - `-Pmigrate` runs standalone migration via `MigratorKt`.
+
+## Release workflow safeguards
+
+- `Release and Publish` is manual-only and must be dispatched from `main` with two matching inputs: `release_version` and `confirm_release_version`.
+- `Publish to Maven Central` is also manual-only and requires the same exact version confirmation from `main`.
+- Both workflows fail unless the requested version exactly matches the root `pom.xml` version, is not a `-SNAPSHOT`, has a matching `CHANGELOG.md` heading, and already passed CI on that exact `main` commit.
+- Maven Central additionally requires the matching GitHub release tag to already exist, and the GitHub release is only created after the GitHub Packages publish succeeds.
 
 ## Database schema rules
 
@@ -294,7 +319,7 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
   - `mvn -pl platform-web test -Dexec.skip=true`
 - **Full reactor must exclude desktop modules** when running locally:
   ```bash
-  mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+  mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
   ```
 - Desktop tests via Podman (see Podman section above).
 - Playwright E2E tests are tagged `@Tag("e2e")` and run in CI via Docker E2E workflow.
@@ -394,7 +419,7 @@ Before every commit, the following MUST be true:
 
 1. **All non-desktop tests pass locally.** Run the full reactor build:
    ```powershell
-   mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+   mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
    ```
    If any test fails, fix it before committing. Do not commit failing tests.
 

@@ -17,7 +17,7 @@
                 <i aria-hidden="true" class="ri-menu-line"></i>
             </label>
         </div>
-        <a href="/" class="flex items-center gap-2 font-bold text-lg text-accent mr-8 whitespace-nowrap">
+        <a href="${shell.appHomeUrl}" class="flex items-center gap-2 font-bold text-lg text-accent mr-8 whitespace-nowrap">
             <i aria-hidden="true" class="ri-planet-fill"></i>
             ${shell.appTitle}
         </a>
@@ -31,15 +31,17 @@
                     ${link.label}
                 </a>
             @endfor
-            <form action="/search" method="get" class="flex items-center px-4 lg:px-2 py-3 lg:py-0 lg:ml-auto">
-                <div class="join w-full lg:w-auto">
-                    <input type="text" name="q" placeholder="${shell.searchPlaceholder}"
-                           class="input input-bordered input-sm join-item w-full lg:w-48">
-                    <button type="submit" class="btn btn-ghost btn-sm join-item" aria-label="${shell.searchLabel}">
-                        <i aria-hidden="true" class="ri-search-line"></i>
-                    </button>
-                </div>
-            </form>
+            @if(shell.searchUrl != null)
+                <form action="${shell.searchUrl}" method="get" class="flex items-center px-4 lg:px-2 py-3 lg:py-0 lg:ml-auto">
+                    <div class="join w-full lg:w-auto">
+                        <input type="text" name="q" placeholder="${shell.searchPlaceholder}"
+                               class="input input-bordered input-sm join-item w-full lg:w-48">
+                        <button type="submit" class="btn btn-ghost btn-sm join-item" aria-label="${shell.searchLabel}">
+                            <i aria-hidden="true" class="ri-search-line"></i>
+                        </button>
+                    </div>
+                </form>
+            @endif
         </div>
         <div class="flex items-center gap-3 ml-auto">
             @if(shell.notificationsUrl != null)

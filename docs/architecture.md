@@ -215,7 +215,7 @@ This is meant to act as the default application shell for future pages.
 
 ### i18n
 
-The platform uses `outerstellar-i18n` for localization.
+The platform uses the in-repository `outerstellar-i18n` module for localization.
 
 Current bundles include:
 
@@ -226,18 +226,26 @@ Current bundles include:
 
 ### Theming
 
-The platform uses `outerstellar-theme` plus local theme selection.
+The web UI uses the platform-owned `ThemeCatalog` of DaisyUI theme IDs, while Swing desktop uses `DesktopTheme` + FlatLaf via `ThemeManager`.
 
-Current web theme choices:
+Current web theme choices come from `ThemeCatalog` and include:
 
 - dark
-- bootstrap
+- light
+- cupcake
+- dracula
+- nord
+- sunset
+- ...plus the rest of the 32 built-in DaisyUI themes
 
-Current Swing theme choices:
+Current Swing theme choices come from `DesktopTheme`:
 
-- FlatLaf light
 - FlatLaf dark
-- Outerstellar-themed dark palette
+- FlatLaf light
+- FlatLaf Darcula
+- FlatLaf IntelliJ
+- FlatLaf macOS Dark
+- FlatLaf macOS Light
 
 ## Build and quality tooling
 

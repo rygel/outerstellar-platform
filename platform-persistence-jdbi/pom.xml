@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>3.6.4</version>
+        <version>3.6.5</version>
 
     </parent>
 
@@ -79,6 +79,12 @@
             <artifactId>outerstellar-platform-core</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.http4k</groupId>
+            <artifactId>http4k-format-jackson</artifactId>
+            <version>${http4k.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

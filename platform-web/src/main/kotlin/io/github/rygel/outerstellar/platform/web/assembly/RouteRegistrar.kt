@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web.assembly
 
 import io.github.rygel.outerstellar.platform.AppConfig
+import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.composition.RegisteredRoute
 import io.github.rygel.outerstellar.platform.composition.RouteGroup
 import io.github.rygel.outerstellar.platform.composition.RouteOwner
@@ -16,6 +17,7 @@ import io.github.rygel.outerstellar.platform.security.ApiKeyRealm
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SessionRealm
+import io.github.rygel.outerstellar.platform.web.AdminSection
 import io.github.rygel.outerstellar.platform.web.AuthApi
 import io.github.rygel.outerstellar.platform.web.ComponentRoutes
 import io.github.rygel.outerstellar.platform.web.DevDashboardRoutes
@@ -32,6 +34,8 @@ import io.github.rygel.outerstellar.platform.web.SyncApi
 import io.github.rygel.outerstellar.platform.web.UserAdminApi
 import io.github.rygel.outerstellar.platform.web.UserAdminRoutes
 import io.github.rygel.outerstellar.platform.web.VoteApi
+import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
+import org.http4k.contract.ContractRoute
 import org.http4k.contract.contract
 import org.http4k.contract.openapi.ApiInfo
 import org.http4k.contract.openapi.v3.OpenApi3
@@ -200,6 +204,11 @@ internal class RouteRegistrar(
 
     private fun registerAdminRoutes(registry: RouteRegistry) {
         val sec = security
+        val includedPages = pluginContribution.includedPlatformPages
+        val mountPlatformAdmin =
+            pluginContribution.mode != PlatformMode.PluginHostedApp || PlatformPageSets.ADMIN in includedPages
+        val mountDevDashboard =
+            pluginContribution.mode != PlatformMode.PluginHostedApp || PlatformPageSets.DEV_DASHBOARD in includedPages
         val adminSecurity =
             object : Security {
                 override val filter = Filter { next ->
@@ -207,11 +216,9 @@ internal class RouteRegistrar(
                 }
             }
         val pluginSections = pluginContribution.adminSections
-        val adminContract = contract {
-            renderer = OpenApi3(ApiInfo("${pluginContribution.appLabel} Admin", "v1.0"), KotlinxSerialization)
-            descriptionPath = "/admin/openapi.json"
-            this.security = adminSecurity
-            routes +=
+        val contractRoutes = mutableListOf<ContractRoute>()
+        if (mountDevDashboard) {
+            contractRoutes +=
                 DevDashboardRoutes(
                         persistence.outboxRepository,
                         core.messageCache,
@@ -220,43 +227,20 @@ internal class RouteRegistrar(
                         config.devDashboardEnabled,
                     )
                     .routes
-            routes +=
-                UserAdminRoutes(web.pages.adminPageFactory, web.runtime.templateRenderer, sec.userAdminService).routes
-            pluginSections.forEach { section -> routes += section.route }
         }
-        val adminHandler: RoutingHttpHandler =
-            if (pluginSections.isNotEmpty()) {
-                val adminAuthFilter = Filter { next ->
-                    SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
-                }
-                val pluginDashboardRoute =
-                    adminAuthFilter.then(
-                        "/admin/plugins" bind
-                            GET to
-                            { req ->
-                                val pluginRequestContext = RequestContext(req, sessionService = sec.sessionService)
-                                val pluginShellRenderer =
-                                    ShellRenderer(
-                                        pluginRequestContext,
-                                        appVersion = config.version,
-                                        shellConfig = ShellConfig(pluginOptions = pluginContribution.options),
-                                    )
-                                val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
-                                val page =
-                                    Page(
-                                        shell,
-                                        PluginAdminDashboardPage(
-                                            cards = pluginSections.map { it.summaryCard },
-                                            diagnostics = pluginContribution.diagnostics(),
-                                        ),
-                                    )
-                                Response(Status.OK).body(web.runtime.templateRenderer(page))
-                            }
-                    )
-                routes(adminContract, pluginDashboardRoute)
-            } else {
-                adminContract
-            }
+        if (mountPlatformAdmin) {
+            contractRoutes +=
+                UserAdminRoutes(web.pages.adminPageFactory, web.runtime.templateRenderer, sec.userAdminService).routes
+        }
+        pluginSections.forEach { section -> contractRoutes += section.route }
+        if (contractRoutes.isEmpty()) return
+        val adminContract = contract {
+            renderer = OpenApi3(ApiInfo("${pluginContribution.appLabel} Admin", "v1.0"), KotlinxSerialization)
+            descriptionPath = "/admin/openapi.json"
+            this.security = adminSecurity
+            routes += contractRoutes
+        }
+        val adminHandler = buildAdminHandler(adminContract, sec, pluginSections)
         registry.register(
             RegisteredRoute(
                 adminHandler,
@@ -267,6 +251,47 @@ internal class RouteRegistrar(
                 "Admin dashboard",
             )
         )
+    }
+
+    private fun buildAdminHandler(
+        adminContract: RoutingHttpHandler,
+        sec: SecurityComponents,
+        pluginSections: List<AdminSection>,
+    ): RoutingHttpHandler {
+        if (pluginSections.isEmpty()) return adminContract
+        val adminAuthFilter = Filter { next ->
+            SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
+        }
+        val pluginDashboardRoute =
+            adminAuthFilter.then(
+                "/admin/plugins" bind
+                    GET to
+                    { req ->
+                        val pluginRequestContext = RequestContext(req, sessionService = sec.sessionService)
+                        val pluginShellRenderer =
+                            ShellRenderer(
+                                pluginRequestContext,
+                                appVersion = config.version,
+                                shellConfig =
+                                    ShellConfig.from(
+                                        pluginContribution,
+                                        appBaseUrl = config.appBaseUrl,
+                                        sidebarFactory = web.pages.sidebarFactory,
+                                    ),
+                            )
+                        val shell = pluginShellRenderer.shell("Plugin Dashboard", "/admin/plugins")
+                        val page =
+                            Page(
+                                shell,
+                                PluginAdminDashboardPage(
+                                    cards = pluginSections.map { it.summaryCard },
+                                    diagnostics = pluginContribution.diagnostics(),
+                                ),
+                            )
+                        Response(Status.OK).body(web.runtime.templateRenderer(page))
+                    }
+            )
+        return routes(adminContract, pluginDashboardRoute)
     }
 
     private fun registerKernelRoutes(registry: RouteRegistry) {
@@ -298,9 +323,14 @@ internal class RouteRegistrar(
 
     private fun registerPluginRoutes(registry: RouteRegistry) {
         pluginContribution.routeRegistrations.forEach { registration ->
+            val httpRoute =
+                when (val route = registration.httpRoute) {
+                    is ContractRoute -> contract { routes += route }
+                    else -> route
+                }
             registry.register(
                 RegisteredRoute(
-                    registration.httpRoute,
+                    httpRoute,
                     RouteOwner.Plugin,
                     registration.group,
                     registration.pathPattern,

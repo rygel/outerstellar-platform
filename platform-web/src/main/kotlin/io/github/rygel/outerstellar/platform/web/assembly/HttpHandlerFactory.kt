@@ -42,10 +42,6 @@ internal class HttpHandlerFactory(
         val adminHandlers = registry.handlers(RouteGroup.Admin)
         val staticHandlers = registry.handlers(RouteGroup.Static)
 
-        val filteredAdminHandler =
-            Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
-                .then(routes(adminHandlers))
-
         val metricsHandler =
             Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
                 .then { Response(Status.OK).body(Metrics.registry.scrape()) }
@@ -65,8 +61,8 @@ internal class HttpHandlerFactory(
         unfiltered += staticHandlers
 
         val appRoutes = mutableListOf<RoutingHttpHandler>()
-        appRoutes += routes(publicUiHandlers)
-        appRoutes += authenticatedFilter.then(routes(protectedUiHandlers))
+        routesIfPresent(publicUiHandlers)?.let(appRoutes::add)
+        routesIfPresent(protectedUiHandlers)?.let { appRoutes += authenticatedFilter.then(it) }
         appRoutes +=
             TOTPRoutes(
                     sec.authService,
@@ -78,7 +74,12 @@ internal class HttpHandlerFactory(
                 .routes
         appRoutes += TOTPApiRoutes(sec.authService, sec.totpService, sec.sessionService).routes
         appRoutes += apiHandlers
-        appRoutes += "/" bind filteredAdminHandler
+        if (adminHandlers.isNotEmpty()) {
+            val filteredAdminHandler =
+                Filter { next -> SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next)) }
+                    .then(routes(adminHandlers))
+            appRoutes += "/" bind filteredAdminHandler
+        }
 
         val baseApp = routes(unfiltered + appRoutes)
         return FilterChainFactory(config, persistence, security, web, pluginContribution).build().then(baseApp)
@@ -86,4 +87,7 @@ internal class HttpHandlerFactory(
 
     private fun RouteRegistry.handlers(group: RouteGroup): List<RoutingHttpHandler> =
         byGroup(group).mapNotNull { it.httpRoute as? RoutingHttpHandler }
+
+    private fun routesIfPresent(handlers: List<RoutingHttpHandler>): RoutingHttpHandler? =
+        handlers.takeIf { it.isNotEmpty() }?.let(::routes)
 }

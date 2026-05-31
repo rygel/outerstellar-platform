@@ -81,7 +81,7 @@
         <label for="sidebar-drawer" class="drawer-overlay"></label>
         <aside class="menu bg-base-200 w-56 min-h-full border-r border-base-300 flex flex-col">
             <div class="p-4 border-b border-base-content/5">
-                <a href="/" class="flex items-center gap-2 text-xl font-extrabold text-accent uppercase tracking-wider">
+                <a href="${shell.appHomeUrl}" class="flex items-center gap-2 text-xl font-extrabold text-accent uppercase tracking-wider">
                     <i aria-hidden="true" class="ri-planet-fill"></i>
                     ${shell.appTitle}
                 </a>

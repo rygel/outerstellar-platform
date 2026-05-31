@@ -145,4 +145,44 @@ class NativeResourceDriftTest {
             assertTrue(false, "Resource entries regenerated — review diff and commit")
         }
     }
+
+    @Test
+    fun `flyway jackson-copied extensions are registered for reflection`() {
+        assertTrue(metadataFile.isFile, "reachability-metadata.json must exist")
+
+        val reflection = mapper.readTree(metadataFile)["reflection"]
+        assertTrue(reflection != null && reflection.isArray, "reflection array must exist")
+
+        val reflectionByType = reflection.filter { it["type"]?.isTextual == true }.associateBy { it["type"].asText() }
+        val requiredTypes =
+            setOf(
+                "org.flywaydb.core.api.migration.baseline.BaselineMigrationConfigurationExtension",
+                "org.flywaydb.core.internal.command.clean.CleanModeConfigurationExtension",
+                "org.flywaydb.core.internal.command.clean.CleanModel",
+                "org.flywaydb.core.internal.command.clean.SchemaModel",
+                "org.flywaydb.core.internal.publishing.PublishingConfigurationExtension",
+                "org.flywaydb.database.postgresql.PostgreSQLConfigurationExtension",
+            )
+
+        val missing = requiredTypes - reflectionByType.keys
+        assertTrue(missing.isEmpty(), "Flyway configuration extensions missing native reflection: $missing")
+
+        val jacksonCopiedTypes =
+            setOf(
+                "org.flywaydb.core.api.migration.baseline.BaselineMigrationConfigurationExtension",
+                "org.flywaydb.core.internal.command.clean.CleanModeConfigurationExtension",
+                "org.flywaydb.core.internal.command.clean.CleanModel",
+                "org.flywaydb.core.internal.command.clean.SchemaModel",
+                "org.flywaydb.core.internal.publishing.PublishingConfigurationExtension",
+                "org.flywaydb.database.postgresql.PostgreSQLConfigurationExtension",
+                "org.flywaydb.database.postgresql.TransactionalModel",
+            )
+        val notEnumerable = jacksonCopiedTypes.filterNot {
+            reflectionByType[it]?.get("allPublicMethods")?.asBoolean(false) == true
+        }
+        assertTrue(
+            notEnumerable.isEmpty(),
+            "Flyway Jackson DTOs must expose public methods in native image: $notEnumerable",
+        )
+    }
 }

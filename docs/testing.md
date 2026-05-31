@@ -266,6 +266,12 @@ podman run --rm --network host `
     outerstellar-test-desktop
 ```
 
+### Dockerfile dependency-cache stages
+
+The desktop wrapper builds `docker/Dockerfile.build --target desktop-test`. That Dockerfile has partial-POM dependency-cache stages which copy `pom.xml` files before the full source tree.
+
+When the Maven module list in the parent `pom.xml` changes, update every partial-POM copy list in `docker/Dockerfile.build`, including the `desktop-deps` stage. Otherwise the cache warmup command can fail with `Child module /app/<module> does not exist` before the real test stage runs. Treat that as a Dockerfile maintenance bug, even if the later full-source stage still passes.
+
 ## http4k Testing Modules
 
 The project uses four http4k testing modules for assertion quality and template verification:
@@ -341,32 +347,32 @@ See [Desktop Testing](#desktop-testing). Use Podman containers exclusively.
 ### Full reactor (non-desktop modules)
 
 ```powershell
-mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 ```
 
 ### Single module
 
 ```powershell
-mvn -pl platform-web test
-mvn -pl platform-persistence-jdbi test
+mvn -pl platform-web -am test
+mvn -pl platform-persistence-jdbi -am test
 ```
 
 ### Specific test class
 
 ```powershell
-mvn -pl platform-web test -Dtest=HealthCheckIntegrationTest
+mvn -pl platform-web -am test -Dtest=HealthCheckIntegrationTest
 ```
 
 ### Skip CSS build (when npm hangs)
 
 ```powershell
-mvn -pl platform-web test -Dexec.skip=true
+mvn -pl platform-web -am test -Dexec.skip=true
 ```
 
 ### Fast compile (skip quality checks)
 
 ```powershell
-mvn -pl platform-web compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
+mvn -pl platform-web -am compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
 ```
 
 ### Desktop tests in Podman

@@ -43,9 +43,9 @@ The `DesktopSyncEngine` (platform-sync-client module) handles:
 
 ### Theming
 
-- FlatLaf-based with 32 DaisyUI theme colors
-- ThemeManager applies FlatLaf themes + Swing component overrides
-- Light/dark mode switching at runtime
+- FlatLaf-based with six built-in desktop themes (`Dark`, `Light`, `Darcula`, `IntelliJ`, `macOS Dark`, `macOS Light`)
+- ThemeManager applies FlatLaf themes consistently across mounted windows and dialogs
+- Runtime theme switching across the desktop UI
 - RemixIcon integration with SVG rendering
 
 ## Testing

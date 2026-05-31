@@ -2,6 +2,15 @@ name: Publish to Maven Central
 
 on:
   workflow_dispatch:
+    inputs:
+      release_version:
+        description: Exact release version from pom.xml and CHANGELOG.md (for example 1.6.4)
+        required: true
+        type: string
+      confirm_release_version:
+        description: Type the exact release version again to confirm
+        required: true
+        type: string
 
 permissions: {}
 
@@ -11,6 +20,7 @@ jobs:
     environment: maven-central
     permissions:
       contents: read
+      actions: read
 
     steps:
       - name: Checkout code
@@ -30,6 +40,63 @@ jobs:
           server-password: CENTRAL_PASSWORD
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Guard Maven Central publish request
+        run: |
+          set -euo pipefail
+
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Publish to Maven Central must run from main. Current ref: ${GITHUB_REF}"
+            exit 1
+          fi
+
+          if ! [[ "${EXPECTED_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::release_version must be plain semver like 1.6.4. Got: ${EXPECTED_VERSION}"
+            exit 1
+          fi
+
+          if [ "${CONFIRM_VERSION}" != "${EXPECTED_VERSION}" ]; then
+            echo "::error::confirm_release_version must exactly match release_version."
+            exit 1
+          fi
+
+          PROJECT_VERSION="$(mvn -q -N help:evaluate -Dexpression=project.version -DforceStdout)"
+          PROJECT_VERSION="${PROJECT_VERSION##*$'\n'}"
+
+          if [[ "${PROJECT_VERSION}" == *-SNAPSHOT ]]; then
+            echo "::error::Refusing to publish SNAPSHOT version ${PROJECT_VERSION} to Maven Central."
+            exit 1
+          fi
+
+          if [ "${PROJECT_VERSION}" != "${EXPECTED_VERSION}" ]; then
+            echo "::error::pom.xml version ${PROJECT_VERSION} does not match requested release ${EXPECTED_VERSION}."
+            exit 1
+          fi
+
+          if ! grep -Fq "## [${PROJECT_VERSION}]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md does not contain a section for ${PROJECT_VERSION}."
+            exit 1
+          fi
+
+          if ! gh release view "v${PROJECT_VERSION}" > /dev/null 2>&1; then
+            echo "::error::GitHub release v${PROJECT_VERSION} does not exist. Run Release and Publish first."
+            exit 1
+          fi
+
+          if ! gh run list \
+            --workflow "CI" \
+            --branch main \
+            --json headSha,conclusion \
+            --limit 50 \
+            --jq ".[] | select(.headSha == \"${GITHUB_SHA}\" and .conclusion == \"success\") | .headSha" \
+            | grep -q .; then
+            echo "::error::No successful CI run was found for ${GITHUB_SHA} on main."
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPECTED_VERSION: ${{ inputs.release_version }}
+          CONFIRM_VERSION: ${{ inputs.confirm_release_version }}
 
       - name: Set up Node.js 20
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0

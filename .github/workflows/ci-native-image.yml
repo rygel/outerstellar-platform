@@ -6,6 +6,7 @@ on:
     paths:
       - 'docker/Dockerfile.build'
       - 'platform-web/**'
+      - 'outerstellar-i18n/**'
       - 'platform-core/**'
       - 'platform-security/**'
       - 'platform-persistence-jdbi/**'
@@ -17,6 +18,7 @@ on:
     paths:
       - 'docker/Dockerfile.build'
       - 'platform-web/**'
+      - 'outerstellar-i18n/**'
       - 'platform-core/**'
       - 'platform-security/**'
       - 'platform-persistence-jdbi/**'

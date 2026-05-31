@@ -8,6 +8,7 @@ import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.SessionRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.service.EmailService
+import io.github.rygel.outerstellar.platform.service.NoOpEmailService
 
 class SecurityComponents(
     val jwtService: JwtService,
@@ -22,6 +23,32 @@ class SecurityComponents(
     val sessionService: SessionService,
     val userAdminService: UserAdminService,
 )
+
+@Deprecated(
+    "Use createSecurityComponents with an explicit emailService parameter.",
+    ReplaceWith(
+        "createSecurityComponents(config, userRepository, auditRepository, resetRepository, apiKeyRepository, NoOpEmailService(), oauthRepository, sessionRepository)"
+    ),
+)
+fun createSecurityComponents(
+    config: AppConfig,
+    userRepository: UserRepository,
+    auditRepository: AuditRepository? = null,
+    resetRepository: PasswordResetRepository? = null,
+    apiKeyRepository: ApiKeyRepository? = null,
+    oauthRepository: OAuthRepository? = null,
+    sessionRepository: SessionRepository? = null,
+): SecurityComponents =
+    createSecurityComponents(
+        config = config,
+        userRepository = userRepository,
+        auditRepository = auditRepository,
+        resetRepository = resetRepository,
+        apiKeyRepository = apiKeyRepository,
+        emailService = NoOpEmailService(),
+        oauthRepository = oauthRepository,
+        sessionRepository = sessionRepository,
+    )
 
 fun createSecurityComponents(
     config: AppConfig,

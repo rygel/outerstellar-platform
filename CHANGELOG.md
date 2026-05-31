@@ -9,6 +9,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.5] – 2026-05-31
+
+### Added
+
+- **Hosted app authoring improvements** — Improved developer experience for plugin-hosted app configuration and authoring.
+- **Config-driven hosted app server tests** — Support for configuration-driven integration tests for hosted app servers (#410).
+- **Plugin-hosted app service separation** — Platform services separated from default UI for plugin-hosted apps, allowing finer-grained control over which platform capabilities are exposed (#376, #409).
+- **I18n module moved into platform** — Migrated `outerstellar-i18n` into the platform monorepo for unified versioning and releases (#412).
+- **Validator migrated in-repo** — Migrated the i18n validator library and Maven plugin into the repository, cleaning stale external dependencies (#405).
+
+### Changed
+
+- **Plugin-hosted app composition** — Plugin-hosted apps can now selectively include platform UI pages independent of platform services (#409).
+- **Release version safeguards** — CI release workflow now validates CHANGELOG entry, SNAPSHOT status, duplicate tag, and CI success before publishing (#406).
+
+### Fixed
+
+- **Issue 407 follow-up** — Recovered follow-up changes for issue 407 (#411).
+
+---
+
+## [3.6.4] – 2026-05-28
+
+---
+
 ## [1.6.3] – 2026-05-28
 
 ### Added

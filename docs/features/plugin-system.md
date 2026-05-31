@@ -1,73 +1,191 @@
-# Plugin System
+# Plugin Author Guide
 
-## Overview
+Hosted apps extend the platform through the `outerstellar-platform-plugin-api` module. New plugins should implement
+`HostedApp`; `PlatformPlugin` remains only as a compatibility alias for older integrations.
 
-Hosted apps extend the platform via the `HostedApp` interface. `PlatformPlugin` remains as a compatibility alias for older integrations, but `HostedApp` and `HostedAppContext` are the primary API names. The public SPI now ships in the `outerstellar-platform-plugin-api` module so hosted apps do not need to depend on `platform-web`.
+For upgrade notes from the older plugin model, see [MIGRATION.md](../../MIGRATION.md).
 
-Hosted apps can contribute:
-- routes and filters
-- shell navigation, admin sections, banners, layout replacement, and assets
-- i18n/text overrides and template overrides
-- database migrations through `HostedApp.migrations`
+## Dependency
 
-## HostedApp Interface
+Plugin modules should depend on the public SPI instead of `platform-web`:
+
+```xml
+<dependency>
+    <groupId>io.github.rygel</groupId>
+    <artifactId>outerstellar-platform-plugin-api</artifactId>
+    <version>${outerstellar-platform.version}</version>
+</dependency>
+```
+
+Only use `platform-web` in an application launcher or integration-test module that boots the real host with
+`createServerComponents`.
+
+## Minimal Hosted App
 
 ```kotlin
-interface HostedApp {
-    val id: String
-    val appLabel: String
-    val manifest: HostedAppManifest
-    val mode: PlatformMode
-    val migrations: PluginMigrations?
+import io.github.rygel.outerstellar.platform.composition.PlatformMode
+import io.github.rygel.outerstellar.platform.plugin.HostedApp
+import io.github.rygel.outerstellar.platform.plugin.HostedAppContributionContext
+import org.http4k.contract.bindContract
+import org.http4k.contract.meta
+import org.http4k.core.Method.GET
+import org.http4k.core.Request
+import org.http4k.core.Response
+import org.http4k.core.Status
 
-    fun contribute(context: HostedAppContributionContext) {}
-    fun routeRegistrations(context: HostedAppContext): List<PluginRouteRegistration> = emptyList()
-    fun filters(context: HostedAppContext): List<Filter> = emptyList()
-    fun adminSections(context: HostedAppContext): List<AdminSection> = emptyList()
-    fun bannerProviders(context: HostedAppContext): List<BannerProvider> = emptyList()
-    fun includePlatformPages(): Set<PlatformPageSets> = emptySet()
-    fun layoutRenderer(context: HostedAppContext): PluginLayoutRenderer? = null
+class ReportsApp : HostedApp {
+    override val id = "reports"
+    override val appLabel = "Reports"
+    override val mode = PlatformMode.PluginHostedApp
+
+    override fun contribute(context: HostedAppContributionContext) {
+        val home =
+            "/" meta { summary = "Reports home" } bindContract GET to
+                { _: Request -> Response(Status.OK).body("Reports") }
+
+        context.routes.publicUi(home, "Reports home", "/")
+        context.navigation.item("Reports", "/", "bar-chart")
+    }
 }
 ```
 
-## Plugin Context
+Prefer the typed `contribute(context)` API for new code. It groups the extension points in one place:
 
-`HostedAppContext` is the primary SPI context. `PluginContext` remains a compatibility alias to the same type and provides access to stable plugin-facing facades:
-- `app` (`config` compatibility alias) — safe app info only: `version`, `appBaseUrl`, `devMode`, `registrationEnabled`
-- `users` (`userRepository` alias) — `currentUser(request)`, `findById`, `findByUsername`, `findByEmail`
-- `analytics` — `identify`, `track`, `page`
-- `notifications` (`notificationService` alias) — create/list/count/mark/delete user notifications
-- `rendering` (`renderer` alias) — template renderer plus `renderShell(shell, bodyHtml)`
-- `security` (`apiKeyService` / `oauthService` aliases) — API key CRUD and OAuth user resolution
+| Need | Use |
+|---|---|
+| UI/API/admin routes | `context.routes.publicUi`, `protectedUi`, `api`, `admin` |
+| Static files | `context.routes.staticAssets`, `context.assets.stylesheet`, `context.assets.script` |
+| Shell navigation | `context.navigation.item` |
+| Platform pages | `context.platformPages.include(...)` |
+| Admin pages | `context.admin.section(...)` |
+| Banners | `context.banners.provider(...)` |
+| Layout replacement | `context.layout.replaceWith(...)` |
 
-Convenience helpers remain on the context itself:
-- `currentUser(request)` — authenticated user
-- `renderShell(shell, bodyHtml)` — wrap plugin HTML in the platform shell
+The older override methods such as `routeRegistrations(context)` still work, but `contribute(context)` is easier to
+test and keeps route ownership metadata beside the route.
 
-## Template Overrides
+## Route Ownership
 
-Plugins can override JTE templates by providing a `templateOverrides()` map. The key is the template name (e.g. `"LayoutHead.kte"`), the value is the full classpath to the replacement. A `PluginTemplateRenderer` composites the base renderer with overrides.
+Every contributed route must stay inside the prefixes declared by `HostedAppManifest.ownership`.
 
-## Database Migrations
+By default, plugin `reports` owns:
 
-Plugins declare migrations with `HostedApp.migrations`:
-- `location: String` — classpath location for Flyway migrations
-- `historyTable: String` — defaults to `flyway_plugin_history`
-- `migrationNames: List<String>` — optional explicit filenames for native-image classpath extraction
+| Group | Default prefixes |
+|---|---|
+| UI | `/reports`, `/plugin/reports` |
+| API | `/api/reports`, `/api/plugin/reports`, `/api/v1/reports`, `/api/v1/plugin/reports` |
+| Admin | `/admin/reports` |
+| Static assets | `/plugins/reports/assets` |
 
-Plugin migrations run after host migrations in a separate Flyway instance. Baseline version is 0 so V1 migrations execute on fresh databases.
+`PluginHostedApp` mode additionally grants `/` to UI routes only. That lets the hosted app own `/`, `/dashboard`, and
+other product UI routes. API, admin, and static asset routes do not get root ownership automatically.
+
+Use custom ownership only when the defaults do not match your product:
+
+```kotlin
+override val manifest =
+    HostedAppManifest(
+        id = id,
+        appLabel = appLabel,
+        ownership =
+            HostedAppOwnership(
+                uiPrefixes = listOf("/"),
+                apiPrefixes = listOf("/api/reports"),
+                adminPrefixes = listOf("/admin/reports"),
+                assetPrefixes = listOf("/assets/reports"),
+            ),
+    )
+```
+
+## Migrations
+
+Plugins with database tables declare isolated Flyway migrations:
 
 ```kotlin
 override val migrations =
     PluginMigrations(
-        location = "classpath:db/migration/my-plugin",
-        historyTable = "flyway_my_plugin_history",
+        location = "classpath:db/migration/reports",
+        historyTable = "flyway_reports_history",
         migrationNames = listOf("V1__init", "V2__seed"),
     )
 ```
 
-Older plugins can keep overriding `migrationLocation`, `migrationHistoryTable`, and `migrationNames` for now, but those compatibility properties are deprecated in favor of `migrations`.
+Plugin migrations run after platform migrations in a separate Flyway instance. Version numbers do not conflict with
+platform migrations because the history table is separate.
 
-## Registration
+## SPI Contract Tests
 
-The server wires a single hosted app into application startup and collects its contributions once. Ownership validation ensures hosted-app routes and assets stay inside the prefixes declared by `HostedAppManifest.ownership`.
+Use `HostedAppContract` for fast plugin tests that do not boot the full platform. This catches ownership mistakes and
+returns the same diagnostics shown by the host.
+
+```kotlin
+class ReportsAppContractTest {
+    @Test
+    fun `plugin contribution is valid`() {
+        val diagnostics = HostedAppContract.diagnostics(ReportsApp(), testHostedAppContext())
+
+        assertEquals("reports", diagnostics.hostedAppId)
+        assertEquals(listOf("/"), diagnostics.routes.map { it.pathPattern })
+        assertEquals(1, diagnostics.capabilities.single { it.id == "navigation" }.count)
+    }
+}
+```
+
+Build the test context with `HostedAppContext.forTesting(rendering = ..., users = ..., security = ...)`. Stub only the
+facades your plugin uses. The in-repo `HostedAppContractTest` is the canonical copyable example.
+
+Recommended contract assertions:
+
+- route path patterns are the paths you expect
+- diagnostics show the expected capabilities
+- invalid routes fail with a useful ownership message
+- migration metadata uses a plugin-specific history table
+
+## Full-Stack Hosted-App Tests
+
+Use full-stack tests when you need real routing, filters, persistence, migrations, auth, or shell rendering:
+
+```kotlin
+val components =
+    createServerComponents(
+        config = testConfig.copy(platformMode = PlatformMode.PluginHostedApp),
+        plugin = ReportsApp(),
+    )
+
+try {
+    val response = components.app.http!!(Request(GET, "/"))
+    assertThat(response, hasStatus(Status.OK))
+} finally {
+    components.persistence.close()
+}
+```
+
+Do not manually call lower-level factories such as `createPersistenceComponents`, `createSecurityComponents`, and
+`createWebComponents` in plugin tests unless the test is specifically about those internals. `createServerComponents`
+is the production assembly path and keeps migrations, filters, routes, shell options, and hosted-app context aligned.
+
+## Diagnostics
+
+Startup validates plugin ownership before routes are mounted. Common failures:
+
+| Message | Meaning | Fix |
+|---|---|---|
+| `pathPattern starting with '/'` | The route metadata is not an absolute path | Pass an absolute `pathPattern` to the route helper |
+| `outside hosted app ... ownership` | The route or asset is outside manifest prefixes | Move the path, update `HostedAppManifest.ownership`, or use the matching route group |
+| `Route conflicts detected` | A plugin route has the same method/path as a mounted platform route | Move the plugin route or exclude the colliding platform page set |
+
+The plugin admin dashboard also exposes `HostedAppDiagnostics`: routes, capabilities, ownership prefixes, included
+platform pages, stylesheets, and scripts.
+
+## Public APIs To Prefer
+
+To keep plugins isolated from platform internals, prefer:
+
+- `HostedApp`, `HostedAppContributionContext`, `HostedAppContext`
+- `HostedAppContract` for SPI-only tests
+- `PluginMigrations` for plugin schema changes
+- `createServerComponents(config, plugin)` for full-stack tests and launchers
+- plugin-facing facades on `HostedAppContext`: `users`, `analytics`, `notifications`, `rendering`, `security`
+
+Avoid depending on internal page factories, route registrars, repository implementations, `WebTest`, or low-level
+component factories from plugin modules.
