@@ -40,5 +40,10 @@ typealias PluginSecurity = io.github.rygel.outerstellar.platform.plugin.PluginSe
 
 typealias HostedApp = io.github.rygel.outerstellar.platform.plugin.HostedApp
 
-/** Compatibility name for existing integrations. New hosted apps should implement HostedApp. */
+/**
+ * Compatibility name for older integrations.
+ *
+ * New hosted apps should implement [HostedApp] directly from `outerstellar-platform-plugin-api`.
+ */
+@Deprecated("Use HostedApp directly.", ReplaceWith("HostedApp"))
 interface PlatformPlugin : io.github.rygel.outerstellar.platform.plugin.HostedApp

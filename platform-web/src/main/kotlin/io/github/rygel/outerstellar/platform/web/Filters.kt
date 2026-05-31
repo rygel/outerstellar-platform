@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform.web
 
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
-import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
 import io.github.rygel.outerstellar.platform.model.ThemeCatalog
@@ -277,25 +276,13 @@ object Filters {
         userRepository: UserRepository,
         appVersion: String = "dev",
         jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
-        pluginOptions: PluginOptions = PluginOptions(),
+        shellConfig: ShellConfig = ShellConfig(),
         cookieSecure: Boolean = true,
-        appBaseUrl: String = "",
-        bannerProviders: List<BannerProvider> = emptyList(),
         sessionService: SessionService? = null,
     ): Filter = Filter { next: HttpHandler ->
         { request ->
             val requestContext = RequestContext(request, userRepository, jwtService, sessionService)
-            val shellRenderer =
-                ShellRenderer(
-                    requestContext,
-                    devDashboardEnabled,
-                    appVersion,
-                    ShellConfig(
-                        pluginOptions = pluginOptions,
-                        appBaseUrl = appBaseUrl,
-                        bannerProviders = bannerProviders,
-                    ),
-                )
+            val shellRenderer = ShellRenderer(requestContext, devDashboardEnabled, appVersion, shellConfig)
             val contextUser =
                 try {
                     requestContext.user

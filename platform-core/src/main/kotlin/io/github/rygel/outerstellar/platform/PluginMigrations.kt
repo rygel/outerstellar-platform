@@ -2,6 +2,15 @@ package io.github.rygel.outerstellar.platform
 
 const val DEFAULT_PLUGIN_MIGRATION_HISTORY_TABLE = "flyway_plugin_history"
 
+/**
+ * Flyway migration metadata contributed by a hosted app.
+ *
+ * @property location classpath location containing the hosted app's Flyway migrations
+ * @property historyTable dedicated Flyway history table for the hosted app; defaults to
+ *   [DEFAULT_PLUGIN_MIGRATION_HISTORY_TABLE]
+ * @property migrationNames optional explicit migration filenames, mainly used when native-image packaging needs the
+ *   migration resources to be enumerated up front
+ */
 class PluginMigrations(
     val location: String,
     val historyTable: String = DEFAULT_PLUGIN_MIGRATION_HISTORY_TABLE,

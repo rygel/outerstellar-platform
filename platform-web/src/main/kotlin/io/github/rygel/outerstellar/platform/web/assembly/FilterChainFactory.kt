@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.di.WebComponents
 import io.github.rygel.outerstellar.platform.plugin.HostedAppContribution
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.web.Filters
+import io.github.rygel.outerstellar.platform.web.ShellConfig
 import io.github.rygel.outerstellar.platform.web.analyticsPageViewFilter
 import io.github.rygel.outerstellar.platform.web.etagCachingFilter
 import io.github.rygel.outerstellar.platform.web.rateLimitFilter
@@ -52,10 +53,12 @@ internal class FilterChainFactory(
                         userRepository,
                         config.version,
                         jwtService,
-                        pluginContribution.options,
+                        ShellConfig.from(
+                            pluginContribution,
+                            appBaseUrl = config.appBaseUrl,
+                            sidebarFactory = web.pages.sidebarFactory,
+                        ),
                         cookieSecure = config.sessionCookieSecure,
-                        appBaseUrl = config.appBaseUrl,
-                        bannerProviders = pluginContribution.bannerProviders,
                         sessionService = security.sessionService,
                     )
                 )
