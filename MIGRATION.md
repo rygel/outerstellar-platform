@@ -125,6 +125,19 @@ val context = HostedAppContext.forTesting(rendering = rendering, users = users, 
 
 For integration coverage against the real platform wiring, prefer the platform test harnesses such as `WebTest`, or boot through `createServerComponents(plugin = ...)` instead of manually wiring every `createXxxComponents(...)` function.
 
+When a test already owns an `AppConfig` or a test database, pass it directly:
+
+```kotlin
+val server = createServerComponents(
+    config = testConfig.copy(platformMode = PlatformMode.PluginHostedApp),
+    plugin = MyHostedApp(),
+)
+
+val response = server.app.http!!(Request(GET, "/my-app"))
+```
+
+Close `server.persistence` when the test is done.
+
 ## Factory wiring guidance
 
 The lower-level `createSecurityComponents(...)`, `createCoreComponents(...)`, and `createWebComponents(...)` functions are still available, but they are assembly seams, not the preferred application entrypoint.

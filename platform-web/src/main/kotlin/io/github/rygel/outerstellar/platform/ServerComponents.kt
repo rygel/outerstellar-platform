@@ -31,7 +31,15 @@ class ServerComponents(
  */
 fun createServerComponents(plugin: HostedApp? = null): ServerComponents {
     val config = AppConfig.fromEnvironment()
+    return createServerComponents(config = config, plugin = plugin)
+}
 
+/**
+ * Preferred application entrypoint when the caller already owns configuration, such as full-stack hosted-app tests that
+ * run against a test database. Production startup should usually use [createServerComponents] without a config
+ * argument.
+ */
+fun createServerComponents(config: AppConfig, plugin: HostedApp? = null): ServerComponents {
     val persistence = loadPersistenceBootstrap().create(config = config, pluginMigrations = plugin?.migrations)
     val emailService = createConfiguredEmailService(config)
 
