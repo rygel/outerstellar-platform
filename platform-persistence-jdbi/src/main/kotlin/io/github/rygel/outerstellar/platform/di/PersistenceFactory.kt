@@ -107,6 +107,13 @@ fun createPersistenceComponents(config: AppConfig, pluginMigrations: PluginMigra
     )
 }
 
+@Deprecated(
+    "Use createPersistenceComponents(config, PluginMigrations?) instead.",
+    ReplaceWith("createPersistenceComponents(config, pluginMigrationSource?.let { PluginMigrations(location = it) })"),
+)
+fun createPersistenceComponents(config: AppConfig, pluginMigrationSource: String?): PersistenceComponents =
+    createPersistenceComponents(config, pluginMigrationSource?.let { PluginMigrations(location = it) })
+
 private fun runMigrations(ds: DataSource, config: AppConfig, pluginMigrations: PluginMigrations?) {
     if (!config.runtime.flywayEnabled) return
     migrate(ds)
