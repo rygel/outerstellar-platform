@@ -9,7 +9,7 @@ If you are upgrading an existing hosted app, see **[MIGRATION.md](MIGRATION.md)*
 ### Key Architectural Features
 
 - **Plugin Composition Model**: Plugins control what platform UI to include via `PlatformMode` (`FullPlatformApp`, `PluginHostedApp`, `HeadlessKernel`). Route ownership, conflict detection, and startup diagnostics come built-in.
-- **Multi-Module Architecture**: `platform-core`, `platform-plugin-api`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, `platform-desktop`, and `platform-seed` for clear separation of concerns.
+- **Multi-Module Architecture**: `outerstellar-i18n`, `platform-core`, `platform-plugin-api`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, `platform-desktop`, and `platform-seed` for clear separation of concerns.
 - **Transactional Outbox Pattern**: Ensures atomicity and reliability for background tasks and data synchronization.
 - **Observability**: Integrated with **OpenTelemetry** for distributed tracing and **Micrometer** for real-time metrics.
 - **Type-Safe Configuration**: Uses **Hoplite** for multi-environment configuration from YAML + env vars.
@@ -23,6 +23,7 @@ If you are upgrading an existing hosted app, see **[MIGRATION.md](MIGRATION.md)*
 ### Project Structure
 
 - `platform-core`: Domain models, service interfaces, shared business logic, composition model types.
+- `outerstellar-i18n`: ResourceBundle-backed runtime translation service.
 - `platform-plugin-api`: Hosted-app SPI and plugin-facing DTOs for the composition model.
 - `platform-persistence-jdbi`: Database implementation using JDBI and Flyway migrations.
 - `platform-sync-client`: Shared DTOs and client logic for synchronization between components.

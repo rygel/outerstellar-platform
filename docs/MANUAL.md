@@ -7,7 +7,7 @@
 - **PostgreSQL 18** (via Podman/Docker or local install)
 - **Node.js** (for Tailwind CSS build)
 
-The build still resolves the external `outerstellar-i18n` artifact from GitHub Packages. Ensure your `settings.xml` includes the `github-rygel` server entry with a Personal Access Token until that remaining dependency is migrated. The validator library and Maven plugin now build from this repository.
+All Outerstellar-owned runtime modules, including `outerstellar-i18n`, build from this repository. GitHub Packages credentials are only needed for publishing workflows, not for normal local dependency resolution.
 
 ## Quick Start
 
@@ -31,6 +31,7 @@ The web app starts on `http://localhost:8080`. A first-boot admin user is create
 
 ```
 platform-core              Domain models, services, configuration
+outerstellar-i18n          ResourceBundle-backed runtime translation service
 platform-plugin-api        Hosted-app SPI and plugin-facing shell/admin DTOs
 platform-persistence-jdbi  JDBI repositories + Flyway migrations
 platform-security          Auth, permissions, OAuth, API keys
@@ -223,7 +224,7 @@ Message bundles in `platform-core/src/main/resources/`:
 
 Key convention: `web.*` for web UI, `swing.*` for desktop UI. Use `{0}` or `{name}` for parameter injection.
 
-The `i18n-validator-maven-plugin` validates key consistency across bundles at build time.
+The `outerstellar-i18n` module provides the runtime `I18nService`. The `i18n-validator-maven-plugin` validates key consistency across bundles at build time.
 
 ## Theming
 
@@ -333,6 +334,8 @@ All enforced at `verify` phase:
 | SpotBugs | Bug detection |
 | Detekt | Kotlin static analysis |
 | Maven Enforcer | Dependency convergence, Java version |
+
+Kotlin companion objects can produce SpotBugs `MS_EXPOSE_REP` false positives on generated `...$Companion` classes. Fix real representation exposure first. If the warning remains on generated companion bytecode, add a narrow class-specific entry to `config/spotbugs-exclude.xml`; do not add package-wide exclusions for new code.
 
 Run all checks:
 

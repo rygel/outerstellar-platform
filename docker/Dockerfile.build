@@ -29,6 +29,9 @@ RUN apt-get update && \
 
 COPY pom.xml .
 COPY platform-jte-extensions/pom.xml platform-jte-extensions/
+COPY outerstellar-i18n/pom.xml outerstellar-i18n/
+COPY outerstellar-i18n-validator/pom.xml outerstellar-i18n-validator/
+COPY outerstellar-i18n-validator-maven-plugin/pom.xml outerstellar-i18n-validator-maven-plugin/
 COPY platform-core/pom.xml platform-core/
 COPY platform-plugin-api/pom.xml platform-plugin-api/
 COPY platform-security/pom.xml platform-security/
@@ -122,6 +125,9 @@ RUN apt-get update && \
 WORKDIR /app
 COPY pom.xml .
 COPY platform-jte-extensions/pom.xml platform-jte-extensions/
+COPY outerstellar-i18n/pom.xml outerstellar-i18n/
+COPY outerstellar-i18n-validator/pom.xml outerstellar-i18n-validator/
+COPY outerstellar-i18n-validator-maven-plugin/pom.xml outerstellar-i18n-validator-maven-plugin/
 COPY platform-core/pom.xml platform-core/
 COPY platform-plugin-api/pom.xml platform-plugin-api/
 COPY platform-security/pom.xml platform-security/

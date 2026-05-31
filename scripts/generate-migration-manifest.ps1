@@ -21,5 +21,6 @@ if ($parentDir -and -not (Test-Path -LiteralPath $parentDir)) {
     New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
 }
 
-$names | Set-Content -LiteralPath $OutputFile -Encoding UTF8NoBOM
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllLines([System.IO.Path]::GetFullPath($OutputFile), [string[]]$names, $utf8NoBom)
 Write-Host "Generated manifest with $($names.Count) migrations -> $OutputFile"
