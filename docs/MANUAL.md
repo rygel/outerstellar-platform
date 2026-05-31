@@ -115,12 +115,12 @@ The platform uses JDBI as its persistence layer, implementing repository interfa
 
 ## Plugin Development
 
-### PlatformPlugin Interface
+### HostedApp Interface
 
 Hosted app integrations should depend on `outerstellar-platform-plugin-api`. That module contains `HostedApp`,
 `HostedAppContext`, `HostedAppContributionContext`, and the compatibility aliases under `io.github...platform.web`.
 
-Plugins implement `PlatformPlugin` and register as a Koin `single`:
+Plugins implement `HostedApp` and are passed to the platform launcher or tests through `createServerComponents`:
 
 ```kotlin
 class MyPlugin : HostedApp {
@@ -132,7 +132,12 @@ class MyPlugin : HostedApp {
         context.routes.protectedUi(myDashboardRoute(), "Dashboard", "/dashboard")
     }
 }
+
+val components = createServerComponents(plugin = MyPlugin())
 ```
+
+See the [Plugin Author Guide](features/plugin-system.md) for route ownership rules, `HostedAppContract` tests,
+full-stack hosted-app tests, and diagnostics.
 
 ### What Plugins Can Do
 

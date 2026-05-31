@@ -134,13 +134,15 @@ data class HostedAppContribution(
                         RouteGroup.Static -> effectiveOwnership.assetPrefixes
                         else -> effectiveOwnership.uiPrefixes
                     }
-                requirePathOwnedByManifest(manifest, registration.pathPattern, prefixes) {
+                requirePathOwnedByManifest(manifest, registration.pathPattern, prefixes, registration.group) {
                     "Route ${registration.method} ${registration.pathPattern} (${registration.description})"
                 }
             }
 
             (assets.stylesheets + assets.scripts).forEach { asset ->
-                requirePathOwnedByManifest(manifest, asset, effectiveOwnership.assetPrefixes) { "Asset $asset" }
+                requirePathOwnedByManifest(manifest, asset, effectiveOwnership.assetPrefixes, RouteGroup.Static) {
+                    "Asset $asset"
+                }
             }
         }
 
@@ -148,17 +150,28 @@ data class HostedAppContribution(
             manifest: HostedAppManifest,
             path: String,
             prefixes: List<String>,
+            group: RouteGroup,
             subject: () -> String,
         ) {
             require(path.startsWith("/")) {
-                "${subject()} must provide a pathPattern starting with '/' so hosted app ownership can be validated."
+                "${subject()} must provide an absolute pathPattern starting with '/' so hosted app ownership can be " +
+                    "validated. Example: context.routes.publicUi(route, \"Page\", \"/${manifest.id}/page\")."
             }
             require(
                 prefixes.any { prefix ->
                     prefix == "/" || path == prefix || path.startsWith("$prefix/") || path.startsWith("$prefix/*")
                 }
             ) {
-                "${subject()} is outside hosted app '${manifest.id}' ownership. Allowed prefixes: ${prefixes.joinToString()}"
+                val rootHint =
+                    if (group == RouteGroup.PublicUi || group == RouteGroup.ProtectedUi) {
+                        " In PluginHostedApp mode, UI routes also get '/' ownership automatically."
+                    } else {
+                        " Root '/' ownership is only granted to UI routes in PluginHostedApp mode; API, admin, and " +
+                            "static asset routes must use their explicit manifest prefixes."
+                    }
+                "${subject()} is outside hosted app '${manifest.id}' ownership for ${group.name}. " +
+                    "Allowed prefixes: ${prefixes.joinToString()}. Fix the pathPattern, update " +
+                    "HostedAppManifest.ownership, or register the route in the matching route group.$rootHint"
             }
         }
     }
