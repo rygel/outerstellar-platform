@@ -215,7 +215,7 @@ This is meant to act as the default application shell for future pages.
 
 ### i18n
 
-The platform uses `outerstellar-i18n` for localization.
+The platform uses the in-repository `outerstellar-i18n` module for localization.
 
 Current bundles include:
 

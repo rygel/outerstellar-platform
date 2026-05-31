@@ -7,6 +7,7 @@ on:
       - 'docker/**'
       - 'platform-jte-extensions/**'
       - 'platform-plugin-api/**'
+      - 'outerstellar-i18n/**'
       - 'platform-web/**'
       - 'pom.xml'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - 'docker/**'
       - 'platform-jte-extensions/**'
       - 'platform-plugin-api/**'
+      - 'outerstellar-i18n/**'
       - 'platform-web/**'
       - 'pom.xml'
   workflow_dispatch:
@@ -121,7 +123,7 @@ jobs:
         run: |
           mvn install -N -q
           mvn install \
-            -pl platform-jte-extensions,platform-core,platform-plugin-api,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web \
+            -pl platform-jte-extensions,outerstellar-i18n,platform-core,platform-plugin-api,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web \
             -DskipTests -Dexec.skip=true -q \
             -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true \
             -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true \

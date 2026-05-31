@@ -34,6 +34,10 @@
         <Bug pattern="MS_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.i18n.Language$Companion"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+    </Match>
+    <Match>
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.model(\..*)?"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>

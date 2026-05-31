@@ -38,6 +38,7 @@
 
     <modules>
         <module>platform-jte-extensions</module>
+        <module>outerstellar-i18n</module>
         <module>outerstellar-i18n-validator</module>
         <module>outerstellar-i18n-validator-maven-plugin</module>
         <module>platform-core</module>
@@ -57,7 +58,6 @@
         <java.version>21</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
-        <outerstellar.version>1.0.14</outerstellar.version>
         <http4k.version>6.48.0.0</http4k.version>
         <netty.version>4.2.14.Final</netty.version>
         <flyway.version>11.20.3</flyway.version>
@@ -132,26 +132,6 @@
         <runtime.dev.mode>false</runtime.dev.mode>
     </properties>
 
-    <repositories>
-        <repository>
-            <id>central</id>
-            <name>Maven Central</name>
-            <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-        <repository>
-            <id>github-rygel</id>
-            <name>Rygel GitHub Packages</name>
-            <url>https://maven.pkg.github.com/rygel/outerstellar-framework</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <layout>default</layout>
-        </repository>
-    </repositories>
-
     <distributionManagement>
         <repository>
             <id>github-rygel</id>
@@ -184,6 +164,11 @@
             <dependency>
                 <groupId>io.github.rygel</groupId>
                 <artifactId>outerstellar-i18n-validator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.rygel</groupId>
+                <artifactId>outerstellar-i18n</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -339,11 +324,6 @@
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.rygel</groupId>
-                <artifactId>outerstellar-i18n</artifactId>
-                <version>${outerstellar.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jdbi</groupId>
