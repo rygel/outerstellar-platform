@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.infra
 
+import gg.jte.CodeResolver
 import gg.jte.TemplateEngine
 import gg.jte.html.OwaspHtmlTemplateOutput
 import gg.jte.output.StringOutput
@@ -40,32 +41,47 @@ fun createRenderer(runtime: RuntimeConfig = RuntimeConfig()): TemplateRenderer {
             val sourceDir =
                 System.getProperty("jte.sourceDir") ?: System.getenv("JTE_SOURCE_DIR") ?: System.getProperty("user.dir")
             val projectDirectory = Path.of(sourceDir)
-            val sourceTemplates = projectDirectory.resolve(Path.of("web", "src", "main", "jte"))
-            val generatedTemplateClasses = projectDirectory.resolve(Path.of("web", "target", "jte-classes"))
+            val sourceTemplates = findSourceTemplateDirectory(projectDirectory)
+            val generatedTemplateClasses = findGeneratedTemplateDirectory(projectDirectory, sourceTemplates)
 
-            if (Files.isDirectory(sourceTemplates)) {
-                val directoryResolver = DirectoryCodeResolver(sourceTemplates)
-                val classpathFallback = ResourceCodeResolver(".")
-                val resolver = CompositeCodeResolver(directoryResolver, classpathFallback)
-                TemplateEngine.create(
-                    resolver,
-                    generatedTemplateClasses,
-                    gg.jte.ContentType.Html,
-                    applicationClassLoader,
-                )
-            } else {
-                TemplateEngine.create(
-                    ResourceCodeResolver("."),
-                    generatedTemplateClasses,
-                    gg.jte.ContentType.Html,
-                    applicationClassLoader,
-                )
-            }
+            val resolver =
+                if (sourceTemplates != null) {
+                    val directoryResolver = DirectoryCodeResolver(sourceTemplates)
+                    val classpathFallback = ResourceCodeResolver(".")
+                    CompositeCodeResolver(directoryResolver, classpathFallback)
+                } else {
+                    ResourceCodeResolver(".")
+                }
+
+            TemplateEngine.create(
+                resolver,
+                generatedTemplateClasses,
+                gg.jte.ContentType.Html,
+                applicationClassLoader,
+            ) to resolver
         } else {
             null
         }
 
-    return if (isProduction) renderUsingPrecompiledRegistry() else renderUsing { requireNotNull(templateEngine) }
+    return if (isProduction) {
+        renderUsingPrecompiledRegistry()
+    } else {
+        val (engine, resolver) = requireNotNull(templateEngine)
+        renderUsingDevEngineWithPrecompiledFallback(engine, resolver)
+    }
+}
+
+private fun findSourceTemplateDirectory(projectDirectory: Path): Path? =
+    listOf(
+            projectDirectory.resolve(Path.of("src", "main", "jte")),
+            projectDirectory.resolve(Path.of("platform-web", "src", "main", "jte")),
+            projectDirectory.resolve(Path.of("web", "src", "main", "jte")),
+        )
+        .firstOrNull(Files::isDirectory)
+
+private fun findGeneratedTemplateDirectory(projectDirectory: Path, sourceTemplates: Path?): Path {
+    val templateProjectDirectory = sourceTemplates?.parent?.parent?.parent
+    return (templateProjectDirectory ?: projectDirectory).resolve(Path.of("target", "jte-classes"))
 }
 
 private fun ensureTemplateClassesLoaded() {
@@ -94,6 +110,19 @@ private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer 
     } catch (e: IllegalStateException) {
         logger.error("JTE render failed for template {}: {}", templateName, e.message)
         throw ViewNotFound(viewModel)
+    }
+}
+
+internal fun renderUsingDevEngineWithPrecompiledFallback(
+    templateEngine: TemplateEngine,
+    resolver: CodeResolver,
+): TemplateRenderer = { viewModel: ViewModel ->
+    val templateName = "${viewModel.template()}.kte"
+
+    if (!resolver.exists(templateName) && JteClassRegistry.getTemplateClass(viewModel.template()) != null) {
+        renderUsingPrecompiledRegistry()(viewModel)
+    } else {
+        renderUsing { templateEngine }(viewModel)
     }
 }
 
