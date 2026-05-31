@@ -118,21 +118,6 @@ platform migrations because the history table is separate.
 Use `HostedAppContract` for fast plugin tests that do not boot the full platform. This catches ownership mistakes and
 returns the same diagnostics shown by the host.
 
-### Verify My Plugin Pattern
-
-Every hosted app should keep one cheap SPI contract test next to the plugin module. The test should collect
-`HostedAppDiagnostics` through `HostedAppContract`, then assert the externally visible contract the platform will
-mount:
-
-- expected route path patterns and route groups
-- expected shell navigation entries or other capabilities
-- expected platform page sets
-- plugin migration metadata, when the plugin owns tables
-- at least one invalid-route assertion when the plugin uses custom ownership
-
-This test does not need PostgreSQL, JTE templates, or the web server. It should depend only on
-`outerstellar-platform-plugin-api` plus the test libraries the plugin already uses.
-
 ```kotlin
 class ReportsAppContractTest {
     @Test
@@ -143,37 +128,11 @@ class ReportsAppContractTest {
         assertEquals(listOf("/"), diagnostics.routes.map { it.pathPattern })
         assertEquals(1, diagnostics.capabilities.single { it.id == "navigation" }.count)
     }
-
-    @Test
-    fun `plugin rejects routes outside its ownership`() {
-        val app = ReportsAppWithBadRoute(pathPattern = "/wrong")
-
-        val error = assertFailsWith<IllegalArgumentException> {
-            HostedAppContract.collect(app, testHostedAppContext())
-        }
-
-        assertTrue(error.message.orEmpty().contains("outside hosted app 'reports' ownership"))
-    }
 }
 ```
 
 Build the test context with `HostedAppContext.forTesting(rendering = ..., users = ..., security = ...)`. Stub only the
-facades your plugin uses. If the plugin only registers routes and navigation, the stubs can return empty values or
-`error("Not used")` for methods that should not be reached.
-
-Keep the helper local to the plugin test source set:
-
-```kotlin
-private fun testHostedAppContext(): HostedAppContext =
-    HostedAppContext.forTesting(
-        rendering = testRendering(),
-        users = testUsers(),
-        security = testSecurity(),
-    )
-```
-
-The in-repo `HostedAppContractTest` is the canonical copyable example when the stubs need to implement every facade
-method explicitly.
+facades your plugin uses. The in-repo `HostedAppContractTest` is the canonical copyable example.
 
 Recommended contract assertions:
 
