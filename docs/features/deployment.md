@@ -20,19 +20,6 @@ mvn clean install -DskipTests
 mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
 ```
 
-## Release Channels
-
-Releases are intentionally staged.
-
-1. **GitHub release and GitHub Packages first**: run the **Release and Publish** workflow from `main` with matching
-   `release_version` and `confirm_release_version` inputs. This is the normal first publication step.
-2. **Maven Central later**: run **Publish to Maven Central** only when the same release is ready for Central
-   distribution.
-
-The two workflows have separate guards. A GitHub-first release can be complete even when Maven Central has not been
-run yet. If a manually dispatched workflow fails because the requested version does not match the root `pom.xml`
-version, treat that as the release safety check doing its job.
-
 ## Run
 
 ### Web Server

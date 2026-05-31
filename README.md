@@ -103,23 +103,11 @@ mvn test
 
 Releases are now **manual and version-confirmed** to avoid publishing the wrong version.
 
-The normal sequence is **GitHub first, Maven Central later**:
+1. Merge the release commit to `main` with the exact target version in `pom.xml` and a matching `CHANGELOG.md` section like `## [1.6.4]`.
+2. Run **Release and Publish** from `main`, enter `release_version`, then type the exact same version again in `confirm_release_version`.
+3. After that succeeds, run **Publish to Maven Central** from `main` with the same two inputs.
 
-1. Merge the release commit to `main` with the exact target version in `pom.xml` and a matching `CHANGELOG.md` section
-   like `## [3.6.5]`.
-2. Run **Release and Publish** from `main`, enter `release_version`, then type the exact same version again in
-   `confirm_release_version`.
-   This creates the GitHub release and publishes the GitHub Packages artifacts.
-3. Stop here when the intent is a GitHub-only release.
-4. Run **Publish to Maven Central** from `main` later, only when the release should be promoted to Maven Central, using
-   the same two version inputs.
-
-Both workflows fail unless they run from `main`, the entered version exactly matches the root Maven version, the version
-is not a `-SNAPSHOT`, the changelog contains that exact release heading, and CI has already succeeded on that exact
-commit. Maven Central also refuses to run until the matching GitHub release tag already exists.
-
-A failed manual dispatch with the wrong version is a successful guardrail, not a broken release. For example, if the
-root `pom.xml` says `3.6.5` and the workflow is dispatched with `1.6.5`, the guard must fail before publishing.
+Both workflows now fail unless they run from `main`, the entered version exactly matches the root Maven version, the version is not a `-SNAPSHOT`, the changelog contains that exact release heading, and CI has already succeeded on that exact commit. Maven Central also refuses to run until the matching GitHub release tag already exists.
 
 ---
 
