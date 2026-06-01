@@ -6,9 +6,11 @@ import gg.jte.output.StringOutput
 import gg.jte.resolve.DirectoryCodeResolver
 import gg.jte.runtime.Template
 import io.github.rygel.outerstellar.platform.RuntimeConfig
+import io.github.rygel.outerstellar.platform.extension.PrecompiledJteTemplateRegistry
 import io.github.rygel.outerstellar.platform.web.JteClassRegistry
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.ServiceLoader
 import org.http4k.core.ContentType
 import org.http4k.core.Response
 import org.http4k.core.Status
@@ -27,14 +29,19 @@ fun TemplateRenderer.render(viewModel: ViewModel, status: Status = Status.OK): R
 fun createRenderer(runtime: RuntimeConfig = RuntimeConfig()): TemplateRenderer {
     val isProduction = System.getProperty("jte.production") == "true" || System.getenv("JTE_PRODUCTION") == "true"
     val doPreload = isProduction || runtime.jtePreloadEnabled
+    val precompiledRegistries by lazy { discoverPrecompiledTemplateRegistries() }
 
     if (doPreload) {
-        logger.info("Production mode: JteClassRegistry has {} template classes", JteClassRegistry.allClasses.size)
-        ensureTemplateClassesLoaded()
+        logger.info(
+            "Production mode: discovered {} JTE registries with {} template classes",
+            precompiledRegistries.size,
+            precompiledRegistries.sumOf { it.allClasses.size },
+        )
+        ensureTemplateClassesLoaded(precompiledRegistries)
     }
 
     if (isProduction) {
-        return renderUsingPrecompiledRegistry()
+        return renderUsingPrecompiledRegistry(precompiledRegistries)
     }
 
     val applicationClassLoader = Thread.currentThread().contextClassLoader
@@ -78,10 +85,31 @@ internal fun resolveDevTemplatePaths(baseDirectory: Path): DevTemplatePaths {
         )
 }
 
-private fun ensureTemplateClassesLoaded() {
+private object PlatformPrecompiledJteTemplateRegistry : PrecompiledJteTemplateRegistry {
+    override val allClasses: List<Class<*>>
+        get() = JteClassRegistry.allClasses
+
+    override fun getTemplateClass(templateName: String): Class<*>? = JteClassRegistry.getTemplateClass(templateName)
+}
+
+internal fun discoverPrecompiledTemplateRegistries(
+    classLoader: ClassLoader = Thread.currentThread().contextClassLoader
+): List<PrecompiledJteTemplateRegistry> {
+    val discovered = ServiceLoader.load(PrecompiledJteTemplateRegistry::class.java, classLoader).toList()
+    val discoveredPlatformRegistry = discovered.any { registry ->
+        registry::class.java.name == "io.github.rygel.outerstellar.platform.web.JteClassRegistryProvider"
+    }
+    return if (discoveredPlatformRegistry) {
+        discovered
+    } else {
+        listOf(PlatformPrecompiledJteTemplateRegistry) + discovered
+    }
+}
+
+private fun ensureTemplateClassesLoaded(registries: List<PrecompiledJteTemplateRegistry>) {
     var loaded = 0
     var failed = 0
-    for (className in JteClassRegistry.allClasses.map { it.name }) {
+    for (className in registries.flatMap { it.allClasses }.map { it.name }.distinct()) {
         try {
             Class.forName(className)
             loaded++
@@ -107,24 +135,44 @@ private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer 
     }
 }
 
-private fun renderUsingPrecompiledRegistry(): TemplateRenderer = { viewModel: ViewModel ->
-    val templateName = "${viewModel.template()}.kte"
-    val templateClass = JteClassRegistry.getTemplateClass(viewModel.template())
+internal fun findPrecompiledTemplateClass(
+    templateName: String,
+    registries: List<PrecompiledJteTemplateRegistry>,
+): Class<*>? = registries.firstNotNullOfOrNull { registry -> registry.getTemplateClass(templateName) }
 
-    if (templateClass == null) {
-        logger.error("Template {} not found in generated class registry", viewModel.template())
-        throw ViewNotFound(viewModel)
-    }
+private fun renderUsingPrecompiledRegistry(registries: List<PrecompiledJteTemplateRegistry>): TemplateRenderer =
+    { viewModel: ViewModel ->
+        val templateName = "${viewModel.template()}.kte"
+        val templateClass = findPrecompiledTemplateClass(viewModel.template(), registries)
 
-    try {
-        val output = StringOutput()
-        Template(templateName, templateClass).render(OwaspHtmlTemplateOutput(output), null, viewModel)
-        output.toString()
-    } catch (e: IllegalArgumentException) {
-        logger.error("JTE registry render failed for {} (class {}): {}", templateName, templateClass.name, e.message)
-        throw ViewNotFound(viewModel)
-    } catch (e: IllegalStateException) {
-        logger.error("JTE registry render failed for {} (class {}): {}", templateName, templateClass.name, e.message)
-        throw ViewNotFound(viewModel)
+        if (templateClass == null) {
+            logger.error(
+                "Template {} not found in {} generated class registries",
+                viewModel.template(),
+                registries.size,
+            )
+            throw ViewNotFound(viewModel)
+        }
+
+        try {
+            val output = StringOutput()
+            Template(templateName, templateClass).render(OwaspHtmlTemplateOutput(output), null, viewModel)
+            output.toString()
+        } catch (e: IllegalArgumentException) {
+            logger.error(
+                "JTE registry render failed for {} (class {}): {}",
+                templateName,
+                templateClass.name,
+                e.message,
+            )
+            throw ViewNotFound(viewModel)
+        } catch (e: IllegalStateException) {
+            logger.error(
+                "JTE registry render failed for {} (class {}): {}",
+                templateName,
+                templateClass.name,
+                e.message,
+            )
+            throw ViewNotFound(viewModel)
+        }
     }
-}

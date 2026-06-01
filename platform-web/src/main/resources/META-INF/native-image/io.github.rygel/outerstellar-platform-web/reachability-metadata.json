@@ -820,6 +820,8 @@
   }, {
     "glob" : "META-INF/services/ch.qos.logback.classic.spi.Configurator"
   }, {
+    "glob" : "META-INF/services/io.github.rygel.outerstellar.platform.extension.PrecompiledJteTemplateRegistry"
+  }, {
     "glob" : "META-INF/services/io.opentelemetry.context.ContextStorageProvider"
   }, {
     "glob" : "META-INF/services/java.net.spi.InetAddressResolverProvider"

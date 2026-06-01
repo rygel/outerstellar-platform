@@ -23,5 +23,10 @@
             <artifactId>jte-extension-api</artifactId>
             <version>${jte.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
