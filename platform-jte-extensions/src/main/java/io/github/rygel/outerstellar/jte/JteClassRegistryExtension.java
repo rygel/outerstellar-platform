@@ -20,6 +20,9 @@ import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public class JteClassRegistryExtension implements JteExtension {
+    private static final String REGISTRY_CONTRACT =
+            "io.github.rygel.outerstellar.platform.extension.PrecompiledJteTemplateRegistry";
+
 
     @Override
     public String name() {
@@ -79,7 +82,30 @@ public class JteClassRegistryExtension implements JteExtension {
             throw new UncheckedIOException(e);
         }
 
+        writeServiceProvider(config, registryPackage);
+
         return List.of(outputFile);
+    }
+
+    private void writeServiceProvider(
+            final JteConfig config,
+            final String registryPackage
+    ) {
+        if (config.generatedResourcesRoot() == null) {
+            return;
+        }
+
+        final Path serviceDir =
+                config.generatedResourcesRoot()
+                        .resolve("META-INF")
+                        .resolve("services");
+        final Path serviceFile = serviceDir.resolve(REGISTRY_CONTRACT);
+        try {
+            Files.createDirectories(serviceDir);
+            Files.writeString(serviceFile, registryPackage + ".JteClassRegistryProvider\n");
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private String deriveRegistryPackage(
@@ -140,134 +166,190 @@ public class JteClassRegistryExtension implements JteExtension {
             final List<String> components,
             final List<String> layouts
     ) {
-        final List<String> allClassNames = new ArrayList<>(
-                pages.size() + fragments.size()
-                        + components.size() + layouts.size());
-        allClassNames.addAll(pages);
-        allClassNames.addAll(fragments);
-        allClassNames.addAll(components);
-        allClassNames.addAll(layouts);
-
-        final StringWriter stringWriter = new StringWriter();
-        final PrintWriter out = new PrintWriter(stringWriter);
-
-        out.println("package " + registryPackage);
-        out.println();
-
-        for (final String fqn : allClassNames) {
-            out.println("import " + fqn);
-        }
-        out.println("import org.slf4j.LoggerFactory");
-
-        out.println();
-        out.println("object JteClassRegistry {");
-        out.println(
-                "    private val logger = "
-                        + "LoggerFactory.getLogger(JteClassRegistry::class.java)");
-        out.println();
-
-        writeClassList(out, "pageClasses", pages);
-        writeClassList(out, "fragmentClasses", fragments);
-        writeClassList(out, "componentClasses", components);
-        writeClassList(out, "layoutClasses", layouts);
-
-        out.println("    val allClasses: List<Class<*>> =");
-        out.println(
-                "        pageClasses + fragmentClasses "
-                        + "+ componentClasses + layoutClasses");
-        out.println();
-
-        out.println(
-                "    private val classMap: Map<String, Class<*>> =");
-        out.println("        allClasses.associateBy { it.name }");
-        out.println();
-
-        out.println("    init {");
-        out.println(
-                "        logger.info("
-                        + "\"Initializing {} JTE template classes\", "
-                        + "allClasses.size)");
-        out.println("        for (cls in allClasses) {");
-        out.println("            try {");
-        out.println(
-                "                Class.forName("
-                        + "cls.name, true, cls.classLoader)");
-        out.println(
-                "            } catch (e: ClassNotFoundException) {");
-        out.println(
-                "                logger.warn("
-                        + "\"Failed to force-load JTE template class "
-                        + "{}: {}\", cls.name, e.message)");
-        out.println("            }");
-        out.println("        }");
-        out.println("    }");
-        out.println();
-
-        out.println(
-                "    fun getTemplateClass("
-                        + "templateName: String): Class<*>? {");
-        out.println(
-                "        val templatePath = "
-                        + "templateName.removeSuffix(\".kte\")");
-        out.println(
-                "        val slash = templatePath.lastIndexOf('/')");
-        out.println("        val packagePath =");
-        out.println(
-                "            if (slash >= 0) "
-                        + "templatePath.substring(0, slash)"
-                        + ".replace('/', '.') else \"\"");
-        out.println(
-                "        val baseName = if (slash >= 0) "
-                        + "templatePath.substring(slash + 1) "
-                        + "else templatePath");
-        out.println(
-                "        val className = "
-                        + "\"Jte${baseName.replace"
-                        + "(\"-\", \"\").replace(\".\", \"\")}"
-                        + "Generated\"");
-        out.println("        val fullName =");
-        out.println("            if (packagePath.isEmpty()) {");
-        out.println(
-                "                \"" + basePackage
-                        + ".$className\"");
-        out.println("            } else {");
-        out.println(
-                "                \"" + basePackage
-                        + ".$packagePath.$className\"");
-        out.println("            }");
-        out.println("        return classMap[fullName]");
-        out.println("    }");
-        out.println("}");
-
-        out.flush();
-        return stringWriter.toString();
+        return new RegistrySourceWriter(
+                registryPackage,
+                basePackage,
+                pages,
+                fragments,
+                components,
+                layouts
+        ).generate();
     }
 
-    private void writeClassList(
-            final PrintWriter out,
-             final String fieldName,
-            final List<String> classNames
-    ) {
-        out.println("    private val " + fieldName + " =");
-        if (classNames.isEmpty()) {
-            out.println("        listOf<Class<*>>()");
+    private static final class RegistrySourceWriter {
+        private final String registryPackage;
+        private final String basePackage;
+        private final List<String> pages;
+        private final List<String> fragments;
+        private final List<String> components;
+        private final List<String> layouts;
+
+        private RegistrySourceWriter(
+                final String registryPackage,
+                final String basePackage,
+                final List<String> pages,
+                final List<String> fragments,
+                final List<String> components,
+                final List<String> layouts
+        ) {
+            this.registryPackage = registryPackage;
+            this.basePackage = basePackage;
+            this.pages = pages;
+            this.fragments = fragments;
+            this.components = components;
+            this.layouts = layouts;
+        }
+
+        private String generate() {
+            final StringWriter stringWriter = new StringWriter();
+            final PrintWriter out = new PrintWriter(stringWriter);
+
+            writeHeader(out, allClassNames());
+            writeRegistryHeader(out);
+            writeClassList(out, "pageClasses", pages);
+            writeClassList(out, "fragmentClasses", fragments);
+            writeClassList(out, "componentClasses", components);
+            writeClassList(out, "layoutClasses", layouts);
+            writeRegistryBody(out);
+            writeRegistryProvider(out);
+
+            out.flush();
+            return stringWriter.toString();
+        }
+
+        private List<String> allClassNames() {
+            final List<String> allClassNames = new ArrayList<>(
+                    pages.size() + fragments.size()
+                            + components.size() + layouts.size());
+            allClassNames.addAll(pages);
+            allClassNames.addAll(fragments);
+            allClassNames.addAll(components);
+            allClassNames.addAll(layouts);
+            return allClassNames;
+        }
+
+        private void writeHeader(
+                final PrintWriter out,
+                final List<String> allClassNames
+        ) {
+            out.println("package " + registryPackage);
             out.println();
-        } else {
-            out.println("        listOf(");
-            for (int i = 0; i < classNames.size(); i++) {
-                final String fqn = classNames.get(i);
-                final String simpleName =
-                        fqn.substring(fqn.lastIndexOf('.') + 1);
-                final String entry = "            "
-                        + simpleName + "::class.java";
-                if (i < classNames.size() - 1) {
-                    out.println(entry + ",");
-                } else {
-                    out.println(entry);
-                }
+
+            for (final String fqn : allClassNames) {
+                out.println("import " + fqn);
             }
-            out.println("        )");
+            out.println("import " + REGISTRY_CONTRACT);
+            out.println("import org.slf4j.LoggerFactory");
             out.println();
+        }
+
+        private void writeRegistryHeader(final PrintWriter out) {
+            out.println("object JteClassRegistry : PrecompiledJteTemplateRegistry {");
+            out.println(
+                    "    private val logger = "
+                            + "LoggerFactory.getLogger(JteClassRegistry::class.java)");
+            out.println();
+        }
+
+        private void writeClassList(
+                final PrintWriter out,
+                final String fieldName,
+                final List<String> classNames
+        ) {
+            out.println("    private val " + fieldName + " =");
+            if (classNames.isEmpty()) {
+                out.println("        listOf<Class<*>>()");
+                out.println();
+            } else {
+                out.println("        listOf(");
+                for (int i = 0; i < classNames.size(); i++) {
+                    final String fqn = classNames.get(i);
+                    final String simpleName =
+                            fqn.substring(fqn.lastIndexOf('.') + 1);
+                    final String entry = "            "
+                            + simpleName + "::class.java";
+                    if (i < classNames.size() - 1) {
+                        out.println(entry + ",");
+                    } else {
+                        out.println(entry);
+                    }
+                }
+                out.println("        )");
+                out.println();
+            }
+        }
+
+        private void writeRegistryBody(final PrintWriter out) {
+            out.println("    override val allClasses: List<Class<*>> =");
+            out.println(
+                    "        pageClasses + fragmentClasses "
+                            + "+ componentClasses + layoutClasses");
+            out.println();
+            out.println("    private val classMap: Map<String, Class<*>> =");
+            out.println("        allClasses.associateBy { it.name }");
+            out.println();
+            writeRegistryInitializer(out);
+            writeTemplateLookup(out);
+            out.println("}");
+        }
+
+        private void writeRegistryInitializer(final PrintWriter out) {
+            out.println("    init {");
+            out.println(
+                    "        logger.info("
+                            + "\"Initializing {} JTE template classes\", "
+                            + "allClasses.size)");
+            out.println("        for (cls in allClasses) {");
+            out.println("            try {");
+            out.println("                Class.forName(cls.name, true, cls.classLoader)");
+            out.println("            } catch (e: ClassNotFoundException) {");
+            out.println(
+                    "                logger.warn("
+                            + "\"Failed to force-load JTE template class "
+                            + "{}: {}\", cls.name, e.message)");
+            out.println("            }");
+            out.println("        }");
+            out.println("    }");
+            out.println();
+        }
+
+        private void writeTemplateLookup(final PrintWriter out) {
+            out.println("    override fun getTemplateClass(templateName: String): Class<*>? {");
+            out.println("        val templatePath = templateName.removeSuffix(\".kte\")");
+            out.println("        val slash = templatePath.lastIndexOf('/')");
+            out.println("        val packagePath =");
+            out.println(
+                    "            if (slash >= 0) "
+                            + "templatePath.substring(0, slash)"
+                            + ".replace('/', '.') else \"\"");
+            out.println(
+                    "        val baseName = if (slash >= 0) "
+                            + "templatePath.substring(slash + 1) "
+                            + "else templatePath");
+            out.println(
+                    "        val className = "
+                            + "\"Jte${baseName.replace"
+                            + "(\"-\", \"\").replace(\".\", \"\")}"
+                            + "Generated\"");
+            out.println("        val fullName =");
+            out.println("            if (packagePath.isEmpty()) {");
+            out.println("                \"" + basePackage + ".$className\"");
+            out.println("            } else {");
+            out.println("                \"" + basePackage + ".$packagePath.$className\"");
+            out.println("            }");
+            out.println("        return classMap[fullName]");
+            out.println("    }");
+        }
+
+        private void writeRegistryProvider(final PrintWriter out) {
+            out.println();
+            out.println("class JteClassRegistryProvider : PrecompiledJteTemplateRegistry {");
+            out.println("    override val allClasses: List<Class<*>>");
+            out.println("        get() = JteClassRegistry.allClasses");
+            out.println();
+            out.println("    override fun getTemplateClass(templateName: String): Class<*>? =");
+            out.println("        JteClassRegistry.getTemplateClass(templateName)");
+            out.println("}");
         }
     }
 }
