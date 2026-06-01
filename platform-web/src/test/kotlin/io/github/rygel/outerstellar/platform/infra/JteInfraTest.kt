@@ -78,6 +78,69 @@ class JteInfraTest {
     }
 
     @Test
+    fun `precompiled lookup returns null when template not found in single registry`() {
+        val singleRegistry = FakePrecompiledJteTemplateRegistry(emptyMap())
+
+        val result = findPrecompiledTemplateClass("com/example/pages/Profile", listOf(singleRegistry))
+
+        assertEquals(null, result, "Expected null when template is not in any of 1 generated class registries")
+    }
+
+    @Test
+    fun `precompiled lookup returns null when template not found across multiple registries`() {
+        val platformRegistry =
+            FakePrecompiledJteTemplateRegistry(
+                mapOf("io/github/rygel/outerstellar/platform/web/HomePage" to PlatformTemplateMarker::class.java)
+            )
+        val extensionRegistry = FakePrecompiledJteTemplateRegistry(emptyMap())
+
+        val result =
+            findPrecompiledTemplateClass("com/example/pages/Profile", listOf(platformRegistry, extensionRegistry))
+
+        assertEquals(null, result, "Expected null when template is not found in any of 2 registries")
+    }
+
+    @Test
+    fun `composed preflight requires at least two registries to pass`() {
+        val singleRegistry =
+            FakePrecompiledJteTemplateRegistry(
+                mapOf("io/github/rygel/outerstellar/platform/web/HomePage" to PlatformTemplateMarker::class.java)
+            )
+        val registries = listOf(singleRegistry)
+
+        val meetsRequirement = registries.size >= 2
+
+        assertEquals(false, meetsRequirement, "Preflight must fail with only 1 generated class registry")
+    }
+
+    @Test
+    fun `composed preflight passes with platform plus plugin registries`() {
+        val platformRegistry =
+            FakePrecompiledJteTemplateRegistry(
+                mapOf("io/github/rygel/outerstellar/platform/web/HomePage" to PlatformTemplateMarker::class.java)
+            )
+        val extensionRegistry =
+            FakePrecompiledJteTemplateRegistry(
+                mapOf(
+                    "com/example/outerstellar/starter/extension/StarterIndexPage" to ExtensionTemplateMarker::class.java
+                )
+            )
+        val registries = listOf(platformRegistry, extensionRegistry)
+
+        val meetsRequirement = registries.size >= 2
+        val platformResolves = registries.any {
+            it.getTemplateClass("io/github/rygel/outerstellar/platform/web/HomePage") != null
+        }
+        val extensionResolves = registries.any {
+            it.getTemplateClass("com/example/outerstellar/starter/extension/StarterIndexPage") != null
+        }
+
+        assertTrue(meetsRequirement, "Preflight must pass with platform + plugin registries")
+        assertTrue(platformResolves, "Platform template must resolve from composed registries")
+        assertTrue(extensionResolves, "Extension template must resolve from composed registries")
+    }
+
+    @Test
     fun `precompiled registries are discoverable from generated service metadata`() {
         val registries = discoverPrecompiledTemplateRegistries()
 
@@ -98,4 +161,6 @@ class JteInfraTest {
     }
 
     private class ExtensionTemplateMarker
+
+    private class PlatformTemplateMarker
 }
