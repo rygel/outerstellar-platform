@@ -33,15 +33,15 @@ COPY outerstellar-i18n/pom.xml outerstellar-i18n/
 COPY outerstellar-i18n-validator/pom.xml outerstellar-i18n-validator/
 COPY outerstellar-i18n-validator-maven-plugin/pom.xml outerstellar-i18n-validator-maven-plugin/
 COPY platform-core/pom.xml platform-core/
-COPY platform-plugin-api/pom.xml platform-plugin-api/
+COPY platform-extension-api/pom.xml platform-extension-api/
 COPY platform-security/pom.xml platform-security/
 COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
-COPY platform-test-infrastructure/pom.xml platform-test-infrastructure/
+COPY platform-testkit/pom.xml platform-testkit/
 COPY platform-sync-client/pom.xml platform-sync-client/
 COPY platform-web/pom.xml platform-web/
 COPY platform-desktop/pom.xml platform-desktop/
 COPY platform-desktop-javafx/pom.xml platform-desktop-javafx/
-COPY platform-seed/pom.xml platform-seed/
+COPY platform-seeder/pom.xml platform-seeder/
 
 COPY package.json package-lock.json* ./
 
@@ -129,15 +129,15 @@ COPY outerstellar-i18n/pom.xml outerstellar-i18n/
 COPY outerstellar-i18n-validator/pom.xml outerstellar-i18n-validator/
 COPY outerstellar-i18n-validator-maven-plugin/pom.xml outerstellar-i18n-validator-maven-plugin/
 COPY platform-core/pom.xml platform-core/
-COPY platform-plugin-api/pom.xml platform-plugin-api/
+COPY platform-extension-api/pom.xml platform-extension-api/
 COPY platform-security/pom.xml platform-security/
 COPY platform-persistence-jdbi/pom.xml platform-persistence-jdbi/
-COPY platform-test-infrastructure/pom.xml platform-test-infrastructure/
+COPY platform-testkit/pom.xml platform-testkit/
 COPY platform-sync-client/pom.xml platform-sync-client/
 COPY platform-web/pom.xml platform-web/
 COPY platform-desktop/pom.xml platform-desktop/
 COPY platform-desktop-javafx/pom.xml platform-desktop-javafx/
-COPY platform-seed/pom.xml platform-seed/
+COPY platform-seeder/pom.xml platform-seeder/
 RUN --mount=type=cache,target=/root/.m2/repository \
     mvn dependency:resolve \
         -pl platform-desktop -am \

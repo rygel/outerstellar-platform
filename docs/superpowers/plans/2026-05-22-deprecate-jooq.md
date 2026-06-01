@@ -29,10 +29,10 @@
 - `platform-web/src/test/kotlin/.../security/SecurityIntegrationTest.kt` — replace JooqUserRepository
 - `platform-web/src/main/kotlin/.../di/AdminWebModule.kt` — use Koin resolution instead of hardcoded JooqNotificationRepository
 - `platform-web/pom.xml` — replace jooq dep with jdbi dep, remove jooq direct dep
-- `platform-seed/pom.xml` — replace jooq dep with jdbi dep
+- `platform-seeder/pom.xml` — replace jooq dep with jdbi dep
 - `platform-desktop/pom.xml` — replace jooq dep with jdbi dep
 - `platform-desktop-javafx/pom.xml` — replace jooq dep with jdbi dep
-- `pom.xml` (root) — remove jooq module, dependencyManagement, plugin, property, spinaker watch
+- `pom.xml` (root) — remove jooq module, dependencyManagement, extension, property, spinaker watch
 - `docker/Dockerfile` — remove jooq COPY line
 - `docker/Dockerfile.native` — remove jooq COPY line
 - `docker/Dockerfile.build` desktop-test target — remove jooq COPY line
@@ -627,7 +627,7 @@ git commit -m "refactor: remove hardcoded JooqNotificationRepository from AdminW
 
 **Files:**
 - Modify: `platform-web/pom.xml`
-- Modify: `platform-seed/pom.xml`
+- Modify: `platform-seeder/pom.xml`
 - Modify: `platform-desktop/pom.xml`
 - Modify: `platform-desktop-javafx/pom.xml`
 
@@ -667,7 +667,7 @@ Replace it with JDBI:
         </dependency>
 ```
 
-- [ ] **Step 2: Update platform-seed/pom.xml**
+- [ ] **Step 2: Update platform-seeder/pom.xml**
 
 Replace:
 ```xml
@@ -707,7 +707,7 @@ With:
 
 Run:
 ```powershell
-mvn clean compile -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed -T4 -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
+mvn clean compile -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder -T4 -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
 ```
 
 Expected: PASS
@@ -715,7 +715,7 @@ Expected: PASS
 - [ ] **Step 6: Commit**
 
 ```bash
-git add platform-web/pom.xml platform-seed/pom.xml platform-desktop/pom.xml platform-desktop-javafx/pom.xml
+git add platform-web/pom.xml platform-seeder/pom.xml platform-desktop/pom.xml platform-desktop-javafx/pom.xml
 git commit -m "refactor: replace jooq with jdbi dependency in all modules"
 ```
 
@@ -762,15 +762,15 @@ Delete:
             </dependency>
 ```
 
-- [ ] **Step 5: Remove jooq-codegen plugin from pluginManagement (lines 671-675)**
+- [ ] **Step 5: Remove jooq-codegen extension from extensionManagement (lines 671-675)**
 
 Delete:
 ```xml
-                <plugin>
+                <extension>
                     <groupId>org.jooq</groupId>
                     <artifactId>jooq-codegen-maven</artifactId>
                     <version>${jooq.version}</version>
-                </plugin>
+                </extension>
 ```
 
 - [ ] **Step 6: Remove jooq from spinaker watch config (lines 940-942)**
@@ -798,7 +798,7 @@ To:
 
 Run:
 ```powershell
-mvn clean compile -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed -T4 -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
+mvn clean compile -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder -T4 -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
 ```
 
 Expected: PASS
@@ -807,7 +807,7 @@ Expected: PASS
 
 ```bash
 git add pom.xml
-git commit -m "refactor: remove jooq module from reactor, dependencyManagement, and plugins"
+git commit -m "refactor: remove jooq module from reactor, dependencyManagement, and extensions"
 ```
 
 ---
@@ -931,7 +931,7 @@ Remove-Item -Recurse -Force platform-persistence-jooq
 - [ ] **Step 2: Verify build still works without it**
 
 ```powershell
-mvn clean compile -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed -T4 -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
+mvn clean compile -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder -T4 -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
 ```
 
 Expected: PASS
@@ -950,7 +950,7 @@ git commit -m "refactor: delete platform-persistence-jooq module"
 - [ ] **Step 1: Run full reactor build**
 
 ```powershell
-mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 Expected: ALL TESTS PASS

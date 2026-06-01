@@ -42,15 +42,15 @@ git commit -m "docs: remove stale jOOQ/DSLContext references from testing guide 
 
 ## Task 2: Fix Testcontainers container reuse
 
-**Context:** Testcontainers ignores `testcontainers.reuse.enable` from classpath properties by design. The file `platform-test-infrastructure/src/main/resources/.testcontainers.properties` is useless and misleading. Container reuse only works via environment variable or `~/.testcontainers.properties`.
+**Context:** Testcontainers ignores `testcontainers.reuse.enable` from classpath properties by design. The file `platform-testkit/src/main/resources/.testcontainers.properties` is useless and misleading. Container reuse only works via environment variable or `~/.testcontainers.properties`.
 
 **Files:**
-- Delete: `platform-test-infrastructure/src/main/resources/.testcontainers.properties`
+- Delete: `platform-testkit/src/main/resources/.testcontainers.properties`
 - Modify: `C:\Users\Alexander\.testcontainers.properties` (add `testcontainers.reuse.enable=true`)
 
 - [ ] **Step 1: Delete the useless classpath file**
 
-Delete `platform-test-infrastructure/src/main/resources/.testcontainers.properties`. This file does nothing — Testcontainers explicitly ignores `reuse.enable` from classpath properties.
+Delete `platform-testkit/src/main/resources/.testcontainers.properties`. This file does nothing — Testcontainers explicitly ignores `reuse.enable` from classpath properties.
 
 - [ ] **Step 2: Add reuse setting to user-level config**
 
@@ -69,7 +69,7 @@ Check logs for "Reuse was requested" warning — it should no longer appear.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add platform-test-infrastructure/src/main/resources/.testcontainers.properties
+git add platform-testkit/src/main/resources/.testcontainers.properties
 git commit -m "fix(test): remove useless classpath testcontainers.properties, fix container reuse config"
 ```
 
@@ -316,7 +316,7 @@ git commit -m "feat(jte): auto-generate JteClassRegistry from template files, fi
 
 After all three tasks:
 
-- [ ] Run full reactor: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+- [ ] Run full reactor: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 - [ ] Verify no Testcontainers reuse warning in logs
 - [ ] Verify JteClassRegistry has 41 entries
 - [ ] Push and create PR

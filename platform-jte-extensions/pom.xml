@@ -9,8 +9,8 @@
         <version>3.6.5</version>
     </parent>
 
-    <artifactId>platform-jte-extensions</artifactId>
-    <name>JTE Extensions</name>
+    <artifactId>outerstellar-platform-jte-extensions</artifactId>
+    <name>Outerstellar Platform JTE Extensions</name>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>

@@ -7,54 +7,54 @@
 
 ## Problem
 
-Phase 1 (PR #377) established the route registry, `PlatformMode`, and `PlatformPageSets`. The next iteration narrows the model from "many plugins in a marketplace" to the expected deployment shape: one platform host normally accepts one hosted app adapter that owns the product experience.
+Phase 1 (PR #377) established the route registry, `PlatformMode`, and `PlatformPageSets`. The next iteration narrows the model from "many extensions in a marketplace" to the expected deployment shape: one platform host normally accepts one extension adapter that owns the product experience.
 
-That still keeps the useful WordPress-like idea: the hosted app contributes routes, layout, assets, admin sections, banners, and selective platform pages through a stable host contract. It does not require dependency ordering, activation state, or conflict resolution for multiple active plugins.
+That still keeps the useful WordPress-like idea: the extension contributes routes, layout, assets, admin sections, banners, and selective platform pages through a stable host contract. It does not require dependency ordering, activation state, or conflict resolution for multiple active extensions.
 
 Four gaps remain:
 
-1. **Hosted apps cannot replace the page layout.** A `PluginHostedApp` still gets the Outerstellar sidebar/topbar chrome, branding, and footer. Issue #376 explicitly requires: "a plugin-hosted product should be able to provide its own renderer and layout without inheriting default platform chrome."
-2. **Startup diagnostics hide excluded page sets.** The route table only shows registered routes. When `PluginHostedApp` omits settings/contacts/search, there is no indication they were considered and intentionally excluded.
+1. **Extensions cannot replace the page layout.** `ExtensionHost` still gets the Outerstellar sidebar/topbar chrome, branding, and footer. Issue #376 explicitly requires an extension-driven product to provide its own renderer and layout without inheriting default platform chrome.
+2. **Startup diagnostics hide excluded page sets.** The route table only shows registered routes. When `ExtensionHost` omits settings/contacts/search, there is no indication they were considered and intentionally excluded.
 3. **`mountPlatformPages()` naming is confusing.** "Mount" suggests adding routes, but the semantic is "include these platform pages." The term `shell` is also overloaded — this spec uses `layout` for the page wrapper concept.
-4. **Hosted app extension points are scattered through `App.kt`.** The host asks the adapter for routes, filters, admin sections, banners, text, layout, and included page sets from several assembly paths. The hosted app should contribute capabilities once, and the host should wire the collected contribution consistently.
+4. **Extension hooks are scattered through `App.kt`.** The host asks the adapter for routes, filters, admin sections, banners, text, layout, and included page sets from several assembly paths. The extension should contribute capabilities once, and the host should wire the collected contribution consistently.
 
 ## Decisions
 
-- Hosted apps replace layout through an explicit `PluginLayoutRenderer`, not a dynamic JTE template string.
-- Hosted apps may implement `PluginLayoutRenderer` with their own generated JTE templates, so template existence is checked by the hosted app build instead of string dispatch in the host.
-- `HostedApp` is the primary contract name. `PlatformPlugin` remains as a compatibility interface for existing integrations.
-- `HostedAppContext`, `HostedAppContribution`, and `HostedAppContributionContext` are the primary API names. `PluginContext`, `PluginContribution`, and `PluginContributionContext` remain as Kotlin source compatibility aliases.
-- `HostedAppManifest` declares the hosted app id, label, version, optional platform version requirement, and route/asset ownership prefixes.
-- Hosted app route registrations and shell asset URLs are validated against manifest ownership prefixes at startup.
-- The platform does not introduce multi-plugin dependency ordering, activation state, or marketplace conflict resolution; normal runtime composition is one hosted app adapter.
-- Route registration stays explicit (`PluginRouteRegistration` wrapping) — verbose but clear.
+- Extensions replace layout through an explicit `ExtensionLayoutRenderer`, not a dynamic JTE template string.
+- Extensions may implement `ExtensionLayoutRenderer` with their own generated JTE templates, so template existence is checked by the extension build instead of string dispatch in the host.
+- `PlatformExtension` is the primary contract name. Matching compatibility typealiases remain under `io.github.rygel.outerstellar.platform.web` for existing integrations.
+- `ExtensionHostContext`, `ExtensionContribution`, and `ExtensionContributionContext` are the primary API names. `ExtensionContext`, `ExtensionContribution`, and `ExtensionContributionContext` remain as Kotlin source compatibility aliases.
+- `ExtensionManifest` declares the extension id, label, version, optional platform version requirement, and route/asset ownership prefixes.
+- Extension route registrations and shell asset URLs are validated against manifest ownership prefixes at startup.
+- The platform does not introduce multi-extension dependency ordering, activation state, or marketplace conflict resolution; normal runtime composition is one extension adapter.
+- Route registration stays explicit (`ExtensionRouteRegistration` wrapping) — verbose but clear.
 - `mountPlatformPages()` renamed to `includePlatformPages()`.
-- Hosted app extension points are registered through a single `contribute(context)` hook with typed registries.
-- Hosted app extension points are collected into one `HostedAppContribution` during startup. `App.kt` consumes that contribution instead of repeatedly calling hosted app SPI methods from route, admin, and filter assembly.
+- Extension hooks are registered through a single `contribute(context)` hook with typed registries.
+- Extension hooks are collected into one `ExtensionContribution` during startup. `App.kt` consumes that contribution instead of repeatedly calling extension SPI methods from route, admin, and filter assembly.
 - Existing per-extension methods remain as compatibility adapters into the typed registries.
 - Internal `ShellView`/`ShellRenderer` names are not renamed in this iteration to limit churn.
 
 ## Design
 
-### 1. Plugin layout renderer
+### 1. Extension layout renderer
 
 Add a small renderer contract:
 
 ```kotlin
-fun interface PluginLayoutRenderer {
+fun interface ExtensionLayoutRenderer {
     fun render(shell: ShellView, content: Content): Content
 }
 ```
 
-Add a new method to `HostedApp`:
+Add a new method to `PlatformExtension`:
 
 ```kotlin
-fun layoutRenderer(context: HostedAppContext): PluginLayoutRenderer? = null
+fun layoutRenderer(context: ExtensionHostContext): ExtensionLayoutRenderer? = null
 ```
 
-When a plugin returns a renderer, the platform routes all shell rendering through that renderer instead of `SidebarLayout.kte` or `TopbarLayout.kte`.
+When an extension returns a renderer, the platform routes all shell rendering through that renderer instead of `SidebarLayout.kte` or `TopbarLayout.kte`.
 
-This is intentionally not `layoutTemplate(): String?`. The platform's production JTE renderer uses `JteClassRegistry`, which only contains platform-generated template classes. A plugin template on the plugin classpath is not automatically available to that registry. A renderer keeps ownership with the plugin: the plugin calls its own generated JTE template class and returns `Content`.
+This is intentionally not `layoutTemplate(): String?`. The platform's production JTE renderer uses `JteClassRegistry`, which only contains platform-generated template classes. An extension template on the extension classpath is not automatically available to that registry. A renderer keeps ownership with the extension: the extension calls its own generated JTE template class and returns `Content`.
 
 #### ShellView extension
 
@@ -63,17 +63,17 @@ Add one field to `ShellView`:
 ```kotlin
 data class ShellView(
     // ... existing fields ...
-    val pluginLayoutRenderer: PluginLayoutRenderer? = null,
+    val extensionLayoutRenderer: ExtensionLayoutRenderer? = null,
 )
 ```
 
-`ShellRenderer.shell()` sets this from `PluginOptions.layoutRenderer` when available.
+`ShellRenderer.shell()` sets this from `ExtensionOptions.layoutRenderer` when available.
 
 #### LayoutRouter.kte change
 
 ```jte
-@if(shell.pluginLayoutRenderer != null)
-    ${shell.pluginLayoutRenderer.render(shell, content)}
+@if(shell.extensionLayoutRenderer != null)
+    ${shell.extensionLayoutRenderer.render(shell, content)}
 @elseif(shell.layoutStyle == "topbar")
     @template...TopbarLayout(shell = shell, content = content)
 @else
@@ -81,68 +81,68 @@ data class ShellView(
 @endif
 ```
 
-The plugin renderer returns `gg.jte.Content`, so JTE can write it as user content. A plugin using JTE can implement the renderer by delegating to its own generated layout class.
+The extension renderer returns `gg.jte.Content`, so JTE can write it as user content. A extension using JTE can implement the renderer by delegating to its own generated layout class.
 
-#### PluginOptions extension
+#### ExtensionOptions extension
 
-Add `layoutRenderer` to `PluginOptions`:
+Add `layoutRenderer` to `ExtensionOptions`:
 
 ```kotlin
-data class PluginOptions(
-    val navItems: List<PluginNavItem> = emptyList(),
+data class ExtensionOptions(
+    val navItems: List<ExtensionNavItem> = emptyList(),
     val textResolver: TextResolver? = null,
     val adminNavItems: List<AdminNavItem> = emptyList(),
-    val layoutRenderer: PluginLayoutRenderer? = null,
+    val layoutRenderer: ExtensionLayoutRenderer? = null,
 )
 ```
 
-`HostedApp` provides it via a new method:
+`PlatformExtension` provides it via a new method:
 
 ```kotlin
-fun layoutRenderer(context: HostedAppContext): PluginLayoutRenderer? = null
+fun layoutRenderer(context: ExtensionHostContext): ExtensionLayoutRenderer? = null
 ```
 
-`HostedAppContribution.from(plugin, fallbackMode, hostedAppContext)` reads `plugin.layoutRenderer(hostedAppContext)` once and carries it inside `PluginOptions`.
+`ExtensionContribution.from(extension, fallbackMode, extensionHostContext)` reads `extension.layoutRenderer(extensionHostContext)` once and carries it inside `ExtensionOptions`.
 
-#### What the plugin renderer receives
+#### What the extension renderer receives
 
-The hosted app's layout renderer receives the same `ShellView` data class with all fields: nav links, user info, CSRF token, banners, theme selectors, i18n labels, SEO metadata. The hosted app decides which fields to use and how to render them. This is a data contract, not a rendering contract.
+The extension layout renderer receives the same `ShellView` data class with all fields: nav links, user info, CSRF token, banners, theme selectors, i18n labels, SEO metadata. The extension decides which fields to use and how to render them. This is a data contract, not a rendering contract.
 
 Example shape:
 
 ```kotlin
-override fun layoutRenderer(context: HostedAppContext): PluginLayoutRenderer =
-    PluginLayoutRenderer { shell, content ->
+override fun layoutRenderer(context: ExtensionHostContext): ExtensionLayoutRenderer =
+    ExtensionLayoutRenderer { shell, content ->
         Content { output ->
             JteRepoQualityLayoutGenerated.render(output as HtmlTemplateOutput, null, shell, content)
         }
     }
 ```
 
-A plugin can copy either `SidebarLayout.kte` or `TopbarLayout.kte` as a starting point and customize from there.
+A extension can copy either `SidebarLayout.kte` or `TopbarLayout.kte` as a starting point and customize from there.
 
 #### PlatformTheme interaction
 
-`PlatformTheme` provides `headInjections()` and `bodyInjections()` hooks, but those hooks are not wired into the current platform layout path yet. This iteration should not claim theme injection support beyond preserving the existing interface. A later phase can make `ShellView` carry head/body injection data so both platform and plugin layouts can render it deliberately.
+`PlatformTheme` provides `headInjections()` and `bodyInjections()` hooks, but those hooks are not wired into the current platform layout path yet. This iteration should not claim theme injection support beyond preserving the existing interface. A later phase can make `ShellView` carry head/body injection data so both platform and extension layouts can render it deliberately.
 
-### 2. Hosted app contribution aggregation
+### 2. Extension contribution aggregation
 
-Add a host-side aggregate for the hosted app's startup contributions:
+Add a host-side aggregate for the extension's startup contributions:
 
 ```kotlin
-data class HostedAppContribution(
+data class ExtensionContribution(
     val mode: PlatformMode,
     val appLabel: String,
-    val manifest: HostedAppManifest? = null,
+    val manifest: ExtensionManifest? = null,
     val includedPlatformPages: Set<PlatformPageSets> = emptySet(),
-    val routeRegistrations: List<PluginRouteRegistration> = emptyList(),
+    val routeRegistrations: List<ExtensionRouteRegistration> = emptyList(),
     val filters: List<Filter> = emptyList(),
     val adminSections: List<AdminSection> = emptyList(),
     val bannerProviders: List<BannerProvider> = emptyList(),
-    val options: PluginOptions = PluginOptions(),
+    val options: ExtensionOptions = ExtensionOptions(),
 )
 
-data class PluginRouteRegistration(
+data class ExtensionRouteRegistration(
     val route: Any?,
     val group: RouteGroup,
     val description: String,
@@ -150,20 +150,20 @@ data class PluginRouteRegistration(
     val method: String = "*",
 )
 
-data class PluginAssets(
+data class ExtensionAssets(
     val stylesheets: List<String> = emptyList(),
     val scripts: List<String> = emptyList(),
 )
 
-data class HostedAppManifest(
+data class ExtensionManifest(
     val id: String,
     val appLabel: String = "Outerstellar",
     val version: String = "dev",
     val requiredPlatformVersion: String? = null,
-    val ownership: HostedAppOwnership = HostedAppOwnership.forPlugin(id),
+    val ownership: ExtensionOwnership = ExtensionOwnership.forExtension(id),
 )
 
-data class HostedAppOwnership(
+data class ExtensionOwnership(
     val uiPrefixes: List<String>,
     val apiPrefixes: List<String>,
     val adminPrefixes: List<String>,
@@ -171,35 +171,35 @@ data class HostedAppOwnership(
 )
 ```
 
-`HostedAppContribution.from(...)` creates a `HostedAppContributionContext`, adapts existing SPI methods into its typed registries, then calls the new hook:
+`ExtensionContribution.from(...)` creates a `ExtensionContributionContext`, adapts existing SPI methods into its typed registries, then calls the new hook:
 
 ```kotlin
-interface HostedApp : PluginMigrationSource {
-    val manifest: HostedAppManifest
-        get() = HostedAppManifest(id = id, appLabel = appLabel)
+interface PlatformExtension : ExtensionMigrationSource {
+    val manifest: ExtensionManifest
+        get() = ExtensionManifest(id = id, appLabel = appLabel)
 
-    fun contribute(context: HostedAppContributionContext) {}
+    fun contribute(context: ExtensionContributionContext) {}
 
     // Compatibility methods, still supported.
-    fun routeRegistrations(context: HostedAppContext): List<PluginRouteRegistration> = emptyList()
+    fun routeRegistrations(context: ExtensionHostContext): List<ExtensionRouteRegistration> = emptyList()
     fun includePlatformPages(): Set<PlatformPageSets> = emptySet()
-    fun filters(context: HostedAppContext): List<Filter> = emptyList()
-    fun adminSections(context: HostedAppContext): List<AdminSection> = emptyList()
-    fun bannerProviders(context: HostedAppContext): List<BannerProvider> = emptyList()
-    fun layoutRenderer(context: HostedAppContext): PluginLayoutRenderer? = null
+    fun filters(context: ExtensionHostContext): List<Filter> = emptyList()
+    fun adminSections(context: ExtensionHostContext): List<AdminSection> = emptyList()
+    fun bannerProviders(context: ExtensionHostContext): List<BannerProvider> = emptyList()
+    fun layoutRenderer(context: ExtensionHostContext): ExtensionLayoutRenderer? = null
 }
 
-interface PlatformPlugin : HostedApp
+interface PlatformExtension : PlatformExtension
 ```
 
 The new authoring model is:
 
 ```kotlin
-override fun contribute(context: HostedAppContributionContext) {
+override fun contribute(context: ExtensionContributionContext) {
     context.platformPages.include(PlatformPageSets.SEARCH)
-    context.routes.protectedUi(reportsRoute, "Reports", "/plugin/reports")
+    context.routes.protectedUi(reportsRoute, "Reports", "/extension/reports")
     context.routes.staticAssets(
-        "/plugins/reports/assets",
+        "/extensions/reports/assets",
         ResourceLoader.Classpath("reports-static"),
         "Reports static assets",
     )
@@ -213,20 +213,20 @@ override fun contribute(context: HostedAppContributionContext) {
     context.banners.provider(reportsBannerProvider)
     context.navigation.item("Reports", "/reports", "bar-chart")
     context.layout.replaceWith(reportsLayoutRenderer)
-    context.assets.stylesheet("/plugins/reports/assets/reports.css")
-    context.assets.script("/plugins/reports/assets/reports.js")
+    context.assets.stylesheet("/extensions/reports/assets/reports.css")
+    context.assets.script("/extensions/reports/assets/reports.js")
 }
 ```
 
 The typed registries are:
 
-- `context.routes` for `PluginRouteRegistration`; convenience methods exist for `publicUi`, `protectedUi`, `api`, and `admin`
-- `context.routes.staticAssets(...)` for plugin-owned classpath static resources
+- `context.routes` for `ExtensionRouteRegistration`; convenience methods exist for `publicUi`, `protectedUi`, `api`, and `admin`
+- `context.routes.staticAssets(...)` for extension-owned classpath static resources
 - `context.platformPages` for included platform page sets
 - `context.filters` for http4k filters
 - `context.admin` for admin sections; a convenience `section(...)` builder creates the nav item and summary card together
 - `context.banners` for banner providers
-- `context.navigation` for plugin nav items; `item(label, url, icon)` covers the common case
+- `context.navigation` for extension nav items; `item(label, url, icon)` covers the common case
 - `context.layout` for replacing the shell layout renderer
 - `context.assets` for stylesheet and script URLs rendered in the shell head
 
@@ -245,21 +245,21 @@ Then `contribute(context)` can add new-style contributions on top.
 The host then passes the contribution into:
 
 - API/UI/component/admin route registration
-- plugin route registration
-- shell state filter (`PluginOptions`, banners)
+- extension route registration
+- shell state filter (`ExtensionOptions`, banners)
 - shell head asset rendering
-- plugin filter chain
+- extension filter chain
 
-Each registered route carries a `pathPattern` used for diagnostics and ownership validation. The hosted app manifest owns default prefixes derived from its id:
+Each registered route carries a `pathPattern` used for diagnostics and ownership validation. The extension manifest owns default prefixes derived from its id:
 
-- UI: `/<id>` and `/plugin/<id>`
-- API: `/api/<id>`, `/api/plugin/<id>`, `/api/v1/<id>`, and `/api/v1/plugin/<id>`
+- UI: `/<id>` and `/extension/<id>`
+- API: `/api/<id>`, `/api/extension/<id>`, `/api/v1/<id>`, and `/api/v1/extension/<id>`
 - Admin: `/admin/<id>`
-- Assets: `/plugins/<id>/assets`
+- Assets: `/extensions/<id>/assets`
 
-The hosted app can override those prefixes through `HostedAppManifest.ownership`. Startup fails fast when a contributed route or stylesheet/script URL falls outside the declared ownership. This keeps the one-hosted-app model explicit without adding a multi-plugin conflict system.
+The extension can override those prefixes through `ExtensionManifest.ownership`. Startup fails fast when a contributed route or stylesheet/script URL falls outside the declared ownership. This keeps the one-extension model explicit without adding a multi-extension conflict system.
 
-This makes `App.kt` closer to a hosted-app composition root: it still owns assembly order and security wrapping, but it does not rediscover hosted app capabilities in each subsystem.
+This makes `App.kt` closer to an extension composition root: it still owns assembly order and security wrapping, but it does not rediscover extension capabilities in each subsystem.
 
 ### 3. Excluded page-set diagnostics
 
@@ -281,18 +281,18 @@ class RouteRegistry {
 
 #### When to call registerExcludedPageSet
 
-In `App.kt`, after page-set inclusion is resolved, register every page set not included by `PluginHostedApp` or `HeadlessKernel`:
+In `App.kt`, after page-set inclusion is resolved, register every page set not included by `ExtensionHost` or `Headless`:
 
 ```kotlin
-if (pluginMode != PlatformMode.FullPlatformApp) {
-    val included = plugin?.includePlatformPages() ?: emptySet()
+if (extensionMode != PlatformMode.FullPlatform) {
+    val included = extension?.includePlatformPages() ?: emptySet()
     PlatformPageSets.entries
         .filter { it !in included }
         .forEach { registry.registerExcludedPageSet(it.pageSet.id) }
 }
 ```
 
-In `FullPlatformApp` mode, no excluded entries exist because all platform page sets are included.
+In `FullPlatform` mode, no excluded entries exist because all platform page sets are included.
 
 #### formatTable changes
 
@@ -313,37 +313,37 @@ Rename across:
 
 | File | Change |
 |------|--------|
-| `PlatformPlugin.kt` | `mountPlatformPages()` → `includePlatformPages()` |
-| `App.kt` | `plugin?.mountPlatformPages()` → `plugin?.includePlatformPages()` |
-| `PluginHostedAppTest.kt` | All references |
+| `PlatformExtension.kt` | `mountPlatformPages()` → `includePlatformPages()` |
+| `App.kt` | `extension?.mountPlatformPages()` → `extension?.includePlatformPages()` |
+| `ExtensionHostTest.kt` | All references |
 | `PlatformPageSetsTest.kt` | Comment/doc references if any |
 
 Binary-compatible: no consumers outside this repository yet, so a straight rename is safe.
 
-### 5. Primary hosted-app names
+### 5. Primary extension names
 
-The public-facing model is now "hosted app" rather than "plugin marketplace":
+The public-facing model is now "extension host" rather than "extension marketplace":
 
-| Primary name | Compatibility name |
-|--------------|--------------------|
-| `HostedApp` | `PlatformPlugin` interface extends it |
-| `HostedAppContext` | `PluginContext` Kotlin typealias |
-| `HostedAppContribution` | `PluginContribution` Kotlin typealias |
-| `HostedAppContributionContext` | `PluginContributionContext` Kotlin typealias |
+| Primary surface | Compatibility surface |
+|-----------------|-----------------------|
+| `io.github.rygel.outerstellar.platform.extension.PlatformExtension` | `io.github.rygel.outerstellar.platform.web.PlatformExtension` typealias |
+| `io.github.rygel.outerstellar.platform.extension.ExtensionHostContext` | `ExtensionContext` Kotlin typealias |
+| `io.github.rygel.outerstellar.platform.extension.ExtensionContribution` | `io.github.rygel.outerstellar.platform.web.ExtensionContribution` typealias |
+| `io.github.rygel.outerstellar.platform.extension.ExtensionContributionContext` | `io.github.rygel.outerstellar.platform.web.ExtensionContributionContext` typealias |
 
-New host assembly entrypoints accept `HostedApp?`. Existing `PlatformPlugin` implementors still satisfy that parameter because `PlatformPlugin : HostedApp`.
+New host assembly entrypoints accept `PlatformExtension?`. Existing integrations can keep importing the compatibility typealiases from `io.github.rygel.outerstellar.platform.web` while migrating package names.
 
 ## Scope boundaries
 
 **In scope:**
-- `PluginLayoutRenderer` and `layoutRenderer()` method on `HostedApp`
-- `pluginLayoutRenderer` field on `ShellView`
-- `layoutRenderer` field on `PluginOptions`
-- `HostedAppContribution` aggregate for hosted app startup capabilities
-- `HostedAppContributionContext` and typed contribution registries
-- `HostedApp.contribute(context)` hook
-- `HostedAppManifest` and `HostedAppOwnership` startup validation
-- Plugin asset URL contribution and plugin-owned static routes
+- `ExtensionLayoutRenderer` and `layoutRenderer()` method on `PlatformExtension`
+- `extensionLayoutRenderer` field on `ShellView`
+- `layoutRenderer` field on `ExtensionOptions`
+- `ExtensionContribution` aggregate for extension startup capabilities
+- `ExtensionContributionContext` and typed contribution registries
+- `PlatformExtension.contribute(context)` hook
+- `ExtensionManifest` and `ExtensionOwnership` startup validation
+- Extension asset URL contribution and extension-owned static routes
 - `LayoutRouter.kte` template dispatch
 - `registerExcludedPageSet()` on `RouteRegistry`
 - `formatTable()` excluded page-set section
@@ -353,32 +353,32 @@ New host assembly entrypoints accept `HostedApp?`. Existing `PlatformPlugin` imp
 - Module split (platform-web-kernel vs platform-ui)
 - `ShellRenderer` → `LayoutRenderer` internal rename
 - `ShellView` → `LayoutData` internal rename
-- `HostedAppContext` slim-down
+- `ExtensionHostContext` slim-down
 - Additional route registration DSLs beyond the typed registry
 - Section-level layout overrides (sidebar, topbar, footer independently)
-- Example plugin / quick-start template
-- Asset fingerprinting/content-hash helpers for plugin files
-- HeadlessKernel-specific route filtering beyond current implementation
+- Example extension / quick-start template
+- Asset fingerprinting/content-hash helpers for extension files
+- Headless-specific route filtering beyond current implementation
 
 ## Testing
 
-- **PluginLayoutRendererTest:** Verify `ShellView.pluginLayoutRenderer` is populated when plugin provides it; verify null when not provided; verify `PluginOptions` propagation; verify `LayoutRouter.kte` delegates to the plugin renderer; verify plugin stylesheet and script URLs render through `LayoutHead.kte`.
-- **PluginContributionTest:** Verify empty-host defaults, legacy SPI adaptation, static route helpers, asset collection, manifest ownership validation, and new `contribute(context)` typed registry collection.
-- **ExcludedDiagnosticsTest:** Verify `registerExcludedPageSet()` entries appear in `formatTable()` output; verify empty excluded list for `FullPlatformApp`; verify correct page set IDs for `PluginHostedApp` with partial inclusion.
-- **IncludePagesRenameTest:** Existing `PluginHostedAppTest` tests updated to use `includePlatformPages()`.
+- **ExtensionLayoutRendererTest:** Verify `ShellView.extensionLayoutRenderer` is populated when extension provides it; verify null when not provided; verify `ExtensionOptions` propagation; verify `LayoutRouter.kte` delegates to the extension renderer; verify extension stylesheet and script URLs render through `LayoutHead.kte`.
+- **ExtensionContributionTest:** Verify empty-host defaults, legacy SPI adaptation, static route helpers, asset collection, manifest ownership validation, and new `contribute(context)` typed registry collection.
+- **ExcludedDiagnosticsTest:** Verify `registerExcludedPageSet()` entries appear in `formatTable()` output; verify empty excluded list for `FullPlatform`; verify correct page set IDs for `ExtensionHost` with partial inclusion.
+- **IncludePagesRenameTest:** Existing `ExtensionHostTest` tests updated to use `includePlatformPages()`.
 - **Full reactor verify:** `mvn clean verify` on all non-desktop modules.
 
 ## Acceptance criteria
 
-- [x] A plugin returning `layoutRenderer()` gets its renderer used instead of the platform's SidebarLayout/TopbarLayout
-- [x] The plugin renderer receives the same `ShellView` data contract
-- [x] Hosted app startup capabilities are collected into one `HostedAppContribution`
-- [x] New plugins can register capabilities through `contribute(context)` and typed registries
-- [x] Plugins can contribute stylesheet/script URLs and plugin-owned static routes
-- [x] `HostedApp`/`HostedAppContribution` are the primary names with `PlatformPlugin`/`PluginContribution` compatibility
-- [x] Hosted app manifests validate route and asset ownership prefixes at startup
-- [ ] `FullPlatformApp` mode is completely unaffected (no layout template, no disabled entries)
-- [x] Startup route table shows excluded page sets in `PluginHostedApp` and `HeadlessKernel` modes
+- [x] A extension returning `layoutRenderer()` gets its renderer used instead of the platform's SidebarLayout/TopbarLayout
+- [x] The extension renderer receives the same `ShellView` data contract
+- [x] Extension startup capabilities are collected into one `ExtensionContribution`
+- [x] New extensions can register capabilities through `contribute(context)` and typed registries
+- [x] Extensions can contribute stylesheet/script URLs and extension-owned static routes
+- [x] `PlatformExtension`/`ExtensionContribution` are the primary names with `PlatformExtension`/`ExtensionContribution` compatibility
+- [x] Extension manifests validate route and asset ownership prefixes at startup
+- [ ] `FullPlatform` mode is completely unaffected (no layout template, no disabled entries)
+- [x] Startup route table shows excluded page sets in `ExtensionHost` and `Headless` modes
 - [x] `includePlatformPages()` replaces `mountPlatformPages()` everywhere
-- [x] Focused plugin composition tests pass
+- [x] Focused extension composition tests pass
 - [x] Full reactor `mvn clean verify` passes

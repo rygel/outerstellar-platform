@@ -481,7 +481,7 @@ git commit -m "docs: add registration toggle and absolute session timeout to AGE
 
 - [ ] **Step 1: Run full reactor build**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 Expected: BUILD SUCCESS
 
 If detekt/spotbugs failures occur, fix them before proceeding.

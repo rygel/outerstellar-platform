@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>outerstellar-i18n-validator</artifactId>
-    <name>Outerstellar i18n Validator</name>
+    <name>Outerstellar I18n Validator</name>
     <description>Core validation engine for i18n property files</description>
 
     <properties>

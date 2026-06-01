@@ -30,7 +30,7 @@
 - `platform-web/.../web/AuthApi.kt` — replace `SecurityService` with `ApiKeyService` + `PasswordResetService`
 - `platform-web/.../web/AuthRoutes.kt` — replace `SecurityService` with `ApiKeyService` + `PasswordResetService`
 - `platform-web/.../web/OAuthRoutes.kt` — replace `SecurityService` with `OAuthService`
-- `platform-web/.../web/PlatformPlugin.kt` — replace `SecurityService` in `PluginContext` with sub-services
+- `platform-web/.../web/PlatformExtension.kt` — replace `SecurityService` in `ExtensionContext` with sub-services
 
 ### Modified files (tests)
 - `platform-web/.../web/WebTest.kt` — replace `createSecurityService()` with direct sub-service creation
@@ -422,7 +422,7 @@ git commit -m "refactor(security): delete SecurityService facade"
 - Modify: `platform-web/.../web/AuthApi.kt`
 - Modify: `platform-web/.../web/AuthRoutes.kt`
 - Modify: `platform-web/.../web/OAuthRoutes.kt`
-- Modify: `platform-web/.../web/PlatformPlugin.kt`
+- Modify: `platform-web/.../web/PlatformExtension.kt`
 
 This is the largest task. Every production file that imports or uses `SecurityService` must be updated. The pattern is consistent: replace `SecurityService` with the specific sub-service(s) the consumer actually calls.
 
@@ -435,7 +435,7 @@ This is the largest task. Every production file that imports or uses `SecuritySe
 | `OAuthRoutes` | `findOrCreateOAuthUser` | `OAuthService` |
 | `WebPageFactory` | passes to `AdminPageFactory` | `OAuthService` + `ApiKeyService` + `PasswordResetService` (or just pass down AdminPageFactory directly) |
 | `AdminPageFactory` | `listApiKeys` (via securityService) | `ApiKeyService` + `PasswordResetService` |
-| `PlatformPlugin.PluginContext` | exposes `securityService` | `OAuthService` + `ApiKeyService` |
+| `PlatformExtension.ExtensionContext` | exposes `securityService` | `OAuthService` + `ApiKeyService` |
 | `App.kt` `ApiKeyRealm` construction | passes `securityService` | passes `apiKeyService` |
 | `App.kt` `app()` param | passes to routes | pass sub-services |
 | `ServerComponents` | `security.securityService` | `security.apiKeyService`, `security.passwordResetService`, `security.oauthService` |
@@ -452,7 +452,7 @@ This is the largest task. Every production file that imports or uses `SecuritySe
 7. Update `AuthRoutes` construction: replace `securityService` with `apiKeyService` and `passwordResetService`.
 8. Update `OAuthRoutes` construction: replace `securityService` with `oauthService`.
 9. Update `buildAdminRoutes` — replace `ctx.securityService` with `ctx.apiKeyService` if used.
-10. Update `PluginContext` construction — pass sub-services instead of `securityService`.
+10. Update `ExtensionContext` construction — pass sub-services instead of `securityService`.
 
 - [ ] **Step 2: Update ServerComponents.kt**
 
@@ -490,9 +490,9 @@ Same pattern as AuthApi. Replace `private val securityService: SecurityService` 
 
 Replace `private val securityService: SecurityService` with `private val oauthService: OAuthService`. Update `securityService.findOrCreateOAuthUser(...)` → `oauthService.findOrCreateOAuthUser(...)`.
 
-- [ ] **Step 9: Update PlatformPlugin.kt**
+- [ ] **Step 9: Update PlatformExtension.kt**
 
-Replace `val securityService: SecurityService` in `PluginContext` with the sub-services plugins actually need. Check what `PluginContext` exposes: `securityService` is used in `forTesting()` and passed to plugins. Determine which sub-services plugins need (likely `OAuthService` for `findOrCreateOAuthUser`, `ApiKeyService` for API key management). If plugins only need `findOrCreateOAuthUser`, replace with `oauthService: OAuthService`. Update `forTesting()` accordingly.
+Replace `val securityService: SecurityService` in `ExtensionContext` with the sub-services extensions actually need. Check what `ExtensionContext` exposes: `securityService` is used in `forTesting()` and passed to extensions. Determine which sub-services extensions need (likely `OAuthService` for `findOrCreateOAuthUser`, `ApiKeyService` for API key management). If extensions only need `findOrCreateOAuthUser`, replace with `oauthService: OAuthService`. Update `forTesting()` accordingly.
 
 - [ ] **Step 10: Compile platform-web**
 
@@ -581,7 +581,7 @@ git commit -m "refactor(web): update all tests to use sub-services directly"
 
 - [ ] **Step 1: Full reactor build (excluding desktop)**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 Expected: PASS (all tests, all quality checks)
 
 - [ ] **Step 2: Search for any remaining SecurityService references**

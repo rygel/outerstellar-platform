@@ -20,8 +20,8 @@ class ShellRenderer(
     private val appVersion: String = "dev",
     private val shellConfig: ShellConfig = ShellConfig(),
 ) {
-    private val pluginOptions
-        get() = shellConfig.pluginOptions
+    private val extensionOptions
+        get() = shellConfig.extensionOptions
 
     private val appBaseUrl
         get() = shellConfig.appBaseUrl
@@ -52,7 +52,7 @@ class ShellRenderer(
                 "/admin/users",
                 "/admin/audit",
                 "/admin/dev",
-                "/admin/plugins",
+                "/admin/extensions",
                 "/settings",
                 "/notifications",
             )
@@ -68,10 +68,10 @@ class ShellRenderer(
 
     val i18n: I18nService by lazy { cachedI18n(ctx.lang) }
 
-    val textResolver: TextResolver by lazy { pluginOptions.textResolver ?: I18nTextResolver(i18n) }
+    val textResolver: TextResolver by lazy { extensionOptions.textResolver ?: I18nTextResolver(i18n) }
 
-    private val isPluginHostedApp: Boolean
-        get() = mode == PlatformMode.PluginHostedApp
+    private val isExtensionHost: Boolean
+        get() = mode == PlatformMode.ExtensionHost
 
     fun url(path: String): String = path
 
@@ -80,8 +80,9 @@ class ShellRenderer(
 
     private fun buildNavLinks(activeSection: String): List<ShellLink> {
         val role = ctx.user?.role?.name ?: "ANONYMOUS"
-        val navKey = if (pluginOptions.navItems.isNotEmpty()) pluginOptions.navItems.hashCode() else 0
-        val adminNavKey = if (pluginOptions.adminNavItems.isNotEmpty()) pluginOptions.adminNavItems.hashCode() else 0
+        val navKey = if (extensionOptions.navItems.isNotEmpty()) extensionOptions.navItems.hashCode() else 0
+        val adminNavKey =
+            if (extensionOptions.adminNavItems.isNotEmpty()) extensionOptions.adminNavItems.hashCode() else 0
         val includedKey = includedPlatformPages.map { it.name }.sorted().joinToString(",")
         val cacheKey = "${ctx.lang}:$role:$activeSection:$devDashboardEnabled:$mode:$navKey:$adminNavKey:$includedKey"
         return navLinkCache.get(cacheKey) { buildNavLinksUncached(activeSection) }
@@ -90,8 +91,8 @@ class ShellRenderer(
     @Suppress("LongMethod")
     private fun buildNavLinksUncached(activeSection: String): List<ShellLink> {
         val links: MutableList<ShellLink> =
-            if (pluginOptions.navItems.isNotEmpty()) {
-                pluginOptions.navItems
+            if (extensionOptions.navItems.isNotEmpty()) {
+                extensionOptions.navItems
                     .map { item ->
                         ShellLink(item.label, url(item.url), item.icon, activeSection == item.activeSection)
                     }
@@ -105,8 +106,8 @@ class ShellRenderer(
     }
 
     private fun defaultPlatformNavLinks(activeSection: String): MutableList<ShellLink> =
-        if (isPluginHostedApp) {
-            buildPluginHostedNavLinks(activeSection)
+        if (isExtensionHost) {
+            buildExtensionHostNavLinks(activeSection)
         } else {
             buildFullPlatformNavLinks(activeSection)
         }
@@ -146,7 +147,7 @@ class ShellRenderer(
                 }
             }
 
-    private fun buildPluginHostedNavLinks(activeSection: String): MutableList<ShellLink> {
+    private fun buildExtensionHostNavLinks(activeSection: String): MutableList<ShellLink> {
         val links = mutableListOf<ShellLink>()
         if (includes(PlatformPageSets.HOME)) {
             links.add(ShellLink(i18n.translate("web.nav.home"), url("/"), "ri-home-5-line", activeSection == "/"))
@@ -194,7 +195,7 @@ class ShellRenderer(
 
     private fun appendAdminLinks(links: MutableList<ShellLink>, activeSection: String) {
         if (ctx.user?.role != UserRole.ADMIN) return
-        if (!isPluginHostedApp || includes(PlatformPageSets.ADMIN)) {
+        if (!isExtensionHost || includes(PlatformPageSets.ADMIN)) {
             links.add(
                 ShellLink(
                     i18n.translate("web.nav.users"),
@@ -212,7 +213,7 @@ class ShellRenderer(
                 )
             )
         }
-        if (devDashboardEnabled && (!isPluginHostedApp || includes(PlatformPageSets.DEV_DASHBOARD))) {
+        if (devDashboardEnabled && (!isExtensionHost || includes(PlatformPageSets.DEV_DASHBOARD))) {
             links.add(
                 ShellLink(
                     i18n.translate("web.nav.dev"),
@@ -222,7 +223,7 @@ class ShellRenderer(
                 )
             )
         }
-        pluginOptions.adminNavItems.forEach { item ->
+        extensionOptions.adminNavItems.forEach { item ->
             links.add(ShellLink(item.label, url(item.url), item.icon, activeSection == item.url))
         }
     }
@@ -230,17 +231,17 @@ class ShellRenderer(
     private fun includes(pageSet: PlatformPageSets): Boolean = pageSet in includedPlatformPages
 
     private fun appTitle(): String =
-        if (isPluginHostedApp) {
+        if (isExtensionHost) {
             shellConfig.appLabel.ifBlank { i18n.translate("web.app.title") }
         } else {
             i18n.translate("web.app.title")
         }
 
     private fun footerVersion(): String =
-        if (isPluginHostedApp) "v$appVersion" else i18n.translate("web.footer.version", appVersion)
+        if (isExtensionHost) "v$appVersion" else i18n.translate("web.footer.version", appVersion)
 
     private fun searchUrl(): String? =
-        if (!isPluginHostedApp || includes(PlatformPageSets.SEARCH)) url("/search") else null
+        if (!isExtensionHost || includes(PlatformPageSets.SEARCH)) url("/search") else null
 
     @Suppress("LongMethod")
     fun shell(pageTitle: String, activeSection: String): ShellView {
@@ -259,7 +260,7 @@ class ShellRenderer(
         return ShellView(
             pageTitle = pageTitle,
             appTitle = appTitle(),
-            appTagline = if (isPluginHostedApp) appTitle() else i18n.translate("web.app.tagline"),
+            appTagline = if (isExtensionHost) appTitle() else i18n.translate("web.app.tagline"),
             currentPath = currentPath,
             localeTag = ctx.lang,
             themeName = ctx.theme,
@@ -269,16 +270,16 @@ class ShellRenderer(
             themeSelector = sidebarFactory.buildThemeSelector(ctx, this),
             languageSelector = sidebarFactory.buildLanguageSelector(ctx, this),
             layoutSelector = sidebarFactory.buildLayoutSelector(ctx, this),
-            footerCopy = if (isPluginHostedApp) appTitle() else i18n.translate("web.footer.copy"),
+            footerCopy = if (isExtensionHost) appTitle() else i18n.translate("web.footer.copy"),
             footerVersion = footerVersion(),
             footerStatusUrl = url("/components/footer-status"),
             version = appVersion,
             username = user?.username,
             isLoggedIn = user != null,
             logoutUrl = url("/logout"),
-            changePasswordUrl = if (user != null && !isPluginHostedApp) url("/auth/change-password") else null,
+            changePasswordUrl = if (user != null && !isExtensionHost) url("/auth/change-password") else null,
             profileUrl =
-                if (user != null && (!isPluginHostedApp || includes(PlatformPageSets.PROFILE))) url("/auth/profile")
+                if (user != null && (!isExtensionHost || includes(PlatformPageSets.PROFILE))) url("/auth/profile")
                 else null,
             toastErrorLabel = i18n.translate("web.layout.toast.error"),
             toastSuccessLabel = i18n.translate("web.layout.toast.success"),
@@ -289,7 +290,7 @@ class ShellRenderer(
             searchPlaceholder = i18n.translate("web.search.placeholder"),
             searchLabel = i18n.translate("web.search.label"),
             notificationsUrl =
-                if (user != null && (!isPluginHostedApp || includes(PlatformPageSets.NOTIFICATIONS))) {
+                if (user != null && (!isExtensionHost || includes(PlatformPageSets.NOTIFICATIONS))) {
                     url("/notifications")
                 } else {
                     null
@@ -304,11 +305,11 @@ class ShellRenderer(
             noIndex = activeSection in NO_INDEX_SECTIONS,
             supportedLocales = listOf("en", "fr"),
             appBaseUrl = appBaseUrl,
-            appHomeUrl = if (isPluginHostedApp) shellConfig.appHomeUrl else url("/"),
+            appHomeUrl = if (isExtensionHost) shellConfig.appHomeUrl else url("/"),
             banners = banners,
-            pluginLayoutRenderer = pluginOptions.layoutRenderer,
-            pluginStylesheets = pluginOptions.assets.stylesheets,
-            pluginScripts = pluginOptions.assets.scripts,
+            extensionLayoutRenderer = extensionOptions.layoutRenderer,
+            extensionStylesheets = extensionOptions.assets.stylesheets,
+            extensionScripts = extensionOptions.assets.scripts,
         )
     }
 }

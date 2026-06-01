@@ -65,16 +65,16 @@ class StaticAssetIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `plugin static files are served without authentication`() {
-        val plugin =
-            object : PlatformPlugin {
+    fun `extension static files are served without authentication`() {
+        val extension =
+            object : PlatformExtension {
                 override val id = "reports"
 
-                override fun contribute(context: HostedAppContributionContext) {
-                    context.routes.staticAssets("/plugins/reports/assets", ResourceLoader.Classpath("static"))
+                override fun contribute(context: ExtensionContributionContext) {
+                    context.routes.staticAssets("/extensions/reports/assets", ResourceLoader.Classpath("static"))
                 }
             }
-        val response = buildApp(plugin = plugin)(Request(GET, "/plugins/reports/assets/site.css"))
+        val response = buildApp(extension = extension)(Request(GET, "/extensions/reports/assets/site.css"))
 
         assertThat(response, hasStatus(Status.OK))
         assertThat(response, hasBody(containsSubstring(".")))

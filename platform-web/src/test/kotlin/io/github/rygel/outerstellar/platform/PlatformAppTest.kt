@@ -14,7 +14,7 @@ import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
-import io.github.rygel.outerstellar.platform.web.HostedAppContextFactory
+import io.github.rygel.outerstellar.platform.web.ExtensionHostContextFactory
 import io.github.rygel.outerstellar.platform.web.StubMessageCache
 import io.github.rygel.outerstellar.platform.web.bodyContains
 import io.mockk.every
@@ -167,7 +167,7 @@ class PlatformAppTest {
                     contactsPageFactory = contactsPageFactory,
                 ),
             hostedAppContextFactory =
-                HostedAppContextFactory(
+                ExtensionHostContextFactory(
                     renderer = createRenderer(),
                     apiKeyService = apiKeyService,
                     oauthService = oauthService,

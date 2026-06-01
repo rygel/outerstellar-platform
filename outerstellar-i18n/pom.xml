@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>outerstellar-i18n</artifactId>
-    <name>Outerstellar i18n</name>
+    <name>Outerstellar I18n</name>
     <description>ResourceBundle-backed translation engine used by Outerstellar Platform</description>
 
     <dependencies>

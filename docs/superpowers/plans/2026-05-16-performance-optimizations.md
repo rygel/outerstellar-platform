@@ -525,7 +525,7 @@ After all 7 tasks are complete:
 - [ ] **Run full reactor verify**
 
 ```bash
-mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 Expected: BUILD SUCCESS, 0 test failures, 0 quality gate violations

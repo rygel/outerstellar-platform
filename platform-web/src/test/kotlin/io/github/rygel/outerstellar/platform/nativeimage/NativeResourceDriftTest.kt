@@ -30,7 +30,7 @@ class NativeResourceDriftTest {
             "META-INF/services/java.sql.Driver",
             "META-INF/services/java.time.zone.ZoneRulesProvider",
             "META-INF/services/javax.xml.parsers.SAXParserFactory",
-            "META-INF/services/org.flywaydb.core.extensibility.Plugin",
+            "META-INF/services/org.flywaydb.core.extensibility.Extension",
             "META-INF/services/org.slf4j.spi.SLF4JServiceProvider",
             "ch/qos/logback/classic/logback-classic-version.properties",
             "ch/qos/logback/core/logback-core-version.properties",

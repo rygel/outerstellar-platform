@@ -18,17 +18,17 @@ import org.junit.jupiter.api.Test
 class AdminSectionTest {
 
     @Test
-    fun `default PlatformPlugin adminSections returns empty list`() {
-        val plugin =
-            object : PlatformPlugin {
-                override val id: String = "test-plugin"
+    fun `default PlatformExtension adminSections returns empty list`() {
+        val extension =
+            object : PlatformExtension {
+                override val id: String = "test-extension"
             }
         val renderer = mockk<TemplateRenderer>(relaxed = true)
         val apiKeyService = mockk<ApiKeyService>(relaxed = true)
         val oauthService = mockk<OAuthService>(relaxed = true)
         val userRepository = mockk<UserRepository>(relaxed = true)
-        val context = PluginContext.forTesting(renderer, apiKeyService, oauthService, userRepository)
-        assertTrue(plugin.adminSections(context).isEmpty())
+        val context = ExtensionContext.forTesting(renderer, apiKeyService, oauthService, userRepository)
+        assertTrue(extension.adminSections(context).isEmpty())
     }
 
     @Test
@@ -53,16 +53,16 @@ class AdminSectionTest {
         assertEquals("/admin/users", card.linkUrl)
         assertEquals("View details", card.linkLabel)
 
-        val customLabel = AdminSummaryCard("Plugins", metrics, "/admin/plugins", "Manage")
+        val customLabel = AdminSummaryCard("Extensions", metrics, "/admin/extensions", "Manage")
         assertEquals("Manage", customLabel.linkLabel)
     }
 
     @Test
     fun `AdminSection holds id navLabel navIcon card and route`() {
         val metrics = listOf(AdminMetric("Count", "3"))
-        val card = AdminSummaryCard("Test", metrics, "/admin/plugins/test")
+        val card = AdminSummaryCard("Test", metrics, "/admin/extensions/test")
         val route =
-            "/admin/plugins/test" meta
+            "/admin/extensions/test" meta
                 {
                     summary = "Test"
                 } bindContract
@@ -70,10 +70,10 @@ class AdminSectionTest {
                 { _: org.http4k.core.Request ->
                     Response(Status.OK)
                 }
-        val section = AdminSection("test-plugins", "Plugins", "puzzle", card, route)
+        val section = AdminSection("test-extensions", "Extensions", "puzzle", card, route)
 
-        assertEquals("test-plugins", section.id)
-        assertEquals("Plugins", section.navLabel)
+        assertEquals("test-extensions", section.id)
+        assertEquals("Extensions", section.navLabel)
         assertEquals("puzzle", section.navIcon)
         assertEquals(card, section.summaryCard)
         assertEquals(route, section.route)
@@ -88,17 +88,17 @@ class AdminSectionTest {
     }
 
     @Test
-    fun `PluginOptions carries adminNavItems`() {
+    fun `ExtensionOptions carries adminNavItems`() {
         val items =
             listOf(AdminNavItem("Users", "/admin/users", "people"), AdminNavItem("Audit", "/admin/audit", "shield"))
-        val layoutRenderer = PluginLayoutRenderer { _, content -> content }
-        val options = PluginOptions(adminNavItems = items, layoutRenderer = layoutRenderer)
+        val layoutRenderer = ExtensionLayoutRenderer { _, content -> content }
+        val options = ExtensionOptions(adminNavItems = items, layoutRenderer = layoutRenderer)
         assertEquals(2, options.adminNavItems.size)
         assertEquals("Users", options.adminNavItems[0].label)
         assertEquals("Audit", options.adminNavItems[1].label)
         assertEquals(layoutRenderer, options.layoutRenderer)
 
-        val defaults = PluginOptions()
+        val defaults = ExtensionOptions()
         assertTrue(defaults.adminNavItems.isEmpty())
         assertNull(defaults.layoutRenderer)
     }

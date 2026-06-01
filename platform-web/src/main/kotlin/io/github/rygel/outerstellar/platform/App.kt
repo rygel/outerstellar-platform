@@ -3,8 +3,8 @@ package io.github.rygel.outerstellar.platform
 import io.github.rygel.outerstellar.platform.di.CoreComponents
 import io.github.rygel.outerstellar.platform.di.PlatformPersistence
 import io.github.rygel.outerstellar.platform.di.WebComponents
-import io.github.rygel.outerstellar.platform.plugin.HostedApp
-import io.github.rygel.outerstellar.platform.plugin.HostedAppContribution
+import io.github.rygel.outerstellar.platform.extension.ExtensionContribution
+import io.github.rygel.outerstellar.platform.extension.PlatformExtension
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.web.assembly.HttpHandlerFactory
 import io.github.rygel.outerstellar.platform.web.assembly.RouteRegistrar
@@ -22,10 +22,10 @@ fun app(
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
-    plugin: HostedApp? = null,
+    extension: PlatformExtension? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
-    val httpHandler = assembleHttpHandler(config, persistence, security, core, web, plugin)
+    val httpHandler = assembleHttpHandler(config, persistence, security, core, web, extension)
     val wsHandler = web.runtime.syncWebSocket.let { websockets("/ws/sync" wsBind it.handler) }
     return PolyHandler(httpHandler, wsHandler)
 }
@@ -36,11 +36,11 @@ private fun assembleHttpHandler(
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
-    plugin: HostedApp?,
+    extension: PlatformExtension?,
 ): HttpHandler {
-    val pluginContext = plugin?.let { web.hostedAppContextFactory.create(config) }
-    val pluginContribution = HostedAppContribution.from(plugin, config.platformMode, pluginContext)
-    val registry = RouteRegistrar(config, persistence, security, core, web, pluginContribution).buildRegistry()
+    val extensionContext = extension?.let { web.hostedAppContextFactory.create(config) }
+    val extensionContribution = ExtensionContribution.from(extension, config.platformMode, extensionContext)
+    val registry = RouteRegistrar(config, persistence, security, core, web, extensionContribution).buildRegistry()
     logger.info(registry.formatTable())
-    return HttpHandlerFactory(config, persistence, security, web, pluginContribution).build(registry)
+    return HttpHandlerFactory(config, persistence, security, web, extensionContribution).build(registry)
 }

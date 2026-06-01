@@ -6,7 +6,7 @@
 
 ## Problem
 
-Private modules (e.g. `private-announcements`) and future public plugins need a way to inject banners into the platform layout, rendered server-side on every page. There is currently no mechanism for this.
+Private modules (e.g. `private-announcements`) and future public extensions need a way to inject banners into the platform layout, rendered server-side on every page. There is currently no mechanism for this.
 
 ## Design
 
@@ -41,16 +41,16 @@ interface BannerProvider {
 - `dismissUrl` is null for sticky (non-dismissible) banners. When non-null, the platform renders an HTMX dismiss button targeting this URL.
 - Dismissal is provider-owned: the platform never stores banner state. Each provider handles its own dismiss endpoint and persistence.
 
-### PlatformPlugin extension
+### PlatformExtension extension
 
 ```kotlin
-interface PlatformPlugin : PluginMigrationSource {
+interface PlatformExtension : ExtensionMigrationSource {
     // ... existing members ...
-    fun bannerProviders(context: PluginContext): List<BannerProvider> = emptyList()
+    fun bannerProviders(context: ExtensionContext): List<BannerProvider> = emptyList()
 }
 ```
 
-Default implementation returns empty list — existing plugins are unaffected. New plugins override this to register their providers.
+Default implementation returns empty list — existing extensions are unaffected. New extensions override this to register their providers.
 
 ### ShellView
 
@@ -66,7 +66,7 @@ val banners: List<Banner> = emptyList()
 
 ### Wiring
 
-1. `PlatformPlugin.bannerProviders(context)` is called in `ServerComponents` during startup.
+1. `PlatformExtension.bannerProviders(context)` is called in `ServerComponents` during startup.
 2. Providers are stored and passed through the filter chain to `WebContext`.
 3. `WebContext` receives `List<BannerProvider>` as a constructor parameter.
 
@@ -99,7 +99,7 @@ The platform provides no `/api/v1/banners/{id}/dismiss` route. Each `BannerProvi
 |----------|--------|-----------|
 | Provider naming | `BannerProvider` | Consistent with existing `SearchProvider` in platform-core |
 | Dismissal ownership | Provider-owned | Different banner types need different semantics; motivating use case already has its own persistence |
-| Registration mechanism | Via `PlatformPlugin` | Follows existing pattern for routes, adminSections, navItems |
+| Registration mechanism | Via `PlatformExtension` | Follows existing pattern for routes, adminSections, navItems |
 | Banner ordering | Severity ordinal (critical first) | Most urgent banners should be seen first |
 | Body content | Provider-sanitized | Platform doesn't sanitize — providers control their own content |
 

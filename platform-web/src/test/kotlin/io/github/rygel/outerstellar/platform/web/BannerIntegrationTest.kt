@@ -20,10 +20,10 @@ class BannerIntegrationTest : WebTest() {
         override fun getBanners(userId: UUID, userRole: String): List<Banner> = banners
     }
 
-    private class TestBannerPlugin(private val providers: List<BannerProvider>) : PlatformPlugin {
-        override val id: String = "test-banner-plugin"
+    private class TestBannerExtension(private val providers: List<BannerProvider>) : PlatformExtension {
+        override val id: String = "test-banner-extension"
 
-        override fun bannerProviders(context: HostedAppContext): List<BannerProvider> = providers
+        override fun bannerProviders(context: ExtensionHostContext): List<BannerProvider> = providers
     }
 
     private val testBanner =
@@ -39,8 +39,8 @@ class BannerIntegrationTest : WebTest() {
     @Test
     fun `banners from BannerProvider are rendered in page layout`() {
         val provider = StubBannerProvider(listOf(testBanner))
-        val plugin = TestBannerPlugin(listOf(provider))
-        val app = buildApp(plugin = plugin)
+        val extension = TestBannerExtension(listOf(provider))
+        val app = buildApp(extension = extension)
 
         val (token, _, _) = withAuthenticatedUser()
         val response = app(Request(Method.GET, "/").cookie(Cookie(RequestContext.SESSION_COOKIE, token)))
@@ -56,8 +56,8 @@ class BannerIntegrationTest : WebTest() {
     @Test
     fun `no banners rendered when user is not authenticated`() {
         val provider = StubBannerProvider(listOf(testBanner))
-        val plugin = TestBannerPlugin(listOf(provider))
-        val app = buildApp(plugin = plugin)
+        val extension = TestBannerExtension(listOf(provider))
+        val app = buildApp(extension = extension)
 
         val response = app(Request(Method.GET, "/auth"))
 
@@ -84,8 +84,8 @@ class BannerIntegrationTest : WebTest() {
                 isDismissible = false,
             )
         val provider = StubBannerProvider(listOf(infoBanner, criticalBanner))
-        val plugin = TestBannerPlugin(listOf(provider))
-        val app = buildApp(plugin = plugin)
+        val extension = TestBannerExtension(listOf(provider))
+        val app = buildApp(extension = extension)
 
         val (token, _, _) = withAuthenticatedUser()
         val response = app(Request(Method.GET, "/").cookie(Cookie(RequestContext.SESSION_COOKIE, token)))

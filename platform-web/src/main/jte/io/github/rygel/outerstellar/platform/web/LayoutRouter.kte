@@ -3,8 +3,8 @@
 @param shell: ShellView
 @param content: Content
 
-@if(shell.pluginLayoutRenderer != null)
-    ${shell.pluginLayoutRenderer!!.render(shell, content)}
+@if(shell.extensionLayoutRenderer != null)
+    ${shell.extensionLayoutRenderer!!.render(shell, content)}
 @elseif(shell.layoutStyle == "topbar")
     @template.io.github.rygel.outerstellar.platform.web.layouts.TopbarLayout(shell = shell, content = content)
 @else

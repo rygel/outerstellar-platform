@@ -56,7 +56,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$modules = "platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed"
+$modules = "platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder"
 
 if ($Module -ne "") {
     $modules = $Module
@@ -96,7 +96,7 @@ Create `test-all.sh` in the project root:
 
 set -euo pipefail
 
-MODULES="platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed"
+MODULES="platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder"
 THREADS=4
 SKIP_INSTALL=false
 
@@ -426,7 +426,7 @@ that don't exist in the source code. **Always use the wrapper scripts:**
 If you MUST run `mvn` directly, always precede it with:
 
 ```powershell
-mvn clean install -DskipTests -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean install -DskipTests -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 ```
 

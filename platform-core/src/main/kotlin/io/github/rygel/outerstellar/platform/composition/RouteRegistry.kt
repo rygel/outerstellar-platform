@@ -43,7 +43,7 @@ class RouteRegistry {
         val conflicts = conflicts()
         require(conflicts.isEmpty()) {
             val details = conflicts.joinToString("\n\n") { it.formatForFailure() }
-            "Route conflicts detected:\n$details\n\nRemediation: move the hosted app route into its manifest-owned " +
+            "Route conflicts detected:\n$details\n\nRemediation: move the extension route into its manifest-owned " +
                 "prefix, change the HTTP method, or explicitly exclude the colliding platform page set."
         }
     }

@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>outerstellar-platform-sync-client</artifactId>
-    <name>Platform Sync Client</name>
+    <name>Outerstellar Platform Sync Client</name>
 
     <dependencies>
         <dependency>

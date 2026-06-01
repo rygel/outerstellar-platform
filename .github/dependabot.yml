@@ -29,7 +29,7 @@ updates:
       test-frameworks:
         patterns: ["org.junit*:*", "io.mockk:*", "com.microsoft.playwright:*", "com.tngtech.archunit:*"]
         dependency-type: "development"
-      build-plugins:
+      build-extensions:
         patterns:
           - "com.github.spotbugs:*"
           - "io.gitlab.arturbosch.detekt:*"

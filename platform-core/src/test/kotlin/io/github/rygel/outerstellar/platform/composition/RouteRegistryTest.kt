@@ -42,8 +42,8 @@ class RouteRegistryTest {
     fun `byOwner filters by owner`() {
         val registry = RouteRegistry()
         registry.register(registeredRoute("GET", "/", owner = RouteOwner.PlatformUi))
-        registry.register(registeredRoute("GET", "/custom", owner = RouteOwner.Plugin))
-        assert(registry.byOwner(RouteOwner.Plugin).size == 1) { "Expected 1 Plugin route" }
+        registry.register(registeredRoute("GET", "/custom", owner = RouteOwner.Extension))
+        assert(registry.byOwner(RouteOwner.Extension).size == 1) { "Expected 1 Extension route" }
         assert(registry.byOwner(RouteOwner.PlatformUi).size == 1) { "Expected 1 PlatformUi route" }
     }
 
@@ -59,7 +59,7 @@ class RouteRegistryTest {
     fun `no conflicts when same path but different methods`() {
         val registry = RouteRegistry()
         registry.register(registeredRoute("GET", "/api/data", owner = RouteOwner.PlatformKernel))
-        registry.register(registeredRoute("POST", "/api/data", owner = RouteOwner.Plugin))
+        registry.register(registeredRoute("POST", "/api/data", owner = RouteOwner.Extension))
         assert(registry.conflicts().isEmpty()) { "Expected no conflicts" }
     }
 
@@ -67,7 +67,7 @@ class RouteRegistryTest {
     fun `detects conflict when same path and method`() {
         val registry = RouteRegistry()
         registry.register(registeredRoute("GET", "/", owner = RouteOwner.PlatformUi))
-        registry.register(registeredRoute("GET", "/", owner = RouteOwner.Plugin))
+        registry.register(registeredRoute("GET", "/", owner = RouteOwner.Extension))
         val conflicts = registry.conflicts()
         assert(conflicts.size == 1) { "Expected 1 conflict" }
         assert(conflicts[0].pathPattern == "/") { "Expected path /" }
@@ -78,10 +78,10 @@ class RouteRegistryTest {
     fun `conflict message identifies both owners`() {
         val registry = RouteRegistry()
         registry.register(registeredRoute("GET", "/settings", "Settings page", owner = RouteOwner.PlatformUi))
-        registry.register(registeredRoute("GET", "/settings", "Hosted settings", owner = RouteOwner.Plugin))
+        registry.register(registeredRoute("GET", "/settings", "Hosted settings", owner = RouteOwner.Extension))
         val conflict = registry.conflicts().first()
         assert(conflict.existing == RouteOwner.PlatformUi) { "Expected PlatformUi as existing" }
-        assert(conflict.challenger == RouteOwner.Plugin) { "Expected Plugin as challenger" }
+        assert(conflict.challenger == RouteOwner.Extension) { "Expected Extension as challenger" }
         assert(conflict.existingRoute?.description == "Settings page") { "Expected existing route details" }
         assert(conflict.challengerRoute?.description == "Hosted settings") { "Expected challenger route details" }
     }
@@ -90,12 +90,12 @@ class RouteRegistryTest {
     fun `requireNoConflicts throws on conflicts`() {
         val registry = RouteRegistry()
         registry.register(registeredRoute("GET", "/", "Platform home", owner = RouteOwner.PlatformUi))
-        registry.register(registeredRoute("GET", "/", "Hosted app home", owner = RouteOwner.Plugin))
+        registry.register(registeredRoute("GET", "/", "Extension home", owner = RouteOwner.Extension))
         val error = assertThrows<IllegalArgumentException> { registry.requireNoConflicts() }
         val message = error.message.orEmpty()
         assert(message.contains("existing: PlatformUi [ProtectedUi] Platform home")) { message }
-        assert(message.contains("challenger: Plugin [ProtectedUi] Hosted app home")) { message }
-        assert(message.contains("Remediation: move the hosted app route")) { message }
+        assert(message.contains("challenger: Extension [ProtectedUi] Extension home")) { message }
+        assert(message.contains("Remediation: move the extension route")) { message }
     }
 
     @Test

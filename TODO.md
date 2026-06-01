@@ -6,10 +6,10 @@ Last checked after PR #412 merged into `develop`.
 
 ## Recently completed
 
-- #376: plugin-hosted UI/root-route work
+- #376: extension-host UI/root-route work
 - #384: moved `outerstellar-i18n` into this repository
-- #407: plugin migration follow-ups
-- #408: duplicate tracker for plugin-hosted migration work
+- #407: extension migration follow-ups
+- #408: duplicate tracker for extension-host migration work
 
 ## Next workflow
 

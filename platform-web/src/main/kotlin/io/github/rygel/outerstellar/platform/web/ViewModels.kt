@@ -193,9 +193,11 @@ data class DevDashboardPage(
     override fun template(): String = "io/github/rygel/outerstellar/platform/web/DevDashboard"
 }
 
-data class PluginAdminDashboardPage(val cards: List<AdminSummaryCard>, val diagnostics: HostedAppDiagnostics? = null) :
-    ViewModel {
-    override fun template(): String = "io/github/rygel/outerstellar/platform/web/PluginAdminDashboard"
+data class ExtensionAdminDashboardPage(
+    val cards: List<AdminSummaryCard>,
+    val diagnostics: ExtensionDiagnostics? = null,
+) : ViewModel {
+    override fun template(): String = "io/github/rygel/outerstellar/platform/web/ExtensionAdminDashboard"
 }
 
 data class OutboxStatsViewModel(val pending: Int, val processed: Int, val failed: Int)
