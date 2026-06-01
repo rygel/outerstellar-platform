@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.PluginMigrations
+import io.github.rygel.outerstellar.platform.ExtensionMigrations
 import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
@@ -42,10 +42,10 @@ interface PersistenceBootstrap {
     /**
      * Creates the platform persistence adapters for the given application config.
      *
-     * [pluginMigrations] should come from `HostedApp.migrations` when the host is starting a hosted app. The bootstrap
-     * runs those migrations in a separate Flyway history table after the platform migrations.
+     * [extensionMigrations] should come from `PlatformExtension.migrations` when the host is starting an extension. The
+     * bootstrap runs those migrations in a separate Flyway history table after the platform migrations.
      */
-    fun create(config: AppConfig, pluginMigrations: PluginMigrations? = null): PlatformPersistence
+    fun create(config: AppConfig, extensionMigrations: ExtensionMigrations? = null): PlatformPersistence
 }
 
 fun loadPersistenceBootstrap(): PersistenceBootstrap {

@@ -834,7 +834,7 @@
   }, {
     "glob" : "META-INF/services/javax.xml.parsers.SAXParserFactory"
   }, {
-    "glob" : "META-INF/services/org.flywaydb.core.extensibility.Plugin"
+    "glob" : "META-INF/services/org.flywaydb.core.extensibility.Extension"
   }, {
     "glob" : "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
   }, {

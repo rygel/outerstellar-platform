@@ -13,6 +13,7 @@ COPY platform-web/target/outerstellar-platform-web-${VERSION}-jar-with-dependenc
 ENV SERVER_PORT=8080
 ENV OTEL_TRACES_EXPORTER=none
 ENV OTEL_METRICS_EXPORTER=none
+ENV JTE_PRODUCTION=true
 
 EXPOSE 8080
 

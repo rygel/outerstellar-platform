@@ -27,12 +27,12 @@ Tests share a single `outerstellar` database within each module. Test isolation 
 
 ## Architecture
 
-### New module: `platform-test-infrastructure`
+### New module: `platform-testkit`
 
 A small shared test utility module producing a `test-jar`.
 
 ```
-platform-test-infrastructure/
+platform-testkit/
   src/main/kotlin/
     SharedPostgres.kt       — container lifecycle + CREATE/DROP DATABASE
     TestDatabase.kt         — per-class database handle (jdbcUrl, Jdbi, DataSource)
@@ -111,25 +111,25 @@ class TestDatabase(
 
 ### Container reuse configuration
 
-`platform-test-infrastructure/src/main/resources/.testcontainers.properties`:
+`platform-testkit/src/main/resources/.testcontainers.properties`:
 ```
 testcontainers.reuse.enable=true
 ```
 
-This file is on the classpath of every module that depends on `platform-test-infrastructure`. Testcontainers reads it automatically. No per-machine configuration needed.
+This file is on the classpath of every module that depends on `platform-testkit`. Testcontainers reads it automatically. No per-machine configuration needed.
 
 ### Maven module setup
 
-`platform-test-infrastructure/pom.xml`:
+`platform-testkit/pom.xml`:
 - Depends on: `platform-core`, `platform-persistence-jdbi` (for `createDataSource`, `migrate`), `testcontainers-postgresql`, `jdbi3-core`, `slf4j-api`
 - Produces a `test-jar` via `maven-jar-plugin` with `test-jar` goal
-- Parent: root POM (inherits version management, plugins)
+- Parent: root POM (inherits version management, extensions)
 
 Consumers add:
 ```xml
 <dependency>
     <groupId>io.github.rygel</groupId>
-    <artifactId>outerstellar-platform-test-infrastructure</artifactId>
+    <artifactId>outerstellar-platform-testkit</artifactId>
     <version>${project.version}</version>
     <classifier>tests</classifier>
     <scope>test</scope>
@@ -288,7 +288,7 @@ Changes from current JdbiTest:
 
 ## What gets deleted
 
-- `CleanupTables.kt` — no longer needed for test cleanup. Verify `platform-seed` doesn't use it; if it does, move the table list into seed.
+- `CleanupTables.kt` — no longer needed for test cleanup. Verify `platform-seeder` doesn't use it; if it does, move the table list into seed.
 - `@AfterEach` cleanup in both WebTest and JdbiTest
 - Per-module container companion objects
 - JdbiTest's companion object entirely
@@ -325,4 +325,4 @@ The real win is **eliminating all cleanup code and getting bulletproof test isol
 | Max connections | 68 databases in one PostgreSQL is trivial; PostgreSQL handles thousands |
 | `PER_CLASS` lifecycle breaks stateful tests | No such tests exist — all state is in companion objects or lazy vals |
 | CI container accumulation | `docker rm -f` step in CI workflow, or rely on CI worker recycling |
-| `testcontainers.reuse.enable=true` not found | Packaged in `platform-test-infrastructure`'s resources, on classpath of all consumers |
+| `testcontainers.reuse.enable=true` not found | Packaged in `platform-testkit`'s resources, on classpath of all consumers |

@@ -56,7 +56,7 @@ Auth uses opaque session tokens (`oss_` prefix, 192-bit entropy). Sessions expir
 |---|---|---|
 | Search page | `GET /search?q=` | HTML results |
 | JSON API | `GET /api/v1/search?q=` | JSON results |
-| Search providers | SPI | `SearchProvider` interface for plugin extensibility |
+| Search providers | SPI | `SearchProvider` interface for extension extensibility |
 
 ### Admin
 

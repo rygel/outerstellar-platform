@@ -119,9 +119,9 @@ SecurityService gains a `SessionService` dependency for TOTP flow (which calls `
 - Routes take `AuthService`, `UserAdminService`, `SessionService` as additional constructor parameters
 - `WebTest.createSecurityService()` updated to match new constructor
 
-## Plugin SPI
+## Extension SPI
 
-`PlatformPlugin` holds `securityService: SecurityService` — unchanged. New services are internal to the platform, not exposed to plugins.
+`PlatformExtension` holds `securityService: SecurityService` — unchanged. New services are internal to the platform, not exposed to extensions.
 
 ## Internal Helpers
 

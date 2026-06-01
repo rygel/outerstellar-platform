@@ -1,10 +1,10 @@
-# Plugin Text & Template Override Implementation Plan
+# Extension Text & Template Override Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace all ~90 hardcoded strings in JTE templates with a `TextResolver` key system that plugins can override, and add per-template override capability so plugins can replace individual `.kte` files.
+**Goal:** Replace all ~90 hardcoded strings in JTE templates with a `TextResolver` key system that extensions can override, and add per-template override capability so extensions can replace individual `.kte` files.
 
-**Architecture:** A `TextResolver` interface in platform-core resolves string keys to values. `DefaultTextResolver` loads from `texts.properties`. `ShellView` exposes `text(key)` for templates. `PlatformPlugin` gets `textResolver` and `templateOverrides()` properties. The `TemplateRenderer` is wrapped to support per-template classpath switching.
+**Architecture:** A `TextResolver` interface in platform-core resolves string keys to values. `DefaultTextResolver` loads from `texts.properties`. `ShellView` exposes `text(key)` for templates. `PlatformExtension` gets `textResolver` and `templateOverrides()` properties. The `TemplateRenderer` is wrapped to support per-template classpath switching.
 
 **Tech Stack:** Kotlin, JTE templates, Koin DI, Maven, http4k
 
@@ -15,15 +15,15 @@
 ### New files
 - `platform-core/src/main/kotlin/io/github/rygel/outerstellar/platform/TextResolver.kt` — interface + DefaultTextResolver
 - `platform-web/src/main/resources/texts.properties` — all extracted UI strings
-- `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/infra/PluginTemplateRenderer.kt` — wraps renderer for template overrides
+- `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/infra/ExtensionTemplateRenderer.kt` — wraps renderer for template overrides
 - `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/TextResolverTest.kt` — unit tests for TextResolver
-- `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/PluginTemplateRendererTest.kt` — unit tests for template override mechanism
+- `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/ExtensionTemplateRendererTest.kt` — unit tests for template override mechanism
 
 ### Modified files
 - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/ViewModels.kt` — add `textResolver` to `ShellView` + `text()` method
 - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/WebContext.kt` — pass `TextResolver` into `ShellView`
 - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/WebPageFactory.kt` — pass `TextResolver` through
-- `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformPlugin.kt` — add `textResolver` + `templateOverrides()`
+- `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformExtension.kt` — add `textResolver` + `templateOverrides()`
 - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/di/WebModule.kt` — wire `TextResolver` + wrap renderer
 - `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt` — pass `TextResolver` to app assembly
 - All 33 `.kte` files — replace hardcoded strings with `${shell.text("key")}`
@@ -222,7 +222,7 @@ git commit -m "feat: add texts.properties with all extracted UI strings"
 - Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/WebPageFactory.kt`
 - Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/di/WebModule.kt`
 - Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt`
-- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformPlugin.kt`
+- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformExtension.kt`
 
 - [ ] **Step 1: Add textResolver field and text() method to ShellView**
 
@@ -250,7 +250,7 @@ class WebContext(
     private val userRepository: UserRepository,
     private val appVersion: String,
     private val jwtService: JwtService?,
-    private val pluginNavItems: List<PluginNavItem>,
+    private val extensionNavItems: List<ExtensionNavItem>,
     private val textResolver: TextResolver = DefaultTextResolver.fromClasspath(),
 )
 ```
@@ -267,16 +267,16 @@ Add to `WebModule.kt`:
 
 ```kotlin
 single<TextResolver> {
-    val plugin = getOrNull<PlatformPlugin>()
-    plugin?.textResolver ?: DefaultTextResolver.fromClasspath()
+    val extension = getOrNull<PlatformExtension>()
+    extension?.textResolver ?: DefaultTextResolver.fromClasspath()
 }
 ```
 
 Pass `get<TextResolver>()` to `WebPageFactory` constructor.
 
-- [ ] **Step 5: Add textResolver and templateOverrides to PlatformPlugin**
+- [ ] **Step 5: Add textResolver and templateOverrides to PlatformExtension**
 
-In `PlatformPlugin.kt`, add:
+In `PlatformExtension.kt`, add:
 
 ```kotlin
 val textResolver: TextResolver
@@ -295,7 +295,7 @@ Expected: All existing tests pass (default TextResolver provides same strings as
 - [ ] **Step 7: Commit**
 
 ```bash
-git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/ViewModels.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/WebContext.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/WebPageFactory.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/di/WebModule.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformPlugin.kt
+git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/ViewModels.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/WebContext.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/WebPageFactory.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/di/WebModule.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformExtension.kt
 git commit -m "feat: wire TextResolver into ShellView, WebContext, and DI"
 ```
 
@@ -376,14 +376,14 @@ git commit -m "feat: replace all hardcoded strings in JTE templates with text re
 
 ---
 
-## Task 5: PluginTemplateRenderer for per-template override
+## Task 5: ExtensionTemplateRenderer for per-template override
 
 **Files:**
-- Create: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/infra/PluginTemplateRenderer.kt`
-- Create: `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/PluginTemplateRendererTest.kt`
+- Create: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/infra/ExtensionTemplateRenderer.kt`
+- Create: `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/ExtensionTemplateRendererTest.kt`
 - Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/di/WebModule.kt`
 
-- [ ] **Step 1: Write failing test for PluginTemplateRenderer**
+- [ ] **Step 1: Write failing test for ExtensionTemplateRenderer**
 
 ```kotlin
 package io.github.rygel.outerstellar.platform
@@ -394,7 +394,7 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class PluginTemplateRendererTest {
+class ExtensionTemplateRendererTest {
 
     private data class TestViewModel(val value: String) : ViewModel {
         override fun template() = "TestTemplate"
@@ -403,16 +403,16 @@ class PluginTemplateRendererTest {
     @Test
     fun `delegates to base renderer when template is not overridden`() {
         val baseRenderer: TemplateRenderer = { "<base>${it.template()}</base>" }
-        val pluginRenderer = PluginTemplateRenderer(baseRenderer, emptySet(), null)
-        val result = pluginRenderer(TestViewModel("test"))
+        val extensionRenderer = ExtensionTemplateRenderer(baseRenderer, emptySet(), null)
+        val result = extensionRenderer(TestViewModel("test"))
         assertEquals("<base>TestTemplate</base>", result)
     }
 
     @Test
     fun `override set is checked but base renderer handles all rendering`() {
         val baseRenderer: TemplateRenderer = { "<base>${it.template()}</base>" }
-        val pluginRenderer = PluginTemplateRenderer(baseRenderer, setOf("SomeTemplate"), null)
-        val result = pluginRenderer(TestViewModel("test"))
+        val extensionRenderer = ExtensionTemplateRenderer(baseRenderer, setOf("SomeTemplate"), null)
+        val result = extensionRenderer(TestViewModel("test"))
         assertEquals("<base>TestTemplate</base>", result)
     }
 }
@@ -422,10 +422,10 @@ Note: The actual per-template classpath switching requires JTE's `TemplateEngine
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `mvn -pl platform-web test -Dtest=PluginTemplateRendererTest -DfailIfNoTests=false`
+Run: `mvn -pl platform-web test -Dtest=ExtensionTemplateRendererTest -DfailIfNoTests=false`
 Expected: FAIL
 
-- [ ] **Step 3: Write PluginTemplateRenderer**
+- [ ] **Step 3: Write ExtensionTemplateRenderer**
 
 ```kotlin
 package io.github.rygel.outerstellar.platform.infra
@@ -433,17 +433,17 @@ package io.github.rygel.outerstellar.platform.infra
 import org.http4k.template.TemplateRenderer
 import org.http4k.template.ViewModel
 
-class PluginTemplateRenderer(
+class ExtensionTemplateRenderer(
     private val delegate: TemplateRenderer,
     private val overrideTemplates: Set<String>,
-    private val pluginClassLoader: ClassLoader?,
+    private val extensionClassLoader: ClassLoader?,
 ) : TemplateRenderer {
 
     override fun invoke(viewModel: ViewModel): String {
         val templateName = viewModel.template()
         val templatePath = "$templateName.kte"
-        if (overrideTemplates.contains(templatePath) && pluginClassLoader != null) {
-            // Future: resolve template from pluginClassLoader
+        if (overrideTemplates.contains(templatePath) && extensionClassLoader != null) {
+            // Future: resolve template from extensionClassLoader
             // For now, delegate to base renderer
         }
         return delegate(viewModel)
@@ -453,19 +453,19 @@ class PluginTemplateRenderer(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `mvn -pl platform-web test -Dtest=PluginTemplateRendererTest`
+Run: `mvn -pl platform-web test -Dtest=ExtensionTemplateRendererTest`
 Expected: PASS
 
-- [ ] **Step 5: Wire PluginTemplateRenderer in WebModule.kt**
+- [ ] **Step 5: Wire ExtensionTemplateRenderer in WebModule.kt**
 
 In `WebModule.kt`, wrap the `TemplateRenderer`:
 
 ```kotlin
 single<TemplateRenderer> {
     val baseRenderer = createRenderer()
-    val plugin = getOrNull<PlatformPlugin>()
-    if (plugin != null && plugin.templateOverrides().isNotEmpty()) {
-        PluginTemplateRenderer(baseRenderer, plugin.templateOverrides(), plugin::class.java.classLoader)
+    val extension = getOrNull<PlatformExtension>()
+    if (extension != null && extension.templateOverrides().isNotEmpty()) {
+        ExtensionTemplateRenderer(baseRenderer, extension.templateOverrides(), extension::class.java.classLoader)
     } else {
         baseRenderer
     }
@@ -480,16 +480,16 @@ Expected: All tests pass
 - [ ] **Step 7: Commit**
 
 ```bash
-git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/infra/PluginTemplateRenderer.kt platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/PluginTemplateRendererTest.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/di/WebModule.kt
-git commit -m "feat: add PluginTemplateRenderer for per-template override"
+git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/infra/ExtensionTemplateRenderer.kt platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/ExtensionTemplateRendererTest.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/di/WebModule.kt
+git commit -m "feat: add ExtensionTemplateRenderer for per-template override"
 ```
 
 ---
 
-## Task 6: Integration test — plugin overrides texts
+## Task 6: Integration test — extension overrides texts
 
 **Files:**
-- Create: `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/web/PluginTextOverrideTest.kt`
+- Create: `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/web/ExtensionTextOverrideTest.kt`
 
 - [ ] **Step 1: Write integration test**
 
@@ -505,7 +505,7 @@ import org.http4k.core.Status
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class PluginTextOverrideTest : WebTest() {
+class ExtensionTextOverrideTest : WebTest() {
 
     @Test
     fun `default text resolver provides nav inbox label`() {
@@ -539,14 +539,14 @@ class PluginTextOverrideTest : WebTest() {
 
 - [ ] **Step 2: Run test**
 
-Run: `mvn -pl platform-web test -Dtest=PluginTextOverrideTest`
+Run: `mvn -pl platform-web test -Dtest=ExtensionTextOverrideTest`
 Expected: PASS
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/web/PluginTextOverrideTest.kt
-git commit -m "test: add integration tests for plugin text override"
+git add platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/web/ExtensionTextOverrideTest.kt
+git commit -m "test: add integration tests for extension text override"
 ```
 
 ---

@@ -78,7 +78,7 @@
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>
-        <Package name="~io\.github\.rygel\.outerstellar\.platform\.plugin(\..*)?"/>
+        <Package name="~io\.github\.rygel\.outerstellar\.platform\.extension(\..*)?"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>

@@ -3,28 +3,28 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.composition.RouteGroup
-import io.github.rygel.outerstellar.platform.plugin.HostedAppContribution
+import io.github.rygel.outerstellar.platform.extension.ExtensionContribution
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 
 data class ShellConfig(
-    val pluginOptions: PluginOptions = PluginOptions(),
+    val extensionOptions: ExtensionOptions = ExtensionOptions(),
     val appBaseUrl: String = "",
     val sidebarFactory: SidebarFactory = SidebarFactory(),
     val bannerProviders: List<BannerProvider> = emptyList(),
-    val mode: PlatformMode = PlatformMode.FullPlatformApp,
+    val mode: PlatformMode = PlatformMode.FullPlatform,
     val appLabel: String = "Outerstellar",
     val appHomeUrl: String = "/",
     val includedPlatformPages: Set<PlatformPageSets> = emptySet(),
 ) {
     companion object {
         fun from(
-            contribution: HostedAppContribution,
+            contribution: ExtensionContribution,
             appBaseUrl: String = "",
             sidebarFactory: SidebarFactory = SidebarFactory(),
         ): ShellConfig {
             val uiRouteGroups = setOf(RouteGroup.PublicUi, RouteGroup.ProtectedUi)
             return ShellConfig(
-                pluginOptions = contribution.options,
+                extensionOptions = contribution.options,
                 appBaseUrl = appBaseUrl,
                 sidebarFactory = sidebarFactory,
                 bannerProviders = contribution.bannerProviders,

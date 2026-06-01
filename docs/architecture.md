@@ -90,7 +90,7 @@ The module:
 - Implements repository interfaces defined in `platform-core`
 - Provides Flyway migrations at `classpath:db/migration`
 - Provides the `persistenceModule` Koin module so the rest of the app is agnostic
-- Provides `DatabaseInfra` functions (`migrate`, `migratePlugin`, `createDataSource`)
+- Provides `DatabaseInfra` functions (`migrate`, `migrateExtension`, `createDataSource`)
 
 #### Adding new repositories
 
@@ -100,23 +100,23 @@ When adding a new repository:
 2. Implement it in `platform-persistence-jdbi`
 3. Register the implementation in `PersistenceModule.kt`
 
-### Plugin migrations
+### Extension migrations
 
-The platform supports plugin applications that have their own Flyway migrations without version conflicts. Hosted apps declare an optional `PluginMigrations` value, which provides:
+The platform supports extension applications that have their own Flyway migrations without version conflicts. Extensions declare an optional `ExtensionMigrations` value, which provides:
 
-- **`location`**: classpath location for the plugin's SQL files (e.g. `classpath:db/migration/plugin`).
-- **`historyTable`**: separate Flyway history table name. Defaults to `"flyway_plugin_history"`.
+- **`location`**: classpath location for the extension's SQL files (e.g. `classpath:db/migration/extension`).
+- **`historyTable`**: separate Flyway history table name. Defaults to `"flyway_extension_history"`.
 - **`migrationNames`**: optional explicit migration filenames for native-image classpath extraction.
 
 The host runs two separate Flyway instances:
 
-| Aspect | Host (platform) | Plugin |
+| Aspect | Host (platform) | Extension |
 |--------|----------------|--------|
-| Migration location | `classpath:db/migration` | Configurable via `PluginMigrations.location` |
-| History table | `flyway_schema_history` | Configurable via `PluginMigrations.historyTable` |
+| Migration location | `classpath:db/migration` | Configurable via `ExtensionMigrations.location` |
+| History table | `flyway_schema_history` | Configurable via `ExtensionMigrations.historyTable` |
 | `baselineOnMigrate` | No | Yes |
 
-Hosted apps implement `HostedApp` / `PlatformPlugin` and the server passes `plugin.migrations` into persistence startup. The persistence bootstrap runs those migrations after the host migrations in a separate Flyway instance. This means plugins can use **any** version numbers (including V1–V4) without conflicting with the platform's own migrations.
+Extensions implement `PlatformExtension` and the server passes `extension.migrations` into persistence startup. The persistence bootstrap runs those migrations after the host migrations in a separate Flyway instance. This means extensions can use **any** version numbers (including V1–V4) without conflicting with the platform's own migrations.
 
 ## Sync design
 
@@ -259,7 +259,7 @@ The build includes workbook-style quality tooling and project hygiene. **It is m
 - Checkstyle (coding standard adherence)
 - PMD (source code analyzer)
 - Detekt (Kotlin static analysis)
-- Versions Maven Plugin (dependency updates)
+- Versions Maven Extension (dependency updates)
 - OWASP Dependency Check (security vulnerabilities)
 
 These are included and enforced so the platform begins with and maintains the exact same rigorous quality expectations as downstream projects.

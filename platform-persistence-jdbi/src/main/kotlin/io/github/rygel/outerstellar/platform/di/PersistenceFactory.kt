@@ -1,10 +1,10 @@
 package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.PluginMigrations
+import io.github.rygel.outerstellar.platform.ExtensionMigrations
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
-import io.github.rygel.outerstellar.platform.infra.migratePlugin
+import io.github.rygel.outerstellar.platform.infra.migrateExtension
 import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
@@ -64,10 +64,13 @@ class PersistenceComponents(
     }
 }
 
-fun createPersistenceComponents(config: AppConfig, pluginMigrations: PluginMigrations? = null): PersistenceComponents {
+fun createPersistenceComponents(
+    config: AppConfig,
+    extensionMigrations: ExtensionMigrations? = null,
+): PersistenceComponents {
     val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword, config.runtime)
     try {
-        runMigrations(ds, config, pluginMigrations)
+        runMigrations(ds, config, extensionMigrations)
     } catch (e: Exception) {
         ds.close()
         throw e
@@ -108,15 +111,17 @@ fun createPersistenceComponents(config: AppConfig, pluginMigrations: PluginMigra
 }
 
 @Deprecated(
-    "Use createPersistenceComponents(config, PluginMigrations?) instead.",
-    ReplaceWith("createPersistenceComponents(config, pluginMigrationSource?.let { PluginMigrations(location = it) })"),
+    "Use createPersistenceComponents(config, ExtensionMigrations?) instead.",
+    ReplaceWith(
+        "createPersistenceComponents(config, extensionMigrationSource?.let { ExtensionMigrations(location = it) })"
+    ),
 )
-fun createPersistenceComponents(config: AppConfig, pluginMigrationSource: String?): PersistenceComponents =
-    createPersistenceComponents(config, pluginMigrationSource?.let { PluginMigrations(location = it) })
+fun createPersistenceComponents(config: AppConfig, extensionMigrationSource: String?): PersistenceComponents =
+    createPersistenceComponents(config, extensionMigrationSource?.let { ExtensionMigrations(location = it) })
 
-private fun runMigrations(ds: DataSource, config: AppConfig, pluginMigrations: PluginMigrations?) {
+private fun runMigrations(ds: DataSource, config: AppConfig, extensionMigrations: ExtensionMigrations?) {
     if (!config.runtime.flywayEnabled) return
     migrate(ds)
-    val plugin = pluginMigrations ?: return
-    migratePlugin(ds, plugin.location, plugin.historyTable, plugin.migrationNames)
+    val extension = extensionMigrations ?: return
+    migrateExtension(ds, extension.location, extension.historyTable, extension.migrationNames)
 }

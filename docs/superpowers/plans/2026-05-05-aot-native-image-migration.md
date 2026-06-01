@@ -6,7 +6,7 @@
 
 **Architecture:** Six independent dependency swaps, ordered from lowest risk to highest. Each task produces a fully working build — the project never enters a broken state. All changes target both the main tree and the `pr-security/` mirror.
 
-**Tech Stack:** Kotlin 2.3.10, Maven multi-module, http4k 6.45.1.0, GraalVM native-image plugin 0.10.5
+**Tech Stack:** Kotlin 2.3.10, Maven multi-module, http4k 6.45.1.0, GraalVM native-image extension 0.10.5
 
 ---
 
@@ -23,9 +23,9 @@
 - `platform-core/src/main/kotlin/.../sync/SyncModels.kt` — replace Konform with `require()` checks
 - `platform-core/src/main/kotlin/.../service/MessageService.kt` — update validation consumption
 
-**Task 2 (JDBI KotlinPlugin removal):**
+**Task 2 (JDBI KotlinExtension removal):**
 - `platform-persistence-jdbi/pom.xml` — remove `jdbi3-kotlin` dependency
-- `platform-persistence-jdbi/src/main/kotlin/.../di/PersistenceModule.kt` — remove `installPlugin(KotlinPlugin())`
+- `platform-persistence-jdbi/src/main/kotlin/.../di/PersistenceModule.kt` — remove `installExtension(KotlinExtension())`
 
 **Task 3 (Simple Java Mail → Angus Mail):**
 - `pom.xml` — replace `simplejavamail.version` with `angus-mail.version` + `jakarta.mail-api.version`
@@ -33,7 +33,7 @@
 - `platform-core/src/main/kotlin/.../service/SmtpEmailService.kt` — rewrite using Jakarta Mail API
 
 **Task 4 (Hoplite → kotlinx.serialization):**
-- `pom.xml` — remove `hoplite.version`, add `kotlinx-serialization.version`, add kotlinx serialization plugin
+- `pom.xml` — remove `hoplite.version`, add `kotlinx-serialization.version`, add kotlinx serialization extension
 - `platform-core/pom.xml` — swap hoplite for kotlinx-serialization-json + yaml
 - `platform-desktop/pom.xml` — swap hoplite for kotlinx-serialization-json + yaml
 - `platform-core/src/main/kotlin/.../AppConfig.kt` — rewrite config loading
@@ -52,7 +52,7 @@
 - All test files using Jackson lenses
 
 **Task 6 (Koin → koin-annotations + KSP):**
-- `pom.xml` — add `koin-annotations.version`, `ksp.version`, KSP Maven plugin
+- `pom.xml` — add `koin-annotations.version`, `ksp.version`, KSP Maven extension
 - All module POMs with koin — add `koin-annotations` dependency + KSP generated sources
 - All Koin module files — add `@Module` / `@Single` annotations
 - All `KoinComponent` objects — verify generated code works
@@ -288,20 +288,20 @@ git add -A && git commit -m "refactor: replace Konform with inline require() val
 
 ---
 
-## Task 2: Remove JDBI KotlinPlugin (trivial — 1 line + 1 dep)
+## Task 2: Remove JDBI KotlinExtension (trivial — 1 line + 1 dep)
 
-**Why second:** Zero risk. The JDBI module only uses `KotlinPlugin` for reflection-based mapping that it never actually uses — all mappers are lambda-based. Removing it makes the JDBI module AOT-compatible.
+**Why second:** Zero risk. The JDBI module only uses `KotlinExtension` for reflection-based mapping that it never actually uses — all mappers are lambda-based. Removing it makes the JDBI module AOT-compatible.
 
 **Files:**
 - Modify: `platform-persistence-jdbi/pom.xml` — remove `jdbi3-kotlin` dependency
-- Modify: `platform-persistence-jdbi/src/main/kotlin/.../di/PersistenceModule.kt` — remove `installPlugin(KotlinPlugin())`
+- Modify: `platform-persistence-jdbi/src/main/kotlin/.../di/PersistenceModule.kt` — remove `installExtension(KotlinExtension())`
 - Modify: `pom.xml:308-312` — optionally remove `jdbi3-kotlin` managed dependency
 
-- [ ] **Step 1: Remove KotlinPlugin from PersistenceModule.kt**
+- [ ] **Step 1: Remove KotlinExtension from PersistenceModule.kt**
 
 In `platform-persistence-jdbi/src/main/kotlin/.../di/PersistenceModule.kt`:
-- Remove `import org.jdbi.v3.core.kotlin.KotlinPlugin`
-- Remove `.installPlugin(KotlinPlugin())` from both `Jdbi.create(...)` calls
+- Remove `import org.jdbi.v3.core.kotlin.KotlinExtension`
+- Remove `.installExtension(KotlinExtension())` from both `Jdbi.create(...)` calls
 - The Jdbi creation becomes just: `Jdbi.create(dataSource)`
 
 - [ ] **Step 2: Remove jdbi3-kotlin dependency**
@@ -315,7 +315,7 @@ In root `pom.xml`:
 - [ ] **Step 3: Run JDBI module tests**
 
 Run: `mvn -pl platform-persistence-jdbi clean test`
-Expected: All JDBI tests pass — the lambda-based mappers don't need KotlinPlugin.
+Expected: All JDBI tests pass — the lambda-based mappers don't need KotlinExtension.
 
 - [ ] **Step 4: Run full build**
 
@@ -325,7 +325,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add -A && git commit -m "refactor: remove JDBI KotlinPlugin for AOT compatibility"
+git add -A && git commit -m "refactor: remove JDBI KotlinExtension for AOT compatibility"
 ```
 
 ---
@@ -489,12 +489,12 @@ git add -A && git commit -m "refactor: replace Simple Java Mail with Angus Mail 
 
 **Why fourth:** Two config classes, two loader sites. Hoplite uses Kotlin reflection to inspect constructors. kotlinx.serialization generates serializers at compile time via KSP, fully AOT-compatible.
 
-**Prerequisite:** The Kotlin compiler must have the `kotlinx-serialization` plugin enabled. This requires adding the plugin to the root POM's `pluginManagement` and applying it to modules that use `@Serializable`.
+**Prerequisite:** The Kotlin compiler must have the `kotlinx-serialization` extension enabled. This requires adding the extension to the root POM's `extensionManagement` and applying it to modules that use `@Serializable`.
 
 **Files:**
-- Modify: `pom.xml` — add serialization plugin + remove hoplite
-- Modify: `platform-core/pom.xml` — swap deps, add serialization plugin
-- Modify: `platform-desktop/pom.xml` — swap deps, add serialization plugin
+- Modify: `pom.xml` — add serialization extension + remove hoplite
+- Modify: `platform-core/pom.xml` — swap deps, add serialization extension
+- Modify: `platform-desktop/pom.xml` — swap deps, add serialization extension
 - Modify: `platform-core/src/main/resources/application.yaml` — keep as-is
 - Modify: `platform-core/src/main/kotlin/.../AppConfig.kt` — rewrite with `@Serializable`
 - Modify: `platform-desktop/src/main/kotlin/.../SwingAppConfig.kt` — rewrite with `@Serializable`
@@ -527,9 +527,9 @@ In `dependencyManagement`, replace hoplite entries with:
 
 Remove hoplite managed dependencies.
 
-In `build > pluginManagement`, add the serialization compiler plugin to the `kotlin-maven-plugin`:
+In `build > extensionManagement`, add the serialization compiler extension to the `kotlin-maven-plugin`:
 ```xml
-<plugin>
+<extension>
     <groupId>org.jetbrains.kotlin</groupId>
     <artifactId>kotlin-maven-plugin</artifactId>
     <version>${kotlin.version}</version>
@@ -537,19 +537,19 @@ In `build > pluginManagement`, add the serialization compiler plugin to the `kot
         <jvmTarget>${java.version}</jvmTarget>
         <useDaemon>false</useDaemon>
         <executionStrategy>in-process</executionStrategy>
-        <compilerPlugins>
-            <plugin>kotlinx-serialization</plugin>
-        </compilerPlugins>
+        <compilerExtensions>
+            <extension>kotlinx-serialization</extension>
+        </compilerExtensions>
     </configuration>
     <dependencies>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-serialization-compiler-plugin-embeddable</artifactId>
+            <artifactId>kotlin-serialization-compiler-extension-embeddable</artifactId>
             <version>${kotlin.version}</version>
         </dependency>
     </dependencies>
     <!-- keep existing executions -->
-</plugin>
+</extension>
 ```
 
 - [ ] **Step 2: Add serialization dependencies to module POMs**
@@ -707,7 +707,7 @@ git add -A && git commit -m "refactor: replace Hoplite with kotlinx.serializatio
 
 ## Task 5: Replace Jackson with kotlinx.serialization (high risk — widest surface area)
 
-**Why fifth:** Largest change surface — every JSON serialization/deserialization call site changes. Must come after Task 4 (kotlinx.serialization plugin is already configured). http4k provides `http4k-format-kotlinx-serialization` as a drop-in replacement for `http4k-format-jackson`.
+**Why fifth:** Largest change surface — every JSON serialization/deserialization call site changes. Must come after Task 4 (kotlinx.serialization extension is already configured). http4k provides `http4k-format-kotlinx-serialization` as a drop-in replacement for `http4k-format-jackson`.
 
 **Key changes:**
 1. Replace `http4k-format-jackson` with `http4k-format-kotlinx-serialization` in all POMs
@@ -908,7 +908,7 @@ git add -A && git commit -m "refactor: replace Jackson with kotlinx.serializatio
 3. KSP generates Kotlin code that replaces the runtime DSL
 4. At runtime, the generated code creates modules without reflection
 
-**IMPORTANT:** For Maven, koin-annotations requires the `ksp` Maven plugin (from `com.google.devtools.ksp`). This is not yet as mature as the Gradle integration. Alternative approach: **keep the existing `module { }` DSL but explicitly specify all type parameters**, which eliminates the need for `kotlin-reflect` in Koin 4.x.
+**IMPORTANT:** For Maven, koin-annotations requires the `ksp` Maven extension (from `com.google.devtools.ksp`). This is not yet as mature as the Gradle integration. Alternative approach: **keep the existing `module { }` DSL but explicitly specify all type parameters**, which eliminates the need for `kotlin-reflect` in Koin 4.x.
 
 **Revised approach — eliminate kotlin-reflect without koin-annotations:**
 
@@ -916,13 +916,13 @@ Koin 4.x only needs `kotlin-reflect` when type parameters cannot be resolved at 
 
 1. Replace all `by inject<T>()` with explicit `get<T>()` calls
 2. This makes `koin-core-jvm` work without `kotlin-reflect` on the classpath
-3. No KSP plugin needed, no annotation processing, no generated code
+3. No KSP extension needed, no annotation processing, no generated code
 
 This is simpler and more reliable than the KSP approach in a Maven build.
 
 **Files:**
 - Modify: All `KoinComponent` objects — replace `by inject()` with `get()`
-- Modify: Root `pom.xml` — add `koin-annotations` managed dependency + KSP plugin (if using annotations approach)
+- Modify: Root `pom.xml` — add `koin-annotations` managed dependency + KSP extension (if using annotations approach)
 - Modify: All module files — add `@Module` / `@Single` annotations (if using annotations approach)
 - Modify: All Koin module test files — update as needed
 
@@ -947,7 +947,7 @@ Apply to all 8 fields in `MainComponent`.
 - [ ] **Step 2: Replace `by inject()` in all other KoinComponent objects**
 
 Same pattern for:
-- `SeedComponent` in `platform-seed/.../SeedData.kt` (4 fields)
+- `SeedComponent` in `platform-seeder/.../SeedData.kt` (4 fields)
 - `DesktopComponent` in `platform-desktop/.../SwingSyncApp.kt` (4 fields)
 
 - [ ] **Step 3: Replace `by inject()` in test files**

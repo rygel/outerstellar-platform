@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>outerstellar-platform-security</artifactId>
-    <name>Platform Security</name>
+    <name>Outerstellar Platform Security</name>
 
     <properties>
     </properties>
@@ -96,4 +96,3 @@
         </plugins>
     </build>
 </project>
-

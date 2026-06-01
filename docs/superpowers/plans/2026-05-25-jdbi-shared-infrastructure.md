@@ -127,7 +127,7 @@ Expected: BUILD SUCCESS
 ### Task 3: Register ArgumentFactory and ColumnMapper on test JDBi
 
 **Files:**
-- Modify: `platform-test-infrastructure/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/TestDatabase.kt:29`
+- Modify: `platform-testkit/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/TestDatabase.kt:29`
 
 - [ ] **Step 1: Update TestDatabase.kt**
 
@@ -157,7 +157,7 @@ To:
 
 - [ ] **Step 2: Compile both modules**
 
-Run: `mvn -pl platform-test-infrastructure,platform-persistence-jdbi compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
+Run: `mvn -pl platform-testkit,platform-persistence-jdbi compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
 Expected: BUILD SUCCESS
 
 ---
@@ -464,7 +464,7 @@ Expected: All tests pass
 
 - [ ] **Step 1: Run full reactor build**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 Expected: BUILD SUCCESS, all 615+ tests pass
 
 - [ ] **Step 2: Verify no remaining manual Timestamp conversions**

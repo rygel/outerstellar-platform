@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>outerstellar-platform-core</artifactId>
-    <name>Platform Core</name>
+    <name>Outerstellar Platform Core</name>
 
     <dependencies>
         <dependency>

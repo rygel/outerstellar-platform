@@ -74,8 +74,8 @@ jobs:
             platform-jte-extensions/target/
             outerstellar-i18n/target/
             platform-core/target/
-            platform-plugin-api/target/
-            platform-test-infrastructure/target/
+            platform-extension-api/target/
+            platform-testkit/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -127,8 +127,8 @@ jobs:
             platform-jte-extensions/target/
             outerstellar-i18n/target/
             platform-core/target/
-            platform-plugin-api/target/
-            platform-test-infrastructure/target/
+            platform-extension-api/target/
+            platform-testkit/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -138,7 +138,7 @@ jobs:
       - name: Install parent POM and dependencies
         run: >
           mvn install -N -q
-          && mvn install -pl platform-jte-extensions,outerstellar-i18n,platform-core,platform-plugin-api,platform-security,platform-test-infrastructure,platform-sync-client,platform-persistence-jdbi
+          && mvn install -pl platform-jte-extensions,outerstellar-i18n,platform-core,platform-extension-api,platform-security,platform-testkit,platform-sync-client,platform-persistence-jdbi
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -194,8 +194,8 @@ jobs:
             platform-jte-extensions/target/
             outerstellar-i18n/target/
             platform-core/target/
-            platform-plugin-api/target/
-            platform-test-infrastructure/target/
+            platform-extension-api/target/
+            platform-testkit/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -209,7 +209,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl outerstellar-i18n,outerstellar-i18n-validator,outerstellar-i18n-validator-maven-plugin,platform-core,platform-plugin-api,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security
+          -pl outerstellar-i18n,outerstellar-i18n-validator,outerstellar-i18n-validator-maven-plugin,platform-core,platform-extension-api,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-security
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -258,8 +258,8 @@ jobs:
             platform-jte-extensions/target/
             outerstellar-i18n/target/
             platform-core/target/
-            platform-plugin-api/target/
-            platform-test-infrastructure/target/
+            platform-extension-api/target/
+            platform-testkit/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -270,7 +270,7 @@ jobs:
         run: >
           mvn install -N -q
           && mvn install
-          -pl platform-jte-extensions,outerstellar-i18n,platform-core,platform-plugin-api,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
+          -pl platform-jte-extensions,outerstellar-i18n,platform-core,platform-extension-api,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-security,platform-web
           -DskipTests -Dexec.skip=true -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true
@@ -345,8 +345,8 @@ jobs:
             platform-jte-extensions/target/
             outerstellar-i18n/target/
             platform-core/target/
-            platform-plugin-api/target/
-            platform-test-infrastructure/target/
+            platform-extension-api/target/
+            platform-testkit/target/
             platform-persistence-jdbi/target/
             platform-sync-client/target/
             platform-security/target/
@@ -356,7 +356,7 @@ jobs:
       - name: Install parent POM and dependencies
         run: >
           mvn install -N -q
-          && mvn install -pl outerstellar-i18n,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi
+          && mvn install -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi
           -DskipTests -q
           -Ddetekt.skip=true -Dcheckstyle.skip=true -Dpmd.skip=true
           -Dcpd.skip=true -Dspotbugs.skip=true -Dspotless.apply.skip=true

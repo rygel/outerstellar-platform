@@ -4,7 +4,7 @@
 
 **Goal:** Replace per-module PostgreSQL containers with one reused container, each test class gets its own database.
 
-**Architecture:** New `platform-test-infrastructure` module provides `SharedPostgres` (singleton reused container) and `TestDatabase` (per-class database with Flyway). `WebTest` and `JdbiTest` consume it. All `@AfterEach` cleanup deleted. `@TestInstance(PER_CLASS)` enables per-class database lifecycle.
+**Architecture:** New `platform-testkit` module provides `SharedPostgres` (singleton reused container) and `TestDatabase` (per-class database with Flyway). `WebTest` and `JdbiTest` consume it. All `@AfterEach` cleanup deleted. `@TestInstance(PER_CLASS)` enables per-class database lifecycle.
 
 **Tech Stack:** Testcontainers 2.0.5 (reuse mode), JDBI 3.53.0, Flyway 12.6.2, PostgreSQL 18, JUnit 6.1.0
 
@@ -16,11 +16,11 @@
 
 | Action | File | Responsibility |
 |--------|------|----------------|
-| Create | `platform-test-infrastructure/pom.xml` | Maven module definition |
-| Create | `platform-test-infrastructure/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/SharedPostgres.kt` | Singleton reused container + CREATE/DROP DATABASE |
-| Create | `platform-test-infrastructure/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/TestDatabase.kt` | Per-class database handle (jdbcUrl, Jdbi, DataSource) |
-| Create | `platform-test-infrastructure/src/main/resources/.testcontainers.properties` | `testcontainers.reuse.enable=true` |
-| Modify | `pom.xml` (root) | Add `platform-test-infrastructure` to `<modules>` |
+| Create | `platform-testkit/pom.xml` | Maven module definition |
+| Create | `platform-testkit/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/SharedPostgres.kt` | Singleton reused container + CREATE/DROP DATABASE |
+| Create | `platform-testkit/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/TestDatabase.kt` | Per-class database handle (jdbcUrl, Jdbi, DataSource) |
+| Create | `platform-testkit/src/main/resources/.testcontainers.properties` | `testcontainers.reuse.enable=true` |
+| Modify | `pom.xml` (root) | Add `platform-testkit` to `<modules>` |
 | Modify | `platform-persistence-jdbi/pom.xml` | Add test-infrastructure dependency, remove direct testcontainers deps |
 | Modify | `platform-web/pom.xml` | Add test-infrastructure dependency, remove direct testcontainers deps |
 | Modify | `platform-persistence-jdbi/src/test/kotlin/.../persistence/JdbiTest.kt` | Use SharedPostgres, PER_CLASS, remove cleanup |
@@ -30,22 +30,22 @@
 
 ---
 
-### Task 1: Create platform-test-infrastructure module
+### Task 1: Create platform-testkit module
 
 **Files:**
-- Create: `platform-test-infrastructure/pom.xml`
+- Create: `platform-testkit/pom.xml`
 - Modify: `pom.xml` (root, `<modules>` section, line ~48)
 
 - [ ] **Step 1: Create the module directory**
 
 ```powershell
-New-Item -ItemType Directory -Path "platform-test-infrastructure/src/main/kotlin/io/github/rygel/outerstellar/platform/testing" -Force
-New-Item -ItemType Directory -Path "platform-test-infrastructure/src/main/resources" -Force
+New-Item -ItemType Directory -Path "platform-testkit/src/main/kotlin/io/github/rygel/outerstellar/platform/testing" -Force
+New-Item -ItemType Directory -Path "platform-testkit/src/main/resources" -Force
 ```
 
 - [ ] **Step 2: Create pom.xml**
 
-Create `platform-test-infrastructure/pom.xml`:
+Create `platform-testkit/pom.xml`:
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -59,7 +59,7 @@ Create `platform-test-infrastructure/pom.xml`:
         <version>1.6.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>outerstellar-platform-test-infrastructure</artifactId>
+    <artifactId>outerstellar-platform-testkit</artifactId>
     <name>Platform Test Infrastructure</name>
 
     <dependencies>
@@ -91,12 +91,12 @@ Create `platform-test-infrastructure/pom.xml`:
 
     <build>
         <sourceDirectory>src/main/kotlin</sourceDirectory>
-        <plugins>
-            <plugin>
+        <extensions>
+            <extension>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
+            </extension>
+            <extension>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
@@ -106,23 +106,23 @@ Create `platform-test-infrastructure/pom.xml`:
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-        </plugins>
+            </extension>
+        </extensions>
     </build>
 </project>
 ```
 
 - [ ] **Step 3: Add module to root pom.xml**
 
-In `pom.xml` (root), add after the `platform-seed` line in `<modules>` (line ~47):
+In `pom.xml` (root), add after the `platform-seeder` line in `<modules>` (line ~47):
 
 ```xml
-        <module>platform-test-infrastructure</module>
+        <module>platform-testkit</module>
 ```
 
 - [ ] **Step 4: Create .testcontainers.properties**
 
-Create `platform-test-infrastructure/src/main/resources/.testcontainers.properties`:
+Create `platform-testkit/src/main/resources/.testcontainers.properties`:
 
 ```
 testcontainers.reuse.enable=true
@@ -131,7 +131,7 @@ testcontainers.reuse.enable=true
 - [ ] **Step 5: Compile to verify module resolves**
 
 ```powershell
-mvn -pl platform-test-infrastructure compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
+mvn -pl platform-testkit compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
 ```
 
 Expected: BUILD SUCCESS (no Kotlin files yet, but POM resolves)
@@ -139,8 +139,8 @@ Expected: BUILD SUCCESS (no Kotlin files yet, but POM resolves)
 - [ ] **Step 6: Commit**
 
 ```bash
-git add platform-test-infrastructure/ pom.xml
-git commit -m "build: scaffold platform-test-infrastructure module"
+git add platform-testkit/ pom.xml
+git commit -m "build: scaffold platform-testkit module"
 ```
 
 ---
@@ -148,12 +148,12 @@ git commit -m "build: scaffold platform-test-infrastructure module"
 ### Task 2: Implement SharedPostgres and TestDatabase
 
 **Files:**
-- Create: `platform-test-infrastructure/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/SharedPostgres.kt`
-- Create: `platform-test-infrastructure/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/TestDatabase.kt`
+- Create: `platform-testkit/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/SharedPostgres.kt`
+- Create: `platform-testkit/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/TestDatabase.kt`
 
 - [ ] **Step 1: Create SharedPostgres.kt**
 
-Create `platform-test-infrastructure/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/SharedPostgres.kt`:
+Create `platform-testkit/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/SharedPostgres.kt`:
 
 ```kotlin
 package io.github.rygel.outerstellar.platform.testing
@@ -197,7 +197,7 @@ fun sanitizeDbName(className: String): String =
 
 - [ ] **Step 2: Create TestDatabase.kt**
 
-Create `platform-test-infrastructure/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/TestDatabase.kt`:
+Create `platform-testkit/src/main/kotlin/io/github/rygel/outerstellar/platform/testing/TestDatabase.kt`:
 
 ```kotlin
 package io.github.rygel.outerstellar.platform.testing
@@ -228,7 +228,7 @@ class TestDatabase(
 - [ ] **Step 3: Compile**
 
 ```powershell
-mvn -pl platform-test-infrastructure -am compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
+mvn -pl platform-testkit -am compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
 ```
 
 Expected: BUILD SUCCESS
@@ -236,7 +236,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 4: Commit**
 
 ```bash
-git add platform-test-infrastructure/
+git add platform-testkit/
 git commit -m "feat(test): add SharedPostgres and TestDatabase for per-class databases"
 ```
 
@@ -257,7 +257,7 @@ In `platform-persistence-jdbi/pom.xml`, add after the `outerstellar-platform-cor
 ```xml
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-test-infrastructure</artifactId>
+            <artifactId>outerstellar-platform-testkit</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
@@ -368,7 +368,7 @@ In `platform-web/pom.xml`, add after the `outerstellar-platform-security` depend
 ```xml
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-test-infrastructure</artifactId>
+            <artifactId>outerstellar-platform-testkit</artifactId>
             <version>${project.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
@@ -686,7 +686,7 @@ In `platform-web/pom.xml`, the Surefire override currently forces `parallel=none
 
 ```xml
             <!-- Web tests share a PostgreSQL database — parallel execution would cause races -->
-            <plugin>
+            <extension>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
@@ -695,13 +695,13 @@ In `platform-web/pom.xml`, the Surefire override currently forces `parallel=none
                         <jte.production>true</jte.production>
                     </systemPropertyVariables>
                 </configuration>
-            </plugin>
+            </extension>
 ```
 
 Change to:
 
 ```xml
-            <plugin>
+            <extension>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
@@ -711,7 +711,7 @@ Change to:
                         <jte.production>true</jte.production>
                     </systemPropertyVariables>
                 </configuration>
-            </plugin>
+            </extension>
 ```
 
 Each test class now has its own database — parallel execution is safe.
@@ -719,7 +719,7 @@ Each test class now has its own database — parallel execution is safe.
 - [ ] **Step 4: Compile**
 
 ```powershell
-mvn -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
+mvn -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder compile -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true
 ```
 
 Expected: BUILD SUCCESS
@@ -727,7 +727,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 5: Full reactor test**
 
 ```powershell
-mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 Expected: All tests pass (now running platform-web in parallel). Build success.
@@ -764,7 +764,7 @@ Update the "Testing expectations" section to mention:
 - Per-class databases via `TestDatabase`
 - `@TestInstance(PER_CLASS)` on WebTest and JdbiTest
 - Remove references to `CleanupTables.ALL`
-- Update the Maven command examples to include `platform-test-infrastructure` in the module list
+- Update the Maven command examples to include `platform-testkit` in the module list
 
 - [ ] **Step 3: Commit**
 
@@ -778,7 +778,7 @@ git commit -m "docs: update testing docs for shared container and per-class data
 ## Self-Review Checklist
 
 ### Spec coverage
-- [x] New module `platform-test-infrastructure` — Task 1
+- [x] New module `platform-testkit` — Task 1
 - [x] `SharedPostgres` singleton with reuse — Task 2
 - [x] `TestDatabase` per-class handle — Task 2
 - [x] `sanitizeDbName()` utility — Task 2

@@ -145,7 +145,7 @@ abstract class WebTest {
     fun buildApp(
         config: AppConfig = testConfig,
         overrides: TestOverrides = TestOverrides(),
-        plugin: PlatformPlugin? = null,
+        extension: PlatformExtension? = null,
     ): HttpHandler {
         val resolvedUserRepo = overrides.userRepository ?: this.userRepository
         val resolvedMessageCache = overrides.messageCache ?: StubMessageCache()
@@ -215,7 +215,7 @@ abstract class WebTest {
                 security = security,
                 core = core,
                 web = web,
-                plugin = plugin,
+                extension = extension,
             )
             .http!!
     }
@@ -316,7 +316,7 @@ abstract class WebTest {
                 ),
             pages = pageFactories,
             hostedAppContextFactory =
-                HostedAppContextFactory(
+                ExtensionHostContextFactory(
                     renderer = renderer,
                     apiKeyService = apiKeyService,
                     oauthService = oauthService,

@@ -72,7 +72,7 @@ The native image build has three phases:
 ┌─────────────────┐     ┌──────────────────┐     ┌──────────────────┐
 │  mvn package     │     │  JTE precompile   │     │  native-image    │
 │  (fat JAR)       │────▶│  (Kotlin sources) │────▶│  (AOT compile)   │
-│  shade plugin    │     │  jte-maven-plugin │     │  GraalVM build   │
+│  shade extension    │     │  jte-maven-plugin │     │  GraalVM build   │
 └─────────────────┘     └──────────────────┘     └──────────────────┘
 ```
 
@@ -341,16 +341,16 @@ The native image configuration lives in `platform-web/pom.xml` under the `native
 <profile>
     <id>native</id>
     <build>
-        <plugins>
+        <extensions>
             <!-- JTE precompile step -->
-            <plugin>
+            <extension>
                 <groupId>gg.jte</groupId>
                 <artifactId>jte-maven-plugin</artifactId>
                 <!-- Precompiles .kte templates to Kotlin source files -->
-            </plugin>
+            </extension>
 
             <!-- GraalVM native image -->
-            <plugin>
+            <extension>
                 <groupId>org.graalvm.buildtools</groupId>
                 <artifactId>native-maven-plugin</artifactId>
                 <version>${native.maven.plugin.version}</version>
@@ -370,8 +370,8 @@ The native image configuration lives in `platform-web/pom.xml` under the `native
                         <buildArg>-H:+ReportExceptionStackTraces</buildArg>
                     </buildArgs>
                 </configuration>
-            </plugin>
-        </plugins>
+            </extension>
+        </extensions>
     </build>
 </profile>
 ```
@@ -476,7 +476,7 @@ When you add a new `.kte` template file, you must update **two places** (the `Na
    )
    ```
 
-   The `NativeResourcesExtension` (configured in `platform-web/pom.xml` as a plugin dependency of `jte-maven-plugin`) automatically registers the generated class in `META-INF/native-image/jte-generated/reflection-config.json` at build time. No manual `reachability-metadata.json` edits are needed for JTE templates.
+   The `NativeResourcesExtension` (configured in `platform-web/pom.xml` as an extension dependency of `jte-maven-plugin`) automatically registers the generated class in `META-INF/native-image/jte-generated/reflection-config.json` at build time. No manual `reachability-metadata.json` edits are needed for JTE templates.
 
 The diagnostic log at startup confirms registration:
 

@@ -1,11 +1,9 @@
 package io.github.rygel.outerstellar.platform.infra
 
-import gg.jte.CodeResolver
 import gg.jte.TemplateEngine
 import gg.jte.html.OwaspHtmlTemplateOutput
 import gg.jte.output.StringOutput
 import gg.jte.resolve.DirectoryCodeResolver
-import gg.jte.resolve.ResourceCodeResolver
 import gg.jte.runtime.Template
 import io.github.rygel.outerstellar.platform.RuntimeConfig
 import io.github.rygel.outerstellar.platform.web.JteClassRegistry
@@ -35,53 +33,49 @@ fun createRenderer(runtime: RuntimeConfig = RuntimeConfig()): TemplateRenderer {
         ensureTemplateClassesLoaded()
     }
 
-    val templateEngine =
-        if (!isProduction) {
-            val applicationClassLoader = Thread.currentThread().contextClassLoader
-            val sourceDir =
-                System.getProperty("jte.sourceDir") ?: System.getenv("JTE_SOURCE_DIR") ?: System.getProperty("user.dir")
-            val projectDirectory = Path.of(sourceDir)
-            val sourceTemplates = findSourceTemplateDirectory(projectDirectory)
-            val generatedTemplateClasses = findGeneratedTemplateDirectory(projectDirectory, sourceTemplates)
-
-            val resolver =
-                if (sourceTemplates != null) {
-                    val directoryResolver = DirectoryCodeResolver(sourceTemplates)
-                    val classpathFallback = ResourceCodeResolver(".")
-                    CompositeCodeResolver(directoryResolver, classpathFallback)
-                } else {
-                    ResourceCodeResolver(".")
-                }
-
-            TemplateEngine.create(
-                resolver,
-                generatedTemplateClasses,
-                gg.jte.ContentType.Html,
-                applicationClassLoader,
-            ) to resolver
-        } else {
-            null
-        }
-
-    return if (isProduction) {
-        renderUsingPrecompiledRegistry()
-    } else {
-        val (engine, resolver) = requireNotNull(templateEngine)
-        renderUsingDevEngineWithPrecompiledFallback(engine, resolver)
+    if (isProduction) {
+        return renderUsingPrecompiledRegistry()
     }
+
+    val applicationClassLoader = Thread.currentThread().contextClassLoader
+    val sourceDir =
+        System.getProperty("jte.sourceDir") ?: System.getenv("JTE_SOURCE_DIR") ?: System.getProperty("user.dir")
+    val projectDirectory = Path.of(sourceDir)
+    val paths = resolveDevTemplatePaths(projectDirectory)
+    logger.info("Development mode: loading JTE source templates from {}", paths.sourceTemplates)
+
+    val templateEngine =
+        TemplateEngine.create(
+            DirectoryCodeResolver(paths.sourceTemplates),
+            paths.generatedTemplateClasses,
+            gg.jte.ContentType.Html,
+            applicationClassLoader,
+        )
+    return renderUsing { templateEngine }
 }
 
-private fun findSourceTemplateDirectory(projectDirectory: Path): Path? =
-    listOf(
-            projectDirectory.resolve(Path.of("src", "main", "jte")),
-            projectDirectory.resolve(Path.of("platform-web", "src", "main", "jte")),
-            projectDirectory.resolve(Path.of("web", "src", "main", "jte")),
-        )
-        .firstOrNull(Files::isDirectory)
+internal data class DevTemplatePaths(val sourceTemplates: Path, val generatedTemplateClasses: Path)
 
-private fun findGeneratedTemplateDirectory(projectDirectory: Path, sourceTemplates: Path?): Path {
-    val templateProjectDirectory = sourceTemplates?.parent?.parent?.parent
-    return (templateProjectDirectory ?: projectDirectory).resolve(Path.of("target", "jte-classes"))
+internal fun resolveDevTemplatePaths(baseDirectory: Path): DevTemplatePaths {
+    val normalizedBase = baseDirectory.toAbsolutePath().normalize()
+    val candidates =
+        listOf(
+            DevTemplatePaths(
+                normalizedBase.resolve(Path.of("platform-web", "src", "main", "jte")),
+                normalizedBase.resolve(Path.of("platform-web", "target", "jte-classes")),
+            ),
+            DevTemplatePaths(
+                normalizedBase.resolve(Path.of("src", "main", "jte")),
+                normalizedBase.resolve(Path.of("target", "jte-classes")),
+            ),
+        )
+
+    return candidates.firstOrNull { Files.isDirectory(it.sourceTemplates) }
+        ?: throw IllegalStateException(
+            "JTE source templates directory not found for development rendering. " +
+                "Base directory: $normalizedBase. Checked: " +
+                candidates.joinToString { it.sourceTemplates.toString() }
+        )
 }
 
 private fun ensureTemplateClassesLoaded() {
@@ -110,19 +104,6 @@ private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer 
     } catch (e: IllegalStateException) {
         logger.error("JTE render failed for template {}: {}", templateName, e.message)
         throw ViewNotFound(viewModel)
-    }
-}
-
-internal fun renderUsingDevEngineWithPrecompiledFallback(
-    templateEngine: TemplateEngine,
-    resolver: CodeResolver,
-): TemplateRenderer = { viewModel: ViewModel ->
-    val templateName = "${viewModel.template()}.kte"
-
-    if (!resolver.exists(templateName) && JteClassRegistry.getTemplateClass(viewModel.template()) != null) {
-        renderUsingPrecompiledRegistry()(viewModel)
-    } else {
-        renderUsing { templateEngine }(viewModel)
     }
 }
 

@@ -63,7 +63,7 @@ fun migrate(dataSource: DataSource) {
     config.load().migrate()
 }
 
-fun migratePlugin(
+fun migrateExtension(
     dataSource: DataSource,
     location: String,
     historyTable: String,

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a `BannerProvider` SPI and `Banner` model so plugins can inject banners into the platform layout, rendered server-side between the header and main content.
+**Goal:** Add a `BannerProvider` SPI and `Banner` model so extensions can inject banners into the platform layout, rendered server-side between the header and main content.
 
-**Architecture:** New `Banner`/`BannerProvider` types in `platform-core` (consistent with `SearchProvider`). `PlatformPlugin` gets a new `bannerProviders()` method. Providers are wired through `PluginOptions` → `WebContext` → `ShellView` → layout templates. A new `Banners.kte` partial renders them with DaisyUI alert styles and HTMX dismiss.
+**Architecture:** New `Banner`/`BannerProvider` types in `platform-core` (consistent with `SearchProvider`). `PlatformExtension` gets a new `bannerProviders()` method. Providers are wired through `ExtensionOptions` → `WebContext` → `ShellView` → layout templates. A new `Banners.kte` partial renders them with DaisyUI alert styles and HTMX dismiss.
 
 **Tech Stack:** Kotlin, http4k, JTE templates, DaisyUI alerts, HTMX
 
@@ -57,15 +57,15 @@ git commit -m "feat(core): add Banner model and BannerProvider interface (#260)"
 
 ---
 
-### Task 2: Add bannerProviders to PlatformPlugin and PluginOptions
+### Task 2: Add bannerProviders to PlatformExtension and ExtensionOptions
 
 **Files:**
-- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformPlugin.kt:31-35` (PluginOptions)
-- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformPlugin.kt:168-169` (PlatformPlugin interface)
+- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformExtension.kt:31-35` (ExtensionOptions)
+- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformExtension.kt:168-169` (PlatformExtension interface)
 
-- [ ] **Step 1: Add `bannerProviders` field to PluginOptions**
+- [ ] **Step 1: Add `bannerProviders` field to ExtensionOptions**
 
-In `PlatformPlugin.kt`, after line 34 (`val adminNavItems`), add:
+In `PlatformExtension.kt`, after line 34 (`val adminNavItems`), add:
 
 ```kotlin
     val bannerProviders: List<BannerProvider> = emptyList(),
@@ -76,13 +76,13 @@ Add import at top of file:
 import io.github.rygel.outerstellar.platform.banner.BannerProvider
 ```
 
-- [ ] **Step 2: Add `bannerProviders()` method to PlatformPlugin interface**
+- [ ] **Step 2: Add `bannerProviders()` method to PlatformExtension interface**
 
-In `PlatformPlugin.kt`, after line 168 (`fun adminSections(...)`) and before line 169 (`}`), add:
+In `PlatformExtension.kt`, after line 168 (`fun adminSections(...)`) and before line 169 (`}`), add:
 
 ```kotlin
 
-    fun bannerProviders(context: PluginContext): List<BannerProvider> = emptyList()
+    fun bannerProviders(context: ExtensionContext): List<BannerProvider> = emptyList()
 ```
 
 - [ ] **Step 3: Compile platform-web**
@@ -93,8 +93,8 @@ Expected: BUILD SUCCESS
 - [ ] **Step 4: Commit**
 
 ```bash
-git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformPlugin.kt
-git commit -m "feat(web): add bannerProviders to PlatformPlugin and PluginOptions (#260)"
+git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformExtension.kt
+git commit -m "feat(web): add bannerProviders to PlatformExtension and ExtensionOptions (#260)"
 ```
 
 ---
@@ -183,18 +183,18 @@ git commit -m "feat(web): wire BannerProviders through WebContext to ShellView (
 
 ---
 
-### Task 5: Wire PluginOptions.bannerProviders in App.kt and Filters.kt
+### Task 5: Wire ExtensionOptions.bannerProviders in App.kt and Filters.kt
 
 **Files:**
-- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt:623-627` (PluginOptions construction)
+- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt:623-627` (ExtensionOptions construction)
 - Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/Filters.kt:282-297` (stateFilter)
 
-- [ ] **Step 1: Pass bannerProviders in PluginOptions construction in App.kt**
+- [ ] **Step 1: Pass bannerProviders in ExtensionOptions construction in App.kt**
 
-In `App.kt`, at the PluginOptions construction (around line 623-627), after `adminNavItems = adminNavItems,`, add:
+In `App.kt`, at the ExtensionOptions construction (around line 623-627), after `adminNavItems = adminNavItems,`, add:
 
 ```kotlin
-                    bannerProviders = plugin?.bannerProviders(ctx.pluginContext()) ?: emptyList(),
+                    bannerProviders = extension?.bannerProviders(ctx.extensionContext()) ?: emptyList(),
 ```
 
 - [ ] **Step 2: Pass bannerProviders through stateFilter to WebContext in Filters.kt**
@@ -214,7 +214,7 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/Filters.kt
-git commit -m "feat(web): wire bannerProviders from plugin through filter chain (#260)"
+git commit -m "feat(web): wire bannerProviders from extension through filter chain (#260)"
 ```
 
 ---
@@ -317,7 +317,7 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.banner.Banner
 import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.banner.BannerSeverity
-import io.github.rygel.outerstellar.platform.web.PlatformPlugin
+import io.github.rygel.outerstellar.platform.web.PlatformExtension
 import java.util.UUID
 import org.http4k.core.Method
 import org.http4k.core.Request
@@ -392,23 +392,23 @@ class BannerIntegrationTest : WebTest() {
 }
 ```
 
-**Important:** This test cannot work yet because `WebTest.buildApp()` does not accept a `BannerProvider` or plugin. The test needs to be updated after Task 5 is verified to wire correctly. The test may need to use a test `PlatformPlugin` or pass providers through a modified `buildApp()`.
+**Important:** This test cannot work yet because `WebTest.buildApp()` does not accept a `BannerProvider` or extension. The test needs to be updated after Task 5 is verified to wire correctly. The test may need to use a test `PlatformExtension` or pass providers through a modified `buildApp()`.
 
-**Revision:** Since `WebTest.buildApp()` calls `app(...)` which constructs the full http4k app, and the plugin is not currently a parameter, the test needs a different approach. The simplest path:
+**Revision:** Since `WebTest.buildApp()` calls `app(...)` which constructs the full http4k app, and the extension is not currently a parameter, the test needs a different approach. The simplest path:
 
-1. Create a stub `PlatformPlugin` that returns the test `BannerProvider` from `bannerProviders()`
-2. Add a `plugin` parameter to `WebTest.buildApp()` (or create a separate helper)
+1. Create a stub `PlatformExtension` that returns the test `BannerProvider` from `bannerProviders()`
+2. Add a `extension` parameter to `WebTest.buildApp()` (or create a separate helper)
 
-However, since modifying `WebTest` affects all existing tests, the safer approach is to add an optional `plugin: PlatformPlugin? = null` parameter to `buildApp()` and thread it through to `app()`. Read `App.kt`'s `app()` function signature to understand how the plugin is passed.
+However, since modifying `WebTest` affects all existing tests, the safer approach is to add an optional `extension: PlatformExtension? = null` parameter to `buildApp()` and thread it through to `app()`. Read `App.kt`'s `app()` function signature to understand how the extension is passed.
 
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `mvn -pl platform-web -am test -Dtest=BannerIntegrationTest`
 Expected: FAIL (banners not yet wired through buildApp)
 
-- [ ] **Step 3: Wire the test plugin through buildApp and verify tests pass**
+- [ ] **Step 3: Wire the test extension through buildApp and verify tests pass**
 
-This step requires reading `app()` in `App.kt` to see how the plugin parameter works, then adding the optional `plugin` parameter to `WebTest.buildApp()`.
+This step requires reading `app()` in `App.kt` to see how the extension parameter works, then adding the optional `extension` parameter to `WebTest.buildApp()`.
 
 Run: `mvn -pl platform-web -am test -Dtest=BannerIntegrationTest`
 Expected: PASS
@@ -426,7 +426,7 @@ git commit -m "test(web): add BannerProvider integration tests (#260)"
 
 - [ ] **Step 1: Run the full non-desktop reactor**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 Expected: BUILD SUCCESS, all tests pass
 
 - [ ] **Step 2: Run the new banner tests explicitly**
