@@ -7,10 +7,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [3.6.6] – 2026-06-01
+
 ### Changed
 
 - **Breaking extension vocabulary cleanup** — renamed the public SPI from plugin/hosted-app terminology to the extension model, including `platform-extension-api`, `PlatformExtension`, `ExtensionHostContext`, `ExtensionContributionContext`, and `PlatformMode` values `FullPlatform`, `ExtensionHost`, and `Headless`.
 - **Module and artifact consistency** — renamed the reactor and published coordinates to the new extension naming set, including `platform-testkit`, `platform-seeder`, and `outerstellar-platform-jte-extensions`.
+
+### Fixed
+
+- **JTE renderer mode split** — development resolves source templates explicitly, while production and tests use the precompiled JTE registry without a silent fallback.
+- **Packaged JVM template rendering** — containerized JVM startup now opts into precompiled JTE templates so packaged images render without source template directories.
+- **Validator Maven plugin build** — corrected the Maven plugin annotations dependency coordinates after moving the validator artifacts into this repository.
 
 ---
 
