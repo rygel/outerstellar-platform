@@ -71,6 +71,7 @@ USER appuser
 EXPOSE 8080
 ENV APP_PROFILE=prod
 ENV SESSIONCOOKIESECURE=true
+ENV JTE_PRODUCTION=true
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # === Stage 3: Native image compilation ===
