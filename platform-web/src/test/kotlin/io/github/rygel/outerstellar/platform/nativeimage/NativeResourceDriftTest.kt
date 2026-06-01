@@ -23,6 +23,7 @@ class NativeResourceDriftTest {
         listOf(
             "META-INF/org/http4k/core/mime.types",
             "META-INF/services/ch.qos.logback.classic.spi.Configurator",
+            "META-INF/services/io.github.rygel.outerstellar.platform.extension.PrecompiledJteTemplateRegistry",
             "META-INF/services/io.opentelemetry.context.ContextStorageProvider",
             "META-INF/services/java.net.spi.InetAddressResolverProvider",
             "META-INF/services/java.net.spi.URLStreamHandlerProvider",

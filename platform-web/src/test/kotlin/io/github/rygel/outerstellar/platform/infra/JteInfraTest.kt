@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.infra
 
+import io.github.rygel.outerstellar.platform.extension.PrecompiledJteTemplateRegistry
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
@@ -61,4 +62,40 @@ class JteInfraTest {
             "Expected module-root candidate in message, got: ${failure.message}",
         )
     }
+
+    @Test
+    fun `precompiled lookup searches extension registries after platform misses`() {
+        val platformRegistry = FakePrecompiledJteTemplateRegistry(emptyMap())
+        val extensionRegistry =
+            FakePrecompiledJteTemplateRegistry(
+                mapOf("com/example/pages/Profile" to ExtensionTemplateMarker::class.java)
+            )
+
+        val templateClass =
+            findPrecompiledTemplateClass("com/example/pages/Profile", listOf(platformRegistry, extensionRegistry))
+
+        assertEquals(ExtensionTemplateMarker::class.java, templateClass)
+    }
+
+    @Test
+    fun `precompiled registries are discoverable from generated service metadata`() {
+        val registries = discoverPrecompiledTemplateRegistries()
+
+        assertTrue(
+            registries.any {
+                it::class.java.name == "io.github.rygel.outerstellar.platform.web.JteClassRegistryProvider"
+            },
+            "Expected generated platform JTE registry provider to be discoverable through ServiceLoader",
+        )
+    }
+
+    private class FakePrecompiledJteTemplateRegistry(private val templates: Map<String, Class<*>>) :
+        PrecompiledJteTemplateRegistry {
+        override val allClasses: List<Class<*>>
+            get() = templates.values.toList()
+
+        override fun getTemplateClass(templateName: String): Class<*>? = templates[templateName]
+    }
+
+    private class ExtensionTemplateMarker
 }

@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
-        <version>3.6.6</version>
+        <version>3.6.7</version>
     </parent>
 
     <artifactId>outerstellar-platform-jte-extensions</artifactId>
@@ -22,6 +22,11 @@
             <groupId>gg.jte</groupId>
             <artifactId>jte-extension-api</artifactId>
             <version>${jte.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
