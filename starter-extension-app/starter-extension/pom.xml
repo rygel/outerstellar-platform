@@ -20,6 +20,16 @@
             <version>${outerstellar-platform.version}</version>
         </dependency>
         <dependency>
+            <groupId>gg.jte</groupId>
+            <artifactId>jte-runtime</artifactId>
+            <version>${jte.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gg.jte</groupId>
+            <artifactId>jte-kotlin</artifactId>
+            <version>${jte.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
             <version>${kotlin.version}</version>
@@ -59,6 +69,46 @@
                 <configuration>
                     <jvmTarget>${java.version}</jvmTarget>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>gg.jte</groupId>
+                <artifactId>jte-maven-plugin</artifactId>
+                <version>${jte.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>gg.jte</groupId>
+                        <artifactId>jte-native-resources</artifactId>
+                        <version>${jte.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>io.github.rygel</groupId>
+                        <artifactId>outerstellar-platform-jte-extensions</artifactId>
+                        <version>${outerstellar-platform.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>jte-generate</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
+                            <contentType>Html</contentType>
+                            <packageName>gg.jte.generated.precompiled.starter</packageName>
+                            <targetResourceDirectory>${project.build.outputDirectory}</targetResourceDirectory>
+                            <extensions>
+                                <extension>
+                                    <className>gg.jte.nativeimage.NativeResourcesExtension</className>
+                                </extension>
+                                <extension>
+                                    <className>io.github.rygel.outerstellar.jte.JteClassRegistryExtension</className>
+                                </extension>
+                            </extensions>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

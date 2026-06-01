@@ -26,23 +26,12 @@ class StarterPlatformExtension : PlatformExtension {
                 } bindContract
                 GET to
                 { _: Request ->
+                    val html = context.host.rendering.renderer(
+                        StarterIndexPage(platformVersion = context.host.app.version)
+                    )
                     Response(Status.OK)
                         .header("content-type", "text/html; charset=utf-8")
-                        .body(
-                            """
-                            <main>
-                              <h1>Starter App is running</h1>
-                              <p>This page is served by <code>StarterPlatformExtension</code>.</p>
-                              <p>Platform version: ${context.host.app.version}</p>
-                              <ul>
-                                <li><a href="/starter/health">Public health probe</a></li>
-                                <li><a href="/starter/me">Protected route using the current user</a></li>
-                                <li><a href="/settings">Included platform settings page</a></li>
-                                <li><a href="/search">Included platform search page</a></li>
-                              </ul>
-                            </main>
-                            """.trimIndent(),
-                        )
+                        .body(html)
                 }
         context.routes.publicUi(homeRoute, "Starter home", "/")
         context.navigation.item(appLabel, "/", "rocket-line")
