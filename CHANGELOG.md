@@ -9,6 +9,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.7] – 2026-06-01
+
+### Changed
+
+- **Dependency refresh** — Updated npm, GitHub Actions, http4k, logging, persistence, MockK, and Maven plugin dependencies from the develop branch maintenance queue.
+
+### Fixed
+
+- **Native extension template rendering** — Production JTE rendering now discovers precompiled template registries from extensions through `ServiceLoader`, so native-image hosts can resolve both platform and extension templates.
+
+---
+
 ## [3.6.6] – 2026-06-01
 
 ### Changed

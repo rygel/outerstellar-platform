@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>3.6.6</version>
+    <version>3.6.7</version>
 
     <packaging>pom</packaging>
 
@@ -58,9 +58,9 @@
         <java.version>21</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
-        <http4k.version>6.48.0.0</http4k.version>
+        <http4k.version>6.50.0.0</http4k.version>
         <netty.version>4.2.14.Final</netty.version>
-        <flyway.version>11.20.3</flyway.version>
+        <flyway.version>12.7.0</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
         <jdbi.version>3.53.0</jdbi.version>
         <testcontainers.version>2.0.5</testcontainers.version>
@@ -86,7 +86,7 @@
         <kotlinx.serialization.version>1.11.0</kotlinx.serialization.version>
         <snakeyaml.engine.version>3.0.1</snakeyaml.engine.version>
         <http4k-connect.version>6.1.0.0</http4k-connect.version>
-        <mockk.version>1.14.9</mockk.version>
+        <mockk.version>1.14.11</mockk.version>
         <archunit.version>1.4.2</archunit.version>
         <micrometer.version>1.16.5</micrometer.version>
         <resilience4j.version>2.4.0</resilience4j.version>
@@ -97,7 +97,7 @@
 
         <jackson.version>2.21.4</jackson.version>
         <slf4j.version>2.0.18</slf4j.version>
-        <logback.version>1.5.33</logback.version>
+        <logback.version>1.5.34</logback.version>
         <jbcrypt.version>0.4</jbcrypt.version>
         <java-jwt.version>4.5.2</java-jwt.version>
         <hikaricp.version>7.0.2</hikaricp.version>
@@ -113,7 +113,7 @@
         <detekt.version>1.23.8</detekt.version>
         <miglayout.version>11.4.3</miglayout.version>
         <assertj.swing.version>4.0.0-beta-3</assertj.swing.version>
-        <maven.plugin.api.version>3.9.14</maven.plugin.api.version>
+        <maven.plugin.api.version>3.9.16</maven.plugin.api.version>
         <maven.plugin.annotations.version>3.15.2</maven.plugin.annotations.version>
         <maven.plugin.plugin.version>3.15.2</maven.plugin.plugin.version>
         <native.maven.plugin.version>1.1.1</native.maven.plugin.version>
