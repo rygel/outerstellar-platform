@@ -1,66 +1,64 @@
 package io.github.rygel.outerstellar.platform.infra
 
-import gg.jte.CodeResolver
-import gg.jte.TemplateEngine
-import gg.jte.resolve.ResourceCodeResolver
-import io.github.rygel.outerstellar.platform.web.ErrorPage
-import io.github.rygel.outerstellar.platform.web.Page
-import io.github.rygel.outerstellar.platform.web.RequestContext
-import io.github.rygel.outerstellar.platform.web.ShellRenderer
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import org.http4k.core.Method.GET
-import org.http4k.core.Request
 import org.junit.jupiter.api.io.TempDir
 
 class JteInfraTest {
 
-    @TempDir lateinit var generatedTemplates: Path
+    @TempDir lateinit var baseDirectory: Path
 
     @Test
-    fun `dev renderer falls back to precompiled platform template when source is absent`() {
-        val renderer =
-            renderUsingDevEngineWithPrecompiledFallback(
-                TemplateEngine.create(
-                    ResourceCodeResolver("."),
-                    generatedTemplates,
-                    gg.jte.ContentType.Html,
-                    Thread.currentThread().contextClassLoader,
-                ),
-                MissingTemplateSourceResolver,
-            )
-        val shell = ShellRenderer(RequestContext(Request(GET, "/broken"))).shell("Error", "/errors")
-        val page =
-            Page(
-                shell = shell,
-                data =
-                    ErrorPage(
-                        statusCode = 500,
-                        heading = "Server down",
-                        message = "The original error should stay visible in logs.",
-                        primaryActionLabel = "Home",
-                        primaryActionUrl = "/",
-                        secondaryActionLabel = "Sign in",
-                        secondaryActionUrl = "/auth",
-                        helpButtonLabel = "Help",
-                        helpUrl = "/errors/components/help/server-error",
-                        errorLabel = "Error",
-                    ),
-            )
+    fun `dev template paths resolve from repository root`() {
+        val sourceTemplates = baseDirectory.resolve(Path.of("platform-web", "src", "main", "jte"))
+        Files.createDirectories(sourceTemplates)
 
-        val html = renderer(page)
+        val paths = resolveDevTemplatePaths(baseDirectory)
 
-        assertTrue(html.contains("Server down"), "Expected precompiled ErrorPage.kte to render, got: $html")
+        assertEquals(sourceTemplates.toAbsolutePath().normalize(), paths.sourceTemplates)
+        assertEquals(
+            baseDirectory.resolve(Path.of("platform-web", "target", "jte-classes")).toAbsolutePath().normalize(),
+            paths.generatedTemplateClasses,
+        )
     }
 
-    private object MissingTemplateSourceResolver : CodeResolver {
-        override fun resolve(name: String): String = error("No source template should be resolved for $name")
+    @Test
+    fun `dev template paths resolve from module root`() {
+        val sourceTemplates = baseDirectory.resolve(Path.of("src", "main", "jte"))
+        Files.createDirectories(sourceTemplates)
 
-        override fun exists(name: String): Boolean = false
+        val paths = resolveDevTemplatePaths(baseDirectory)
 
-        override fun getLastModified(name: String): Long = 0
+        assertEquals(sourceTemplates.toAbsolutePath().normalize(), paths.sourceTemplates)
+        assertEquals(
+            baseDirectory.resolve(Path.of("target", "jte-classes")).toAbsolutePath().normalize(),
+            paths.generatedTemplateClasses,
+        )
+    }
 
-        override fun resolveAllTemplateNames(): MutableList<String> = mutableListOf()
+    @Test
+    fun `dev template paths fail clearly when source templates are absent`() {
+        val failure = assertFailsWith<IllegalStateException> { resolveDevTemplatePaths(baseDirectory) }
+
+        assertTrue(
+            failure.message.orEmpty().contains("JTE source templates directory not found for development rendering"),
+            "Expected missing source directory message, got: ${failure.message}",
+        )
+        assertTrue(
+            failure.message.orEmpty().contains(baseDirectory.toAbsolutePath().normalize().toString()),
+            "Expected base directory in message, got: ${failure.message}",
+        )
+        assertTrue(
+            failure.message.orEmpty().contains(Path.of("platform-web", "src", "main", "jte").toString()),
+            "Expected repository-root candidate in message, got: ${failure.message}",
+        )
+        assertTrue(
+            failure.message.orEmpty().contains(Path.of("src", "main", "jte").toString()),
+            "Expected module-root candidate in message, got: ${failure.message}",
+        )
     }
 }
