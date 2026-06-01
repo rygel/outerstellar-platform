@@ -458,7 +458,7 @@ git commit -m "refactor: delete all Koin modules, remove Koin dependency from en
 - [ ] **Step 1: Run non-desktop reactor verify**
 
 ```
-mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 Expected: BUILD SUCCESS

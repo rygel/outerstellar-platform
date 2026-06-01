@@ -11,7 +11,7 @@ Comprehensive analysis of systemic issues in the Outerstellar Platform test suit
 **Impact:** We spent hours debugging "pre-existing" failures that were caused entirely by stale classes. Tests pass after `clean install` but fail in a bare `verify`. This is the single biggest time sink in the test workflow.
 
 **Fix options:**
-- **Option A (recommended):** Add a Maven enforcer rule or build-helper plugin that detects when a SNAPSHOT dependency in the local repo is older than the corresponding source module's `target/classes`. Fail the build with a clear message like "Run `mvn clean install -DskipTests` on module X before testing module Y."
+- **Option A (recommended):** Add a Maven enforcer rule or build-helper extension that detects when a SNAPSHOT dependency in the local repo is older than the corresponding source module's `target/classes`. Fail the build with a clear message like "Run `mvn clean install -DskipTests` on module X before testing module Y."
 - **Option B:** Add a script `test-all.sh` / `test-all.ps1` that always runs `mvn clean install -DskipTests` on the full reactor before running `mvn verify`. This is the current documented workaround in AGENTS.md but is manual and easy to forget.
 - **Option C:** Configure Surefire to use `useModulePath false` and rely on the reactor's compiled output instead of the local Maven repo. This requires testing.
 

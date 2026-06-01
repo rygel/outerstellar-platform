@@ -5,8 +5,8 @@ import io.github.rygel.outerstellar.platform.composition.RouteGroup
 import io.github.rygel.outerstellar.platform.composition.RouteRegistry
 import io.github.rygel.outerstellar.platform.di.PlatformPersistence
 import io.github.rygel.outerstellar.platform.di.WebComponents
+import io.github.rygel.outerstellar.platform.extension.ExtensionContribution
 import io.github.rygel.outerstellar.platform.model.UserRole
-import io.github.rygel.outerstellar.platform.plugin.HostedAppContribution
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.web.Metrics
@@ -29,7 +29,7 @@ internal class HttpHandlerFactory(
     private val persistence: PlatformPersistence,
     private val security: SecurityComponents,
     private val web: WebComponents,
-    private val pluginContribution: HostedAppContribution,
+    private val extensionContribution: ExtensionContribution,
 ) {
     fun build(registry: RouteRegistry): HttpHandler {
         val sec = security
@@ -82,7 +82,7 @@ internal class HttpHandlerFactory(
         }
 
         val baseApp = routes(unfiltered + appRoutes)
-        return FilterChainFactory(config, persistence, security, web, pluginContribution).build().then(baseApp)
+        return FilterChainFactory(config, persistence, security, web, extensionContribution).build().then(baseApp)
     }
 
     private fun RouteRegistry.handlers(group: RouteGroup): List<RoutingHttpHandler> =

@@ -179,7 +179,7 @@ class WebContext(
     private val appVersion: String = "dev",
     private val jwtService: JwtService? = null,
     private val securityService: SecurityService? = null,
-    private val pluginOptions: PluginOptions = PluginOptions(),
+    private val extensionOptions: ExtensionOptions = ExtensionOptions(),
 )
 ```
 
@@ -220,7 +220,7 @@ fun stateFilter(
     appVersion: String = "dev",
     jwtService: JwtService? = null,
     securityService: SecurityService? = null,
-    pluginOptions: PluginOptions = PluginOptions(),
+    extensionOptions: ExtensionOptions = ExtensionOptions(),
 ): Filter = Filter { next ->
     { request ->
         val context =
@@ -231,7 +231,7 @@ fun stateFilter(
                 appVersion,
                 jwtService,
                 securityService,
-                pluginOptions,
+                extensionOptions,
             )
         ...
     }

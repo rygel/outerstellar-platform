@@ -12,7 +12,7 @@ Outerstellar is a full-stack web + desktop platform for team communication and c
 | [Desktop Client](desktop-client.md) | Swing UI, two-way sync, offline support |
 | [Configuration](configuration.md) | AppConfig, RuntimeConfig, env vars, profiles |
 | [SEO & Metadata](seo-metadata.md) | Open Graph, Twitter Card, JSON-LD, sitemap |
-| [Plugin System](plugin-system.md) | HostedApp author guide, ownership, migrations, contract tests |
+| [Extension System](extension-system.md) | PlatformExtension author guide, ownership, migrations, contract tests |
 | [Security](security.md) | Auth, CSRF, rate limiting, CSP, SSRF protection |
 | [API Reference](api-reference.md) | REST endpoints, WebSocket, sync protocol |
 | [Deployment](deployment.md) | JVM tuning, Docker, native-image, profiles |

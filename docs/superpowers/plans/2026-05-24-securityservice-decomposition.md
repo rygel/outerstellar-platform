@@ -509,7 +509,7 @@ Expected: BUILD SUCCESS
 
 - [ ] **Step 1: Run full non-desktop reactor**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 Expected: BUILD SUCCESS
 
 - [ ] **Step 2: Fix any test failures by updating callers**

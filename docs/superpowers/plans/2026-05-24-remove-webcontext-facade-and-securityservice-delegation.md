@@ -189,7 +189,7 @@ Update the `SyncWebSocket` creation in `WebComponents` / wherever it's created.
 - [ ] **Step 9: Compile and verify**
 
 ```powershell
-mvn clean compile -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"
+mvn clean compile -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"
 ```
 
 Expected: BUILD SUCCESS
@@ -197,7 +197,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 10: Run tests**
 
 ```powershell
-mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 Expected: BUILD SUCCESS, all tests pass.
@@ -393,13 +393,13 @@ with:
 io.github.rygel.outerstellar.platform.web.RequestContext.SESSION_COOKIE
 ```
 
-Replace the Plugin Dashboard route's WebContext usage with RequestContext + ShellRenderer.
+Replace the Extension Dashboard route's WebContext usage with RequestContext + ShellRenderer.
 
 Replace `request.webContext.url(...)` with `request.shellRenderer.url(...)`.
 
-- [ ] **Step 2: Update PlatformPlugin.kt**
+- [ ] **Step 2: Update PlatformExtension.kt**
 
-Replace `request.webContext` usages in PlatformPlugin with `request.requestContext` / `request.shellRenderer`.
+Replace `request.webContext` usages in PlatformExtension with `request.requestContext` / `request.shellRenderer`.
 
 ---
 
@@ -430,7 +430,7 @@ mvn clean test-compile -T4 -pl platform-web -am "-Ddetekt.skip=true" "-Dspotbugs
 - [ ] **Step 1: Full reactor build**
 
 ```powershell
-mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 Expected: BUILD SUCCESS, all tests pass.

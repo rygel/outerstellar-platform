@@ -8,7 +8,7 @@ import io.github.rygel.outerstellar.platform.composition.RouteOwner
 import io.github.rygel.outerstellar.platform.composition.RouteRegistry
 import io.github.rygel.outerstellar.platform.di.CoreComponents
 import io.github.rygel.outerstellar.platform.di.WebComponents
-import io.github.rygel.outerstellar.platform.plugin.HostedAppContribution
+import io.github.rygel.outerstellar.platform.extension.ExtensionContribution
 import io.github.rygel.outerstellar.platform.search.ContactSearchProvider
 import io.github.rygel.outerstellar.platform.search.MessageSearchProvider
 import io.github.rygel.outerstellar.platform.security.AppleOAuthProvider
@@ -54,7 +54,7 @@ internal class UiRouteRegistrar(
     private val security: SecurityComponents,
     private val core: CoreComponents,
     private val web: WebComponents,
-    private val pluginContribution: HostedAppContribution,
+    private val extensionContribution: ExtensionContribution,
 ) {
     fun register(registry: RouteRegistry) {
         val publicContractRoutes = mutableListOf<ContractRoute>()
@@ -62,16 +62,16 @@ internal class UiRouteRegistrar(
 
         registerUiKernelRoutes(registry, publicContractRoutes, protectedContractRoutes)
 
-        when (pluginContribution.mode) {
-            PlatformMode.FullPlatformApp ->
+        when (extensionContribution.mode) {
+            PlatformMode.FullPlatform ->
                 registerFullPlatformUiRoutes(registry, publicContractRoutes, protectedContractRoutes)
-            PlatformMode.PluginHostedApp -> {
-                val included = pluginContribution.includedPlatformPages
+            PlatformMode.ExtensionHost -> {
+                val included = extensionContribution.includedPlatformPages
                 included.forEach { registerPageSet(it, registry, publicContractRoutes, protectedContractRoutes) }
                 registerExcludedPageSets(registry, included)
             }
 
-            PlatformMode.HeadlessKernel -> registerExcludedPageSets(registry, emptySet())
+            PlatformMode.Headless -> registerExcludedPageSets(registry, emptySet())
         }
 
         registerLogoutRoute(protectedContractRoutes, registry)
@@ -238,7 +238,7 @@ internal class UiRouteRegistrar(
         publicRoutes: MutableList<ContractRoute>,
         protectedRoutes: MutableList<ContractRoute>,
     ) {
-        val appLabel = pluginContribution.appLabel
+        val appLabel = extensionContribution.appLabel
         val publicContract = contract {
             renderer = OpenApi3(ApiInfo("$appLabel UI", "v1.0"), KotlinxSerialization)
             descriptionPath = "/ui/openapi.json"

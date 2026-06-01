@@ -1,4 +1,4 @@
-# Plugin Text & Template Override
+# Extension Text & Template Override
 
 **Date:** 2026-05-05  
 **Status:** Approved  
@@ -6,16 +6,16 @@
 
 ## Problem
 
-All ~90 user-facing strings in the JTE templates are hardcoded. Plugins cannot change any text — labels, headings, button copy, error messages, nav items — without forking the entire platform. The sidebar language selector is cosmetic (no i18n backend). The platform needs two capabilities:
+All ~90 user-facing strings in the JTE templates are hardcoded. Extensions cannot change any text — labels, headings, button copy, error messages, nav items — without forking the entire platform. The sidebar language selector is cosmetic (no i18n backend). The platform needs two capabilities:
 
-1. Every string in every template resolved through a key system that plugins can override
-2. Per-template override so plugins can replace individual `.kte` files without forking all of them
+1. Every string in every template resolved through a key system that extensions can override
+2. Per-template override so extensions can replace individual `.kte` files without forking all of them
 
 ## Constraints
 
-- Plugin-only override (no runtime multi-language switching by end users)
-- One language at a time — the plugin controls all texts
-- Backward compatible — existing apps without a plugin keep working with default English strings
+- Extension-only override (no runtime multi-language switching by end users)
+- One language at a time — the extension controls all texts
+- Backward compatible — existing apps without an extension keep working with default English strings
 - No new runtime dependencies
 
 ## Design
@@ -149,10 +149,10 @@ data class ShellView(
 
 Templates access strings as `${shell.text("nav.inbox")}`.
 
-### 5. PlatformPlugin changes
+### 5. PlatformExtension changes
 
 ```kotlin
-interface PlatformPlugin : PluginMigrationSource {
+interface PlatformExtension : ExtensionMigrationSource {
     // ... existing ...
 
     /** Text resolver for all UI strings. Override to provide custom translations. */
@@ -160,8 +160,8 @@ interface PlatformPlugin : PluginMigrationSource {
         get() = DefaultTextResolver()
 
     /**
-     * JTE template paths that this plugin overrides (e.g. `setOf("layouts/SidebarLayout.kte")`).
-     * The host resolves these templates from the plugin's classpath instead of its own.
+     * JTE template paths that this extension overrides (e.g. `setOf("layouts/SidebarLayout.kte")`).
+     * The host resolves these templates from the extension's classpath instead of its own.
      */
     fun templateOverrides(): Set<String> = emptySet()
 }
@@ -169,25 +169,25 @@ interface PlatformPlugin : PluginMigrationSource {
 
 ### 6. Template Override Mechanism
 
-The host wraps its `TemplateRenderer` in a `PluginTemplateRenderer`:
+The host wraps its `TemplateRenderer` in a `ExtensionTemplateRenderer`:
 
 ```kotlin
-class PluginTemplateRenderer(
+class ExtensionTemplateRenderer(
     private val delegate: TemplateRenderer,
     private val overrideTemplates: Set<String>,
-    private val pluginClassLoader: ClassLoader?,
+    private val extensionClassLoader: ClassLoader?,
 ) : TemplateRenderer {
     override fun invoke(viewModel: ViewModel): String {
         // For precompiled JTE: if the template class is in overrideTemplates,
-        // resolve from pluginClassLoader instead of host classloader.
+        // resolve from extensionClassLoader instead of host classloader.
         // Otherwise delegate normally.
     }
 }
 ```
 
-At startup, `App.kt` (or the DI module) checks if a plugin is registered and if it declares template overrides. If so, it wraps the default renderer.
+At startup, `App.kt` (or the DI module) checks if an extension is registered and if it declares template overrides. If so, it wraps the default renderer.
 
-Plugin JTE files live in the plugin's own `src/main/jte/` and are precompiled by the plugin's own JTE Maven plugin execution into the plugin JAR.
+Extension JTE files live in the extension's own `src/main/jte/` and are precompiled by the extension's own JTE Maven extension execution into the extension JAR.
 
 ### 7. DI Wiring
 
@@ -195,19 +195,19 @@ In `WebModule.kt`:
 
 ```kotlin
 single<TemplateRenderer> {
-    val plugin = getOrNull<PlatformPlugin>()
+    val extension = getOrNull<PlatformExtension>()
     val baseRenderer = // ... existing JTE renderer setup ...
     
-    if (plugin != null && plugin.templateOverrides().isNotEmpty()) {
-        PluginTemplateRenderer(baseRenderer, plugin.templateOverrides(), plugin::class.java.classLoader)
+    if (extension != null && extension.templateOverrides().isNotEmpty()) {
+        ExtensionTemplateRenderer(baseRenderer, extension.templateOverrides(), extension::class.java.classLoader)
     } else {
         baseRenderer
     }
 }
 
 single<TextResolver> {
-    val plugin = getOrNull<PlatformPlugin>()
-    plugin?.textResolver ?: DefaultTextResolver()
+    val extension = getOrNull<PlatformExtension>()
+    extension?.textResolver ?: DefaultTextResolver()
 }
 ```
 
@@ -220,24 +220,24 @@ single<TextResolver> {
 | `platform-core` | New `TextResolver` interface, `DefaultTextResolver` class |
 | `platform-web/src/main/resources/texts.properties` | New file with all ~90 strings |
 | `ShellView` | Add `textResolver` field + `text()` convenience method |
-| `PlatformPlugin` | Add `textResolver` property + `templateOverrides()` method |
-| `PluginContext` | Expose `textResolver` |
+| `PlatformExtension` | Add `textResolver` property + `templateOverrides()` method |
+| `ExtensionContext` | Expose `textResolver` |
 | All 33 `.kte` files | Replace hardcoded strings with `${shell.text("key")}` calls |
-| `PluginTemplateRenderer` | New class wrapping the default renderer |
-| `WebModule.kt` | Wire `TextResolver` and wrap renderer if plugin declares overrides |
+| `ExtensionTemplateRenderer` | New class wrapping the default renderer |
+| `WebModule.kt` | Wire `TextResolver` and wrap renderer if extension declares overrides |
 | Existing tests | Update any assertions on hardcoded strings to match text key resolution |
 
 ## Migration
 
-- Apps without a plugin: zero changes. `DefaultTextResolver` provides all English strings.
-- Apps with a plugin that doesn't override `textResolver`: same behavior, default strings.
-- Apps with a plugin that overrides `textResolver`: plugin controls all texts.
-- Plugin can override individual strings by extending `DefaultTextResolver` and overriding specific keys.
+- Apps without an extension: zero changes. `DefaultTextResolver` provides all English strings.
+- Apps with an extension that doesn't override `textResolver`: same behavior, default strings.
+- Apps with an extension that overrides `textResolver`: extension controls all texts.
+- Extension can override individual strings by extending `DefaultTextResolver` and overriding specific keys.
 
 ## Testing
 
 - Unit test `DefaultTextResolver`: loads from properties, returns key for missing entries, formats args
 - Unit test `ShellView.text()`: delegates to resolver
-- Integration test: register a plugin with custom `TextResolver`, verify rendered HTML contains custom strings
-- Integration test: register a plugin with `templateOverrides()`, verify plugin template is used
+- Integration test: register an extension with custom `TextResolver`, verify rendered HTML contains custom strings
+- Integration test: register an extension with `templateOverrides()`, verify extension template is used
 - Update existing template tests to assert on `shell.text("key")` output

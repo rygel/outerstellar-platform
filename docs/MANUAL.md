@@ -32,13 +32,13 @@ The web app starts on `http://localhost:8080`. A first-boot admin user is create
 ```
 platform-core              Domain models, services, configuration
 outerstellar-i18n          ResourceBundle-backed runtime translation service
-platform-plugin-api        Hosted-app SPI and plugin-facing shell/admin DTOs
+platform-extension-api      Extension SPI and extension-facing shell/admin DTOs
 platform-persistence-jdbi  JDBI repositories + Flyway migrations
 platform-security          Auth, permissions, OAuth, API keys
 platform-sync-client       Sync DTOs and client sync service
 platform-web               http4k web server, JTE templates, HTMX
 platform-desktop           Swing desktop client with two-way sync
-platform-seed              Database seeding utility
+platform-seeder              Database seeding utility
 ```
 
 ### Dependency Graph
@@ -100,7 +100,7 @@ Set `APP_PROFILE` to select a profile. The loader first tries `/application-{pro
 
 ### Schema
 
-All tables use the `plt_` prefix to avoid collisions with plugin tables. Migrations are in `platform-persistence-jdbi/src/main/resources/db/migration/`.
+All tables use the `plt_` prefix to avoid collisions with extension tables. Migrations are in `platform-persistence-jdbi/src/main/resources/db/migration/`.
 
 | Migration | Tables |
 |---|---|
@@ -113,33 +113,33 @@ All tables use the `plt_` prefix to avoid collisions with plugin tables. Migrati
 
 The platform uses JDBI as its persistence layer, implementing repository interfaces defined in `platform-core`.
 
-## Plugin Development
+## Extension Development
 
-### HostedApp Interface
+### PlatformExtension Interface
 
-Hosted app integrations should depend on `outerstellar-platform-plugin-api`. That module contains `HostedApp`,
-`HostedAppContext`, `HostedAppContributionContext`, and the compatibility aliases under `io.github...platform.web`.
+Extension integrations should depend on `outerstellar-platform-extension-api`. That module contains `PlatformExtension`,
+`ExtensionHostContext`, `ExtensionContributionContext`, and the compatibility aliases under `io.github...platform.web`.
 
-Plugins implement `HostedApp` and are passed to the platform launcher or tests through `createServerComponents`:
+Extensions implement `PlatformExtension` and are passed to the platform launcher or tests through `createServerComponents`:
 
 ```kotlin
-class MyPlugin : HostedApp {
-    override val id = "my-plugin"
+class MyExtension : PlatformExtension {
+    override val id = "my-extension"
     override val appLabel = "My App"
 
-    override fun contribute(context: HostedAppContributionContext) {
+    override fun contribute(context: ExtensionContributionContext) {
         context.navigation.item("Dashboard", "/dashboard", "dashboard-3-line")
         context.routes.protectedUi(myDashboardRoute(), "Dashboard", "/dashboard")
     }
 }
 
-val components = createServerComponents(plugin = MyPlugin())
+val components = createServerComponents(extension = MyExtension())
 ```
 
-See the [Plugin Author Guide](features/plugin-system.md) for route ownership rules, `HostedAppContract` tests,
-full-stack hosted-app tests, and diagnostics.
+See the [Extension Author Guide](features/extension-system.md) for route ownership rules, `ExtensionContract` tests,
+full-stack extension host tests, and diagnostics.
 
-### What Plugins Can Do
+### What Extensions Can Do
 
 | Capability | Override | Description |
 |---|---|---|
@@ -148,13 +148,13 @@ full-stack hosted-app tests, and diagnostics.
 | Navigation | `contribute(context)` | Add shell navigation items |
 | Admin | `contribute(context)` / `adminSections(context)` | Add admin summary cards and routes |
 | Layout & assets | `layoutRenderer(context)` / `contribute(context)` | Replace the shell layout and contribute styles/scripts/static assets |
-| Migrations | `HostedApp.migrations` (`PluginMigrations`) | Separate Flyway instance with own history table |
+| Migrations | `PlatformExtension.migrations` (`ExtensionMigrations`) | Separate Flyway instance with own history table |
 | Text overrides | `textResolver` | Custom translations |
-| Template overrides | `templateOverrides()` | Override JTE templates from plugin classpath |
+| Template overrides | `templateOverrides()` | Override JTE templates from extension classpath |
 
-### HostedAppContext (`PluginContext` compatibility alias)
+### ExtensionHostContext (`ExtensionContext` compatibility alias)
 
-Passed to hosted-app hooks, provides access to:
+Passed to extension hooks, provides access to:
 
 - `app` (`config` compatibility alias) — safe app info: `version`, `appBaseUrl`, `devMode`, `registrationEnabled`
 - `users` (`userRepository` alias) — current user lookup plus `findById`, `findByUsername`, `findByEmail`
@@ -164,15 +164,15 @@ Passed to hosted-app hooks, provides access to:
 - `security` (`apiKeyService` / `oauthService` aliases) — API key CRUD and OAuth user resolution
 - `currentUser(request)` / `renderShell(shell, bodyHtml)` convenience helpers
 
-### Plugin Migrations
+### Extension Migrations
 
-Plugins use a separate Flyway instance with configurable history table (default: `flyway_plugin_history`). This prevents version conflicts with platform migrations (V1–V4). Plugins can use any version numbers.
+Extensions use a separate Flyway instance with configurable history table (default: `flyway_extension_history`). This prevents version conflicts with platform migrations (V1–V4). Extensions can use any version numbers.
 
 ```kotlin
 override val migrations =
-    PluginMigrations(
-        location = "classpath:db/migration/my-plugin",
-        historyTable = "flyway_my_plugin_history",
+    ExtensionMigrations(
+        location = "classpath:db/migration/my-extension",
+        historyTable = "flyway_my_extension_history",
     )
 ```
 

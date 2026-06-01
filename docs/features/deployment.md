@@ -17,7 +17,7 @@ Production: Use a managed PostgreSQL service. Set `JDBC_URL`, `JDBC_USER`, `JDBC
 mvn clean install -DskipTests
 
 # Build with quality checks
-mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 ## Run

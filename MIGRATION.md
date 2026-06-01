@@ -1,103 +1,103 @@
 # Migration Guide
 
-This guide covers the main migration path from the older **1.6.x** plugin model to the current **3.6.4** platform surface.
+This guide covers the main migration path from the older **1.6.x** extension model to the current **3.6.4** platform surface.
 
 ## Quick checklist: 1.6.x to 3.6.x
 
-- [ ] Depend on `outerstellar-platform-plugin-api` instead of `platform-web`
-- [ ] Implement `HostedApp` directly (or keep `PlatformPlugin` — it is a deprecated alias)
-- [ ] Start the app with `createServerComponents(plugin = MyHostedApp())`
-- [ ] Set `mode = PlatformMode.PluginHostedApp` for custom product UI
+- [ ] Depend on `outerstellar-platform-extension-api` instead of `platform-web`
+- [ ] Import `PlatformExtension` from `io.github.rygel.outerstellar.platform.extension`
+- [ ] Start the app with `createServerComponents(extension = MyPlatformExtension())`
+- [ ] Set `mode = PlatformMode.ExtensionHost` for custom product UI
 - [ ] Move route/page selection to `mode` + `includePlatformPages()`
-- [ ] Replace legacy migration properties with `override val migrations = PluginMigrations(...)`
-- [ ] Use `HostedAppContributionContext` in `contribute()` for route registration
+- [ ] Replace legacy migration properties with `override val migrations = ExtensionMigrations(...)`
+- [ ] Use `ExtensionContributionContext` in `contribute()` for route registration
 - [ ] Add `emailService` parameter to `createSecurityComponents(...)` calls
 - [ ] Check Jackson version alignment if your app uses Jackson 3.x
 
 ## Primary import paths
 
 ```kotlin
-import io.github.rygel.outerstellar.platform.plugin.HostedApp
-import io.github.rygel.outerstellar.platform.plugin.HostedAppContributionContext
-import io.github.rygel.outerstellar.platform.PluginMigrations
+import io.github.rygel.outerstellar.platform.extension.PlatformExtension
+import io.github.rygel.outerstellar.platform.extension.ExtensionContributionContext
+import io.github.rygel.outerstellar.platform.ExtensionMigrations
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 import io.github.rygel.outerstellar.platform.createServerComponents
 ```
 
-The `outerstellar-platform-plugin-api` module re-exports these under `io.github.rygel.outerstellar.platform.web` as
-typealiases for older integrations. New code should import from the `plugin` package directly.
+The `outerstellar-platform-extension-api` module also exposes compatibility typealiases under
+`io.github.rygel.outerstellar.platform.web`. New code should import from the `extension` package directly.
 
 ## Recommended path
 
-For most hosted apps, the fastest path is:
+For most extensions, the fastest path is:
 
-1. Depend on `outerstellar-platform-plugin-api`.
-2. Implement `HostedApp` directly.
-3. Start the app with `createServerComponents(plugin = MyHostedApp())`.
+1. Depend on `outerstellar-platform-extension-api`.
+2. Implement `PlatformExtension` directly.
+3. Start the app with `createServerComponents(extension = MyPlatformExtension())`.
 4. Move route/page selection to `mode` + `includePlatformPages()`.
-5. Replace legacy migration properties with `override val migrations = PluginMigrations(...)`.
+5. Replace legacy migration properties with `override val migrations = ExtensionMigrations(...)`.
 
 ## API name changes
 
 | Older shape | Current shape |
 | --- | --- |
-| `PlatformPlugin` | `HostedApp` is the primary SPI. `PlatformPlugin` remains as a deprecated compatibility alias. |
-| `PluginContext` | `HostedAppContext` is the primary name. `PluginContext` remains as an alias. |
-| `pluginMigrationSource` | `HostedApp.migrations: PluginMigrations?` |
+| `io.github.rygel.outerstellar.platform.web.PlatformExtension` | `io.github.rygel.outerstellar.platform.extension.PlatformExtension` is the primary SPI. The old `web` package import remains as a compatibility typealias. |
+| `ExtensionContext` | `ExtensionHostContext` is the primary name. `ExtensionContext` remains as an alias. |
+| `extensionMigrationSource` | `PlatformExtension.migrations: ExtensionMigrations?` |
 | `excludeDefaultRoutes` | `mode` + `includePlatformPages()` |
 
-## Minimal hosted app
+## Minimal extension
 
 ```kotlin
-class MyHostedApp : HostedApp {
+class MyPlatformExtension : PlatformExtension {
     override val id = "my-app"
     override val appLabel = "My App"
-    override val mode = PlatformMode.PluginHostedApp
+    override val mode = PlatformMode.ExtensionHost
 
-    override fun contribute(context: HostedAppContributionContext) {
+    override fun contribute(context: ExtensionContributionContext) {
         context.routes.protectedUi(myHomeRoute(), "Home", "/")
         context.navigation.item("Home", "/", "home-4-line")
     }
 }
 
-val server = createServerComponents(plugin = MyHostedApp())
+val server = createServerComponents(extension = MyPlatformExtension())
 ```
 
 ## Platform modes and route ownership
 
 The biggest behavior change is that platform UI is now explicit:
 
-- `FullPlatformApp` — the default Outerstellar product UI is mounted.
-- `PluginHostedApp` — the plugin owns the product UI and opts into platform pages with `includePlatformPages()`.
-- `HeadlessKernel` — no HTML product UI.
+- `FullPlatform` — the default Outerstellar product UI is mounted.
+- `ExtensionHost` — the extension owns the product UI and opts into platform pages with `includePlatformPages()`.
+- `Headless` — no HTML product UI.
 
-### Root routes in `PluginHostedApp`
+### Root routes in `ExtensionHost`
 
-In `PluginHostedApp`, the hosted app automatically gets `/` as a **UI ownership prefix**. This means the hosted app
+In `ExtensionHost`, the extension automatically gets `/` as a **UI ownership prefix**. This means the extension
 can register routes at `/`, `/dashboard`, `/about`, and any other top-level UI path without prefixing them with
-`/<plugin-id>`.
+`/<extension-id>`.
 
-How it works internally: `HostedAppContribution.from(...)` calls `HostedAppOwnership.withMode(mode)` which prepends `"/"`
-to the `uiPrefixes` list when the mode is `PluginHostedApp`. The validation in `requirePathOwnedByManifest` then
+How it works internally: `ExtensionContribution.from(...)` calls `ExtensionOwnership.withMode(mode)` which prepends `"/"`
+to the `uiPrefixes` list when the mode is `ExtensionHost`. The validation in `requirePathOwnedByManifest` then
 accepts any path that matches `/` or starts with `/…`.
 
 **What stays under explicit prefixes:**
 
-- API routes — still require `/api/<plugin-id>` or similar declared prefixes
-- Admin routes — still require `/admin/<plugin-id>`
-- Static assets — still require `/plugins/<plugin-id>/assets`
+- API routes — still require `/api/<extension-id>` or similar declared prefixes
+- Admin routes — still require `/admin/<extension-id>`
+- Static assets — still require `/extensions/<extension-id>/assets`
 
-Example of a hosted app claiming the root:
+Example of an extension claiming the root:
 
 ```kotlin
-class DashboardApp : HostedApp {
+class DashboardApp : PlatformExtension {
     override val id = "dashboard"
     override val appLabel = "Dashboard"
-    override val mode = PlatformMode.PluginHostedApp
+    override val mode = PlatformMode.ExtensionHost
 
-    override fun contribute(context: HostedAppContributionContext) {
-        // These all work because PluginHostedApp grants "/" as a UI prefix
+    override fun contribute(context: ExtensionContributionContext) {
+        // These all work because ExtensionHost grants "/" as a UI prefix
         context.routes.publicUi(rootRoute(), "Root", "/")
         context.routes.protectedUi(dashboardRoute(), "Dashboard", "/dashboard")
         context.routes.publicUi(aboutRoute(), "About", "/about")
@@ -112,7 +112,7 @@ Older integrations often fought the platform UI by filtering or excluding platfo
 **Before (1.6.x):**
 
 ```kotlin
-class MyPlugin : PlatformPlugin {
+class MyExtension : PlatformExtension {
     override fun excludeDefaultRoutes() = setOf("home", "contacts")
 }
 ```
@@ -120,7 +120,7 @@ class MyPlugin : PlatformPlugin {
 **After (3.6.x):**
 
 ```kotlin
-override val mode = PlatformMode.PluginHostedApp
+override val mode = PlatformMode.ExtensionHost
 
 override fun includePlatformPages() = setOf(
     PlatformPageSets.SETTINGS,
@@ -128,9 +128,9 @@ override fun includePlatformPages() = setOf(
 )
 ```
 
-If the plugin does not include a page set, the default platform UI for that page set is not mounted.
+If the extension does not include a page set, the default platform UI for that page set is not mounted.
 
-## Hosted app migrations
+## Extension migrations
 
 **Before (1.6.x):**
 
@@ -144,24 +144,24 @@ override val migrationNames = listOf("V1__init", "V2__seed")
 
 ```kotlin
 override val migrations =
-    PluginMigrations(
+    ExtensionMigrations(
         location = "classpath:db/migration/my-app",
         historyTable = "flyway_my_app_history",
         migrationNames = listOf("V1__init", "V2__seed"),
     )
 ```
 
-`PluginMigrations` means:
+`ExtensionMigrations` means:
 
-- `location` — Flyway classpath location for plugin migrations
-- `historyTable` — separate Flyway history table for the hosted app
+- `location` — Flyway classpath location for extension migrations
+- `historyTable` — separate Flyway history table for the extension
 - `migrationNames` — optional explicit filenames, mainly useful for native-image packaging
 
-The host passes `plugin.migrations` into persistence startup automatically when you use `createServerComponents(plugin = ...)`.
+The host passes `extension.migrations` into persistence startup automatically when you use `createServerComponents(extension = ...)`.
 
 ## Context and facade changes
 
-`HostedAppContext` is narrower than the older raw host-service surface. Prefer these facades:
+`ExtensionHostContext` is narrower than the older raw host-service surface. Prefer these facades:
 
 | Use this now | Compatibility alias |
 | --- | --- |
@@ -179,23 +179,23 @@ The compatibility aliases still exist, but they are deprecated.
 **Before (1.6.x) — `routeRegistrations` returning a list:**
 
 ```kotlin
-override fun routeRegistrations(context: HostedAppContext): List<PluginRouteRegistration> =
+override fun routeRegistrations(context: ExtensionHostContext): List<ExtensionRouteRegistration> =
     listOf(
-        PluginRouteRegistration(myRoute(), RouteGroup.ProtectedUi, "My page", "/my-page"),
+        ExtensionRouteRegistration(myRoute(), RouteGroup.ProtectedUi, "My page", "/my-page"),
     )
 ```
 
 **After (3.6.x) — `contribute` with the contribution context:**
 
 ```kotlin
-override fun contribute(context: HostedAppContributionContext) {
+override fun contribute(context: ExtensionContributionContext) {
     context.routes.protectedUi(myRoute(), "My page", "/my-page")
     context.navigation.item("My Page", "/my-page", "my-icon")
 }
 ```
 
 The `contribute` method is the preferred registration path. `routeRegistrations(...)` still works for backward
-compatibility — both are called during `HostedAppContribution.from(...)`.
+compatibility — both are called during `ExtensionContribution.from(...)`.
 
 ## Testing
 
@@ -203,10 +203,10 @@ Two patterns are supported:
 
 ### SPI-only tests
 
-Use `HostedAppContext.forTesting(...)` when testing the plugin contract itself without booting the whole platform:
+Use `ExtensionHostContext.forTesting(...)` when testing the extension contract itself without booting the whole platform:
 
 ```kotlin
-val context = HostedAppContext.forTesting(rendering = rendering, users = users, security = security)
+val context = ExtensionHostContext.forTesting(rendering = rendering, users = users, security = security)
 ```
 
 ### Full-stack web tests
@@ -215,8 +215,8 @@ For integration coverage against the real platform wiring, use `createServerComp
 
 ```kotlin
 val server = createServerComponents(
-    config = testConfig.copy(platformMode = PlatformMode.PluginHostedApp),
-    plugin = MyHostedApp(),
+    config = testConfig.copy(platformMode = PlatformMode.ExtensionHost),
+    extension = MyPlatformExtension(),
 )
 
 val response = server.app.http!!(Request(GET, "/my-app"))
@@ -224,9 +224,9 @@ val response = server.app.http!!(Request(GET, "/my-app"))
 
 Close `server.persistence` when the test is done.
 
-The platform's `WebTest` base class is an internal test harness. Downstream hosted apps should **not** extend it.
+The platform's `WebTest` base class is an internal test harness. Downstream extensions should **not** extend it.
 Instead, create a test database (e.g. using `SharedPostgres` or Testcontainers) and boot through
-`createServerComponents(config, plugin)`.
+`createServerComponents(config, extension)`.
 
 ## Factory wiring guidance
 
@@ -235,18 +235,18 @@ The lower-level `createSecurityComponents(...)`, `createCoreComponents(...)`, an
 For applications and most tests, prefer:
 
 ```kotlin
-createServerComponents(plugin = MyHostedApp())
+createServerComponents(extension = MyPlatformExtension())
 ```
 
-That keeps persistence migrations, email wiring, websocket/event wiring, and hosted-app context assembly aligned with production.
+That keeps persistence migrations, email wiring, websocket/event wiring, and extension host context assembly aligned with production.
 
 ### Deprecated factory overloads
 
 The following deprecated overloads are provided for backward compatibility:
 
-**`createPersistenceComponents(config, pluginMigrationSource: String?)`** — wraps the string location into a
-`PluginMigrations`. Migrate to `createPersistenceComponents(config, PluginMigrations?)` or use
-`createServerComponents(plugin = ...)`.
+**`createPersistenceComponents(config, extensionMigrationSource: String?)`** — wraps the string location into a
+`ExtensionMigrations`. Migrate to `createPersistenceComponents(config, ExtensionMigrations?)` or use
+`createServerComponents(extension = ...)`.
 
 **`createSecurityComponents(config, userRepository, ..., oauthRepository?, sessionRepository?)`** — calls without
 `emailService` default to `NoOpEmailService`. Migrate by adding an explicit `emailService` parameter.
@@ -273,7 +273,7 @@ convergence failures:
        </exclusions>
    </dependency>
    ```
-3. Use the Maven Enforcer plugin's `dependencyConvergence` rule to catch conflicts early.
+3. Use the Maven Enforcer extension's `dependencyConvergence` rule to catch conflicts early.
 
 The platform already runs `dependencyConvergence` and `banDuplicateClasses` as part of its build, so the published
 artifacts have a clean classpath. Conflicts only appear when downstream consumers introduce different Jackson versions.

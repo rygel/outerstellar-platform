@@ -420,7 +420,7 @@ Files to check (from dependency analysis):
 - `App.kt` — imports SessionRealm, UserRepository, SessionLookup
 - `WebContext.kt` — imports User, SessionLookup, UserRepository
 - `Filters.kt` — imports User, UserRepository
-- `PlatformPlugin.kt` — imports User, UserRepository
+- `PlatformExtension.kt` — imports User, UserRepository
 - `Main.kt` — imports UserRepository
 - `di/WebModule.kt` — imports UserRepository
 
@@ -439,10 +439,10 @@ Expected: SUCCESS
 
 ---
 
-## Task 7: Update all imports in platform-seed and platform-desktop
+## Task 7: Update all imports in platform-seeder and platform-desktop
 
 **Files:**
-- Modify: `platform-seed/src/main/kotlin/.../seed/SeedData.kt`
+- Modify: `platform-seeder/src/main/kotlin/.../seed/SeedData.kt`
 - Modify: All .kt files in `platform-desktop/src/main/kotlin/` that import from security package
 
 - [ ] **Step 1: Update SeedData.kt**
@@ -458,7 +458,7 @@ Update any found imports.
 
 - [ ] **Step 3: Compile all non-desktop modules**
 
-Run: `mvn -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
+Run: `mvn -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
 Expected: SUCCESS
 
 ---
@@ -483,7 +483,7 @@ Apply the same replacement patterns as Task 4. The bulk of test files are in:
 
 - [ ] **Step 2: Compile all test code**
 
-Run: `mvn -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed test-compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
+Run: `mvn -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder test-compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
 Expected: SUCCESS
 
 ---
@@ -492,7 +492,7 @@ Expected: SUCCESS
 
 - [ ] **Step 1: Run full reactor build**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 Expected: BUILD SUCCESS — all tests pass, SpotBugs/Detekt/Spotless clean.
 
 - [ ] **Step 2: Commit**
@@ -533,7 +533,7 @@ If `OAuthRepository` is still needed, the dependency stays for now (it moves whe
 
 - [ ] **Step 2: Verify build**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 Expected: BUILD SUCCESS
 
 - [ ] **Step 3: Commit (if dependency was removed)**

@@ -7,12 +7,12 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>3.6.5</version>
+        <version>3.6.6</version>
 
     </parent>
 
     <artifactId>outerstellar-platform-desktop</artifactId>
-    <name>Platform Desktop</name>
+    <name>Outerstellar Platform Desktop</name>
 
     <properties>
         <maven.deploy.skip>true</maven.deploy.skip>
@@ -143,7 +143,7 @@
                         <pattern>.translate</pattern>
                     </sourcePatterns>
                     <scanExtensions>
-                        <extension>kt</extension>
+                        <plugin>kt</plugin>
                     </scanExtensions>
                     <failOnUndefined>true</failOnUndefined>
                 </configuration>

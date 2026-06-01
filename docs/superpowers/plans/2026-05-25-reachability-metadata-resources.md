@@ -84,7 +84,7 @@ class NativeResourceDriftTest {
         "META-INF/services/java.sql.Driver",
         "META-INF/services/java.time.zone.ZoneRulesProvider",
         "META-INF/services/javax.xml.parsers.SAXParserFactory",
-        "META-INF/services/org.flywaydb.core.extensibility.Plugin",
+        "META-INF/services/org.flywaydb.core.extensibility.Extension",
         "META-INF/services/org.slf4j.spi.SLF4JServiceProvider",
         "ch/qos/logback/classic/logback-classic-version.properties",
         "ch/qos/logback/core/logback-core-version.properties",
@@ -350,7 +350,7 @@ The manual generation script is no longer needed."
 
 Run:
 ```powershell
-mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 Expected: BUILD SUCCESS. All tests pass including `NativeResourceDriftTest`.

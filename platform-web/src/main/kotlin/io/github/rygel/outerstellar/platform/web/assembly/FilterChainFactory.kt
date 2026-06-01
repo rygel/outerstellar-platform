@@ -3,7 +3,7 @@ package io.github.rygel.outerstellar.platform.web.assembly
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.di.PlatformPersistence
 import io.github.rygel.outerstellar.platform.di.WebComponents
-import io.github.rygel.outerstellar.platform.plugin.HostedAppContribution
+import io.github.rygel.outerstellar.platform.extension.ExtensionContribution
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.web.Filters
 import io.github.rygel.outerstellar.platform.web.ShellConfig
@@ -19,7 +19,7 @@ internal class FilterChainFactory(
     private val persistence: PlatformPersistence,
     private val security: SecurityComponents,
     private val web: WebComponents,
-    private val pluginContribution: HostedAppContribution,
+    private val extensionContribution: ExtensionContribution,
 ) {
     fun build(): Filter {
         val userRepository = persistence.userRepository
@@ -54,7 +54,7 @@ internal class FilterChainFactory(
                         config.version,
                         jwtService,
                         ShellConfig.from(
-                            pluginContribution,
+                            extensionContribution,
                             appBaseUrl = config.appBaseUrl,
                             sidebarFactory = web.pages.sidebarFactory,
                         ),
@@ -63,7 +63,7 @@ internal class FilterChainFactory(
                     )
                 )
 
-        for (filter in pluginContribution.filters) {
+        for (filter in extensionContribution.filters) {
             chain = chain.then(filter)
         }
 

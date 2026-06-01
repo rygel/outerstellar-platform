@@ -59,7 +59,7 @@ That is reliable on a normal JVM, where generated classes live in jars or direct
 - Fixed 6 CRITICAL silently-swallowed exceptions (added logging):
   - `SecurityService.kt` — SSRF URI parsing
   - `Filters.kt` — analytics page-view
-  - `PlatformPlugin.kt` — lens extraction
+  - `PlatformExtension.kt` — lens extraction
   - `NotificationRoutes.kt` — invalid UUID
   - `PasswordEncoder.kt` — malformed BCrypt
   - `ThemeCatalog.kt` — color parsing

@@ -61,7 +61,7 @@ fun app(
     security: io.github.rygel.outerstellar.platform.security.SecurityComponents,
     core: io.github.rygel.outerstellar.platform.di.CoreComponents,
     web: io.github.rygel.outerstellar.platform.di.WebComponents,
-    plugin: io.github.rygel.outerstellar.platform.web.PlatformPlugin? = null,
+    extension: io.github.rygel.outerstellar.platform.web.PlatformExtension? = null,
 ): PolyHandler
 ```
 
@@ -74,10 +74,10 @@ fun app(
     security: SecurityComponents,
     core: CoreComponents,
     web: WebComponents,
-    plugin: PlatformPlugin? = null,
+    extension: PlatformExtension? = null,
 ): PolyHandler {
     logger.info("Initializing Outerstellar application")
-    val httpHandler = assembleHttpHandler(config, persistence, security, core, web, plugin)
+    val httpHandler = assembleHttpHandler(config, persistence, security, core, web, extension)
     val wsHandler = web.syncWebSocket?.let { websockets("/ws/sync" wsBind it.handler) }
     return PolyHandler(httpHandler, wsHandler)
 }
@@ -112,9 +112,9 @@ Replace the `AppContext`-taking private functions with versions that take explic
 | `ctx.totpService` | `security.totpService` |
 | `ctx.voteService` | `web.voteService` |
 | `ctx.pollService` | `web.pollService` |
-| `ctx.plugin` | `plugin` (parameter) |
-| `ctx.appLabel` | `plugin?.appLabel ?: "Outerstellar"` |
-| `ctx.excludedRoutes` | `plugin?.excludeDefaultRoutes ?: emptySet()` |
+| `ctx.extension` | `extension` (parameter) |
+| `ctx.appLabel` | `extension?.appLabel ?: "Outerstellar"` |
+| `ctx.excludedRoutes` | `extension?.excludeDefaultRoutes ?: emptySet()` |
 
 Each private function (`buildApiRoutes`, `buildUiRoutes`, `buildAdminRoutes`, `buildComponentRoutes`, `buildBaseApp`, `buildFilterChain`) changes its signature from `(ctx: AppContext)` to taking the component groups it needs.
 
@@ -129,7 +129,7 @@ val polyHandler = app(
     security = security,
     core = core,
     web = web,
-    plugin = plugin,
+    extension = extension,
 )
 ```
 
@@ -197,9 +197,9 @@ return app(
         notificationService = overrides.notificationService ?: notificationService,
         adminPageFactory = AdminPageFactory(apiKeyService, overrides.notificationService ?: notificationService, userAdminService),
         adminStatsService = AdminStatsService(resolvedUserRepo),
-        pluginMigrationSource = NoOpPluginMigrationSource,
+        extensionMigrationSource = NoOpExtensionMigrationSource,
     ),
-    plugin = plugin,
+    extension = extension,
 ).http!!
 ```
 

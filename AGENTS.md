@@ -23,14 +23,14 @@ This project uses **synchronous blocking I/O** with a planned migration to **Jav
 ```
 platform-core              Domain models, services, configuration (AppConfig, RuntimeConfig), composition model types
 outerstellar-i18n          ResourceBundle-backed I18nService runtime module
-platform-plugin-api        Hosted-app SPI, plugin-facing DTOs, contribution contexts, facades
+platform-extension-api      Extension SPI, extension-facing DTOs, contribution contexts, facades
 platform-security          Auth, permissions, User/UserRepository, OAuth, API keys, JWT
 platform-persistence-jdbi  JDBI repositories + Flyway migrations
-platform-test-infrastructure SharedPostgres container, TestDatabase, testing utilities
+platform-testkit           SharedPostgres container, TestDatabase, testing utilities
 platform-sync-client       Sync DTOs, DesktopSyncEngine (sync client logic)
 platform-web               http4k web server, JTE templates, HTMX frontend, route registry
 platform-desktop           Swing desktop client with two-way sync
-platform-seed              Database seeding utility
+platform-seeder            Database seeding utility
 platform-desktop-javafx    JavaFX desktop module (scaffolded, not production-ready)
 platform-jte-extensions    Custom JTE code generation (JteClassRegistry)
 ```
@@ -44,7 +44,7 @@ platform-jte-extensions    Custom JTE code generation (JteClassRegistry)
 - **Flyway migrations**: Source of truth for schema.
 - **AppConfig/RuntimeConfig**: Configuration from YAML + env vars. `AppConfig.fromEnvironment()` loads `application-{PROFILE}.yaml` then `application.yaml`. All fields support env var override. `platformMode` field controls composition mode via `PLATFORM_MODE` env var.
 - **Domain page factories**: AuthPageFactory, ErrorPageFactory, SidebarFactory, ContactsPageFactory, HomePageFactory, InfraPageFactory, SettingsPageFactory, SearchPageFactory, DevDashboardPageFactory, AdminPageFactory own page-specific rendering directly.
-- **Plugin composition**: `PlatformPlugin` interface with `mode` (PlatformMode), `includePlatformPages()` (Set of PlatformPageSets), `routeRegistrations()` (List of PluginRouteRegistration), `layoutTemplate()` (JTE template override), `filters()`, `bannerProviders()`. Route ownership tracked via `RouteRegistry` with startup conflict detection.
+- **Extension composition**: `PlatformExtension` interface with `mode` (PlatformMode), `includePlatformPages()` (Set of PlatformPageSets), `routeRegistrations()` (List of ExtensionRouteRegistration), `layoutTemplate()` (JTE template override), `filters()`, `bannerProviders()`. Route ownership tracked via `RouteRegistry` with startup conflict detection.
 
 ## Build and run
 
@@ -133,7 +133,7 @@ pwsh scripts/test.ps1 -TimeoutMinutes 10 -Modules platform-core
 # Full build excluding desktop modules (PowerShell)
 # NOTE: `-pl,!platform-desktop,!platform-desktop-javafx` does NOT work via PowerShell + cmd.exe
 # Use explicit module list instead:
-mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 
 # Run a specific test in a specific module (ALWAYS use -am to rebuild upstream modules)
 mvn -pl platform-web -am test -Dtest=HealthCheckIntegrationTest
@@ -159,7 +159,7 @@ mvn -pl platform-web test
 mvn -pl platform-web -am test
 
 # Full reactor build (always safe, no -am needed)
-mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 ### Desktop Tests in Podman
@@ -210,7 +210,7 @@ Windows PowerShell 5 does not support `Set-Content -Encoding UTF8NoBOM`. Scripts
 
 ### External GitHub Packages
 
-All Outerstellar-owned runtime artifacts now build from this repository, including `outerstellar-i18n`, the validator library, and the validator Maven plugin. GitHub Packages credentials are only needed for publish workflows, not for normal local dependency resolution.
+All Outerstellar-owned runtime artifacts now build from this repository, including `outerstellar-i18n`, the validator library, and the validator Maven extension. GitHub Packages credentials are only needed for publish workflows, not for normal local dependency resolution.
 
 ## Maven profile conventions
 
@@ -261,7 +261,7 @@ All configuration is read from `application.yaml` (or `application-{profile}.yam
 | `jdbcUser` | `JDBC_USER` | `outerstellar` | Database user |
 | `jdbcPassword` | `JDBC_PASSWORD` | `outerstellar` | Database password |
 | `profile` | `APP_PROFILE` | `default` | Active config profile |
-| `platformMode` | `PLATFORM_MODE` | `FullPlatformApp` | Composition mode (`FullPlatformApp`, `PluginHostedApp`, `HeadlessKernel`) |
+| `platformMode` | `PLATFORM_MODE` | `FullPlatform` | Composition mode (`FullPlatform`, `ExtensionHost`, `Headless`) |
 | `devMode` | `DEVMODE` | false | Dev auto-login |
 | `sessionTimeoutMinutes` | `SESSIONTIMEOUTMINUTES` | 30 | Session timeout |
 | `registrationEnabled` | `REGISTRATION_ENABLED` | true | Enable or disable public user registration |
@@ -288,8 +288,8 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 |---------|----------|
 | Route assembly | `App.kt` (mode-based `RouteRegistry` assembly) |
 | Composition model types | `platform-core/.../composition/` (`PlatformMode`, `RouteRegistry`, `RegisteredRoute`, `RouteOwner`, `RouteGroup`) |
-| Hosted-app SPI | `platform-plugin-api/` (`HostedAppManifest`, facades, DTOs) |
-| Plugin interface | `platform-web/.../PlatformPlugin.kt` |
+| Extension SPI | `platform-extension-api/` (`ExtensionManifest`, facades, DTOs) |
+| Extension interface | `platform-extension-api/.../extension/PlatformExtensionApi.kt` |
 | Platform page sets | `platform-web/.../composition/PlatformPageSets.kt` |
 | Theme interface | `platform-web/.../theme/PlatformTheme.kt`, `DaisyUITheme.kt` |
 | Filters | `Filters.kt` in `platform-web` |
@@ -302,7 +302,7 @@ Explicit profiles: `APP_PROFILE=small` (4 connections, small caches), `APP_PROFI
 | Desktop dialogs | `SyncDialogs.kt` (630 lines) |
 | Sync engine | `DesktopSyncEngine.kt` in `platform-sync-client` |
 | Migrations | `platform-persistence-jdbi/src/main/resources/db/migration/` |
-| Test infrastructure | `platform-test-infrastructure` (`SharedPostgres`, `TestDatabase`) |
+| Test infrastructure | `platform-testkit` (`SharedPostgres`, `TestDatabase`) |
 | Web test base | `platform-web/src/test/kotlin/.../web/WebTest.kt` |
 | Jdbi test base | `platform-persistence-jdbi/src/test/kotlin/.../persistence/JdbiTest.kt` |
 
@@ -319,7 +319,7 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
   - `mvn -pl platform-web test -Dexec.skip=true`
 - **Full reactor must exclude desktop modules** when running locally:
   ```bash
-  mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+  mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
   ```
 - Desktop tests via Podman (see Podman section above).
 - Playwright E2E tests are tagged `@Tag("e2e")` and run in CI via Docker E2E workflow.
@@ -333,7 +333,7 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
 
 ### Shared PostgreSQL container conventions
 
-- `platform-test-infrastructure` provides `SharedPostgres` (singleton reused container) and `TestDatabase` (per-class DB handle).
+- `platform-testkit` provides `SharedPostgres` (singleton reused container) and `TestDatabase` (per-class DB handle).
 - `WebTest` and `JdbiTest` both use `@TestInstance(PER_CLASS)` — each test class gets its own database, dropped in `@AfterAll`.
 - `@AfterEach` row deletion cleans between methods within a class. No manual `cleanup()` calls needed.
 - platform-web Surefire config: `parallel=classes`, `threadCount=4`. Classes run concurrently (each has its own DB), methods run sequentially.
@@ -419,7 +419,7 @@ Before every commit, the following MUST be true:
 
 1. **All non-desktop tests pass locally.** Run the full reactor build:
    ```powershell
-   mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+   mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
    ```
    If any test fails, fix it before committing. Do not commit failing tests.
 

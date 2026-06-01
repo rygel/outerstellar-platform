@@ -205,12 +205,12 @@ platform-desktop-javafx/
     <build>
         <sourceDirectory>src/main/kotlin</sourceDirectory>
         <testSourceDirectory>src/test/kotlin</testSourceDirectory>
-        <plugins>
-            <plugin>
+        <extensions>
+            <extension>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-            <plugin>
+            </extension>
+            <extension>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
@@ -221,8 +221,8 @@ platform-desktop-javafx/
                         <java.awt.headless>true</java.awt.headless>
                     </systemPropertyVariables>
                 </configuration>
-            </plugin>
-        </plugins>
+            </extension>
+        </extensions>
     </build>
 </project>
 ```
