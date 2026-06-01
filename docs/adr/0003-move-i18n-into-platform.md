@@ -4,7 +4,7 @@
 
 ## Context
 
-`outerstellar-i18n` was the last runtime dependency resolved from the old `outerstellar-framework` GitHub Packages feed. The validator library and validator Maven plugin already live in this repository, while the translation bundles themselves live in `platform-core/src/main/resources`.
+`outerstellar-i18n` was the last runtime dependency resolved from the old `outerstellar-framework` GitHub Packages feed. The validator library and validator Maven extension already live in this repository, while the translation bundles themselves live in `platform-core/src/main/resources`.
 
 The remaining i18n runtime API is small: `I18nService`, `Language`, `ParameterInjector`, and `Translatable`. It is used by platform core text resolution, the web shell, Swing, JavaFX, and tests. There is no evidence in this repository that it is independently reused outside the platform, and keeping it external forces every local and CI build to keep access to the old framework package feed.
 

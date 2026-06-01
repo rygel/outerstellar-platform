@@ -3943,7 +3943,7 @@ In each test file:
 
 - [ ] **Step 2: Run full build excluding desktop UI tests**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder -Ddetekt.skip=true -Dspotbugs.skip=true -Dspotless.check.skip=true`
 Expected: ALL PASS
 
 - [ ] **Step 3: Run platform-desktop compile (tests run in Podman only)**
@@ -3984,7 +3984,7 @@ Expected: ALL PASS (desktop tests run in Podman per project rules)
 
 - [ ] **Step 3: Run full reactor build**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jooq,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 Expected: ALL PASS
 
 - [ ] **Step 4: Commit**

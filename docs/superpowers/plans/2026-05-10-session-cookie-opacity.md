@@ -102,7 +102,7 @@ class WebContext(
     private val appVersion: String = "dev",
     private val jwtService: JwtService? = null,
     private val securityService: SecurityService? = null,
-    private val pluginOptions: PluginOptions = PluginOptions(),
+    private val extensionOptions: ExtensionOptions = ExtensionOptions(),
 )
 ```
 
@@ -142,14 +142,14 @@ fun stateFilter(
     appVersion: String = "dev",
     jwtService: io.github.rygel.outerstellar.platform.security.JwtService? = null,
     securityService: SecurityService? = null,
-    pluginOptions: PluginOptions = PluginOptions(),
+    extensionOptions: ExtensionOptions = ExtensionOptions(),
 ): Filter = Filter { next: HttpHandler ->
 ```
 
 Change the `WebContext(...)` constructor call inside (line 249) to:
 ```kotlin
 val context =
-    WebContext(request, devDashboardEnabled, userRepository, appVersion, jwtService, securityService, pluginOptions)
+    WebContext(request, devDashboardEnabled, userRepository, appVersion, jwtService, securityService, extensionOptions)
 ```
 
 - [ ] **Step 3: Update stateFilter call in App.kt**
@@ -164,9 +164,9 @@ In `App.kt`, the `buildFilterChain` method calls `Filters.stateFilter(...)` at a
         config.version,
         jwtService,
         securityService,
-        PluginOptions(
-            navItems = plugin?.navItems ?: emptyList(),
-            textResolver = plugin?.textResolver,
+        ExtensionOptions(
+            navItems = extension?.navItems ?: emptyList(),
+            textResolver = extension?.textResolver,
             adminNavItems = adminNavItems,
         ),
     )

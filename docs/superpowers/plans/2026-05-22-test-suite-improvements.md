@@ -498,7 +498,7 @@ Tasks 1-4 are **independent** and can be executed in parallel by separate agents
 
 ## Out of Scope (Deferred)
 
-- Issue #1 (stale classpath detection) — requires Maven enforcer plugin investigation
+- Issue #1 (stale classpath detection) — requires Maven enforcer extension investigation
 - Issue #6 (two PostgreSQL containers) — requires Testcontainers reuse investigation
 - Issue #7 (test data builders) — large effort, incremental
 - Issue #8 (raw SQL in tests) — low priority, only 3 files

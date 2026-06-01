@@ -7,12 +7,12 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>3.6.5</version>
+        <version>3.6.6</version>
 
     </parent>
 
     <artifactId>outerstellar-platform-web</artifactId>
-    <name>Platform Web</name>
+    <name>Outerstellar Platform Web</name>
 
     <properties>
         <exec.skip>false</exec.skip>
@@ -27,7 +27,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-plugin-api</artifactId>
+            <artifactId>outerstellar-platform-extension-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -105,7 +105,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.rygel</groupId>
-            <artifactId>outerstellar-platform-test-infrastructure</artifactId>
+            <artifactId>outerstellar-platform-testkit</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -293,7 +293,7 @@
                     </dependency>
                     <dependency>
                         <groupId>io.github.rygel</groupId>
-                        <artifactId>platform-jte-extensions</artifactId>
+                        <artifactId>outerstellar-platform-jte-extensions</artifactId>
                         <version>${project.version}</version>
                     </dependency>
                 </dependencies>

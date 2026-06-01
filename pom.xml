@@ -6,11 +6,11 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>3.6.5</version>
+    <version>3.6.6</version>
 
     <packaging>pom</packaging>
 
-    <name>Outerstellar Platform</name>
+    <name>Outerstellar Platform Parent</name>
     <description>Opinionated app scaffold with http4k, JDBI, Flyway, JTE</description>
     <url>https://github.com/rygel/outerstellar-platform</url>
 
@@ -42,15 +42,15 @@
         <module>outerstellar-i18n-validator</module>
         <module>outerstellar-i18n-validator-maven-plugin</module>
         <module>platform-core</module>
-        <module>platform-plugin-api</module>
+        <module>platform-extension-api</module>
         <module>platform-persistence-jdbi</module>
         <module>platform-sync-client</module>
         <module>platform-web</module>
         <module>platform-desktop</module>
         <module>platform-desktop-javafx</module>
         <module>platform-security</module>
-        <module>platform-seed</module>
-        <module>platform-test-infrastructure</module>
+        <module>platform-seeder</module>
+        <module>platform-testkit</module>
     </modules>
 
     <properties>
@@ -178,7 +178,7 @@
             </dependency>
             <dependency>
                 <groupId>io.github.rygel</groupId>
-                <artifactId>outerstellar-platform-plugin-api</artifactId>
+                <artifactId>outerstellar-platform-extension-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1061,7 +1061,7 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <configuration>
-                            <mainClass>io.github.rygel.outerstellar.platform.seed.SeedDataKt</mainClass>
+                            <mainClass>io.github.rygel.outerstellar.platform.seeder.SeedDataKt</mainClass>
                             <classpathScope>compile</classpathScope>
                         </configuration>
                     </plugin>
@@ -1160,11 +1160,11 @@
                         <configuration>
                             <publishingServerId>central</publishingServerId>
                             <excludeArtifacts>
-                                <excludeArtifact>outerstellar-platform-seed</excludeArtifact>
-                                <excludeArtifact>outerstellar-platform-test-infrastructure</excludeArtifact>
+                                <excludeArtifact>outerstellar-platform-seeder</excludeArtifact>
+                                <excludeArtifact>outerstellar-platform-testkit</excludeArtifact>
                                 <excludeArtifact>outerstellar-platform-desktop</excludeArtifact>
                                 <excludeArtifact>outerstellar-platform-desktop-javafx</excludeArtifact>
-                                <excludeArtifact>platform-jte-extensions</excludeArtifact>
+                                <excludeArtifact>outerstellar-platform-jte-extensions</excludeArtifact>
                             </excludeArtifacts>
                         </configuration>
                     </plugin>

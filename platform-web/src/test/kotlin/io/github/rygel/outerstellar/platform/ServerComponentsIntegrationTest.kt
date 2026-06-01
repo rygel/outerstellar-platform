@@ -3,8 +3,8 @@ package io.github.rygel.outerstellar.platform
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
-import io.github.rygel.outerstellar.platform.plugin.HostedApp
-import io.github.rygel.outerstellar.platform.plugin.HostedAppContributionContext
+import io.github.rygel.outerstellar.platform.extension.ExtensionContributionContext
+import io.github.rygel.outerstellar.platform.extension.PlatformExtension
 import io.github.rygel.outerstellar.platform.web.WebTest
 import kotlin.test.Test
 import org.http4k.contract.bindContract
@@ -17,9 +17,9 @@ import org.http4k.hamkrest.hasStatus
 
 class ServerComponentsIntegrationTest : WebTest() {
     @Test
-    fun `server components can boot hosted app with explicit test config`() {
-        val config = testConfig.copy(version = "test-config-version", platformMode = PlatformMode.PluginHostedApp)
-        val components = createServerComponents(config = config, plugin = configProbeApp())
+    fun `server components can boot extension with explicit test config`() {
+        val config = testConfig.copy(version = "test-config-version", platformMode = PlatformMode.ExtensionHost)
+        val components = createServerComponents(config = config, extension = configProbeApp())
 
         try {
             val response = components.app.http!!(Request(GET, "/probe/config"))
@@ -33,10 +33,10 @@ class ServerComponentsIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `hosted app in PluginHostedApp mode owns root route`() {
-        val config = testConfig.copy(platformMode = PlatformMode.PluginHostedApp)
+    fun `extension in ExtensionHost mode owns root route`() {
+        val config = testConfig.copy(platformMode = PlatformMode.ExtensionHost)
         val app = rootOwningApp()
-        val components = createServerComponents(config = config, plugin = app)
+        val components = createServerComponents(config = config, extension = app)
 
         try {
             val rootResponse = components.app.http!!(Request(GET, "/"))
@@ -56,22 +56,22 @@ class ServerComponentsIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `hosted app with FullPlatformApp mode cannot register root route`() {
+    fun `extension with FullPlatform mode cannot register root route`() {
         val thrown =
             org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
-                val config = testConfig.copy(platformMode = PlatformMode.FullPlatformApp)
-                createServerComponents(config = config, plugin = rootClaimingFullModeApp())
+                val config = testConfig.copy(platformMode = PlatformMode.FullPlatform)
+                createServerComponents(config = config, extension = rootClaimingFullModeApp())
             }
-        assert(thrown.message!!.contains("outside hosted app"))
+        assert(thrown.message!!.contains("outside extension"))
     }
 
-    private fun rootClaimingFullModeApp(): HostedApp =
-        object : HostedApp {
+    private fun rootClaimingFullModeApp(): PlatformExtension =
+        object : PlatformExtension {
             override val id = "root-claim"
             override val appLabel = "Root Claim"
-            override val mode = PlatformMode.FullPlatformApp
+            override val mode = PlatformMode.FullPlatform
 
-            override fun contribute(context: HostedAppContributionContext) {
+            override fun contribute(context: ExtensionContributionContext) {
                 val rootRoute =
                     "/" meta
                         {
@@ -85,13 +85,13 @@ class ServerComponentsIntegrationTest : WebTest() {
             }
         }
 
-    private fun rootOwningApp(): HostedApp =
-        object : HostedApp {
+    private fun rootOwningApp(): PlatformExtension =
+        object : PlatformExtension {
             override val id = "root-owner"
             override val appLabel = "Root Owner"
-            override val mode = PlatformMode.PluginHostedApp
+            override val mode = PlatformMode.ExtensionHost
 
-            override fun contribute(context: HostedAppContributionContext) {
+            override fun contribute(context: ExtensionContributionContext) {
                 val rootRoute =
                     "/" meta
                         {
@@ -127,13 +127,13 @@ class ServerComponentsIntegrationTest : WebTest() {
             }
         }
 
-    private fun configProbeApp(): HostedApp =
-        object : HostedApp {
+    private fun configProbeApp(): PlatformExtension =
+        object : PlatformExtension {
             override val id = "config-probe"
             override val appLabel = "Config Probe"
-            override val mode = PlatformMode.PluginHostedApp
+            override val mode = PlatformMode.ExtensionHost
 
-            override fun contribute(context: HostedAppContributionContext) {
+            override fun contribute(context: ExtensionContributionContext) {
                 val route =
                     "/probe/config" meta
                         {

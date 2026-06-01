@@ -4,14 +4,14 @@ import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.SegmentAnalyticsService
-import io.github.rygel.outerstellar.platform.infra.PluginTemplateRenderer
+import io.github.rygel.outerstellar.platform.extension.PlatformExtension
+import io.github.rygel.outerstellar.platform.infra.ExtensionTemplateRenderer
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.NotificationRepository
 import io.github.rygel.outerstellar.platform.persistence.PollRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.persistence.VoteRepository
-import io.github.rygel.outerstellar.platform.plugin.HostedApp
 import io.github.rygel.outerstellar.platform.security.ApiKeyService
 import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.security.UserAdminService
@@ -26,8 +26,8 @@ import io.github.rygel.outerstellar.platform.web.ContactTrashListFactory
 import io.github.rygel.outerstellar.platform.web.ContactsPageFactory
 import io.github.rygel.outerstellar.platform.web.DevDashboardPageFactory
 import io.github.rygel.outerstellar.platform.web.ErrorPageFactory
+import io.github.rygel.outerstellar.platform.web.ExtensionHostContextFactory
 import io.github.rygel.outerstellar.platform.web.HomePageFactory
-import io.github.rygel.outerstellar.platform.web.HostedAppContextFactory
 import io.github.rygel.outerstellar.platform.web.InfraPageFactory
 import io.github.rygel.outerstellar.platform.web.SearchPageFactory
 import io.github.rygel.outerstellar.platform.web.SettingsPageFactory
@@ -58,7 +58,7 @@ class WebPageFactories(
 class WebComponents(
     val runtime: WebRuntimeComponents,
     val pages: WebPageFactories,
-    val hostedAppContextFactory: HostedAppContextFactory,
+    val hostedAppContextFactory: ExtensionHostContextFactory,
     val voteService: VoteService,
     val pollService: PollService,
     val notificationService: NotificationService,
@@ -67,7 +67,7 @@ class WebComponents(
 @Suppress("LongParameterList")
 fun createWebComponents(
     config: AppConfig,
-    plugin: HostedApp? = null,
+    extension: PlatformExtension? = null,
     apiKeyService: ApiKeyService,
     oauthService: OAuthService,
     syncWebSocket: SyncWebSocket,
@@ -81,10 +81,10 @@ fun createWebComponents(
     notificationRepository: NotificationRepository,
 ): WebComponents {
     val baseRenderer = createRenderer(config.runtime)
-    val overrides = plugin?.templateOverrides()
+    val overrides = extension?.templateOverrides()
     val templateRenderer: TemplateRenderer =
-        if (plugin != null && overrides != null && overrides.isNotEmpty()) {
-            PluginTemplateRenderer(baseRenderer, overrides, plugin::class.java.classLoader)
+        if (extension != null && overrides != null && overrides.isNotEmpty()) {
+            ExtensionTemplateRenderer(baseRenderer, overrides, extension::class.java.classLoader)
         } else {
             baseRenderer
         }
@@ -118,7 +118,7 @@ fun createWebComponents(
             syncWebSocket = syncWebSocket,
         )
     val hostedAppContextFactory =
-        HostedAppContextFactory(
+        ExtensionHostContextFactory(
             renderer = templateRenderer,
             apiKeyService = apiKeyService,
             oauthService = oauthService,

@@ -518,7 +518,7 @@ If any check fails, the app exits immediately with an actionable error message.
 
 - [ ] **Step 2: Run full reactor verify**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 
 Expected: BUILD SUCCESS
 

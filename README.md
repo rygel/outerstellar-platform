@@ -1,23 +1,24 @@
 ### Outerstellar Platform
 
-A Kotlin application platform for building plugin-hosted web and desktop products. The platform provides configuration, database migrations, authentication, session management, routing, and template rendering — plugins provide the product UI and business logic.
+A Kotlin application platform for building extension-driven web and desktop products. The platform provides configuration, database migrations, authentication, session management, routing, and template rendering — extensions provide the product UI and business logic.
 
-If you are building a hosted app, start with the **[Plugin Author Guide](docs/features/plugin-system.md)**. If you are
-upgrading an existing hosted app, see **[MIGRATION.md](MIGRATION.md)** for the 1.6.x -> 3.6.4 migration path.
+If you are building an extension, start with the **[Extension Author Guide](docs/features/extension-system.md)** and the
+copyable **[starter-extension-app](starter-extension-app/README.md)** scaffold. If you are
+upgrading an existing extension, see **[MIGRATION.md](MIGRATION.md)** for the 1.6.x -> 3.6.4 migration path.
 
 ---
 
 ### Key Architectural Features
 
-- **Plugin Composition Model**: Plugins control what platform UI to include via `PlatformMode` (`FullPlatformApp`, `PluginHostedApp`, `HeadlessKernel`). Route ownership, conflict detection, and startup diagnostics come built-in.
-- **Multi-Module Architecture**: `outerstellar-i18n`, `platform-core`, `platform-plugin-api`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, `platform-desktop`, and `platform-seed` for clear separation of concerns.
+- **Extension Composition Model**: Extensions control what platform UI to include via `PlatformMode` (`FullPlatform`, `ExtensionHost`, `Headless`). Route ownership, conflict detection, and startup diagnostics come built-in.
+- **Multi-Module Architecture**: `outerstellar-i18n`, `platform-core`, `platform-extension-api`, `platform-persistence-jdbi`, `platform-sync-client`, `platform-security`, `platform-web`, `platform-desktop`, and `platform-seeder` for clear separation of concerns.
 - **Transactional Outbox Pattern**: Ensures atomicity and reliability for background tasks and data synchronization.
 - **Observability**: Integrated with **OpenTelemetry** for distributed tracing and **Micrometer** for real-time metrics.
 - **Type-Safe Configuration**: Uses **Hoplite** for multi-environment configuration from YAML + env vars.
 - **Contract-First API**: Synchronization API defined using **http4k-contract** with automatic OpenAPI documentation.
 - **Caching Layer**: **Caffeine-based caching** with integrated metrics.
 - **Swing Desktop MVVM**: Desktop client uses **Model-View-ViewModel** with **FlatLaf** theming.
-- **Managed Database Migrations**: **Flyway** for schema versioning with plugin-isolated migration history tables.
+- **Managed Database Migrations**: **Flyway** for schema versioning with extension-isolated migration history tables.
 
 ---
 
@@ -25,13 +26,13 @@ upgrading an existing hosted app, see **[MIGRATION.md](MIGRATION.md)** for the 1
 
 - `platform-core`: Domain models, service interfaces, shared business logic, composition model types.
 - `outerstellar-i18n`: ResourceBundle-backed runtime translation service.
-- `platform-plugin-api`: Hosted-app SPI and plugin-facing DTOs for the composition model.
+- `platform-extension-api`: Extension SPI and extension-facing DTOs for the composition model.
 - `platform-persistence-jdbi`: Database implementation using JDBI and Flyway migrations.
 - `platform-sync-client`: Shared DTOs and client logic for synchronization between components.
 - `platform-security`: Authentication models, role-based access control, fine-grained permissions, multi-realm auth, and security filters.
 - `platform-web`: The main http4k server, JTE templates, route registry, and web-specific infrastructure.
 - `platform-desktop`: A Swing-based desktop application implementing the MVVM pattern.
-- `platform-seed`: Database seeding utility.
+- `platform-seeder`: Database seeding utility.
 - `platform-desktop-javafx`: JavaFX desktop module (scaffolded, not production-ready).
 
 ---
@@ -39,8 +40,8 @@ upgrading an existing hosted app, see **[MIGRATION.md](MIGRATION.md)** for the 1
 ### Getting Started
 
 #### Prerequisites
-- JDK 17+
-- Maven 3.8+
+- JDK 21
+- Maven 3.9+
 - Node.js (for Tailwind CSS)
 
 #### Build
@@ -117,43 +118,43 @@ The web application uses **http4k** with **JTE** templates and **HTMX** for inte
 
 1. **Kernel routes**: Always present — auth, static assets, health, metrics.
 2. **Platform UI routes**: Opt-in via `includePlatformPages()` — home, contacts, settings, search, notifications, profile, admin, dev-dashboard.
-3. **Plugin routes**: Registered by the plugin via `routeRegistrations()` in any route group.
+3. **Extension routes**: Registered by the extension via `routeRegistrations()` in any route group.
 4. **API routes**: JSON-based synchronization and bearer-token API.
 
 #### Platform Modes
 
 ```kotlin
 enum class PlatformMode {
-    FullPlatformApp,   // Default — all platform UI routes mounted, zero config
-    PluginHostedApp,   // Plugin opts into specific platform pages via includePlatformPages()
-    HeadlessKernel     // API-only, no HTML UI at all
+    FullPlatform,   // Default — all platform UI routes mounted, zero config
+    ExtensionHost,   // Extension opts into specific platform pages via includePlatformPages()
+    Headless     // API-only, no HTML UI at all
 }
 ```
 
-#### Creating a Hosted App
+#### Creating an Extension
 
 ```kotlin
-class MyHostedApp : HostedApp {
+class MyPlatformExtension : PlatformExtension {
     override val id = "my-app"
-    override val mode = PlatformMode.PluginHostedApp
+    override val mode = PlatformMode.ExtensionHost
 
-    override fun contribute(context: HostedAppContributionContext) {
+    override fun contribute(context: ExtensionContributionContext) {
         context.platformPages.include(PlatformPageSets.SETTINGS, PlatformPageSets.SEARCH)
         context.routes.publicUi(myHomeRoute, "Home page", "/")
         context.navigation.item("Home", "/", "home-line")
     }
 }
 
-class MyHostedAppContractTest {
+class MyExtensionContractTest {
     @Test
     fun `contribution is valid`() {
-        val diagnostics = HostedAppContract.diagnostics(MyHostedApp(), testHostedAppContext())
+        val diagnostics = ExtensionContract.diagnostics(MyPlatformExtension(), testExtensionHostContext())
         assertEquals(listOf("/"), diagnostics.routes.map { it.pathPattern })
     }
 }
 
 // Start the server
-val components = createServerComponents(plugin = MyHostedApp())
+val components = createServerComponents(extension = MyPlatformExtension())
 ```
 
 At startup, the route registry logs a table showing all routes, their owners, and any conflicts. If two owners claim the same path, the server fails fast with a descriptive error.

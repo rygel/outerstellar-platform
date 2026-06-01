@@ -41,14 +41,14 @@ class ShellRendererTest {
     }
 
     @Test
-    fun `plugin hosted shell uses plugin branding and hides default chrome`() {
+    fun `extension hosted shell uses extension branding and hides default chrome`() {
         val shell =
             ShellRenderer(
                     requestContext(shellCookie = "topbar"),
                     appVersion = "1.6.4",
                     shellConfig =
                         ShellConfig(
-                            mode = PlatformMode.PluginHostedApp,
+                            mode = PlatformMode.ExtensionHost,
                             appLabel = "RepoQuality",
                             appHomeUrl = "/repoquality",
                         ),
@@ -68,17 +68,17 @@ class ShellRendererTest {
     }
 
     @Test
-    fun `nav cache keeps full and plugin hosted shells separate`() {
+    fun `nav cache keeps full and extension hosted shells separate`() {
         val requestContext = requestContext()
         val fullShell =
-            ShellRenderer(requestContext, shellConfig = ShellConfig(mode = PlatformMode.FullPlatformApp))
+            ShellRenderer(requestContext, shellConfig = ShellConfig(mode = PlatformMode.FullPlatform))
                 .shell("Outerstellar", "/")
-        val pluginShell =
+        val extensionShell =
             ShellRenderer(
                     requestContext,
                     shellConfig =
                         ShellConfig(
-                            mode = PlatformMode.PluginHostedApp,
+                            mode = PlatformMode.ExtensionHost,
                             appLabel = "RepoQuality",
                             appHomeUrl = "/repoquality",
                             includedPlatformPages = setOf(PlatformPageSets.SEARCH, PlatformPageSets.NOTIFICATIONS),
@@ -88,11 +88,11 @@ class ShellRendererTest {
 
         assertTrue(fullShell.navLinks.any { it.url == "/contacts" })
         assertTrue(fullShell.navLinks.any { it.url == "/admin/users" })
-        assertFalse(pluginShell.navLinks.any { it.url == "/contacts" })
-        assertFalse(pluginShell.navLinks.any { it.url == "/admin/users" })
-        assertTrue(pluginShell.navLinks.any { it.url == "/search" })
-        assertEquals("/notifications", pluginShell.notificationsUrl)
-        assertNull(pluginShell.profileUrl)
-        assertNull(pluginShell.changePasswordUrl)
+        assertFalse(extensionShell.navLinks.any { it.url == "/contacts" })
+        assertFalse(extensionShell.navLinks.any { it.url == "/admin/users" })
+        assertTrue(extensionShell.navLinks.any { it.url == "/search" })
+        assertEquals("/notifications", extensionShell.notificationsUrl)
+        assertNull(extensionShell.profileUrl)
+        assertNull(extensionShell.changePasswordUrl)
     }
 }

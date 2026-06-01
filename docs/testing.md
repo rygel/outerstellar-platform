@@ -22,7 +22,7 @@ Every test in this project exercises the full stack. There are no unit tests tha
 The test infrastructure has three layers:
 
 ```
-platform-test-infrastructure:  SharedPostgres (singleton reused container)
+platform-testkit:  SharedPostgres (singleton reused container)
                                   + TestDatabase (per-class database)
                                       |
 platform-web:        WebTest (per-class DB via SharedPostgres + repos + http4k app)
@@ -32,7 +32,7 @@ platform-persistence-jdbi:  JdbiTest (per-class DB via SharedPostgres + Jdbi han
 platform-core / platform-security / platform-sync-client:  No database (pure unit tests)
 ```
 
-- **SharedPostgres** (in `platform-test-infrastructure`) manages a single reused PostgreSQL 18 container via Testcontainers `withReuse(true)`. Each test class gets its own database via `CREATE DATABASE`, dropped in `@AfterAll`.
+- **SharedPostgres** (in `platform-testkit`) manages a single reused PostgreSQL 18 container via Testcontainers `withReuse(true)`. Each test class gets its own database via `CREATE DATABASE`, dropped in `@AfterAll`.
 - **WebTest** creates a per-class database, runs all migrations, and constructs all repositories and the full http4k HTTP handler. ~55 integration test classes extend it.
 - **JdbiTest** creates a per-class database, runs all migrations, and provides a Jdbi handle. All JDBI repository tests extend it.
 - **platform-core, platform-security, platform-sync-client** have no database dependency. Their tests are pure unit tests (MockK, in-memory stubs).
@@ -47,9 +47,9 @@ platform-core / platform-security / platform-sync-client:  No database (pure uni
 
 ## Container Architecture
 
-### Shared PostgreSQL Container (platform-test-infrastructure)
+### Shared PostgreSQL Container (platform-testkit)
 
-All database-dependent tests share a single PostgreSQL 18 container managed by `SharedPostgres` in `platform-test-infrastructure`. The container uses Testcontainers `withReuse(true)` to persist across test runs.
+All database-dependent tests share a single PostgreSQL 18 container managed by `SharedPostgres` in `platform-testkit`. The container uses Testcontainers `withReuse(true)` to persist across test runs.
 
 Each test class gets its own database via `SharedPostgres.createDatabase(className)`, which runs `CREATE DATABASE` on the shared container. The database is dropped in `@AfterAll` via `testDb.drop()`. This means:
 
@@ -347,7 +347,7 @@ See [Desktop Testing](#desktop-testing). Use Podman containers exclusively.
 ### Full reactor (non-desktop modules)
 
 ```powershell
-mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed
+mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
 ```
 
 ### Single module

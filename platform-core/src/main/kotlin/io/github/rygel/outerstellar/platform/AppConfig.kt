@@ -84,7 +84,7 @@ data class AppConfig(
     val appleOAuth: AppleOAuthConfig = AppleOAuthConfig(),
     val pushNotifications: PushNotificationConfig = PushNotificationConfig(),
     val runtime: RuntimeConfig = RuntimeConfig(),
-    val platformMode: PlatformMode = PlatformMode.FullPlatformApp,
+    val platformMode: PlatformMode = PlatformMode.FullPlatform,
 ) {
     companion object {
         const val DEFAULT_APP_BASE_URL = "http://localhost:8080"
@@ -177,7 +177,7 @@ data class AppConfig(
                 runtime = buildRuntimeConfig(yaml["runtime"] as? Map<String, Any>, env),
                 platformMode =
                     PlatformMode.entries.firstOrNull { it.name.equals(env["PLATFORM_MODE"], ignoreCase = true) }
-                        ?: PlatformMode.FullPlatformApp,
+                        ?: PlatformMode.FullPlatform,
             )
         }
 

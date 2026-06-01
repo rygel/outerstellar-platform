@@ -9,19 +9,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.6] – 2026-06-01
+
+### Changed
+
+- **Breaking extension vocabulary cleanup** — renamed the public SPI from plugin/hosted-app terminology to the extension model, including `platform-extension-api`, `PlatformExtension`, `ExtensionHostContext`, `ExtensionContributionContext`, and `PlatformMode` values `FullPlatform`, `ExtensionHost`, and `Headless`.
+- **Module and artifact consistency** — renamed the reactor and published coordinates to the new extension naming set, including `platform-testkit`, `platform-seeder`, and `outerstellar-platform-jte-extensions`.
+
+### Fixed
+
+- **JTE renderer mode split** — development resolves source templates explicitly, while production and tests use the precompiled JTE registry without a silent fallback.
+- **Packaged JVM template rendering** — containerized JVM startup now opts into precompiled JTE templates so packaged images render without source template directories.
+- **Validator Maven plugin build** — corrected the Maven plugin annotations dependency coordinates after moving the validator artifacts into this repository.
+
+---
+
 ## [3.6.5] – 2026-05-31
 
 ### Added
 
-- **Hosted app authoring improvements** — Improved developer experience for plugin-hosted app configuration and authoring.
-- **Config-driven hosted app server tests** — Support for configuration-driven integration tests for hosted app servers (#410).
-- **Plugin-hosted app service separation** — Platform services separated from default UI for plugin-hosted apps, allowing finer-grained control over which platform capabilities are exposed (#376, #409).
+- **Extension authoring improvements** — Improved developer experience for extension-host configuration and authoring.
+- **Config-driven extension host server tests** — Support for configuration-driven integration tests for extension host servers (#410).
+- **Extension host service separation** — Platform services separated from default UI for extension-host deployments, allowing finer-grained control over which platform capabilities are exposed (#376, #409).
 - **I18n module moved into platform** — Migrated `outerstellar-i18n` into the platform monorepo for unified versioning and releases (#412).
-- **Validator migrated in-repo** — Migrated the i18n validator library and Maven plugin into the repository, cleaning stale external dependencies (#405).
+- **Validator migrated in-repo** — Migrated the i18n validator library and Maven extension into the repository, cleaning stale external dependencies (#405).
 
 ### Changed
 
-- **Plugin-hosted app composition** — Plugin-hosted apps can now selectively include platform UI pages independent of platform services (#409).
+- **Extension host composition** — Extension-host deployments can now selectively include platform UI pages independent of platform services (#409).
 - **Release version safeguards** — CI release workflow now validates CHANGELOG entry, SNAPSHOT status, duplicate tag, and CI success before publishing (#406).
 
 ### Fixed
@@ -38,19 +53,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- **Plugin Composition Model** — WordPress-like plugin+theme separation with three platform modes: `FullPlatformApp` (default, zero change), `PluginHostedApp` (plugin opts into platform UI pages), `HeadlessKernel` (API only, no HTML UI).
-- **Route Registry** — Central `RouteRegistry` with ownership tracking (`RouteOwner`: PlatformKernel, PlatformUi, Plugin), route groups (PublicUi, ProtectedUi, Api, Admin, Static, Health), conflict detection, and startup diagnostics (route table logged at boot, conflicts fail fast).
-- **PlatformPageSets** — 8 bundled page sets (home, contacts, settings, search, notifications, profile, admin, dev-dashboard) that plugins opt into via `includePlatformPages()`.
+- **Extension Composition Model** — WordPress-like extension+theme separation with three platform modes: `FullPlatform` (default, zero change), `ExtensionHost` (extension opts into platform UI pages), `Headless` (API only, no HTML UI).
+- **Route Registry** — Central `RouteRegistry` with ownership tracking (`RouteOwner`: PlatformKernel, PlatformUi, Extension), route groups (PublicUi, ProtectedUi, Api, Admin, Static, Health), conflict detection, and startup diagnostics (route table logged at boot, conflicts fail fast).
+- **PlatformPageSets** — 8 bundled page sets (home, contacts, settings, search, notifications, profile, admin, dev-dashboard) that extensions opt into via `includePlatformPages()`.
 - **PlatformTheme interface** — `DaisyUITheme` default with `headInjections()`, `bodyInjections()`, and `templateOverrides()` hooks for CSS/JS customization.
-- **Hosted-app SPI** — Extracted into `platform-plugin-api` module with `HostedAppManifest`, `HostedAppLayout`, `HostedAppAssets`, `HostedAppNavigation`, typed contribution contexts, and plugin-facing facades for config, users, analytics, notifications, rendering, and security.
+- **Extension SPI** — Extracted into `platform-extension-api` module with `ExtensionManifest`, `PlatformExtensionLayout`, `PlatformExtensionAssets`, `PlatformExtensionNavigation`, typed contribution contexts, and extension-facing facades for config, users, analytics, notifications, rendering, and security.
 - **Jazzer fuzz tests** — Regression coverage for CSP parsing, JWT validation, OAuth callback parsing, rate limiter form parsing, token bucket behavior, and URL validation.
 
 ### Changed
 
-- **PlatformPlugin interface refactored** — `excludeDefaultRoutes` replaced with `includePlatformPages()` (opt-in model). Added `routeRegistrations()` returning `List<PluginRouteRegistration>` with `RouteGroup` ownership. Added `mode: PlatformMode` property.
-- **App.kt route assembly refactored** — Replaced hardcoded route lists with `RouteRegistry`-based assembly. Mode-based conditional registration: `FullPlatformApp` registers all UI routes, `PluginHostedApp` registers only included page sets, `HeadlessKernel` registers no UI routes.
-- **PluginContext narrowed behind facades** — Raw host services replaced with stable `app`, `users`, `analytics`, `notifications`, `rendering`, and `security` facades. Compatibility aliases preserved for migration.
-- **ServerComponents accepts plugin** — `createServerComponents(plugin = MyPlugin())` is the primary entry point.
+- **PlatformExtension interface refactored** — `excludeDefaultRoutes` replaced with `includePlatformPages()` (opt-in model). Added `routeRegistrations()` returning `List<ExtensionRouteRegistration>` with `RouteGroup` ownership. Added `mode: PlatformMode` property.
+- **App.kt route assembly refactored** — Replaced hardcoded route lists with `RouteRegistry`-based assembly. Mode-based conditional registration: `FullPlatform` registers all UI routes, `ExtensionHost` registers only included page sets, `Headless` registers no UI routes.
+- **ExtensionContext narrowed behind facades** — Raw host services replaced with stable `app`, `users`, `analytics`, `notifications`, `rendering`, and `security` facades. Compatibility aliases preserved for migration.
+- **ServerComponents accepts extension** — `createServerComponents(extension = MyExtension())` is the primary entry point.
 
 ### Architecture
 
@@ -63,7 +78,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### New Modules
 
-- `platform-plugin-api` — Hosted-app SPI, plugin-facing DTOs, contribution contexts. Separated from `platform-web` for cleaner consumer dependencies.
+- `platform-extension-api` — Extension SPI, extension-facing DTOs, contribution contexts. Separated from `platform-web` for cleaner consumer dependencies.
 
 ---
 
@@ -105,7 +120,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `buildUponDefaultConfig` re-enabled for detekt — codebases extending this project may see new violations.
 
 ### Added
-- DaisyUI v5.5.19 integrated via Tailwind v4 CSS-first configuration (`@plugin "daisyui"`)
+- DaisyUI v5.5.19 integrated via Tailwind v4 CSS-first configuration (`@extension "daisyui"`)
 - Sidebar layout rewritten with DaisyUI `drawer lg:drawer-open`
 - Topbar layout rewritten with DaisyUI `navbar`
 - All 60+ JTE templates migrated to DaisyUI semantic classes (`card`, `badge`, `btn`, `table`, etc.)
@@ -190,7 +205,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Bumped `http4k` from 6.37.0.0 to 6.39.1.0
 - Bumped `jOOQ` from 3.20.11 to 3.21.1
 - Bumped `flyway` from 12.1.1 to 12.3.0
-- Bumped `SpotBugs Maven Plugin`, `byte-buddy`, `outerstellar-i18n-validator-maven-plugin`
+- Bumped `SpotBugs Maven Extension`, `byte-buddy`, `outerstellar-i18n-validator-maven-plugin`
 
 ---
 
@@ -248,9 +263,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.3.3] – 2026-03-24
 
 ### Added
-- `PluginContext.currentUser(request)` — one-liner to get the authenticated user without manual LensFailure handling
-- `PluginContext.buildPage(request, title, section, data)` — wraps plugin ViewModels in the platform shell with CSRF token, theme, and nav
-- `PluginContext.forTesting(renderer, securityService, userRepository)` — factory with sensible defaults for plugin testing
+- `ExtensionContext.currentUser(request)` — one-liner to get the authenticated user without manual LensFailure handling
+- `ExtensionContext.buildPage(request, title, section, data)` — wraps extension ViewModels in the platform shell with CSRF token, theme, and nav
+- `ExtensionContext.forTesting(renderer, securityService, userRepository)` — factory with sensible defaults for extension testing
 
 ### Fixed
 - Migrated deprecated Koin `checkModules()` to `verify()` API (core, persistence, sync-client modules)
@@ -305,7 +320,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Maven version now matches release tag (was stuck at 1.2.0 for all releases)
-- Framework dependency bumped to 1.0.7 (PluginManager SLF4J, ThemeService performance, ParameterInjector regex, I18n hot-reload fix)
+- Framework dependency bumped to 1.0.7 (ExtensionManager SLF4J, ThemeService performance, ParameterInjector regex, I18n hot-reload fix)
 
 ### Performance
 - Health endpoint uses `countAll()` instead of `findAll().size` — no longer loads all users into memory
@@ -353,7 +368,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.2.6] – 2026-03-22
 
 ### Fixed
-- `baselineOnMigrate(true)` added to `migratePlugin()` for Flyway baseline support
+- `baselineOnMigrate(true)` added to `migrateExtension()` for Flyway baseline support
 
 ### Changed
 - Dependencies bumped: http4k 6.37.0.0, JDBI 3.52.0, ByteBuddy 1.18.7
@@ -370,7 +385,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [1.2.4] – 2026-03-22
 
 ### Added
-- Plugin filter hook — `PlatformPlugin.filters` for custom request/response filters
+- Extension filter hook — `PlatformExtension.filters` for custom request/response filters
 - Parallel test execution enabled for faster CI builds
 
 ### Fixed
@@ -477,7 +492,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - Updated all dependencies to latest stable versions
-- Upgraded ktfmt, Jackson, and Maven plugins
+- Upgraded ktfmt, Jackson, and Maven extensions
 - Fixed Playwright test compatibility after dependency updates
 - Applied ktfmt formatting to `SyncModels.kt`
 

@@ -710,7 +710,7 @@ git commit -m "docs: document http4k testing modules and conventions"
 
 - [ ] **Step 1: Full reactor build**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 
 Expected: BUILD SUCCESS, all tests pass, all quality checks pass
 

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace all Koin-based runtime wiring in the server application path (platform-web, platform-seed, and their dependency modules) with explicit constructor composition, while preserving the desktop modules' Koin usage untouched.
+**Goal:** Replace all Koin-based runtime wiring in the server application path (platform-web, platform-seeder, and their dependency modules) with explicit constructor composition, while preserving the desktop modules' Koin usage untouched.
 
 **Architecture:** Introduce a `ServerComponents` data class in platform-web as the explicit composition root. `main()` constructs `ServerComponents` directly instead of calling `startKoin`. All Koin module files in platform-core, platform-security, platform-persistence-jdbi, and platform-web are replaced by plain factory functions. The `app()` function and `AppContext` remain unchanged — they already accept explicit parameters.
 
@@ -20,12 +20,12 @@
 - `platform-web/src/main/kotlin/.../Main.kt` — replace `startKoin` + `MainComponent` with `ServerComponents`
 - `platform-web/src/main/kotlin/.../di/WebModule.kt` — replace with factory function
 - `platform-web/src/main/kotlin/.../di/AdminWebModule.kt` — replace with factory function
-- `platform-web/src/main/kotlin/.../web/PlatformPlugin.kt` — remove `koinModules()` method and `Module` import
-- `platform-seed/src/main/kotlin/.../seed/SeedData.kt` — replace `startKoin` + `SeedComponent` with explicit wiring
+- `platform-web/src/main/kotlin/.../web/PlatformExtension.kt` — remove `koinModules()` method and `Module` import
+- `platform-seeder/src/main/kotlin/.../seed/SeedData.kt` — replace `startKoin` + `SeedComponent` with explicit wiring
 - `platform-web/src/test/kotlin/.../di/KoinModuleTest.kt` — delete (no longer applicable)
 - `platform-web/src/test/kotlin/.../e2e/ResponsiveLayoutE2ETest.kt` — replace Koin with manual wiring
 - `platform-web/src/test/kotlin/.../e2e/PlaywrightE2ETest.kt` — replace Koin with manual wiring
-- POM files for platform-web, platform-seed — remove `koin-core-jvm` from production dependencies
+- POM files for platform-web, platform-seeder — remove `koin-core-jvm` from production dependencies
 - Root `pom.xml` — keep `koin.version` property (desktop modules still use it)
 - `platform-web/pom.xml` — keep `koin-test-junit5` as test dependency only if still needed after E2E rewrite
 
@@ -59,8 +59,8 @@
 - `platform-core/src/main/kotlin/.../AppConfig.kt` — remove `configModule`
 - `platform-security/src/main/kotlin/.../security/SecurityModule.kt` — replaced by `SecurityFactory.kt`
 - `platform-web/src/main/kotlin/.../Main.kt` — use `ServerComponents` instead of Koin
-- `platform-web/src/main/kotlin/.../web/PlatformPlugin.kt` — remove `koinModules()` and `Module` import
-- `platform-seed/src/main/kotlin/.../seed/SeedData.kt` — use explicit construction
+- `platform-web/src/main/kotlin/.../web/PlatformExtension.kt` — remove `koinModules()` and `Module` import
+- `platform-seeder/src/main/kotlin/.../seed/SeedData.kt` — use explicit construction
 - `platform-web/src/test/.../e2e/ResponsiveLayoutE2ETest.kt` — use explicit construction
 - `platform-web/src/test/.../e2e/PlaywrightE2ETest.kt` — use explicit construction
 - POM files — dependency adjustments
@@ -81,10 +81,10 @@ This is the foundation — everything depends on repositories. The factory funct
 package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.ExtensionMigrationSource
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
-import io.github.rygel.outerstellar.platform.infra.migratePlugin
+import io.github.rygel.outerstellar.platform.infra.migrateExtension
 import io.github.rygel.outerstellar.platform.persistence.*
 import io.github.rygel.outerstellar.platform.security.CachingUserRepository
 import io.github.rygel.outerstellar.platform.security.OAuthRepository
@@ -113,14 +113,14 @@ data class PersistenceComponents(
 
 fun createPersistenceComponents(
     config: AppConfig,
-    pluginMigrationSource: PluginMigrationSource? = null,
+    extensionMigrationSource: ExtensionMigrationSource? = null,
 ): PersistenceComponents {
     val ds = createDataSource(config.jdbcUrl, config.jdbcUser, config.jdbcPassword, config.runtime)
     try {
         if (config.runtime.flywayEnabled) {
             migrate(ds)
-            pluginMigrationSource?.migrationLocation?.let { location ->
-                migratePlugin(ds, location, pluginMigrationSource.migrationHistoryTable, pluginMigrationSource.migrationNames)
+            extensionMigrationSource?.migrationLocation?.let { location ->
+                migrateExtension(ds, location, extensionMigrationSource.migrationHistoryTable, extensionMigrationSource.migrationNames)
             }
         }
     } catch (e: Exception) {
@@ -351,11 +351,11 @@ package io.github.rygel.outerstellar.platform.di
 
 import io.github.rygel.outerstellar.i18n.I18nService
 import io.github.rygel.outerstellar.platform.AppConfig
-import io.github.rygel.outerstellar.platform.PluginMigrationSource
+import io.github.rygel.outerstellar.platform.ExtensionMigrationSource
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.SegmentAnalyticsService
-import io.github.rygel.outerstellar.platform.infra.PluginTemplateRenderer
+import io.github.rygel.outerstellar.platform.infra.ExtensionTemplateRenderer
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.MessageCache
 import io.github.rygel.outerstellar.platform.persistence.OutboxRepository
@@ -365,7 +365,7 @@ import io.github.rygel.outerstellar.platform.security.JwtService
 import io.github.rygel.outerstellar.platform.security.SecurityService
 import io.github.rygel.outerstellar.platform.security.TOTPService
 import io.github.rygel.outerstellar.platform.service.*
-import io.github.rygel.outerstellar.platform.web.PlatformPlugin
+import io.github.rygel.outerstellar.platform.web.PlatformExtension
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import io.github.rygel.outerstellar.platform.web.WebPageFactory
 import io.github.rygel.outerstellar.platform.security.AdminStatsService
@@ -385,14 +385,14 @@ data class WebComponents(
     val notificationService: NotificationService,
     val adminPageFactory: AdminPageFactory,
     val adminStatsService: AdminStatsService,
-    val pluginMigrationSource: PluginMigrationSource,
+    val extensionMigrationSource: ExtensionMigrationSource,
 )
 
-private object NoPluginMigrationSource : PluginMigrationSource
+private object NoExtensionMigrationSource : ExtensionMigrationSource
 
 fun createWebComponents(
     config: AppConfig,
-    plugin: PlatformPlugin? = null,
+    extension: PlatformExtension? = null,
     messageRepository: io.github.rygel.outerstellar.platform.persistence.MessageRepository? = null,
     messageService: MessageService? = null,
     contactService: ContactService? = null,
@@ -405,10 +405,10 @@ fun createWebComponents(
     userRepository: UserRepository? = null,
 ): WebComponents {
     val baseRenderer = createRenderer(config.runtime)
-    val overrides = plugin?.templateOverrides()
+    val overrides = extension?.templateOverrides()
     val templateRenderer: TemplateRenderer =
-        if (plugin != null && overrides != null && overrides.isNotEmpty()) {
-            PluginTemplateRenderer(baseRenderer, overrides, plugin::class.java.classLoader)
+        if (extension != null && overrides != null && overrides.isNotEmpty()) {
+            ExtensionTemplateRenderer(baseRenderer, overrides, extension::class.java.classLoader)
         } else {
             baseRenderer
         }
@@ -452,7 +452,7 @@ fun createWebComponents(
     val adminStatsService = AdminStatsService(userRepository!!)
     val adminPageFactory = AdminPageFactory(notificationRepository!!, adminStatsService)
 
-    val pluginMigrationSource: PluginMigrationSource = plugin ?: NoPluginMigrationSource
+    val extensionMigrationSource: ExtensionMigrationSource = extension ?: NoExtensionMigrationSource
 
     return WebComponents(
         templateRenderer = templateRenderer,
@@ -468,7 +468,7 @@ fun createWebComponents(
         notificationService = notificationService,
         adminPageFactory = adminPageFactory,
         adminStatsService = adminStatsService,
-        pluginMigrationSource = pluginMigrationSource,
+        extensionMigrationSource = extensionMigrationSource,
     )
 }
 ```
@@ -501,7 +501,7 @@ This is the key step — the composition root that wires everything together exp
 package io.github.rygel.outerstellar.platform
 
 import io.github.rygel.outerstellar.platform.di.*
-import io.github.rygel.outerstellar.platform.web.PlatformPlugin
+import io.github.rygel.outerstellar.platform.web.PlatformExtension
 import org.http4k.core.PolyHandler
 import org.http4k.template.TemplateRenderer
 
@@ -520,14 +520,14 @@ class ServerComponents(
 Add to `ServerComponents.kt`:
 
 ```kotlin
-fun createServerComponents(plugin: PlatformPlugin? = null): ServerComponents {
+fun createServerComponents(extension: PlatformExtension? = null): ServerComponents {
     val config = AppConfig.fromEnvironment()
 
     val webComponents = createWebComponents(
         config = config,
-        plugin = plugin,
+        extension = extension,
     )
-    val persistence = createPersistenceComponents(config, webComponents.pluginMigrationSource)
+    val persistence = createPersistenceComponents(config, webComponents.extensionMigrationSource)
 
     val core = createCoreComponents(
         config = config,
@@ -562,7 +562,7 @@ fun createServerComponents(plugin: PlatformPlugin? = null): ServerComponents {
         analytics = webComponents.analyticsService,
         notificationService = webComponents.notificationService,
         jwtService = security.jwtService,
-        plugin = plugin,
+        extension = extension,
         activityUpdater = security.asyncActivityUpdater,
         syncWebSocket = webComponents.syncWebSocket,
         totpService = security.totpService,
@@ -712,12 +712,12 @@ git commit -m "feat(web): replace Koin with explicit ServerComponents in main()"
 ### Task 6: Rewrite SeedData.kt
 
 **Files:**
-- Modify: `platform-seed/src/main/kotlin/.../seed/SeedData.kt`
+- Modify: `platform-seeder/src/main/kotlin/.../seed/SeedData.kt`
 
 - [ ] **Step 1: Rewrite SeedData.kt with explicit construction**
 
 ```kotlin
-package io.github.rygel.outerstellar.platform.seed
+package io.github.rygel.outerstellar.platform.seeder
 
 import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.di.createPersistenceComponents
@@ -728,7 +728,7 @@ import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import java.util.UUID
 import org.slf4j.LoggerFactory
 
-private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.seed.SeedData")
+private val logger = LoggerFactory.getLogger("io.github.rygel.outerstellar.platform.seeder.SeedData")
 
 fun main() {
     logger.info("Starting database seed process...")
@@ -787,15 +787,15 @@ private fun seedUsers(repo: io.github.rygel.outerstellar.platform.persistence.Us
 }
 ```
 
-- [ ] **Step 2: Compile platform-seed**
+- [ ] **Step 2: Compile platform-seeder**
 
-Run: `mvn -pl platform-seed -am compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
+Run: `mvn -pl platform-seeder -am compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
 Expected: PASS
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add platform-seed/src/main/kotlin/.../seed/SeedData.kt
+git add platform-seeder/src/main/kotlin/.../seed/SeedData.kt
 git commit -m "feat(seed): replace Koin with explicit construction in SeedData"
 ```
 
@@ -896,7 +896,7 @@ git commit -m "test(web): replace Koin in E2E tests with explicit construction, 
 
 ---
 
-### Task 8: Delete old Koin module files and clean up PlatformPlugin
+### Task 8: Delete old Koin module files and clean up PlatformExtension
 
 **Files:**
 - Delete: `platform-core/src/main/kotlin/.../di/CoreModule.kt`
@@ -905,7 +905,7 @@ git commit -m "test(web): replace Koin in E2E tests with explicit construction, 
 - Delete: `platform-web/src/main/kotlin/.../di/AdminWebModule.kt`
 - Modify: `platform-security/src/main/kotlin/.../security/SecurityModule.kt` — delete the file
 - Modify: `platform-core/src/main/kotlin/.../AppConfig.kt` — remove `configModule`
-- Modify: `platform-web/src/main/kotlin/.../web/PlatformPlugin.kt` — remove `koinModules()` method and `Module` import
+- Modify: `platform-web/src/main/kotlin/.../web/PlatformExtension.kt` — remove `koinModules()` method and `Module` import
 
 **WARNING:** The desktop modules (platform-desktop, platform-desktop-javafx) still import `persistenceModule`, `coreModule`, `securityModule` from these files. Deleting them will break desktop compilation. This task must verify that desktop modules still compile.
 
@@ -975,7 +975,7 @@ val configModule
 
 Update `platform-desktop/.../SwingSyncApp.kt` (and JavaFX) to provide `AppConfig` directly in their Koin modules instead of importing `configModule`. This is a minimal desktop change — just add `single { AppConfig.fromEnvironment() }` inline where `configModule` was used.
 
-- [ ] **Step 3: Remove `koinModules()` from PlatformPlugin**
+- [ ] **Step 3: Remove `koinModules()` from PlatformExtension**
 
 Delete:
 ```kotlin
@@ -986,7 +986,7 @@ And remove `import org.koin.core.module.Module`.
 
 - [ ] **Step 4: Compile the full reactor (excluding desktop)**
 
-Run: `mvn clean compile -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
+Run: `mvn clean compile -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
 Expected: PASS
 
 - [ ] **Step 5: Compile desktop modules**
@@ -1007,7 +1007,7 @@ git commit -m "refactor: deprecate Koin modules, delegate to factory functions, 
 
 **Files:**
 - Modify: `platform-web/pom.xml` — remove `koin-core-jvm` from production deps
-- Modify: `platform-seed/pom.xml` — remove `koin-core-jvm` from production deps
+- Modify: `platform-seeder/pom.xml` — remove `koin-core-jvm` from production deps
 - Modify: `platform-web/pom.xml` — remove `koin-test-junit5` from test deps (no more KoinModuleTest)
 
 Note: `platform-core`, `platform-security`, `platform-persistence-jdbi` must keep `koin-core-jvm` because the deprecated module files still exist for desktop compatibility. They can be removed later when desktop migrates.
@@ -1024,20 +1024,20 @@ Find and remove:
 
 Also remove `koin-test-junit5` from test dependencies.
 
-- [ ] **Step 2: Remove koin-core-jvm from platform-seed pom.xml**
+- [ ] **Step 2: Remove koin-core-jvm from platform-seeder pom.xml**
 
 Find and remove the `koin-core-jvm` dependency.
 
 - [ ] **Step 3: Compile full reactor**
 
-Run: `mvn clean compile -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
+Run: `mvn clean compile -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"`
 Expected: PASS
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add platform-web/pom.xml platform-seed/pom.xml
-git commit -m "build: remove koin-core-jvm from platform-web and platform-seed production deps"
+git add platform-web/pom.xml platform-seeder/pom.xml
+git commit -m "build: remove koin-core-jvm from platform-web and platform-seeder production deps"
 ```
 
 ---
@@ -1046,7 +1046,7 @@ git commit -m "build: remove koin-core-jvm from platform-web and platform-seed p
 
 - [ ] **Step 1: Run full reactor verify (non-desktop)**
 
-Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-test-infrastructure,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seed`
+Run: `mvn clean verify -T4 -pl platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
 Expected: All tests pass
 
 - [ ] **Step 2: Compile desktop modules**
@@ -1073,8 +1073,8 @@ git commit -m "fix: resolve test failures after Koin removal"
 - [x] Server starts without Koin — Task 5 (Main.kt rewrite)
 - [x] Main.kt uses explicit typed wiring — Task 5
 - [x] No `named(...)` for core bootstrap — Task 5 (removed)
-- [x] Plugin migrations still work — Task 4 (pluginMigrationSource)
-- [x] Plugin template overrides still work — Task 4 (TemplateRenderer)
+- [x] Extension migrations still work — Task 4 (extensionMigrationSource)
+- [x] Extension template overrides still work — Task 4 (TemplateRenderer)
 - [x] JVM startup behavior equivalent — Task 10 (verify)
 - [x] GraalVM native-image supported — No native-image changes needed (app() unchanged)
 - [x] Desktop modules not regressed — Task 8 (old modules delegate to factories)

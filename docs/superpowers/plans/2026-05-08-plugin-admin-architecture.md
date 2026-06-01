@@ -1,10 +1,10 @@
-# Plugin Admin Architecture Implementation Plan
+# Extension Admin Architecture Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extend `PlatformPlugin` with an `adminSections()` method so plugins can contribute dashboard summary cards and full detail pages to the admin section.
+**Goal:** Extend `PlatformExtension` with an `adminSections()` method so extensions can contribute dashboard summary cards and full detail pages to the admin section.
 
-**Architecture:** Three new data types (`AdminMetric`, `AdminSummaryCard`, `AdminSection`) define what a plugin contributes. A new `adminSections()` method on `PlatformPlugin` returns these sections. App.kt wires them into the existing admin contract (which already has ADMIN-role security). A new JTE template renders a dashboard grid of summary cards. Admin nav items are derived from plugin sections and injected via `PluginOptions`.
+**Architecture:** Three new data types (`AdminMetric`, `AdminSummaryCard`, `AdminSection`) define what an extension contributes. A new `adminSections()` method on `PlatformExtension` returns these sections. App.kt wires them into the existing admin contract (which already has ADMIN-role security). A new JTE template renders a dashboard grid of summary cards. Admin nav items are derived from extension sections and injected via `ExtensionOptions`.
 
 **Tech Stack:** Kotlin, http4k contract routing, JTE templates, DaisyUI/Tailwind CSS
 
@@ -17,11 +17,11 @@
 | Create | `platform-web/src/main/kotlin/.../web/AdminMetric.kt` | Single metric data class |
 | Create | `platform-web/src/main/kotlin/.../web/AdminSummaryCard.kt` | Card with metrics + link |
 | Create | `platform-web/src/main/kotlin/.../web/AdminSection.kt` | Section = nav + card + route |
-| Modify | `platform-web/src/main/kotlin/.../web/PlatformPlugin.kt` | Add `adminSections()`, `AdminNavItem` |
-| Modify | `platform-web/src/main/kotlin/.../web/ViewModels.kt` | Add `PluginAdminDashboardPage` |
-| Create | `platform-web/src/main/jte/.../web/PluginAdminDashboard.kte` | Dashboard grid template |
-| Modify | `platform-web/src/main/kotlin/.../web/WebContext.kt` | Append plugin admin nav items |
-| Modify | `platform-web/src/main/kotlin/.../App.kt` | Wire plugin admin routes + nav |
+| Modify | `platform-web/src/main/kotlin/.../web/PlatformExtension.kt` | Add `adminSections()`, `AdminNavItem` |
+| Modify | `platform-web/src/main/kotlin/.../web/ViewModels.kt` | Add `ExtensionAdminDashboardPage` |
+| Create | `platform-web/src/main/jte/.../web/ExtensionAdminDashboard.kte` | Dashboard grid template |
+| Modify | `platform-web/src/main/kotlin/.../web/WebContext.kt` | Append extension admin nav items |
+| Modify | `platform-web/src/main/kotlin/.../App.kt` | Wire extension admin routes + nav |
 | Create | `platform-web/src/test/kotlin/.../web/AdminSectionTest.kt` | All tests |
 
 ---
@@ -52,7 +52,7 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/AdminMetric.kt
-git commit -m "feat: add AdminMetric data class for plugin admin infrastructure"
+git commit -m "feat: add AdminMetric data class for extension admin infrastructure"
 ```
 
 ---
@@ -84,7 +84,7 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/AdminSummaryCard.kt
-git commit -m "feat: add AdminSummaryCard data class for plugin admin infrastructure"
+git commit -m "feat: add AdminSummaryCard data class for extension admin infrastructure"
 ```
 
 ---
@@ -119,24 +119,24 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/AdminSection.kt
-git commit -m "feat: add AdminSection data class for plugin admin infrastructure"
+git commit -m "feat: add AdminSection data class for extension admin infrastructure"
 ```
 
 ---
 
-### Task 4: Extend PlatformPlugin with adminSections() and AdminNavItem
+### Task 4: Extend PlatformExtension with adminSections() and AdminNavItem
 
 **Files:**
-- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformPlugin.kt`
+- Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformExtension.kt`
 
-The existing `PlatformPlugin.kt` has:
-- `PluginNavItem(label, url, icon, activeSection)` at line ~16
-- `PluginOptions(navItems, textResolver)` at line ~24
-- `PlatformPlugin` interface starting ~line 55
+The existing `PlatformExtension.kt` has:
+- `ExtensionNavItem(label, url, icon, activeSection)` at line ~16
+- `ExtensionOptions(navItems, textResolver)` at line ~24
+- `PlatformExtension` interface starting ~line 55
 
-- [ ] **Step 1: Add AdminNavItem data class after PluginNavItem**
+- [ ] **Step 1: Add AdminNavItem data class after ExtensionNavItem**
 
-After the existing `PluginNavItem` data class, add:
+After the existing `ExtensionNavItem` data class, add:
 
 ```kotlin
 data class AdminNavItem(
@@ -146,24 +146,24 @@ data class AdminNavItem(
 )
 ```
 
-- [ ] **Step 2: Add adminNavItems to PluginOptions**
+- [ ] **Step 2: Add adminNavItems to ExtensionOptions**
 
-In `PluginOptions`, add a new field after `textResolver`:
+In `ExtensionOptions`, add a new field after `textResolver`:
 
 ```kotlin
-data class PluginOptions(
-    val navItems: List<PluginNavItem> = emptyList(),
+data class ExtensionOptions(
+    val navItems: List<ExtensionNavItem> = emptyList(),
     val textResolver: TextResolver? = null,
     val adminNavItems: List<AdminNavItem> = emptyList(),
 )
 ```
 
-- [ ] **Step 3: Add adminSections() to PlatformPlugin interface**
+- [ ] **Step 3: Add adminSections() to PlatformExtension interface**
 
-In the `PlatformPlugin` interface, after the existing `filters(context)` method, add:
+In the `PlatformExtension` interface, after the existing `filters(context)` method, add:
 
 ```kotlin
-fun adminSections(context: PluginContext): List<AdminSection> = emptyList()
+fun adminSections(context: ExtensionContext): List<AdminSection> = emptyList()
 ```
 
 - [ ] **Step 4: Verify compilation**
@@ -174,25 +174,25 @@ Expected: BUILD SUCCESS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformPlugin.kt
-git commit -m "feat: extend PlatformPlugin with adminSections() and AdminNavItem"
+git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/PlatformExtension.kt
+git commit -m "feat: extend PlatformExtension with adminSections() and AdminNavItem"
 ```
 
 ---
 
-### Task 5: Add PluginAdminDashboardPage view model
+### Task 5: Add ExtensionAdminDashboardPage view model
 
 **Files:**
 - Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/ViewModels.kt`
 
 The existing file has `DevDashboardPage` (line ~145) as a model for admin dashboard pages.
 
-- [ ] **Step 1: Add PluginAdminDashboardPage after DevDashboardPage**
+- [ ] **Step 1: Add ExtensionAdminDashboardPage after DevDashboardPage**
 
 After the `DevDashboardPage` class definition, add:
 
 ```kotlin
-class PluginAdminDashboardPage(
+class ExtensionAdminDashboardPage(
     val cards: List<AdminSummaryCard>,
     override val shell: ShellViewModel,
 ) : PageViewModel
@@ -207,26 +207,26 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/ViewModels.kt
-git commit -m "feat: add PluginAdminDashboardPage view model"
+git commit -m "feat: add ExtensionAdminDashboardPage view model"
 ```
 
 ---
 
-### Task 6: Create PluginAdminDashboard JTE template
+### Task 6: Create ExtensionAdminDashboard JTE template
 
 **Files:**
-- Create: `platform-web/src/main/jte/io/github/rygel/outerstellar/platform/web/PluginAdminDashboard.kte`
+- Create: `platform-web/src/main/jte/io/github/rygel/outerstellar/platform/web/ExtensionAdminDashboard.kte`
 
 Follow the pattern from `DevDashboard.kte`: uses `@template.LayoutRouter`, DaisyUI cards, grid layout.
 
 - [ ] **Step 1: Create the template**
 
 ```jte
-@param model: io.github.rygel.outerstellar.platform.web.Page<io.github.rygel.outerstellar.platform.web.PluginAdminDashboardPage>
+@param model: io.github.rygel.outerstellar.platform.web.Page<io.github.rygel.outerstellar.platform.web.ExtensionAdminDashboardPage>
 @import io.github.rygel.outerstellar.platform.web.AdminMetric
 @template.io.github.rygel.outerstellar.platform.web.layouts.LayoutRouter(shell = model.shell, content = @`
 <div class="p-6">
-    <h2 class="text-2xl font-bold mb-6">Plugin Dashboard</h2>
+    <h2 class="text-2xl font-bold mb-6">Extension Dashboard</h2>
     <div class="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
         @for(model.data.cards.indices)
         <div class="card bg-base-200 border border-base-300">
@@ -252,7 +252,7 @@ Follow the pattern from `DevDashboard.kte`: uses `@template.LayoutRouter`, Daisy
     </div>
     @if(model.data.cards.isEmpty())
     <div class="text-center opacity-60 mt-12">
-        <p>No plugin admin sections registered.</p>
+        <p>No extension admin sections registered.</p>
     </div>
     @endif
 </div>
@@ -267,30 +267,30 @@ Expected: BUILD SUCCESS
 - [ ] **Step 3: Commit**
 
 ```bash
-git add platform-web/src/main/jte/io/github/rygel/outerstellar/platform/web/PluginAdminDashboard.kte
-git commit -m "feat: add PluginAdminDashboard JTE template"
+git add platform-web/src/main/jte/io/github/rygel/outerstellar/platform/web/ExtensionAdminDashboard.kte
+git commit -m "feat: add ExtensionAdminDashboard JTE template"
 ```
 
 ---
 
-### Task 7: Wire plugin admin nav items in WebContext
+### Task 7: Wire extension admin nav items in WebContext
 
 **Files:**
 - Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/WebContext.kt`
 
-The existing `appendAdminLinks()` method (line ~147) adds hardcoded admin nav links. It's called from `buildNavLinks()` which is called from `shell()` which receives `PluginOptions` via `ctx.pluginOptions`.
+The existing `appendAdminLinks()` method (line ~147) adds hardcoded admin nav links. It's called from `buildNavLinks()` which is called from `shell()` which receives `ExtensionOptions` via `ctx.extensionOptions`.
 
-- [ ] **Step 1: Add plugin admin nav items in appendAdminLinks()**
+- [ ] **Step 1: Add extension admin nav items in appendAdminLinks()**
 
 In `appendAdminLinks()`, after the existing `devDashboardEnabled` block, add:
 
 ```kotlin
-pluginOptions.adminNavItems.forEach { item ->
+extensionOptions.adminNavItems.forEach { item ->
     links.add(ShellLink(item.label, url(item.url), item.icon, activeSection == item.url))
 }
 ```
 
-Note: `appendAdminLinks` currently has no access to `pluginOptions`. It's a private method on `WebContext`. The `WebContext` constructor receives `pluginOptions: PluginOptions` and stores it in a field. Add `pluginOptions` as a parameter to `appendAdminLinks`, or use the existing field. Check the constructor — `pluginOptions` is already a constructor parameter stored as a val, so it can be accessed directly.
+Note: `appendAdminLinks` currently has no access to `extensionOptions`. It's a private method on `WebContext`. The `WebContext` constructor receives `extensionOptions: ExtensionOptions` and stores it in a field. Add `extensionOptions` as a parameter to `appendAdminLinks`, or use the existing field. Check the constructor — `extensionOptions` is already a constructor parameter stored as a val, so it can be accessed directly.
 
 - [ ] **Step 2: Verify compilation**
 
@@ -301,24 +301,24 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/web/WebContext.kt
-git commit -m "feat: append plugin admin nav items in WebContext"
+git commit -m "feat: append extension admin nav items in WebContext"
 ```
 
 ---
 
-### Task 8: Wire plugin admin routes and dashboard in App.kt
+### Task 8: Wire extension admin routes and dashboard in App.kt
 
 **Files:**
 - Modify: `platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt`
 
 This is the core wiring task. Changes needed:
 
-1. Pass `plugin` to `buildAdminRoutes()` 
-2. Add plugin admin sections' routes to the admin contract
-3. Add a plugin admin dashboard route (`/admin/plugins`) if plugin has sections
-4. Derive `AdminNavItem` list from `plugin.adminSections()` and pass into `PluginOptions`
+1. Pass `extension` to `buildAdminRoutes()`
+2. Add extension admin sections' routes to the admin contract
+3. Add an extension admin dashboard route (`/admin/extensions`) if the extension has sections
+4. Derive `AdminNavItem` list from `extension.adminSections()` and pass into `ExtensionOptions`
 
-- [ ] **Step 1: Add plugin parameter to buildAdminRoutes()**
+- [ ] **Step 1: Add extension parameter to buildAdminRoutes()**
 
 The current signature is:
 ```kotlin
@@ -333,7 +333,7 @@ private fun buildAdminRoutes(
 ): RoutingHttpHandler
 ```
 
-Add `plugin: PlatformPlugin` parameter:
+Add `extension: PlatformExtension` parameter:
 ```kotlin
 private fun buildAdminRoutes(
     appLabel: String,
@@ -343,50 +343,50 @@ private fun buildAdminRoutes(
     jteRenderer: TemplateRenderer,
     config: AppConfig,
     securityService: SecurityService,
-    plugin: PlatformPlugin,
+    extension: PlatformExtension,
 ): RoutingHttpHandler
 ```
 
-- [ ] **Step 2: Add plugin admin section routes inside buildAdminRoutes()**
+- [ ] **Step 2: Add extension admin section routes inside buildAdminRoutes()**
 
 After the existing `routes += DevDashboardRoutes(...)` and `routes += UserAdminRoutes(...)`, add:
 
 ```kotlin
-val pluginContext = PluginContext.forTesting(jteRenderer, config, securityService)
-val sections = plugin.adminSections(pluginContext)
+val extensionContext = ExtensionContext.forTesting(jteRenderer, config, securityService)
+val sections = extension.adminSections(extensionContext)
 if (sections.isNotEmpty()) {
-    routes += prefix("/admin/plugins") {
+    routes += prefix("/admin/extensions") {
         sections.forEach { section ->
             routes += section.route
         }
     }
-    routes += "/admin/plugins" bind Method.GET to { req ->
-        val ctx = WebContext(req, PluginOptions(adminNavItems = sections.map {
+    routes += "/admin/extensions" bind Method.GET to { req ->
+        val ctx = WebContext(req, ExtensionOptions(adminNavItems = sections.map {
             AdminNavItem(it.navLabel, it.summaryCard.linkUrl, it.navIcon)
         }))
-        val shell = ctx.shell("Plugin Dashboard")
-        val page = Page(PluginAdminDashboardPage(sections.map { it.summaryCard }, shell))
-        Response(Status.OK).body(jteRenderer.render("PluginAdminDashboard.kte", page))
+        val shell = ctx.shell("Extension Dashboard")
+        val page = Page(ExtensionAdminDashboardPage(sections.map { it.summaryCard }, shell))
+        Response(Status.OK).body(jteRenderer.render("ExtensionAdminDashboard.kte", page))
     }
 }
 ```
 
-Note: The exact `PluginContext` construction and `WebContext` usage may need adjustment based on how the existing code builds these in `buildBaseApp()`. Check how `PluginContext.forTesting()` is used and replicate the pattern from the existing `buildUiRoutes()` method.
+Note: The exact `ExtensionContext` construction and `WebContext` usage may need adjustment based on how the existing code builds these in `buildBaseApp()`. Check how `ExtensionContext.forTesting()` is used and replicate the pattern from the existing `buildUiRoutes()` method.
 
-- [ ] **Step 3: Pass plugin to buildAdminRoutes() at the call site**
+- [ ] **Step 3: Pass extension to buildAdminRoutes() at the call site**
 
-In `buildBaseApp()`, find the call to `buildAdminRoutes(...)` and add the `plugin` parameter.
+In `buildBaseApp()`, find the call to `buildAdminRoutes(...)` and add the `extension` parameter.
 
-- [ ] **Step 4: Derive adminNavItems for PluginOptions**
+- [ ] **Step 4: Derive adminNavItems for ExtensionOptions**
 
-In `buildFilterChain()` where `PluginOptions` is constructed, derive admin nav items from the plugin:
+In `buildFilterChain()` where `ExtensionOptions` is constructed, derive admin nav items from the extension:
 
 ```kotlin
-val adminNavItems = plugin.adminSections(PluginContext.forTesting(jteRenderer, config, securityService))
-    .map { AdminNavItem(it.navLabel, "/admin/plugins", it.navIcon) }
-PluginOptions(
-    navItems = plugin.navItems(PluginContext.forTesting(jteRenderer, config, securityService)),
-    textResolver = plugin.textResolver,
+val adminNavItems = extension.adminSections(ExtensionContext.forTesting(jteRenderer, config, securityService))
+    .map { AdminNavItem(it.navLabel, "/admin/extensions", it.navIcon) }
+ExtensionOptions(
+    navItems = extension.navItems(ExtensionContext.forTesting(jteRenderer, config, securityService)),
+    textResolver = extension.textResolver,
     adminNavItems = adminNavItems,
 )
 ```
@@ -400,7 +400,7 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add platform-web/src/main/kotlin/io/github/rygel/outerstellar/platform/App.kt
-git commit -m "feat: wire plugin admin routes and dashboard in App.kt"
+git commit -m "feat: wire extension admin routes and dashboard in App.kt"
 ```
 
 ---
@@ -410,7 +410,7 @@ git commit -m "feat: wire plugin admin routes and dashboard in App.kt"
 **Files:**
 - Create: `platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/web/AdminSectionTest.kt`
 
-Follow the test patterns from `AdminHtmlRoutesIntegrationTest.kt` and `PluginTextOverrideTest.kt`. The test base class is `WebTest` which provides an in-memory `HttpHandler` with Testcontainers PostgreSQL.
+Follow the test patterns from `AdminHtmlRoutesIntegrationTest.kt` and `ExtensionTextOverrideTest.kt`. The test base class is `WebTest` which provides an in-memory `HttpHandler` with Testcontainers PostgreSQL.
 
 - [ ] **Step 1: Create test file**
 
@@ -431,12 +431,12 @@ import org.junit.jupiter.api.Test
 class AdminSectionTest : WebTest() {
 
     @Test
-    fun `default PlatformPlugin adminSections returns empty list`() {
-        val plugin = object : PlatformPlugin {
-            override val id = "test-plugin"
+    fun `default PlatformExtension adminSections returns empty list`() {
+        val extension = object : PlatformExtension {
+            override val id = "test-extension"
         }
-        val context = PluginContext.forTesting()
-        assertEquals(emptyList<AdminSection>(), plugin.adminSections(context))
+        val context = ExtensionContext.forTesting()
+        assertEquals(emptyList<AdminSection>(), extension.adminSections(context))
     }
 
     @Test
@@ -454,23 +454,23 @@ class AdminSectionTest : WebTest() {
         val card = AdminSummaryCard(
             title = "Payments",
             metrics = listOf(AdminMetric("Revenue", "$1,200")),
-            linkUrl = "/admin/plugins/payments",
+            linkUrl = "/admin/extensions/payments",
             linkLabel = "Open",
         )
         assertEquals("Payments", card.title)
         assertEquals(1, card.metrics.size)
-        assertEquals("/admin/plugins/payments", card.linkUrl)
+        assertEquals("/admin/extensions/payments", card.linkUrl)
         assertEquals("Open", card.linkLabel)
     }
 
     @Test
     fun `AdminSection holds id navLabel navIcon card and route`() {
-        val route: ContractRoute = "/admin/plugins/test" meta { summary = "Test section" } bindContract Method.GET to { Response(OK) }
+        val route: ContractRoute = "/admin/extensions/test" meta { summary = "Test section" } bindContract Method.GET to { Response(OK) }
         val section = AdminSection(
             id = "test-section",
             navLabel = "Test",
             navIcon = "ri-test-line",
-            summaryCard = AdminSummaryCard("Test", emptyList(), "/admin/plugins/test"),
+            summaryCard = AdminSummaryCard("Test", emptyList(), "/admin/extensions/test"),
             route = route,
         )
         assertEquals("test-section", section.id)
@@ -479,19 +479,19 @@ class AdminSectionTest : WebTest() {
 
     @Test
     fun `AdminNavItem holds label url and icon`() {
-        val item = AdminNavItem("Billing", "/admin/plugins/billing", "ri-money-dollar-circle-line")
+        val item = AdminNavItem("Billing", "/admin/extensions/billing", "ri-money-dollar-circle-line")
         assertEquals("Billing", item.label)
-        assertEquals("/admin/plugins/billing", item.url)
+        assertEquals("/admin/extensions/billing", item.url)
         assertEquals("ri-money-dollar-circle-line", item.icon)
     }
 
     @Test
-    fun `PluginOptions carries adminNavItems`() {
-        val opts = PluginOptions(
+    fun `ExtensionOptions carries adminNavItems`() {
+        val opts = ExtensionOptions(
             adminNavItems = listOf(AdminNavItem("Test", "/test", "ri-test-line")),
         )
         assertEquals(1, opts.adminNavItems.size)
-        val empty = PluginOptions()
+        val empty = ExtensionOptions()
         assertTrue(empty.adminNavItems.isEmpty())
     }
 }
@@ -506,7 +506,7 @@ Expected: All tests pass
 
 ```bash
 git add platform-web/src/test/kotlin/io/github/rygel/outerstellar/platform/web/AdminSectionTest.kt
-git commit -m "test: add AdminSectionTest for plugin admin infrastructure"
+git commit -m "test: add AdminSectionTest for extension admin infrastructure"
 ```
 
 ---

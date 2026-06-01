@@ -7,7 +7,7 @@ import io.github.rygel.outerstellar.platform.di.createConfiguredEmailService
 import io.github.rygel.outerstellar.platform.di.createCoreComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
 import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
-import io.github.rygel.outerstellar.platform.plugin.HostedApp
+import io.github.rygel.outerstellar.platform.extension.PlatformExtension
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
@@ -23,24 +23,24 @@ class ServerComponents(
 )
 
 /**
- * Preferred application entrypoint for hosted apps and production wiring.
+ * Preferred application entrypoint for extensions and production wiring.
  *
- * This keeps persistence bootstrap, hosted-app migrations, email wiring, websocket/event publishing, and hosted-app
+ * This keeps persistence bootstrap, extension migrations, email wiring, websocket/event publishing, and extension host
  * context assembly aligned with the production composition model. Prefer this over manually wiring the lower-level
  * `createXxxComponents(...)` helpers unless you are deliberately testing a smaller assembly seam.
  */
-fun createServerComponents(plugin: HostedApp? = null): ServerComponents {
+fun createServerComponents(extension: PlatformExtension? = null): ServerComponents {
     val config = AppConfig.fromEnvironment()
-    return createServerComponents(config = config, plugin = plugin)
+    return createServerComponents(config = config, extension = extension)
 }
 
 /**
- * Preferred application entrypoint when the caller already owns configuration, such as full-stack hosted-app tests that
+ * Preferred application entrypoint when the caller already owns configuration, such as full-stack extension tests that
  * run against a test database. Production startup should usually use [createServerComponents] without a config
  * argument.
  */
-fun createServerComponents(config: AppConfig, plugin: HostedApp? = null): ServerComponents {
-    val persistence = loadPersistenceBootstrap().create(config = config, pluginMigrations = plugin?.migrations)
+fun createServerComponents(config: AppConfig, extension: PlatformExtension? = null): ServerComponents {
+    val persistence = loadPersistenceBootstrap().create(config = config, extensionMigrations = extension?.migrations)
     val emailService = createConfiguredEmailService(config)
 
     val security =
@@ -71,7 +71,7 @@ fun createServerComponents(config: AppConfig, plugin: HostedApp? = null): Server
     val web =
         createWebComponents(
             config = config,
-            plugin = plugin,
+            extension = extension,
             apiKeyService = security.apiKeyService,
             oauthService = security.oauthService,
             syncWebSocket = syncWebSocket,
@@ -86,7 +86,14 @@ fun createServerComponents(config: AppConfig, plugin: HostedApp? = null): Server
         )
 
     val polyHandler =
-        app(config = config, persistence = persistence, security = security, core = core, web = web, plugin = plugin)
+        app(
+            config = config,
+            persistence = persistence,
+            security = security,
+            core = core,
+            web = web,
+            extension = extension,
+        )
 
     return ServerComponents(
         config = config,

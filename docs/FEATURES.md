@@ -30,12 +30,12 @@
 - **Preferences sync** — settings saved to user account when logged in, cookies for anonymous users
 
 ### Search
-- **Search SPI** — `SearchProvider` interface for plugins to register searchable entities
+- **Search SPI** — `SearchProvider` interface for extensions to register searchable entities
 - **Search page** — `/search?q=` with aggregated results across all providers
 - **Search API** — `GET /api/v1/search?q=` JSON endpoint
 
 ### Export
-- **Export SPI** — `ExportProvider` interface for plugins to register exportable entities
+- **Export SPI** — `ExportProvider` interface for extensions to register exportable entities
 - **CSV utilities** — `CsvUtils.escapeCsv()` and `CsvUtils.toCsvRow()` for safe CSV generation
 - **Built-in exports** — user list and audit log as CSV
 
@@ -44,8 +44,8 @@
 ### Routing & Templates
 - **http4k** — contract-based routing with OpenAPI documentation
 - **JTE/KTE templates** — precompiled Kotlin templates with hot-reload in dev mode
-- **HostedApp / PlatformPlugin interface** — hosted apps register routes, navigation, assets, layout, and migrations
-- **PluginContext** — safe app info plus users, security, analytics, notifications, and rendering facades passed to plugins
+- **PlatformExtension interface** — extensions register routes, navigation, assets, layout, and migrations
+- **ExtensionContext** — safe app info plus users, security, analytics, notifications, and rendering facades passed to extensions
 - **Layout router** — sidebar and topbar layout variants with automatic dispatching
 
 ### Filters & Middleware
@@ -70,7 +70,7 @@
 
 ### Database Support
 - **PostgreSQL** — sole database engine for development, testing, and production
-- **Flyway migrations** — versioned schema management with plugin migration support
+- **Flyway migrations** — versioned schema management with extension migration support
 - **JDBI** — lightweight SQL abstraction for all repository implementations
 - **HikariCP** — connection pooling
 
@@ -78,9 +78,9 @@
 
 The platform uses `platform-persistence-jdbi` for all repository implementations against the interfaces defined in `platform-core`.
 
-### Plugin Migration Isolation
+### Extension Migration Isolation
 
-Plugins that need their own database migrations expose `HostedApp.migrations` as a `PluginMigrations` value. The host runs plugin migrations with a separate Flyway instance, separate classpath location, and separate history table (`flyway_plugin_history` by default). This prevents version number conflicts between platform migrations (V1–V4) and plugin migrations.
+Extensions that need their own database migrations expose `PlatformExtension.migrations` as a `ExtensionMigrations` value. The host runs extension migrations with a separate Flyway instance, separate classpath location, and separate history table (`flyway_extension_history` by default). This prevents version number conflicts between platform migrations (V1–V4) and extension migrations.
 
 ### Repositories
 - Message repository (CRUD, sync, conflict tracking)
