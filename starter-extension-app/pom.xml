@@ -1,0 +1,38 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example.outerstellar</groupId>
+    <artifactId>starter-extension-app-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Outerstellar Extension Starter Parent</name>
+    <description>Copyable starter project for building an extension-host application on outerstellar-platform.</description>
+
+    <modules>
+        <module>starter-extension</module>
+        <module>starter-host</module>
+    </modules>
+
+    <repositories>
+        <repository>
+            <id>github-outerstellar-platform</id>
+            <url>https://maven.pkg.github.com/rygel/outerstellar-platform</url>
+        </repository>
+    </repositories>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>21</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <kotlin.version>2.3.10</kotlin.version>
+        <outerstellar-platform.version>3.6.7</outerstellar-platform.version>
+        <jte.version>3.2.4</jte.version>
+        <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
+        <exec.maven.plugin.version>3.6.3</exec.maven.plugin.version>
+        <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
+        <native.maven.plugin.version>1.1.1</native.maven.plugin.version>
+    </properties>
+</project>
