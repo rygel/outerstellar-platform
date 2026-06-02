@@ -7,15 +7,22 @@ import io.github.rygel.outerstellar.platform.web.AdminSection
 import io.github.rygel.outerstellar.platform.web.AdminSummaryCard
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 import org.http4k.contract.ContractRoute
+import org.http4k.contract.bindContract
+import org.http4k.contract.meta
 import org.http4k.core.Filter
+import org.http4k.core.Method.GET
+import org.http4k.core.Request
+import org.http4k.core.Response
+import org.http4k.core.Status.Companion.OK
 import org.http4k.routing.ResourceLoader
 import org.http4k.routing.bind
 import org.http4k.routing.static
+import org.http4k.template.ViewModel
 
 class ExtensionContributionContext
 internal constructor(
     val host: ExtensionHostContext,
-    internal val routeRegistry: ExtensionRouteContributionRegistry = ExtensionRouteContributionRegistry(),
+    internal val routeRegistry: ExtensionRouteContributionRegistry = ExtensionRouteContributionRegistry(host),
     internal val platformPageRegistry: PlatformPageContributionRegistry = PlatformPageContributionRegistry(),
     internal val filterRegistry: ExtensionFilterContributionRegistry = ExtensionFilterContributionRegistry(),
     internal val adminRegistry: ExtensionAdminContributionRegistry = ExtensionAdminContributionRegistry(),
@@ -38,7 +45,7 @@ internal constructor(
     val templates: ExtensionTemplateContributionRegistry = templateOverrideRegistry
 }
 
-class ExtensionRouteContributionRegistry internal constructor() {
+class ExtensionRouteContributionRegistry internal constructor(private val host: ExtensionHostContext) {
     private val registrations = mutableListOf<ExtensionRouteRegistration>()
 
     fun register(
@@ -79,6 +86,29 @@ class ExtensionRouteContributionRegistry internal constructor() {
                 pathPattern = "$pathPrefix/*",
             )
     }
+
+    fun page(
+        path: String,
+        model: (Request) -> ViewModel,
+        description: String = path,
+        group: RouteGroup = RouteGroup.ProtectedUi,
+    ) {
+        val route =
+            path meta
+                {
+                    summary = description
+                } bindContract
+                GET to
+                { req: Request ->
+                    val viewModel = model(req)
+                    val html = host.rendering.renderer(viewModel)
+                    Response(OK).header("content-type", "text/html; charset=utf-8").body(html.toString())
+                }
+        register(route, group, description, path, "GET")
+    }
+
+    fun publicPage(path: String, model: (Request) -> ViewModel, description: String = path) =
+        page(path, model, description, RouteGroup.PublicUi)
 
     internal fun snapshot(): List<ExtensionRouteRegistration> = registrations.toList()
 }
