@@ -24,6 +24,8 @@ internal constructor(
         ExtensionNavigationContributionRegistry(),
     internal val layoutRegistry: ExtensionLayoutContributionRegistry = ExtensionLayoutContributionRegistry(),
     internal val assetRegistry: ExtensionAssetContributionRegistry = ExtensionAssetContributionRegistry(),
+    internal val templateOverrideRegistry: ExtensionTemplateContributionRegistry =
+        ExtensionTemplateContributionRegistry(),
 ) {
     val routes: ExtensionRouteContributionRegistry = routeRegistry
     val platformPages: PlatformPageContributionRegistry = platformPageRegistry
@@ -33,6 +35,7 @@ internal constructor(
     val navigation: ExtensionNavigationContributionRegistry = navigationRegistry
     val layout: ExtensionLayoutContributionRegistry = layoutRegistry
     val assets: ExtensionAssetContributionRegistry = assetRegistry
+    val templates: ExtensionTemplateContributionRegistry = templateOverrideRegistry
 }
 
 class ExtensionRouteContributionRegistry internal constructor() {
@@ -204,4 +207,18 @@ class ExtensionAssetContributionRegistry internal constructor() {
 
     internal fun snapshot(): ExtensionAssets =
         ExtensionAssets(stylesheets = stylesheets.toList(), scripts = scripts.toList())
+}
+
+class ExtensionTemplateContributionRegistry internal constructor() {
+    private val overrides = mutableSetOf<String>()
+
+    fun override(templateName: String) {
+        overrides += templateName
+    }
+
+    fun override(vararg templateNames: String) {
+        overrides += templateNames.toSet()
+    }
+
+    internal fun snapshot(): Set<String> = overrides.toSet()
 }
