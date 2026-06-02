@@ -20,8 +20,6 @@ typealias HostAppInfo = io.github.rygel.outerstellar.platform.extension.HostAppI
 
 typealias ExtensionHostContext = io.github.rygel.outerstellar.platform.extension.ExtensionHostContext
 
-typealias ExtensionContext = io.github.rygel.outerstellar.platform.extension.ExtensionContext
-
 typealias HostUsers = io.github.rygel.outerstellar.platform.extension.HostUsers
 
 typealias HostAnalytics = io.github.rygel.outerstellar.platform.extension.HostAnalytics

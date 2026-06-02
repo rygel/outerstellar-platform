@@ -85,13 +85,6 @@ data class ExtensionContribution(
             }
 
             val contributionContext = ExtensionContributionContext(host = context)
-            contributionContext.platformPages.includeAll(extension.includePlatformPages())
-            extension.routeRegistrations(context).forEach(contributionContext.routes::register)
-            contributionContext.filters.addAll(extension.filters(context))
-            contributionContext.admin.sections(extension.adminSections(context))
-            contributionContext.banners.providers(extension.bannerProviders(context))
-            extension.layoutRenderer(context)?.let(contributionContext.layout::replaceWith)
-
             extension.contribute(contributionContext)
 
             val adminSections = contributionContext.adminRegistry.snapshot()
