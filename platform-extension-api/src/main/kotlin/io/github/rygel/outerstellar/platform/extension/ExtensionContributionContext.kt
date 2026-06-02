@@ -102,7 +102,7 @@ class ExtensionRouteContributionRegistry internal constructor(private val host: 
                 { req: Request ->
                     val viewModel = model(req)
                     val html = host.rendering.renderer(viewModel)
-                    Response(OK).header("content-type", "text/html; charset=utf-8").body(html.toString())
+                    Response(OK).header("content-type", "text/html; charset=utf-8").body(html as String)
                 }
         register(route, group, description, path, "GET")
     }
