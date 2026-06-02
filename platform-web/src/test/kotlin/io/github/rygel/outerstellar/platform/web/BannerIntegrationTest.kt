@@ -23,7 +23,9 @@ class BannerIntegrationTest : WebTest() {
     private class TestBannerExtension(private val providers: List<BannerProvider>) : PlatformExtension {
         override val id: String = "test-banner-extension"
 
-        override fun bannerProviders(context: ExtensionHostContext): List<BannerProvider> = providers
+        override fun contribute(context: ExtensionContributionContext) {
+            providers.forEach { context.banners.provider(it) }
+        }
     }
 
     private val testBanner =

@@ -4,7 +4,7 @@ import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService
 import io.github.rygel.outerstellar.platform.analytics.SegmentAnalyticsService
-import io.github.rygel.outerstellar.platform.extension.PlatformExtension
+import io.github.rygel.outerstellar.platform.extension.ExtensionContribution
 import io.github.rygel.outerstellar.platform.infra.ExtensionTemplateRenderer
 import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
@@ -67,7 +67,7 @@ class WebComponents(
 @Suppress("LongParameterList")
 fun createWebComponents(
     config: AppConfig,
-    extension: PlatformExtension? = null,
+    extensionContribution: ExtensionContribution? = null,
     apiKeyService: ApiKeyService,
     oauthService: OAuthService,
     syncWebSocket: SyncWebSocket,
@@ -81,10 +81,10 @@ fun createWebComponents(
     notificationRepository: NotificationRepository,
 ): WebComponents {
     val baseRenderer = createRenderer(config.runtime)
-    val overrides = extension?.templateOverrides()
+    val overrides = extensionContribution?.templateOverrides
     val templateRenderer: TemplateRenderer =
-        if (extension != null && overrides != null && overrides.isNotEmpty()) {
-            ExtensionTemplateRenderer(baseRenderer, overrides, extension::class.java.classLoader)
+        if (overrides != null && overrides.isNotEmpty()) {
+            ExtensionTemplateRenderer(baseRenderer, overrides, null)
         } else {
             baseRenderer
         }
