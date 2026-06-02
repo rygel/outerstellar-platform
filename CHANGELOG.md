@@ -9,6 +9,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.8] – 2026-06-02
+
+### Added
+
+- **Single-plugin native executable** — Native images can now be built as composed applications (platform + one plugin) from a distribution module. The `starter-host` module demonstrates the pattern with shade plugin (merging `META-INF/services` via `ServicesResourceTransformer`), GraalVM `native-maven-plugin`, and a `NativeRegistryVerify` preflight that fails the build unless both platform and extension JTE registries are present.
+- **JTE template generation for extensions** — The `starter-extension` module now runs `jte-maven-plugin:generate` with `JteClassRegistryExtension`, producing a per-module `JteClassRegistry`, service file, and native-image reflection metadata.
+- **Pre-native registry verification** — A preflight check (`NativeRegistryVerify`) runs before GraalVM compilation and fails fast with a clear error message if either the platform or extension JTE registry is missing from the composed classpath.
+- **Multi-registry regression tests** — Four new tests in `JteInfraTest` covering single-registry failure, multi-registry miss, preflight requires ≥2 registries, and composed preflight pass with both registries.
+
+### Changed
+
+- **Starter extension renders via JTE** — The starter home route now uses the platform's `TemplateRenderer` with a JTE template instead of hardcoded HTML, proving the extension → platform rendering pipeline works end-to-end.
+
+---
+
 ## [3.6.7] – 2026-06-01
 
 ### Changed
