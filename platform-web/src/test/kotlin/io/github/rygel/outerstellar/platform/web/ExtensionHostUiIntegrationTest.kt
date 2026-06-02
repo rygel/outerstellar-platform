@@ -4,7 +4,6 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.containsSubstring
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.composition.RouteGroup
-import io.github.rygel.outerstellar.platform.extension.ExtensionHostContext
 import io.github.rygel.outerstellar.platform.extension.ExtensionRouteRegistration
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 import kotlin.test.Test
@@ -28,9 +27,8 @@ class ExtensionHostUiIntegrationTest : WebTest() {
             override val appLabel: String = "RepoQuality"
             override val mode: PlatformMode = PlatformMode.ExtensionHost
 
-            override fun includePlatformPages(): Set<PlatformPageSets> = includedPages
-
-            override fun routeRegistrations(context: ExtensionHostContext): List<ExtensionRouteRegistration> {
+            override fun contribute(context: ExtensionContributionContext) {
+                includedPages.forEach { context.platformPages.include(it) }
                 val route =
                     homePath meta
                         {
@@ -41,9 +39,11 @@ class ExtensionHostUiIntegrationTest : WebTest() {
                             val shell = request.shellRenderer.shell("RepoQuality", homePath)
                             Response(Status.OK)
                                 .header("content-type", "text/html; charset=utf-8")
-                                .body(context.renderShell(shell, """<main id="extension-home">RepoQuality</main>"""))
+                                .body(
+                                    context.host.renderShell(shell, """<main id="extension-home">RepoQuality</main>""")
+                                )
                         }
-                return listOf(
+                context.routes.register(
                     ExtensionRouteRegistration(
                         route = route,
                         group = RouteGroup.ProtectedUi,

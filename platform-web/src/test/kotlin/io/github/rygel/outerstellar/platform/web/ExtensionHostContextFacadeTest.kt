@@ -50,8 +50,7 @@ class ExtensionHostContextFacadeTest {
         assertEquals(true, context.app.devMode)
         assertEquals(false, context.app.registrationEnabled)
         assertSame(renderer, context.rendering.renderer)
-        assertSame(renderer, context.renderer)
-        assertEquals(context.app, context.config)
+        assertEquals(context.app, context.app)
     }
 
     @Test
@@ -85,7 +84,7 @@ class ExtensionHostContextFacadeTest {
         assertSame(user, context.users.findById(userId))
         assertSame(user, context.users.findByUsername("alex"))
         assertSame(user, context.users.findByEmail("alex@example.com"))
-        assertSame(user, context.userRepository.findById(userId))
+        assertSame(user, context.users.findById(userId))
     }
 
     @Test
@@ -125,11 +124,11 @@ class ExtensionHostContextFacadeTest {
             )
 
         assertEquals(createdKey, context.security.apiKeys.createApiKey(userId, "CLI"))
-        assertEquals(listOf(apiKey), context.apiKeyService.listApiKeys(userId))
+        assertEquals(listOf(apiKey), context.security.apiKeys.listApiKeys(userId))
         context.security.apiKeys.deleteApiKey(userId, 7L)
         assertEquals(user, context.security.oauth.findOrCreateOAuthUser("github", "sub-1", "alex@example.com"))
         assertEquals(listOf(expectedNotification), context.notifications!!.listForUser(userId, 10))
-        assertEquals(1, context.notificationService!!.countUnread(userId))
+        assertEquals(1, context.notifications!!.countUnread(userId))
         context.notifications!!.markAllRead(userId)
 
         verify { apiKeyService.createApiKey(userId, "CLI") }

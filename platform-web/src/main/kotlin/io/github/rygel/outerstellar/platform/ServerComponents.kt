@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.di.createConfiguredEmailService
 import io.github.rygel.outerstellar.platform.di.createCoreComponents
 import io.github.rygel.outerstellar.platform.di.createWebComponents
 import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
+import io.github.rygel.outerstellar.platform.extension.ExtensionContribution
 import io.github.rygel.outerstellar.platform.extension.PlatformExtension
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
@@ -68,10 +69,11 @@ fun createServerComponents(config: AppConfig, extension: PlatformExtension? = nu
             emailService = emailService,
         )
 
+    val extensionContribution = ExtensionContribution.from(extension, config.platformMode, null)
     val web =
         createWebComponents(
             config = config,
-            extension = extension,
+            extensionContribution = extensionContribution,
             apiKeyService = security.apiKeyService,
             oauthService = security.oauthService,
             syncWebSocket = syncWebSocket,

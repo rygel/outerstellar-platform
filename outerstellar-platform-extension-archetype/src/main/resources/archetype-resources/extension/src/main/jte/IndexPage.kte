@@ -1,0 +1,12 @@
+@param platformVersion : String
+<main>
+  <h1>${appLabel} is running</h1>
+  <p>This page is rendered by a <code>JTE template</code> from your extension.</p>
+  <p>Platform version: $!{platformVersion}</p>
+  <ul>
+    <li><a href="/${extensionId}/health">Public health probe</a></li>
+    <li><a href="/${extensionId}/me">Protected route using the current user</a></li>
+    <li><a href="/settings">Included platform settings page</a></li>
+    <li><a href="/search">Included platform search page</a></li>
+  </ul>
+</main>

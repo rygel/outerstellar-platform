@@ -1,8 +1,11 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.persistence.UserRepository
-import io.github.rygel.outerstellar.platform.security.ApiKeyService
-import io.github.rygel.outerstellar.platform.security.OAuthService
+import io.github.rygel.outerstellar.platform.composition.PlatformMode
+import io.github.rygel.outerstellar.platform.extension.HostApiKeys
+import io.github.rygel.outerstellar.platform.extension.HostOAuth
+import io.github.rygel.outerstellar.platform.extension.HostRendering
+import io.github.rygel.outerstellar.platform.extension.HostSecurity
+import io.github.rygel.outerstellar.platform.extension.HostUsers
 import io.mockk.mockk
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -12,23 +15,19 @@ import org.http4k.contract.meta
 import org.http4k.core.Method
 import org.http4k.core.Response
 import org.http4k.core.Status
-import org.http4k.template.TemplateRenderer
 import org.junit.jupiter.api.Test
 
 class AdminSectionTest {
 
     @Test
-    fun `default PlatformExtension adminSections returns empty list`() {
+    fun `default PlatformExtension contribute produces no admin sections`() {
         val extension =
             object : PlatformExtension {
                 override val id: String = "test-extension"
             }
-        val renderer = mockk<TemplateRenderer>(relaxed = true)
-        val apiKeyService = mockk<ApiKeyService>(relaxed = true)
-        val oauthService = mockk<OAuthService>(relaxed = true)
-        val userRepository = mockk<UserRepository>(relaxed = true)
-        val context = ExtensionContext.forTesting(renderer, apiKeyService, oauthService, userRepository)
-        assertTrue(extension.adminSections(context).isEmpty())
+        val context = extensionHostContext()
+        val contribution = ExtensionContribution.from(extension, PlatformMode.FullPlatform, context)
+        assertTrue(contribution.adminSections.isEmpty())
     }
 
     @Test
@@ -102,4 +101,12 @@ class AdminSectionTest {
         assertTrue(defaults.adminNavItems.isEmpty())
         assertNull(defaults.layoutRenderer)
     }
+
+    private fun extensionHostContext() =
+        io.github.rygel.outerstellar.platform.extension.ExtensionHostContext.forTesting(
+            rendering = mockk<HostRendering>(relaxed = true),
+            users = mockk<HostUsers>(relaxed = true),
+            security =
+                HostSecurity(apiKeys = mockk<HostApiKeys>(relaxed = true), oauth = mockk<HostOAuth>(relaxed = true)),
+        )
 }
