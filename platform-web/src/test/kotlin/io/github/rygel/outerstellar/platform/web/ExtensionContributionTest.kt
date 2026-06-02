@@ -6,9 +6,11 @@ import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.composition.RouteGroup
 import io.github.rygel.outerstellar.platform.extension.ExtensionHostContext
-import io.github.rygel.outerstellar.platform.persistence.UserRepository
-import io.github.rygel.outerstellar.platform.security.ApiKeyService
-import io.github.rygel.outerstellar.platform.security.OAuthService
+import io.github.rygel.outerstellar.platform.extension.HostApiKeys
+import io.github.rygel.outerstellar.platform.extension.HostOAuth
+import io.github.rygel.outerstellar.platform.extension.HostRendering
+import io.github.rygel.outerstellar.platform.extension.HostSecurity
+import io.github.rygel.outerstellar.platform.extension.HostUsers
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 import io.mockk.mockk
 import java.util.UUID
@@ -24,7 +26,6 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.routing.ResourceLoader
-import org.http4k.template.TemplateRenderer
 
 class ExtensionContributionTest {
     @Test
@@ -44,7 +45,7 @@ class ExtensionContributionTest {
     }
 
     @Test
-    fun `collects extension extension points once into a single contribution`() {
+    fun `collects extension capabilities via contribute hook`() {
         val context = extensionContext()
         val textResolver =
             object : TextResolver {
@@ -79,42 +80,19 @@ class ExtensionContributionTest {
             )
         val extension =
             object : PlatformExtension {
-                var routeCalls = 0
-                var filterCalls = 0
-                var adminCalls = 0
-                var bannerCalls = 0
-                var layoutCalls = 0
-
                 override val id = "tools"
                 override val appLabel = "Tools App"
                 override val mode = PlatformMode.ExtensionHost
                 override val textResolver = textResolver
 
-                override fun includePlatformPages(): Set<PlatformPageSets> = setOf(PlatformPageSets.HOME)
-
-                override fun routeRegistrations(context: ExtensionHostContext): List<ExtensionRouteRegistration> {
-                    routeCalls += 1
-                    return listOf(routeRegistration)
-                }
-
-                override fun filters(context: ExtensionHostContext): List<Filter> {
-                    filterCalls += 1
-                    return listOf(filter)
-                }
-
-                override fun adminSections(context: ExtensionHostContext): List<AdminSection> {
-                    adminCalls += 1
-                    return listOf(adminSection)
-                }
-
-                override fun bannerProviders(context: ExtensionHostContext): List<BannerProvider> {
-                    bannerCalls += 1
-                    return listOf(bannerProvider)
-                }
-
-                override fun layoutRenderer(context: ExtensionHostContext): ExtensionLayoutRenderer? {
-                    layoutCalls += 1
-                    return layoutRenderer
+                override fun contribute(ctx: ExtensionContributionContext) {
+                    ctx.platformPages.include(PlatformPageSets.HOME)
+                    ctx.routes.register(routeRegistration)
+                    ctx.filters.add(filter)
+                    ctx.admin.section(adminSection)
+                    ctx.banners.provider(bannerProvider)
+                    ctx.layout.replaceWith(layoutRenderer)
+                    ctx.templates.override("some-template")
                 }
             }
 
@@ -129,15 +107,11 @@ class ExtensionContributionTest {
         assertEquals(listOf(bannerProvider), contribution.bannerProviders)
         assertSame(textResolver, contribution.options.textResolver)
         assertSame(layoutRenderer, contribution.options.layoutRenderer)
+        assertEquals(setOf("some-template"), contribution.templateOverrides)
         assertEquals(
             listOf(io.github.rygel.outerstellar.platform.extension.AdminNavItem("Tools", "/admin/tools", "wrench")),
             contribution.options.adminNavItems,
         )
-        assertEquals(1, extension.routeCalls)
-        assertEquals(1, extension.filterCalls)
-        assertEquals(1, extension.adminCalls)
-        assertEquals(1, extension.bannerCalls)
-        assertEquals(1, extension.layoutCalls)
     }
 
     @Test
@@ -369,11 +343,11 @@ class ExtensionContributionTest {
 
     private fun extensionContext(): ExtensionHostContext {
         val context =
-            ExtensionContext.forTesting(
-                renderer = mockk<TemplateRenderer>(relaxed = true),
-                apiKeyService = mockk<ApiKeyService>(relaxed = true),
-                oauthService = mockk<OAuthService>(relaxed = true),
-                userRepository = mockk<UserRepository>(relaxed = true),
+            ExtensionHostContext.forTesting(
+                rendering = mockk<HostRendering>(relaxed = true),
+                users = mockk<HostUsers>(relaxed = true),
+                security =
+                    HostSecurity(apiKeys = mockk<HostApiKeys>(relaxed = true), oauth = mockk<HostOAuth>(relaxed = true)),
             )
         assertNotNull(context)
         return context

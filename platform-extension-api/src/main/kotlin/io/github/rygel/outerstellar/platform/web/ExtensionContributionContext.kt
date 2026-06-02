@@ -25,3 +25,6 @@ typealias ExtensionLayoutContributionRegistry =
 
 typealias ExtensionAssetContributionRegistry =
     io.github.rygel.outerstellar.platform.extension.ExtensionAssetContributionRegistry
+
+typealias ExtensionTemplateContributionRegistry =
+    io.github.rygel.outerstellar.platform.extension.ExtensionTemplateContributionRegistry

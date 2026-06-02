@@ -1,0 +1,48 @@
+<archetype-descriptor xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0 http://maven.apache.org/xsd/archetype-descriptor-1.1.0.xsd"
+                      name="outerstellar-platform-extension">
+    <requiredProperties>
+        <requiredProperty key="extensionId">
+            <defaultValue>${artifactId}</defaultValue>
+        </requiredProperty>
+        <requiredProperty key="appLabel">
+            <defaultValue>My App</defaultValue>
+        </requiredProperty>
+    </requiredProperties>
+
+    <modules>
+        <module id="${extensionId}-extension" dir="extension">
+            <fileSets>
+                <fileSet filtered="true" packaged="true" encoding="UTF-8">
+                    <directory>src/main/kotlin</directory>
+                    <includes>
+                        <include>**/*.kt</include>
+                    </includes>
+                </fileSet>
+                <fileSet filtered="true" encoding="UTF-8">
+                    <directory>src/main/jte</directory>
+                    <includes>
+                        <include>**/*.kte</include>
+                    </includes>
+                </fileSet>
+                <fileSet filtered="true" packaged="true" encoding="UTF-8">
+                    <directory>src/test/kotlin</directory>
+                    <includes>
+                        <include>**/*.kt</include>
+                    </includes>
+                </fileSet>
+            </fileSets>
+        </module>
+        <module id="${extensionId}-host" dir="host">
+            <fileSets>
+                <fileSet filtered="true" packaged="true" encoding="UTF-8">
+                    <directory>src/main/kotlin</directory>
+                    <includes>
+                        <include>**/*.kt</include>
+                    </includes>
+                </fileSet>
+            </fileSets>
+        </module>
+    </modules>
+</archetype-descriptor>
