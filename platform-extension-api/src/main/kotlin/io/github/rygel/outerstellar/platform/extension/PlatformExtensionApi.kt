@@ -3,19 +3,15 @@ package io.github.rygel.outerstellar.platform.extension
 import gg.jte.Content
 import io.github.rygel.outerstellar.platform.ExtensionMigrations
 import io.github.rygel.outerstellar.platform.TextResolver
-import io.github.rygel.outerstellar.platform.banner.BannerProvider
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.composition.RouteGroup
 import io.github.rygel.outerstellar.platform.model.ApiKeySummary
 import io.github.rygel.outerstellar.platform.model.CreateApiKeyResponse
 import io.github.rygel.outerstellar.platform.model.NotificationSummary
 import io.github.rygel.outerstellar.platform.model.User
-import io.github.rygel.outerstellar.platform.web.AdminSection
 import io.github.rygel.outerstellar.platform.web.ShellView
-import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
 import java.util.UUID
 import org.http4k.contract.ContractRoute
-import org.http4k.core.Filter
 import org.http4k.core.Request
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.template.TemplateRenderer
@@ -176,30 +172,6 @@ class ExtensionHostContext(
     val rendering: HostRendering,
     val security: HostSecurity,
 ) {
-    @Deprecated("Use rendering.renderer", ReplaceWith("rendering.renderer"))
-    val renderer: TemplateRenderer
-        get() = rendering.renderer
-
-    @Deprecated("Use app", ReplaceWith("app"))
-    val config: HostAppInfo
-        get() = app
-
-    @Deprecated("Use security.apiKeys", ReplaceWith("security.apiKeys"))
-    val apiKeyService: HostApiKeys
-        get() = security.apiKeys
-
-    @Deprecated("Use security.oauth", ReplaceWith("security.oauth"))
-    val oauthService: HostOAuth
-        get() = security.oauth
-
-    @Deprecated("Use users", ReplaceWith("users"))
-    val userRepository: HostUsers
-        get() = users
-
-    @Deprecated("Use notifications", ReplaceWith("notifications"))
-    val notificationService: HostNotifications?
-        get() = notifications
-
     /** Returns the authenticated user for this request, or null if no user is logged in. */
     fun currentUser(request: Request): User? = users.currentUser(request)
 
@@ -231,8 +203,6 @@ class ExtensionHostContext(
     }
 }
 
-typealias ExtensionContext = ExtensionHostContext
-
 private object NoOpHostAnalytics : HostAnalytics {
     override fun identify(userId: String, traits: Map<String, Any>) = Unit
 
@@ -263,52 +233,8 @@ interface PlatformExtension {
     val textResolver: TextResolver?
         get() = null
 
-    /**
-     * Flyway migrations contributed by this extension. Return null when the extension does not own schema changes.
-     *
-     * Older extensions can keep overriding the deprecated migrationLocation/migrationHistoryTable/migrationNames
-     * compatibility properties for now; the default getter adapts them into this value.
-     *
-     * Use [ExtensionMigrations.location] for the classpath location, [ExtensionMigrations.historyTable] for a dedicated
-     * Flyway history table, and [ExtensionMigrations.migrationNames] when migration resources need to be enumerated
-     * explicitly for packaging.
-     */
-    @Suppress("DEPRECATION")
     val migrations: ExtensionMigrations?
-        get() {
-            val location = migrationLocation ?: return null
-            return ExtensionMigrations(
-                location = location,
-                historyTable = migrationHistoryTable,
-                migrationNames = migrationNames,
-            )
-        }
-
-    @Deprecated("Override migrations with ExtensionMigrations instead.", ReplaceWith("migrations"))
-    val migrationLocation: String?
         get() = null
 
-    @Deprecated("Override migrations with ExtensionMigrations instead.", ReplaceWith("migrations"))
-    val migrationHistoryTable: String
-        get() = io.github.rygel.outerstellar.platform.DEFAULT_EXTENSION_MIGRATION_HISTORY_TABLE
-
-    @Deprecated("Override migrations with ExtensionMigrations instead.", ReplaceWith("migrations"))
-    val migrationNames: List<String>
-        get() = emptyList()
-
-    fun templateOverrides(): Set<String> = emptySet()
-
     fun contribute(context: ExtensionContributionContext) {}
-
-    fun routeRegistrations(context: ExtensionHostContext): List<ExtensionRouteRegistration> = emptyList()
-
-    fun includePlatformPages(): Set<PlatformPageSets> = emptySet()
-
-    fun layoutRenderer(context: ExtensionHostContext): ExtensionLayoutRenderer? = null
-
-    fun filters(context: ExtensionHostContext): List<Filter> = emptyList()
-
-    fun adminSections(context: ExtensionHostContext): List<AdminSection> = emptyList()
-
-    fun bannerProviders(context: ExtensionHostContext): List<BannerProvider> = emptyList()
 }

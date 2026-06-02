@@ -17,6 +17,7 @@ data class ExtensionContribution(
     val filters: List<Filter> = emptyList(),
     val adminSections: List<AdminSection> = emptyList(),
     val bannerProviders: List<BannerProvider> = emptyList(),
+    val templateOverrides: Set<String> = emptySet(),
     val options: ExtensionOptions = ExtensionOptions(),
 ) {
     fun diagnostics(): ExtensionDiagnostics =
@@ -84,13 +85,6 @@ data class ExtensionContribution(
             }
 
             val contributionContext = ExtensionContributionContext(host = context)
-            contributionContext.platformPages.includeAll(extension.includePlatformPages())
-            extension.routeRegistrations(context).forEach(contributionContext.routes::register)
-            contributionContext.filters.addAll(extension.filters(context))
-            contributionContext.admin.sections(extension.adminSections(context))
-            contributionContext.banners.providers(extension.bannerProviders(context))
-            extension.layoutRenderer(context)?.let(contributionContext.layout::replaceWith)
-
             extension.contribute(contributionContext)
 
             val adminSections = contributionContext.adminRegistry.snapshot()
@@ -110,6 +104,7 @@ data class ExtensionContribution(
                 filters = contributionContext.filterRegistry.snapshot(),
                 adminSections = adminSections,
                 bannerProviders = contributionContext.bannerRegistry.snapshot(),
+                templateOverrides = contributionContext.templateOverrideRegistry.snapshot(),
                 options =
                     ExtensionOptions(
                         navItems = contributionContext.navigationRegistry.snapshot(),
