@@ -9,6 +9,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.9] – 2026-06-02
+
+### Added
+
+- **Extension Maven archetype** — Replaced the `starter-extension-app` with a proper Maven archetype (`outerstellar-platform-extension-archetype`). Extension authors now scaffold new projects with `mvn archetype:generate` instead of copying a directory. The archetype produces a two-module project (extension + host) with working JTE templates, contract tests, and native-image verification.
+- **Extension parent POM** — New `outerstellar-platform-extension-parent` provides zero-config JTE build with `JteClassRegistryExtension` and `NativeResourcesExtension` preconfigured in `pluginManagement`.
+- **`page()` / `publicPage()` convenience methods** — `ExtensionRouteContributionRegistry` now offers one-liner page registration with JTE template inference from the ViewModel's `template()` method.
+- **`ExtensionTemplateContributionRegistry`** — Template overrides are now registered through the contribution context (`context.templates.override(...)`) instead of a separate interface method.
+
+### Changed
+
+- **Removed 8 deprecated methods from `PlatformExtension`** — `contribute()` is now the single extension point. Removed: `routeRegistrations()`, `layoutTemplate()`, `filters()`, `bannerProviders()`, `includePlatformPages()`, `mode()`, `id()`, `appLabel()`.
+- **Removed deprecated `ExtensionHostContext` aliases** — Use grouped fields (`rendering.renderer`, `app.config`, `security.apiKeys`, etc.) instead of top-level shortcuts (`renderer`, `config`, `apiKeyService`, etc.).
+- **Removed `typealias ExtensionContext`** — Use `ExtensionHostContext` directly.
+- **Simplified `ExtensionContribution.from()`** — Now only calls `contribute()`, no longer falls back to deprecated methods.
+- **`WebFactory` takes `ExtensionContribution?`** instead of `PlatformExtension?` — template overrides read from the contribution object, not the extension interface.
+- **`starter-extension-app/` removed** — Replaced by the Maven archetype.
+
+---
+
 ## [3.6.8] – 2026-06-02
 
 ### Added
