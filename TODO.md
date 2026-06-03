@@ -124,6 +124,45 @@ pwsh scripts/test-desktop.ps1
 - The existing unrelated Maven plugin POM modification is preserved untouched.
 - Focused compile and renderer tests pass before broader validation.
 
+## Pending
+
+### #453: Merge Flyway migration history into a single table
+
+**Problem**: `PersistenceFactory.runMigrations()` runs two separate Flyway instances — `migrate()` for platform (V1–V13 → `flyway_schema_history`) and `migrateExtension()` for extensions (V100+ → `flyway_extension_history`). Switching between JVM and native-image builds on the same DB causes `42P07: relation already exists` because the two history tables disagree on what has been applied.
+
+**Fix**: Merge both migration sets into a single Flyway instance with one history table. Add extension `location` as a second `locations` entry in the same `migrate()` call. Deprecate `ExtensionMigrations.historyTable`. Add one-time repair for existing dual-table deployments. Update `Migrator.kt` to handle extension migrations.
+
+**Before fixing**: Audit the entire codebase for other instances of duplicated/redundant dual setups (dual config loading, dual service initialization, duplicated constants, etc.).
+
+**Key files**:
+- `platform-persistence-jdbi/.../infra/DatabaseInfra.kt` — `migrate()` + `migrateExtension()`
+- `platform-persistence-jdbi/.../di/PersistenceFactory.kt` — `runMigrations()` orchestrator
+- `platform-core/.../ExtensionMigrations.kt` — SPI data class
+- `platform-persistence-jdbi/.../persistence/Migrator.kt` — standalone CLI (missing extension support)
+
+### Duplication audit results (#453 prerequisite)
+
+#### Medium severity — latent bugs
+
+| # | Finding | Files |
+|---|---------|-------|
+| A | **Sync module wiring x3** — `DesktopComponents.kt`, `JavaFxApp.kt`, and `SyncClientComponents.kt` all wire the same HTTP clients, auth/sync/profile/admin/notification modules independently. `SyncClientComponents.kt` is the canonical factory but neither desktop module uses it. | `platform-desktop/.../di/DesktopComponents.kt:68-133`, `platform-desktop-javafx/.../JavaFxApp.kt:107-193`, `platform-sync-client/.../di/SyncClientComponents.kt:48-133` |
+| B | **JavaFX persistence wiring duplicated manually** — `JavaFxApp.kt` creates its own datasource, runs Flyway, creates JDBI, wires repos instead of calling `createPersistenceComponents()`. Missing `InstantArgumentFactory`, `InstantColumnMapper`, `CachingUserRepository`. | `platform-desktop-javafx/.../JavaFxApp.kt:119-141`, `platform-persistence-jdbi/.../di/PersistenceFactory.kt:67-111` |
+| C | **Table cleanup lists duplicated** — `WebTest` and `JdbiTest` have identical `tablesToDelete` lists that must stay in sync. New tables require updating both. | `platform-web/.../WebTest.kt:332-352`, `platform-persistence-jdbi/.../JdbiTest.kt:19-39` |
+| D | **ExtensionTemplateRenderer override logic is dead code** — both branches call `delegate(viewModel)`, the override check does nothing. `extensionClassLoader` is always null from `WebFactory.kt:87`. Extension template overrides are non-functional. | `platform-web/.../ExtensionTemplateRenderer.kt:12-18` |
+| E | **JDBI setup pattern x3, JavaFX missing mappers** — `PersistenceFactory.kt`, `TestDatabase.kt`, and `JavaFxApp.kt` all repeat the JDBI create+register pattern. JavaFX copy is missing `InstantColumnMapper` (will fail at runtime for Instant reads). | `platform-persistence-jdbi/.../PersistenceFactory.kt:79-91`, `platform-testkit/.../TestDatabase.kt:57-61`, `platform-desktop-javafx/.../JavaFxApp.kt:128-133` |
+
+#### Low severity — maintenance burden
+
+| # | Finding | Files |
+|---|---------|-------|
+| F | YAML config loading infrastructure duplicated between `AppConfig.kt` and `DesktopAppConfig.kt` | `platform-core/.../AppConfig.kt:100-116`, `platform-sync-client/.../DesktopAppConfig.kt:29-45` |
+| G | CSP policy constant defined twice — `AppConfig.kt` and `Filters.kt` have identical `DEFAULT_CSP_POLICY` | `platform-core/.../AppConfig.kt:19-22`, `platform-web/.../Filters.kt:44-52` |
+| H | `InstantArgumentFactory`/`InstantColumnMapper` duplicated in production and test | `platform-persistence-jdbi/.../JdbiSupport.kt:28-43`, `platform-testkit/.../TestDatabase.kt:20-35` |
+| I | `DesktopAppConfig` re-declares fields from `AppConfig` with manual copying in `DesktopComponents.kt` | `platform-sync-client/.../DesktopAppConfig.kt`, `platform-desktop/.../DesktopComponents.kt:146-148` |
+| J | `RuntimeConfig()` instantiated 15x in `buildRuntimeConfig()` for field defaults | `platform-core/.../AppConfig.kt:243-325` |
+| K | Triple-layered user identity flow (RequestContext → SecurityRules.USER_KEY → route handler) — intentional but layered | `platform-web/.../Filters.kt:282-298`, `platform-web/.../Filters.kt:355-366`, `platform-security/.../SecurityRules.kt:14-22` |
+
 ## Recently completed
 
 - #376: extension-host UI/root-route work

@@ -6,13 +6,13 @@ const val DEFAULT_EXTENSION_MIGRATION_HISTORY_TABLE = "flyway_extension_history"
  * Flyway migration metadata contributed by an extension.
  *
  * @property location classpath location containing the extension's Flyway migrations
- * @property historyTable dedicated Flyway history table for the extension; defaults to
- *   [DEFAULT_EXTENSION_MIGRATION_HISTORY_TABLE]
+ * @property historyTable no longer used — all migrations share flyway_schema_history
  * @property migrationNames optional explicit migration filenames, mainly used when native-image packaging needs the
  *   migration resources to be enumerated up front
  */
 class ExtensionMigrations(
     val location: String,
+    @Deprecated("Extensions now share the platform history table. This field is ignored.")
     val historyTable: String = DEFAULT_EXTENSION_MIGRATION_HISTORY_TABLE,
     migrationNames: List<String> = emptyList(),
 ) {
