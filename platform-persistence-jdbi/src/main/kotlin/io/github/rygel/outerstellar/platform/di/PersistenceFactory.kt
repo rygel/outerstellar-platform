@@ -4,7 +4,6 @@ import io.github.rygel.outerstellar.platform.AppConfig
 import io.github.rygel.outerstellar.platform.ExtensionMigrations
 import io.github.rygel.outerstellar.platform.infra.createDataSource
 import io.github.rygel.outerstellar.platform.infra.migrate
-import io.github.rygel.outerstellar.platform.infra.migrateExtension
 import io.github.rygel.outerstellar.platform.persistence.ApiKeyRepository
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.ContactRepository
@@ -121,7 +120,9 @@ fun createPersistenceComponents(config: AppConfig, extensionMigrationSource: Str
 
 private fun runMigrations(ds: DataSource, config: AppConfig, extensionMigrations: ExtensionMigrations?) {
     if (!config.runtime.flywayEnabled) return
-    migrate(ds)
-    val extension = extensionMigrations ?: return
-    migrateExtension(ds, extension.location, extension.historyTable, extension.migrationNames)
+    migrate(
+        ds,
+        extensionLocation = extensionMigrations?.location,
+        extensionMigrationNames = extensionMigrations?.migrationNames,
+    )
 }

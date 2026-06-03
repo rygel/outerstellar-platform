@@ -5,8 +5,8 @@ import io.github.rygel.outerstellar.platform.infra.migrate
 import org.slf4j.LoggerFactory
 
 /**
- * Standalone Flyway migration runner. Runs host database migrations as a separate command, so the main application can
- * start with `FLYWAY_ENABLED=false`.
+ * Standalone Flyway migration runner. Runs all database migrations (platform + extension if configured) as a separate
+ * command, so the main application can start with `FLYWAY_ENABLED=false`.
  *
  * Environment variables: JDBC_URL, JDBC_USER, JDBC_PASSWORD, APP_PROFILE, HIKARI_* (optional).
  *
@@ -30,7 +30,7 @@ fun main() {
 
     try {
         migrate(ds)
-        logger.info("Host migrations completed successfully")
+        logger.info("Migrations completed successfully")
     } catch (e: Exception) {
         logger.error("Migration failed: {}", e.message, e)
         System.exit(1)
