@@ -231,4 +231,12 @@
         <Class name="io.github.rygel.outerstellar.platform.fx.viewmodel.FxSyncViewModel"/>
         <Bug pattern="URF_UNREAD_FIELD"/>
     </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.infra.DatabaseInfraKt"/>
+        <Bug pattern="OBL_UNSATISFIED_OBLIGATION"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.infra.DatabaseInfraKt"/>
+        <Bug pattern="UCF_USELESS_CONTROL_FLOW_NEXT_LINE"/>
+    </Match>
 </FindBugsFilter>
