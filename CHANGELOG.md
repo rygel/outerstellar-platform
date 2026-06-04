@@ -9,6 +9,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.7.0] – 2026-06-04
+
+### Changed
+
+- **Single Flyway migration history table** — Extension migrations now share `flyway_schema_history` with platform migrations instead of using a separate `flyway_extension_history` table. This allows JVM and native-image builds to coexist on the same database (closes #453).
+- `migrate()` in `DatabaseInfra` now accepts `extensionLocation` and `extensionMigrationNames` to merge both migration sets into a single Flyway run.
+- `repairLegacyExtensionHistoryTable()` auto-detects and migrates any existing `flyway_extension_history` rows into `flyway_schema_history` with re-ranked `installed_rank`, then drops the legacy table.
+- `migrateExtension()` deprecated — kept as wrapper calling `migrate()` internally.
+- `ExtensionMigrations.historyTable` deprecated — the field is now ignored.
+
+---
+
 ## [3.6.9] – 2026-06-02
 
 ### Added
