@@ -31,6 +31,7 @@ import io.github.rygel.outerstellar.platform.sync.client.HttpSyncClient
 import io.github.rygel.outerstellar.platform.sync.client.NotificationClient
 import io.github.rygel.outerstellar.platform.sync.client.ProfileClient
 import io.github.rygel.outerstellar.platform.sync.client.SyncClient
+import io.github.rygel.outerstellar.platform.sync.engine.DefaultSessionLifecycle
 import io.github.rygel.outerstellar.platform.sync.engine.HttpConnectivityChecker
 import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModuleImpl
 import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModuleImpl
@@ -142,19 +143,9 @@ class JavaFxApp : Application() {
     }
 
     private fun createModules(clients: HttpClients, repos: Repositories, analytics: NoOpAnalyticsService): SyncModules {
-        lateinit var authModule: AuthModuleImpl
-        lateinit var syncDataModule: SyncDataModuleImpl
+        val lifecycle = DefaultSessionLifecycle()
 
-        authModule =
-            AuthModuleImpl(
-                authClient = clients.auth,
-                analytics = analytics,
-                onLoadData = { syncDataModule.loadData() },
-                onStartAutoSync = { syncDataModule.startAutoSync() },
-                onStopAutoSync = { syncDataModule.stopAutoSync() },
-                notifier = FxTrayNotifier,
-            )
-        syncDataModule =
+        val syncDataModule =
             SyncDataModuleImpl(
                 syncClient = clients.sync,
                 messageService = repos.messageService,
@@ -162,33 +153,29 @@ class JavaFxApp : Application() {
                 analytics = analytics,
                 repository = repos.messageRepository,
                 transactionManager = repos.transactionManager,
-                authStateProvider = { authModule.authState },
+                lifecycle = lifecycle,
+                notifier = FxTrayNotifier,
+            )
+        val authModule =
+            AuthModuleImpl(
+                authClient = clients.auth,
+                analytics = analytics,
+                lifecycle = lifecycle,
                 notifier = FxTrayNotifier,
             )
         val profileModule =
             ProfileModuleImpl(
                 profileClient = clients.profile,
                 analytics = analytics,
-                authStateProvider = { authModule.authState },
-                onLoadData = { syncDataModule.loadData() },
-                onStopAutoSync = { syncDataModule.stopAutoSync() },
-                onLogout = { authModule.logout() },
+                lifecycle = lifecycle,
                 notifier = FxTrayNotifier,
             )
-        val adminModule =
-            AdminModuleImpl(
-                adminClient = clients.admin,
-                analytics = analytics,
-                authStateProvider = { authModule.authState },
-                onStopAutoSync = { syncDataModule.stopAutoSync() },
-                onLogout = { authModule.logout() },
-            )
+        val adminModule = AdminModuleImpl(adminClient = clients.admin, analytics = analytics, lifecycle = lifecycle)
         val notificationModule =
-            NotificationModuleImpl(
-                notificationClient = clients.notification,
-                onStopAutoSync = { syncDataModule.stopAutoSync() },
-                onLogout = { authModule.logout() },
-            )
+            NotificationModuleImpl(notificationClient = clients.notification, lifecycle = lifecycle)
+
+        lifecycle.initialize(syncDataModule = syncDataModule, authModule = authModule, authClient = clients.auth)
+
         return SyncModules(authModule, syncDataModule, profileModule, adminModule, notificationModule)
     }
 

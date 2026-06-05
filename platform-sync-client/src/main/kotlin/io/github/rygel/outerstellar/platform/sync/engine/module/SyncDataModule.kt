@@ -64,4 +64,6 @@ interface SyncDataModule {
         companyAddress: String,
         department: String,
     ): Result<Unit>
+
+    fun clearState() {}
 }

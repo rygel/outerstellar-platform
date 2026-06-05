@@ -5,6 +5,7 @@ package io.github.rygel.outerstellar.platform.sync.engine.module
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.sync.client.AdminClient
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
 import org.slf4j.LoggerFactory
@@ -12,9 +13,7 @@ import org.slf4j.LoggerFactory
 class AdminModuleImpl(
     private val adminClient: AdminClient,
     private val analytics: AnalyticsService,
-    private val authStateProvider: () -> AuthState,
-    private val onStopAutoSync: () -> Unit,
-    private val onLogout: () -> Unit,
+    private val lifecycle: SessionLifecycle,
 ) : AdminModule {
     private val logger = LoggerFactory.getLogger(AdminModuleImpl::class.java)
 
@@ -48,7 +47,7 @@ class AdminModuleImpl(
             adminClient.setUserEnabled(userId, enabled)
             loadUsers()
             analytics.track(
-                authStateProvider().userName,
+                lifecycle.authState.userName,
                 "user_enabled_changed",
                 mapOf("userId" to userId, "enabled" to enabled),
             )
@@ -60,28 +59,31 @@ class AdminModuleImpl(
             adminClient.setUserRole(userId, role)
             loadUsers()
             analytics.track(
-                authStateProvider().userName,
+                lifecycle.authState.userName,
                 "user_role_changed",
                 mapOf("userId" to userId, "role" to role),
             )
             Result.success(Unit)
         }
 
-    private fun handleSessionExpired(e: Exception? = null) {
+    override fun clearState() {
+        updateState { AdminState() }
+        listeners.forEach { it.onSessionExpired() }
+    }
+
+    private fun onSessionExpired(e: Exception? = null) {
         if (e != null) {
             logger.warn("Session expired: ${e.message}", e)
         }
-        onStopAutoSync()
-        onLogout()
-        updateState { AdminState() }
-        listeners.forEach { it.onSessionExpired() }
+        lifecycle.onSessionExpired()
+        clearState()
     }
 
     private fun runGuarded(operation: String, onError: (Exception) -> Unit = {}, block: () -> Unit) {
         try {
             block()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
         } catch (e: Exception) {
             logger.warn("Failed to {}", operation, e)
             onError(e)
@@ -96,7 +98,7 @@ class AdminModuleImpl(
         return try {
             block()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
             Result.failure(e)
         } catch (e: Exception) {
             logger.warn("Failed to {}", operation, e)

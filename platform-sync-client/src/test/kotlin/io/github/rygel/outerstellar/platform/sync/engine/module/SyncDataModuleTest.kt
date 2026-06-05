@@ -19,6 +19,7 @@ import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushResponse
 import io.github.rygel.outerstellar.platform.sync.client.SyncClient
 import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -39,6 +40,7 @@ internal class SyncDataModuleTest {
     private lateinit var repository: MessageRepository
     private lateinit var transactionManager: TransactionManager
     private lateinit var connectivityChecker: ConnectivityChecker
+    private lateinit var lifecycle: SessionLifecycle
     private lateinit var notifier: ModuleNotifier
     private lateinit var module: SyncDataModuleImpl
 
@@ -54,8 +56,10 @@ internal class SyncDataModuleTest {
         repository = mockk(relaxed = true)
         transactionManager = mockk(relaxed = true)
         connectivityChecker = mockk(relaxed = true)
+        lifecycle = mockk(relaxed = true)
         notifier = mockk(relaxed = true)
         authState = AuthState()
+        every { lifecycle.authState } answers { authState }
 
         val observerSlot = slot<(Boolean) -> Unit>()
         every { connectivityChecker.addObserver(capture(observerSlot)) } answers
@@ -73,7 +77,7 @@ internal class SyncDataModuleTest {
                 analytics = analytics,
                 repository = repository,
                 transactionManager = transactionManager,
-                authStateProvider = { authState },
+                lifecycle = lifecycle,
                 notifier = notifier,
                 connectivityChecker = connectivityChecker,
             )
@@ -185,6 +189,7 @@ internal class SyncDataModuleTest {
 
         assertTrue(result.isFailure)
         assertFalse(module.syncDataState.isSyncing)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test
@@ -324,7 +329,7 @@ internal class SyncDataModuleTest {
                 analytics = analytics,
                 repository = repository,
                 transactionManager = transactionManager,
-                authStateProvider = { authState },
+                lifecycle = lifecycle,
             )
 
         val result = moduleNoContact.createContact("A", emptyList(), emptyList(), emptyList(), "", "", "")
@@ -374,7 +379,7 @@ internal class SyncDataModuleTest {
                 analytics = analytics,
                 repository = repository,
                 transactionManager = transactionManager,
-                authStateProvider = { authState },
+                lifecycle = lifecycle,
             )
 
         moduleNoContact.loadContacts()

@@ -22,4 +22,6 @@ interface AdminModule {
     fun setUserEnabled(userId: String, enabled: Boolean): Result<Unit>
 
     fun setUserRole(userId: String, role: String): Result<Unit>
+
+    fun clearState() {}
 }

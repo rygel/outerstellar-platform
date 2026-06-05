@@ -17,6 +17,7 @@ import io.github.rygel.outerstellar.platform.sync.client.NotificationClient
 import io.github.rygel.outerstellar.platform.sync.client.ProfileClient
 import io.github.rygel.outerstellar.platform.sync.client.SyncClient
 import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
+import io.github.rygel.outerstellar.platform.sync.engine.DefaultSessionLifecycle
 import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
 import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModuleImpl
 import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
@@ -64,10 +65,9 @@ fun createSyncClientComponents(
     val adminClient = HttpAdminClient(baseUrl, session, httpClient)
     val notificationClient = HttpNotificationClient(baseUrl, session, httpClient)
 
-    lateinit var authModule: AuthModule
-    lateinit var syncDataModule: SyncDataModule
+    val lifecycle = DefaultSessionLifecycle()
 
-    syncDataModule =
+    val syncDataModule: SyncDataModule =
         SyncDataModuleImpl(
             syncClient = syncClient,
             messageService = messageService,
@@ -75,47 +75,29 @@ fun createSyncClientComponents(
             analytics = analytics,
             repository = repository,
             transactionManager = transactionManager,
-            authStateProvider = { authModule.authState },
+            lifecycle = lifecycle,
             notifier = notifier,
             connectivityChecker = connectivityChecker,
         )
 
-    authModule =
-        AuthModuleImpl(
-            authClient = authClient,
-            analytics = analytics,
-            onLoadData = { syncDataModule.loadData() },
-            onStartAutoSync = { syncDataModule.startAutoSync() },
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            notifier = notifier,
-        )
+    val authModule: AuthModule =
+        AuthModuleImpl(authClient = authClient, analytics = analytics, lifecycle = lifecycle, notifier = notifier)
 
-    val profileModule =
+    val profileModule: ProfileModule =
         ProfileModuleImpl(
             profileClient = profileClient,
             analytics = analytics,
-            authStateProvider = { authModule.authState },
-            onLoadData = { syncDataModule.loadData() },
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            onLogout = { authModule.logout() },
+            lifecycle = lifecycle,
             notifier = notifier,
         )
 
-    val adminModule =
-        AdminModuleImpl(
-            adminClient = adminClient,
-            analytics = analytics,
-            authStateProvider = { authModule.authState },
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            onLogout = { authModule.logout() },
-        )
+    val adminModule: AdminModule =
+        AdminModuleImpl(adminClient = adminClient, analytics = analytics, lifecycle = lifecycle)
 
-    val notificationModule =
-        NotificationModuleImpl(
-            notificationClient = notificationClient,
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            onLogout = { authModule.logout() },
-        )
+    val notificationModule: NotificationModule =
+        NotificationModuleImpl(notificationClient = notificationClient, lifecycle = lifecycle)
+
+    lifecycle.initialize(syncDataModule = syncDataModule, authModule = authModule, authClient = authClient)
 
     return SyncClientComponents(
         session = session,
