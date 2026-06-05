@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.model.UserProfileResponse
 import io.github.rygel.outerstellar.platform.sync.client.ProfileClient
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -19,31 +20,25 @@ internal class ProfileModuleTest {
 
     private lateinit var profileClient: ProfileClient
     private lateinit var analytics: AnalyticsService
+    private lateinit var lifecycle: SessionLifecycle
     private lateinit var notifier: ModuleNotifier
     private lateinit var module: ProfileModuleImpl
 
     private var authState = AuthState()
-    private var loadDataCalled = false
-    private var stopAutoSyncCalled = false
-    private var logoutCalled = false
 
     @BeforeEach
     fun setUp() {
         profileClient = mockk(relaxed = true)
         analytics = mockk(relaxed = true)
+        lifecycle = mockk(relaxed = true)
         notifier = mockk(relaxed = true)
         authState = AuthState(isLoggedIn = true, userName = "user", userRole = "USER")
-        loadDataCalled = false
-        stopAutoSyncCalled = false
-        logoutCalled = false
+        every { lifecycle.authState } answers { authState }
         module =
             ProfileModuleImpl(
                 profileClient = profileClient,
                 analytics = analytics,
-                authStateProvider = { authState },
-                onLoadData = { loadDataCalled = true },
-                onStopAutoSync = { stopAutoSyncCalled = true },
-                onLogout = { logoutCalled = true },
+                lifecycle = lifecycle,
                 notifier = notifier,
             )
     }
@@ -67,8 +62,7 @@ internal class ProfileModuleTest {
 
         module.loadProfile()
 
-        assertTrue(logoutCalled)
-        assertTrue(stopAutoSyncCalled)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test
@@ -81,7 +75,7 @@ internal class ProfileModuleTest {
         assertTrue(result.isSuccess)
         verify { analytics.track("user", "profile_updated") }
         verify { notifier.notifySuccess("Profile updated") }
-        assertTrue(loadDataCalled)
+        verify { profileClient.fetchProfile() }
     }
 
     @Test
@@ -91,7 +85,7 @@ internal class ProfileModuleTest {
         val result = module.updateProfile("x@b.c")
 
         assertTrue(result.isFailure)
-        assertTrue(logoutCalled)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test
@@ -110,7 +104,7 @@ internal class ProfileModuleTest {
         val result = module.updateNotificationPreferences(true, true)
 
         assertTrue(result.isFailure)
-        assertTrue(logoutCalled)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test
@@ -121,8 +115,7 @@ internal class ProfileModuleTest {
         verify { profileClient.deleteAccount("secret") }
         verify { analytics.track("user", "account_deleted") }
         verify { notifier.notifySuccess("Account deleted") }
-        assertTrue(stopAutoSyncCalled)
-        assertTrue(logoutCalled)
+        verify { lifecycle.beforeLogout() }
     }
 
     @Test

@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.model.AuthTokenResponse
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.sync.client.AuthClient
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -20,42 +21,23 @@ internal class AuthModuleTest {
 
     private lateinit var authClient: AuthClient
     private lateinit var analytics: AnalyticsService
+    private lateinit var lifecycle: SessionLifecycle
     private lateinit var notifier: ModuleNotifier
     private lateinit var module: AuthModuleImpl
-
-    private var loadDataCalled = false
-    private var startAutoSyncCalled = false
-    private var stopAutoSyncCalled = false
 
     @BeforeEach
     fun setUp() {
         authClient = mockk(relaxed = true)
         analytics = mockk(relaxed = true)
+        lifecycle = mockk(relaxed = true)
         notifier = mockk(relaxed = true)
-        loadDataCalled = false
-        startAutoSyncCalled = false
-        stopAutoSyncCalled = false
         module =
-            AuthModuleImpl(
-                authClient = authClient,
-                analytics = analytics,
-                onLoadData = { loadDataCalled = true },
-                onStartAutoSync = { startAutoSyncCalled = true },
-                onStopAutoSync = { stopAutoSyncCalled = true },
-                notifier = notifier,
-            )
+            AuthModuleImpl(authClient = authClient, analytics = analytics, lifecycle = lifecycle, notifier = notifier)
     }
 
     @Test
     fun `initial state has defaults`() {
-        val fresh =
-            AuthModuleImpl(
-                authClient = authClient,
-                analytics = analytics,
-                onLoadData = {},
-                onStartAutoSync = {},
-                onStopAutoSync = {},
-            )
+        val fresh = AuthModuleImpl(authClient = authClient, analytics = analytics, lifecycle = mockk(relaxed = true))
         assertFalse(fresh.authState.isLoggedIn)
         assertEquals("", fresh.authState.userName)
         assertNull(fresh.authState.userRole)
@@ -74,8 +56,7 @@ internal class AuthModuleTest {
         verify { analytics.identify("alice", mapOf("role" to "ADMIN")) }
         verify { analytics.track("alice", "user_login") }
         verify { notifier.notifySuccess("Logged in as alice") }
-        assertTrue(startAutoSyncCalled)
-        assertTrue(loadDataCalled)
+        verify { lifecycle.afterAuthSuccess() }
     }
 
     @Test
@@ -97,6 +78,7 @@ internal class AuthModuleTest {
 
         assertTrue(result.isFailure)
         assertFalse(module.authState.isLoggedIn)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test
@@ -110,8 +92,7 @@ internal class AuthModuleTest {
         assertEquals("bob", module.authState.userName)
         verify { analytics.track("bob", "user_register") }
         verify { notifier.notifySuccess("Registered as bob") }
-        assertTrue(startAutoSyncCalled)
-        assertTrue(loadDataCalled)
+        verify { lifecycle.afterAuthSuccess() }
     }
 
     @Test
@@ -133,7 +114,7 @@ internal class AuthModuleTest {
 
         assertFalse(module.authState.isLoggedIn)
         assertEquals("", module.authState.userName)
-        assertTrue(stopAutoSyncCalled)
+        verify { lifecycle.beforeLogout() }
     }
 
     @Test
@@ -156,6 +137,7 @@ internal class AuthModuleTest {
         val result = module.changePassword("old", "new")
 
         assertTrue(result.isFailure)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test

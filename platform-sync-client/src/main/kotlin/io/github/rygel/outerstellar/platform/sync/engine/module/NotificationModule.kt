@@ -25,4 +25,6 @@ interface NotificationModule {
     fun markNotificationRead(notificationId: String)
 
     fun markAllNotificationsRead()
+
+    fun clearState() {}
 }

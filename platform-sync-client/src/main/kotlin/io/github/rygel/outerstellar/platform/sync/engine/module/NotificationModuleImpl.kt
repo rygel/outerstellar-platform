@@ -4,14 +4,14 @@ package io.github.rygel.outerstellar.platform.sync.engine.module
 
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.sync.client.NotificationClient
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
 import org.slf4j.LoggerFactory
 
 class NotificationModuleImpl(
     private val notificationClient: NotificationClient,
-    private val onStopAutoSync: () -> Unit,
-    private val onLogout: () -> Unit,
+    private val lifecycle: SessionLifecycle,
 ) : NotificationModule {
     private val logger = LoggerFactory.getLogger(NotificationModuleImpl::class.java)
 
@@ -52,21 +52,24 @@ class NotificationModuleImpl(
             loadNotifications()
         }
 
-    private fun handleSessionExpired(e: Exception? = null) {
+    override fun clearState() {
+        updateState { NotificationState() }
+        listeners.forEach { it.onSessionExpired() }
+    }
+
+    private fun onSessionExpired(e: Exception? = null) {
         if (e != null) {
             logger.warn("Session expired: ${e.message}", e)
         }
-        onStopAutoSync()
-        onLogout()
-        updateState { NotificationState() }
-        listeners.forEach { it.onSessionExpired() }
+        lifecycle.onSessionExpired()
+        clearState()
     }
 
     private fun runGuarded(operation: String, onError: (Exception) -> Unit = {}, block: () -> Unit) {
         try {
             block()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
         } catch (e: Exception) {
             logger.warn("Failed to {}", operation, e)
             onError(e)

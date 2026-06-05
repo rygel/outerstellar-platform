@@ -196,10 +196,6 @@ If a declared child module is missing from these partial copy lists, Maven fails
 
 After any `mvn clean install -DskipTests` that changes compiled production code in a dependency module, the dependent module's test classpath may hold stale classes. Always do `mvn clean test` when cross-module changes are involved.
 
-### Common Issue: UserRole Duplicate
-
-There are TWO `UserRole` enums — one in `platform-core` (model package) and one in `platform-security` (security package). Module dependencies cause `platform-web` and `platform-desktop` to sometimes resolve the wrong one during incremental compilation. Clean build (`mvn clean compile`) resolves this.
-
 ### Common Issue: Kotlin companion SpotBugs false positives
 
 SpotBugs can report `MS_EXPOSE_REP` on Kotlin `Companion` classes even when a method returns a defensive copy. First fix the API if it really exposes mutable state. If the warning remains attached to a generated `...$Companion` class, add a narrow class-specific match to `config/spotbugs-exclude.xml`, following the existing `WebContext$Companion`, `RequestContext$Companion`, and `PasswordResetService$Companion` examples. Do not add package-wide SpotBugs exclusions for new code.

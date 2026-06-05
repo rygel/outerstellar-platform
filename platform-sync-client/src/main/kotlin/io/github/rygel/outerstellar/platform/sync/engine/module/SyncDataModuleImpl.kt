@@ -14,6 +14,7 @@ import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
 import io.github.rygel.outerstellar.platform.sync.SyncStats
 import io.github.rygel.outerstellar.platform.sync.client.SyncClient
 import io.github.rygel.outerstellar.platform.sync.engine.ConnectivityChecker
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -29,7 +30,7 @@ class SyncDataModuleImpl(
     private val analytics: AnalyticsService,
     private val repository: MessageRepository,
     private val transactionManager: TransactionManager,
-    private val authStateProvider: () -> AuthState,
+    private val lifecycle: SessionLifecycle,
     private val notifier: ModuleNotifier? = null,
     connectivityChecker: ConnectivityChecker? = null,
 ) : SyncDataModule {
@@ -63,7 +64,7 @@ class SyncDataModuleImpl(
     }
 
     override fun sync(isAuto: Boolean): Result<Unit> {
-        if (!authStateProvider().isLoggedIn) {
+        if (!lifecycle.authState.isLoggedIn) {
             return Result.failure(IllegalStateException("Not logged in"))
         }
         if (!syncDataState.isOnline) {
@@ -85,9 +86,9 @@ class SyncDataModuleImpl(
                 )
             }
             if (isAuto) {
-                analytics.track(authStateProvider().userName, "auto_sync")
+                analytics.track(lifecycle.authState.userName, "auto_sync")
             } else {
-                analytics.track(authStateProvider().userName, "manual_sync")
+                analytics.track(lifecycle.authState.userName, "manual_sync")
             }
             loadData()
             if (!isAuto) {
@@ -97,7 +98,7 @@ class SyncDataModuleImpl(
         } catch (e: SessionExpiredException) {
             syncInProgress.set(false)
             updateState { it.copy(isSyncing = false) }
-            handleSessionExpired(e)
+            onSessionExpired(e)
             Result.failure(e)
         } catch (e: Exception) {
             syncInProgress.set(false)
@@ -233,7 +234,7 @@ class SyncDataModuleImpl(
         return try {
             svc.createContact(name, emails, phones, socialMedia, company, companyAddress, department)
             loadContacts()
-            analytics.track(authStateProvider().userName, "contact_created", mapOf("name" to name))
+            analytics.track(lifecycle.authState.userName, "contact_created", mapOf("name" to name))
             Result.success(Unit)
         } catch (e: Exception) {
             logger.warn("Failed to create contact", e)
@@ -271,7 +272,7 @@ class SyncDataModuleImpl(
                 )
             svc.updateContact(updated)
             loadContacts()
-            analytics.track(authStateProvider().userName, "contact_updated", mapOf("name" to name))
+            analytics.track(lifecycle.authState.userName, "contact_updated", mapOf("name" to name))
             Result.success(Unit)
         } catch (e: Exception) {
             logger.warn("Failed to update contact", e)
@@ -280,13 +281,18 @@ class SyncDataModuleImpl(
         }
     }
 
-    private fun handleSessionExpired(e: Exception? = null) {
-        if (e != null) {
-            logger.warn("Session expired: ${e.message}", e)
-        }
+    override fun clearState() {
         stopAutoSync()
         updateState { SyncDataState(isOnline = it.isOnline) }
         listeners.forEach { it.onSyncError("session", "Session expired") }
+    }
+
+    private fun onSessionExpired(e: Exception? = null) {
+        if (e != null) {
+            logger.warn("Session expired: ${e.message}", e)
+        }
+        lifecycle.onSessionExpired()
+        clearState()
         notifier?.notifyFailure("Session expired. Please log in again.")
     }
 
@@ -306,7 +312,7 @@ class SyncDataModuleImpl(
         try {
             block()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
         } catch (e: Exception) {
             logger.warn("Failed to {}", operation, e)
             onError(e)
@@ -322,7 +328,7 @@ class SyncDataModuleImpl(
         return try {
             block()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
             Result.failure(e)
         } catch (e: Exception) {
             logger.warn("Failed to {}", operation, e)

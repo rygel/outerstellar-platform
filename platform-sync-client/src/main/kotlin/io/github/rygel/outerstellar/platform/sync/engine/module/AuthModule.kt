@@ -26,4 +26,6 @@ interface AuthModule {
     fun requestPasswordReset(email: String): Result<Unit>
 
     fun resetPassword(token: String, newPassword: String): Result<Unit>
+
+    fun resetState() {}
 }
