@@ -32,6 +32,7 @@ class SyncModules(
     val notification: NotificationModule,
 )
 
+@Suppress("LongParameterList")
 fun createSyncModules(
     syncClient: SyncClient,
     authClient: AuthClient,
