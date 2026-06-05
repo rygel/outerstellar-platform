@@ -19,18 +19,7 @@ import io.github.rygel.outerstellar.platform.sync.client.HttpSyncClient
 import io.github.rygel.outerstellar.platform.sync.client.NotificationClient
 import io.github.rygel.outerstellar.platform.sync.client.ProfileClient
 import io.github.rygel.outerstellar.platform.sync.client.SyncClient
-import io.github.rygel.outerstellar.platform.sync.engine.DefaultSessionLifecycle
 import io.github.rygel.outerstellar.platform.sync.engine.DesktopAppConfig
-import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModuleImpl
-import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModuleImpl
-import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModuleImpl
-import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModuleImpl
-import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModuleImpl
 import java.nio.file.Path
 import org.http4k.client.JavaHttpClient
 import org.http4k.core.HttpHandler
@@ -43,14 +32,6 @@ class HttpClients(
     val profile: ProfileClient,
     val admin: AdminClient,
     val notification: NotificationClient,
-)
-
-class SyncModules(
-    val auth: AuthModule,
-    val syncData: SyncDataModule,
-    val profile: ProfileModule,
-    val admin: AdminModule,
-    val notification: NotificationModule,
 )
 
 class DesktopComponents(
@@ -78,38 +59,6 @@ private fun createHttpClients(appConfig: DesktopAppConfig): HttpClients {
         admin = HttpAdminClient(appConfig.serverBaseUrl, session, handler),
         notification = HttpNotificationClient(appConfig.serverBaseUrl, session, handler),
     )
-}
-
-private fun createSyncModules(
-    clients: HttpClients,
-    persistence: PersistenceComponents,
-    core: CoreComponents,
-    analyticsService: AnalyticsService,
-): SyncModules {
-    val lifecycle = DefaultSessionLifecycle()
-
-    val authModule: AuthModule =
-        AuthModuleImpl(authClient = clients.auth, analytics = analyticsService, lifecycle = lifecycle)
-    val syncDataModule: SyncDataModule =
-        SyncDataModuleImpl(
-            syncClient = clients.sync,
-            messageService = core.messageService,
-            contactService = core.contactService,
-            analytics = analyticsService,
-            repository = persistence.messageRepository,
-            transactionManager = persistence.transactionManager,
-            lifecycle = lifecycle,
-        )
-    val profileModule: ProfileModule =
-        ProfileModuleImpl(profileClient = clients.profile, analytics = analyticsService, lifecycle = lifecycle)
-    val adminModule: AdminModule =
-        AdminModuleImpl(adminClient = clients.admin, analytics = analyticsService, lifecycle = lifecycle)
-    val notificationModule: NotificationModule =
-        NotificationModuleImpl(notificationClient = clients.notification, lifecycle = lifecycle)
-
-    lifecycle.initialize(syncDataModule = syncDataModule, authModule = authModule, authClient = clients.auth)
-
-    return SyncModules(authModule, syncDataModule, profileModule, adminModule, notificationModule)
 }
 
 private fun createAnalyticsService(appConfig: DesktopAppConfig): AnalyticsService =
@@ -140,7 +89,19 @@ fun createDesktopComponents(): DesktopComponents {
     val i18nService = I18nService.create("messages")
     val analyticsService = createAnalyticsService(appConfig)
     val clients = createHttpClients(appConfig)
-    val modules = createSyncModules(clients, persistence, core, analyticsService)
+    val modules =
+        createSyncModules(
+            syncClient = clients.sync,
+            authClient = clients.auth,
+            profileClient = clients.profile,
+            adminClient = clients.admin,
+            notificationClient = clients.notification,
+            messageService = core.messageService,
+            contactService = core.contactService,
+            analytics = analyticsService,
+            repository = persistence.messageRepository,
+            transactionManager = persistence.transactionManager,
+        )
 
     val syncViewModel =
         SyncViewModel(
