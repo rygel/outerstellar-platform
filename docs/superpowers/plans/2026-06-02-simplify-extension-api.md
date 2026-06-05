@@ -736,7 +736,7 @@ git commit -m "chore: add extension-parent to Dockerfile.build module lists"
 
 - [ ] **Step 1: Run full reactor build**
 
-Run: `mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder`
+Run: `mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx`
 
 Expected: BUILD SUCCESS
 

@@ -347,7 +347,7 @@ See [Desktop Testing](#desktop-testing). Use Podman containers exclusively.
 ### Full reactor (non-desktop modules)
 
 ```powershell
-mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
+mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
 ```
 
 ### Single module

@@ -103,7 +103,7 @@ podman run -d --name my-container my-image
 
 ### Test timeout guardrails
 
-The full non-desktop reactor build (6 modules) must complete in **under 20 minutes**. If it exceeds 20 minutes, something is wrong — investigate immediately.
+The full non-desktop reactor build (15 reactor projects: root plus 14 non-desktop modules) must complete in **under 20 minutes**. If it exceeds 20 minutes, something is wrong — investigate immediately.
 
 Existing timeouts enforced by Maven Surefire:
 
@@ -130,10 +130,9 @@ pwsh scripts/test.ps1 -TimeoutMinutes 10 -Modules platform-core
 ### Test execution
 
 ```powershell
-# Full build excluding desktop modules (PowerShell)
-# NOTE: `-pl,!platform-desktop,!platform-desktop-javafx` does NOT work via PowerShell + cmd.exe
-# Use explicit module list instead:
-mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
+# Full build excluding desktop modules
+# NOTE: `--%` tells PowerShell to pass remaining args literally (stops ! from breaking)
+mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
 
 # Run a specific test in a specific module (ALWAYS use -am to rebuild upstream modules)
 mvn -pl platform-web -am test -Dtest=HealthCheckIntegrationTest
@@ -159,7 +158,7 @@ mvn -pl platform-web test
 mvn -pl platform-web -am test
 
 # Full reactor build (always safe, no -am needed)
-mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
+mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
 ```
 
 ### Desktop Tests in Podman
@@ -315,7 +314,7 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
   - `mvn -pl platform-web test -Dexec.skip=true`
 - **Full reactor must exclude desktop modules** when running locally:
   ```bash
-  mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
+  mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
   ```
 - Desktop tests via Podman (see Podman section above).
 - Playwright E2E tests are tagged `@Tag("e2e")` and run in CI via Docker E2E workflow.
@@ -415,7 +414,7 @@ Before every commit, the following MUST be true:
 
 1. **All non-desktop tests pass locally.** Run the full reactor build:
    ```powershell
-   mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
+   mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
    ```
    If any test fails, fix it before committing. Do not commit failing tests.
 
