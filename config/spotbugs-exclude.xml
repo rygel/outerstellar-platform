@@ -239,8 +239,4 @@
         <Class name="io.github.rygel.outerstellar.platform.infra.DatabaseInfraKt"/>
         <Bug pattern="UCF_USELESS_CONTROL_FLOW_NEXT_LINE"/>
     </Match>
-    <Match>
-        <Class name="io.github.rygel.outerstellar.platform.sync.engine.DefaultSessionLifecycle"/>
-        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
-    </Match>
 </FindBugsFilter>
