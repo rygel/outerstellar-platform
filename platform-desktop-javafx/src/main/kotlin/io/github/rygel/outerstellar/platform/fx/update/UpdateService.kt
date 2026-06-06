@@ -15,25 +15,31 @@ class UpdateService(private val currentVersion: String, private val updateUrl: S
     fun checkForUpdate(): UpdateResult {
         if (updateUrl.isBlank()) return UpdateResult.NoUpdateUrl
         return try {
-            val request =
-                HttpRequest.newBuilder().uri(URI.create(updateUrl)).timeout(Duration.ofSeconds(5)).GET().build()
+            val request = buildRequest()
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-            if (response.statusCode() == 200) {
-                val latestVersion = response.body().trim()
-                try {
-                    if (isNewerVersion(latestVersion)) UpdateResult.UpdateAvailable(latestVersion)
-                    else UpdateResult.UpToDate
-                } catch (e: IllegalArgumentException) {
-                    UpdateResult.CheckFailed(e.message ?: "Invalid version")
-                }
-            } else {
-                UpdateResult.CheckFailed("Server returned ${response.statusCode()}")
-            }
+            handleResponse(response)
         } catch (e: Exception) {
             logger.warn("Update check failed", e)
             UpdateResult.CheckFailed(e.message ?: "Unknown error")
         }
     }
+
+    private fun buildRequest(): HttpRequest =
+        HttpRequest.newBuilder().uri(URI.create(updateUrl)).timeout(Duration.ofSeconds(5)).GET().build()
+
+    private fun handleResponse(response: HttpResponse<String>): UpdateResult =
+        if (response.statusCode() == HTTP_OK) {
+            updateResultFor(response.body().trim())
+        } else {
+            UpdateResult.CheckFailed("Server returned ${response.statusCode()}")
+        }
+
+    private fun updateResultFor(latestVersion: String): UpdateResult =
+        try {
+            if (isNewerVersion(latestVersion)) UpdateResult.UpdateAvailable(latestVersion) else UpdateResult.UpToDate
+        } catch (e: IllegalArgumentException) {
+            UpdateResult.CheckFailed(e.message ?: "Invalid version")
+        }
 
     private fun isNewerVersion(latest: String): Boolean {
         val current = parseVersion(currentVersion, "current")
@@ -70,5 +76,9 @@ class UpdateService(private val currentVersion: String, private val updateUrl: S
         data object NoUpdateUrl : UpdateResult()
 
         data class CheckFailed(val message: String) : UpdateResult()
+    }
+
+    companion object {
+        private const val HTTP_OK = 200
     }
 }
