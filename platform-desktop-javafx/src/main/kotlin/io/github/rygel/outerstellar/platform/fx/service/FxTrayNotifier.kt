@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.service
 
 import io.github.rygel.outerstellar.platform.sync.engine.module.ModuleNotifier
+import java.awt.AWTException
 import java.awt.SystemTray
 import java.awt.Toolkit
 import java.awt.TrayIcon
@@ -15,12 +16,16 @@ object FxTrayNotifier : ModuleNotifier {
             logger.warn("System tray is not supported on this platform")
             return
         }
-        val image = Toolkit.getDefaultToolkit().getImage(javaClass.getResource("/icons/tray.png"))
-        trayIcon = TrayIcon(image, "Outerstellar").apply { isImageAutoSize = true }
-        val icon = trayIcon
-        if (icon != null) {
-            runCatching { SystemTray.getSystemTray().add(icon) }
-                .onFailure { logger.warn("Failed to add tray icon: {}", it.message) }
+        val resource =
+            javaClass.getResource("/icons/tray.png")
+                ?: return logger.error("System tray icon resource is missing: /icons/tray.png")
+        val image = Toolkit.getDefaultToolkit().getImage(resource)
+        val icon = TrayIcon(image, "Outerstellar").apply { isImageAutoSize = true }
+        try {
+            SystemTray.getSystemTray().add(icon)
+            trayIcon = icon
+        } catch (e: AWTException) {
+            logger.warn("Failed to add tray icon: {}", e.message, e)
         }
     }
 
@@ -39,8 +44,7 @@ object FxTrayNotifier : ModuleNotifier {
 
     fun dispose() {
         trayIcon?.let {
-            runCatching { SystemTray.getSystemTray().remove(it) }
-                .onFailure { logger.warn("Failed to remove tray icon: {}", it.message) }
+            SystemTray.getSystemTray().remove(it)
             trayIcon = null
         }
     }

@@ -293,10 +293,10 @@ data class FxAppConfig(
         fun fromEnvironment(): FxAppConfig {
             val profile = System.getenv("APP_PROFILE") ?: "dev"
             val configPath = Path.of("config/application-${profile}.yaml")
-            val fallbackPath = Path.of("config/application.yaml")
+            val defaultConfigPath = Path.of("config/application.yaml")
             val yaml =
                 if (Files.exists(configPath)) readYaml(configPath)
-                else if (Files.exists(fallbackPath)) readYaml(fallbackPath)
+                else if (Files.exists(defaultConfigPath)) readYaml(defaultConfigPath)
                 else emptyMap()
 
             return FxAppConfig(
@@ -1077,7 +1077,7 @@ object FxIconLoader {
             val resource = javaClass.getResourceAsStream("/icons/${iconName}.png")
             if (resource != null) Image(resource)
             else {
-                logger.warn("Icon not found: {}, using fallback", iconName)
+                logger.warn("Icon not found: {}", iconName)
                 Image(javaClass.getResourceAsStream("/icons/settings-3-line.png")!!)
             }
         }

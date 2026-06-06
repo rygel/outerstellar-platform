@@ -10,7 +10,7 @@
 
 ---
 
-## Task 1: Remove Plaintext Token Fallback in PasswordResetService
+## Task 1: Remove Plaintext Token Compatibility Lookup in PasswordResetService
 
 **Severity:** CRITICAL
 **Files:**
@@ -19,7 +19,7 @@
 
 The `resetPassword()` method falls back to looking up the raw plaintext token if the hashed lookup fails. This undermines the entire purpose of hashing tokens.
 
-- [ ] **Step 1: Remove the plaintext fallback line**
+- [ ] **Step 1: Remove the plaintext token lookup**
 
 In `PasswordResetService.kt`, change lines 51-56 from:
 
@@ -51,7 +51,7 @@ Expected: All tests pass (they already use the hashed path because `requestPassw
 
 ```bash
 git add platform-security/src/main/kotlin/io/github/rygel/outerstellar/platform/security/PasswordResetService.kt
-git commit -m "fix(security): remove plaintext token fallback in PasswordResetService"
+git commit -m "fix(security): remove plaintext token lookup in PasswordResetService"
 ```
 
 ---

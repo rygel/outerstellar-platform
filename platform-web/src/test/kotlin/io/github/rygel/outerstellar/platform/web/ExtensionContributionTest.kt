@@ -30,8 +30,7 @@ import org.http4k.routing.ResourceLoader
 class ExtensionContributionTest {
     @Test
     fun `empty contribution keeps host mode defaults`() {
-        val contribution =
-            ExtensionContribution.from(extension = null, fallbackMode = PlatformMode.Headless, context = null)
+        val contribution = ExtensionContribution.platformDefaults(PlatformMode.Headless)
 
         assertEquals(PlatformMode.Headless, contribution.mode)
         assertEquals("Outerstellar", contribution.appLabel)
@@ -42,6 +41,21 @@ class ExtensionContributionTest {
         assertEquals(emptyList(), contribution.bannerProviders)
         assertNull(contribution.options.textResolver)
         assertNull(contribution.options.layoutRenderer)
+    }
+
+    @Test
+    fun `extension contribution requires context when extension is provided`() {
+        val extension =
+            object : PlatformExtension {
+                override val id = "reports"
+            }
+
+        val error =
+            assertFailsWith<IllegalArgumentException> {
+                ExtensionContribution.from(extension, PlatformMode.FullPlatform, context = null)
+            }
+
+        assertEquals("ExtensionHostContext is required when an extension is provided.", error.message)
     }
 
     @Test

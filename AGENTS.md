@@ -46,6 +46,18 @@ platform-jte-extensions    Custom JTE code generation (JteClassRegistry)
 - **Domain page factories**: AuthPageFactory, ErrorPageFactory, SidebarFactory, ContactsPageFactory, HomePageFactory, InfraPageFactory, SettingsPageFactory, SearchPageFactory, DevDashboardPageFactory, AdminPageFactory own page-specific rendering directly.
 - **Extension composition**: `PlatformExtension` interface with `mode` (PlatformMode), `includePlatformPages()` (Set of PlatformPageSets), `routeRegistrations()` (List of ExtensionRouteRegistration), `layoutTemplate()` (JTE template override), `filters()`, `bannerProviders()`. Route ownership tracked via `RouteRegistry` with startup conflict detection.
 
+### Error Handling — No Hidden Fallbacks
+
+Fallbacks are almost always counterproductive in this codebase. Do not implement a fallback to paper over missing state, missing dependencies, missing resources, invalid configuration, broken rendering, or unexpected exceptions.
+
+- Fail clearly when required application state is absent.
+- Log the original exception with stack trace and enough request/configuration context to diagnose it.
+- Return an explicit error response at system boundaries: JSON for APIs, HTMX-safe text for HTMX fragments, and a renderer-independent emergency HTML page only when normal error-page rendering itself fails.
+- Do not synthesize substitute `RequestContext`, `ShellRenderer`, services, repositories, configs, locales, files, templates, or route registrations.
+- Do not silently catch broad exceptions. If an operation is best-effort, name it as best-effort, log at the appropriate level, and keep it outside core correctness paths.
+
+The default stance is: show a clear error and fix the root cause. A fallback needs a written justification and a regression test proving it is an intentional boundary behavior, not error hiding.
+
 ## Build and run
 
 - Run Maven commands from the repository root unless a task explicitly requires module-local execution.
@@ -103,7 +115,7 @@ podman run -d --name my-container my-image
 
 ### Test timeout guardrails
 
-The full non-desktop reactor build (6 modules) must complete in **under 20 minutes**. If it exceeds 20 minutes, something is wrong — investigate immediately.
+The full non-desktop reactor build (15 reactor projects: root plus 14 non-desktop modules) must complete in **under 20 minutes**. If it exceeds 20 minutes, something is wrong — investigate immediately.
 
 Existing timeouts enforced by Maven Surefire:
 
@@ -130,10 +142,9 @@ pwsh scripts/test.ps1 -TimeoutMinutes 10 -Modules platform-core
 ### Test execution
 
 ```powershell
-# Full build excluding desktop modules (PowerShell)
-# NOTE: `-pl,!platform-desktop,!platform-desktop-javafx` does NOT work via PowerShell + cmd.exe
-# Use explicit module list instead:
-mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
+# Full build excluding desktop modules
+# NOTE: `--%` tells PowerShell to pass remaining args literally (stops ! from breaking)
+mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
 
 # Run a specific test in a specific module (ALWAYS use -am to rebuild upstream modules)
 mvn -pl platform-web -am test -Dtest=HealthCheckIntegrationTest
@@ -159,7 +170,7 @@ mvn -pl platform-web test
 mvn -pl platform-web -am test
 
 # Full reactor build (always safe, no -am needed)
-mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
+mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
 ```
 
 ### Desktop Tests in Podman
@@ -315,7 +326,7 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
   - `mvn -pl platform-web test -Dexec.skip=true`
 - **Full reactor must exclude desktop modules** when running locally:
   ```bash
-  mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
+  mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
   ```
 - Desktop tests via Podman (see Podman section above).
 - Playwright E2E tests are tagged `@Tag("e2e")` and run in CI via Docker E2E workflow.
@@ -379,12 +390,14 @@ Guessing at framework DSLs and "fixing" compile errors iteratively is wasteful. 
 
 ### Compile after every file change
 
-After editing a file, compile immediately:
+After editing a file, compile immediately. For fast syntax feedback, a narrow compile may skip quality checks:
 ```powershell
 mvn -pl <module> compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"
 ```
 
-Do not batch 5 file rewrites and then compile. Errors compound and become harder to diagnose.
+This skipped-check command is only an inner-loop compile aid. It is not PR validation and must never be cited as proof
+that CI-facing quality gates pass. Do not batch 5 file rewrites and then compile. Errors compound and become harder to
+diagnose.
 
 ### Run tests before declaring work done
 
@@ -413,18 +426,26 @@ Write → Compile → FAIL → Guess fix → Compile → FAIL → Guess fix → 
 
 Before every commit, the following MUST be true:
 
-1. **All non-desktop tests pass locally.** Run the full reactor build:
+1. **CI build and quality checks pass locally with checks enabled.** Run the same build shape as GitHub Actions:
    ```powershell
-   mvn clean verify -T4 -pl outerstellar-i18n,platform-core,platform-security,platform-testkit,platform-persistence-jdbi,platform-sync-client,platform-web,platform-seeder
+   mvn install -T 1C -DskipTests "-Djacoco.skip=true" "-Denforcer.skip=true"
+   ```
+   Do not add `-Ddetekt.skip=true`, `-Dspotbugs.skip=true`, `-Dspotless.check.skip=true`, or any equivalent quality-check
+   skip flag to this command. Detekt, SpotBugs, Checkstyle, PMD/CPD, Spotless, and i18n validation must run before pushing.
+   If this command fails, fix it before committing.
+
+2. **All non-desktop tests pass locally.** Run the full reactor build:
+   ```powershell
+   mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
    ```
    If any test fails, fix it before committing. Do not commit failing tests.
 
-2. **Desktop/UI tests must run in Podman containers.** Desktop/Swing tests must NEVER run directly on the host machine — they capture mouse and keyboard. Use:
+3. **Desktop/UI tests must run in Podman containers.** Desktop/Swing tests must NEVER run directly on the host machine — they capture mouse and keyboard. Use:
    ```powershell
    pwsh scripts/test-desktop.ps1
    ```
 
-**Do not commit if either of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
+**Do not commit if any of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
 
 ## Testing discipline
 
