@@ -390,12 +390,14 @@ Guessing at framework DSLs and "fixing" compile errors iteratively is wasteful. 
 
 ### Compile after every file change
 
-After editing a file, compile immediately:
+After editing a file, compile immediately. For fast syntax feedback, a narrow compile may skip quality checks:
 ```powershell
 mvn -pl <module> compile "-Ddetekt.skip=true" "-Dspotbugs.skip=true" "-Dspotless.check.skip=true"
 ```
 
-Do not batch 5 file rewrites and then compile. Errors compound and become harder to diagnose.
+This skipped-check command is only an inner-loop compile aid. It is not PR validation and must never be cited as proof
+that CI-facing quality gates pass. Do not batch 5 file rewrites and then compile. Errors compound and become harder to
+diagnose.
 
 ### Run tests before declaring work done
 
@@ -424,18 +426,26 @@ Write → Compile → FAIL → Guess fix → Compile → FAIL → Guess fix → 
 
 Before every commit, the following MUST be true:
 
-1. **All non-desktop tests pass locally.** Run the full reactor build:
+1. **CI build and quality checks pass locally with checks enabled.** Run the same build shape as GitHub Actions:
+   ```powershell
+   mvn install -T 1C -DskipTests "-Djacoco.skip=true" "-Denforcer.skip=true"
+   ```
+   Do not add `-Ddetekt.skip=true`, `-Dspotbugs.skip=true`, `-Dspotless.check.skip=true`, or any equivalent quality-check
+   skip flag to this command. Detekt, SpotBugs, Checkstyle, PMD/CPD, Spotless, and i18n validation must run before pushing.
+   If this command fails, fix it before committing.
+
+2. **All non-desktop tests pass locally.** Run the full reactor build:
    ```powershell
    mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
    ```
    If any test fails, fix it before committing. Do not commit failing tests.
 
-2. **Desktop/UI tests must run in Podman containers.** Desktop/Swing tests must NEVER run directly on the host machine — they capture mouse and keyboard. Use:
+3. **Desktop/UI tests must run in Podman containers.** Desktop/Swing tests must NEVER run directly on the host machine — they capture mouse and keyboard. Use:
    ```powershell
    pwsh scripts/test-desktop.ps1
    ```
 
-**Do not commit if either of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
+**Do not commit if any of these conditions is not met.** Pushing code that fails locally wastes CI time and is unacceptable.
 
 ## Testing discipline
 
