@@ -146,10 +146,11 @@ class PlatformAppTest {
         val homePageFactory =
             io.github.rygel.outerstellar.platform.web.HomePageFactory(messageService, contactTrashListFactory)
         val infraPageFactory = io.github.rygel.outerstellar.platform.web.InfraPageFactory(repository)
+        val renderer = createRenderer()
         return WebComponents(
             runtime =
                 WebRuntimeComponents(
-                    templateRenderer = createRenderer(),
+                    templateRenderer = renderer,
                     analyticsService = io.github.rygel.outerstellar.platform.analytics.NoOpAnalyticsService(),
                     syncWebSocket = io.github.rygel.outerstellar.platform.web.SyncWebSocket(sessionService),
                 ),
@@ -168,7 +169,7 @@ class PlatformAppTest {
                 ),
             hostedAppContextFactory =
                 ExtensionHostContextFactory(
-                    renderer = createRenderer(),
+                    renderer = renderer,
                     apiKeyService = apiKeyService,
                     oauthService = oauthService,
                     userRepository = userRepository,

@@ -13,12 +13,12 @@ object ExtensionContract {
     fun collect(
         hostedApp: PlatformExtension,
         context: ExtensionHostContext,
-        fallbackMode: PlatformMode = hostedApp.mode,
-    ): ExtensionContribution = ExtensionContribution.from(hostedApp, fallbackMode, context)
+        platformMode: PlatformMode = hostedApp.mode,
+    ): ExtensionContribution = ExtensionContribution.from(hostedApp, platformMode, context)
 
     fun diagnostics(
         hostedApp: PlatformExtension,
         context: ExtensionHostContext,
-        fallbackMode: PlatformMode = hostedApp.mode,
-    ): ExtensionDiagnostics = collect(hostedApp, context, fallbackMode).diagnostics()
+        platformMode: PlatformMode = hostedApp.mode,
+    ): ExtensionDiagnostics = collect(hostedApp, context, platformMode).diagnostics()
 }

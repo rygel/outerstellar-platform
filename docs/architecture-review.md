@@ -341,7 +341,7 @@ This breaks the interface abstraction — any alternative `UserRepository` imple
 
 - Added `UsernameAlreadyExistsException(username)` and `WeakPasswordException(message)` to the `OuterstellarException` sealed hierarchy in `Exceptions.kt`
 - `SecurityService.register()` now throws `UsernameAlreadyExistsException` and `WeakPasswordException` instead of `require()` / `IllegalArgumentException`
-- `AuthApi` catches each typed exception first, mapping `UsernameAlreadyExistsException` to HTTP 409 and `WeakPasswordException` to HTTP 400. The original `IllegalArgumentException` catch remains as a fallback for `require(username.isNotBlank())`.
+- `AuthApi` catches each typed exception first, mapping `UsernameAlreadyExistsException` to HTTP 409 and `WeakPasswordException` to HTTP 400. The original `IllegalArgumentException` catch remains to map `require(username.isNotBlank())` validation failures.
 
 ### Fixed pagination URL query parameter name mismatch
 

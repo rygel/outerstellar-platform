@@ -9,6 +9,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import java.time.Instant
+import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 import java.util.Base64
 import java.util.UUID
@@ -159,9 +160,17 @@ class PersistentBatchingAnalyticsService(
     private fun pruneOldEvents(events: List<JsonObject>) {
         val cutoff = Instant.now().minus(maxEventAgeDays, ChronoUnit.DAYS)
         val kept = events.filter { event ->
-            val ts =
-                (event["timestamp"] as? JsonPrimitive)?.content?.let { runCatching { Instant.parse(it) }.getOrNull() }
-            ts == null || ts.isAfter(cutoff)
+            val timestamp = (event["timestamp"] as? JsonPrimitive)?.content
+            if (timestamp == null) {
+                true
+            } else {
+                try {
+                    Instant.parse(timestamp).isAfter(cutoff)
+                } catch (e: DateTimeParseException) {
+                    logger.warn("Dropping analytics event with invalid timestamp: {}", timestamp, e)
+                    false
+                }
+            }
         }
         val dropped = events.size - kept.size
         if (dropped > 0) {

@@ -9,6 +9,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.11] – 2026-06-06
+
+### Changed
+
+- **Sync client module wiring** — consolidated desktop and JavaFX sync client wiring through shared sync modules, reducing duplicated HTTP client and module construction paths.
+- **Sync session lifecycle** — extracted session lifecycle behavior into dedicated sync engine components for clearer login/logout state handling.
+- **Error handling discipline** — documented and enforced a no-hidden-fallback policy for error handling. CI-facing local validation now explicitly requires Detekt, SpotBugs, Checkstyle, PMD/CPD, Spotless, and i18n validation to run before pushing.
+- **Dependency refresh** — updated http4k, Netty, Jackson, Byte Buddy, persistence dependencies, and GitHub Actions workflow pins from the develop maintenance queue.
+
+### Fixed
+
+- **Global error handler diagnostics** — preserved the original exception when error-page rendering fails, logging both the original failure and renderer failure instead of hiding the root cause.
+- **Hidden fallback cleanup** — replaced silent fallback behavior across i18n loading, extension contribution assembly, web error/demo routes, component vote handling, desktop icon/tray setup, JavaFX update/theme handling, permission parsing, and sync logout with explicit errors, status responses, or logging.
+- **Desktop icon resources** — added missing Remix icon resources so stricter icon loading fails only for genuinely absent assets.
+
+---
+
 ## [3.6.10] – 2026-06-04
 
 ### Changed

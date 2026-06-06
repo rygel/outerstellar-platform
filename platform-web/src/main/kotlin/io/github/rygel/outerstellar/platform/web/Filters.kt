@@ -446,16 +446,24 @@ object Filters {
         return if (request.uri.path.startsWith("/api/")) {
             jsonErrorResponse(Status.NOT_FOUND, "Resource not found", request)
         } else {
-            val ctx =
-                try {
-                    request.requestContext
-                } catch (e: IllegalStateException) {
-                    logger.debug("RequestContext not found for error page: {}", e.message)
-                    RequestContext(request)
-                }
-            val shellRenderer = runCatching { request.shellRenderer }.getOrDefault(ShellRenderer(ctx))
+            val shellRenderer = request.shellRenderer
             val errorPage = errorPageFactory.buildErrorPage(shellRenderer, "not-found")
-            Response(Status.NOT_FOUND).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
+            try {
+                Response(Status.NOT_FOUND).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
+            } catch (renderEx: Exception) {
+                logErrorPageRenderFailure(
+                    request,
+                    Status.NOT_FOUND,
+                    originalException = null,
+                    renderException = renderEx,
+                )
+                emergencyErrorResponse(
+                    status = Status.NOT_FOUND,
+                    title = "Page not found",
+                    message = "The requested page does not exist.",
+                    request = request,
+                )
+            }
         }
     }
 
@@ -484,19 +492,80 @@ object Filters {
             val safeMessage = if (e is OuterstellarException) e.message ?: "Action failed" else "Action failed"
             Response(status).body(safeMessage)
         } else {
-            val ctx =
-                try {
-                    request.requestContext
-                } catch (ex: IllegalStateException) {
-                    logger.debug("RequestContext not found for error page: {}", ex.message)
-                    RequestContext(request)
-                }
-            val shellRenderer = runCatching { request.shellRenderer }.getOrDefault(ShellRenderer(ctx))
+            val shellRenderer = request.shellRenderer
             val errorKind = if (status == Status.INTERNAL_SERVER_ERROR) "server-error" else "not-found"
             val errorPage = errorPageFactory.buildErrorPage(shellRenderer, errorKind)
-            Response(status).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
+            try {
+                Response(status).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
+            } catch (renderEx: Exception) {
+                logErrorPageRenderFailure(request, status, originalException = e, renderException = renderEx)
+                emergencyErrorResponse(
+                    status = status,
+                    title = status.description,
+                    message = "The error has been logged.",
+                    request = request,
+                )
+            }
         }
     }
+
+    private fun logErrorPageRenderFailure(
+        request: org.http4k.core.Request,
+        status: Status,
+        originalException: Exception?,
+        renderException: Exception,
+    ) {
+        val requestId = request.header(REQUEST_ID_HEADER) ?: "-"
+        logger.error(
+            "Error page rendering failed requestId={} method={} path={} status={} originalException={} originalMessage={} renderException={}: {}",
+            requestId.take(LOG_ID_LENGTH),
+            request.method,
+            request.uri.path,
+            status.code,
+            originalException?.javaClass?.name ?: "-",
+            originalException?.message ?: "-",
+            renderException.javaClass.name,
+            renderException.message,
+            renderException,
+        )
+    }
+
+    private fun emergencyErrorResponse(
+        status: Status,
+        title: String,
+        message: String,
+        request: org.http4k.core.Request,
+    ): Response {
+        val requestId = request.header(REQUEST_ID_HEADER) ?: "unavailable"
+        val body =
+            """
+            <!doctype html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>${escapeHtml(title)}</title>
+              </head>
+              <body>
+                <main>
+                  <h1>${escapeHtml(title)}</h1>
+                  <p>${escapeHtml(message)}</p>
+                  <p>Reference: ${escapeHtml(requestId)}</p>
+                </main>
+              </body>
+            </html>
+            """
+                .trimIndent()
+        return Response(status).header("content-type", "text/html; charset=utf-8").body(body)
+    }
+
+    private fun escapeHtml(value: String): String =
+        value
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;")
 
     private fun jsonErrorResponse(status: Status, message: String, request: org.http4k.core.Request): Response {
         val requestId = request.header(REQUEST_ID_HEADER) ?: "-"

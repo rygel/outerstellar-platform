@@ -27,4 +27,6 @@ interface ProfileModule {
     fun deleteAccount(currentPassword: String): Result<Unit>
 
     fun updateNotificationPreferences(emailEnabled: Boolean, pushEnabled: Boolean): Result<Unit>
+
+    fun clearState() {}
 }

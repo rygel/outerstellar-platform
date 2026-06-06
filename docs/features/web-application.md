@@ -88,3 +88,16 @@ Three density modes: nice (default), cozy, compact.
 ## Real-time Updates
 
 WebSocket at `/ws/sync` provides real-time UI refresh via HTMX `ws-subscribe`. The server pushes out-of-band HTMX fragments that trigger the shared `refresh` event on `document.body`, which the message and trash-list fragments already listen to with `hx-trigger="refresh from:body"`.
+
+## Error Handling
+
+The web layer must prefer clear error handling over fallback behavior. In practice, fallbacks hide broken wiring and make production failures harder to diagnose.
+
+- Required request state must be present. Do not synthesize substitute `RequestContext`, `ShellRenderer`, users, themes, layouts, services, or renderers when they are missing.
+- Unexpected exceptions must be logged with the original exception and stack trace.
+- API endpoints return explicit JSON error responses.
+- HTMX fragment requests return explicit fragment-safe error text.
+- Full-page requests render the normal error page. If the error page renderer itself fails, return the minimal renderer-independent emergency HTML page with a request reference; that is an error boundary, not a general fallback mechanism.
+- Missing templates, invalid configuration, broken route registrations, and missing resources should fail clearly instead of continuing with guessed defaults.
+
+If a fallback is proposed, treat it as an exception to the architecture. It needs a written justification and a regression test proving the fallback is intentional boundary behavior rather than an attempt to hide an error.

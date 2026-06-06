@@ -14,7 +14,7 @@
 
 | File | Change |
 |------|--------|
-| `platform-core/src/main/kotlin/…/persistence/MessageCache.kt` | Add `invalidateByPrefix` with default fallback |
+| `platform-core/src/main/kotlin/…/persistence/MessageCache.kt` | Add `invalidateByPrefix` with an explicit default implementation |
 | `platform-core/src/main/kotlin/…/persistence/CaffeineMessageCache.kt` | Implement `invalidateByPrefix` |
 | `platform-core/src/main/kotlin/…/service/MessageService.kt` | Replace 7× `invalidateAll()` with `invalidateByPrefix("list:")` |
 | `platform-core/src/test/kotlin/…/persistence/CaffeineMessageCacheTest.kt` | New — test `invalidateByPrefix` |

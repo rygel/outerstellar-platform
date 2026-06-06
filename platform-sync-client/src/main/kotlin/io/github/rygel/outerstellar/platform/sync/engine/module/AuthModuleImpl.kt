@@ -5,6 +5,7 @@ package io.github.rygel.outerstellar.platform.sync.engine.module
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.sync.client.AuthClient
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
 import org.slf4j.LoggerFactory
@@ -18,9 +19,7 @@ interface ModuleNotifier {
 class AuthModuleImpl(
     private val authClient: AuthClient,
     private val analytics: AnalyticsService,
-    private val onLoadData: () -> Unit,
-    private val onStartAutoSync: () -> Unit,
-    private val onStopAutoSync: () -> Unit,
+    private val lifecycle: SessionLifecycle,
     private val notifier: ModuleNotifier? = null,
 ) : AuthModule {
     private val logger = LoggerFactory.getLogger(AuthModuleImpl::class.java)
@@ -45,7 +44,7 @@ class AuthModuleImpl(
     }
 
     override fun login(username: String, password: String): Result<Unit> =
-        runGuardedResult(
+        runGuarded(
             "login",
             onError = { e ->
                 updateState { it.copy() }
@@ -56,14 +55,13 @@ class AuthModuleImpl(
             updateState { it.copy(isLoggedIn = true, userName = auth.username, userRole = auth.role) }
             analytics.identify(auth.username, mapOf("role" to auth.role))
             analytics.track(auth.username, "user_login")
-            onStartAutoSync()
-            onLoadData()
+            lifecycle.afterAuthSuccess()
             notifier?.notifySuccess("Logged in as ${auth.username}")
             Result.success(Unit)
         }
 
     override fun register(username: String, password: String): Result<Unit> =
-        runGuardedResult(
+        runGuarded(
             "register",
             onError = { e ->
                 updateState { it.copy() }
@@ -74,14 +72,13 @@ class AuthModuleImpl(
             updateState { it.copy(isLoggedIn = true, userName = auth.username, userRole = auth.role) }
             analytics.identify(auth.username, mapOf("role" to auth.role))
             analytics.track(auth.username, "user_register")
-            onStartAutoSync()
-            onLoadData()
+            lifecycle.afterAuthSuccess()
             notifier?.notifySuccess("Registered as ${auth.username}")
             Result.success(Unit)
         }
 
     override fun logout() {
-        onStopAutoSync()
+        lifecycle.beforeLogout()
         authClient.logout()
         updateState { AuthState() }
         val username = authState.userName
@@ -91,7 +88,7 @@ class AuthModuleImpl(
     }
 
     override fun changePassword(currentPassword: String, newPassword: String): Result<Unit> =
-        runGuardedResult(
+        runGuarded(
             "changePassword",
             onError = { e -> notifier?.notifyFailure("Password change failed: ${e.message}") },
         ) {
@@ -107,7 +104,7 @@ class AuthModuleImpl(
             notifier?.notifySuccess("Password reset email sent")
             Result.success(Unit)
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
             Result.failure(e)
         } catch (e: Exception) {
             logger.warn("Password reset request failed", e)
@@ -122,7 +119,7 @@ class AuthModuleImpl(
             notifier?.notifySuccess("Password has been reset")
             Result.success(Unit)
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
             Result.failure(e)
         } catch (e: Exception) {
             logger.warn("Password reset failed", e)
@@ -131,18 +128,21 @@ class AuthModuleImpl(
         }
     }
 
-    private fun handleSessionExpired(e: Exception? = null) {
+    override fun resetState() {
+        _authState.set(AuthState())
+        listeners.forEach { it.onSessionExpired() }
+    }
+
+    private fun onSessionExpired(e: Exception? = null) {
         if (e != null) {
             logger.warn("Session expired: ${e.message}", e)
         }
-        onStopAutoSync()
-        authClient.logout()
-        updateState { AuthState() }
-        listeners.forEach { it.onSessionExpired() }
+        lifecycle.onSessionExpired()
+        resetState()
         notifier?.notifyFailure("Session expired. Please log in again.")
     }
 
-    private fun runGuardedResult(
+    private fun runGuarded(
         operation: String,
         onError: (Exception) -> Unit = {},
         block: () -> Result<Unit>,
@@ -150,7 +150,7 @@ class AuthModuleImpl(
         return try {
             block()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
             Result.failure(e)
         } catch (e: Exception) {
             logger.warn("Failed to {}", operation, e)

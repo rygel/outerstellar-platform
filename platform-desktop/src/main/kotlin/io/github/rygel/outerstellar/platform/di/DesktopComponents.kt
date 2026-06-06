@@ -20,16 +20,6 @@ import io.github.rygel.outerstellar.platform.sync.client.NotificationClient
 import io.github.rygel.outerstellar.platform.sync.client.ProfileClient
 import io.github.rygel.outerstellar.platform.sync.client.SyncClient
 import io.github.rygel.outerstellar.platform.sync.engine.DesktopAppConfig
-import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.AdminModuleImpl
-import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.AuthModuleImpl
-import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.NotificationModuleImpl
-import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.ProfileModuleImpl
-import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
-import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModuleImpl
 import java.nio.file.Path
 import org.http4k.client.JavaHttpClient
 import org.http4k.core.HttpHandler
@@ -42,14 +32,6 @@ class HttpClients(
     val profile: ProfileClient,
     val admin: AdminClient,
     val notification: NotificationClient,
-)
-
-class SyncModules(
-    val auth: AuthModule,
-    val syncData: SyncDataModule,
-    val profile: ProfileModule,
-    val admin: AdminModule,
-    val notification: NotificationModule,
 )
 
 class DesktopComponents(
@@ -77,59 +59,6 @@ private fun createHttpClients(appConfig: DesktopAppConfig): HttpClients {
         admin = HttpAdminClient(appConfig.serverBaseUrl, session, handler),
         notification = HttpNotificationClient(appConfig.serverBaseUrl, session, handler),
     )
-}
-
-private fun createSyncModules(
-    clients: HttpClients,
-    persistence: PersistenceComponents,
-    core: CoreComponents,
-    analyticsService: AnalyticsService,
-): SyncModules {
-    lateinit var syncDataModule: SyncDataModule
-    lateinit var authModule: AuthModule
-
-    authModule =
-        AuthModuleImpl(
-            authClient = clients.auth,
-            analytics = analyticsService,
-            onLoadData = { syncDataModule.loadData() },
-            onStartAutoSync = { syncDataModule.startAutoSync() },
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-        )
-    syncDataModule =
-        SyncDataModuleImpl(
-            syncClient = clients.sync,
-            messageService = core.messageService,
-            contactService = core.contactService,
-            analytics = analyticsService,
-            repository = persistence.messageRepository,
-            transactionManager = persistence.transactionManager,
-            authStateProvider = { authModule.authState },
-        )
-    val profileModule =
-        ProfileModuleImpl(
-            profileClient = clients.profile,
-            analytics = analyticsService,
-            authStateProvider = { authModule.authState },
-            onLoadData = { syncDataModule.loadData() },
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            onLogout = { authModule.logout() },
-        )
-    val adminModule =
-        AdminModuleImpl(
-            adminClient = clients.admin,
-            analytics = analyticsService,
-            authStateProvider = { authModule.authState },
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            onLogout = { authModule.logout() },
-        )
-    val notificationModule =
-        NotificationModuleImpl(
-            notificationClient = clients.notification,
-            onStopAutoSync = { syncDataModule.stopAutoSync() },
-            onLogout = { authModule.logout() },
-        )
-    return SyncModules(authModule, syncDataModule, profileModule, adminModule, notificationModule)
 }
 
 private fun createAnalyticsService(appConfig: DesktopAppConfig): AnalyticsService =
@@ -160,7 +89,19 @@ fun createDesktopComponents(): DesktopComponents {
     val i18nService = I18nService.create("messages")
     val analyticsService = createAnalyticsService(appConfig)
     val clients = createHttpClients(appConfig)
-    val modules = createSyncModules(clients, persistence, core, analyticsService)
+    val modules =
+        createSyncModules(
+            syncClient = clients.sync,
+            authClient = clients.auth,
+            profileClient = clients.profile,
+            adminClient = clients.admin,
+            notificationClient = clients.notification,
+            messageService = core.messageService,
+            contactService = core.contactService,
+            analytics = analyticsService,
+            repository = persistence.messageRepository,
+            transactionManager = persistence.transactionManager,
+        )
 
     val syncViewModel =
         SyncViewModel(

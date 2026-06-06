@@ -41,6 +41,8 @@ import org.junit.jupiter.api.BeforeEach
  * Component tests:
  * - GET /components/polls/{syncId} returns poll card fragment
  * - POST /components/polls/{syncId}/vote votes via HTMX
+ * - POST /components/polls/{syncId}/vote returns 400 for invalid option id
+ * - POST /components/polls/{syncId}/vote returns 409 when poll is closed
  */
 class PollIntegrationTest : WebTest() {
 
@@ -262,5 +264,35 @@ class PollIntegrationTest : WebTest() {
         assertThat(response, hasStatus(Status.OK))
         val body = response.bodyString()
         assertTrue(body.contains("poll-card"), "Response should be a poll card fragment")
+    }
+
+    @Test
+    fun `POST components-polls-syncId-vote returns 400 for invalid option id`() {
+        val created = createPollViaApi()
+        val response =
+            app(
+                Request(POST, "/components/polls/${created.poll.syncId}/vote")
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body("optionId=not-a-number")
+                    .cookie(sessionCookie())
+            )
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
+    }
+
+    @Test
+    fun `POST components-polls-syncId-vote returns 409 when poll is closed`() {
+        val created = createPollViaApi()
+        val optionId = created.options.first().id
+        app(Request(POST, "/api/v1/polls/${created.poll.syncId}/close").cookie(sessionCookie()))
+
+        val response =
+            app(
+                Request(POST, "/components/polls/${created.poll.syncId}/vote")
+                    .header("content-type", "application/x-www-form-urlencoded")
+                    .body("optionId=$optionId")
+                    .cookie(sessionCookie())
+            )
+        assertThat(response, hasStatus(Status.CONFLICT))
+        assertTrue(response.bodyString().contains("Poll is closed"))
     }
 }

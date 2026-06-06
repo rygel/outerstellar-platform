@@ -155,7 +155,10 @@ public class I18nValidator {
 
     private void scanSourceCode(ProgressListener listener) {
         File projectDir = new File(config.projectPath());
-        if (!projectDir.exists()) return;
+        if (!projectDir.exists()) {
+            results.add(ValidationResult.error("Project directory does not exist: " + config.projectPath()));
+            return;
+        }
 
         List<Pattern> patterns = new ArrayList<>();
         for (String p : config.sourcePatterns()) {
@@ -176,7 +179,9 @@ public class I18nValidator {
                     }
                 }
             } catch (IOException e) {
-                // Skip unreadable files
+                results.add(ValidationResult.error(
+                        "Failed to read source file " + file.getPath() + ": " + e.getMessage()
+                ));
             }
         }
 
@@ -188,10 +193,8 @@ public class I18nValidator {
     private void crossReferenceKeys(ProgressListener listener) {
         if (allProperties.isEmpty() || sourceCodeKeys.isEmpty()) return;
 
-        // Use base properties as reference, fall back to first available
-        Properties refProps = allProperties.getOrDefault("base",
-                allProperties.getOrDefault("en",
-                        allProperties.values().iterator().next()));
+        Properties refProps = referenceProperties("source key cross-reference");
+        if (refProps == null) return;
 
         // Unused: defined in properties but not in source code
         for (String key : refProps.stringPropertyNames()) {
@@ -221,8 +224,7 @@ public class I18nValidator {
     // -- Step 5: Placeholder consistency --------------------------------------
 
     private void validatePlaceholders(ProgressListener listener) {
-        Properties refProps = allProperties.getOrDefault("base",
-                allProperties.getOrDefault("en", null));
+        Properties refProps = referenceProperties("placeholder validation");
         if (refProps == null) return;
 
         Pattern placeholderPattern = Pattern.compile("\\{(\\d+)}");
@@ -258,6 +260,28 @@ public class I18nValidator {
             placeholders.add(m.group(0));
         }
         return placeholders;
+    }
+
+    private Properties referenceProperties(String validationStep) {
+        Properties baseProps = allProperties.get("base");
+        if (baseProps != null) return baseProps;
+
+        Properties englishProps = allProperties.get("en");
+        if (englishProps != null) return englishProps;
+
+        results.add(ValidationResult.error(
+                "Reference translation file is required for " + validationStep + ": "
+                        + config.baseFileName() + " or " + englishFileName()
+        ));
+        return null;
+    }
+
+    private String englishFileName() {
+        String base = config.baseFileName();
+        if (base.endsWith(".properties")) {
+            return base.substring(0, base.length() - ".properties".length()) + "_en.properties";
+        }
+        return base + "_en.properties";
     }
 
     // -- Helpers --------------------------------------------------------------

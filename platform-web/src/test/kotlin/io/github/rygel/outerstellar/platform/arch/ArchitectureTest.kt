@@ -6,7 +6,9 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition
 import java.nio.file.Paths
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ArchitectureTest {
 
     // This test lives in platform-web, which depends on:
@@ -16,7 +18,15 @@ class ArchitectureTest {
     // Rules targeting desktop, seed, or javafx still use allowEmptyShould(true)
     // because those modules are NOT on the classpath.
 
-    private val allClasses = ClassFileImporter().importPackages("io.github.rygel.outerstellar.platform")
+    private val productionClassPaths =
+        listOf(
+            Paths.get("..", "platform-core", "target", "classes"),
+            Paths.get("..", "platform-security", "target", "classes"),
+            Paths.get("..", "platform-persistence-jdbi", "target", "classes"),
+            Paths.get("..", "platform-sync-client", "target", "classes"),
+            Paths.get("target", "classes"),
+        )
+    private val allClasses = ClassFileImporter().importPaths(productionClassPaths)
     private val webProductionClasses = ClassFileImporter().importPaths(Paths.get("target", "classes"))
 
     @Test

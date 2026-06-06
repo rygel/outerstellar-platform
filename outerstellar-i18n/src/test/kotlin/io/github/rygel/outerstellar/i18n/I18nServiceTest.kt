@@ -32,6 +32,19 @@ class I18nServiceTest {
     }
 
     @Test
+    fun `missing locale uses base bundle instead of default locale`() {
+        val previousDefault = Locale.getDefault()
+        Locale.setDefault(Locale.FRENCH)
+        try {
+            val i18n = I18nService.create("test-messages", Locale.GERMAN)
+
+            assertEquals("Hello Alice", i18n.translate("greeting", "Alice"))
+        } finally {
+            Locale.setDefault(previousDefault)
+        }
+    }
+
+    @Test
     fun `dynamic bundles override resource bundle values`() {
         val i18n = I18nService.create("test-messages", Locale.ENGLISH)
         val override = "greeting=Override {0}\nextra=Extra value\n".byteInputStream()

@@ -112,8 +112,8 @@ Extensions that need their own database migrations expose `PlatformExtension.mig
 ## Email
 - **SimpleJavaMail** — clean email API with SMTP/TLS support
 - **Circuit breaker** — Resilience4j circuit breaker prevents cascading failures when SMTP is down
-- **Console email** — development fallback that logs emails to console
-- **No-op email** — silent fallback for tests
+- **Console email** — development adapter that logs emails to console
+- **No-op email** — explicit test adapter
 
 ## Analytics & Observability
 - **Segment analytics** — optional user tracking (identify, track, page)

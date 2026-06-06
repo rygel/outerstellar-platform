@@ -35,7 +35,7 @@ val sessionExpired: Boolean by lazy {
 
 **Files:** `platform-web/.../web/WebContext.kt` (lines 92-112)
 
-**Risk:** Low. Same data, derived once. The JWT fallback path in `user` remains independent since JWT lookup is a different code path.
+**Risk:** Low. Same data, derived once. The JWT lookup path in `user` remains independent because JWT lookup is a different code path.
 
 ---
 

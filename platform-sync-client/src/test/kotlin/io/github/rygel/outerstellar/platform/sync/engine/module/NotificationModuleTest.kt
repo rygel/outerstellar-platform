@@ -5,33 +5,25 @@ package io.github.rygel.outerstellar.platform.sync.engine.module
 import io.github.rygel.outerstellar.platform.model.NotificationSummary
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.sync.client.NotificationClient
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 internal class NotificationModuleTest {
 
     private lateinit var notificationClient: NotificationClient
+    private lateinit var lifecycle: SessionLifecycle
     private lateinit var module: NotificationModuleImpl
-
-    private var stopAutoSyncCalled = false
-    private var logoutCalled = false
 
     @BeforeEach
     fun setUp() {
         notificationClient = mockk(relaxed = true)
-        stopAutoSyncCalled = false
-        logoutCalled = false
-        module =
-            NotificationModuleImpl(
-                notificationClient = notificationClient,
-                onStopAutoSync = { stopAutoSyncCalled = true },
-                onLogout = { logoutCalled = true },
-            )
+        lifecycle = mockk(relaxed = true)
+        module = NotificationModuleImpl(notificationClient = notificationClient, lifecycle = lifecycle)
     }
 
     @Test
@@ -51,8 +43,7 @@ internal class NotificationModuleTest {
 
         module.loadNotifications()
 
-        assertTrue(logoutCalled)
-        assertTrue(stopAutoSyncCalled)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test
@@ -83,7 +74,7 @@ internal class NotificationModuleTest {
 
         module.markNotificationRead("n1")
 
-        assertTrue(logoutCalled)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test

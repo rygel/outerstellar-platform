@@ -531,7 +531,7 @@ class ExtensionTextOverrideTest : WebTest() {
         val customTexts = mapOf("nav.inbox" to "MyInbox", "auth.login" to "MyLogin")
         val resolver = DefaultTextResolver(customTexts)
         assertTrue(resolver.resolve("nav.inbox") == "MyInbox")
-        // Keys not in custom map fall back to returning the key itself
+        // Keys not in custom map return the key itself
         assertTrue(resolver.resolve("nav.contacts") == "nav.contacts")
     }
 }

@@ -60,9 +60,9 @@
             
     <section class="card bg-base-200 border border-base-300 mb-4">
         <div>
-            <p class="badge badge-outline">Error 404</p>
-            <h1>The page could not be found</h1>
-            <p>Use this 404 example to show how sidebar navigation and recovery actions stay available.</p>
+            <p class="badge badge-outline">Error 403</p>
+            <h1>Access is not allowed</h1>
+            <p>Use this 403 example to explain that the current account does not have permission for this page.</p>
         </div>
         <div class="flex gap-3 justify-end mt-4">
             <a href="/" class="btn btn-primary btn-sm">Back to home</a>
@@ -72,7 +72,7 @@
 
     <section class="card bg-base-200 border border-base-300">
         <button class="btn btn-ghost btn-sm"
-                hx-get="/errors/components/help/not-found"
+                hx-get="/errors/components/help/forbidden"
                 hx-target="#error-help-slot"
                 hx-swap="innerHTML">
             Load HTMX recovery tips
@@ -281,5 +281,3 @@
 <script src="/platform.js?v=[CACHE-BUSTER]"></script>
 </body>
 </html>
-
-

@@ -5,6 +5,7 @@ package io.github.rygel.outerstellar.platform.sync.engine.module
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.sync.client.ProfileClient
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
 import org.slf4j.LoggerFactory
@@ -12,10 +13,7 @@ import org.slf4j.LoggerFactory
 class ProfileModuleImpl(
     private val profileClient: ProfileClient,
     private val analytics: AnalyticsService,
-    private val authStateProvider: () -> AuthState,
-    private val onLoadData: () -> Unit,
-    private val onStopAutoSync: () -> Unit,
-    private val onLogout: () -> Unit,
+    private val lifecycle: SessionLifecycle,
     private val notifier: ModuleNotifier? = null,
 ) : ProfileModule {
     private val logger = LoggerFactory.getLogger(ProfileModuleImpl::class.java)
@@ -58,9 +56,8 @@ class ProfileModuleImpl(
             onError = { e -> notifier?.notifyFailure("Profile update failed: ${e.message}") },
         ) {
             profileClient.updateProfile(email, username, avatarUrl)
-            onLoadData()
             loadProfile()
-            analytics.track(authStateProvider().userName, "profile_updated")
+            analytics.track(lifecycle.authState.userName, "profile_updated")
             notifier?.notifySuccess("Profile updated")
             Result.success(Unit)
         }
@@ -70,12 +67,11 @@ class ProfileModuleImpl(
             "deleteAccount",
             onError = { e -> notifier?.notifyFailure("Account deletion failed: ${e.message}") },
         ) {
-            val username = authStateProvider().userName
+            val username = lifecycle.authState.userName
             profileClient.deleteAccount(currentPassword)
-            onStopAutoSync()
-            onLogout()
-            analytics.track(username, "account_deleted")
+            lifecycle.beforeLogout()
             updateState { ProfileState() }
+            analytics.track(username, "account_deleted")
             notifier?.notifySuccess("Account deleted")
             Result.success(Unit)
         }
@@ -87,14 +83,17 @@ class ProfileModuleImpl(
             Result.success(Unit)
         }
 
-    private fun handleSessionExpired(e: Exception? = null) {
+    override fun clearState() {
+        updateState { ProfileState() }
+        listeners.forEach { it.onSessionExpired() }
+    }
+
+    private fun onSessionExpired(e: Exception? = null) {
         if (e != null) {
             logger.warn("Session expired: ${e.message}", e)
         }
-        onStopAutoSync()
-        onLogout()
-        updateState { ProfileState() }
-        listeners.forEach { it.onSessionExpired() }
+        lifecycle.onSessionExpired()
+        clearState()
         notifier?.notifyFailure("Session expired. Please log in again.")
     }
 
@@ -102,11 +101,10 @@ class ProfileModuleImpl(
         try {
             block()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
         } catch (e: Exception) {
             logger.warn("Failed to {}", operation, e)
             onError(e)
-            listeners.forEach { it.onSessionExpired() }
         }
     }
 
@@ -118,7 +116,7 @@ class ProfileModuleImpl(
         return try {
             block()
         } catch (e: SessionExpiredException) {
-            handleSessionExpired(e)
+            onSessionExpired(e)
             Result.failure(e)
         } catch (e: Exception) {
             logger.warn("Failed to {}", operation, e)
