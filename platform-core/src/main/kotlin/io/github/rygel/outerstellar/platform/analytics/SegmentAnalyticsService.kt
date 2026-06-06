@@ -20,22 +20,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.slf4j.LoggerFactory
 
-class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
+class SegmentAnalyticsService internal constructor(private val sender: SegmentEventSender) : AnalyticsService {
     private val logger = LoggerFactory.getLogger(SegmentAnalyticsService::class.java)
-    private val client = HttpClient.newHttpClient()
-    private val json = Json { encodeDefaults = true }
-    private val authHeader = "Basic " + Base64.getEncoder().encodeToString("$writeKey:".toByteArray())
-    private val executor: ExecutorService =
-        ThreadPoolExecutor(
-            1,
-            1,
-            0L,
-            TimeUnit.MILLISECONDS,
-            LinkedBlockingQueue(100),
-            { r -> Thread(r, "segment-analytics").also { it.isDaemon = true } },
-        ) { _, _ ->
-            logger.warn("Segment analytics queue full — dropping event")
-        }
+
+    constructor(writeKey: String) : this(HttpSegmentEventSender(writeKey))
 
     override fun identify(userId: String, traits: Map<String, Any>) {
         send(
@@ -90,24 +78,7 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                     },
                 )
             }
-            val request =
-                HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.segment.io/v1/$endpoint"))
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", authHeader)
-                    .POST(HttpRequest.BodyPublishers.ofString(json.encodeToString(JsonObject.serializer(), payload)))
-                    .build()
-            try {
-                executor.execute {
-                    try {
-                        client.send(request, HttpResponse.BodyHandlers.discarding())
-                    } catch (e: Exception) {
-                        logger.warn("Segment {} call failed: {}", endpoint, e.message)
-                    }
-                }
-            } catch (_: java.util.concurrent.RejectedExecutionException) {
-                logger.warn("Segment analytics event dropped: queue full")
-            }
+            sender.send(endpoint, payload)
         } catch (e: IOException) {
             logger.warn("Segment analytics IO error on {}: {}", endpoint, e.message)
         }
@@ -138,6 +109,49 @@ class SegmentAnalyticsService(writeKey: String) : AnalyticsService {
                     )
                 else -> put(key, value.toString())
             }
+        }
+    }
+}
+
+internal fun interface SegmentEventSender {
+    fun send(endpoint: String, payload: JsonObject)
+}
+
+private class HttpSegmentEventSender(writeKey: String) : SegmentEventSender {
+    private val logger = LoggerFactory.getLogger(HttpSegmentEventSender::class.java)
+    private val client = HttpClient.newHttpClient()
+    private val json = Json { encodeDefaults = true }
+    private val authHeader = "Basic " + Base64.getEncoder().encodeToString("$writeKey:".toByteArray())
+    private val executor: ExecutorService =
+        ThreadPoolExecutor(
+            1,
+            1,
+            0L,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue(100),
+            { r -> Thread(r, "segment-analytics").also { it.isDaemon = true } },
+        ) { _, _ ->
+            logger.warn("Segment analytics queue full — dropping event")
+        }
+
+    override fun send(endpoint: String, payload: JsonObject) {
+        val request =
+            HttpRequest.newBuilder()
+                .uri(URI.create("https://api.segment.io/v1/$endpoint"))
+                .header("Content-Type", "application/json")
+                .header("Authorization", authHeader)
+                .POST(HttpRequest.BodyPublishers.ofString(json.encodeToString(JsonObject.serializer(), payload)))
+                .build()
+        try {
+            executor.execute {
+                try {
+                    client.send(request, HttpResponse.BodyHandlers.discarding())
+                } catch (e: Exception) {
+                    logger.warn("Segment {} call failed: {}", endpoint, e.message)
+                }
+            }
+        } catch (_: java.util.concurrent.RejectedExecutionException) {
+            logger.warn("Segment analytics event dropped: queue full")
         }
     }
 }
