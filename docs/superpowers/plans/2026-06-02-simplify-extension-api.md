@@ -266,11 +266,11 @@ Replace the body of `from()` (lines 81-125) with:
 ```kotlin
         fun from(
             extension: PlatformExtension?,
-            fallbackMode: PlatformMode,
+            platformMode: PlatformMode,
             context: ExtensionHostContext?,
         ): ExtensionContribution {
             if (extension == null || context == null) {
-                return ExtensionContribution(mode = fallbackMode, appLabel = "Outerstellar")
+                return ExtensionContribution(mode = platformMode, appLabel = "Outerstellar")
             }
 
             val contributionContext = ExtensionContributionContext(host = context)

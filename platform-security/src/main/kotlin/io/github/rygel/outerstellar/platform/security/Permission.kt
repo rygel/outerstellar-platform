@@ -38,11 +38,12 @@ data class Permission(val domain: String, val action: String = "*", val instance
          */
         fun parse(s: String): Permission {
             val parts = s.split(":", limit = 3)
-            return Permission(
-                domain = parts[0],
-                action = parts.getOrElse(1) { "*" },
-                instance = parts.getOrElse(2) { "*" },
-            )
+            return when (parts.size) {
+                1 -> Permission(domain = parts[0])
+                2 -> Permission(domain = parts[0], action = parts[1])
+                3 -> Permission(domain = parts[0], action = parts[1], instance = parts[2])
+                else -> error("Unexpected permission segment count: ${parts.size}")
+            }
         }
     }
 }

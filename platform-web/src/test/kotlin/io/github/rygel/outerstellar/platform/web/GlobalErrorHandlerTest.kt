@@ -8,6 +8,7 @@ import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.then
+import org.http4k.core.with
 import org.http4k.hamkrest.hasBody
 import org.http4k.hamkrest.hasHeader
 import org.http4k.hamkrest.hasStatus
@@ -26,7 +27,7 @@ class GlobalErrorHandlerTest {
                 throw HandlerTestException("something broke in the handler")
             }
 
-        val response = handler(Request(GET, "/test-page").header("X-Request-Id", "request-123"))
+        val response = handler(pageRequest("/test-page", "request-123"))
 
         assertThat(response, hasStatus(Status.INTERNAL_SERVER_ERROR))
         assertThat(response, hasHeader("content-type", "text/html; charset=utf-8"))
@@ -40,7 +41,7 @@ class GlobalErrorHandlerTest {
     fun `error handler returns emergency error page with request reference when exception has no message`() {
         val handler = Filters.globalErrorHandler(errorPageFactory, brokenRenderer).then { throw HandlerTestException() }
 
-        val response = handler(Request(GET, "/test-page").header("X-Request-Id", "request-456"))
+        val response = handler(pageRequest("/test-page", "request-456"))
 
         assertThat(response, hasStatus(Status.INTERNAL_SERVER_ERROR))
         assertThat(response, hasBody(containsSubstring("<h1>Internal Server Error</h1>")))
@@ -52,7 +53,7 @@ class GlobalErrorHandlerTest {
     fun `404 handler returns emergency not found page when template rendering fails`() {
         val handler = Filters.globalErrorHandler(errorPageFactory, brokenRenderer).then { Response(Status.NOT_FOUND) }
 
-        val response = handler(Request(GET, "/missing-page").header("X-Request-Id", "request-789"))
+        val response = handler(pageRequest("/missing-page", "request-789"))
 
         assertThat(response, hasStatus(Status.NOT_FOUND))
         assertThat(response, hasHeader("content-type", "text/html; charset=utf-8"))
@@ -90,4 +91,10 @@ class GlobalErrorHandlerTest {
     private class HandlerTestException(message: String? = null) : Exception(message)
 
     private class TemplateRenderTestException(message: String) : Exception(message)
+
+    private fun pageRequest(path: String, requestId: String): Request {
+        val request = Request(GET, path).header("X-Request-Id", requestId)
+        val context = RequestContext(request)
+        return request.with(RequestContext.KEY of context).with(ShellRenderer.KEY of ShellRenderer(context))
+    }
 }

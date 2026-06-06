@@ -17,6 +17,11 @@ class I18nService private constructor(private val baseName: String, private val 
     @Volatile private var currentLocale: Locale = Locale.getDefault()
 
     companion object {
+        private val NO_DEFAULT_LOCALE_CONTROL =
+            object : ResourceBundle.Control() {
+                override fun getFallbackLocale(baseName: String, locale: Locale): Locale? = null
+            }
+
         @JvmStatic
         @JvmName("create")
         fun create(baseName: String): I18nService = I18nService(baseName, Thread.currentThread().contextClassLoader)
@@ -72,7 +77,7 @@ class I18nService private constructor(private val baseName: String, private val 
         dynamicBundles.values.forEach { keys.addAll(it.keySet()) }
         try {
             keys.addAll(getBundle().keySet())
-        } catch (_: Exception) {
+        } catch (_: MissingResourceException) {
             // Missing bundles simply contribute no keys.
         }
         return keys
@@ -114,11 +119,7 @@ class I18nService private constructor(private val baseName: String, private val 
     private fun getBundle(): ResourceBundle {
         val key = "${currentLocale}_$baseName"
         return bundleCache.getOrPut(key) {
-            try {
-                ResourceBundle.getBundle(baseName, currentLocale, classLoader)
-            } catch (_: MissingResourceException) {
-                ResourceBundle.getBundle(baseName, Locale.getDefault(), classLoader)
-            }
+            ResourceBundle.getBundle(baseName, currentLocale, classLoader, NO_DEFAULT_LOCALE_CONTROL)
         }
     }
 }

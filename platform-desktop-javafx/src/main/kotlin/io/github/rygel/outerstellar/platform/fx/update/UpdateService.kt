@@ -20,8 +20,12 @@ class UpdateService(private val currentVersion: String, private val updateUrl: S
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
             if (response.statusCode() == 200) {
                 val latestVersion = response.body().trim()
-                if (isNewerVersion(latestVersion)) UpdateResult.UpdateAvailable(latestVersion)
-                else UpdateResult.UpToDate
+                try {
+                    if (isNewerVersion(latestVersion)) UpdateResult.UpdateAvailable(latestVersion)
+                    else UpdateResult.UpToDate
+                } catch (e: IllegalArgumentException) {
+                    UpdateResult.CheckFailed(e.message ?: "Invalid version")
+                }
             } else {
                 UpdateResult.CheckFailed("Server returned ${response.statusCode()}")
             }
@@ -32,16 +36,31 @@ class UpdateService(private val currentVersion: String, private val updateUrl: S
     }
 
     private fun isNewerVersion(latest: String): Boolean {
-        val current = currentVersion.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
-        val latestParts = latest.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
-        for (i in 0 until maxOf(current.size, latestParts.size)) {
-            val c = current.getOrElse(i) { 0 }
-            val l = latestParts.getOrElse(i) { 0 }
+        val current = parseVersion(currentVersion, "current")
+        val latestParts = parseVersion(latest, "latest")
+        val width = maxOf(current.size, latestParts.size)
+        val normalizedCurrent = current.padVersion(width)
+        val normalizedLatest = latestParts.padVersion(width)
+        for (i in 0 until width) {
+            val c = normalizedCurrent[i]
+            val l = normalizedLatest[i]
             if (l > c) return true
             if (l < c) return false
         }
         return false
     }
+
+    private fun parseVersion(version: String, label: String): List<Int> {
+        val normalized = version.removePrefix("v")
+        require(normalized.isNotBlank()) { "Invalid $label version: $version" }
+        return normalized.split(".").map { segment ->
+            require(segment.isNotBlank()) { "Invalid $label version: $version" }
+            requireNotNull(segment.toIntOrNull()) { "Invalid $label version segment '$segment' in $version" }
+        }
+    }
+
+    private fun List<Int>.padVersion(width: Int): List<Int> =
+        if (size >= width) this else this + List(width - size) { 0 }
 
     sealed class UpdateResult {
         data object UpToDate : UpdateResult()

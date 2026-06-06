@@ -312,7 +312,14 @@ class HttpAuthClient(
             val request =
                 Request(Method.POST, "$baseUrl/api/v1/auth/logout")
                     .header("Authorization", "Bearer $token")
-            runCatching { client(request) }
+            try {
+                val response = client(request)
+                if (response.status != Status.OK) {
+                    logger.warn("Logout request returned {}", response.status)
+                }
+            } catch (e: Exception) {
+                logger.warn("Logout request failed; clearing local session only: {}", e.message, e)
+            }
         }
         session.clear()
     }

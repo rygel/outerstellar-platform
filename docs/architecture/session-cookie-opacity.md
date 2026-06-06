@@ -205,9 +205,9 @@ val user: User? by lazy {
 
 Notes:
 
-- Keep the JWT cookie fallback unchanged unless this work intentionally changes device/API auth.
+- Keep the JWT cookie device/API auth path unchanged unless this work intentionally changes device/API auth.
 - Invalid old UUID cookies should simply produce `null` and force a fresh login.
-- Avoid a compatibility fallback that accepts UUID cookies, because that would preserve the forgery risk during migration.
+- Avoid compatibility handling that accepts UUID cookies, because that would preserve the forgery risk during migration.
 
 ### 3. Pass `SecurityService` Through `Filters.stateFilter`
 

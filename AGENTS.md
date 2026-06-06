@@ -46,6 +46,18 @@ platform-jte-extensions    Custom JTE code generation (JteClassRegistry)
 - **Domain page factories**: AuthPageFactory, ErrorPageFactory, SidebarFactory, ContactsPageFactory, HomePageFactory, InfraPageFactory, SettingsPageFactory, SearchPageFactory, DevDashboardPageFactory, AdminPageFactory own page-specific rendering directly.
 - **Extension composition**: `PlatformExtension` interface with `mode` (PlatformMode), `includePlatformPages()` (Set of PlatformPageSets), `routeRegistrations()` (List of ExtensionRouteRegistration), `layoutTemplate()` (JTE template override), `filters()`, `bannerProviders()`. Route ownership tracked via `RouteRegistry` with startup conflict detection.
 
+### Error Handling — No Hidden Fallbacks
+
+Fallbacks are almost always counterproductive in this codebase. Do not implement a fallback to paper over missing state, missing dependencies, missing resources, invalid configuration, broken rendering, or unexpected exceptions.
+
+- Fail clearly when required application state is absent.
+- Log the original exception with stack trace and enough request/configuration context to diagnose it.
+- Return an explicit error response at system boundaries: JSON for APIs, HTMX-safe text for HTMX fragments, and a renderer-independent emergency HTML page only when normal error-page rendering itself fails.
+- Do not synthesize substitute `RequestContext`, `ShellRenderer`, services, repositories, configs, locales, files, templates, or route registrations.
+- Do not silently catch broad exceptions. If an operation is best-effort, name it as best-effort, log at the appropriate level, and keep it outside core correctness paths.
+
+The default stance is: show a clear error and fix the root cause. A fallback needs a written justification and a regression test proving it is an intentional boundary behavior, not error hiding.
+
 ## Build and run
 
 - Run Maven commands from the repository root unless a task explicitly requires module-local execution.

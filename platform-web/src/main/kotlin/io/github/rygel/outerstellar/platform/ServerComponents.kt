@@ -69,7 +69,7 @@ fun createServerComponents(config: AppConfig, extension: PlatformExtension? = nu
             emailService = emailService,
         )
 
-    val extensionContribution = ExtensionContribution.from(extension, config.platformMode, null)
+    val extensionContribution = ExtensionContribution.platformDefaults(config.platformMode)
     val web =
         createWebComponents(
             config = config,

@@ -10,6 +10,7 @@ This document describes the Outerstellar Platform test architecture, patterns, a
 - [How to Write New Tests](#how-to-write-new-tests)
 - [JTE Template Testing](#jte-template-testing)
 - [End-to-End Tests Only](#end-to-end-tests-only)
+- [Error Handling Tests](#error-handling-tests)
 - [Desktop Testing](#desktop-testing)
 - [http4k Testing Modules](#http4k-testing-modules)
 - [Anti-Patterns](#anti-patterns)
@@ -245,6 +246,17 @@ fun `health check reports database connectivity`() {
 }
 ```
 
+## Error Handling Tests
+
+Error handling tests must verify clear behavior, not fallback behavior. A passing test should prove that the system reports the failure correctly, logs or exposes a useful diagnostic path, and does not hide missing required state behind guessed defaults.
+
+Rules:
+- Do not add tests that approve synthesized substitutes for required state, services, renderers, resources, locales, templates, or configuration.
+- Test expected boundary responses explicitly: API JSON errors, HTMX-safe text errors, normal HTML error pages, and the renderer-independent emergency HTML response used only when normal error-page rendering fails.
+- Assert that sensitive exception messages are not leaked to users, while request references and logged errors preserve enough context for diagnosis.
+- When a fallback is truly intentional, name the test after the boundary behavior and explain why continuing is correct. This should be rare.
+- If a missing dependency or invalid configuration is the scenario under test, assert a clear failure or validation error. Do not assert that the system quietly keeps going.
+
 ## Desktop Testing
 
 Desktop/Swing tests must **never** run directly on the host machine — they capture the mouse and keyboard. Always use Podman:
@@ -337,6 +349,12 @@ This compiles JTE templates from source at test runtime. It adds 60+ seconds per
 ### Never write smoke tests
 
 See [End-to-End Tests Only](#end-to-end-tests-only). Every test must assert meaningful behavior beyond HTTP status codes.
+
+### Never test hidden fallbacks as success
+
+Fallbacks are counterproductive in almost all error-handling paths. Do not write tests that make a broken dependency, missing request state, missing config, missing template, or unreadable file look successful by accepting a guessed substitute. The correct behavior is usually a clear error plus logging.
+
+Allowed exception: an explicitly documented boundary response, such as API JSON errors, HTMX-safe text errors, or the renderer-independent emergency HTML page used when normal error rendering fails.
 
 ### Never run desktop tests on the host
 

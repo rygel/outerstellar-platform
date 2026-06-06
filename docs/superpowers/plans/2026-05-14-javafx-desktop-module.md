@@ -1291,14 +1291,10 @@ class FxTrayNotifier : EngineNotifier {
     init {
         if (SystemTray.isSupported()) {
             try {
-                val image: Image =
-                    runCatching {
-                            val url: URL? = javaClass.getResource("/icons/app-icon.png")
-                            if (url != null) Toolkit.getDefaultToolkit().getImage(url)
-                            else null
-                        }
-                        .getOrNull()
-                        ?: Toolkit.getDefaultToolkit().createImage(java.awt.datatransfer.DataBuffer::class.java, 1, 1)
+                val url: URL = requireNotNull(javaClass.getResource("/icons/app-icon.png")) {
+                    "Missing tray icon resource: /icons/app-icon.png"
+                }
+                val image: Image = Toolkit.getDefaultToolkit().getImage(url)
 
                 val icon = TrayIcon(image, "Outerstellar")
                 icon.isImageAutoSize = true
@@ -1636,11 +1632,14 @@ class UpdateService(private val currentVersion: String, private val updateUrl: S
     }
 
     private fun isNewerVersion(latest: String): Boolean {
-        val current = currentVersion.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
-        val latestParts = latest.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
-        for (i in 0 until maxOf(current.size, latestParts.size)) {
-            val c = current.getOrElse(i) { 0 }
-            val l = latestParts.getOrElse(i) { 0 }
+        val current = currentVersion.removePrefix("v").split(".").map { it.toInt() }
+        val latestParts = latest.removePrefix("v").split(".").map { it.toInt() }
+        val width = maxOf(current.size, latestParts.size)
+        val normalizedCurrent = current + List(width - current.size) { 0 }
+        val normalizedLatest = latestParts + List(width - latestParts.size) { 0 }
+        for (i in 0 until width) {
+            val c = normalizedCurrent[i]
+            val l = normalizedLatest[i]
             if (l > c) return true
             if (l < c) return false
         }

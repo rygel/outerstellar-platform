@@ -446,13 +446,7 @@ object Filters {
         return if (request.uri.path.startsWith("/api/")) {
             jsonErrorResponse(Status.NOT_FOUND, "Resource not found", request)
         } else {
-            val ctx =
-                runCatching { request.requestContext }
-                    .getOrElse {
-                        logger.debug("RequestContext not found for error page: {}", it.message)
-                        RequestContext(request)
-                    }
-            val shellRenderer = runCatching { request.shellRenderer }.getOrDefault(ShellRenderer(ctx))
+            val shellRenderer = request.shellRenderer
             val errorPage = errorPageFactory.buildErrorPage(shellRenderer, "not-found")
             try {
                 Response(Status.NOT_FOUND).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
@@ -498,13 +492,7 @@ object Filters {
             val safeMessage = if (e is OuterstellarException) e.message ?: "Action failed" else "Action failed"
             Response(status).body(safeMessage)
         } else {
-            val ctx =
-                runCatching { request.requestContext }
-                    .getOrElse {
-                        logger.debug("RequestContext not found for error page: {}", it.message)
-                        RequestContext(request)
-                    }
-            val shellRenderer = runCatching { request.shellRenderer }.getOrDefault(ShellRenderer(ctx))
+            val shellRenderer = request.shellRenderer
             val errorKind = if (status == Status.INTERNAL_SERVER_ERROR) "server-error" else "not-found"
             val errorPage = errorPageFactory.buildErrorPage(shellRenderer, errorKind)
             try {

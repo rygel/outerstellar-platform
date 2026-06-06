@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach
  * - POST without Authorization header → 401
  * - POST with malformed JSON body → 400
  * - DELETE /api/v1/devices/register with valid bearer + JSON body → 204
- * - DELETE with ?token query param fallback → 204
+ * - DELETE with ?token query param compatibility path -> 204
  * - DELETE without Authorization header → 401
  * - Token is actually stored in the repository on successful POST
  * - Token is actually removed from the repository on successful DELETE
