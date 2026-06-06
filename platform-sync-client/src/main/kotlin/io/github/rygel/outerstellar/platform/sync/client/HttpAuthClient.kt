@@ -17,10 +17,12 @@ import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.core.with
 import org.http4k.format.KotlinxSerialization.auto
+import org.slf4j.LoggerFactory
 
 class HttpAuthClient(private val baseUrl: String, private val session: ApiSession, private val client: HttpHandler) :
     AuthClient {
 
+    private val logger = LoggerFactory.getLogger(HttpAuthClient::class.java)
     private val loginRequestLens = Body.auto<LoginRequest>().toLens()
     private val registerRequestLens = Body.auto<RegisterRequest>().toLens()
     private val authTokenLens = Body.auto<AuthTokenResponse>().toLens()
@@ -60,7 +62,14 @@ class HttpAuthClient(private val baseUrl: String, private val session: ApiSessio
     override fun logout() {
         session.apiToken?.let { token ->
             val request = Request(POST, "$baseUrl/api/v1/auth/logout").header("Authorization", "Bearer $token")
-            runCatching { client(request) }
+            try {
+                val response = client(request)
+                if (response.status != Status.OK) {
+                    logger.warn("Logout request returned {}", response.status)
+                }
+            } catch (e: Exception) {
+                logger.warn("Logout request failed; clearing local session only: {}", e.message, e)
+            }
         }
         session.clear()
     }

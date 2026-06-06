@@ -137,7 +137,9 @@ class ComponentRoutes(
                     { request: org.http4k.core.Request ->
                         val syncId = extractVoteSyncId(request) ?: return@to Response(Status.BAD_REQUEST)
                         val user = request.requestContext.user!!
-                        val direction = request.form("direction")?.toIntOrNull() ?: 0
+                        val direction =
+                            parseMessageVoteDirection(request)
+                                ?: return@to Response(Status.BAD_REQUEST).body("direction must be 1 or -1")
                         val score = vs.vote(syncId, user.id, direction) ?: VoteScore(syncId, 0, 0, 0, null)
                         renderer.render(VoteFragmentViewModel(score, syncId))
                     }
@@ -184,8 +186,10 @@ class ComponentRoutes(
                             val results =
                                 try {
                                     ps.castVote(syncId, optionId, user.id)
-                                } catch (_: IllegalStateException) {
-                                    ps.getPoll(syncId, user.id)
+                                } catch (e: IllegalStateException) {
+                                    return@to Response(Status.CONFLICT).body(e.message ?: "Poll cannot accept votes")
+                                } catch (e: IllegalArgumentException) {
+                                    return@to Response(Status.BAD_REQUEST).body(e.message ?: "Invalid poll vote")
                                 } ?: return@to Response(Status.NOT_FOUND)
                             renderer.render(PollFragmentViewModel(results, syncId))
                         }
@@ -214,4 +218,11 @@ class ComponentRoutes(
         val syncId = path.removePrefix(VOTE_PATH_PREFIX).removeSuffix(VOTE_PATH_SUFFIX)
         return syncId.ifBlank { null }
     }
+
+    private fun parseMessageVoteDirection(request: org.http4k.core.Request): Int? =
+        when (val direction = request.form("direction")?.toIntOrNull()) {
+            1,
+            -1 -> direction
+            else -> null
+        }
 }

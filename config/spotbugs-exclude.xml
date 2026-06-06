@@ -164,18 +164,6 @@
         <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
     </Match>
     <Match>
-        <Class name="~io\.github\.rygel\.outerstellar\.platform\.di\.SyncClientComponents.*"/>
-        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
-    </Match>
-    <Match>
-        <Class name="~io\.github\.rygel\.outerstellar\.platform\.di\.SyncClientComponents.*"/>
-        <Bug pattern="NP_NULL_PARAM_DEREF"/>
-    </Match>
-    <Match>
-        <Class name="io.github.rygel.outerstellar.platform.di.SyncClientComponents"/>
-        <Bug pattern="EI_EXPOSE_REP"/>
-    </Match>
-    <Match>
         <Class name="~io\.github\.rygel\.outerstellar\.platform\.di\.DesktopComponentsKt"/>
         <Bug pattern="NP_NULL_ON_SOME_PATH"/>
     </Match>

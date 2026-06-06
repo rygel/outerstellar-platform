@@ -75,14 +75,16 @@ data class ExtensionContribution(
         )
 
     companion object {
+        fun platformDefaults(platformMode: PlatformMode): ExtensionContribution =
+            ExtensionContribution(mode = platformMode, appLabel = "Outerstellar")
+
         fun from(
             extension: PlatformExtension?,
-            fallbackMode: PlatformMode,
+            platformMode: PlatformMode,
             context: ExtensionHostContext?,
         ): ExtensionContribution {
-            if (extension == null || context == null) {
-                return ExtensionContribution(mode = fallbackMode, appLabel = "Outerstellar")
-            }
+            if (extension == null) return platformDefaults(platformMode)
+            requireNotNull(context) { "ExtensionHostContext is required when an extension is provided." }
 
             val contributionContext = ExtensionContributionContext(host = context)
             extension.contribute(contributionContext)

@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.fx.service
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 class FxThemeManagerTest {
@@ -43,9 +44,12 @@ class FxThemeManagerTest {
     }
 
     @Test
-    fun `applyThemeByName lookup returns DARK fallback for unknown name`() {
-        val theme = FxTheme.entries.firstOrNull { it.name.equals("NONEXISTENT", ignoreCase = true) } ?: FxTheme.DARK
-        assertThat(theme).isEqualTo(FxTheme.DARK)
+    fun `applyThemeByName rejects unknown name`() {
+        val manager = FxThemeManager()
+
+        assertThatThrownBy { manager.applyThemeByName("NONEXISTENT") }
+            .isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessage("Unknown JavaFX theme 'NONEXISTENT'")
     }
 
     @Test

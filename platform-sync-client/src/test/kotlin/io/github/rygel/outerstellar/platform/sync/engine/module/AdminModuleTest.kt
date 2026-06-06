@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UserSummary
 import io.github.rygel.outerstellar.platform.sync.client.AdminClient
+import io.github.rygel.outerstellar.platform.sync.engine.SessionLifecycle
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -19,26 +20,18 @@ internal class AdminModuleTest {
 
     private lateinit var adminClient: AdminClient
     private lateinit var analytics: AnalyticsService
+    private lateinit var lifecycle: SessionLifecycle
     private lateinit var module: AdminModuleImpl
 
     private var authState = AuthState(isLoggedIn = true, userName = "user", userRole = "USER")
-    private var stopAutoSyncCalled = false
-    private var logoutCalled = false
 
     @BeforeEach
     fun setUp() {
         adminClient = mockk(relaxed = true)
         analytics = mockk(relaxed = true)
-        stopAutoSyncCalled = false
-        logoutCalled = false
-        module =
-            AdminModuleImpl(
-                adminClient = adminClient,
-                analytics = analytics,
-                authStateProvider = { authState },
-                onStopAutoSync = { stopAutoSyncCalled = true },
-                onLogout = { logoutCalled = true },
-            )
+        lifecycle = mockk(relaxed = true)
+        every { lifecycle.authState } answers { authState }
+        module = AdminModuleImpl(adminClient = adminClient, analytics = analytics, lifecycle = lifecycle)
     }
 
     @Test
@@ -58,8 +51,7 @@ internal class AdminModuleTest {
 
         module.loadUsers()
 
-        assertTrue(logoutCalled)
-        assertTrue(stopAutoSyncCalled)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test
@@ -80,7 +72,7 @@ internal class AdminModuleTest {
         val result = module.setUserEnabled("1", true)
 
         assertTrue(result.isFailure)
-        assertTrue(logoutCalled)
+        verify { lifecycle.onSessionExpired() }
     }
 
     @Test

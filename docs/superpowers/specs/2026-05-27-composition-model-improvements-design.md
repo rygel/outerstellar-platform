@@ -102,7 +102,7 @@ data class ExtensionOptions(
 fun layoutRenderer(context: ExtensionHostContext): ExtensionLayoutRenderer? = null
 ```
 
-`ExtensionContribution.from(extension, fallbackMode, extensionHostContext)` reads `extension.layoutRenderer(extensionHostContext)` once and carries it inside `ExtensionOptions`.
+`ExtensionContribution.from(extension, platformMode, extensionHostContext)` reads `extension.layoutRenderer(extensionHostContext)` once and carries it inside `ExtensionOptions`.
 
 #### What the extension renderer receives
 

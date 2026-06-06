@@ -58,9 +58,23 @@ class ErrorPagesIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `GET errors-components-help with unknown kind returns 200 (graceful fallback)`() {
-        val response = app(Request(GET, "/errors/components/help/totally-unknown-error-kind"))
+    fun `GET errors-components-help-forbidden returns 200`() {
+        val response = app(Request(GET, "/errors/components/help/forbidden"))
         assertThat(response, hasStatus(Status.OK))
+    }
+
+    @Test
+    fun `GET errors-components-help with unknown kind returns 400`() {
+        val response = app(Request(GET, "/errors/components/help/totally-unknown-error-kind"))
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
+        assertThat(response, bodyContains("Unknown error help kind"))
+    }
+
+    @Test
+    fun `GET errors page with unknown kind returns 400`() {
+        val response = app(Request(GET, "/errors/totally-unknown-error-kind"))
+        assertThat(response, hasStatus(Status.BAD_REQUEST))
+        assertThat(response, bodyContains("Unknown error page kind"))
     }
 
     @Test

@@ -39,7 +39,9 @@ class FxThemeManager {
     }
 
     fun applyThemeByName(name: String) {
-        val theme = FxTheme.entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: FxTheme.DARK
+        val theme =
+            FxTheme.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
+                ?: throw IllegalArgumentException("Unknown JavaFX theme '$name'")
         applyTheme(theme)
     }
 

@@ -10,7 +10,7 @@ import javax.swing.Icon
 
 /**
  * [Icon] implementation that renders a Unicode character (emoji/symbol). Ensures proper rendering of Unicode icons in
- * FlatLaf menus via font fallback.
+ * FlatLaf menus by selecting an installed Unicode-capable font.
  *
  * @param unicode The Unicode string to render (e.g. "\u2B1C" or an emoji literal).
  * @param size The icon size in pixels (default 16).
