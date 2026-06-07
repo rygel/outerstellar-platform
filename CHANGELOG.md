@@ -9,6 +9,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.12] – 2026-06-07
+
+### Added
+
+- **Nonce-based Content Security Policy support** — generated per-request CSP nonces, expanded `{nonce}` in configured policies, and exposed the nonce to platform and extension shell rendering so scripts can run without `unsafe-inline` (#472).
+
+### Fixed
+
+- **Extension contract route parameters** — mounted extension `ContractRoute` registrations through shared contracts per route group so path-parameter routes resolve instead of returning 404 (#471).
+- **Error-page approval stability** — normalized generated CSP nonces in error-page approval tests while preserving coverage for nonce-bearing script tags.
+
+---
+
 ## [3.6.11] – 2026-06-06
 
 ### Changed
