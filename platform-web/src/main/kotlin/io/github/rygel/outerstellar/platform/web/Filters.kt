@@ -12,7 +12,9 @@ import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SessionService
 import java.nio.ByteBuffer
 import java.security.MessageDigest
+import java.security.SecureRandom
 import java.time.Duration
+import java.util.Base64
 import java.util.UUID
 import org.http4k.core.Body
 import org.http4k.core.Filter
@@ -31,6 +33,7 @@ import org.http4k.filter.MicrometerMetrics
 import org.http4k.filter.OpenTelemetryTracing
 import org.http4k.filter.ServerFilters
 import org.http4k.format.KotlinxSerialization
+import org.http4k.lens.RequestKey
 import org.http4k.template.TemplateRenderer
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
@@ -41,9 +44,10 @@ private const val COOKIE_MAX_AGE_DAYS = 365L
 private const val REQUEST_ID_HEADER = "X-Request-Id"
 private const val LOG_ID_LENGTH = 8
 private const val STATIC_ASSET_MAX_AGE = 31536000L
+private const val CSP_NONCE_BYTES = 16
 private const val DEFAULT_CSP_POLICY =
     "default-src 'self'; " +
-        "script-src 'self'; " +
+        "script-src 'self' {nonce}; " +
         "style-src 'self' 'unsafe-inline'; " +
         "font-src 'self'; " +
         "connect-src 'self' wss:; " +
@@ -151,6 +155,8 @@ private fun persistUserPreferences(
 
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
+    private val secureRandom = SecureRandom()
+    val CSP_NONCE_KEY = RequestKey.optional<String>("request.cspNonce")
 
     val correlationId: Filter = Filter { next: HttpHandler ->
         { request ->
@@ -187,7 +193,9 @@ object Filters {
 
     fun securityHeaders(cspPolicy: String = DEFAULT_CSP_POLICY): Filter = Filter { next: HttpHandler ->
         { request ->
-            next(request)
+            val cspNonce = generateCspNonce()
+            val requestWithNonce = request.with(CSP_NONCE_KEY of cspNonce)
+            next(requestWithNonce)
                 .header("X-Content-Type-Options", "nosniff")
                 .header("X-Frame-Options", "DENY")
                 .header("Referrer-Policy", "strict-origin-when-cross-origin")
@@ -195,13 +203,26 @@ object Filters {
                 .header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
                 .let { response ->
                     if (!request.uri.path.startsWith("/api/")) {
-                        response.header("Content-Security-Policy", cspPolicy)
+                        response.header("Content-Security-Policy", cspPolicy.withCspNonce(cspNonce))
                     } else {
                         response
                     }
                 }
         }
     }
+
+    private fun generateCspNonce(): String {
+        val bytes = ByteArray(CSP_NONCE_BYTES)
+        secureRandom.nextBytes(bytes)
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+    }
+
+    private fun String.withCspNonce(cspNonce: String): String =
+        if (contains("{nonce}")) {
+            replace("{nonce}", "'nonce-$cspNonce'")
+        } else {
+            this
+        }
 
     val requestLogging: Filter = Filter { next: HttpHandler ->
         { request ->

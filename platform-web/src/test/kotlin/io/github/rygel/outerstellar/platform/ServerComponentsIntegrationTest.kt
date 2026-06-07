@@ -8,12 +8,15 @@ import io.github.rygel.outerstellar.platform.extension.PlatformExtension
 import io.github.rygel.outerstellar.platform.web.WebTest
 import kotlin.test.Test
 import org.http4k.contract.bindContract
+import org.http4k.contract.div
 import org.http4k.contract.meta
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
 import org.http4k.core.Response
 import org.http4k.core.Status
 import org.http4k.hamkrest.hasStatus
+import org.http4k.lens.Path
+import org.http4k.lens.string
 
 class ServerComponentsIntegrationTest : WebTest() {
     @Test
@@ -50,6 +53,21 @@ class ServerComponentsIntegrationTest : WebTest() {
             val aboutResponse = components.app.http!!(Request(GET, "/about"))
             assertThat(aboutResponse, hasStatus(Status.OK))
             assertThat(aboutResponse.bodyString(), equalTo("about"))
+        } finally {
+            components.persistence.close()
+        }
+    }
+
+    @Test
+    fun `extension contract routes with path parameters match requests`() {
+        val config = testConfig.copy(platformMode = PlatformMode.ExtensionHost)
+        val components = createServerComponents(config = config, extension = pathParameterApp())
+
+        try {
+            val response = components.app.http!!(Request(GET, "/projects/outerstellar"))
+
+            assertThat(response, hasStatus(Status.OK))
+            assertThat(response.bodyString(), equalTo("project=outerstellar"))
         } finally {
             components.persistence.close()
         }
@@ -145,6 +163,28 @@ class ServerComponentsIntegrationTest : WebTest() {
                         }
 
                 context.routes.publicUi(route, "Config probe", "/probe/config")
+            }
+        }
+
+    private fun pathParameterApp(): PlatformExtension =
+        object : PlatformExtension {
+            override val id = "path-params"
+            override val appLabel = "Path Params"
+            override val mode = PlatformMode.ExtensionHost
+
+            override fun contribute(context: ExtensionContributionContext) {
+                val slugPath = Path.string().of("slug")
+                val route =
+                    "/projects" / slugPath meta
+                        {
+                            summary = "Project detail"
+                        } bindContract
+                        GET to
+                        { slug ->
+                            { _: Request -> Response(Status.OK).body("project=$slug") }
+                        }
+
+                context.routes.publicUi(route, "Project detail", "/projects/{slug}")
             }
         }
 }

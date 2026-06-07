@@ -54,6 +54,8 @@ class RequestContext(
 
     val csrfToken: String by lazy { request.cookie(CSRF_COOKIE)?.value ?: java.util.UUID.randomUUID().toString() }
 
+    val cspNonce: String by lazy { Filters.CSP_NONCE_KEY(request).orEmpty() }
+
     val lang: String by lazy {
         request.query("lang")
             ?: request.cookie(LANG_COOKIE)?.value

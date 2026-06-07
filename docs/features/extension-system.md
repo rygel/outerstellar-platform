@@ -75,6 +75,14 @@ Prefer the typed `contribute(context)` API for new code. It groups the extension
 The older override methods such as `routeRegistrations(context)` still work, but `contribute(context)` is easier to
 test and keeps route ownership metadata beside the route.
 
+Contributed script URLs from `context.assets.script(...)` are rendered by the platform shell with the current request's
+CSP nonce. If an extension replaces the shell layout or writes its own inline script tags, use `ShellView.cspNonce` as
+the nonce attribute value:
+
+```html
+<script nonce="${shell.cspNonce}">
+```
+
 ## Route Ownership
 
 Every contributed route must stay inside the prefixes declared by `ExtensionManifest.ownership`.

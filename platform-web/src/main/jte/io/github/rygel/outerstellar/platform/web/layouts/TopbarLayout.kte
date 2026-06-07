@@ -90,6 +90,6 @@
         </footer>
     </div>
 </div>
-<script src="/platform.js?v=${shell.version}"></script>
+<script nonce="${shell.cspNonce}" src="/platform.js?v=${shell.version}"></script>
 </body>
 </html>

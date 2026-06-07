@@ -125,6 +125,21 @@ class SecurityHeadersIntegrationTest : WebTest() {
     }
 
     @Test
+    fun `HTML route CSP nonce matches rendered script nonces`() {
+        val response = app(Request(GET, "/auth"))
+        val csp = response.header("Content-Security-Policy")
+        assertNotNull(csp, "CSP should be present on HTML routes")
+
+        val nonce = Regex("""'nonce-([^']+)'""").find(csp)?.groupValues?.get(1)
+        assertNotNull(nonce, "CSP should include a script nonce, got: $csp")
+        assertTrue(nonce.length >= 20, "Nonce should have enough entropy, got: $nonce")
+        assertTrue(
+            response.bodyString().contains("""<script defer nonce="$nonce" src="/vendor/htmx.min.js"></script>""")
+        )
+        assertTrue(response.bodyString().contains("""<script nonce="$nonce" src="/platform.js"""))
+    }
+
+    @Test
     fun `API route does NOT have Content-Security-Policy`() {
         val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         val csp = response.header("Content-Security-Policy")
