@@ -86,7 +86,7 @@ internal class HttpHandlerFactory(
     }
 
     private fun RouteRegistry.handlers(group: RouteGroup): List<RoutingHttpHandler> =
-        byGroup(group).mapNotNull { it.httpRoute as? RoutingHttpHandler }
+        byGroup(group).mapNotNull { it.httpRoute as? RoutingHttpHandler }.distinct()
 
     private fun routesIfPresent(handlers: List<RoutingHttpHandler>): RoutingHttpHandler? =
         handlers.takeIf { it.isNotEmpty() }?.let(::routes)

@@ -34,10 +34,14 @@
 
 Default policy:
 ```
-default-src 'self'; script-src 'self' 'unsafe-inline';
+default-src 'self'; script-src 'self' {nonce};
 style-src 'self' 'unsafe-inline'; font-src 'self';
-connect-src 'self' ws: wss:; img-src 'self' data:;
+connect-src 'self' wss:; img-src 'self' data:;
+base-uri 'self'; form-action 'self'
 ```
+
+`{nonce}` is replaced per request with a cryptographically random `nonce-...` source. Platform layouts expose the same
+value as `ShellView.cspNonce` and render it on script tags.
 
 ## SSRF Protection
 

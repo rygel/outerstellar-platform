@@ -27,8 +27,8 @@
     <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
     <link rel="stylesheet" href="/site.css?v=[CACHE-BUSTER]">
     
-    <script defer src="/vendor/htmx.min.js"></script>
-    <script defer src="/vendor/htmx-ext-ws.js"></script>
+    <script defer nonce="[CSP-NONCE]" src="/vendor/htmx.min.js"></script>
+    <script defer nonce="[CSP-NONCE]" src="/vendor/htmx-ext-ws.js"></script>
     
 </head>
 
@@ -278,8 +278,9 @@
         </aside>
     </div>
 </div>
-<script src="/platform.js?v=[CACHE-BUSTER]"></script>
+<script nonce="[CSP-NONCE]" src="/platform.js?v=[CACHE-BUSTER]"></script>
 </body>
 </html>
+
 
 

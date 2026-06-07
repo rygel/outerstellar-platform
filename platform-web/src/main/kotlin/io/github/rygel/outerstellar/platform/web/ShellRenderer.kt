@@ -286,6 +286,7 @@ class ShellRenderer(
             changePasswordLabel = i18n.translate("web.layout.change.password"),
             signOutLabel = i18n.translate("web.layout.sign.out"),
             csrfToken = ctx.csrfToken,
+            cspNonce = ctx.cspNonce,
             searchUrl = searchUrl(),
             searchPlaceholder = i18n.translate("web.search.placeholder"),
             searchLabel = i18n.translate("web.search.label"),

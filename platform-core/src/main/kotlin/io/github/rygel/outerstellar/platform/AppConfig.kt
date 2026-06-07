@@ -17,7 +17,7 @@ private const val DEFAULT_LOCKOUT_DURATION_SECONDS = 900L
 private const val DEFAULT_REGISTRATION_ENABLED = true
 private const val DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES = 1440
 private const val DEFAULT_CSP_POLICY =
-    "default-src 'self'; script-src 'self'; " +
+    "default-src 'self'; script-src 'self' {nonce}; " +
         "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' wss:; img-src 'self' data:; " +
         "base-uri 'self'; form-action 'self'"
 
