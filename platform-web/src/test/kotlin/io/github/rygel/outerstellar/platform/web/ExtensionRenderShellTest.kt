@@ -107,11 +107,16 @@ class ExtensionRenderShellTest {
                 .copy(
                     extensionStylesheets = listOf("/extensions/reports/assets/reports.css"),
                     extensionScripts = listOf("/extensions/reports/assets/reports.js"),
+                    cspNonce = "test-nonce",
                 )
 
         val result = ctx.renderShell(shell, "<p>content</p>")
 
         assertTrue(result.contains("""<link rel="stylesheet" href="/extensions/reports/assets/reports.css">"""))
-        assertTrue(result.contains("""<script defer src="/extensions/reports/assets/reports.js"></script>"""))
+        assertTrue(
+            result.contains(
+                """<script defer nonce="test-nonce" src="/extensions/reports/assets/reports.js"></script>"""
+            )
+        )
     }
 }

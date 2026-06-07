@@ -78,7 +78,14 @@ class WebFuzzTest {
         val filter = Filters.securityHeaders(cspPolicy = input).then { _: Request -> Response(Status.OK).body("ok") }
 
         val uiResponse = filter(Request(Method.GET, "/"))
-        assertEquals(input, uiResponse.header("Content-Security-Policy"))
+        val actualPolicy = uiResponse.header("Content-Security-Policy").orEmpty()
+        if (input.contains("{nonce}")) {
+            val expectedPolicy =
+                Regex(Regex.escape(input).replace(Regex.escape("{nonce}"), """'nonce-[A-Za-z0-9_-]+'"""))
+            assertTrue(expectedPolicy.matches(actualPolicy))
+        } else {
+            assertEquals(input, actualPolicy)
+        }
 
         val apiResponse = filter(Request(Method.GET, "/api/v1/health"))
         assertNull(apiResponse.header("Content-Security-Policy"))

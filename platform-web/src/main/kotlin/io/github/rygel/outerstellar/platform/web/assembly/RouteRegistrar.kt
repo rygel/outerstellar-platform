@@ -322,22 +322,38 @@ internal class RouteRegistrar(
     }
 
     private fun registerExtensionRoutes(registry: RouteRegistry) {
-        extensionContribution.routeRegistrations.forEach { registration ->
-            val httpRoute =
-                when (val route = registration.httpRoute) {
-                    is ContractRoute -> contract { routes += route }
-                    else -> route
-                }
-            registry.register(
-                RegisteredRoute(
-                    httpRoute,
-                    RouteOwner.Extension,
-                    registration.group,
-                    registration.pathPattern,
-                    registration.method,
-                    registration.description,
+        extensionContribution.routeRegistrations
+            .filter { it.staticRoute != null }
+            .forEach { registration ->
+                registry.register(
+                    RegisteredRoute(
+                        registration.staticRoute,
+                        RouteOwner.Extension,
+                        registration.group,
+                        registration.pathPattern,
+                        registration.method,
+                        registration.description,
+                    )
                 )
-            )
-        }
+            }
+
+        extensionContribution.routeRegistrations
+            .filter { it.route != null }
+            .groupBy { it.group }
+            .forEach { (_, registrations) ->
+                val extensionContract = contract { routes += registrations.mapNotNull { it.route } }
+                registrations.forEach { registration ->
+                    registry.register(
+                        RegisteredRoute(
+                            extensionContract,
+                            RouteOwner.Extension,
+                            registration.group,
+                            registration.pathPattern,
+                            registration.method,
+                            registration.description,
+                        )
+                    )
+                }
+            }
     }
 }

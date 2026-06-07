@@ -37,6 +37,7 @@ data class ShellView(
     val changePasswordLabel: String = "Change password",
     val signOutLabel: String = "Sign out",
     val csrfToken: String = "",
+    val cspNonce: String = "",
     val notificationsUrl: String? = null,
     val unreadNotificationCount: Int = 0,
     val searchUrl: String? = "/search",

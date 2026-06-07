@@ -33,9 +33,9 @@
     @for(stylesheet in shell.extensionStylesheets)
     <link rel="stylesheet" href="${stylesheet}">
     @endfor
-    <script defer src="/vendor/htmx.min.js"></script>
-    <script defer src="/vendor/htmx-ext-ws.js"></script>
+    <script defer nonce="${shell.cspNonce}" src="/vendor/htmx.min.js"></script>
+    <script defer nonce="${shell.cspNonce}" src="/vendor/htmx-ext-ws.js"></script>
     @for(script in shell.extensionScripts)
-    <script defer src="${script}"></script>
+    <script defer nonce="${shell.cspNonce}" src="${script}"></script>
     @endfor
 </head>
