@@ -9,6 +9,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.13] – 2026-06-08
+
+### Fixed
+
+- **Global error handler fallback response** — when an exception occurs and rendering the normal error page also fails, the platform now returns a plain-text 500 response containing the original exception message instead of replacing it with a generic emergency HTML page.
+
+---
+
 ## [3.6.12] – 2026-06-07
 
 ### Added
