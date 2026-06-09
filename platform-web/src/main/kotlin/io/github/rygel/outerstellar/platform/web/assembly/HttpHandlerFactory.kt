@@ -53,7 +53,16 @@ internal class HttpHandlerFactory(
                 "/health" bind
                     GET to
                     {
-                        StaticRoutes.localhostOnly.then { StaticRoutes.buildHealthResponse(userRepository) }(it)
+                        StaticRoutes.localhostOnly.then {
+                            StaticRoutes.buildHealthResponse(userRepository, extensionContribution)
+                        }(it)
+                    },
+                "/debug/routes" bind
+                    GET to
+                    {
+                        StaticRoutes.localhostOnly.then {
+                            StaticRoutes.buildRouteDiagnostics(registry, extensionContribution)
+                        }(it)
                     },
                 "/metrics" bind GET to metricsHandler,
                 "/robots.txt" bind GET to { StaticRoutes.buildRobotsTxtResponse() },

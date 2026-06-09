@@ -31,6 +31,13 @@ Remove-Item $watcherLog, $watcherErrorLog, $appLog, $appErrorLog, $tailwindLog, 
 $env:DEV_MODE = "true"
 $port = if ($env:PORT) { [int]$env:PORT } else { 8080 }
 
+$markerOwner = if ($env:AGENT_OWNER) { $env:AGENT_OWNER } else { "outerstellar-start-web" }
+$markerTaskPrefix = if ($env:AGENT_TASK) { $env:AGENT_TASK } else { "web-dev" }
+$mavenMarkerOpts = "-Dagent.owner=$markerOwner -Dagent.task=$markerTaskPrefix"
+$env:MAVEN_OPTS = (($env:MAVEN_OPTS, $mavenMarkerOpts) | Where-Object { $_ }) -join " "
+$env:AGENT_OWNER = $markerOwner
+$env:AGENT_TASK = $markerTaskPrefix
+
 Write-Host "Ensuring Node dependencies..." -ForegroundColor Cyan
 & $npmCommand.Source run css:ensure
 if ($LASTEXITCODE -ne 0) {
@@ -38,6 +45,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Starting watcher..." -ForegroundColor Cyan
+$env:AGENT_TASK = "$markerTaskPrefix-maven-watch"
 $watcherProcess = Start-Process `
     -FilePath $mavenCommand.Source `
     -ArgumentList "-Pruntime-dev", "-pl", "platform-web", "fizzed-watcher:run" `
@@ -48,6 +56,7 @@ $watcherProcess = Start-Process `
     -PassThru
 
 Write-Host "Starting Tailwind watcher..." -ForegroundColor Cyan
+$env:AGENT_TASK = "$markerTaskPrefix-tailwind-watch"
 $tailwindProcess = Start-Process `
     -FilePath $npmCommand.Source `
     -ArgumentList "run", "watch:css" `
@@ -58,6 +67,7 @@ $tailwindProcess = Start-Process `
     -PassThru
 
 Write-Host "Starting web application..." -ForegroundColor Green
+$env:AGENT_TASK = "$markerTaskPrefix-web-app"
 $appProcess = Start-Process `
     -FilePath $mavenCommand.Source `
     -ArgumentList "-Pruntime-dev", "-pl", "platform-web", "compile", "exec:java" `
@@ -70,6 +80,7 @@ $appProcess = Start-Process `
 Set-Content -Path $watcherPidFile -Value $watcherProcess.Id
 Set-Content -Path $tailwindPidFile -Value $tailwindProcess.Id
 Set-Content -Path $appPidFile -Value $appProcess.Id
+$env:AGENT_TASK = $markerTaskPrefix
 
 $healthUrl = "http://localhost:$port/health"
 $started = $false

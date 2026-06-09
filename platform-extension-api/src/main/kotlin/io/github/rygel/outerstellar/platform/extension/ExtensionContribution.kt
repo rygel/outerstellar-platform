@@ -18,6 +18,7 @@ data class ExtensionContribution(
     val adminSections: List<AdminSection> = emptyList(),
     val bannerProviders: List<BannerProvider> = emptyList(),
     val templateOverrides: Set<String> = emptySet(),
+    val readinessChecks: List<ExtensionReadinessCheck> = emptyList(),
     val options: ExtensionOptions = ExtensionOptions(),
 ) {
     fun diagnostics(): ExtensionDiagnostics =
@@ -71,6 +72,7 @@ data class ExtensionContribution(
             includedPlatformPages = includedPlatformPages.map { it.pageSet.id }.sorted(),
             stylesheets = options.assets.stylesheets,
             scripts = options.assets.scripts,
+            readiness = readinessChecks,
             ownership = effectiveOwnership?.toDiagnostics(),
         )
 
@@ -107,6 +109,7 @@ data class ExtensionContribution(
                 adminSections = adminSections,
                 bannerProviders = contributionContext.bannerRegistry.snapshot(),
                 templateOverrides = contributionContext.templateOverrideRegistry.snapshot(),
+                readinessChecks = contributionContext.readinessRegistry.snapshot(),
                 options =
                     ExtensionOptions(
                         navItems = contributionContext.navigationRegistry.snapshot(),
@@ -189,6 +192,7 @@ data class ExtensionDiagnostics(
     val includedPlatformPages: List<String>,
     val stylesheets: List<String>,
     val scripts: List<String>,
+    val readiness: List<ExtensionReadinessCheck>,
     val ownership: ExtensionOwnershipDiagnostics?,
 )
 

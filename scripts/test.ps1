@@ -58,6 +58,11 @@ if ($ExtraArgs) {
 
 $timeoutMs = $TimeoutMinutes * 60 * 1000
 $startTime = Get-Date
+$markerOwner = if ($env:AGENT_OWNER) { $env:AGENT_OWNER } else { "outerstellar-test-script" }
+$markerTask = if ($env:AGENT_TASK) { $env:AGENT_TASK } else { "reactor-verify" }
+$env:AGENT_OWNER = $markerOwner
+$env:AGENT_TASK = $markerTask
+$env:MAVEN_OPTS = (($env:MAVEN_OPTS, "-Dagent.owner=$markerOwner -Dagent.task=$markerTask") | Where-Object { $_ }) -join " "
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host " Test Runner (timeout: ${TimeoutMinutes}min)" -ForegroundColor Cyan
