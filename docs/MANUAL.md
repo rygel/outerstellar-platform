@@ -394,6 +394,15 @@ mvn spotless:check checkstyle:check pmd:check spotbugs:check detekt:check
 | `scripts/stop-web.ps1` | Kill web dev stack |
 | `scripts/start-swing.ps1` | Start Swing desktop client |
 
+The web and test scripts mark their Maven-launched JVMs with `-Dagent.owner=...` and `-Dagent.task=...`.
+On a shared Windows machine, identify marked processes with:
+
+```powershell
+Get-CimInstance Win32_Process |
+  Where-Object { $_.CommandLine -match 'agent.owner=' -or $_.CommandLine -match 'AGENT_OWNER=' } |
+  Select-Object ProcessId, CommandLine
+```
+
 ---
 
 ## Configuration Reference
@@ -489,6 +498,21 @@ For large deployments (2 GB+ heap), enable parallel GC and preload:
 
 ```bash
 java -Xms2g -Xmx4g -XX:+UseParallelGC -Djte.production=true -DJTE_PRELOAD_ENABLED=true -jar platform-web/target/platform-web-*.jar
+```
+
+When launching manually on a shared machine, add process markers to JVM commands:
+
+```bash
+java -Dagent.owner=outerstellar -Dagent.task=web-prod -Xms256m -Xmx1g -jar platform-web/target/platform-web-*.jar
+```
+
+For native-image binaries, record the owner by the supervisor or wrapper command and by the listening port:
+
+```powershell
+$env:AGENT_OWNER = "outerstellar"
+$env:AGENT_TASK = "native-web"
+.\platform-web.exe
+Get-NetTCPConnection -LocalPort 8080 -State Listen | Select-Object OwningProcess, LocalPort
 ```
 
 > **JVM vs Native Image (item #17):** Native image (GraalVM) can reduce cold start time from ~3-5s to <1s and idle RSS from ~150 MB to ~50 MB. However, peak throughput is typically comparable or slightly lower than JVM due to the absence of JIT optimizations. The best deployment strategy is: use JVM for steady-state workloads (servers), use native-image for short-lived or auto-scaling workloads (serverless, batch jobs). Run your own benchmark with `APP_PROFILE=small` on both runtimes before choosing.

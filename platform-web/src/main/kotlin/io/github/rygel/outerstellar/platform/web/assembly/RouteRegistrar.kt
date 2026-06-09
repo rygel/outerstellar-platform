@@ -166,6 +166,7 @@ internal class RouteRegistrar(
             ComponentRoutes(
                 web.pages.sidebarFactory,
                 web.pages.homePageFactory,
+                web.pages.infraPageFactory,
                 web.runtime.templateRenderer,
                 web.voteService,
                 web.pollService,
@@ -183,6 +184,16 @@ internal class RouteRegistrar(
                 "/components/openapi.json",
                 "GET",
                 "Public components",
+            )
+        )
+        registry.register(
+            RegisteredRoute(
+                componentRoutes.footerStatusRoute,
+                RouteOwner.PlatformKernel,
+                RouteGroup.PublicUi,
+                "/components/footer-status",
+                "GET",
+                "Footer status component",
             )
         )
         val protectedContract = contract {
@@ -303,6 +314,16 @@ internal class RouteRegistrar(
         )
         registry.register(
             RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Health, "/metrics", "GET", "Metrics")
+        )
+        registry.register(
+            RegisteredRoute(
+                null,
+                RouteOwner.PlatformKernel,
+                RouteGroup.Health,
+                "/debug/routes",
+                "GET",
+                "Local route diagnostics",
+            )
         )
         registry.register(
             RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Static, "/robots.txt", "GET", "Robots.txt")

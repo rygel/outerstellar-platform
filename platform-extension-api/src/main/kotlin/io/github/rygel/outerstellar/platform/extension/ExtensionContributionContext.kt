@@ -31,6 +31,7 @@ internal constructor(
         ExtensionNavigationContributionRegistry(),
     internal val layoutRegistry: ExtensionLayoutContributionRegistry = ExtensionLayoutContributionRegistry(),
     internal val assetRegistry: ExtensionAssetContributionRegistry = ExtensionAssetContributionRegistry(),
+    internal val readinessRegistry: ExtensionReadinessContributionRegistry = ExtensionReadinessContributionRegistry(),
     internal val templateOverrideRegistry: ExtensionTemplateContributionRegistry =
         ExtensionTemplateContributionRegistry(),
 ) {
@@ -42,6 +43,7 @@ internal constructor(
     val navigation: ExtensionNavigationContributionRegistry = navigationRegistry
     val layout: ExtensionLayoutContributionRegistry = layoutRegistry
     val assets: ExtensionAssetContributionRegistry = assetRegistry
+    val readiness: ExtensionReadinessContributionRegistry = readinessRegistry
     val templates: ExtensionTemplateContributionRegistry = templateOverrideRegistry
 }
 
@@ -102,7 +104,7 @@ class ExtensionRouteContributionRegistry internal constructor(private val host: 
                 { req: Request ->
                     val viewModel = model(req)
                     val html = host.rendering.renderer(viewModel)
-                    Response(OK).header("content-type", "text/html; charset=utf-8").body(html as String)
+                    Response(OK).header("content-type", "text/html; charset=utf-8").body(html)
                 }
         register(route, group, description, path, "GET")
     }
@@ -237,6 +239,30 @@ class ExtensionAssetContributionRegistry internal constructor() {
 
     internal fun snapshot(): ExtensionAssets =
         ExtensionAssets(stylesheets = stylesheets.toList(), scripts = scripts.toList())
+}
+
+class ExtensionReadinessContributionRegistry internal constructor() {
+    private val checks = mutableListOf<ExtensionReadinessCheck>()
+
+    fun up(name: String, message: String, required: Boolean = true) {
+        check(ExtensionReadinessCheck(name, ExtensionReadinessStatus.UP, message, required))
+    }
+
+    fun warn(name: String, message: String, required: Boolean = false) {
+        check(ExtensionReadinessCheck(name, ExtensionReadinessStatus.WARN, message, required))
+    }
+
+    fun down(name: String, message: String, required: Boolean = true) {
+        check(ExtensionReadinessCheck(name, ExtensionReadinessStatus.DOWN, message, required))
+    }
+
+    fun check(check: ExtensionReadinessCheck) {
+        require(check.name.isNotBlank()) { "Extension readiness check name must not be blank." }
+        require(check.message.isNotBlank()) { "Extension readiness check message must not be blank." }
+        checks += check
+    }
+
+    internal fun snapshot(): List<ExtensionReadinessCheck> = checks.toList()
 }
 
 class ExtensionTemplateContributionRegistry internal constructor() {

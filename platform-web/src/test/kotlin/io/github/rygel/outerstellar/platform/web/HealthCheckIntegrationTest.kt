@@ -2,6 +2,8 @@ package io.github.rygel.outerstellar.platform.web
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.containsSubstring
+import io.github.rygel.outerstellar.platform.extension.ExtensionContributionContext
+import io.github.rygel.outerstellar.platform.extension.PlatformExtension
 import kotlin.test.Test
 import org.http4k.core.Method.GET
 import org.http4k.core.Request
@@ -67,4 +69,38 @@ class HealthCheckIntegrationTest : WebTest() {
         assertThat(response, hasBody(!containsSubstring("users")))
         assertThat(response, hasBody(!containsSubstring("Exception")))
     }
+
+    @Test
+    fun `GET health exposes optional extension readiness without failing`() {
+        val response = buildApp(extension = readinessExtension(requiredDown = false))(Request(GET, "/health"))
+
+        assertThat(response, hasStatus(Status.OK))
+        assertThat(response, bodyContains("extensions"))
+        assertThat(response, bodyContains("preview-cache"))
+        assertThat(response, bodyContains("Preview cache is disabled"))
+    }
+
+    @Test
+    fun `GET health fails when required extension readiness is down`() {
+        val response = buildApp(extension = readinessExtension(requiredDown = true))(Request(GET, "/health"))
+
+        assertThat(response, hasStatus(Status.SERVICE_UNAVAILABLE))
+        assertThat(response, bodyContains("\"status\":\"DOWN\""))
+        assertThat(response, bodyContains("content-dir"))
+        assertThat(response, bodyContains("Set CONTENT_DIR to an existing directory"))
+    }
+
+    private fun readinessExtension(requiredDown: Boolean): PlatformExtension =
+        object : PlatformExtension {
+            override val id = "reports"
+            override val appLabel = "Reports"
+
+            override fun contribute(context: ExtensionContributionContext) {
+                if (requiredDown) {
+                    context.readiness.down("content-dir", "Set CONTENT_DIR to an existing directory")
+                } else {
+                    context.readiness.warn("preview-cache", "Preview cache is disabled")
+                }
+            }
+        }
 }

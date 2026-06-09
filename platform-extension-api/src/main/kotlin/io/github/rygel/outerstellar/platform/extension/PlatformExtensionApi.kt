@@ -87,6 +87,19 @@ data class ExtensionRouteRegistration(
 
 data class ExtensionAssets(val stylesheets: List<String> = emptyList(), val scripts: List<String> = emptyList())
 
+enum class ExtensionReadinessStatus {
+    UP,
+    WARN,
+    DOWN,
+}
+
+data class ExtensionReadinessCheck(
+    val name: String,
+    val status: ExtensionReadinessStatus,
+    val message: String,
+    val required: Boolean = true,
+)
+
 fun interface ExtensionLayoutRenderer {
     fun render(shell: ShellView, content: Content): Content
 }

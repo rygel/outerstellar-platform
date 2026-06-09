@@ -26,5 +26,12 @@ typealias ExtensionLayoutContributionRegistry =
 typealias ExtensionAssetContributionRegistry =
     io.github.rygel.outerstellar.platform.extension.ExtensionAssetContributionRegistry
 
+typealias ExtensionReadinessContributionRegistry =
+    io.github.rygel.outerstellar.platform.extension.ExtensionReadinessContributionRegistry
+
+typealias ExtensionReadinessCheck = io.github.rygel.outerstellar.platform.extension.ExtensionReadinessCheck
+
+typealias ExtensionReadinessStatus = io.github.rygel.outerstellar.platform.extension.ExtensionReadinessStatus
+
 typealias ExtensionTemplateContributionRegistry =
     io.github.rygel.outerstellar.platform.extension.ExtensionTemplateContributionRegistry
