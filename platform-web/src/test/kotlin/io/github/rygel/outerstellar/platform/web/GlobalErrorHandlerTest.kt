@@ -21,7 +21,7 @@ class GlobalErrorHandlerTest {
     private val errorPageFactory = ErrorPageFactory()
 
     @Test
-    fun `error handler returns emergency error page when template rendering fails`() {
+    fun `error handler returns plain text with original exception when template rendering fails`() {
         val handler =
             Filters.globalErrorHandler(errorPageFactory, brokenRenderer).then {
                 throw HandlerTestException("something broke in the handler")
@@ -30,23 +30,19 @@ class GlobalErrorHandlerTest {
         val response = handler(pageRequest("/test-page", "request-123"))
 
         assertThat(response, hasStatus(Status.INTERNAL_SERVER_ERROR))
-        assertThat(response, hasHeader("content-type", "text/html; charset=utf-8"))
-        assertThat(response, hasBody(containsSubstring("<h1>Internal Server Error</h1>")))
-        assertThat(response, hasBody(containsSubstring("The error has been logged.")))
-        assertThat(response, hasBody(containsSubstring("Reference: request-123")))
-        assertThat(response, hasBody(!containsSubstring("something broke in the handler")))
+        assertThat(response, hasHeader("content-type", "text/plain; charset=utf-8"))
+        assertThat(response, hasBody("Internal Server Error: something broke in the handler"))
     }
 
     @Test
-    fun `error handler returns emergency error page with request reference when exception has no message`() {
+    fun `error handler returns plain text with generic message when exception has no message`() {
         val handler = Filters.globalErrorHandler(errorPageFactory, brokenRenderer).then { throw HandlerTestException() }
 
         val response = handler(pageRequest("/test-page", "request-456"))
 
         assertThat(response, hasStatus(Status.INTERNAL_SERVER_ERROR))
-        assertThat(response, hasBody(containsSubstring("<h1>Internal Server Error</h1>")))
-        assertThat(response, hasBody(containsSubstring("The error has been logged.")))
-        assertThat(response, hasBody(containsSubstring("Reference: request-456")))
+        assertThat(response, hasHeader("content-type", "text/plain; charset=utf-8"))
+        assertThat(response, hasBody("Internal Server Error: An unexpected error occurred"))
     }
 
     @Test

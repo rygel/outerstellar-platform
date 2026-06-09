@@ -9,6 +9,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.13] – 2026-06-08
+
+### Fixed
+
+- **Global error handler fallback response** — when an exception occurs and rendering the normal error page also fails, the platform now returns a plain-text 500 response containing the original exception message instead of replacing it with a generic emergency HTML page.
+
+---
+
+## [3.6.12] – 2026-06-07
+
+### Added
+
+- **Nonce-based Content Security Policy support** — generated per-request CSP nonces, expanded `{nonce}` in configured policies, and exposed the nonce to platform and extension shell rendering so scripts can run without `unsafe-inline` (#472).
+
+### Fixed
+
+- **Extension contract route parameters** — mounted extension `ContractRoute` registrations through shared contracts per route group so path-parameter routes resolve instead of returning 404 (#471).
+- **Error-page approval stability** — normalized generated CSP nonces in error-page approval tests while preserving coverage for nonce-bearing script tags.
+
+---
+
 ## [3.6.11] – 2026-06-06
 
 ### Changed
