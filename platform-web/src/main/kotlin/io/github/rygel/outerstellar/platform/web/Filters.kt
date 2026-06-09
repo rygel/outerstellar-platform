@@ -520,14 +520,16 @@ object Filters {
                 Response(status).header("content-type", "text/html; charset=utf-8").body(renderer(errorPage))
             } catch (renderEx: Exception) {
                 logErrorPageRenderFailure(request, status, originalException = e, renderException = renderEx)
-                emergencyErrorResponse(
-                    status = status,
-                    title = status.description,
-                    message = "The error has been logged.",
-                    request = request,
-                )
+                plainTextOriginalErrorResponse(status, e)
             }
         }
+    }
+
+    private fun plainTextOriginalErrorResponse(status: Status, originalException: Exception): Response {
+        val message = originalException.message ?: "An unexpected error occurred"
+        return Response(status)
+            .header("content-type", "text/plain; charset=utf-8")
+            .body("Internal Server Error: $message")
     }
 
     private fun logErrorPageRenderFailure(

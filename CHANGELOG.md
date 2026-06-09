@@ -9,6 +9,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.14] – 2026-06-09
+
+### Added
+
+- **External static asset directories** — platform and extension assets can now be loaded from configured filesystem directories before packaged resources, enabling deployment-specific CSS, JavaScript, and media overrides without rebuilding artifacts (#479).
+- **Platform diagnostics** — added local-only route diagnostics with route owner, group, method, path pattern, description, handler kind, extension readiness checks, and excluded page sets (#476).
+- **Extension readiness checks** — extensions can now report named `UP`, `WARN`, or `DOWN` readiness checks with actionable messages; required `DOWN` checks make `/health` fail for release and operations visibility (#476).
+
+### Changed
+
+- **Shell component ownership** — `/components/footer-status` is registered through platform component routes so shell templates no longer reference an unregistered component endpoint (#476).
+- **Asset loading** — removed the unconditional Remix icon font preload while retaining the stylesheet load, avoiding unnecessary preload noise for pages that do not need the font immediately (#476).
+- **Process hygiene** — dev and test scripts now mark Maven-launched JVM processes with stable `agent.owner` and `agent.task` values and document shared-machine process identification (#476).
+
+---
+
+## [3.6.13] – 2026-06-08
+
+### Fixed
+
+- **Global error handler fallback response** — when an exception occurs and rendering the normal error page also fails, the platform now returns a plain-text 500 response containing the original exception message instead of replacing it with a generic emergency HTML page.
+
+---
+
+## [3.6.12] – 2026-06-07
+
+### Added
+
+- **Nonce-based Content Security Policy support** — generated per-request CSP nonces, expanded `{nonce}` in configured policies, and exposed the nonce to platform and extension shell rendering so scripts can run without `unsafe-inline` (#472).
+
+### Fixed
+
+- **Extension contract route parameters** — mounted extension `ContractRoute` registrations through shared contracts per route group so path-parameter routes resolve instead of returning 404 (#471).
+- **Error-page approval stability** — normalized generated CSP nonces in error-page approval tests while preserving coverage for nonce-bearing script tags.
+
+---
+
 ## [3.6.11] – 2026-06-06
 
 ### Changed
