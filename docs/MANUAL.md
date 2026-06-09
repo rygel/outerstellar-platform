@@ -463,6 +463,7 @@ runtime:
 | `maxFailedLoginAttempts` | `MAX_FAILED_LOGIN_ATTEMPTS` | 10 | Account lockout threshold |
 | `lockoutDurationSeconds` | `LOCKOUT_DURATION_SECONDS` | 900 | Account lockout duration |
 | `cspPolicy` | `CSP_POLICY` | (default CSP string) | Content-Security-Policy header |
+| `staticDir` | `STATIC_DIR` (`ASSETS_DIR` alias) | "" | Filesystem directory for static assets before classpath fallback |
 | `version` | `VERSION` | `dev` | Application version label |
 
 ---

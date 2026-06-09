@@ -82,6 +82,8 @@ class ExtensionRouteContributionRegistry internal constructor(private val host: 
         registrations +=
             ExtensionRouteRegistration.staticAssets(
                 route = pathPrefix bind static(loader),
+                pathPrefix = pathPrefix,
+                loader = loader,
                 description = description,
                 pathPattern = "$pathPrefix/*",
             )

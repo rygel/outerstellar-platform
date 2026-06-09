@@ -40,6 +40,24 @@ class AppConfigTest {
     }
 
     @Test
+    fun `static dir is set from STATIC_DIR env var`() {
+        val config = AppConfig.fromEnvironment(mapOf("STATIC_DIR" to "C:\\outerstellar\\assets"))
+
+        assert(config.staticDir == "C:\\outerstellar\\assets") {
+            "Expected STATIC_DIR value but was ${config.staticDir}"
+        }
+    }
+
+    @Test
+    fun `static dir is set from ASSETS_DIR env var`() {
+        val config = AppConfig.fromEnvironment(mapOf("ASSETS_DIR" to "C:\\outerstellar\\assets"))
+
+        assert(config.staticDir == "C:\\outerstellar\\assets") {
+            "Expected ASSETS_DIR value but was ${config.staticDir}"
+        }
+    }
+
+    @Test
     fun `accepts valid config without warnings`() {
         val env =
             mapOf(

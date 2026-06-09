@@ -2,6 +2,8 @@ package io.github.rygel.outerstellar.platform.web
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.containsSubstring
+import java.nio.file.Files
+import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import org.http4k.core.Method.GET
@@ -65,16 +67,45 @@ class StaticAssetIntegrationTest : WebTest() {
     }
 
     @Test
-    fun `extension static files are served without authentication`() {
-        val extension =
-            object : PlatformExtension {
-                override val id = "reports"
+    fun `platform static files prefer configured filesystem directory`() {
+        val staticDir = createStaticDir()
+        Files.writeString(staticDir.resolve("site.css"), "body { color: seagreen; }")
 
-                override fun contribute(context: ExtensionContributionContext) {
-                    context.routes.staticAssets("/extensions/reports/assets", ResourceLoader.Classpath("static"))
-                }
-            }
-        val response = buildApp(extension = extension)(Request(GET, "/extensions/reports/assets/site.css"))
+        val response = buildApp(config = testConfig.copy(staticDir = staticDir.toString()))(Request(GET, "/site.css"))
+
+        assertThat(response, hasStatus(Status.OK))
+        assertThat(response, hasBody(containsSubstring("seagreen")))
+    }
+
+    @Test
+    fun `extension static files are served without authentication`() {
+        val response = buildApp(extension = reportsExtension())(Request(GET, "/extensions/reports/assets/site.css"))
+
+        assertThat(response, hasStatus(Status.OK))
+        assertThat(response, hasBody(containsSubstring(".")))
+    }
+
+    @Test
+    fun `extension static files prefer configured filesystem directory`() {
+        val staticDir = createStaticDir()
+        Files.writeString(staticDir.resolve("site.css"), "body { color: hotpink; }")
+
+        val response =
+            buildApp(config = testConfig.copy(staticDir = staticDir.toString()), extension = reportsExtension())(
+                Request(GET, "/extensions/reports/assets/site.css")
+            )
+
+        assertThat(response, hasStatus(Status.OK))
+        assertThat(response, hasBody(containsSubstring("hotpink")))
+    }
+
+    @Test
+    fun `extension static files fall back to classpath when configured filesystem file is absent`() {
+        val staticDir = createStaticDir()
+        val response =
+            buildApp(config = testConfig.copy(staticDir = staticDir.toString()), extension = reportsExtension())(
+                Request(GET, "/extensions/reports/assets/site.css")
+            )
 
         assertThat(response, hasStatus(Status.OK))
         assertThat(response, hasBody(containsSubstring(".")))
@@ -106,5 +137,20 @@ class StaticAssetIntegrationTest : WebTest() {
             response.header("ETag") == null,
             "JSON responses should not have ETag, got: ${response.header("ETag")}",
         )
+    }
+
+    private fun reportsExtension(): PlatformExtension =
+        object : PlatformExtension {
+            override val id = "reports"
+
+            override fun contribute(context: ExtensionContributionContext) {
+                context.routes.staticAssets("/extensions/reports/assets", ResourceLoader.Classpath("static"))
+            }
+        }
+
+    private fun createStaticDir(): Path {
+        val root = Path.of("target", "test-static-assets")
+        Files.createDirectories(root)
+        return Files.createTempDirectory(root, "static-")
     }
 }

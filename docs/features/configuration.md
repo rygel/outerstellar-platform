@@ -39,6 +39,7 @@ Usage: `APP_PROFILE=small mvn exec:java`
 | `maxFailedLoginAttempts` | `MAX_FAILED_LOGIN_ATTEMPTS` | 10 | Account lockout threshold |
 | `lockoutDurationSeconds` | `LOCKOUT_DURATION_SECONDS` | 900 | Lockout duration (seconds) |
 | `cspPolicy` | `CSP_POLICY` | (default policy) | Content-Security-Policy |
+| `staticDir` | `STATIC_DIR` (`ASSETS_DIR` alias) | "" | Filesystem directory for static assets before classpath fallback |
 | `version` | `VERSION` | `dev` | Version label |
 
 ### Runtime Sizing
