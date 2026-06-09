@@ -9,6 +9,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.14] – 2026-06-09
+
+### Added
+
+- **External static asset directories** — platform and extension assets can now be loaded from configured filesystem directories before packaged resources, enabling deployment-specific CSS, JavaScript, and media overrides without rebuilding artifacts (#479).
+- **Platform diagnostics** — added local-only route diagnostics with route owner, group, method, path pattern, description, handler kind, extension readiness checks, and excluded page sets (#476).
+- **Extension readiness checks** — extensions can now report named `UP`, `WARN`, or `DOWN` readiness checks with actionable messages; required `DOWN` checks make `/health` fail for release and operations visibility (#476).
+
+### Changed
+
+- **Shell component ownership** — `/components/footer-status` is registered through platform component routes so shell templates no longer reference an unregistered component endpoint (#476).
+- **Asset loading** — removed the unconditional Remix icon font preload while retaining the stylesheet load, avoiding unnecessary preload noise for pages that do not need the font immediately (#476).
+- **Process hygiene** — dev and test scripts now mark Maven-launched JVM processes with stable `agent.owner` and `agent.task` values and document shared-machine process identification (#476).
+
+---
+
 ## [3.6.13] – 2026-06-08
 
 ### Fixed
