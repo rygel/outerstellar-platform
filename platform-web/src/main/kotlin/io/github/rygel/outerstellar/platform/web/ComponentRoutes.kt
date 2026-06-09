@@ -27,6 +27,7 @@ private const val VOTE_PATH_SUFFIX = "/vote"
 class ComponentRoutes(
     private val sidebarFactory: SidebarFactory,
     private val homePageFactory: HomePageFactory,
+    private val infraPageFactory: InfraPageFactory,
     private val renderer: TemplateRenderer,
     private val voteService: VoteService? = null,
     private val pollService: PollService? = null,
@@ -38,8 +39,19 @@ class ComponentRoutes(
     private val optionIdLens = Query.string().required("optionId")
     private val pollSyncIdPath = Path.string().of("syncId")
 
+    val footerStatusRoute =
+        "/components/footer-status" meta
+            {
+                summary = "Footer status fragment"
+            } bindContract
+            GET to
+            { request: org.http4k.core.Request ->
+                renderer.render(infraPageFactory.buildFooterStatus(request.shellRenderer))
+            }
+
     val publicRoutes =
         listOf(
+            footerStatusRoute,
             "/components/navigation/page" meta
                 {
                     summary = "Theme/Lang/Layout refresh"

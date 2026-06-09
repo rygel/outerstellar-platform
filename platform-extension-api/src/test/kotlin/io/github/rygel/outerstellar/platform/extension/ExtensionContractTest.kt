@@ -46,6 +46,27 @@ class ExtensionContractTest {
     }
 
     @Test
+    fun `contract helper collects extension readiness checks`() {
+        val extension =
+            object : PlatformExtension {
+                override val id = "reports"
+                override val appLabel = "Reports"
+
+                override fun contribute(context: ExtensionContributionContext) {
+                    context.readiness.down("content-dir", "Set CONTENT_DIR to an existing directory")
+                    context.readiness.warn("preview-cache", "Preview cache is disabled")
+                }
+            }
+
+        val diagnostics = ExtensionContract.diagnostics(extension, extensionTestContext())
+
+        assertEquals(listOf("content-dir", "preview-cache"), diagnostics.readiness.map { it.name })
+        assertEquals(ExtensionReadinessStatus.DOWN, diagnostics.readiness.first().status)
+        assertEquals(true, diagnostics.readiness.first().required)
+        assertEquals(false, diagnostics.readiness.last().required)
+    }
+
+    @Test
     fun `contract helper reports ownership mistakes before full platform boot`() {
         val extension =
             object : PlatformExtension {

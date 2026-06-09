@@ -3,6 +3,7 @@ package io.github.rygel.outerstellar.platform.web
 import io.github.rygel.outerstellar.platform.infra.render
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.service.MessageService
+import org.http4k.contract.ContractRoute
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -33,17 +34,7 @@ class HomeRoutes(
     private val yearLens = Query.int().optional("year")
     private val syncIdPath = Path.string().of("syncId")
 
-    val publicRoutes =
-        listOf(
-            "/components/footer-status" meta
-                {
-                    summary = "Footer status fragment"
-                } bindContract
-                GET to
-                { request ->
-                    renderer.render(infraPageFactory.buildFooterStatus(request.shellRenderer))
-                }
-        )
+    val publicRoutes = emptyList<ContractRoute>()
 
     val protectedRoutes =
         listOf(

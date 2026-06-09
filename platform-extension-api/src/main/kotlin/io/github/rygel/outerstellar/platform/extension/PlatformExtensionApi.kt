@@ -13,6 +13,7 @@ import io.github.rygel.outerstellar.platform.web.ShellView
 import java.util.UUID
 import org.http4k.contract.ContractRoute
 import org.http4k.core.Request
+import org.http4k.routing.ResourceLoader
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.template.TemplateRenderer
 
@@ -63,6 +64,8 @@ data class ExtensionRouteRegistration(
     val pathPattern: String = description,
     val method: String = "*",
     val staticRoute: RoutingHttpHandler? = null,
+    val staticPathPrefix: String? = null,
+    val staticLoader: ResourceLoader? = null,
 ) {
     val httpRoute: Any?
         get() = route ?: staticRoute
@@ -70,6 +73,8 @@ data class ExtensionRouteRegistration(
     companion object {
         fun staticAssets(
             route: RoutingHttpHandler,
+            pathPrefix: String,
+            loader: ResourceLoader,
             description: String,
             pathPattern: String,
             method: String = "GET",
@@ -81,11 +86,26 @@ data class ExtensionRouteRegistration(
                 pathPattern = pathPattern,
                 method = method,
                 staticRoute = route,
+                staticPathPrefix = pathPrefix,
+                staticLoader = loader,
             )
     }
 }
 
 data class ExtensionAssets(val stylesheets: List<String> = emptyList(), val scripts: List<String> = emptyList())
+
+enum class ExtensionReadinessStatus {
+    UP,
+    WARN,
+    DOWN,
+}
+
+data class ExtensionReadinessCheck(
+    val name: String,
+    val status: ExtensionReadinessStatus,
+    val message: String,
+    val required: Boolean = true,
+)
 
 fun interface ExtensionLayoutRenderer {
     fun render(shell: ShellView, content: Content): Content

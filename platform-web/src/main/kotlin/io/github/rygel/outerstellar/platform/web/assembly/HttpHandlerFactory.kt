@@ -12,6 +12,7 @@ import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.web.Metrics
 import io.github.rygel.outerstellar.platform.web.TOTPApiRoutes
 import io.github.rygel.outerstellar.platform.web.TOTPRoutes
+import java.nio.file.Path
 import org.http4k.core.Filter
 import org.http4k.core.HttpHandler
 import org.http4k.core.Method.GET
@@ -48,11 +49,20 @@ internal class HttpHandlerFactory(
 
         val unfiltered =
             mutableListOf(
-                static(ResourceLoader.Classpath("static")),
+                static(staticResourceLoader()),
                 "/health" bind
                     GET to
                     {
-                        StaticRoutes.localhostOnly.then { StaticRoutes.buildHealthResponse(userRepository) }(it)
+                        StaticRoutes.localhostOnly.then {
+                            StaticRoutes.buildHealthResponse(userRepository, extensionContribution)
+                        }(it)
+                    },
+                "/debug/routes" bind
+                    GET to
+                    {
+                        StaticRoutes.localhostOnly.then {
+                            StaticRoutes.buildRouteDiagnostics(registry, extensionContribution)
+                        }(it)
                     },
                 "/metrics" bind GET to metricsHandler,
                 "/robots.txt" bind GET to { StaticRoutes.buildRobotsTxtResponse() },
@@ -90,4 +100,10 @@ internal class HttpHandlerFactory(
 
     private fun routesIfPresent(handlers: List<RoutingHttpHandler>): RoutingHttpHandler? =
         handlers.takeIf { it.isNotEmpty() }?.let(::routes)
+
+    private fun staticResourceLoader(): ResourceLoader {
+        val fallback = ResourceLoader.Classpath("static")
+        val staticDir = config.staticDir.takeIf { it.isNotBlank() } ?: return fallback
+        return FilesystemFirstResourceLoader(Path.of(staticDir), fallback)
+    }
 }

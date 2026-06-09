@@ -35,6 +35,7 @@ import io.github.rygel.outerstellar.platform.web.UserAdminApi
 import io.github.rygel.outerstellar.platform.web.UserAdminRoutes
 import io.github.rygel.outerstellar.platform.web.VoteApi
 import io.github.rygel.outerstellar.platform.web.composition.PlatformPageSets
+import java.nio.file.Path
 import org.http4k.contract.ContractRoute
 import org.http4k.contract.contract
 import org.http4k.contract.openapi.ApiInfo
@@ -48,6 +49,7 @@ import org.http4k.format.KotlinxSerialization
 import org.http4k.routing.RoutingHttpHandler
 import org.http4k.routing.bind
 import org.http4k.routing.routes
+import org.http4k.routing.static
 import org.http4k.security.Security
 
 @Suppress("LongParameterList")
@@ -166,6 +168,7 @@ internal class RouteRegistrar(
             ComponentRoutes(
                 web.pages.sidebarFactory,
                 web.pages.homePageFactory,
+                web.pages.infraPageFactory,
                 web.runtime.templateRenderer,
                 web.voteService,
                 web.pollService,
@@ -183,6 +186,16 @@ internal class RouteRegistrar(
                 "/components/openapi.json",
                 "GET",
                 "Public components",
+            )
+        )
+        registry.register(
+            RegisteredRoute(
+                componentRoutes.footerStatusRoute,
+                RouteOwner.PlatformKernel,
+                RouteGroup.PublicUi,
+                "/components/footer-status",
+                "GET",
+                "Footer status component",
             )
         )
         val protectedContract = contract {
@@ -305,6 +318,16 @@ internal class RouteRegistrar(
             RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Health, "/metrics", "GET", "Metrics")
         )
         registry.register(
+            RegisteredRoute(
+                null,
+                RouteOwner.PlatformKernel,
+                RouteGroup.Health,
+                "/debug/routes",
+                "GET",
+                "Local route diagnostics",
+            )
+        )
+        registry.register(
             RegisteredRoute(null, RouteOwner.PlatformKernel, RouteGroup.Static, "/robots.txt", "GET", "Robots.txt")
         )
         registry.register(
@@ -325,9 +348,10 @@ internal class RouteRegistrar(
         extensionContribution.routeRegistrations
             .filter { it.staticRoute != null }
             .forEach { registration ->
+                val staticRoute = externalStaticRoute(registration) ?: registration.staticRoute
                 registry.register(
                     RegisteredRoute(
-                        registration.staticRoute,
+                        staticRoute,
                         RouteOwner.Extension,
                         registration.group,
                         registration.pathPattern,
@@ -355,5 +379,14 @@ internal class RouteRegistrar(
                     )
                 }
             }
+    }
+
+    private fun externalStaticRoute(
+        registration: io.github.rygel.outerstellar.platform.extension.ExtensionRouteRegistration
+    ): RoutingHttpHandler? {
+        val staticDir = config.staticDir.takeIf { it.isNotBlank() } ?: return null
+        val pathPrefix = registration.staticPathPrefix ?: return null
+        val fallbackLoader = registration.staticLoader ?: return null
+        return pathPrefix bind static(FilesystemFirstResourceLoader(Path.of(staticDir), fallbackLoader))
     }
 }
