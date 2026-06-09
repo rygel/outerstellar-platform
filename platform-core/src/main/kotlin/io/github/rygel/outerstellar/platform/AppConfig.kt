@@ -80,6 +80,7 @@ data class AppConfig(
     val sessionAbsoluteTimeoutMinutes: Int = DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES,
     val jwt: JwtConfig = JwtConfig(),
     val cspPolicy: String = DEFAULT_CSP_POLICY,
+    val staticDir: String = "",
     val trustedProxies: String = "",
     val appleOAuth: AppleOAuthConfig = AppleOAuthConfig(),
     val pushNotifications: PushNotificationConfig = PushNotificationConfig(),
@@ -171,6 +172,7 @@ data class AppConfig(
                     ),
                 jwt = buildJwtConfig(yaml["jwt"] as? Map<String, Any>, env),
                 cspPolicy = yaml.str("cspPolicy", env, "CSP_POLICY", DEFAULT_CSP_POLICY),
+                staticDir = yaml.staticDir(env),
                 trustedProxies = yaml.str("trustedProxies", env, "TRUSTED_PROXIES", ""),
                 appleOAuth = buildAppleOAuthConfig(yaml["appleOAuth"] as? Map<String, Any>, env),
                 pushNotifications = buildPushNotificationConfig(yaml["pushNotifications"] as? Map<String, Any>, env),
@@ -329,6 +331,9 @@ data class AppConfig(
 
 private fun Map<String, Any>.str(key: String, env: Map<String, String>, envKey: String, default: String): String =
     env[envKey] ?: (this[key] as? String) ?: default
+
+private fun Map<String, Any>.staticDir(env: Map<String, String>): String =
+    env["STATIC_DIR"] ?: env["ASSETS_DIR"] ?: (this["staticDir"] as? String) ?: (this["assetsDir"] as? String) ?: ""
 
 private fun Map<String, Any>.int(key: String, env: Map<String, String>, envKey: String, default: Int): Int =
     env[envKey]?.toInt() ?: (this[key] as? Int) ?: default
