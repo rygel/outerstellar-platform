@@ -9,6 +9,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.15] – 2026-06-10
+
+### Changed
+
+- **JTE template registry validation** — startup now warns when no `PrecompiledJteTemplateRegistry` implementations are discovered via ServiceLoader; template-not-found errors log registered class count and sample class names for faster diagnosis (#484).
+- **Process label** — `start-web.ps1` passes `-Dprocess.label=outerstellar-web-dev` to the application JVM for easier process identification on shared machines (#476).
+
+---
+
 ## [3.6.14] – 2026-06-09
 
 ### Added
