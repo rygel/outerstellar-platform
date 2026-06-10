@@ -11,6 +11,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [3.6.15] – 2026-06-10
 
+### Added
+
+- **Bulk route registration** — `ExtensionRouteContributionRegistry` now supports `publicUiAll`, `protectedUiAll`, `apiAll`, `adminAll`, `registerAll`, and `pages` methods for registering multiple routes in a single call, reducing extension `contribute()` boilerplate (#488).
+
 ### Changed
 
 - **JTE template registry validation** — startup now warns when no `PrecompiledJteTemplateRegistry` implementations are discovered via ServiceLoader; template-not-found errors log registered class count and sample class names for faster diagnosis (#484).
