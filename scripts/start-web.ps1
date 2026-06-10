@@ -70,7 +70,7 @@ Write-Host "Starting web application..." -ForegroundColor Green
 $env:AGENT_TASK = "$markerTaskPrefix-web-app"
 $appProcess = Start-Process `
     -FilePath $mavenCommand.Source `
-    -ArgumentList "-Pruntime-dev", "-pl", "platform-web", "compile", "exec:java" `
+    -ArgumentList "-Pruntime-dev", "-pl", "platform-web", "compile", "exec:java", "-Dprocess.label=outerstellar-web-dev" `
     -WorkingDirectory $projectRoot `
     -RedirectStandardOutput $appLog `
     -RedirectStandardError $appErrorLog `

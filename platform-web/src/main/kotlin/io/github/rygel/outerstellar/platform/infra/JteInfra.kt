@@ -32,6 +32,13 @@ fun createRenderer(runtime: RuntimeConfig = RuntimeConfig()): TemplateRenderer {
     val precompiledRegistries by lazy { discoverPrecompiledTemplateRegistries() }
 
     if (doPreload) {
+        if (precompiledRegistries.isEmpty()) {
+            logger.warn(
+                "No PrecompiledJteTemplateRegistry implementations found via ServiceLoader. " +
+                    "Ensure the JTE Maven plugin includes JteClassRegistryExtension and the " +
+                    "META-INF/services file is generated. Templates will not resolve in production mode."
+            )
+        }
         logger.info(
             "Production mode: discovered {} JTE registries with {} template classes",
             precompiledRegistries.size,
@@ -146,10 +153,14 @@ private fun renderUsingPrecompiledRegistry(registries: List<PrecompiledJteTempla
         val templateClass = findPrecompiledTemplateClass(viewModel.template(), registries)
 
         if (templateClass == null) {
+            val availableTemplates = registries.flatMap { it.allClasses }.map { it.name }.sorted()
             logger.error(
-                "Template {} not found in {} generated class registries",
+                "Template {} not found in {} generated class registries ({} classes registered). " +
+                    "Ensure the JTE Maven plugin includes JteClassRegistryExtension. Registered: {}",
                 viewModel.template(),
                 registries.size,
+                availableTemplates.size,
+                availableTemplates.takeLast(10),
             )
             throw ViewNotFound(viewModel)
         }
