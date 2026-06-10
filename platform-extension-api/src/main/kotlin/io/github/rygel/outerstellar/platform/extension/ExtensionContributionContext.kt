@@ -80,6 +80,26 @@ class ExtensionRouteContributionRegistry internal constructor(private val host: 
         register(route, RouteGroup.Admin, description, pathPattern)
     }
 
+    fun publicUiAll(routes: List<ContractRoute>, basePath: String) {
+        routes.forEach { publicUi(it, basePath) }
+    }
+
+    fun protectedUiAll(routes: List<ContractRoute>, basePath: String) {
+        routes.forEach { protectedUi(it, basePath) }
+    }
+
+    fun apiAll(routes: List<ContractRoute>, basePath: String) {
+        routes.forEach { api(it, basePath) }
+    }
+
+    fun adminAll(routes: List<ContractRoute>, basePath: String) {
+        routes.forEach { admin(it, basePath) }
+    }
+
+    fun registerAll(registrations: List<ExtensionRouteRegistration>) {
+        this.registrations += registrations
+    }
+
     fun staticAssets(pathPrefix: String, loader: ResourceLoader, description: String = "Extension static assets") {
         registrations +=
             ExtensionRouteRegistration.staticAssets(
@@ -113,6 +133,10 @@ class ExtensionRouteContributionRegistry internal constructor(private val host: 
 
     fun publicPage(path: String, model: (Request) -> ViewModel, description: String = path) =
         page(path, model, description, RouteGroup.PublicUi)
+
+    fun pages(routes: List<ContractRoute>, group: RouteGroup = RouteGroup.ProtectedUi, basePath: String) {
+        routes.forEach { register(it, group, basePath, basePath) }
+    }
 
     internal fun snapshot(): List<ExtensionRouteRegistration> = registrations.toList()
 }

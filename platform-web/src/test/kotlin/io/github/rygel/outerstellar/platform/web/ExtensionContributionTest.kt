@@ -355,6 +355,56 @@ class ExtensionContributionTest {
         assertEquals(listOf("/assets/reports/reports.css"), contribution.options.assets.stylesheets)
     }
 
+    @Test
+    fun `bulk route registration methods register all routes`() {
+        val route1 = ("/extension/reports/page1" bindContract GET).to { _ -> Response(Status.OK) }
+        val route2 = ("/extension/reports/page2" bindContract GET).to { _ -> Response(Status.OK) }
+        val adminRoute = ("/admin/reports/settings" bindContract GET).to { _ -> Response(Status.OK) }
+        val extension =
+            object : PlatformExtension {
+                override val id = "reports"
+                override val mode = PlatformMode.ExtensionHost
+
+                override fun contribute(context: ExtensionContributionContext) {
+                    context.routes.publicUiAll(listOf(route1, route2), "/extension/reports")
+                    context.routes.adminAll(listOf(adminRoute), "/admin/reports")
+                }
+            }
+
+        val contribution = ExtensionContribution.from(extension, PlatformMode.FullPlatform, extensionContext())
+
+        assertEquals(3, contribution.routeRegistrations.size)
+        assertEquals(RouteGroup.PublicUi, contribution.routeRegistrations[0].group)
+        assertEquals(RouteGroup.PublicUi, contribution.routeRegistrations[1].group)
+        assertEquals(RouteGroup.Admin, contribution.routeRegistrations[2].group)
+    }
+
+    @Test
+    fun `registerAll accepts pre-built registration list`() {
+        val route = ("/extension/reports/page" bindContract GET).to { _ -> Response(Status.OK) }
+        val registration =
+            ExtensionRouteRegistration(
+                route = route,
+                group = RouteGroup.ProtectedUi,
+                description = "Reports page",
+                pathPattern = "/extension/reports/page",
+            )
+        val extension =
+            object : PlatformExtension {
+                override val id = "reports"
+                override val mode = PlatformMode.ExtensionHost
+
+                override fun contribute(context: ExtensionContributionContext) {
+                    context.routes.registerAll(listOf(registration))
+                }
+            }
+
+        val contribution = ExtensionContribution.from(extension, PlatformMode.FullPlatform, extensionContext())
+
+        assertEquals(1, contribution.routeRegistrations.size)
+        assertEquals("Reports page", contribution.routeRegistrations[0].description)
+    }
+
     private fun extensionContext(): ExtensionHostContext {
         val context =
             ExtensionHostContext.forTesting(
