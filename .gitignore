@@ -1,6 +1,9 @@
 target/
 .idea/
 *.iml
+.project
+.classpath
+.settings/
 data/
 *.log
 node_modules/
