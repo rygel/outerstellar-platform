@@ -87,7 +87,6 @@
         <versions-maven-plugin.version>2.21.0</versions-maven-plugin.version>
         <kotlinx.serialization.version>1.11.0</kotlinx.serialization.version>
         <snakeyaml.engine.version>3.0.1</snakeyaml.engine.version>
-        <http4k-connect.version>6.1.0.0</http4k-connect.version>
         <mockk.version>1.14.11</mockk.version>
         <archunit.version>1.4.2</archunit.version>
         <micrometer.version>1.16.5</micrometer.version>
@@ -240,12 +239,7 @@
                 <artifactId>http4k-realtime-core</artifactId>
                 <version>${http4k.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.http4k</groupId>
-                <artifactId>http4k-server-jetty</artifactId>
-                <version>${http4k.version}</version>
-            </dependency>
-            <dependency>
+<dependency>
                 <groupId>org.http4k</groupId>
                 <artifactId>http4k-server-netty</artifactId>
                 <version>${http4k.version}</version>
@@ -477,11 +471,6 @@
                 <groupId>jakarta.mail</groupId>
                 <artifactId>jakarta.mail-api</artifactId>
                 <version>${jakarta.mail.api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.activation</groupId>
-                <artifactId>jakarta.activation-api</artifactId>
-                <version>${jakarta.activation.api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.angus</groupId>
