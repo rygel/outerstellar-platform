@@ -4,6 +4,9 @@ target/
 .classpath
 .settings/
 *.iml
+.project
+.classpath
+.settings/
 data/
 *.log
 node_modules/

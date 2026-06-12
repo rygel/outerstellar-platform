@@ -60,7 +60,7 @@
         <java.version>21</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <kotlin.version>2.3.10</kotlin.version>
-        <http4k.version>6.52.0.0</http4k.version>
+        <http4k.version>6.53.0.0</http4k.version>
         <netty.version>4.2.15.Final</netty.version>
         <flyway.version>12.8.1</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
@@ -72,10 +72,10 @@
         <enforcer.version>3.6.3</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
-        <spotbugs.version>4.9.8.3</spotbugs.version>
+        <spotbugs.version>4.10.2.0</spotbugs.version>
         <spotless.version>3.6.0</spotless.version>
         <ktfmt.version>0.62</ktfmt.version>
-        <jacoco.version>0.8.14</jacoco.version>
+        <jacoco.version>0.8.15</jacoco.version>
         <extra-enforcer-rules.version>1.12.0</extra-enforcer-rules.version>
         <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
         <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
@@ -89,10 +89,10 @@
         <snakeyaml.engine.version>3.0.1</snakeyaml.engine.version>
         <mockk.version>1.14.11</mockk.version>
         <archunit.version>1.4.2</archunit.version>
-        <micrometer.version>1.16.5</micrometer.version>
+        <micrometer.version>1.17.0</micrometer.version>
         <resilience4j.version>2.4.0</resilience4j.version>
         <caffeine.version>3.2.4</caffeine.version>
-        <opentelemetry.version>1.62.0</opentelemetry.version>
+        <opentelemetry.version>1.63.0</opentelemetry.version>
         <totp.version>1.7.1</totp.version>
         <zxing.version>3.5.4</zxing.version>
 
@@ -117,7 +117,7 @@
         <maven.plugin.api.version>3.9.16</maven.plugin.api.version>
         <maven.plugin.annotations.version>3.15.2</maven.plugin.annotations.version>
         <maven.plugin.plugin.version>3.15.2</maven.plugin.plugin.version>
-        <native.maven.plugin.version>1.1.1</native.maven.plugin.version>
+        <native.maven.plugin.version>1.1.2</native.maven.plugin.version>
         <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
         <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
         <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>

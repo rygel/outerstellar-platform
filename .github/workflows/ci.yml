@@ -52,13 +52,19 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Populate dependency cache
-        run: mvn dependency:go-offline -q 2>/dev/null || true
+        run: mvn org.apache.maven.plugins:maven-dependency-plugin:3.8.1:go-offline -q 2>/dev/null || true
 
       - name: Compile, install, and run quality checks
-        run: >
-          mvn install -T 1C -DskipTests
-          -Djacoco.skip=true
-          -Denforcer.skip=true
+        run: |
+          for i in 1 2 3; do
+            mvn install -T 1C -DskipTests \
+              -Djacoco.skip=true \
+              -Denforcer.skip=true \
+              --fail-at-end && exit 0
+            echo "Maven build attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+          exit 1
 
       - name: Run additional quality checks
         if: github.event_name == 'push'
