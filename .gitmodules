@@ -1,4 +1,0 @@
-[submodule "pr-security"]
-	path = pr-security
-	url = https://github.com/rygel/outerstellar-platform.git
-	branch = pr-security
