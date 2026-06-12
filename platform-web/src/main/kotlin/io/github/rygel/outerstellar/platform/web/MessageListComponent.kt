@@ -36,7 +36,11 @@ private const val ARG_IS_TRASH = 4
 
 class MessageListComponent(private val messageService: MessageService) {
 
-    fun build(ctx: RequestContext, shellRenderer: ShellRenderer, vararg args: Any?): MessageListViewModel {
+    fun build(
+        @Suppress("UNUSED_PARAMETER") ctx: RequestContext,
+        shellRenderer: ShellRenderer,
+        vararg args: Any?,
+    ): MessageListViewModel {
         val query = args.getOrNull(ARG_QUERY) as? String
         val limit = args.getOrNull(ARG_LIMIT) as? Int ?: DEFAULT_PAGE_SIZE
         val offset = args.getOrNull(ARG_OFFSET) as? Int ?: 0
