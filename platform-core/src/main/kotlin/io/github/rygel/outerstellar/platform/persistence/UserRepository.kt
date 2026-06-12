@@ -2,10 +2,17 @@ package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
+import java.time.Instant
 import java.time.LocalDateTime
 import java.util.UUID
 
-interface UserRepository : LockoutRepository {
+interface UserRepository {
+    fun incrementFailedLoginAttempts(userId: UUID): Int
+
+    fun resetFailedLoginAttempts(userId: UUID)
+
+    fun updateLockedUntil(userId: UUID, lockedUntil: Instant?)
+
     fun findById(id: UUID): User?
 
     fun findByUsername(username: String): User?
