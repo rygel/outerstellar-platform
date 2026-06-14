@@ -65,4 +65,19 @@ class PathPatternMatcherTest {
     fun `case sensitive matching`() {
         assertFalse(PathPatternMatcher.matches("/Map/**", "/map"))
     }
+
+    @Test
+    fun `double star in mid-pattern matches multiple segments`() {
+        assertTrue(PathPatternMatcher.matches("/api/**/users", "/api/v1/admin/users"))
+    }
+
+    @Test
+    fun `double star in mid-pattern matches zero segments`() {
+        assertTrue(PathPatternMatcher.matches("/api/**/users", "/api/users"))
+    }
+
+    @Test
+    fun `double star in mid-pattern does not match when trailing segment absent`() {
+        assertFalse(PathPatternMatcher.matches("/api/**/users", "/api/v1/admin"))
+    }
 }
