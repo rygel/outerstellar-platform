@@ -89,4 +89,46 @@ class AppConfigTest {
             }
         }
     }
+
+    @Test
+    fun `permissions policy is set from PERMISSIONS_POLICY env var`() {
+        val config = AppConfig.fromEnvironment(mapOf("PERMISSIONS_POLICY" to "geolocation=(self)"))
+        assert(config.securityHeaders.permissionsPolicy == "geolocation=(self)") {
+            "Expected geolocation=(self) but was ${config.securityHeaders.permissionsPolicy}"
+        }
+    }
+
+    @Test
+    fun `permissions policy defaults to camera microphone geolocation`() {
+        val config = AppConfig.fromEnvironment(emptyMap())
+        assert(config.securityHeaders.permissionsPolicy == "camera=(), microphone=(), geolocation=()")
+    }
+
+    @Test
+    fun `x frame options is set from X_FRAME_OPTIONS env var`() {
+        val config = AppConfig.fromEnvironment(mapOf("X_FRAME_OPTIONS" to "SAMEORIGIN"))
+        assert(config.securityHeaders.xFrameOptions == "SAMEORIGIN")
+    }
+
+    @Test
+    fun `referrer policy is set from REFERRER_POLICY env var`() {
+        val config = AppConfig.fromEnvironment(mapOf("REFERRER_POLICY" to "no-referrer"))
+        assert(config.securityHeaders.referrerPolicy == "no-referrer")
+    }
+
+    @Test
+    fun `strict transport security is set from env var`() {
+        val config = AppConfig.fromEnvironment(mapOf("STRICT_TRANSPORT_SECURITY" to "max-age=999"))
+        assert(config.securityHeaders.strictTransportSecurity == "max-age=999")
+    }
+
+    @Test
+    fun `security headers defaults match current hard-coded values`() {
+        val config = AppConfig.fromEnvironment(emptyMap())
+        assert(config.securityHeaders.xContentTypeOptions == "nosniff")
+        assert(config.securityHeaders.xFrameOptions == "DENY")
+        assert(config.securityHeaders.referrerPolicy == "strict-origin-when-cross-origin")
+        assert(config.securityHeaders.strictTransportSecurity == "max-age=31536000; includeSubDomains")
+        assert(config.securityHeaders.perRouteOverrides.isEmpty())
+    }
 }

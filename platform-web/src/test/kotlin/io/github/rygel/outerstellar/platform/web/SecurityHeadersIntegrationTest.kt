@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.RouteHeaderOverride
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import java.util.UUID
@@ -202,5 +203,128 @@ class SecurityHeadersIntegrationTest : WebTest() {
         val requestId = response.header("X-Request-Id")
         assertNotNull(requestId, "Server should generate a request ID when none provided")
         assertTrue(requestId.isNotBlank())
+    }
+
+    // ---- Per-route overrides ----
+
+    @Test
+    fun `per-route override changes Permissions-Policy for matching path`() {
+        val config =
+            testConfig.copy(
+                securityHeaders =
+                    testConfig.securityHeaders.copy(
+                        perRouteOverrides =
+                            listOf(
+                                RouteHeaderOverride(
+                                    pattern = "/map/**",
+                                    permissionsPolicy = "geolocation=(self), camera=(), microphone=()",
+                                )
+                            )
+                    )
+            )
+        val mapApp = buildApp(config = config)
+
+        val response = mapApp(Request(GET, "/map/europe"))
+        val header = response.header("Permissions-Policy")
+        assertNotNull(header, "Permissions-Policy should be present")
+        assertTrue(header.contains("geolocation=(self)"), "Expected geolocation=(self) but was $header")
+    }
+
+    @Test
+    fun `per-route override does not affect non-matching path`() {
+        val config =
+            testConfig.copy(
+                securityHeaders =
+                    testConfig.securityHeaders.copy(
+                        perRouteOverrides =
+                            listOf(
+                                RouteHeaderOverride(
+                                    pattern = "/map/**",
+                                    permissionsPolicy = "geolocation=(self), camera=(), microphone=()",
+                                )
+                            )
+                    )
+            )
+        val mapApp = buildApp(config = config)
+
+        val response = mapApp(Request(GET, "/auth"))
+        val header = response.header("Permissions-Policy")
+        assertNotNull(header)
+        assertTrue(
+            header.contains("geolocation=()"),
+            "Non-matching path should have default geolocation=() but was $header",
+        )
+    }
+
+    @Test
+    fun `per-route override changes CSP and nonce still works`() {
+        val mapCsp =
+            "default-src 'self'; script-src 'self' {nonce}; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org"
+        val config =
+            testConfig.copy(
+                securityHeaders =
+                    testConfig.securityHeaders.copy(
+                        perRouteOverrides = listOf(RouteHeaderOverride(pattern = "/map/**", csp = mapCsp))
+                    )
+            )
+        val mapApp = buildApp(config = config)
+
+        val response = mapApp(Request(GET, "/map/europe"))
+        val csp = response.header("Content-Security-Policy")
+        assertNotNull(csp, "CSP should be present on /map/ routes")
+        assertTrue(csp.contains("tile.openstreetmap.org"), "CSP should allow OSM tiles but was: $csp")
+        assertTrue(csp.contains("'nonce-"), "CSP should contain a nonce but was: $csp")
+    }
+
+    @Test
+    fun `blank HSTS suppresses the header`() {
+        val config = testConfig.copy(securityHeaders = testConfig.securityHeaders.copy(strictTransportSecurity = ""))
+        val hstsApp = buildApp(config = config)
+
+        val response = hstsApp(Request(GET, "/health"))
+        assertNull(response.header("Strict-Transport-Security"), "HSTS should be absent when blank")
+    }
+
+    @Test
+    fun `per-route override for X-Frame-Options on embed path`() {
+        val config =
+            testConfig.copy(
+                securityHeaders =
+                    testConfig.securityHeaders.copy(
+                        perRouteOverrides =
+                            listOf(
+                                RouteHeaderOverride(
+                                    pattern = "/embed/*",
+                                    xFrameOptions = "ALLOW-FROM https://example.com",
+                                )
+                            )
+                    )
+            )
+        val embedApp = buildApp(config = config)
+
+        val response = embedApp(Request(GET, "/embed/video"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Frame-Options", "ALLOW-FROM https://example.com"))
+    }
+
+    @Test
+    fun `first matching per-route pattern wins`() {
+        val config =
+            testConfig.copy(
+                securityHeaders =
+                    testConfig.securityHeaders.copy(
+                        perRouteOverrides =
+                            listOf(
+                                RouteHeaderOverride(pattern = "/**", xFrameOptions = "SAMEORIGIN"),
+                                RouteHeaderOverride(
+                                    pattern = "/embed/**",
+                                    xFrameOptions = "ALLOW-FROM https://example.com",
+                                ),
+                            )
+                    )
+            )
+        val orderedApp = buildApp(config = config)
+
+        val response = orderedApp(Request(GET, "/embed/video"))
+        assertThat(response, org.http4k.hamkrest.hasHeader("X-Frame-Options", "SAMEORIGIN"))
     }
 }

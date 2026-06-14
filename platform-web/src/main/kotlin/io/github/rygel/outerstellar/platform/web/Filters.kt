@@ -1,5 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
+import io.github.rygel.outerstellar.platform.RouteHeaderOverride
+import io.github.rygel.outerstellar.platform.SecurityHeadersConfig
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.model.InsufficientPermissionException
 import io.github.rygel.outerstellar.platform.model.OuterstellarException
@@ -173,39 +175,61 @@ object Filters {
         }
     }
 
-    fun cors(allowedOrigins: String): Filter = Filter { next: HttpHandler ->
-        { request ->
-            if (allowedOrigins.isBlank()) return@Filter next(request)
-            if (request.method == org.http4k.core.Method.OPTIONS) {
-                Response(Status.NO_CONTENT)
-                    .header("Access-Control-Allow-Origin", allowedOrigins)
-                    .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-                    .header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id")
-                    .header("Access-Control-Max-Age", "3600")
-            } else {
-                val response = next(request)
-                response
-                    .header("Access-Control-Allow-Origin", allowedOrigins)
-                    .header("Access-Control-Expose-Headers", "X-Request-Id, X-Session-Expired")
+    fun cors(allowedOrigins: String, headerConfig: SecurityHeadersConfig = SecurityHeadersConfig()): Filter =
+        Filter { next: HttpHandler ->
+            { request ->
+                val path = request.uri.path
+                val override = headerConfig.findOverride(path)
+                val effectiveOrigins = override?.corsAllowedOrigins?.joinToString(", ") ?: allowedOrigins
+                if (effectiveOrigins.isBlank()) return@Filter next(request)
+                if (request.method == org.http4k.core.Method.OPTIONS) {
+                    Response(Status.NO_CONTENT)
+                        .header("Access-Control-Allow-Origin", effectiveOrigins)
+                        .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                        .header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id")
+                        .header("Access-Control-Max-Age", "3600")
+                } else {
+                    val response = next(request)
+                    response
+                        .header("Access-Control-Allow-Origin", effectiveOrigins)
+                        .header("Access-Control-Expose-Headers", "X-Request-Id, X-Session-Expired")
+                }
             }
         }
-    }
 
-    fun securityHeaders(cspPolicy: String = DEFAULT_CSP_POLICY): Filter = Filter { next: HttpHandler ->
+    fun securityHeaders(
+        cspPolicy: String = DEFAULT_CSP_POLICY,
+        headerConfig: SecurityHeadersConfig = SecurityHeadersConfig(),
+    ): Filter = Filter { next: HttpHandler ->
         { request ->
             val cspNonce = generateCspNonce()
             val requestWithNonce = request.with(CSP_NONCE_KEY of cspNonce)
-            next(requestWithNonce)
-                .header("X-Content-Type-Options", "nosniff")
-                .header("X-Frame-Options", "DENY")
-                .header("Referrer-Policy", "strict-origin-when-cross-origin")
-                .header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-                .header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-                .let { response ->
-                    if (!request.uri.path.startsWith("/api/")) {
-                        response.header("Content-Security-Policy", cspPolicy.withCspNonce(cspNonce))
+            val response = next(requestWithNonce)
+            val path = request.uri.path
+            val override = headerConfig.findOverride(path)
+            val effectivePermissionsPolicy = override?.permissionsPolicy ?: headerConfig.permissionsPolicy
+            val effectiveReferrerPolicy = override?.referrerPolicy ?: headerConfig.referrerPolicy
+            val effectiveFrameOptions = override?.xFrameOptions ?: headerConfig.xFrameOptions
+            val effectiveContentTypeOptions = override?.xContentTypeOptions ?: headerConfig.xContentTypeOptions
+            val effectiveHsts = override?.strictTransportSecurity ?: headerConfig.strictTransportSecurity
+            response
+                .header("X-Content-Type-Options", effectiveContentTypeOptions)
+                .header("X-Frame-Options", effectiveFrameOptions)
+                .header("Referrer-Policy", effectiveReferrerPolicy)
+                .header("Permissions-Policy", effectivePermissionsPolicy)
+                .let { resp ->
+                    if (effectiveHsts.isNotBlank()) {
+                        resp.header("Strict-Transport-Security", effectiveHsts)
                     } else {
-                        response
+                        resp
+                    }
+                }
+                .let { resp ->
+                    if (!path.startsWith("/api/")) {
+                        val effectiveCsp = override?.csp ?: cspPolicy
+                        resp.header("Content-Security-Policy", effectiveCsp.withCspNonce(cspNonce))
+                    } else {
+                        resp
                     }
                 }
         }
@@ -599,4 +623,8 @@ object Filters {
                 .toString()
         return Response(status).header("content-type", "application/json; charset=utf-8").body(body)
     }
+}
+
+fun SecurityHeadersConfig.findOverride(path: String): RouteHeaderOverride? = perRouteOverrides.firstOrNull {
+    PathPatternMatcher.matches(it.pattern, path)
 }
