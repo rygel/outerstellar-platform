@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Configurable security headers** — all response headers (`Permissions-Policy`, `X-Frame-Options`, `Referrer-Policy`, `X-Content-Type-Options`, `Strict-Transport-Security`) are now configurable via YAML/env vars with per-route overrides using Ant-style glob patterns. Extensions can no longer be blocked by hard-coded security headers (#501).
+
 ---
 
 ## [3.6.15] – 2026-06-10
