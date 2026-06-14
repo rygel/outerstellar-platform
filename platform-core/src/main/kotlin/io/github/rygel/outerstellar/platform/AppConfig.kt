@@ -269,21 +269,20 @@ data class AppConfig(
             yaml: Map<String, Any>?,
             env: Map<String, String>,
         ): SecurityHeadersConfig {
-            if (yaml == null) return SecurityHeadersConfig()
+            val map = yaml ?: emptyMap()
             return SecurityHeadersConfig(
-                permissionsPolicy =
-                    yaml.str("permissionsPolicy", env, "PERMISSIONS_POLICY", DEFAULT_PERMISSIONS_POLICY),
-                referrerPolicy = yaml.str("referrerPolicy", env, "REFERRER_POLICY", "strict-origin-when-cross-origin"),
-                xFrameOptions = yaml.str("xFrameOptions", env, "X_FRAME_OPTIONS", "DENY"),
-                xContentTypeOptions = yaml.str("xContentTypeOptions", env, "X_CONTENT_TYPE_OPTIONS", "nosniff"),
+                permissionsPolicy = map.str("permissionsPolicy", env, "PERMISSIONS_POLICY", DEFAULT_PERMISSIONS_POLICY),
+                referrerPolicy = map.str("referrerPolicy", env, "REFERRER_POLICY", "strict-origin-when-cross-origin"),
+                xFrameOptions = map.str("xFrameOptions", env, "X_FRAME_OPTIONS", "DENY"),
+                xContentTypeOptions = map.str("xContentTypeOptions", env, "X_CONTENT_TYPE_OPTIONS", "nosniff"),
                 strictTransportSecurity =
-                    yaml.str(
+                    map.str(
                         "strictTransportSecurity",
                         env,
                         "STRICT_TRANSPORT_SECURITY",
                         "max-age=31536000; includeSubDomains",
                     ),
-                perRouteOverrides = buildPerRouteOverrides(yaml["perRouteOverrides"]),
+                perRouteOverrides = buildPerRouteOverrides(map["perRouteOverrides"]),
             )
         }
 
