@@ -74,6 +74,14 @@
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
     <Match>
+        <Class name="io.github.rygel.outerstellar.platform.RouteHeaderOverride"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="io.github.rygel.outerstellar.platform.SecurityHeadersConfig"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
         <Package name="~io\.github\.rygel\.outerstellar\.platform\.web(\..*)?"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>

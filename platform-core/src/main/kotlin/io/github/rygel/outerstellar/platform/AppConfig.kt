@@ -21,6 +21,8 @@ private const val DEFAULT_CSP_POLICY =
         "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' wss:; img-src 'self' data:; " +
         "base-uri 'self'; form-action 'self'"
 
+const val DEFAULT_PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=()"
+
 data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
 
 data class JwtConfig(
@@ -58,6 +60,26 @@ data class PushNotificationConfig(
     val apnsBundleId: String = "",
 )
 
+data class SecurityHeadersConfig(
+    val permissionsPolicy: String = DEFAULT_PERMISSIONS_POLICY,
+    val referrerPolicy: String = "strict-origin-when-cross-origin",
+    val xFrameOptions: String = "DENY",
+    val xContentTypeOptions: String = "nosniff",
+    val strictTransportSecurity: String = "max-age=31536000; includeSubDomains",
+    val perRouteOverrides: List<RouteHeaderOverride> = emptyList(),
+)
+
+data class RouteHeaderOverride(
+    val pattern: String,
+    val permissionsPolicy: String? = null,
+    val referrerPolicy: String? = null,
+    val xFrameOptions: String? = null,
+    val xContentTypeOptions: String? = null,
+    val strictTransportSecurity: String? = null,
+    val csp: String? = null,
+    val corsAllowedOrigins: List<String>? = null,
+)
+
 data class AppConfig(
     val version: String = "dev",
     val port: Int = DEFAULT_HTTP_PORT,
@@ -84,6 +106,7 @@ data class AppConfig(
     val trustedProxies: String = "",
     val appleOAuth: AppleOAuthConfig = AppleOAuthConfig(),
     val pushNotifications: PushNotificationConfig = PushNotificationConfig(),
+    val securityHeaders: SecurityHeadersConfig = SecurityHeadersConfig(),
     val runtime: RuntimeConfig = RuntimeConfig(),
     val platformMode: PlatformMode = PlatformMode.FullPlatform,
 ) {
@@ -176,6 +199,7 @@ data class AppConfig(
                 trustedProxies = yaml.str("trustedProxies", env, "TRUSTED_PROXIES", ""),
                 appleOAuth = buildAppleOAuthConfig(yaml["appleOAuth"] as? Map<String, Any>, env),
                 pushNotifications = buildPushNotificationConfig(yaml["pushNotifications"] as? Map<String, Any>, env),
+                securityHeaders = buildSecurityHeadersConfig(yaml["securityHeaders"] as? Map<String, Any>, env),
                 runtime = buildRuntimeConfig(yaml["runtime"] as? Map<String, Any>, env),
                 platformMode =
                     PlatformMode.entries.firstOrNull { it.name.equals(env["PLATFORM_MODE"], ignoreCase = true) }
@@ -239,6 +263,45 @@ data class AppConfig(
                 apnsPrivateKeyPem = yaml.str("apnsPrivateKeyPem", env, "PUSH_APNS_PRIVATEKEYPEM", ""),
                 apnsBundleId = yaml.str("apnsBundleId", env, "PUSH_APNS_BUNDLEID", ""),
             )
+        }
+
+        private fun buildSecurityHeadersConfig(
+            yaml: Map<String, Any>?,
+            env: Map<String, String>,
+        ): SecurityHeadersConfig {
+            val map = yaml ?: emptyMap()
+            return SecurityHeadersConfig(
+                permissionsPolicy = map.str("permissionsPolicy", env, "PERMISSIONS_POLICY", DEFAULT_PERMISSIONS_POLICY),
+                referrerPolicy = map.str("referrerPolicy", env, "REFERRER_POLICY", "strict-origin-when-cross-origin"),
+                xFrameOptions = map.str("xFrameOptions", env, "X_FRAME_OPTIONS", "DENY"),
+                xContentTypeOptions = map.str("xContentTypeOptions", env, "X_CONTENT_TYPE_OPTIONS", "nosniff"),
+                strictTransportSecurity =
+                    map.str(
+                        "strictTransportSecurity",
+                        env,
+                        "STRICT_TRANSPORT_SECURITY",
+                        "max-age=31536000; includeSubDomains",
+                    ),
+                perRouteOverrides = buildPerRouteOverrides(map["perRouteOverrides"]),
+            )
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        private fun buildPerRouteOverrides(raw: Any?): List<RouteHeaderOverride> {
+            val list = raw as? List<*> ?: return emptyList()
+            return list.mapNotNull { entry ->
+                val map = entry as? Map<String, Any> ?: return@mapNotNull null
+                RouteHeaderOverride(
+                    pattern = map["pattern"] as? String ?: "",
+                    permissionsPolicy = map["permissionsPolicy"] as? String,
+                    referrerPolicy = map["referrerPolicy"] as? String,
+                    xFrameOptions = map["xFrameOptions"] as? String,
+                    xContentTypeOptions = map["xContentTypeOptions"] as? String,
+                    strictTransportSecurity = map["strictTransportSecurity"] as? String,
+                    csp = map["csp"] as? String,
+                    corsAllowedOrigins = (map["corsAllowedOrigins"] as? List<*>)?.map { it.toString() },
+                )
+            }
         }
 
         @Suppress("LongMethod")

@@ -7,7 +7,7 @@
         <groupId>io.github.rygel</groupId>
         <artifactId>outerstellar-platform-parent</artifactId>
 
-        <version>3.6.15</version>
+        <version>3.6.16</version>
 
     </parent>
 
@@ -31,14 +31,7 @@
             <groupId>org.http4k</groupId>
             <artifactId>http4k-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.http4k</groupId>
-            <artifactId>http4k-security-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.http4k</groupId>
-            <artifactId>http4k-api-openapi</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>

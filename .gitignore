@@ -1,6 +1,12 @@
 target/
 .idea/
+.project
+.classpath
+.settings/
 *.iml
+.project
+.classpath
+.settings/
 data/
 *.log
 node_modules/
@@ -12,3 +18,4 @@ package-lock.json
 mcp.json
 *.dll
 META-INF/services/
+.env

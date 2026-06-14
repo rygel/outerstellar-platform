@@ -28,10 +28,10 @@ internal class FilterChainFactory(
         val analytics = web.runtime.analyticsService
         var chain =
             Filters.correlationId
-                .then(Filters.cors(config.corsOrigins))
+                .then(Filters.cors(config.corsOrigins, config.securityHeaders))
                 .then(etagCachingFilter)
                 .then(staticCacheControlFilter)
-                .then(Filters.securityHeaders(config.cspPolicy))
+                .then(Filters.securityHeaders(config.cspPolicy, config.securityHeaders))
                 .then(Filters.telemetry)
                 .then(
                     rateLimitFilter(
