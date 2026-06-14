@@ -72,18 +72,6 @@ fun migrate(dataSource: DataSource, extensionLocation: String? = null, extension
     config.load().migrate()
 }
 
-@Deprecated("Extensions now share the platform history table. Use migrate() with extensionLocation instead.")
-@Suppress("UNUSED_PARAMETER")
-fun migrateExtension(
-    dataSource: DataSource,
-    location: String,
-    historyTable: String,
-    migrationNames: List<String>? = null,
-) {
-    repairLegacyExtensionHistoryTable(dataSource)
-    migrate(dataSource = dataSource, extensionLocation = location, extensionMigrationNames = migrationNames)
-}
-
 private fun resolveExtensionLocationNative(location: String, migrationNames: List<String>?): List<String> {
     if (!location.startsWith("classpath:") || migrationNames == null) {
         return listOf(location)

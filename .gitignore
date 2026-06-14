@@ -1,5 +1,8 @@
 target/
 .idea/
+.project
+.classpath
+.settings/
 *.iml
 .project
 .classpath
@@ -15,3 +18,4 @@ package-lock.json
 mcp.json
 *.dll
 META-INF/services/
+.env

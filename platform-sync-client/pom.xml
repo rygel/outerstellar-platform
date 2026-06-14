@@ -28,10 +28,6 @@
             <artifactId>http4k-format-kotlinx-serialization</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.http4k</groupId>
-            <artifactId>http4k-client-apache</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>

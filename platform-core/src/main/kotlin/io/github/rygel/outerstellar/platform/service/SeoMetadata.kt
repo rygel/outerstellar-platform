@@ -1,16 +1,17 @@
 package io.github.rygel.outerstellar.platform.service
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+
 class SeoMetadata(
     private val title: String,
     private val description: String,
     private val canonicalUrl: String,
     private val ogImage: String = "",
-    private val ogType: String = "website",
-    private val twitterCard: String = "summary",
     private val locale: String = "en",
+    private val noIndex: Boolean = false,
 ) {
     companion object {
-        @Suppress("UNUSED_PARAMETER")
         fun forPage(
             title: String,
             description: String,
@@ -25,6 +26,7 @@ class SeoMetadata(
                 canonicalUrl = canonicalUrl,
                 ogImage = ogImage,
                 locale = locale,
+                noIndex = robots.startsWith("noindex"),
             )
     }
 
@@ -44,24 +46,21 @@ class SeoMetadata(
             appendLine("<meta property=\"og:image\" content=\"${escapeHtml(ogImage)}\">")
             appendLine("<meta name=\"twitter:image\" content=\"${escapeHtml(ogImage)}\">")
         }
-        if (ogType.isNotBlank()) {
-            appendLine("<meta property=\"og:type\" content=\"${escapeHtml(ogType)}\">")
-        }
-        if (twitterCard.isNotBlank()) {
-            appendLine("<meta name=\"twitter:card\" content=\"${escapeHtml(twitterCard)}\">")
-        }
-        if (locale.isNotBlank()) {
-            appendLine("<meta property=\"og:locale\" content=\"${escapeHtml(locale)}\">")
+        appendLine("<meta property=\"og:type\" content=\"website\">")
+        appendLine("<meta name=\"twitter:card\" content=\"summary\">")
+        appendLine("<meta property=\"og:locale\" content=\"${escapeHtml(locale)}\">")
+        if (noIndex) {
+            appendLine("<meta name=\"robots\" content=\"noindex, nofollow\">")
         }
         if (canonicalUrl.isNotBlank() && title.isNotBlank()) {
             appendLine("<script type=\"application/ld+json\">")
             appendLine("{")
             appendLine("  \"@context\": \"https://schema.org\",")
             appendLine("  \"@type\": \"WebSite\",")
-            appendLine("  \"name\": \"${escapeJson(title)}\",")
-            appendLine("  \"url\": \"${escapeJson(canonicalUrl)}\"")
+            appendLine("  \"name\": ${Json.encodeToString(JsonPrimitive(title))},")
+            appendLine("  \"url\": ${Json.encodeToString(JsonPrimitive(canonicalUrl))}")
             if (description.isNotBlank()) {
-                appendLine("  ,\"description\": \"${escapeJson(description)}\"")
+                appendLine("  ,\"description\": ${Json.encodeToString(JsonPrimitive(description))}")
             }
             appendLine("}")
             appendLine("</script>")
@@ -69,8 +68,10 @@ class SeoMetadata(
     }
 
     private fun escapeHtml(value: String): String =
-        value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;")
-
-    private fun escapeJson(value: String): String =
-        value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+        value
+            .replace("&", "&amp;")
+            .replace("'", "&#39;")
+            .replace("\"", "&quot;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
 }
