@@ -14,7 +14,8 @@ class TOTPServiceTest {
 
     @BeforeEach
     fun setUp() {
-        totpService = TOTPService()
+        // logRounds = 4 keeps the suite fast (repo convention) — production uses the default 12.
+        totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4))
     }
 
     @Test
@@ -57,6 +58,28 @@ class TOTPServiceTest {
         assertNotNull(result, "Valid code should return updated JSON")
         val result2 = totpService.verifyBackupCode(rawCodes[0], result!!)
         assertNull(result2, "Consumed code should not verify again")
+    }
+
+    @Test
+    fun `generateBackupCodes stores BCrypt hashes`() {
+        val (_, hashed) = totpService.generateBackupCodes()
+        val stored = hashed.removeSurrounding("[", "]").split(",").map { it.trim().removeSurrounding("\"") }
+        stored.forEach { hash ->
+            assertTrue(
+                hash.startsWith("\$2a$") || hash.startsWith("\$2b$"),
+                "Backup code must be a BCrypt hash, was: $hash",
+            )
+        }
+    }
+
+    @Test
+    fun `verifyBackupCode rejects legacy unsalted SHA-256 hashes`() {
+        // Pre-fix backup codes were stored as 64-char hex SHA-256 digests. After the BCrypt migration
+        // these must no longer verify (they cannot be re-hashed without the plaintext, so they are
+        // invalidated by design). Simulate a stored legacy hash for a known code.
+        val legacySha256 = "a".repeat(64)
+        val stored = """["$legacySha256"]"""
+        assertNull(totpService.verifyBackupCode("anything", stored), "Legacy SHA-256 hash must not verify")
     }
 
     @Test

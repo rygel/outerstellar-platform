@@ -171,7 +171,7 @@ abstract class WebTest {
         val contactsPageFactory = ContactsPageFactory(resolvedContactService, contactTrashListFactory)
         val homePageFactory = HomePageFactory(messageService, contactTrashListFactory)
         val infraPageFactory = InfraPageFactory(messageRepository)
-        val authService = AuthService(userRepository, encoder, auditRepository, totpService = TOTPService())
+        val authService = AuthService(userRepository, encoder, auditRepository, totpService = TOTPService(encoder))
         val accountService = AccountService(userRepository, encoder, sessionRepository, auditRepository)
 
         val persistence = buildPersistence(resolvedUserRepo, outbox, txManager, overrides)
@@ -271,7 +271,7 @@ abstract class WebTest {
                 ),
             oauthService = oauthService,
             authRealms = emptyList(),
-            totpService = TOTPService(),
+            totpService = TOTPService(encoder),
             sessionService = sessionSvc,
             userAdminService = userAdminService,
         )

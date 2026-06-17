@@ -56,7 +56,13 @@ class OAuthIntegrationTest : WebTest() {
                 oauthRepository = localOAuthRepository,
                 auditRepository = auditRepository,
             )
-        localAuthService = AuthService(userRepository, encoder, auditRepository, totpService = TOTPService())
+        localAuthService =
+            AuthService(
+                userRepository,
+                encoder,
+                auditRepository,
+                totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
+            )
 
         app = buildApp()
     }

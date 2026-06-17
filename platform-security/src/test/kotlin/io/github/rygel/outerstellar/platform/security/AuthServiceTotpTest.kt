@@ -29,7 +29,7 @@ class AuthServiceTotpTest {
         userRepository = mockk(relaxed = true)
         sessionRepository = mockk(relaxed = true)
         passwordEncoder = mockk(relaxed = true)
-        totpService = TOTPService()
+        totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4))
         authService =
             AuthService(
                 userRepository = userRepository,

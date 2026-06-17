@@ -4,6 +4,7 @@ import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.AuthService
+import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.TOTPService
 import java.util.UUID
 import kotlin.test.Test
@@ -51,7 +52,13 @@ class ChangePasswordWebIntegrationTest : WebTest() {
             )
         userRepository.save(testUser)
 
-        authService = AuthService(userRepository, encoder, auditRepository, totpService = TOTPService())
+        authService =
+            AuthService(
+                userRepository,
+                encoder,
+                auditRepository,
+                totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
+            )
 
         testToken = sessionSvc.createSession(testUser.id)
 
