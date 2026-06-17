@@ -131,4 +131,59 @@ class AppConfigTest {
         assert(config.securityHeaders.strictTransportSecurity == "max-age=31536000; includeSubDomains")
         assert(config.securityHeaders.perRouteOverrides.isEmpty())
     }
+
+    @Test
+    fun `AppConfig toString masks the JDBC password and nested secrets`() {
+        val config =
+            AppConfig(
+                jdbcPassword = "super-secret-db-password",
+                jwt = JwtConfig(enabled = true, secret = "jwt-hmac-signing-key"),
+                email = EmailConfig(enabled = true, password = "smtp-password"),
+                appleOAuth = AppleOAuthConfig(enabled = true, privateKeyPem = "-----BEGIN PRIVATE KEY-----"),
+                pushNotifications =
+                    PushNotificationConfig(
+                        enabled = true,
+                        fcmServiceAccountJson = """{"type":"service_account"}""",
+                        apnsPrivateKeyPem = "-----BEGIN APNS KEY-----",
+                    ),
+                segment = SegmentConfig(writeKey = "segment-write-key"),
+            )
+        val rendered = config.toString()
+
+        assert(!rendered.contains("super-secret-db-password")) { "JDBC password leaked in toString: $rendered" }
+        assert(!rendered.contains("jwt-hmac-signing-key")) { "JWT secret leaked in toString: $rendered" }
+        assert(!rendered.contains("smtp-password")) { "SMTP password leaked in toString: $rendered" }
+        assert(!rendered.contains("BEGIN PRIVATE KEY")) { "Apple OAuth private key leaked in toString: $rendered" }
+        assert(!rendered.contains("service_account")) { "FCM service account JSON leaked in toString: $rendered" }
+        assert(!rendered.contains("BEGIN APNS KEY")) { "APNS private key leaked in toString: $rendered" }
+        assert(!rendered.contains("segment-write-key")) { "Segment write key leaked in toString: $rendered" }
+    }
+
+    @Test
+    fun `AppConfig toString preserves non-secret fields for diagnostics`() {
+        // jdbcPassword="" (explicitly blank) exercises the empty-secret marker path; the data-class
+        // default is "outerstellar", which would be masked as "***" — so set it explicitly here.
+        val config = AppConfig(port = 9090, jdbcUser = "outerstellar", jdbcPassword = "", profile = "prod")
+        val rendered = config.toString()
+
+        // Non-secret values remain visible so toString() is still useful for diagnostics.
+        assert(rendered.contains("port=9090")) { "Expected port in toString: $rendered" }
+        assert(rendered.contains("jdbcUser=outerstellar")) { "Expected jdbcUser in toString: $rendered" }
+        assert(rendered.contains("profile=prod")) { "Expected profile in toString: $rendered" }
+        // A blank password renders as an explicit empty marker, not the literal secret.
+        assert(rendered.contains("jdbcPassword=\"\"")) { "Expected blank jdbcPassword marker: $rendered" }
+    }
+
+    @Test
+    fun `JwtConfig toString masks the HMAC secret`() {
+        val rendered = JwtConfig(secret = "do-not-leak-me").toString()
+        assert(!rendered.contains("do-not-leak-me")) { "JWT secret leaked: $rendered" }
+        assert(rendered.contains("***")) { "Expected mask marker: $rendered" }
+    }
+
+    @Test
+    fun `EmailConfig toString masks the SMTP password`() {
+        val rendered = EmailConfig(password = "do-not-leak-me").toString()
+        assert(!rendered.contains("do-not-leak-me")) { "SMTP password leaked: $rendered" }
+    }
 }
