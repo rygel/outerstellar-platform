@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform
 
 import io.github.rygel.outerstellar.platform.infra.NativeStartupCheck
-import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -71,11 +70,11 @@ fun main() {
     outboxScheduler.schedule(outboxTask, 0, TimeUnit.MILLISECONDS)
     logger.info(elapsed(t0, "Background jobs started"))
 
-    registerShutdownHook(components.security.asyncActivityUpdater, outboxScheduler, server)
+    registerShutdownHook(components, outboxScheduler, server)
 }
 
 private fun registerShutdownHook(
-    activityUpdater: AsyncActivityUpdater,
+    components: ServerComponents,
     outboxScheduler: ScheduledExecutorService,
     server: Http4kServer,
 ) {
@@ -84,20 +83,28 @@ private fun registerShutdownHook(
             Thread(
                 {
                     logger.info("Graceful shutdown initiated")
-                    logger.info("Flushing pending activity updates...")
-                    activityUpdater.flush()
-                    logger.info("Stopping outbox scheduler...")
-                    outboxScheduler.shutdown()
                     try {
-                        if (!outboxScheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                        logger.info("Flushing pending activity updates...")
+                        components.security.asyncActivityUpdater.flush()
+                        logger.info("Stopping outbox scheduler...")
+                        outboxScheduler.shutdown()
+                        try {
+                            if (!outboxScheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                                outboxScheduler.shutdownNow()
+                            }
+                        } catch (e: InterruptedException) {
                             outboxScheduler.shutdownNow()
                         }
-                    } catch (e: InterruptedException) {
-                        outboxScheduler.shutdownNow()
+                        logger.info("Stopping HTTP server...")
+                        server.stop()
+                    } finally {
+                        // Always close the persistence layer (HikariDataSource) last so DB connections
+                        // are released to the pool and Postgres even if an earlier shutdown step throws.
+                        logger.info("Closing persistence (DB pool)...")
+                        runCatching { components.persistence.close() }
+                            .onFailure { logger.warn("Failed to close persistence cleanly", it) }
+                        logger.info("Shutdown complete")
                     }
-                    logger.info("Stopping HTTP server...")
-                    server.stop()
-                    logger.info("Shutdown complete")
                 },
                 "graceful-shutdown",
             )
