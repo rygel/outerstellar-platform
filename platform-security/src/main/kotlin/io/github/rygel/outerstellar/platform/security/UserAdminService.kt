@@ -11,10 +11,7 @@ import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory
 
-class UserAdminService(
-    private val userRepository: UserRepository,
-    private val auditRepository: AuditRepository? = null,
-) {
+class UserAdminService(private val userRepository: UserRepository, private val auditRepository: AuditRepository) {
     private val logger = LoggerFactory.getLogger(UserAdminService::class.java)
 
     fun listUsers(): List<UserSummary> = userRepository.findAll().map { it.toSummary() }
@@ -38,7 +35,7 @@ class UserAdminService(
         userRepository.updateEnabled(targetId, enabled)
         logger.info("User {} enabled set to {} by admin {}", sanitize(target.username), enabled, adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
-        auditRepository?.logAction(action, actor = admin, target = target)
+        auditRepository.logAction(action, actor = admin, target = target)
     }
 
     fun unlockAccount(adminId: UUID, targetId: UUID) {
@@ -49,7 +46,7 @@ class UserAdminService(
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.resetFailedLoginAttempts(targetId)
         logger.info("User {} unlocked by admin {}", sanitize(target.username), sanitize(admin.username))
-        auditRepository?.logAction("USER_UNLOCKED", actor = admin, target = target)
+        auditRepository.logAction("USER_UNLOCKED", actor = admin, target = target)
     }
 
     fun setUserRole(adminId: UUID, targetId: UUID, role: UserRole) {
@@ -63,7 +60,7 @@ class UserAdminService(
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
         userRepository.updateRole(targetId, role)
         logger.info("User {} role set to {} by admin {}", sanitize(target.username), role, adminId)
-        auditRepository?.logAction(
+        auditRepository.logAction(
             "USER_ROLE_CHANGED",
             actor = admin,
             target = target,
@@ -71,11 +68,11 @@ class UserAdminService(
         )
     }
 
-    fun countAuditEntries(): Long = auditRepository?.countAll() ?: 0L
+    fun countAuditEntries(): Long = auditRepository.countAll()
 
-    fun getAuditLog(limit: Int = 50): List<AuditEntry> = auditRepository?.findRecent(limit) ?: emptyList()
+    fun getAuditLog(limit: Int = 50): List<AuditEntry> = auditRepository.findRecent(limit)
 
-    fun getAuditLog(limit: Int, offset: Int): List<AuditEntry> = auditRepository?.findPage(limit, offset) ?: emptyList()
+    fun getAuditLog(limit: Int, offset: Int): List<AuditEntry> = auditRepository.findPage(limit, offset)
 
     private fun User.toSummary() =
         UserSummary(
