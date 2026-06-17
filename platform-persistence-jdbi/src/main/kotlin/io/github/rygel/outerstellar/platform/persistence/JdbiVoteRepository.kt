@@ -67,25 +67,23 @@ class JdbiVoteRepository(private val jdbi: Jdbi) : VoteRepository {
         if (messageSyncIds.isEmpty()) return emptyMap()
 
         return jdbi.withHandle<Map<String, VoteScore>, Exception> { handle ->
-            val placeholders = messageSyncIds.indices.joinToString(", ") { ":id_$it" }
-
             val scores = mutableMapOf<String, MutablePair>()
             for (msgId in messageSyncIds) {
                 scores[msgId] = MutablePair(0, 0)
             }
 
-            val aggregateQuery =
-                """
-                SELECT message_sync_id,
-                       SUM(CASE WHEN direction = 1 THEN 1 ELSE 0 END) as upvotes,
-                       SUM(CASE WHEN direction = -1 THEN 1 ELSE 0 END) as downvotes
-                FROM plt_message_votes
-                WHERE message_sync_id IN ($placeholders)
-                GROUP BY message_sync_id
-                """
-            var aggQuery = handle.createQuery(aggregateQuery)
-            messageSyncIds.forEachIndexed { index, id -> aggQuery = aggQuery.bind("id_$index", id) }
-            aggQuery
+            handle
+                .createQuery(
+                    """
+                    SELECT message_sync_id,
+                           SUM(CASE WHEN direction = 1 THEN 1 ELSE 0 END) as upvotes,
+                           SUM(CASE WHEN direction = -1 THEN 1 ELSE 0 END) as downvotes
+                    FROM plt_message_votes
+                    WHERE message_sync_id IN (<ids>)
+                    GROUP BY message_sync_id
+                    """
+                )
+                .bindList("ids", messageSyncIds)
                 .map { rs, _ ->
                     val msgId = rs.getString("message_sync_id")
                     val up = rs.getInt("upvotes")
@@ -97,14 +95,16 @@ class JdbiVoteRepository(private val jdbi: Jdbi) : VoteRepository {
 
             val userVotes = mutableMapOf<String, Int>()
             if (userId != null) {
-                val userQuery =
-                    """
-                    SELECT message_sync_id, direction FROM plt_message_votes
-                    WHERE user_id = :userId AND message_sync_id IN ($placeholders)
-                    """
-                var uq = handle.createQuery(userQuery).bind("userId", userId)
-                messageSyncIds.forEachIndexed { index, id -> uq = uq.bind("id_$index", id) }
-                uq.map { rs, _ ->
+                handle
+                    .createQuery(
+                        """
+                        SELECT message_sync_id, direction FROM plt_message_votes
+                        WHERE user_id = :userId AND message_sync_id IN (<ids>)
+                        """
+                    )
+                    .bind("userId", userId)
+                    .bindList("ids", messageSyncIds)
+                    .map { rs, _ ->
                         val msgId = rs.getString("message_sync_id")
                         val dir = rs.getInt("direction")
                         userVotes[msgId] = dir
