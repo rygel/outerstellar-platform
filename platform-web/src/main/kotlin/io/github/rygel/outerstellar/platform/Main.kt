@@ -26,16 +26,16 @@ fun main() {
     logger.info(elapsed(t0, "Components created"))
 
     if (
-        components.config.jdbcPassword == AppConfig.DEFAULT_JDBC_PASSWORD &&
+        components.config.usesDefaultJdbcPassword() &&
             components.config.profile != "default" &&
             components.config.profile != "test"
     ) {
         logger.error(
-            "FATAL: JDBC_PASSWORD is still the default '{}' with profile '{}'. " +
+            "FATAL: JDBC_PASSWORD is still the shipped default in profile '{}'. " +
                 "Set JDBC_PASSWORD to a secure value before deploying.",
-            AppConfig.DEFAULT_JDBC_PASSWORD,
             components.config.profile,
         )
+        System.exit(1)
     }
 
     val server = components.app.asServer(Netty(components.config.port)).start()

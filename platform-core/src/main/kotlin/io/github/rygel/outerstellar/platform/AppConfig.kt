@@ -33,6 +33,12 @@ data class JwtConfig(
     val issuer: String = "outerstellar",
     val expirySeconds: Long = DEFAULT_JWT_EXPIRY_SECONDS,
 ) {
+    init {
+        require(!enabled || secret.isNotBlank()) {
+            "JWT is enabled but the HMAC secret is blank. Set JWT_SECRET to a strong value (>= 32 chars) before enabling JWT."
+        }
+    }
+
     // HMAC secret is a signing key — never expose it in logs, stack traces, or debug output.
     override fun toString(): String =
         "JwtConfig(enabled=$enabled, secret=${mask(secret)}, issuer=$issuer, expirySeconds=$expirySeconds)"
@@ -126,6 +132,9 @@ data class AppConfig(
     val runtime: RuntimeConfig = RuntimeConfig(),
     val platformMode: PlatformMode = PlatformMode.FullPlatform,
 ) {
+    /** True when the JDBC password was not overridden from the shipped dev default. */
+    fun usesDefaultJdbcPassword(): Boolean = jdbcPassword == DEFAULT_JDBC_PASSWORD
+
     // Override the data-class toString() so the DB password (and the secrets nested in jwt/email/appleOAuth/
     // pushNotifications, whose own toString() implementations mask them) are never written to logs, stack
     // traces, error messages, or observability output. See issue #524.
@@ -141,7 +150,13 @@ data class AppConfig(
 
     companion object {
         const val DEFAULT_APP_BASE_URL = "http://localhost:8080"
-        const val DEFAULT_JDBC_PASSWORD = "outerstellar"
+
+        /**
+         * Shipped default JDBC password used only for local/dev convenience. Internal to avoid leaking the known-value
+         * credential through the public API; [AppConfig.usesDefaultJdbcPassword] is the supported way to detect that
+         * the operator did not override it.
+         */
+        internal const val DEFAULT_JDBC_PASSWORD = "outerstellar"
         private val logger = LoggerFactory.getLogger(AppConfig::class.java)
 
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
@@ -430,8 +445,20 @@ private fun Map<String, Any>.staticDir(env: Map<String, String>): String =
 private fun Map<String, Any>.int(key: String, env: Map<String, String>, envKey: String, default: Int): Int =
     env[envKey]?.toInt() ?: (this[key] as? Int) ?: default
 
-private fun Map<String, Any>.bool(key: String, env: Map<String, String>, envKey: String, default: Boolean): Boolean =
-    env[envKey]?.toBoolean() ?: (this[key] as? Boolean) ?: default
+private fun Map<String, Any>.bool(key: String, env: Map<String, String>, envKey: String, default: Boolean): Boolean {
+    // Fail loud on a malformed boolean value rather than silently disabling security-sensitive flags.
+    // Kotlin's String.toBoolean() returns false for any non-"true" string, so SESSION_COOKIE_SECURE=yes
+    // would silently disable the Secure flag; require an explicit true/false (case-insensitive) instead.
+    val raw = env[envKey] ?: return (this[key] as? Boolean) ?: default
+    return when (raw.lowercase()) {
+        "true" -> true
+        "false" -> false
+        else ->
+            throw IllegalArgumentException(
+                "Environment variable $envKey='$raw' is not a valid boolean (expected 'true' or 'false')."
+            )
+    }
+}
 
 private fun Map<String, Any>.long(key: String, env: Map<String, String>, envKey: String, default: Long): Long =
     env[envKey]?.toLong() ?: (this[key] as? Long) ?: default
