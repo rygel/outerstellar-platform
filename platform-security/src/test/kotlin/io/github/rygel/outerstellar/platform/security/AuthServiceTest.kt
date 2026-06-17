@@ -46,7 +46,7 @@ class AuthServiceTest {
                 userRepository = userRepository,
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
-                totpService = TOTPService(),
+                totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
             )
     }
 
@@ -213,7 +213,7 @@ class AuthServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 config = SecurityConfig(registrationEnabled = false),
-                totpService = TOTPService(),
+                totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
             )
 
         assertThrows<RegistrationDisabledException> { disabledService.register("new@test.com", "ValidP@ss1") }

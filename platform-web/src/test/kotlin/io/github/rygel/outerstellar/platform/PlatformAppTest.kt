@@ -10,6 +10,7 @@ import io.github.rygel.outerstellar.platform.infra.createRenderer
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.ApiKeyService
+import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SessionService
@@ -98,7 +99,7 @@ class PlatformAppTest {
             passwordResetService = mockk(relaxed = true),
             oauthService = mockk(relaxed = true),
             authRealms = emptyList(),
-            totpService = TOTPService(),
+            totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
             sessionService = mockk(relaxed = true),
             userAdminService = mockk(relaxed = true),
         )

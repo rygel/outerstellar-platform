@@ -72,7 +72,7 @@ fun createSecurityComponents(
             sessionAbsoluteTimeoutSeconds = config.sessionAbsoluteTimeoutMinutes.toLong() * 60,
             registrationEnabled = config.registrationEnabled,
         )
-    val totpService = TOTPService()
+    val totpService = TOTPService(passwordEncoder)
     val sessionService =
         SessionService(
             sessionRepository = sessionRepository ?: error("SessionRepository required"),

@@ -8,9 +8,14 @@ import dev.samstevens.totp.recovery.RecoveryCodeGenerator
 import dev.samstevens.totp.secret.DefaultSecretGenerator
 import dev.samstevens.totp.time.SystemTimeProvider
 import dev.samstevens.totp.util.Utils
-import java.security.MessageDigest
 
-class TOTPService {
+/**
+ * Hashes and verifies TOTP backup codes. Backup codes are an equally critical credential as the main password (a single
+ * code bypasses TOTP entirely), so they are stored with the same slow, salted KDF used for passwords rather than a fast
+ * unsalted digest. Verification goes through [PasswordEncoder.matches], whose underlying
+ * [org.mindrot.jbcrypt.BCrypt.checkpw] is constant-time.
+ */
+class TOTPService(private val backupCodeEncoder: PasswordEncoder) {
 
     private val secretGenerator = DefaultSecretGenerator(32)
     private val codeVerifier =
@@ -45,21 +50,17 @@ class TOTPService {
 
     fun generateBackupCodes(): Pair<List<String>, String> {
         val codes = recoveryCodeGenerator.generateCodes(16).toList()
-        val hashed = codes.map { sha256(it) }
+        val hashed = codes.map { backupCodeEncoder.encode(it) }
         return codes to serializeJson(hashed)
     }
 
     fun verifyBackupCode(code: String, hashedCodesJson: String): String? {
         val hashedCodes = parseJsonList(hashedCodesJson).toMutableList()
-        val hashed = sha256(code)
-        val idx = hashedCodes.indexOfFirst { it == hashed }
+        val idx = hashedCodes.indexOfFirst { backupCodeEncoder.matches(code, it) }
         if (idx == -1) return null
         hashedCodes.removeAt(idx)
         return if (hashedCodes.isEmpty()) "" else serializeJson(hashedCodes)
     }
-
-    private fun sha256(value: String): String =
-        MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
 
     private fun serializeJson(list: List<String>): String = list.joinToString(",", "[", "]") { "\"$it\"" }
 
