@@ -7,6 +7,55 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [3.6.17] – 2026-06-18
+
+### Security
+
+- **TOTP backup codes hardened** — backup codes are now hashed with BCrypt (matching password storage, logRounds=12) instead of unsalted SHA-256, and verification is constant-time via `BCrypt.checkpw`. Legacy SHA-256 codes are invalidated by design (#506, #511).
+- **Config secrets masked in `toString()`** — `AppConfig` and nested config data classes no longer leak the DB password, JWT secret, SMTP password, OAuth private keys, or FCM/APNS credentials via `toString()` (logs, stack traces, observability). Non-blank secrets render as `***` (#524).
+- **Login timing oracle closed** — the not-found login path now runs a dummy BCrypt verify so its latency matches the bad-password path, preventing account enumeration via response timing (#505).
+- **JWT claims cache removed** — bearer tokens are re-verified on every request (HMAC verify is sub-ms), closing a 60s window where a token stayed valid after logout/password-change/role-change and exposing up to 2000 raw tokens in a heap dump (#507).
+- **Password-reset token consumption is atomic** — a single `UPDATE ... WHERE used=false AND expires_at>now() RETURNING` replaces the non-atomic find+check+markUsed, closing a TOCTOU race where two concurrent resets with the same token both succeeded. Prior unused tokens are now invalidated when a new one is issued (#508).
+- **TOTP brute-force bounded** — a per-user `failed_totp_attempts` counter (independent of the resettable per-partial-token cap) locks the account after N TOTP failures. An attacker with the password can no longer reset the cap by re-authenticating (#510).
+- **Last-admin protection** — `setUserRole`/`setUserEnabled` refuse to demote or disable the last enabled administrator, preventing an unrecoverable lockout (#513).
+- **Audit-log account enumeration closed** — all `AUTHENTICATION_FAILED` audit entries now use a single generic `"Invalid credentials"` detail; the per-reason discriminator stays in server logs only (#509).
+- **Search-result URL XSS prevented** — `SearchPageFactory.safeHref()` allow-lists URL schemes at the provider-output chokepoint; `javascript:`/`data:`/`vbscript:` (and case/whitespace bypasses) collapse to `#` so a malicious/buggy `SearchProvider` can't inject script via the href (#517).
+- **Request body-size limit** — a new `maxBodySize` filter rejects oversized request bodies (413) before they're buffered into memory, defaulting to 2 MiB (`MAX_REQUEST_BODY_BYTES`), preventing oversized-POST DoS (#516).
+- **Fail-loud config defaults** — default JDBC credentials now abort startup (`System.exit(1)`) in non-dev/test profiles; `bool()` env parsing rejects invalid values instead of silently disabling security flags; `JwtConfig` rejects `enabled`+blank-`secret` at construction; `DEFAULT_JDBC_PASSWORD` is no longer public API (#527).
+- **CSRF cookie `Secure` flag dropped** — the `_csrf` double-submit cookie is now non-Secure so browsers store it over HTTP (localhost dev, TLS-terminating proxies); CSRF protection comes from token-matching, not transport (#515).
+- **HikariDataSource closed on shutdown** — the DB pool is now released in the shutdown hook (`finally`-guarded); previously it was abandoned on every JVM shutdown, leaking Postgres connections (#525).
+- **Shutdown robust to per-step exceptions** — each cleanup step (flush, outbox, server-stop, persistence-close) is individually `try/catch(Throwable)`-guarded so one failure no longer aborts the rest (#526).
+
+### Added
+
+- **Health endpoints** — `/health/live` (always 200, no dependency probe) and `/health/ready` (DB+extension readiness, 503 when DOWN) for orchestrator liveness/readiness probes; `/health` kept as a backward-compatible readiness alias (#528).
+- **Admin index handler** — bare `GET /admin` now 302-redirects to `/admin/extensions` instead of 404, and `/admin` is always defined when any admin content is mounted (#531).
+- **Sync wire-format schema version** — `SyncPullResponse`/`SyncPushResponse` carry a `schemaVersion`; the client rejects pull responses whose version differs (`SYNC_SCHEMA_VERSION`), preventing silent data corruption across client/server version skew (#523).
+
+### Changed
+
+- **Session cookie Max-Age** — all session-establishing routes (login, OAuth, TOTP, dev-auto-login) now set `Max-Age` from `sessionTimeoutMinutes` so the browser lifetime matches the server policy (#518).
+- **Sign in with Apple consistently disabled** — the provider returns the not-configured stub for both `authorizationUrl` and `exchangeCode` until the token-exchange implementation is complete (gated behind `TOKEN_EXCHANGE_IMPLEMENTED`), so users are never routed through Apple only to hit a 500 (#514).
+- **Vote repository queries use `bindList`** — `JdbiVoteRepository.findScoresByMessages` uses JDBI `bindList` instead of string-concatenated `IN(...)` placeholders, matching the rest of the persistence layer and restoring prepared-statement plan caching (#529).
+- **Sync conflict handling preserves local content** — conflicts now use `repository.markConflict` (preserving both versions for the UI and `resolveConflict`) instead of unconditionally overwriting the local row; `SyncConflict` gained a `clientMessage` field (#521).
+- **TOTP backup-code JSON via kotlinx.serialization** — the hand-rolled concat/split serializer (which corrupted on `,` `"` `\`) is replaced by `ListSerializer(String.serializer())`; stored format unchanged, no migration (#512).
+
+### Fixed
+
+- **Sync dirty flag cleared after push** — `doSync()` now calls `repository.markClean` after a successful push, so locally-originated messages aren't re-pushed on every sync cycle (#519).
+- **Sync pull loop bounded** — max-round (100) and max-item (50_000) guards prevent infinite loops / OOM when the server signals `hasMore=true`; an empty batch with `hasMore=true` is treated as a protocol error (#520).
+- **Sync 401 routed to session-expired** — `HttpSyncClient.pull`/`push` throw `SessionExpiredException` specifically for 401/403, so auto-sync stops hammering a dead token and the user is told to re-authenticate (#522).
+- **Missing `plt_message_votes` table** — the table queried by `JdbiVoteRepository` had no `CREATE TABLE` anywhere; added via V14 migration. First `JdbiVoteRepositoryTest` (9 cases) added (#529).
+- **Redundant reset-token index dropped** — V15 drops `idx_plt_password_reset_tokens_token`, which duplicated the `UNIQUE(token)` constraint's btree (#530).
+- **Dead `AppConfigTest` methods** — three `@Test` functions nested inside another test's body (never executed by JUnit) hoisted to class top level (#536).
+- **Graceful shutdown closes the DB pool even if an earlier step throws** — see #526.
+
+---
+
+## [3.6.16] – 2026-06-14
+
 ### Added
 
 - **Configurable security headers** — all response headers (`Permissions-Policy`, `X-Frame-Options`, `Referrer-Policy`, `X-Content-Type-Options`, `Strict-Transport-Security`) are now configurable via YAML/env vars with per-route overrides using Ant-style glob patterns. Extensions can no longer be blocked by hard-coded security headers (#501).
