@@ -111,6 +111,7 @@ class AuthService(
         return created
     }
 
+    @Suppress("ReturnCount")
     fun verifyTotp(partialToken: String, code: String, sessionService: SessionService): TotpVerifyResponse {
         val partial =
             partialAuthStore.asMap().compute(partialToken) { _, existing ->
@@ -123,6 +124,7 @@ class AuthService(
 
         if (totpService.verifyCode(secret, code)) {
             partialAuthStore.invalidate(partialToken)
+            userRepository.resetFailedTotpAttempts(user.id)
             val token = sessionService.createSession(user.id)
             return TotpVerifyResponse("success", token = token, username = user.username, role = user.role.name)
         }
@@ -133,11 +135,24 @@ class AuthService(
             if (updatedCodes != null) {
                 userRepository.updateTotpSecret(user.id, user.totpSecret, updatedCodes.ifEmpty { null })
                 partialAuthStore.invalidate(partialToken)
+                userRepository.resetFailedTotpAttempts(user.id)
                 val token = sessionService.createSession(user.id)
                 return TotpVerifyResponse("success", token = token, username = user.username, role = user.role.name)
             }
         }
 
+        // Per-user TOTP failure tracking (issue #510): the partial-token cap was resettable by
+        // re-authenticating, allowing indefinite TOTP brute-force. Increment a per-user counter
+        // independent of the partial-token lifecycle, and lock the account once it reaches the
+        // configured threshold (reusing the existing lockout infrastructure).
+        val attempts = userRepository.incrementFailedTotpAttempts(user.id)
+        if (attempts >= config.maxFailedLoginAttempts) {
+            val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
+            userRepository.updateLockedUntil(user.id, until)
+            partialAuthStore.invalidate(partialToken)
+            logger.warn("TOTP verification locked user ${sanitize(user.username)} after $attempts failed attempts")
+            return TotpVerifyResponse("locked")
+        }
         return TotpVerifyResponse("invalid_code")
     }
 

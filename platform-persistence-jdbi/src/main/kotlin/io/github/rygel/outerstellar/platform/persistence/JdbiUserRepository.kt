@@ -233,6 +233,40 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
         }
     }
 
+    override fun incrementFailedTotpAttempts(userId: UUID): Int {
+        return jdbi.withHandle<Int, Exception> { handle ->
+            handle
+                .createQuery(
+                    """
+                    UPDATE plt_users
+                    SET failed_totp_attempts = failed_totp_attempts + 1
+                    WHERE id = :id
+                    RETURNING failed_totp_attempts
+                    """
+                        .trimIndent()
+                )
+                .bind("id", userId)
+                .mapTo(Int::class.java)
+                .one()
+        }
+    }
+
+    override fun resetFailedTotpAttempts(userId: UUID) {
+        jdbi.useHandle<Exception> { handle ->
+            handle
+                .createUpdate(
+                    """
+                    UPDATE plt_users
+                    SET failed_totp_attempts = 0
+                    WHERE id = :id
+                    """
+                        .trimIndent()
+                )
+                .bind("id", userId)
+                .execute()
+        }
+    }
+
     override fun updateLockedUntil(userId: UUID, lockedUntil: Instant?) {
         jdbi.useHandle<Exception> { handle ->
             handle
@@ -303,6 +337,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             role = UserRole.valueOf(rs.getString("role")),
             enabled = rs.getBoolean("enabled"),
             failedLoginAttempts = rs.getInt("failed_login_attempts"),
+            failedTotpAttempts = rs.getInt("failed_totp_attempts"),
             lockedUntil = rs.getNullableInstant("locked_until"),
             lastActivityAt = rs.getNullableInstant("last_activity_at"),
             avatarUrl = rs.getString("avatar_url"),
@@ -322,7 +357,7 @@ class JdbiUserRepository(private val jdbi: Jdbi) : UserRepository {
             """
             SELECT id, username, email, password_hash, role, enabled, last_activity_at, avatar_url,
                    email_notifications_enabled, push_notifications_enabled, language, theme, layout,
-                   failed_login_attempts, locked_until, totp_secret, totp_enabled, totp_backup_codes
+                   failed_login_attempts, failed_totp_attempts, locked_until, totp_secret, totp_enabled, totp_backup_codes
             FROM plt_users
             """
     }
