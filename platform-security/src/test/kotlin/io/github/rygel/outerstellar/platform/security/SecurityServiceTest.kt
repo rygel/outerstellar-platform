@@ -129,6 +129,38 @@ class SecurityServiceTest {
     }
 
     @Test
+    fun `setUserRole refuses to demote the last enabled admin`() {
+        // Regression guard for issue #513: demoting the only enabled admin would lock everyone out of
+        // admin endpoints with no recovery short of DB intervention. Actor is a disabled admin (role check
+        // passes on role, not enabled), target is the sole enabled admin.
+        val soleEnabledAdmin = adminUser.copy(id = UUID.randomUUID())
+        val actor = adminUser.copy(id = UUID.randomUUID(), enabled = false)
+        every { userRepository.findById(actor.id) } returns actor
+        every { userRepository.findById(soleEnabledAdmin.id) } returns soleEnabledAdmin
+        every { userRepository.findAll() } returns listOf(soleEnabledAdmin, actor, testUser)
+
+        assertThrows<InsufficientPermissionException> {
+            userAdminService.setUserRole(actor.id, soleEnabledAdmin.id, UserRole.USER)
+        }
+    }
+
+    @Test
+    fun `setUserEnabled refuses to disable the last enabled admin`() {
+        // Actor is a disabled admin (role check passes on role, not enabled), target is the sole enabled
+        // admin. Disabling the target would leave zero enabled admins. Actor != target so the self-check
+        // does not short-circuit; the last-admin guard must fire.
+        val soleEnabledAdmin = adminUser.copy(id = UUID.randomUUID())
+        val actor = adminUser.copy(id = UUID.randomUUID(), enabled = false)
+        every { userRepository.findById(actor.id) } returns actor
+        every { userRepository.findById(soleEnabledAdmin.id) } returns soleEnabledAdmin
+        every { userRepository.findAll() } returns listOf(soleEnabledAdmin, actor, testUser)
+
+        assertThrows<InsufficientPermissionException> {
+            userAdminService.setUserEnabled(actor.id, soleEnabledAdmin.id, false)
+        }
+    }
+
+    @Test
     fun `createApiKey returns key with osk prefix`() {
         val response = apiKeyService.createApiKey(testUser.id, "my-key")
 

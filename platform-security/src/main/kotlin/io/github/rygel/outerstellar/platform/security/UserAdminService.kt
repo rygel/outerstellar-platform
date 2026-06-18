@@ -32,6 +32,9 @@ class UserAdminService(private val userRepository: UserRepository, private val a
             throw InsufficientPermissionException("Only administrators can enable/disable accounts")
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
+        if (!enabled && target.role == UserRole.ADMIN && wouldLeaveNoEnabledAdmin(targetId)) {
+            throw InsufficientPermissionException("Cannot disable the last enabled administrator")
+        }
         userRepository.updateEnabled(targetId, enabled)
         logger.info("User {} enabled set to {} by admin {}", sanitize(target.username), enabled, adminId)
         val action = if (enabled) "USER_ENABLED" else "USER_DISABLED"
@@ -58,6 +61,9 @@ class UserAdminService(private val userRepository: UserRepository, private val a
             throw InsufficientPermissionException("Only administrators can change user roles")
         }
         val target = userRepository.findById(targetId) ?: throw UserNotFoundException(targetId.toString())
+        if (target.role == UserRole.ADMIN && role != UserRole.ADMIN && wouldLeaveNoEnabledAdmin(targetId)) {
+            throw InsufficientPermissionException("Cannot demote the last enabled administrator")
+        }
         userRepository.updateRole(targetId, role)
         logger.info("User {} role set to {} by admin {}", sanitize(target.username), role, adminId)
         auditRepository.logAction(
@@ -73,6 +79,14 @@ class UserAdminService(private val userRepository: UserRepository, private val a
     fun getAuditLog(limit: Int = 50): List<AuditEntry> = auditRepository.findRecent(limit)
 
     fun getAuditLog(limit: Int, offset: Int): List<AuditEntry> = auditRepository.findPage(limit, offset)
+
+    /**
+     * True iff [targetId] is the only enabled ADMIN — i.e. demoting or disabling them would leave zero enabled
+     * administrators, locking everyone out of admin endpoints with no recovery short of DB intervention. Counts enabled
+     * admins excluding the target; <= 0 means the target is the last one.
+     */
+    private fun wouldLeaveNoEnabledAdmin(targetId: UUID): Boolean =
+        userRepository.findAll().count { it.role == UserRole.ADMIN && it.enabled && it.id != targetId } == 0
 
     private fun User.toSummary() =
         UserSummary(
