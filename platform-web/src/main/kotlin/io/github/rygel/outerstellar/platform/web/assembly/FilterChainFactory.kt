@@ -29,6 +29,7 @@ internal class FilterChainFactory(
         var chain =
             Filters.correlationId
                 .then(Filters.cors(config.corsOrigins, config.securityHeaders))
+                .then(Filters.maxBodySize(config.maxRequestBodyBytes))
                 .then(etagCachingFilter)
                 .then(staticCacheControlFilter)
                 .then(Filters.securityHeaders(config.cspPolicy, config.securityHeaders))
