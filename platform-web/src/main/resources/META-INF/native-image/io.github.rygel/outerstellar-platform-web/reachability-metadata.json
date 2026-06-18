@@ -764,6 +764,8 @@
   }, {
     "glob" : "db/migration/V13__utc_only_timestamptz.sql"
   }, {
+    "glob" : "db/migration/V14__add_message_votes.sql"
+  }, {
     "glob" : "db/migration/V1__initial_schema.sql"
   }, {
     "glob" : "db/migration/V2__user_profile_enhancements.sql"
