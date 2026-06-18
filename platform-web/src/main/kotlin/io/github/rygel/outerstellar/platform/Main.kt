@@ -83,10 +83,12 @@ private fun registerShutdownHook(
             Thread(
                 {
                     logger.info("Graceful shutdown initiated")
-                    try {
-                        logger.info("Flushing pending activity updates...")
-                        components.security.asyncActivityUpdater.flush()
-                        logger.info("Stopping outbox scheduler...")
+                    // Each independent cleanup step is guarded individually: a failure in one
+                    // (e.g. DB error during flush, port still bound during server.stop) must not
+                    // skip the others. Shutdown is the wrong place to propagate — catch Throwable
+                    // and log, so the JVM always reaches a fully-stopped state.
+                    runStep("flush activity updates") { components.security.asyncActivityUpdater.flush() }
+                    runStep("stop outbox scheduler") {
                         outboxScheduler.shutdown()
                         try {
                             if (!outboxScheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
@@ -95,18 +97,25 @@ private fun registerShutdownHook(
                         } catch (e: InterruptedException) {
                             outboxScheduler.shutdownNow()
                         }
-                        logger.info("Stopping HTTP server...")
-                        server.stop()
-                    } finally {
-                        // Always close the persistence layer (HikariDataSource) last so DB connections
-                        // are released to the pool and Postgres even if an earlier shutdown step throws.
-                        logger.info("Closing persistence (DB pool)...")
-                        runCatching { components.persistence.close() }
-                            .onFailure { logger.warn("Failed to close persistence cleanly", it) }
-                        logger.info("Shutdown complete")
                     }
+                    runStep("stop HTTP server") { server.stop() }
+                    // Close the DB pool last so connections are released even if an earlier step threw.
+                    runStep("close persistence (DB pool)") { components.persistence.close() }
+                    logger.info("Shutdown complete")
                 },
                 "graceful-shutdown",
             )
         )
+}
+
+/** Runs a shutdown step, logging its start and swallowing any Throwable so subsequent steps still run. */
+private fun runStep(name: String, step: () -> Unit) {
+    logger.info("$name...")
+    try {
+        step()
+    } catch (t: Throwable) {
+        // Shutdown-hook exceptions are swallowed by the JVM and abort the remaining cleanup,
+        // leaving the process half-dead. Catch everything and log so every step gets a chance.
+        logger.warn("Failed to $name", t)
+    }
 }
