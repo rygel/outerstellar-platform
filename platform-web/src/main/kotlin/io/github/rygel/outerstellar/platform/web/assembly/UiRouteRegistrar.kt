@@ -194,6 +194,7 @@ internal class UiRouteRegistrar(
                 sessionService = security.sessionService,
                 sessionCookieSecure = config.sessionCookieSecure,
                 appBaseUrl = config.appBaseUrl,
+                sessionTimeoutMinutes = config.sessionTimeoutMinutes,
             )
         oauthRoutes.routes.forEach { route ->
             registry.register(

@@ -95,6 +95,7 @@ internal class HttpHandlerFactory(
                     config.sessionCookieSecure,
                     sec.totpService,
                     sec.sessionService,
+                    config.sessionTimeoutMinutes,
                 )
                 .routes
         appRoutes += TOTPApiRoutes(sec.authService, sec.totpService, sec.sessionService).routes

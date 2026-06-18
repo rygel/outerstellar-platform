@@ -92,7 +92,14 @@ class AuthRoutes(
                             val sessionToken = sessionService.createSession(user.id)
                             Response(Status.FOUND)
                                 .header("location", shellRenderer.url(returnTo))
-                                .header("Set-Cookie", SessionCookie.create(sessionToken, appConfig.sessionCookieSecure))
+                                .header(
+                                    "Set-Cookie",
+                                    SessionCookie.create(
+                                        sessionToken,
+                                        appConfig.sessionCookieSecure,
+                                        appConfig.sessionTimeoutMinutes * 60L,
+                                    ),
+                                )
                         } else {
                             renderer.render(
                                 AuthResultFragment(
