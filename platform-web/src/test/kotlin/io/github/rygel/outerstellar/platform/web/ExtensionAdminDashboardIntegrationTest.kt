@@ -56,4 +56,16 @@ class ExtensionAdminDashboardIntegrationTest : WebTest() {
         assertThat(body, containsSubstring("Layout"))
         assertThat(body, containsSubstring("Admin sections"))
     }
+
+    @Test
+    fun `bare GET on admin root redirects to the extensions dashboard instead of 404`() {
+        // Regression guard for issue #531: navigating to the obvious /admin URL must not 404.
+        val app = buildApp()
+        val (token, _, _) = withAuthenticatedUser(role = "ADMIN")
+        val response = app(Request(GET, "/admin").cookie(Cookie(RequestContext.SESSION_COOKIE, token)))
+
+        assertThat(response, hasStatus(Status.FOUND))
+        val location = response.header("location")
+        assert(location == "/admin/extensions") { "Expected redirect to /admin/extensions, got: $location" }
+    }
 }
