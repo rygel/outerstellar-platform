@@ -15,15 +15,35 @@ class AppleOAuthProvider(
     companion object {
         private const val APPLE_AUTH_ENDPOINT = "https://appleid.apple.com/auth/authorize"
         private const val APPLE_TOKEN_ENDPOINT = "https://appleid.apple.com/auth/token"
+
+        /**
+         * Flip to true once exchangeCode is fully implemented (client_secret JWT signing + token endpoint POST +
+         * id_token parsing). Until then the provider is consistently disabled — authorizationUrl returns the
+         * not-configured stub so users are never routed through the real Apple flow only to hit the unimplemented
+         * token-exchange step (issue #514).
+         */
+        private const val TOKEN_EXCHANGE_IMPLEMENTED = false
+    }
+
+    init {
+        if (TOKEN_EXCHANGE_IMPLEMENTED.not() && clientId.isNotBlank()) {
+            logger.warn(
+                "Sign in with Apple is partially configured (credentials present) but the token-exchange " +
+                    "step is not yet implemented — the provider is disabled until implementation is complete. " +
+                    "Users will see the not-configured page rather than being routed through Apple."
+            )
+        }
     }
 
     override val name: String = "apple"
 
     override fun authorizationUrl(state: String, redirectUri: String): String {
-        if (clientId.isBlank()) {
+        // Consistently disabled until token exchange is implemented (issue #514): previously this returned
+        // a real Apple URL when clientId was set, routing users through OAuth only to throw at exchangeCode.
+        if (!TOKEN_EXCHANGE_IMPLEMENTED || clientId.isBlank()) {
             logger.warn(
-                "AppleOAuthProvider is not configured — using stub authorization URL. " +
-                    "Set teamId, clientId, keyId, and privateKeyPem to enable real Sign in with Apple."
+                "AppleOAuthProvider is not available — using stub authorization URL. " +
+                    "Sign in with Apple token exchange is not yet implemented."
             )
             return "/auth/oauth/apple/not-configured"
         }
@@ -38,10 +58,10 @@ class AppleOAuthProvider(
     }
 
     override fun exchangeCode(code: String, state: String, redirectUri: String): OAuthUserInfo {
-        if (clientId.isBlank()) {
+        if (!TOKEN_EXCHANGE_IMPLEMENTED || clientId.isBlank()) {
             throw OAuthException(
-                "Sign in with Apple is not yet configured. " +
-                    "Provide Apple Developer credentials in AppleOAuthConfig."
+                "Sign in with Apple is not available — token exchange is not yet implemented. " +
+                    "The provider is disabled until implementation is complete."
             )
         }
 
