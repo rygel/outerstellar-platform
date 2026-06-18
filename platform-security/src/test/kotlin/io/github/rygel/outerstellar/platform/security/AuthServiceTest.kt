@@ -159,7 +159,7 @@ class AuthServiceTest {
             auditRepository.log(
                 match {
                     it.action == "AUTHENTICATION_FAILED" &&
-                        it.detail == "User not found" &&
+                        it.detail == "Invalid credentials" &&
                         it.targetUsername == "unknown"
                 }
             )
@@ -174,7 +174,7 @@ class AuthServiceTest {
         service.authenticate("testuser", "anypass")
 
         verify {
-            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Account disabled" })
+            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Invalid credentials" })
         }
     }
 
@@ -186,9 +186,7 @@ class AuthServiceTest {
         service.authenticate("testuser", "correctpass")
 
         verify {
-            auditRepository.log(
-                match { it.action == "AUTHENTICATION_FAILED" && it.detail?.startsWith("Account locked until") == true }
-            )
+            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Invalid credentials" })
         }
     }
 
@@ -201,7 +199,7 @@ class AuthServiceTest {
         service.authenticate("testuser", "wrongpass")
 
         verify {
-            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Invalid password" })
+            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Invalid credentials" })
         }
     }
 
