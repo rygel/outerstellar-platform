@@ -175,6 +175,26 @@ object Filters {
         }
     }
 
+    /**
+     * Rejects requests whose body exceeds [maxBytes] before the body is buffered into memory, returning 413. Defends
+     * against oversized-body DoS (heap exhaustion / GC thrash from a single large POST). The check is on the
+     * Content-Length header so the body is never read for oversized requests. Requests without a Content-Length (e.g.
+     * chunked/streamed) are left to the handler, which is the http4k default; a hard cap on those would require
+     * consuming the stream, which we avoid to keep the filter allocation-free.
+     */
+    fun maxBodySize(maxBytes: Long): Filter = Filter { next: HttpHandler ->
+        { request ->
+            val declared = request.header("Content-Length")?.toLongOrNull()
+            if (declared != null && declared > maxBytes) {
+                Response(Status.REQUEST_ENTITY_TOO_LARGE)
+                    .header("content-type", "text/plain; charset=utf-8")
+                    .body("Request body of $declared bytes exceeds the limit of $maxBytes bytes.")
+            } else {
+                next(request)
+            }
+        }
+    }
+
     fun cors(allowedOrigins: String, headerConfig: SecurityHeadersConfig = SecurityHeadersConfig()): Filter =
         Filter { next: HttpHandler ->
             { request ->

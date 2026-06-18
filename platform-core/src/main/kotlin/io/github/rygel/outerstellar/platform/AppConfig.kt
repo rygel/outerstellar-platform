@@ -13,6 +13,8 @@ private const val DEFAULT_JWT_EXPIRY_SECONDS = 86400L
 private const val MAX_HTTP_PORT = 65535
 private const val MIN_HTTP_PORT = 1
 private const val DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 10
+private const val DEFAULT_MAX_REQUEST_BODY_BYTES =
+    2L * 1024 * 1024 // 2 MiB — generous for forms/JSON, blocks oversized-body DoS
 private const val DEFAULT_LOCKOUT_DURATION_SECONDS = 900L
 private const val DEFAULT_REGISTRATION_ENABLED = true
 private const val DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES = 1440
@@ -119,6 +121,7 @@ data class AppConfig(
     val email: EmailConfig = EmailConfig(),
     val appBaseUrl: String = DEFAULT_APP_BASE_URL,
     val maxFailedLoginAttempts: Int = DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
+    val maxRequestBodyBytes: Long = DEFAULT_MAX_REQUEST_BODY_BYTES,
     val lockoutDurationSeconds: Long = DEFAULT_LOCKOUT_DURATION_SECONDS,
     val registrationEnabled: Boolean = DEFAULT_REGISTRATION_ENABLED,
     val sessionAbsoluteTimeoutMinutes: Int = DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES,
@@ -142,7 +145,7 @@ data class AppConfig(
         "AppConfig(version=$version, port=$port, jdbcUrl=$jdbcUrl, jdbcUser=$jdbcUser, jdbcPassword=${mask(jdbcPassword)}, " +
             "profile=$profile, devDashboardEnabled=$devDashboardEnabled, devMode=$devMode, sessionCookieSecure=$sessionCookieSecure, " +
             "sessionTimeoutMinutes=$sessionTimeoutMinutes, corsOrigins=$corsOrigins, csrfEnabled=$csrfEnabled, segment=$segment, " +
-            "email=$email, appBaseUrl=$appBaseUrl, maxFailedLoginAttempts=$maxFailedLoginAttempts, " +
+            "email=$email, appBaseUrl=$appBaseUrl, maxFailedLoginAttempts=$maxFailedLoginAttempts, maxRequestBodyBytes=$maxRequestBodyBytes, " +
             "lockoutDurationSeconds=$lockoutDurationSeconds, registrationEnabled=$registrationEnabled, " +
             "sessionAbsoluteTimeoutMinutes=$sessionAbsoluteTimeoutMinutes, jwt=$jwt, cspPolicy=$cspPolicy, staticDir=$staticDir, " +
             "trustedProxies=$trustedProxies, appleOAuth=$appleOAuth, pushNotifications=$pushNotifications, " +
@@ -221,6 +224,8 @@ data class AppConfig(
                         "MAX_FAILED_LOGIN_ATTEMPTS",
                         DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
                     ),
+                maxRequestBodyBytes =
+                    yaml.long("maxRequestBodyBytes", env, "MAX_REQUEST_BODY_BYTES", DEFAULT_MAX_REQUEST_BODY_BYTES),
                 lockoutDurationSeconds =
                     yaml.long(
                         "lockoutDurationSeconds",
