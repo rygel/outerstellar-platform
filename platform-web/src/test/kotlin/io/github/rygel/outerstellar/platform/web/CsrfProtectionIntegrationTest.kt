@@ -124,4 +124,21 @@ class CsrfProtectionIntegrationTest : WebTest() {
         val csrfCookieInResponse = response.cookies().find { it.name == RequestContext.CSRF_COOKIE }
         assert(csrfCookieInResponse != null) { "Expected _csrf cookie to be set on first GET" }
     }
+
+    @Test
+    fun `CSRF cookie is emitted without Secure so double-submit works over HTTP and TLS-terminating proxies`() {
+        // Regression guard for issue #515: the _csrf cookie backs a double-submit token, so the browser
+        // must STORE it over http:// (localhost dev, reverse-proxy → plain HTTP to app). A Secure flag
+        // makes the browser refuse to store it over HTTP per RFC 6265bis, silently breaking every POST.
+        // The test config defaults sessionCookieSecure=true (the production default); the CSRF cookie must
+        // still be non-Secure regardless, since CSRF protection comes from token-matching not transport.
+        val response = app(Request(GET, "/"))
+        val setCookieHeader = response.header("Set-Cookie") ?: ""
+        assert(setCookieHeader.contains("_csrf", ignoreCase = true)) {
+            "Expected _csrf Set-Cookie, got: $setCookieHeader"
+        }
+        assert(!setCookieHeader.contains("secure", ignoreCase = true)) {
+            "_csrf cookie must NOT carry Secure (breaks double-submit over HTTP): $setCookieHeader"
+        }
+    }
 }
