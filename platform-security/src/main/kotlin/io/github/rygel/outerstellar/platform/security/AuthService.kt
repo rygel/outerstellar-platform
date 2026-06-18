@@ -37,24 +37,20 @@ class AuthService(
                     logger.warn("Authentication failed: User ${sanitize(username)} not found")
                     auditRepository?.logAction(
                         "AUTHENTICATION_FAILED",
-                        detail = "User not found",
+                        detail = "Invalid credentials",
                         targetUsername = sanitize(username),
                     )
                     return null
                 }
         if (!user.enabled) {
             logger.warn("Authentication failed: User ${sanitize(username)} is disabled")
-            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Account disabled")
+            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
             return null
         }
         val lockedUntil = user.lockedUntil
         if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
             logger.warn("Authentication failed: User ${sanitize(username)} is locked until $lockedUntil")
-            auditRepository?.logAction(
-                "AUTHENTICATION_FAILED",
-                actor = user,
-                detail = "Account locked until $lockedUntil",
-            )
+            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
             return null
         }
         if (passwordEncoder.matches(password, user.passwordHash)) {
@@ -69,7 +65,7 @@ class AuthService(
         }
         val attempts = userRepository.incrementFailedLoginAttempts(user.id)
         logger.warn("Authentication failed: Invalid password for user ${sanitize(username)} (attempt $attempts)")
-        auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid password")
+        auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
         if (attempts >= config.maxFailedLoginAttempts) {
             val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
             userRepository.updateLockedUntil(user.id, until)
