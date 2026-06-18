@@ -1,5 +1,8 @@
 package io.github.rygel.outerstellar.platform.security
 
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -89,5 +92,50 @@ class TOTPServiceTest {
         val uri1 = totpService.generateQrDataUri(secret1, "a@b.com")
         val uri2 = totpService.generateQrDataUri(secret2, "a@b.com")
         assertFalse(uri1 == uri2, "Different secrets should produce different QR URIs")
+    }
+
+    @Test
+    fun `verifyBackupCode parses a stored hash containing commas and quotes without corruption`() {
+        // Regression guard for issue #512: the old hand-rolled parser split on "," and stripped
+        // surrounding quotes, so a hash containing those characters was silently corrupted. A
+        // properly-escaped JSON array (as kotlinx.serialization now produces) must round-trip intact.
+        // Build the stored JSON via the same codec so it's guaranteed valid despite the special chars.
+        val trickyHash = """hash,with"quote\backslash"""
+        val other = "plain"
+        val stored = Json.encodeToString(ListSerializer(String.serializer()), listOf(trickyHash, other))
+        val stubMatchingEncoder =
+            object : PasswordEncoder {
+                override fun encode(raw: String): String = ""
+
+                override fun matches(raw: String, hashed: String): Boolean = hashed == trickyHash
+            }
+        val service = TOTPService(stubMatchingEncoder)
+        val remaining = service.verifyBackupCode("anything", stored)
+        assertNotNull(remaining, "A matching hash with special characters must parse and verify")
+        // The matched hash should be consumed, leaving only "plain".
+        assertEquals("""["plain"]""", remaining!!.replace(" ", ""))
+    }
+
+    @Test
+    fun `verifyBackupCode treats the blank exhausted sentinel as an empty code set`() {
+        // verifyBackupCode returns "" when the last code is consumed; that "" is stored and later re-parsed.
+        // The parser must yield an empty list (not throw) for blank input — the old code relied on this too.
+        assertNull(totpService.verifyBackupCode("anything", ""), "Blank sentinel must yield no match")
+    }
+
+    @Test
+    fun `verifyBackupCode round-trips a full generate-then-consume cycle without data loss`() {
+        // End-to-end: generate 16, consume all 16 in sequence; the final consume must return "" (exhausted),
+        // and re-verifying any code against the exhausted sentinel must return null. Confirms the JSON
+        // round-trip survives a realistic full-consumption sequence.
+        val (rawCodes, hashed) = totpService.generateBackupCodes()
+        var current = hashed
+        for (code in rawCodes) {
+            val updated = totpService.verifyBackupCode(code, current)
+            assertNotNull(updated, "Each code must verify in sequence")
+            current = updated!!
+        }
+        assertEquals("", current, "After consuming all codes the sentinel must be the empty string")
+        assertNull(totpService.verifyBackupCode(rawCodes[0], current), "Exhausted set must yield no match")
     }
 }
