@@ -8,6 +8,9 @@ import dev.samstevens.totp.recovery.RecoveryCodeGenerator
 import dev.samstevens.totp.secret.DefaultSecretGenerator
 import dev.samstevens.totp.time.SystemTimeProvider
 import dev.samstevens.totp.util.Utils
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.Json
 
 /**
  * Hashes and verifies TOTP backup codes. Backup codes are an equally critical credential as the main password (a single
@@ -16,6 +19,14 @@ import dev.samstevens.totp.util.Utils
  * [org.mindrot.jbcrypt.BCrypt.checkpw] is constant-time.
  */
 class TOTPService(private val backupCodeEncoder: PasswordEncoder) {
+
+    // Reused JSON codec for the backup-code hash list. Stored format is a JSON array of strings (the BCrypt
+    // hashes), so ListSerializer(String.serializer()) handles all escaping of ",", "\"", "\" correctly —
+    // replacing the previous hand-rolled concat/split that silently corrupted on special characters (#512).
+    private val backupCodeJson = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     private val secretGenerator = DefaultSecretGenerator(32)
     private val codeVerifier =
@@ -62,8 +73,14 @@ class TOTPService(private val backupCodeEncoder: PasswordEncoder) {
         return if (hashedCodes.isEmpty()) "" else serializeJson(hashedCodes)
     }
 
-    private fun serializeJson(list: List<String>): String = list.joinToString(",", "[", "]") { "\"$it\"" }
+    private fun serializeJson(list: List<String>): String =
+        backupCodeJson.encodeToString(ListSerializer(String.serializer()), list)
 
-    private fun parseJsonList(json: String): List<String> =
-        json.removeSurrounding("[", "]").split(",").map { it.trim().removeSurrounding("\"") }.filter { it.isNotEmpty() }
+    private fun parseJsonList(json: String): List<String> {
+        // verifyBackupCode returns "" to signal an exhausted code set; that "" is stored as the column value
+        // and later passed back here. Treat blank input as an empty list rather than attempting to decode it
+        // as JSON (which would throw).
+        if (json.isBlank()) return emptyList()
+        return backupCodeJson.decodeFromString(ListSerializer(String.serializer()), json)
+    }
 }
