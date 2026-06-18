@@ -92,6 +92,17 @@ class AuthServiceTest {
     }
 
     @Test
+    fun `authenticate runs a dummy password verify on the not-found path to mask the timing oracle`() {
+        // Regression guard for issue #505: the not-found path must invoke passwordEncoder.matches so its
+        // latency matches the bad-password path (otherwise timing reveals which usernames exist).
+        every { userRepository.findByUsername("unknown") } returns null
+
+        service.authenticate("unknown", "anypass")
+
+        verify { passwordEncoder.matches(any(), any()) }
+    }
+
+    @Test
     fun `authenticate returns null for locked account`() {
         val lockedUser = testUser.copy(lockedUntil = Instant.now().plusSeconds(300))
         every { userRepository.findByUsername("testuser") } returns lockedUser
