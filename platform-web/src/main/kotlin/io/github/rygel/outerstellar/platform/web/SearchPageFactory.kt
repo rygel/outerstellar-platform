@@ -29,6 +29,28 @@ class SearchPageFactory {
             val providerLimit = ceil(safeLimit.toDouble() / filtered.size).toInt()
             return filtered.flatMap { it.search(query, providerLimit) }.sortedByDescending { it.score }.take(safeLimit)
         }
+
+        /**
+         * Neutralises dangerous URL schemes for use in an `href` context. jte's `${...}` HTML-escapes, so attribute
+         * breakout via `"` is impossible, but it does NOT neutralise executable schemes — `javascript:`, `data:`,
+         * `vbscript:` survive unchanged and execute on click. This allow-lists only http(s), protocol-relative
+         * (`//host`), root-relative (`/path`), and fragment (`#`) URLs; anything else (including all executable
+         * schemes, with or without surrounding whitespace/case tricks) is collapsed to `#` so the link still renders
+         * but is inert. Defence-in-depth: SearchProvider is an extension SPI, so a careless/malicious third-party
+         * provider can't inject script via result URLs.
+         */
+        fun safeHref(url: String): String {
+            val trimmed = url.trim()
+            if (trimmed.isEmpty()) return "#"
+            // Root-relative and fragment links are always safe.
+            if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed
+            val schemeEnd = trimmed.indexOf(':')
+            // No scheme (no colon before any '/', '?', '#') → relative/same-origin, safe.
+            val firstSlash = trimmed.indexOfAny(charArrayOf('/', '?', '#'))
+            if (schemeEnd == -1 || (firstSlash != -1 && schemeEnd > firstSlash)) return trimmed
+            val scheme = trimmed.substring(0, schemeEnd).lowercase()
+            return if (scheme == "http" || scheme == "https") trimmed else "#"
+        }
     }
 
     fun buildSearchPage(
@@ -42,7 +64,13 @@ class SearchPageFactory {
         val shell = shellRenderer.shell(i18n.translate("web.search.title"), "/search")
         val results =
             aggregateResults(providers, query, limit, typeFilter).map { r ->
-                SearchResultViewModel(id = r.id, title = r.title, subtitle = r.subtitle, url = r.url, type = r.type)
+                SearchResultViewModel(
+                    id = r.id,
+                    title = r.title,
+                    subtitle = r.subtitle,
+                    url = safeHref(r.url),
+                    type = r.type,
+                )
             }
         val typeFilters = buildTypeFilters(providers, query, typeFilter, i18n)
         return Page(
