@@ -46,6 +46,7 @@ internal class FilterChainFactory(
                         userRepository,
                         security.sessionService,
                         config.sessionCookieSecure,
+                        config.sessionTimeoutMinutes,
                     )
                 )
                 .then(

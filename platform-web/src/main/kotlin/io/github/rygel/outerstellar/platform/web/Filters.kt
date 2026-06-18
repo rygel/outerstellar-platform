@@ -310,6 +310,7 @@ object Filters {
         userRepository: UserRepository,
         sessionService: SessionService,
         sessionCookieSecure: Boolean,
+        sessionTimeoutMinutes: Int = 30,
     ): Filter = Filter { next ->
         { request ->
             val host = request.header("Host")
@@ -322,7 +323,10 @@ object Filters {
                     val token = sessionService.createSession(admin.id)
                     val response = next(request.cookie(Cookie(RequestContext.SESSION_COOKIE, token)))
                     if (response.cookies().none { it.name == RequestContext.SESSION_COOKIE }) {
-                        response.header("Set-Cookie", SessionCookie.create(token, sessionCookieSecure))
+                        response.header(
+                            "Set-Cookie",
+                            SessionCookie.create(token, sessionCookieSecure, sessionTimeoutMinutes * 60L),
+                        )
                     } else {
                         response
                     }
