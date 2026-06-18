@@ -768,6 +768,8 @@
   }, {
     "glob" : "db/migration/V15__drop_redundant_reset_token_index.sql"
   }, {
+    "glob" : "db/migration/V16__add_totp_attempt_counter.sql"
+  }, {
     "glob" : "db/migration/V1__initial_schema.sql"
   }, {
     "glob" : "db/migration/V2__user_profile_enhancements.sql"

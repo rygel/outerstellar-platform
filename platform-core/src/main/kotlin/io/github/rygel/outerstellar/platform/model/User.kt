@@ -11,6 +11,7 @@ data class User(
     val role: UserRole,
     val enabled: Boolean = true,
     val failedLoginAttempts: Int = 0,
+    val failedTotpAttempts: Int = 0,
     val lockedUntil: Instant? = null,
     val lastActivityAt: Instant? = null,
     val avatarUrl: String? = null,

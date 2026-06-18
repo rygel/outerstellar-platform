@@ -11,6 +11,10 @@ interface UserRepository {
 
     fun resetFailedLoginAttempts(userId: UUID)
 
+    fun incrementFailedTotpAttempts(userId: UUID): Int
+
+    fun resetFailedTotpAttempts(userId: UUID)
+
     fun updateLockedUntil(userId: UUID, lockedUntil: Instant?)
 
     fun findById(id: UUID): User?
