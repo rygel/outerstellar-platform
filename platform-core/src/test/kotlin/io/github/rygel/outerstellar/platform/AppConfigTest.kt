@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 
 class AppConfigTest {
 
@@ -186,5 +187,33 @@ class AppConfigTest {
     fun `EmailConfig toString masks the SMTP password`() {
         val rendered = EmailConfig(password = "do-not-leak-me").toString()
         assert(!rendered.contains("do-not-leak-me")) { "SMTP password leaked: $rendered" }
+    }
+
+    @Test
+    fun `usesDefaultJdbcPassword detects the shipped default`() {
+        assert(AppConfig().usesDefaultJdbcPassword()) { "Default config should use the shipped JDBC password" }
+        assert(AppConfig(jdbcPassword = "overridden").usesDefaultJdbcPassword().not()) {
+            "An overridden password should not be flagged as default"
+        }
+    }
+
+    @Test
+    fun `bool env var rejects non-boolean values instead of silently defaulting to false`() {
+        // Fail-loud parsing (issue #527): a typo like SESSIONCOOKIESECURE=yes must crash-start rather
+        // than silently disable the Secure cookie flag.
+        assertThrows<IllegalArgumentException> { AppConfig.fromEnvironment(mapOf("SESSIONCOOKIESECURE" to "yes")) }
+    }
+
+    @Test
+    fun `bool env var accepts true and false case-insensitively`() {
+        assert(AppConfig.fromEnvironment(mapOf("SESSIONCOOKIESECURE" to "TRUE")).sessionCookieSecure)
+        assert(AppConfig.fromEnvironment(mapOf("SESSIONCOOKIESECURE" to "False")).sessionCookieSecure.not())
+    }
+
+    @Test
+    fun `JwtConfig rejects enabled with a blank secret at construction`() {
+        assertThrows<IllegalArgumentException> { JwtConfig(enabled = true, secret = "") }
+        // Disabled with blank secret is still allowed (JWT simply won't be used).
+        JwtConfig(enabled = false, secret = "")
     }
 }
