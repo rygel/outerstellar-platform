@@ -246,7 +246,11 @@ internal class RouteRegistrar(
                 UserAdminRoutes(web.pages.adminPageFactory, web.runtime.templateRenderer, sec.userAdminService).routes
         }
         extensionSections.forEach { section -> contractRoutes += section.route }
-        if (contractRoutes.isEmpty()) return
+        // Mount /admin whenever there is any admin content (built-in dev dashboard, platform user-admin,
+        // or contributed sections). Previously this early-returned when contractRoutes was empty, leaving
+        // /admin undefined even for extensions that opted into ADMIN pages — see issue #531.
+        val hasAdminContent = contractRoutes.isNotEmpty() || extensionSections.isNotEmpty()
+        if (!hasAdminContent) return
         val adminContract = contract {
             renderer = OpenApi3(ApiInfo("${extensionContribution.appLabel} Admin", "v1.0"), KotlinxSerialization)
             descriptionPath = "/admin/openapi.json"
@@ -271,10 +275,16 @@ internal class RouteRegistrar(
         sec: SecurityComponents,
         extensionSections: List<AdminSection>,
     ): RoutingHttpHandler {
-        if (extensionSections.isEmpty()) return adminContract
         val adminAuthFilter = Filter { next ->
             SecurityRules.authenticated(SecurityRules.hasRole(UserRole.ADMIN, next))
         }
+        // Always define a bare /admin index so navigating to the obvious admin URL does not 404. The
+        // platform ships a built-in dashboard at /admin/extensions; redirect there. (issue #531)
+        val adminIndexRoute =
+            adminAuthFilter.then(
+                "/admin" bind GET to { Response(Status.FOUND).header("location", "/admin/extensions") }
+            )
+        if (extensionSections.isEmpty()) return routes(adminIndexRoute, adminContract)
         val extensionDashboardRoute =
             adminAuthFilter.then(
                 "/admin/extensions" bind
@@ -304,7 +314,7 @@ internal class RouteRegistrar(
                         Response(Status.OK).body(web.runtime.templateRenderer(page))
                     }
             )
-        return routes(adminContract, extensionDashboardRoute)
+        return routes(adminIndexRoute, adminContract, extensionDashboardRoute)
     }
 
     private fun registerKernelRoutes(registry: RouteRegistry) {
