@@ -54,6 +54,44 @@ class JdbiPasswordResetRepositoryTest : JdbiTest() {
     }
 
     @Test
+    fun `claimToken atomically marks a valid token used and returns the owner`() {
+        val userId = createUser()
+        repo.save(token(userId, "claimable-token"))
+        val claimedUserId = repo.claimToken("claimable-token")
+        assertEquals(userId, claimedUserId)
+        assertTrue(repo.findByToken("claimable-token")!!.used)
+    }
+
+    @Test
+    fun claimTokenReturnsNullForAlreadyClaimedToken() {
+        val userId = createUser()
+        repo.save(token(userId, "once-only"))
+        assertNotNull(repo.claimToken("once-only"))
+        // Second claim must fail — the atomic WHERE used = false guard prevents double-use.
+        assertNull(repo.claimToken("once-only"))
+    }
+
+    @Test
+    fun `claimToken returns null for an expired token`() {
+        val userId = createUser()
+        val expired = token(userId, "expired-claim").copy(expiresAt = Instant.now().minusSeconds(60))
+        repo.save(expired)
+        assertNull(repo.claimToken("expired-claim"))
+    }
+
+    @Test
+    fun `invalidateUnusedForUser marks all prior unused tokens for the user as used`() {
+        val userId = createUser()
+        repo.save(token(userId, "old-1"))
+        repo.save(token(userId, "old-2"))
+        repo.save(token(userId, "old-3"))
+        repo.invalidateUnusedForUser(userId)
+        assertTrue(repo.findByToken("old-1")!!.used)
+        assertTrue(repo.findByToken("old-2")!!.used)
+        assertTrue(repo.findByToken("old-3")!!.used)
+    }
+
+    @Test
     fun `token column has only the unique-constraint index, not a redundant duplicate`() {
         // Regression guard for issue #530: the non-unique idx_plt_password_reset_tokens_token
         // duplicated the plt_password_reset_tokens_token_key UNIQUE constraint and was dropped.

@@ -31,6 +31,10 @@ class PasswordResetService(
         }
 
         val tokenValue = generateResetToken()
+        // Invalidate any prior unused tokens for this user so only the newest reset email is valid —
+        // prevents token hoarding where a leaked old reset email remains a live attack vector after
+        // the user has already reset via a later email.
+        resetRepository?.invalidateUnusedForUser(user.id)
         val resetToken =
             PasswordResetToken(
                 userId = user.id,
@@ -51,24 +55,20 @@ class PasswordResetService(
 
     fun resetPassword(token: String, newPassword: String) {
         val repository = resetRepository ?: throw IllegalArgumentException("Invalid reset token")
-        val resetToken =
-            repository.findByToken(TokenHashing.hash(token)) ?: throw IllegalArgumentException("Invalid reset token")
+        // Atomic claim: a single UPDATE ... WHERE used = false AND expires_at > now() RETURNING user_id
+        // marks the token used and returns the owner in one statement, so two concurrent reset requests
+        // with the same token cannot both pass the guard (only one UPDATE matches). Replaces the old
+        // findByToken + Java used/expiry check + markUsed which ran in separate transactions (TOCTOU).
+        val userId =
+            repository.claimToken(TokenHashing.hash(token)) ?: throw IllegalArgumentException("Invalid reset token")
 
-        if (resetToken.used) {
-            throw IllegalArgumentException("Reset token has already been used")
-        }
-        if (resetToken.expiresAt.isBefore(Instant.now())) {
-            throw IllegalArgumentException("Reset token has expired")
-        }
         val normalized = newPassword.trim()
         validatePassword(normalized)?.let { throw WeakPasswordException(it) }
 
-        val user =
-            userRepository.findById(resetToken.userId) ?: throw UserNotFoundException(resetToken.userId.toString())
+        val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
 
         val updated = user.copy(passwordHash = passwordEncoder.encode(normalized))
         userRepository.save(updated)
-        repository.markUsed(resetToken.token)
         sessionRepository?.deleteByUserId(user.id)
         logger.info("Password reset completed for user {}", sanitize(user.username))
         auditRepository?.logAction("PASSWORD_RESET_COMPLETED", actor = user)
