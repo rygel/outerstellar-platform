@@ -39,15 +39,37 @@ data class SyncPushRequest(val messages: List<SyncMessage> = emptyList()) {
     }
 }
 
-@Serializable data class SyncConflict(val syncId: String, val reason: String, val serverMessage: SyncMessage? = null)
+/**
+ * Wire-format schema version for the sync protocol. Bumped on any breaking change to a sync DTO's field set or
+ * semantics. Clients and servers that disagree on [SCHEMA_VERSION] reject the exchange rather than silently
+ * dropping/misinterpreting fields. See issue #523.
+ */
+const val SYNC_SCHEMA_VERSION: Int = 1
 
-@Serializable data class SyncPushResponse(val appliedCount: Int = 0, val conflicts: List<SyncConflict> = emptyList())
+@Serializable
+data class SyncConflict(
+    val syncId: String,
+    val reason: String,
+    val serverMessage: SyncMessage? = null,
+    // The client's version of the conflicting message, so the UI can show "yours vs theirs" and so the
+    // MINE conflict strategy can recover the local content after sync. Previously absent (issue #521),
+    // leaving resolveConflict(MINE) unable to restore the displaced local edit.
+    val clientMessage: SyncMessage? = null,
+)
+
+@Serializable
+data class SyncPushResponse(
+    val appliedCount: Int = 0,
+    val conflicts: List<SyncConflict> = emptyList(),
+    val schemaVersion: Int = SYNC_SCHEMA_VERSION,
+)
 
 @Serializable
 data class SyncPullResponse(
     val messages: List<SyncMessage> = emptyList(),
     val serverTimestamp: Long = 0,
     val hasMore: Boolean = false,
+    val schemaVersion: Int = SYNC_SCHEMA_VERSION,
 )
 
 data class SyncStats(val pushedCount: Int = 0, val pulledCount: Int = 0, val conflictCount: Int = 0)
