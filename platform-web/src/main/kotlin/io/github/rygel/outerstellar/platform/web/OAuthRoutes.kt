@@ -31,6 +31,7 @@ class OAuthRoutes(
     private val sessionService: SessionService,
     private val sessionCookieSecure: Boolean = false,
     private val appBaseUrl: String = "http://localhost:8080",
+    private val sessionTimeoutMinutes: Int = 30,
 ) : ServerRoutes {
 
     private val logger = LoggerFactory.getLogger(OAuthRoutes::class.java)
@@ -141,7 +142,10 @@ class OAuthRoutes(
             logger.info("OAuth sign-in successful: user={} provider={}", user.username, providerName)
             Response(Status.FOUND)
                 .header("location", "/")
-                .header("Set-Cookie", SessionCookie.create(sessionToken, sessionCookieSecure))
+                .header(
+                    "Set-Cookie",
+                    SessionCookie.create(sessionToken, sessionCookieSecure, sessionTimeoutMinutes * 60L),
+                )
                 .cookie(Cookie("oauth_state", "", maxAge = 0L, path = "/"))
         } catch (e: OAuthException) {
             logger.warn("OAuth callback error for provider={}: {}", providerName, e.message)

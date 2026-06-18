@@ -46,7 +46,7 @@ class AuthServiceTest {
                 userRepository = userRepository,
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
-                totpService = TOTPService(),
+                totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
             )
     }
 
@@ -89,6 +89,17 @@ class AuthServiceTest {
         val result = service.authenticate("unknown", "anypass")
 
         assertNull(result)
+    }
+
+    @Test
+    fun `authenticate runs a dummy password verify on the not-found path to mask the timing oracle`() {
+        // Regression guard for issue #505: the not-found path must invoke passwordEncoder.matches so its
+        // latency matches the bad-password path (otherwise timing reveals which usernames exist).
+        every { userRepository.findByUsername("unknown") } returns null
+
+        service.authenticate("unknown", "anypass")
+
+        verify { passwordEncoder.matches(any(), any()) }
     }
 
     @Test
@@ -159,7 +170,7 @@ class AuthServiceTest {
             auditRepository.log(
                 match {
                     it.action == "AUTHENTICATION_FAILED" &&
-                        it.detail == "User not found" &&
+                        it.detail == "Invalid credentials" &&
                         it.targetUsername == "unknown"
                 }
             )
@@ -174,7 +185,7 @@ class AuthServiceTest {
         service.authenticate("testuser", "anypass")
 
         verify {
-            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Account disabled" })
+            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Invalid credentials" })
         }
     }
 
@@ -186,9 +197,7 @@ class AuthServiceTest {
         service.authenticate("testuser", "correctpass")
 
         verify {
-            auditRepository.log(
-                match { it.action == "AUTHENTICATION_FAILED" && it.detail?.startsWith("Account locked until") == true }
-            )
+            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Invalid credentials" })
         }
     }
 
@@ -201,7 +210,7 @@ class AuthServiceTest {
         service.authenticate("testuser", "wrongpass")
 
         verify {
-            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Invalid password" })
+            auditRepository.log(match { it.action == "AUTHENTICATION_FAILED" && it.detail == "Invalid credentials" })
         }
     }
 
@@ -213,7 +222,7 @@ class AuthServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 config = SecurityConfig(registrationEnabled = false),
-                totpService = TOTPService(),
+                totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
             )
 
         assertThrows<RegistrationDisabledException> { disabledService.register("new@test.com", "ValidP@ss1") }

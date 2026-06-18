@@ -19,6 +19,7 @@ class TOTPRoutes(
     private val sessionCookieSecure: Boolean,
     private val totpService: TOTPService,
     private val sessionService: SessionService,
+    private val sessionTimeoutMinutes: Int = 30,
 ) {
     val routes =
         routes(
@@ -35,7 +36,10 @@ class TOTPRoutes(
                         "success" -> {
                             val sessionToken = result.token ?: return@to Response(OK).body("Missing session token")
                             Response(OK)
-                                .header("Set-Cookie", SessionCookie.create(sessionToken, sessionCookieSecure))
+                                .header(
+                                    "Set-Cookie",
+                                    SessionCookie.create(sessionToken, sessionCookieSecure, sessionTimeoutMinutes * 60L),
+                                )
                                 .header("HX-Redirect", "/")
                         }
                         "invalid_code" ->

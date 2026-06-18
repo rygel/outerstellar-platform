@@ -30,31 +30,41 @@ class AuthService(
     private val partialAuthStore: Cache<String, PartialAuth> =
         Caffeine.newBuilder().expireAfterWrite(5, TimeUnit.MINUTES).maximumSize(10_000).build()
 
+    /**
+     * A dummy password hash used to keep the not-found login path's timing equal to the bad-password path (issue #505).
+     * Computed once via the injected encoder so its cost factor matches the deployment's real password hashes; the
+     * value is constant but never used to authenticate anyone.
+     */
+    private val dummyPasswordHash: String by lazy { passwordEncoder.encode("timing-mitigation-dummy") }
+
     fun authenticate(username: String, password: String): AuthResult? {
         val user =
             userRepository.findByUsername(username)
                 ?: run {
+                    // Timing-oracle mitigation (issue #505): a non-existent account returns immediately
+                    // and never invokes the (deliberately slow) BCrypt check, so it responds far faster
+                    // than an existing account with a wrong password — a reliable enumeration signal.
+                    // Run a dummy BCrypt verify against a precomputed hash so the not-found path takes
+                    // the same ~50-150ms as the bad-password path. The result is discarded. Standard
+                    // mitigation (Spring Security, Django, etc.).
+                    passwordEncoder.matches(password, dummyPasswordHash)
                     logger.warn("Authentication failed: User ${sanitize(username)} not found")
                     auditRepository?.logAction(
                         "AUTHENTICATION_FAILED",
-                        detail = "User not found",
+                        detail = "Invalid credentials",
                         targetUsername = sanitize(username),
                     )
                     return null
                 }
         if (!user.enabled) {
             logger.warn("Authentication failed: User ${sanitize(username)} is disabled")
-            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Account disabled")
+            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
             return null
         }
         val lockedUntil = user.lockedUntil
         if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
             logger.warn("Authentication failed: User ${sanitize(username)} is locked until $lockedUntil")
-            auditRepository?.logAction(
-                "AUTHENTICATION_FAILED",
-                actor = user,
-                detail = "Account locked until $lockedUntil",
-            )
+            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
             return null
         }
         if (passwordEncoder.matches(password, user.passwordHash)) {
@@ -69,7 +79,7 @@ class AuthService(
         }
         val attempts = userRepository.incrementFailedLoginAttempts(user.id)
         logger.warn("Authentication failed: Invalid password for user ${sanitize(username)} (attempt $attempts)")
-        auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid password")
+        auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
         if (attempts >= config.maxFailedLoginAttempts) {
             val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
             userRepository.updateLockedUntil(user.id, until)
@@ -101,6 +111,7 @@ class AuthService(
         return created
     }
 
+    @Suppress("ReturnCount")
     fun verifyTotp(partialToken: String, code: String, sessionService: SessionService): TotpVerifyResponse {
         val partial =
             partialAuthStore.asMap().compute(partialToken) { _, existing ->
@@ -113,6 +124,7 @@ class AuthService(
 
         if (totpService.verifyCode(secret, code)) {
             partialAuthStore.invalidate(partialToken)
+            userRepository.resetFailedTotpAttempts(user.id)
             val token = sessionService.createSession(user.id)
             return TotpVerifyResponse("success", token = token, username = user.username, role = user.role.name)
         }
@@ -123,11 +135,24 @@ class AuthService(
             if (updatedCodes != null) {
                 userRepository.updateTotpSecret(user.id, user.totpSecret, updatedCodes.ifEmpty { null })
                 partialAuthStore.invalidate(partialToken)
+                userRepository.resetFailedTotpAttempts(user.id)
                 val token = sessionService.createSession(user.id)
                 return TotpVerifyResponse("success", token = token, username = user.username, role = user.role.name)
             }
         }
 
+        // Per-user TOTP failure tracking (issue #510): the partial-token cap was resettable by
+        // re-authenticating, allowing indefinite TOTP brute-force. Increment a per-user counter
+        // independent of the partial-token lifecycle, and lock the account once it reaches the
+        // configured threshold (reusing the existing lockout infrastructure).
+        val attempts = userRepository.incrementFailedTotpAttempts(user.id)
+        if (attempts >= config.maxFailedLoginAttempts) {
+            val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
+            userRepository.updateLockedUntil(user.id, until)
+            partialAuthStore.invalidate(partialToken)
+            logger.warn("TOTP verification locked user ${sanitize(user.username)} after $attempts failed attempts")
+            return TotpVerifyResponse("locked")
+        }
         return TotpVerifyResponse("invalid_code")
     }
 

@@ -31,6 +31,7 @@ abstract class JdbiTest {
             "plt_contact_socials",
             "plt_contacts",
             "plt_messages",
+            "plt_message_votes",
             "plt_poll_votes",
             "plt_poll_options",
             "plt_polls",

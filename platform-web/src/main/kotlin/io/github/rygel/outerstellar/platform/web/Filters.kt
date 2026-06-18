@@ -175,6 +175,26 @@ object Filters {
         }
     }
 
+    /**
+     * Rejects requests whose body exceeds [maxBytes] before the body is buffered into memory, returning 413. Defends
+     * against oversized-body DoS (heap exhaustion / GC thrash from a single large POST). The check is on the
+     * Content-Length header so the body is never read for oversized requests. Requests without a Content-Length (e.g.
+     * chunked/streamed) are left to the handler, which is the http4k default; a hard cap on those would require
+     * consuming the stream, which we avoid to keep the filter allocation-free.
+     */
+    fun maxBodySize(maxBytes: Long): Filter = Filter { next: HttpHandler ->
+        { request ->
+            val declared = request.header("Content-Length")?.toLongOrNull()
+            if (declared != null && declared > maxBytes) {
+                Response(Status.REQUEST_ENTITY_TOO_LARGE)
+                    .header("content-type", "text/plain; charset=utf-8")
+                    .body("Request body of $declared bytes exceeds the limit of $maxBytes bytes.")
+            } else {
+                next(request)
+            }
+        }
+    }
+
     fun cors(allowedOrigins: String, headerConfig: SecurityHeadersConfig = SecurityHeadersConfig()): Filter =
         Filter { next: HttpHandler ->
             { request ->
@@ -290,6 +310,7 @@ object Filters {
         userRepository: UserRepository,
         sessionService: SessionService,
         sessionCookieSecure: Boolean,
+        sessionTimeoutMinutes: Int = 30,
     ): Filter = Filter { next ->
         { request ->
             val host = request.header("Host")
@@ -302,7 +323,10 @@ object Filters {
                     val token = sessionService.createSession(admin.id)
                     val response = next(request.cookie(Cookie(RequestContext.SESSION_COOKIE, token)))
                     if (response.cookies().none { it.name == RequestContext.SESSION_COOKIE }) {
-                        response.header("Set-Cookie", SessionCookie.create(token, sessionCookieSecure))
+                        response.header(
+                            "Set-Cookie",
+                            SessionCookie.create(token, sessionCookieSecure, sessionTimeoutMinutes * 60L),
+                        )
                     } else {
                         response
                     }
@@ -410,6 +434,7 @@ object Filters {
         }
     }
 
+    @Suppress("UnusedParameter")
     fun csrfProtection(sessionCookieSecure: Boolean, enabled: Boolean = true): Filter = Filter { next ->
         { request ->
             if (!enabled) return@Filter next(request)
@@ -454,7 +479,16 @@ object Filters {
                             RequestContext.CSRF_COOKIE,
                             newToken,
                             path = "/",
-                            secure = sessionCookieSecure,
+                            // The _csrf cookie backs a double-submit token: the browser must read it
+                            // client-side and submit the value back in the X-CSRF-Token header / _csrf
+                            // form field. That requires the cookie to be *stored* over HTTP too (localhost
+                            // dev, TLS-terminating reverse proxies). A Secure flag would make the browser
+                            // refuse to store it over http:// per RFC 6265bis, silently breaking every
+                            // state-changing request. CSRF protection comes from token-matching, not from
+                            // transport — so the cookie must NOT be Secure. (The session cookie, which is
+                            // auto-sent and transport-only, correctly keeps Secure.) httpOnly stays false
+                            // so JS can read the token; SameSite=Strict provides the cross-site defence.
+                            secure = false,
                             httpOnly = false,
                             sameSite = SameSite.Strict,
                         )

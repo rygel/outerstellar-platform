@@ -86,19 +86,6 @@ class PlaywrightE2ETest {
                 sessionRepository = persistence.sessionRepository,
             )
         val syncWebSocket = SyncWebSocket(security.sessionService)
-        val web =
-            createWebComponents(
-                config = testConfig,
-                apiKeyService = security.apiKeyService,
-                oauthService = security.oauthService,
-                syncWebSocket = syncWebSocket,
-                userAdminService = security.userAdminService,
-                userRepository = persistence.userRepository,
-                messageRepository = persistence.messageRepository,
-                voteRepository = persistence.voteRepository,
-                pollRepository = persistence.pollRepository,
-                notificationRepository = persistence.notificationRepository,
-            )
         val core =
             createCoreComponents(
                 config = testConfig,
@@ -109,6 +96,20 @@ class PlaywrightE2ETest {
                 auditRepository = persistence.auditRepository,
                 eventPublisher = syncWebSocket,
                 emailService = emailService,
+            )
+        val web =
+            createWebComponents(
+                config = testConfig,
+                apiKeyService = security.apiKeyService,
+                oauthService = security.oauthService,
+                syncWebSocket = syncWebSocket,
+                userAdminService = security.userAdminService,
+                userRepository = persistence.userRepository,
+                messageRepository = persistence.messageRepository,
+                contactService = core.contactService,
+                voteRepository = persistence.voteRepository,
+                pollRepository = persistence.pollRepository,
+                notificationRepository = persistence.notificationRepository,
             )
 
         messageRepo = persistence.messageRepository

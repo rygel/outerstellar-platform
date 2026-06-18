@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 
 class ApiKeyService(
     private val userRepository: UserRepository,
-    private val apiKeyRepository: ApiKeyRepository? = null,
+    private val apiKeyRepository: ApiKeyRepository,
     private val auditRepository: AuditRepository? = null,
 ) {
     private val logger = LoggerFactory.getLogger(ApiKeyService::class.java)
@@ -25,7 +25,7 @@ class ApiKeyService(
         val keyHash = TokenHashing.hash(rawKey)
 
         val apiKey = ApiKey(userId = userId, keyHash = keyHash, keyPrefix = keyPrefix, name = name)
-        apiKeyRepository?.save(apiKey)
+        apiKeyRepository.save(apiKey)
         logger.info("API key created for user {}", userId)
         val user = userRepository.findById(userId)
         auditRepository?.logAction("API_KEY_CREATED", actor = user, detail = "name=$name")
@@ -34,7 +34,7 @@ class ApiKeyService(
 
     fun authenticateApiKey(rawKey: String): User? {
         val keyHash = TokenHashing.hash(rawKey)
-        val apiKey = apiKeyRepository?.findByKeyHash(keyHash) ?: return null
+        val apiKey = apiKeyRepository.findByKeyHash(keyHash) ?: return null
         if (!apiKey.enabled) return null
 
         val user = userRepository.findById(apiKey.userId)
@@ -46,7 +46,7 @@ class ApiKeyService(
     }
 
     fun listApiKeys(userId: UUID): List<ApiKeySummary> {
-        return apiKeyRepository?.findByUserId(userId)?.map { key ->
+        return apiKeyRepository.findByUserId(userId).map { key ->
             ApiKeySummary(
                 id = key.id,
                 keyPrefix = key.keyPrefix,
@@ -55,11 +55,11 @@ class ApiKeyService(
                 createdAt = key.createdAt.toString(),
                 lastUsedAt = key.lastUsedAt?.toString(),
             )
-        } ?: emptyList()
+        }
     }
 
     fun deleteApiKey(userId: UUID, keyId: Long) {
-        apiKeyRepository?.delete(keyId, userId)
+        apiKeyRepository.delete(keyId, userId)
         logger.info("API key {} deleted for user {}", keyId, userId)
         val user = userRepository.findById(userId)
         auditRepository?.logAction("API_KEY_DELETED", actor = user, detail = "keyId=$keyId")

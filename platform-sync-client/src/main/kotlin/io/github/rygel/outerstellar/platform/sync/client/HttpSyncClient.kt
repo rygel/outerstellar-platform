@@ -1,5 +1,6 @@
 package io.github.rygel.outerstellar.platform.sync.client
 
+import io.github.rygel.outerstellar.platform.model.SessionExpiredException
 import io.github.rygel.outerstellar.platform.model.SyncException
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
@@ -24,6 +25,14 @@ class HttpSyncClient(private val baseUrl: String, private val session: ApiSessio
     override fun pull(since: Long): SyncPullResponse {
         val request = Request(GET, "$baseUrl/api/v1/sync?since=$since")
         val response = authenticated(request)
+        if (response.status == Status.UNAUTHORIZED || response.status == Status.FORBIDDEN) {
+            // A 401/403 means the bearer token is expired/revoked. Throw SessionExpiredException specifically
+            // (not the generic SyncException) so SyncDataModuleImpl.sync()'s SessionExpiredException arm
+            // catches it, clears state, and fires onSessionExpired — otherwise auto-sync loops forever on
+            // the dead token. The two exceptions are siblings (both extend OuterstellarException), so the
+            // generic Exception arm does NOT catch 401 as session-expiry. See issue #522.
+            throw SessionExpiredException("Pull rejected: ${response.status}")
+        }
         if (response.status != Status.OK) {
             throw SyncException("Pull failed: ${response.status}")
         }
@@ -33,6 +42,9 @@ class HttpSyncClient(private val baseUrl: String, private val session: ApiSessio
     override fun push(request: SyncPushRequest): SyncPushResponse {
         val httpRequest = Request(POST, "$baseUrl/api/v1/sync").with(pushRequestLens of request)
         val response = authenticated(httpRequest)
+        if (response.status == Status.UNAUTHORIZED || response.status == Status.FORBIDDEN) {
+            throw SessionExpiredException("Push rejected: ${response.status}")
+        }
         if (response.status != Status.OK) {
             throw SyncException("Push failed: ${response.status}")
         }

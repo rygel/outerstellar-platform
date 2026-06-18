@@ -1,11 +1,11 @@
 package io.github.rygel.outerstellar.platform.web
 
 class ContactTrashListFactory(
-    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService?
+    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService
 ) {
     fun build(shellRenderer: ShellRenderer): ContactTrashListViewModel {
         val i18n = shellRenderer.i18n
-        val dbContacts = contactService?.listContacts(limit = 100, offset = 0, includeDeleted = true) ?: emptyList()
+        val dbContacts = contactService.listContacts(limit = 100, offset = 0, includeDeleted = true)
         return ContactTrashListViewModel(
             contacts =
                 dbContacts.map {

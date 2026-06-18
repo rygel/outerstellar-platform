@@ -99,9 +99,13 @@ class JwtServiceTest {
     }
 
     @Test
-    fun `isEnabled is false when secret is blank`() {
-        val noSecret = JwtService(JwtConfig(enabled = true, secret = "", issuer = "test"))
-        assertTrue(!noSecret.isEnabled)
+    fun `constructing an enabled JwtConfig with a blank secret fails fast`() {
+        // Fail-fast contract (issue #527): an enabled JWT with no secret is rejected at construction,
+        // rather than silently running with an empty HMAC key. Previously JwtService would warn and
+        // treat itself as disabled; that runtime guard is now a startup-time precondition.
+        org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+            JwtConfig(enabled = true, secret = "", issuer = "test")
+        }
     }
 
     @Test

@@ -75,7 +75,7 @@ fun createWebComponents(
     userRepository: UserRepository,
     messageRepository: MessageRepository,
     messageService: MessageService? = null,
-    contactService: ContactService? = null,
+    contactService: ContactService,
     voteRepository: VoteRepository,
     pollRepository: PollRepository,
     notificationRepository: NotificationRepository,

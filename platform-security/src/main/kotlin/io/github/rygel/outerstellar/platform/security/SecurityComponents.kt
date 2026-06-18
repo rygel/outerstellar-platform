@@ -72,7 +72,7 @@ fun createSecurityComponents(
             sessionAbsoluteTimeoutSeconds = config.sessionAbsoluteTimeoutMinutes.toLong() * 60,
             registrationEnabled = config.registrationEnabled,
         )
-    val totpService = TOTPService()
+    val totpService = TOTPService(passwordEncoder)
     val sessionService =
         SessionService(
             sessionRepository = sessionRepository ?: error("SessionRepository required"),
@@ -80,7 +80,7 @@ fun createSecurityComponents(
             config = securityConfig,
             activityUpdater = asyncActivityUpdater,
         )
-    val userAdminService = UserAdminService(userRepository = userRepository, auditRepository = auditRepository)
+    val userAdminService = UserAdminService(userRepository, auditRepository ?: error("AuditRepository required"))
     val authService =
         AuthService(
             userRepository = userRepository,
@@ -101,7 +101,7 @@ fun createSecurityComponents(
     val apiKeyService =
         ApiKeyService(
             userRepository = userRepository,
-            apiKeyRepository = apiKeyRepository,
+            apiKeyRepository = apiKeyRepository ?: error("ApiKeyRepository required for ApiKeyService"),
             auditRepository = auditRepository,
         )
     val passwordResetService =

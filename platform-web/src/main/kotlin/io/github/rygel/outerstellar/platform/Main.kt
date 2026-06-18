@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform
 
 import io.github.rygel.outerstellar.platform.infra.NativeStartupCheck
-import io.github.rygel.outerstellar.platform.security.AsyncActivityUpdater
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -27,16 +26,16 @@ fun main() {
     logger.info(elapsed(t0, "Components created"))
 
     if (
-        components.config.jdbcPassword == AppConfig.DEFAULT_JDBC_PASSWORD &&
+        components.config.usesDefaultJdbcPassword() &&
             components.config.profile != "default" &&
             components.config.profile != "test"
     ) {
         logger.error(
-            "FATAL: JDBC_PASSWORD is still the default '{}' with profile '{}'. " +
+            "FATAL: JDBC_PASSWORD is still the shipped default in profile '{}'. " +
                 "Set JDBC_PASSWORD to a secure value before deploying.",
-            AppConfig.DEFAULT_JDBC_PASSWORD,
             components.config.profile,
         )
+        System.exit(1)
     }
 
     val server = components.app.asServer(Netty(components.config.port)).start()
@@ -71,11 +70,11 @@ fun main() {
     outboxScheduler.schedule(outboxTask, 0, TimeUnit.MILLISECONDS)
     logger.info(elapsed(t0, "Background jobs started"))
 
-    registerShutdownHook(components.security.asyncActivityUpdater, outboxScheduler, server)
+    registerShutdownHook(components, outboxScheduler, server)
 }
 
 private fun registerShutdownHook(
-    activityUpdater: AsyncActivityUpdater,
+    components: ServerComponents,
     outboxScheduler: ScheduledExecutorService,
     server: Http4kServer,
 ) {
@@ -84,22 +83,39 @@ private fun registerShutdownHook(
             Thread(
                 {
                     logger.info("Graceful shutdown initiated")
-                    logger.info("Flushing pending activity updates...")
-                    activityUpdater.flush()
-                    logger.info("Stopping outbox scheduler...")
-                    outboxScheduler.shutdown()
-                    try {
-                        if (!outboxScheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                    // Each independent cleanup step is guarded individually: a failure in one
+                    // (e.g. DB error during flush, port still bound during server.stop) must not
+                    // skip the others. Shutdown is the wrong place to propagate — catch Throwable
+                    // and log, so the JVM always reaches a fully-stopped state.
+                    runStep("flush activity updates") { components.security.asyncActivityUpdater.flush() }
+                    runStep("stop outbox scheduler") {
+                        outboxScheduler.shutdown()
+                        try {
+                            if (!outboxScheduler.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                                outboxScheduler.shutdownNow()
+                            }
+                        } catch (e: InterruptedException) {
                             outboxScheduler.shutdownNow()
                         }
-                    } catch (e: InterruptedException) {
-                        outboxScheduler.shutdownNow()
                     }
-                    logger.info("Stopping HTTP server...")
-                    server.stop()
+                    runStep("stop HTTP server") { server.stop() }
+                    // Close the DB pool last so connections are released even if an earlier step threw.
+                    runStep("close persistence (DB pool)") { components.persistence.close() }
                     logger.info("Shutdown complete")
                 },
                 "graceful-shutdown",
             )
         )
+}
+
+/** Runs a shutdown step, logging its start and swallowing any Throwable so subsequent steps still run. */
+private fun runStep(name: String, step: () -> Unit) {
+    logger.info("$name...")
+    try {
+        step()
+    } catch (t: Throwable) {
+        // Shutdown-hook exceptions are swallowed by the JVM and abort the remaining cleanup,
+        // leaving the process half-dead. Catch everything and log so every step gets a chance.
+        logger.warn("Failed to $name", t)
+    }
 }

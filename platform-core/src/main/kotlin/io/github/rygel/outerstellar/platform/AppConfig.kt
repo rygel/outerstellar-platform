@@ -13,6 +13,8 @@ private const val DEFAULT_JWT_EXPIRY_SECONDS = 86400L
 private const val MAX_HTTP_PORT = 65535
 private const val MIN_HTTP_PORT = 1
 private const val DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS = 10
+private const val DEFAULT_MAX_REQUEST_BODY_BYTES =
+    2L * 1024 * 1024 // 2 MiB — generous for forms/JSON, blocks oversized-body DoS
 private const val DEFAULT_LOCKOUT_DURATION_SECONDS = 900L
 private const val DEFAULT_REGISTRATION_ENABLED = true
 private const val DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES = 1440
@@ -23,14 +25,26 @@ private const val DEFAULT_CSP_POLICY =
 
 const val DEFAULT_PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=()"
 
-data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false)
+data class SegmentConfig(val writeKey: String = "", val enabled: Boolean = false) {
+    override fun toString(): String = "SegmentConfig(writeKey=${mask(writeKey)}, enabled=$enabled)"
+}
 
 data class JwtConfig(
     val enabled: Boolean = false,
     val secret: String = "",
     val issuer: String = "outerstellar",
     val expirySeconds: Long = DEFAULT_JWT_EXPIRY_SECONDS,
-)
+) {
+    init {
+        require(!enabled || secret.isNotBlank()) {
+            "JWT is enabled but the HMAC secret is blank. Set JWT_SECRET to a strong value (>= 32 chars) before enabling JWT."
+        }
+    }
+
+    // HMAC secret is a signing key — never expose it in logs, stack traces, or debug output.
+    override fun toString(): String =
+        "JwtConfig(enabled=$enabled, secret=${mask(secret)}, issuer=$issuer, expirySeconds=$expirySeconds)"
+}
 
 data class EmailConfig(
     val enabled: Boolean = false,
@@ -40,7 +54,10 @@ data class EmailConfig(
     val password: String = "",
     val from: String = "noreply@example.com",
     val startTls: Boolean = true,
-)
+) {
+    override fun toString(): String =
+        "EmailConfig(enabled=$enabled, host=$host, port=$port, username=$username, password=${mask(password)}, from=$from, startTls=$startTls)"
+}
 
 data class AppleOAuthConfig(
     val enabled: Boolean = false,
@@ -48,7 +65,10 @@ data class AppleOAuthConfig(
     val clientId: String = "",
     val keyId: String = "",
     val privateKeyPem: String = "",
-)
+) {
+    override fun toString(): String =
+        "AppleOAuthConfig(enabled=$enabled, teamId=$teamId, clientId=$clientId, keyId=$keyId, privateKeyPem=${mask(privateKeyPem)})"
+}
 
 data class PushNotificationConfig(
     val enabled: Boolean = false,
@@ -58,7 +78,11 @@ data class PushNotificationConfig(
     val apnsKeyId: String = "",
     val apnsPrivateKeyPem: String = "",
     val apnsBundleId: String = "",
-)
+) {
+    override fun toString(): String =
+        "PushNotificationConfig(enabled=$enabled, provider=$provider, fcmServiceAccountJson=${mask(fcmServiceAccountJson)}, " +
+            "apnsTeamId=$apnsTeamId, apnsKeyId=$apnsKeyId, apnsPrivateKeyPem=${mask(apnsPrivateKeyPem)}, apnsBundleId=$apnsBundleId)"
+}
 
 data class SecurityHeadersConfig(
     val permissionsPolicy: String = DEFAULT_PERMISSIONS_POLICY,
@@ -97,6 +121,7 @@ data class AppConfig(
     val email: EmailConfig = EmailConfig(),
     val appBaseUrl: String = DEFAULT_APP_BASE_URL,
     val maxFailedLoginAttempts: Int = DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
+    val maxRequestBodyBytes: Long = DEFAULT_MAX_REQUEST_BODY_BYTES,
     val lockoutDurationSeconds: Long = DEFAULT_LOCKOUT_DURATION_SECONDS,
     val registrationEnabled: Boolean = DEFAULT_REGISTRATION_ENABLED,
     val sessionAbsoluteTimeoutMinutes: Int = DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES,
@@ -110,9 +135,31 @@ data class AppConfig(
     val runtime: RuntimeConfig = RuntimeConfig(),
     val platformMode: PlatformMode = PlatformMode.FullPlatform,
 ) {
+    /** True when the JDBC password was not overridden from the shipped dev default. */
+    fun usesDefaultJdbcPassword(): Boolean = jdbcPassword == DEFAULT_JDBC_PASSWORD
+
+    // Override the data-class toString() so the DB password (and the secrets nested in jwt/email/appleOAuth/
+    // pushNotifications, whose own toString() implementations mask them) are never written to logs, stack
+    // traces, error messages, or observability output. See issue #524.
+    override fun toString(): String =
+        "AppConfig(version=$version, port=$port, jdbcUrl=$jdbcUrl, jdbcUser=$jdbcUser, jdbcPassword=${mask(jdbcPassword)}, " +
+            "profile=$profile, devDashboardEnabled=$devDashboardEnabled, devMode=$devMode, sessionCookieSecure=$sessionCookieSecure, " +
+            "sessionTimeoutMinutes=$sessionTimeoutMinutes, corsOrigins=$corsOrigins, csrfEnabled=$csrfEnabled, segment=$segment, " +
+            "email=$email, appBaseUrl=$appBaseUrl, maxFailedLoginAttempts=$maxFailedLoginAttempts, maxRequestBodyBytes=$maxRequestBodyBytes, " +
+            "lockoutDurationSeconds=$lockoutDurationSeconds, registrationEnabled=$registrationEnabled, " +
+            "sessionAbsoluteTimeoutMinutes=$sessionAbsoluteTimeoutMinutes, jwt=$jwt, cspPolicy=$cspPolicy, staticDir=$staticDir, " +
+            "trustedProxies=$trustedProxies, appleOAuth=$appleOAuth, pushNotifications=$pushNotifications, " +
+            "securityHeaders=$securityHeaders, runtime=$runtime, platformMode=$platformMode)"
+
     companion object {
         const val DEFAULT_APP_BASE_URL = "http://localhost:8080"
-        const val DEFAULT_JDBC_PASSWORD = "outerstellar"
+
+        /**
+         * Shipped default JDBC password used only for local/dev convenience. Internal to avoid leaking the known-value
+         * credential through the public API; [AppConfig.usesDefaultJdbcPassword] is the supported way to detect that
+         * the operator did not override it.
+         */
+        internal const val DEFAULT_JDBC_PASSWORD = "outerstellar"
         private val logger = LoggerFactory.getLogger(AppConfig::class.java)
 
         fun fromEnvironment(environment: Map<String, String> = System.getenv()): AppConfig {
@@ -177,6 +224,8 @@ data class AppConfig(
                         "MAX_FAILED_LOGIN_ATTEMPTS",
                         DEFAULT_MAX_FAILED_LOGIN_ATTEMPTS,
                     ),
+                maxRequestBodyBytes =
+                    yaml.long("maxRequestBodyBytes", env, "MAX_REQUEST_BODY_BYTES", DEFAULT_MAX_REQUEST_BODY_BYTES),
                 lockoutDurationSeconds =
                     yaml.long(
                         "lockoutDurationSeconds",
@@ -401,8 +450,27 @@ private fun Map<String, Any>.staticDir(env: Map<String, String>): String =
 private fun Map<String, Any>.int(key: String, env: Map<String, String>, envKey: String, default: Int): Int =
     env[envKey]?.toInt() ?: (this[key] as? Int) ?: default
 
-private fun Map<String, Any>.bool(key: String, env: Map<String, String>, envKey: String, default: Boolean): Boolean =
-    env[envKey]?.toBoolean() ?: (this[key] as? Boolean) ?: default
+private fun Map<String, Any>.bool(key: String, env: Map<String, String>, envKey: String, default: Boolean): Boolean {
+    // Fail loud on a malformed boolean value rather than silently disabling security-sensitive flags.
+    // Kotlin's String.toBoolean() returns false for any non-"true" string, so SESSION_COOKIE_SECURE=yes
+    // would silently disable the Secure flag; require an explicit true/false (case-insensitive) instead.
+    val raw = env[envKey] ?: return (this[key] as? Boolean) ?: default
+    return when (raw.lowercase()) {
+        "true" -> true
+        "false" -> false
+        else ->
+            throw IllegalArgumentException(
+                "Environment variable $envKey='$raw' is not a valid boolean (expected 'true' or 'false')."
+            )
+    }
+}
 
 private fun Map<String, Any>.long(key: String, env: Map<String, String>, envKey: String, default: Long): Long =
     env[envKey]?.toLong() ?: (this[key] as? Long) ?: default
+
+/**
+ * Masks a secret value for safe inclusion in `toString()` output. Empty/blank values are reported as `""` (so it's
+ * clear the secret is genuinely unset); any non-blank value is reported as `***`. The actual secret material is never
+ * rendered, not even partially — leaking a suffix would still leak entropy.
+ */
+private fun mask(secret: String): String = if (secret.isBlank()) "\"\"" else "\"***\""
