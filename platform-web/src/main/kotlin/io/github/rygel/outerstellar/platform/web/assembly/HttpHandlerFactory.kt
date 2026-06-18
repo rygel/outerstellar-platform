@@ -50,9 +50,24 @@ internal class HttpHandlerFactory(
         val unfiltered =
             mutableListOf(
                 static(staticResourceLoader()),
+                "/health/live" bind
+                    GET to
+                    {
+                        // Liveness: process up, no dependency probes (avoids restart loops on transient blips).
+                        StaticRoutes.localhostOnly.then { StaticRoutes.buildLivenessResponse() }(it)
+                    },
+                "/health/ready" bind
+                    GET to
+                    {
+                        // Readiness: probes DB + extension readiness — traffic should be withheld if DOWN.
+                        StaticRoutes.localhostOnly.then {
+                            StaticRoutes.buildHealthResponse(userRepository, extensionContribution)
+                        }(it)
+                    },
                 "/health" bind
                     GET to
                     {
+                        // Backward-compatible alias for /health/ready (the pre-existing behaviour).
                         StaticRoutes.localhostOnly.then {
                             StaticRoutes.buildHealthResponse(userRepository, extensionContribution)
                         }(it)

@@ -81,6 +81,18 @@ internal object StaticRoutes {
             )
     }
 
+    /**
+     * Liveness probe: the process is up and the JVM is serving. Always 200 — if this fails, the orchestrator should
+     * restart the container. Does NOT probe dependencies (DB, extensions) so a transient dependency blip doesn't cause
+     * a restart loop. Kubernetes `/health/live` convention.
+     */
+    fun buildLivenessResponse(): Response {
+        val body = mapOf("status" to "UP", "timestamp" to Instant.now().toString())
+        return Response(Status.OK)
+            .header("content-type", "application/json; charset=utf-8")
+            .body(KotlinxSerialization.asJsonObject(body).toString())
+    }
+
     @Suppress("TooGenericExceptionCaught", "SwallowedException")
     fun buildHealthResponse(userRepository: UserRepository, extensionContribution: ExtensionContribution): Response {
         val checks = mutableMapOf<String, Any>("status" to "UP")
