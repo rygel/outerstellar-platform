@@ -45,7 +45,7 @@ jobs:
         env:
           POSTGRES_DB: outerstellar
           POSTGRES_USER: outerstellar
-          POSTGRES_PASSWORD: outerstellar
+          POSTGRES_PASSWORD: e2e-test-password
         ports:
           - 5432:5432
         options: >-
@@ -101,7 +101,7 @@ jobs:
             -e SESSIONCOOKIESECURE=false \
             -e "JDBC_URL=jdbc:postgresql://host.docker.internal:5432/outerstellar" \
             -e JDBC_USER=outerstellar \
-            -e JDBC_PASSWORD=outerstellar \
+            -e JDBC_PASSWORD=e2e-test-password \
             outerstellar-platform:e2e
 
       - name: Wait for application to be ready
