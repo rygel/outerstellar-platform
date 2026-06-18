@@ -430,6 +430,7 @@ object Filters {
         }
     }
 
+    @Suppress("UnusedParameter")
     fun csrfProtection(sessionCookieSecure: Boolean, enabled: Boolean = true): Filter = Filter { next ->
         { request ->
             if (!enabled) return@Filter next(request)
@@ -474,7 +475,16 @@ object Filters {
                             RequestContext.CSRF_COOKIE,
                             newToken,
                             path = "/",
-                            secure = sessionCookieSecure,
+                            // The _csrf cookie backs a double-submit token: the browser must read it
+                            // client-side and submit the value back in the X-CSRF-Token header / _csrf
+                            // form field. That requires the cookie to be *stored* over HTTP too (localhost
+                            // dev, TLS-terminating reverse proxies). A Secure flag would make the browser
+                            // refuse to store it over http:// per RFC 6265bis, silently breaking every
+                            // state-changing request. CSRF protection comes from token-matching, not from
+                            // transport — so the cookie must NOT be Secure. (The session cookie, which is
+                            // auto-sent and transport-only, correctly keeps Secure.) httpOnly stays false
+                            // so JS can read the token; SameSite=Strict provides the cross-site defence.
+                            secure = false,
                             httpOnly = false,
                             sameSite = SameSite.Strict,
                         )
