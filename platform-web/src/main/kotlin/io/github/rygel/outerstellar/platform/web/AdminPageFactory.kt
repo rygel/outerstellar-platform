@@ -8,9 +8,9 @@ private const val ADMIN_SECONDS_PER_HOUR = 3600
 private const val ADMIN_SECONDS_PER_DAY = 86400
 
 class AdminPageFactory(
-    private val apiKeyService: io.github.rygel.outerstellar.platform.security.ApiKeyService? = null,
-    private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService? = null,
-    private val userAdminService: UserAdminService? = null,
+    private val apiKeyService: io.github.rygel.outerstellar.platform.security.ApiKeyService,
+    private val notificationService: io.github.rygel.outerstellar.platform.service.NotificationService,
+    private val userAdminService: UserAdminService,
 ) {
 
     fun buildUserAdminPage(
@@ -21,9 +21,9 @@ class AdminPageFactory(
     ): Page<UserAdminPage> {
         val i18n = shellRenderer.i18n
         val shell = shellRenderer.shell(i18n.translate("web.admin.users.title"), "/admin/users")
-        val totalCount = userAdminService?.countUsers() ?: 0L
+        val totalCount = userAdminService.countUsers()
         val safeOffset = offset.coerceIn(0, maxOf(0, totalCount.toInt() - 1))
-        val pageUsers = userAdminService?.listUsers(limit, safeOffset) ?: emptyList()
+        val pageUsers = userAdminService.listUsers(limit, safeOffset)
         val currentUserId = ctx.user?.id?.toString()
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
@@ -80,9 +80,9 @@ class AdminPageFactory(
     fun buildAuditLogPage(shellRenderer: ShellRenderer, limit: Int = 20, offset: Int = 0): Page<AuditLogPage> {
         val i18n = shellRenderer.i18n
         val shell = shellRenderer.shell(i18n.translate("web.admin.audit.title"), "/admin/audit")
-        val totalCount = userAdminService?.countAuditEntries() ?: 0L
+        val totalCount = userAdminService.countAuditEntries()
         val safeOffset = offset.coerceIn(0, maxOf(0, totalCount.toInt() - 1))
-        val pageEntries = userAdminService?.getAuditLog(limit, safeOffset) ?: emptyList()
+        val pageEntries = userAdminService.getAuditLog(limit, safeOffset)
         val currentPage = (safeOffset / limit) + 1
         val hasPrevious = safeOffset > 0
         val hasNext = safeOffset + limit < totalCount
@@ -129,7 +129,7 @@ class AdminPageFactory(
         val i18n = shellRenderer.i18n
         val shell = shellRenderer.shell(i18n.translate("web.apikeys.title"), "/auth/api-keys")
         val userId = checkNotNull(ctx.user?.id) { "User not logged in" }
-        val keys = apiKeyService?.listApiKeys(userId) ?: emptyList()
+        val keys = apiKeyService.listApiKeys(userId)
 
         return Page(
             shell = shell,
@@ -205,12 +205,12 @@ class AdminPageFactory(
     fun buildNotificationsPage(ctx: RequestContext, shellRenderer: ShellRenderer): Page<NotificationsPage> {
         val i18n = shellRenderer.i18n
         val user = ctx.user ?: throw InsufficientPermissionException("Authentication required")
-        val unreadCount = notificationService?.countUnread(user.id) ?: 0
+        val unreadCount = notificationService.countUnread(user.id)
         val shell =
             shellRenderer
                 .shell(i18n.translate("web.notifications.title"), "/notifications")
                 .copy(notificationsUrl = shellRenderer.url("/notifications"), unreadNotificationCount = unreadCount)
-        val notifications = notificationService?.listForUser(user.id) ?: emptyList()
+        val notifications = notificationService.listForUser(user.id)
         return Page(
             shell = shell,
             data =
@@ -241,7 +241,7 @@ class AdminPageFactory(
     }
 
     fun buildNotificationBell(ctx: RequestContext, shellRenderer: ShellRenderer): NotificationBellFragment {
-        val unreadCount = ctx.user?.id?.let { notificationService?.countUnread(it) } ?: 0
+        val unreadCount = ctx.user?.id?.let { notificationService.countUnread(it) } ?: 0
         return NotificationBellFragment(
             unreadCount = unreadCount,
             notificationsUrl = shellRenderer.url("/notifications"),

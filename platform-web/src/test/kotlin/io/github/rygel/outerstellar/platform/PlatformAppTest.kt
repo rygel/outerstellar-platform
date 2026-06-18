@@ -15,6 +15,7 @@ import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
+import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.web.ExtensionHostContextFactory
 import io.github.rygel.outerstellar.platform.web.StubMessageCache
 import io.github.rygel.outerstellar.platform.web.bodyContains
@@ -45,6 +46,7 @@ class PlatformAppTest {
                 security.apiKeyService,
                 security.oauthService,
                 security.sessionService,
+                security.userAdminService,
             )
 
         val handler = app(config = config, persistence = persistence, security = security, core = core, web = web).http
@@ -122,6 +124,7 @@ class PlatformAppTest {
         apiKeyService: ApiKeyService,
         oauthService: OAuthService,
         sessionService: SessionService,
+        userAdminService: UserAdminService,
     ): WebComponents {
         val messageService = mockk<io.github.rygel.outerstellar.platform.service.MessageService>(relaxed = true)
         val notificationService =
@@ -129,7 +132,11 @@ class PlatformAppTest {
         val voteRepo = mockk<io.github.rygel.outerstellar.platform.persistence.VoteRepository>(relaxed = true)
         val pollRepo = mockk<io.github.rygel.outerstellar.platform.persistence.PollRepository>(relaxed = true)
         val adminPageFactory =
-            io.github.rygel.outerstellar.platform.web.AdminPageFactory(null, notificationService, null)
+            io.github.rygel.outerstellar.platform.web.AdminPageFactory(
+                apiKeyService,
+                notificationService,
+                userAdminService,
+            )
         val authPageFactory = io.github.rygel.outerstellar.platform.web.AuthPageFactory()
         val errorPageFactory = io.github.rygel.outerstellar.platform.web.ErrorPageFactory()
         val sidebarFactory = io.github.rygel.outerstellar.platform.web.SidebarFactory()
@@ -141,9 +148,10 @@ class PlatformAppTest {
             )
         val searchPageFactory = io.github.rygel.outerstellar.platform.web.SearchPageFactory()
         val devDashboardPageFactory = io.github.rygel.outerstellar.platform.web.DevDashboardPageFactory()
-        val contactTrashListFactory = io.github.rygel.outerstellar.platform.web.ContactTrashListFactory(null)
+        val contactService = mockk<io.github.rygel.outerstellar.platform.service.ContactService>(relaxed = true)
+        val contactTrashListFactory = io.github.rygel.outerstellar.platform.web.ContactTrashListFactory(contactService)
         val contactsPageFactory =
-            io.github.rygel.outerstellar.platform.web.ContactsPageFactory(null, contactTrashListFactory)
+            io.github.rygel.outerstellar.platform.web.ContactsPageFactory(contactService, contactTrashListFactory)
         val homePageFactory =
             io.github.rygel.outerstellar.platform.web.HomePageFactory(messageService, contactTrashListFactory)
         val infraPageFactory = io.github.rygel.outerstellar.platform.web.InfraPageFactory(repository)

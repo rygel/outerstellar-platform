@@ -1,7 +1,7 @@
 package io.github.rygel.outerstellar.platform.web
 
 class ContactsPageFactory(
-    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService?,
+    private val contactService: io.github.rygel.outerstellar.platform.service.ContactService,
     private val contactTrashListFactory: ContactTrashListFactory,
 ) {
 
@@ -17,8 +17,8 @@ class ContactsPageFactory(
         val i18n = shellRenderer.i18n
         val shell = shellRenderer.shell(i18n.translate("web.nav.contacts"), "/contacts")
 
-        val dbContacts = contactService?.listContacts(query, limit, offset) ?: emptyList()
-        val totalCount = contactService?.countContacts(query) ?: 0L
+        val dbContacts = contactService.listContacts(query, limit, offset)
+        val totalCount = contactService.countContacts(query)
         val currentPage = (offset / limit) + 1
         val hasPrevious = offset > 0
         val hasNext = offset + limit < totalCount
@@ -65,7 +65,7 @@ class ContactsPageFactory(
 
     fun buildContactForm(shellRenderer: ShellRenderer, syncId: String? = null): ContactFormFragment {
         val i18n = shellRenderer.i18n
-        val existing = syncId?.let { contactService?.getContactBySyncId(it) }
+        val existing = syncId?.let { contactService.getContactBySyncId(it) }
         return ContactFormFragment(
             syncId = existing?.syncId ?: "",
             name = existing?.name ?: "",
