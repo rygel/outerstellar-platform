@@ -52,4 +52,29 @@ class JdbiPasswordResetRepositoryTest : JdbiTest() {
         assertNotNull(repo.findByToken("token-1"))
         assertNotNull(repo.findByToken("token-2"))
     }
+
+    @Test
+    fun `token column has only the unique-constraint index, not a redundant duplicate`() {
+        // Regression guard for issue #530: the non-unique idx_plt_password_reset_tokens_token
+        // duplicated the plt_password_reset_tokens_token_key UNIQUE constraint and was dropped.
+        // If it ever returns (e.g. a future migration re-adding it), this fails.
+        val indexes =
+            jdbi.withHandle<List<String>, Exception> { handle ->
+                handle
+                    .createQuery(
+                        "SELECT indexname FROM pg_indexes WHERE tablename = 'plt_password_reset_tokens' ORDER BY indexname"
+                    )
+                    .mapTo(String::class.java)
+                    .list()
+            }
+        assertFalse(
+            indexes.contains("idx_plt_password_reset_tokens_token"),
+            "Redundant token index must not exist: $indexes",
+        )
+        assertTrue(
+            indexes.contains("plt_password_reset_tokens_token_key"),
+            "UNIQUE constraint index must remain: $indexes",
+        )
+        assertTrue(indexes.contains("idx_plt_password_reset_tokens_user_id"), "user_id index must remain: $indexes")
+    }
 }
