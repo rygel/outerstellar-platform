@@ -5,10 +5,12 @@ package io.github.rygel.outerstellar.platform.sync.engine.module
 import io.github.rygel.outerstellar.platform.analytics.AnalyticsService
 import io.github.rygel.outerstellar.platform.model.ConflictStrategy
 import io.github.rygel.outerstellar.platform.model.SessionExpiredException
+import io.github.rygel.outerstellar.platform.model.SyncException
 import io.github.rygel.outerstellar.platform.persistence.MessageRepository
 import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.service.ContactService
 import io.github.rygel.outerstellar.platform.service.MessageService
+import io.github.rygel.outerstellar.platform.sync.SYNC_SCHEMA_VERSION
 import io.github.rygel.outerstellar.platform.sync.SyncPullResponse
 import io.github.rygel.outerstellar.platform.sync.SyncPushRequest
 import io.github.rygel.outerstellar.platform.sync.SyncStats
@@ -22,6 +24,11 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import org.slf4j.LoggerFactory
+
+// Pull-loop safety bounds (issue #520): cap rounds and total items to prevent infinite loops / OOM
+// when the server signals hasMore=true with empty batches or unbounded non-empty batches.
+private const val MAX_PULL_ROUNDS = 100
+private const val MAX_PULL_ITEMS = 50_000
 
 class SyncDataModuleImpl(
     private val syncClient: SyncClient,
@@ -120,9 +127,29 @@ class SyncDataModuleImpl(
         var pullHasMore = true
         var pullSince = lastSync
         var latestTimestamp = 0L
+        var pullRounds = 0
 
         while (pullHasMore) {
+            // Guards against infinite loops and unbounded memory (issue #520): cap the number of pull
+            // rounds and the total items, and treat hasMore=true with an empty batch as a protocol error
+            // (the cursor wouldn't advance, so the loop would spin on the same response forever).
+            if (++pullRounds > MAX_PULL_ROUNDS) {
+                throw SyncException("Pull exceeded $MAX_PULL_ROUNDS rounds; aborting to avoid runaway sync")
+            }
+            if (allPulled.size > MAX_PULL_ITEMS) {
+                throw SyncException("Pull exceeded $MAX_PULL_ITEMS items; aborting to avoid runaway sync")
+            }
             val pullBody: SyncPullResponse = syncClient.pull(pullSince)
+            // Reject a server speaking an incompatible wire-format schema rather than silently dropping
+            // or misinterpreting fields (issue #523).
+            if (pullBody.schemaVersion != SYNC_SCHEMA_VERSION) {
+                throw SyncException(
+                    "Server sync schema version ${pullBody.schemaVersion} is incompatible with client version $SYNC_SCHEMA_VERSION"
+                )
+            }
+            if (pullBody.hasMore && pullBody.messages.isEmpty()) {
+                throw SyncException("Server signalled hasMore=true with an empty batch; cursor would not advance")
+            }
             allPulled.addAll(pullBody.messages)
             pullHasMore = pullBody.hasMore
             latestTimestamp = pullBody.serverTimestamp
@@ -139,7 +166,16 @@ class SyncDataModuleImpl(
         transactionManager.inTransaction {
             allPulled.forEach { repository.upsertSyncedMessage(it, false) }
             pushBody.conflicts.forEach { conflict ->
-                conflict.serverMessage?.let { repository.upsertSyncedMessage(it, false) }
+                // Do NOT auto-overwrite the local row with the server message (issue #521): that destroyed
+                // the local edit and made resolveConflict(MINE) unable to recover it. Instead mark the
+                // conflict, preserving both versions so the UI can surface it and resolveConflict can act.
+                conflict.serverMessage?.let { repository.markConflict(conflict.syncId, it) }
+            }
+            // Clear the dirty flag on the locally-originated messages that were just pushed (issue #519).
+            // Without this, listDirtyMessages returns the same set on the next sync and re-pushes them
+            // every cycle. markClean takes the sync IDs of the pushed messages.
+            if (dirtyMessages.isNotEmpty()) {
+                repository.markClean(dirtyMessages.map { it.syncId })
             }
             repository.setLastSyncEpochMs(latestTimestamp)
         }
