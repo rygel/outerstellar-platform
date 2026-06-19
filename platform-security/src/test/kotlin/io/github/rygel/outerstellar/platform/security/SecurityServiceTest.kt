@@ -178,8 +178,7 @@ class SecurityServiceTest {
     @Test
     fun `authenticateApiKey returns user for valid key`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val expectedHash = digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
+        val expectedHash = TokenHashing(TokenHashing.DEFAULT_PEPPER).hash(rawKey)
 
         val apiKey =
             ApiKey(id = 1L, userId = testUser.id, keyHash = expectedHash, keyPrefix = "osk_abcd", name = "test-key")
@@ -197,8 +196,7 @@ class SecurityServiceTest {
     @Test
     fun `authenticateApiKey returns null for disabled key`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val expectedHash = digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
+        val expectedHash = TokenHashing(TokenHashing.DEFAULT_PEPPER).hash(rawKey)
 
         val disabledKey =
             ApiKey(
@@ -220,8 +218,7 @@ class SecurityServiceTest {
     @Test
     fun `authenticateApiKey returns null for disabled user`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
-        val digest = java.security.MessageDigest.getInstance("SHA-256")
-        val expectedHash = digest.digest(rawKey.toByteArray()).joinToString("") { "%02x".format(it) }
+        val expectedHash = TokenHashing(TokenHashing.DEFAULT_PEPPER).hash(rawKey)
 
         val apiKey =
             ApiKey(id = 3L, userId = testUser.id, keyHash = expectedHash, keyPrefix = "osk_abcd", name = "test-key")

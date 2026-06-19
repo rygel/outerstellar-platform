@@ -20,6 +20,7 @@ class PasswordResetService(
     private val sessionRepository: SessionRepository? = null,
     private val emailService: EmailService,
     private val appBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
+    private val tokenHashing: TokenHashing = TokenHashing(TokenHashing.DEFAULT_PEPPER),
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
 
@@ -38,7 +39,7 @@ class PasswordResetService(
         val resetToken =
             PasswordResetToken(
                 userId = user.id,
-                token = TokenHashing.hash(tokenValue),
+                token = tokenHashing.hash(tokenValue),
                 expiresAt = Instant.now().plusSeconds(RESET_TOKEN_TTL_SECONDS),
             )
         resetRepository?.save(resetToken)
@@ -60,7 +61,7 @@ class PasswordResetService(
         // with the same token cannot both pass the guard (only one UPDATE matches). Replaces the old
         // findByToken + Java used/expiry check + markUsed which ran in separate transactions (TOCTOU).
         val userId =
-            repository.claimToken(TokenHashing.hash(token)) ?: throw IllegalArgumentException("Invalid reset token")
+            repository.claimToken(tokenHashing.hash(token)) ?: throw IllegalArgumentException("Invalid reset token")
 
         val normalized = newPassword.trim()
         validatePassword(normalized)?.let { throw WeakPasswordException(it) }

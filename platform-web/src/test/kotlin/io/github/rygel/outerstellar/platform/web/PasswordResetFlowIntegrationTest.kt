@@ -148,7 +148,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
                 .first()
 
         assertNotEquals(rawToken, storedToken, "Raw reset token must not be stored")
-        assertTrue(storedToken.matches(Regex("[0-9a-f]{64}")), "Stored reset token should be a SHA-256 hex hash")
+        assertTrue(storedToken.length == 44, "Stored reset token should be an HMAC-SHA256 Base64 hash (44 chars)")
     }
 
     @Test

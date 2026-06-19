@@ -11,6 +11,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+private val tokenHashing = TokenHashing(TokenHashing.DEFAULT_PEPPER)
+
 class JdbiSessionRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiSessionRepository(jdbi) }
@@ -19,7 +21,7 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     fun `save and findByTokenHash round-trips`() {
         val userId = createUser()
         val rawToken = "oss_test_token_${UUID.randomUUID()}"
-        val tokenHash = TokenHashing.hash(rawToken)
+        val tokenHash = tokenHashing.hash(rawToken)
         val session =
             Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES))
         repo.save(session)
@@ -37,7 +39,7 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `findByTokenHash returns null for expired session`() {
         val userId = createUser()
-        val tokenHash = TokenHashing.hash("expired_token")
+        val tokenHash = tokenHashing.hash("expired_token")
         val session =
             Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().minus(1, ChronoUnit.HOURS))
         repo.save(session)
@@ -47,7 +49,7 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `updateExpiresAt extends session`() {
         val userId = createUser()
-        val tokenHash = TokenHashing.hash("extend_token")
+        val tokenHash = tokenHashing.hash("extend_token")
         val session =
             Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().plus(5, ChronoUnit.MINUTES))
         repo.save(session)
@@ -62,7 +64,7 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `deleteByTokenHash removes session`() {
         val userId = createUser()
-        val tokenHash = TokenHashing.hash("delete_token")
+        val tokenHash = tokenHashing.hash("delete_token")
         val session =
             Session(tokenHash = tokenHash, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES))
         repo.save(session)
@@ -73,8 +75,8 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `deleteByUserId removes all sessions for user`() {
         val userId = createUser()
-        val hash1 = TokenHashing.hash("token1")
-        val hash2 = TokenHashing.hash("token2")
+        val hash1 = tokenHashing.hash("token1")
+        val hash2 = tokenHashing.hash("token2")
         repo.save(Session(tokenHash = hash1, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES)))
         repo.save(Session(tokenHash = hash2, userId = userId, expiresAt = Instant.now().plus(30, ChronoUnit.MINUTES)))
         repo.deleteByUserId(userId)
@@ -85,8 +87,8 @@ class JdbiSessionRepositoryTest : JdbiTest() {
     @Test
     fun `deleteExpired removes only expired sessions`() {
         val userId = createUser()
-        val expiredHash = TokenHashing.hash("expired")
-        val activeHash = TokenHashing.hash("active")
+        val expiredHash = tokenHashing.hash("expired")
+        val activeHash = tokenHashing.hash("active")
         repo.save(
             Session(tokenHash = expiredHash, userId = userId, expiresAt = Instant.now().minus(1, ChronoUnit.HOURS))
         )

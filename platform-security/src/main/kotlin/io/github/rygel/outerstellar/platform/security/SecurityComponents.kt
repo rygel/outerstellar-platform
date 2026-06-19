@@ -50,6 +50,7 @@ fun createSecurityComponents(
         sessionRepository = sessionRepository,
     )
 
+@Suppress("LongMethod")
 fun createSecurityComponents(
     config: AppConfig,
     userRepository: UserRepository,
@@ -61,6 +62,7 @@ fun createSecurityComponents(
     sessionRepository: SessionRepository? = null,
 ): SecurityComponents {
     val passwordEncoder = BCryptPasswordEncoder()
+    val tokenHashing = TokenHashing(config.tokenPepper)
     val jwtService = JwtService(config.jwt)
     val asyncActivityUpdater = AsyncActivityUpdater(userRepository)
     val securityConfig =
@@ -79,6 +81,7 @@ fun createSecurityComponents(
             userRepository = userRepository,
             config = securityConfig,
             activityUpdater = asyncActivityUpdater,
+            tokenHashing = tokenHashing,
         )
     val userAdminService = UserAdminService(userRepository, auditRepository ?: error("AuditRepository required"))
     val authService =
@@ -103,6 +106,7 @@ fun createSecurityComponents(
             userRepository = userRepository,
             apiKeyRepository = apiKeyRepository ?: error("ApiKeyRepository required for ApiKeyService"),
             auditRepository = auditRepository,
+            tokenHashing = tokenHashing,
         )
     val passwordResetService =
         PasswordResetService(
@@ -113,6 +117,7 @@ fun createSecurityComponents(
             sessionRepository = sessionRepository,
             emailService = emailService,
             appBaseUrl = config.appBaseUrl,
+            tokenHashing = tokenHashing,
         )
     val oauthService =
         OAuthService(
