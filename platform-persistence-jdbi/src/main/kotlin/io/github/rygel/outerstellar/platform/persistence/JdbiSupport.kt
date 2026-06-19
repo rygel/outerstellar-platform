@@ -15,6 +15,14 @@ import org.jdbi.v3.core.statement.StatementContext
 
 data class FilterClause(val sql: String, val binder: (Query) -> Unit)
 
+/**
+ * Maximum number of entries allowed in a single `IN (...)` clause / batch upsert. Guards against unbounded `bindList` /
+ * `prepareBatch` calls that could blow up SQL parse/plan time or hit Postgres's ~65535 bind-parameter ceiling (DoS via
+ * a single oversized request). Apply at every repository method that takes a caller-controlled list for an `IN` clause
+ * or batch.
+ */
+const val MAX_IN_CLAUSE: Int = 1000
+
 fun String.escapeLike(): String = replace("!", "!!").replace("%", "!%").replace("_", "!_")
 
 fun ResultSet.getNullableInstant(column: String): Instant? = getTimestamp(column)?.toInstant()

@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.persistence
 
 import io.github.rygel.outerstellar.platform.model.ApiKey
+import io.github.rygel.outerstellar.platform.security.TokenHashing
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.Test
@@ -17,7 +18,7 @@ class JdbiApiKeyRepositoryTest : JdbiTest() {
     private fun apiKey(userId: UUID, name: String = "My Key") =
         ApiKey(
             userId = userId,
-            keyHash = JdbiApiKeyRepository.hashKey("raw-key-${UUID.randomUUID()}"),
+            keyHash = TokenHashing.hash("raw-key-${UUID.randomUUID()}"),
             keyPrefix = "sk_test",
             name = name,
             enabled = true,
@@ -28,7 +29,7 @@ class JdbiApiKeyRepositoryTest : JdbiTest() {
     fun `save and findByKeyHash round-trips`() {
         val userId = createUser()
         val rawKey = "raw-test-key"
-        val hash = JdbiApiKeyRepository.hashKey(rawKey)
+        val hash = TokenHashing.hash(rawKey)
         val key =
             ApiKey(
                 userId = userId,
@@ -107,9 +108,9 @@ class JdbiApiKeyRepositoryTest : JdbiTest() {
     }
 
     @Test
-    fun `hashKey produces consistent SHA-256 hex`() {
-        val hash1 = JdbiApiKeyRepository.hashKey("test-key")
-        val hash2 = JdbiApiKeyRepository.hashKey("test-key")
+    fun `TokenHashing produces consistent SHA-256 hex`() {
+        val hash1 = TokenHashing.hash("test-key")
+        val hash2 = TokenHashing.hash("test-key")
         assertEquals(hash1, hash2)
         assertEquals(64, hash1.length) // SHA-256 = 32 bytes = 64 hex chars
         assertFalse(hash1.contains("test-key"))

@@ -64,6 +64,9 @@ class JdbiVoteRepository(private val jdbi: Jdbi) : VoteRepository {
     }
 
     override fun findScoresByMessages(messageSyncIds: List<String>, userId: UUID?): Map<String, VoteScore> {
+        require(messageSyncIds.size <= MAX_IN_CLAUSE) {
+            "messageSyncIds list of ${messageSyncIds.size} exceeds the maximum of $MAX_IN_CLAUSE entries (DoS guard)"
+        }
         if (messageSyncIds.isEmpty()) return emptyMap()
 
         return jdbi.withHandle<Map<String, VoteScore>, Exception> { handle ->
