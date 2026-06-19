@@ -111,6 +111,12 @@ class SegmentAnalyticsService internal constructor(private val sender: SegmentEv
             }
         }
     }
+
+    override fun close() {
+        // Delegate to the sender, which owns the executor + HttpClient lifecycle (issue: analytics
+        // resources were never closed in the shutdown hook, leaking across restarts).
+        (sender as? HttpSegmentEventSender)?.close()
+    }
 }
 
 internal fun interface SegmentEventSender {
@@ -152,6 +158,18 @@ private class HttpSegmentEventSender(writeKey: String) : SegmentEventSender {
             }
         } catch (_: java.util.concurrent.RejectedExecutionException) {
             logger.warn("Segment analytics event dropped: queue full")
+        }
+    }
+
+    fun close() {
+        // Release the analytics executor on shutdown so it doesn't leak across restarts. The HttpClient
+        // manages its own internal resources; closing the executor stops queued/pending sends cleanly.
+        executor.shutdown()
+        try {
+            if (!executor.awaitTermination(2, TimeUnit.SECONDS)) executor.shutdownNow()
+        } catch (_: InterruptedException) {
+            executor.shutdownNow()
+            Thread.currentThread().interrupt()
         }
     }
 }

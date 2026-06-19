@@ -1,6 +1,6 @@
 package io.github.rygel.outerstellar.platform.analytics
 
-interface AnalyticsService {
+interface AnalyticsService : AutoCloseable {
     fun identify(userId: String, traits: Map<String, Any> = emptyMap())
 
     fun track(userId: String, event: String, properties: Map<String, Any> = emptyMap())
@@ -14,4 +14,6 @@ class NoOpAnalyticsService : AnalyticsService {
     override fun track(userId: String, event: String, properties: Map<String, Any>) = Unit
 
     override fun page(userId: String, path: String) = Unit
+
+    override fun close() = Unit
 }

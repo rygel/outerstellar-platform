@@ -50,7 +50,7 @@ class SyncDataModuleImpl(
     private val listeners = CopyOnWriteArrayList<SyncDataListener>()
 
     private val syncInProgress = AtomicBoolean(false)
-    private var autoSyncExecutor: ScheduledExecutorService? = null
+    @Volatile private var autoSyncExecutor: ScheduledExecutorService? = null
     private val autoSyncIntervalMinutes: Long = 5L
 
     init {
