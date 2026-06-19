@@ -74,6 +74,8 @@ class PersistentBatchingAnalyticsService(
         )
     }
 
+    override fun close() = Unit
+
     @Synchronized
     private fun append(event: JsonObject) {
         try {
