@@ -552,6 +552,27 @@ object Filters {
         errorPageFactory: ErrorPageFactory,
         renderer: TemplateRenderer,
     ): Response {
+        // The OpenAPI spec-rendering endpoints (any path ending in openapi.json) fail on http4k 6.53
+        // because the OpenApi3 renderer is incompatible with the kotlinx.serialization format
+        // (http4k/http4k#750): the spec model contains internal JSON-element types (EmptyArray /
+        // JsonLiteral) that have no registered serializer. Until that's fixed upstream, degrade to a
+        // clear 503 instead of a generic 500 so consumers get an honest, non-alarming response and the
+        // root cause is visible. See issue #558.
+        val isOpenApiSerializationFailure =
+            e is kotlinx.serialization.SerializationException && request.uri.path.endsWith("openapi.json")
+        if (isOpenApiSerializationFailure) {
+            logger.warn(
+                "OpenAPI spec unavailable at {} — http4k OpenApi3/kotlinx.serialization incompatibility (http4k#750): {}",
+                request.uri,
+                e.message,
+            )
+            return jsonErrorResponse(
+                Status.SERVICE_UNAVAILABLE,
+                "OpenAPI spec is unavailable on this platform version (pending an http4k fix; see http4k#750).",
+                request,
+            )
+        }
+
         val status =
             when (e) {
                 is ValidationException -> Status.BAD_REQUEST
