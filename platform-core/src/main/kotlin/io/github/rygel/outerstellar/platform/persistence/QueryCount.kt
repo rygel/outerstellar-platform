@@ -5,7 +5,9 @@ object QueryCount {
 
     fun drain(): Int {
         val v = count.get()
-        count.set(0)
+        // remove() rather than set(0) so the entry is dropped from the thread's map entirely — avoids
+        // leaving a stale Integer on pooled threads (HikariCP/Netty) between requests.
+        count.remove()
         return v
     }
 

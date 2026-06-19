@@ -12,12 +12,13 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
                 .createUpdate(
                     """
                     INSERT INTO plt_outbox (id, payload_type, payload, status)
-                    VALUES (:id, :payloadType, :payload, '${OutboxStatus.PENDING.name}')
+                    VALUES (:id, :payloadType, :payload, :status)
                     """
                 )
                 .bind("id", entry.id)
                 .bind("payloadType", entry.payloadType)
                 .bind("payload", entry.payload)
+                .bind("status", OutboxStatus.PENDING.name)
                 .execute()
         }
     }
@@ -28,11 +29,12 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
                 .createQuery(
                     """
                     SELECT id, payload_type, payload, status, created_at FROM plt_outbox
-                    WHERE status = '${OutboxStatus.PENDING.name}'
+                    WHERE status = :status
                     ORDER BY created_at ASC
                     LIMIT :limit
                     """
                 )
+                .bind("status", OutboxStatus.PENDING.name)
                 .bind("limit", limit)
                 .map { rs, _ ->
                     OutboxEntry(
@@ -52,11 +54,12 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
             handle
                 .createUpdate(
                     """
-                    UPDATE plt_outbox SET status = '${OutboxStatus.PROCESSED.name}', processed_at = :processedAt
+                    UPDATE plt_outbox SET status = :status, processed_at = :processedAt
                     WHERE id = :id
                     """
                 )
                 .bind("id", id)
+                .bind("status", OutboxStatus.PROCESSED.name)
                 .bind("processedAt", Instant.now())
                 .execute()
         }
@@ -65,10 +68,9 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
     override fun markFailed(id: UUID, error: String) {
         jdbi.useHandle<Exception> { handle ->
             handle
-                .createUpdate(
-                    "UPDATE plt_outbox SET status = '${OutboxStatus.FAILED.name}', last_error = :error WHERE id = :id"
-                )
+                .createUpdate("UPDATE plt_outbox SET status = :status, last_error = :error WHERE id = :id")
                 .bind("id", id)
+                .bind("status", OutboxStatus.FAILED.name)
                 .bind("error", error)
                 .execute()
         }
@@ -90,10 +92,11 @@ class JdbiOutboxRepository(private val jdbi: Jdbi) : OutboxRepository {
                 .createQuery(
                     """
                     SELECT id, payload_type, payload, status, created_at FROM plt_outbox
-                    WHERE status = '${OutboxStatus.FAILED.name}'
+                    WHERE status = :status
                     ORDER BY created_at DESC
                     """
                 )
+                .bind("status", OutboxStatus.FAILED.name)
                 .map { rs, _ ->
                     OutboxEntry(
                         id = rs.getObject("id", UUID::class.java),
