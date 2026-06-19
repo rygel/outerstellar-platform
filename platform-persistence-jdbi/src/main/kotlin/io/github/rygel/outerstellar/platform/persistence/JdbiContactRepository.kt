@@ -224,6 +224,9 @@ class JdbiContactRepository(private val jdbi: Jdbi) : ContactRepository {
     }
 
     override fun batchUpsertSyncedContacts(contacts: List<SyncContact>, dirty: Boolean): List<StoredContact> {
+        require(contacts.size <= MAX_IN_CLAUSE) {
+            "contacts list of ${contacts.size} exceeds the maximum of $MAX_IN_CLAUSE entries (DoS guard)"
+        }
         if (contacts.isEmpty()) return emptyList()
 
         jdbi.useTransaction<Exception> { handle ->

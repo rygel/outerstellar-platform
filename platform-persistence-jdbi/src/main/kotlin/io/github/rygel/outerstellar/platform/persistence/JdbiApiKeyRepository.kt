@@ -83,11 +83,4 @@ class JdbiApiKeyRepository(private val jdbi: Jdbi) : ApiKeyRepository {
             lastUsedAt = rs.getNullableInstant("last_used_at"),
         )
     }
-
-    companion object {
-        fun hashKey(key: String): String {
-            val digest = java.security.MessageDigest.getInstance("SHA-256")
-            return digest.digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
-        }
-    }
 }

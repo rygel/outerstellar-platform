@@ -181,6 +181,9 @@ class JdbiMessageRepository(private val jdbi: Jdbi) : MessageRepository {
     }
 
     override fun batchUpsertSyncedMessages(messages: List<SyncMessage>, dirty: Boolean): List<StoredMessage> {
+        require(messages.size <= MAX_IN_CLAUSE) {
+            "messages list of ${messages.size} exceeds the maximum of $MAX_IN_CLAUSE entries (DoS guard)"
+        }
         if (messages.isEmpty()) return emptyList()
 
         jdbi.useHandle<Exception> { handle ->
