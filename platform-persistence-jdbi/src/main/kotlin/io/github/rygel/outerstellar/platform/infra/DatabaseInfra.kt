@@ -69,6 +69,15 @@ fun migrate(dataSource: DataSource, extensionLocation: String? = null, extension
         }
     }
     @Suppress("SpreadOperator") config.locations(*locations.toTypedArray())
+    // Honor the standard Flyway out-of-order / ignore flags via system property or env var (#561). Without
+    // this, a platform upgrade that adds migrations to an existing dev DB crashes at startup with
+    // "resolved migration not applied" and no in-config workaround. Out-of-order lets the new migrations
+    // apply; the system-property / env conventions are Flyway's own.
+    val outOfOrder = System.getProperty("flyway.outOfOrder") ?: System.getenv("FLYWAY_OUT_OF_ORDER")
+    if (outOfOrder == "true") {
+        logger.info("Flyway outOfOrder=true (from flyway.outOfOrder) — pending migrations will be applied")
+        config.outOfOrder(true)
+    }
     config.load().migrate()
 }
 

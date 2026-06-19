@@ -65,7 +65,11 @@ fun createRenderer(runtime: RuntimeConfig = RuntimeConfig()): TemplateRenderer {
             gg.jte.ContentType.Html,
             applicationClassLoader,
         )
-    return renderUsing { templateEngine }
+    // Composite dev renderer (#560): resolve extension templates from the filesystem (hot reload) first,
+    // and fall back to the precompiled registry for platform-owned templates (AuthPage, FooterStatus, etc.)
+    // that live in the platform jar, not on the extension's filesystem. Without this fallback, every route
+    // that touches a platform template returns 500 in dev mode, forcing jte.production=true everywhere.
+    return renderUsingComposite(templateEngine, precompiledRegistries)
 }
 
 internal data class DevTemplatePaths(val sourceTemplates: Path, val generatedTemplateClasses: Path)
@@ -86,9 +90,10 @@ internal fun resolveDevTemplatePaths(baseDirectory: Path): DevTemplatePaths {
 
     return candidates.firstOrNull { Files.isDirectory(it.sourceTemplates) }
         ?: throw IllegalStateException(
-            "JTE source templates directory not found for development rendering. " +
-                "Base directory: $normalizedBase. Checked: " +
-                candidates.joinToString { it.sourceTemplates.toString() }
+            "JTE source templates directory not found for development rendering. Base directory: " +
+                "$normalizedBase. Checked: ${candidates.joinToString { it.sourceTemplates.toString() }}. " +
+                "Set the system property 'jte.sourceDir' (or JTE_SOURCE_DIR env var) to the directory " +
+                "containing your module's src/main/jte, e.g. -Djte.sourceDir=/path/to/your-extension-module."
         )
 }
 
@@ -127,12 +132,33 @@ private fun ensureTemplateClassesLoaded(registries: List<PrecompiledJteTemplateR
     logger.info("Preloaded {} template classes, {} not found", loaded, failed)
 }
 
-private fun renderUsing(engineProvider: () -> TemplateEngine): TemplateRenderer = { viewModel: ViewModel ->
+/**
+ * Dev-mode composite renderer (#560): tries the filesystem [TemplateEngine] first (extension templates, with hot
+ * reload), and falls back to the [precompiledRegistries] for templates not found on disk (platform-owned templates like
+ * AuthPage / FooterStatusFragment that live in the platform jar). This makes dev mode usable for routes that touch
+ * platform templates without forcing jte.production=true.
+ */
+private fun renderUsingComposite(
+    templateEngine: TemplateEngine,
+    precompiledRegistries: List<PrecompiledJteTemplateRegistry>,
+): TemplateRenderer = { viewModel: ViewModel ->
     val templateName = "${viewModel.template()}.kte"
-    val templateEngine = engineProvider()
 
     try {
         StringOutput().also { templateEngine.render(templateName, viewModel, it) }.toString()
+    } catch (e: gg.jte.TemplateException) {
+        // Filesystem resolver didn't find the template — fall back to the precompiled registry for
+        // platform-owned templates (e.g. AuthPage) that live in the jar, not on the extension's disk.
+        logger.debug("JTE template {} not on filesystem; trying precompiled registry: {}", templateName, e.message)
+        val templateClass = findPrecompiledTemplateClass(viewModel.template(), precompiledRegistries)
+        if (templateClass != null) {
+            val output = StringOutput()
+            Template(templateName, templateClass).render(OwaspHtmlTemplateOutput(output), null, viewModel)
+            output.toString()
+        } else {
+            logger.error("JTE template {} not found on filesystem or in precompiled registry", templateName)
+            throw ViewNotFound(viewModel)
+        }
     } catch (e: IllegalArgumentException) {
         logger.error("JTE render failed for template {}: {}", templateName, e.message)
         throw ViewNotFound(viewModel)
