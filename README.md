@@ -31,9 +31,14 @@ upgrading an existing extension, see **[MIGRATION.md](MIGRATION.md)** for the 1.
 - `platform-sync-client`: Shared DTOs and client logic for synchronization between components.
 - `platform-security`: Authentication models, role-based access control, fine-grained permissions, multi-realm auth, and security filters.
 - `platform-web`: The main http4k server, JTE templates, route registry, and web-specific infrastructure.
+- `platform-jte-extensions`: Shared JTE template registry and rendering helpers for extensions.
 - `platform-desktop`: A Swing-based desktop application implementing the MVVM pattern.
 - `platform-seeder`: Database seeding utility.
 - `platform-desktop-javafx`: JavaFX desktop module (scaffolded, not production-ready).
+- `platform-testkit`: Shared test fixtures and helpers (JDBI test harness, mock builders).
+- `outerstellar-i18n-validator` / `outerstellar-i18n-validator-maven-plugin`: Build-time i18n key validation and the wrapping Maven plugin.
+- `outerstellar-platform-extension-archetype`: Maven archetype for scaffolding a new extension host.
+- `outerstellar-platform-extension-parent`: Parent POM extensions extend to inherit plugin/dependency configuration.
 
 ---
 
