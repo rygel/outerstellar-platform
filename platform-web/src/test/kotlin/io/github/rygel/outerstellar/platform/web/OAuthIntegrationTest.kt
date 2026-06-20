@@ -1,6 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
 import com.natpryce.hamkrest.assertion.assertThat
+import io.github.rygel.outerstellar.platform.model.User
+import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.OAuthService
@@ -335,8 +337,17 @@ class OAuthIntegrationTest : WebTest() {
 
     @Test
     fun `findOrCreateOAuthUser generates unique username when base is already taken`() {
-        // Create a user whose username will collide with the derived OAuth username
-        localAuthService.register("alice@test.com", testPassword())
+        // Create a user whose username "alice" collides with the OAuth-derived username.
+        // Save via repository directly since register() now requires email-format usernames.
+        userRepository.save(
+            User(
+                id = java.util.UUID.randomUUID(),
+                username = "alice",
+                email = "alice@test.com",
+                passwordHash = "\$2a\$04\$dummy",
+                role = UserRole.USER,
+            )
+        )
 
         val oauthUser = testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.alice", "alice@example.com")
 
