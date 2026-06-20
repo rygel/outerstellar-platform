@@ -11,6 +11,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+private val tokenHashing = TokenHashing(TokenHashing.DEFAULT_PEPPER)
+
 class JdbiApiKeyRepositoryTest : JdbiTest() {
 
     private val repo by lazy { JdbiApiKeyRepository(jdbi) }
@@ -18,7 +20,7 @@ class JdbiApiKeyRepositoryTest : JdbiTest() {
     private fun apiKey(userId: UUID, name: String = "My Key") =
         ApiKey(
             userId = userId,
-            keyHash = TokenHashing.hash("raw-key-${UUID.randomUUID()}"),
+            keyHash = tokenHashing.hash("raw-key-${UUID.randomUUID()}"),
             keyPrefix = "sk_test",
             name = name,
             enabled = true,
@@ -29,7 +31,7 @@ class JdbiApiKeyRepositoryTest : JdbiTest() {
     fun `save and findByKeyHash round-trips`() {
         val userId = createUser()
         val rawKey = "raw-test-key"
-        val hash = TokenHashing.hash(rawKey)
+        val hash = tokenHashing.hash(rawKey)
         val key =
             ApiKey(
                 userId = userId,
@@ -108,11 +110,11 @@ class JdbiApiKeyRepositoryTest : JdbiTest() {
     }
 
     @Test
-    fun `TokenHashing produces consistent SHA-256 hex`() {
-        val hash1 = TokenHashing.hash("test-key")
-        val hash2 = TokenHashing.hash("test-key")
+    fun `TokenHashing produces consistent HMAC-SHA256`() {
+        val hash1 = tokenHashing.hash("test-key")
+        val hash2 = tokenHashing.hash("test-key")
         assertEquals(hash1, hash2)
-        assertEquals(64, hash1.length) // SHA-256 = 32 bytes = 64 hex chars
+        assertEquals(44, hash1.length) // HMAC-SHA256 = 32 bytes = 44 Base64 chars
         assertFalse(hash1.contains("test-key"))
     }
 }

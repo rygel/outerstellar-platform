@@ -14,13 +14,14 @@ class SessionService(
     private val userRepository: UserRepository,
     private val config: SecurityConfig,
     private val activityUpdater: AsyncActivityUpdater? = null,
+    private val tokenHashing: TokenHashing = TokenHashing(TokenHashing.DEFAULT_PEPPER),
 ) {
     private val logger = LoggerFactory.getLogger(SessionService::class.java)
     private val secureRandom = SecureRandom()
 
     fun createSession(userId: UUID): String {
         val rawToken = "oss_" + generateRandomHex(SESSION_TOKEN_HEX_LENGTH)
-        val tokenHash = TokenHashing.hash(rawToken)
+        val tokenHash = tokenHashing.hash(rawToken)
         val session =
             Session(
                 tokenHash = tokenHash,
@@ -33,7 +34,7 @@ class SessionService(
     }
 
     fun lookupSession(rawToken: String): SessionLookup {
-        val tokenHash = TokenHashing.hash(rawToken)
+        val tokenHash = tokenHashing.hash(rawToken)
         val activeSession = sessionRepository.findByTokenHash(tokenHash)
         if (activeSession != null) {
             val absoluteDeadline = activeSession.createdAt.plusSeconds(config.sessionAbsoluteTimeoutSeconds)
@@ -57,7 +58,7 @@ class SessionService(
     }
 
     fun deleteSession(rawToken: String) {
-        sessionRepository.deleteByTokenHash(TokenHashing.hash(rawToken))
+        sessionRepository.deleteByTokenHash(tokenHashing.hash(rawToken))
     }
 
     private fun generateRandomHex(length: Int): String {
