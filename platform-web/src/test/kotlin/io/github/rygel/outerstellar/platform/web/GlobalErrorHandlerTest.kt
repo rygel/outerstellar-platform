@@ -31,7 +31,7 @@ class GlobalErrorHandlerTest {
 
         assertThat(response, hasStatus(Status.INTERNAL_SERVER_ERROR))
         assertThat(response, hasHeader("content-type", "text/plain; charset=utf-8"))
-        assertThat(response, hasBody("Internal Server Error: something broke in the handler"))
+        assertThat(response, hasBody("Internal Server Error"))
     }
 
     @Test
@@ -42,7 +42,7 @@ class GlobalErrorHandlerTest {
 
         assertThat(response, hasStatus(Status.INTERNAL_SERVER_ERROR))
         assertThat(response, hasHeader("content-type", "text/plain; charset=utf-8"))
-        assertThat(response, hasBody("Internal Server Error: An unexpected error occurred"))
+        assertThat(response, hasBody("Internal Server Error"))
     }
 
     @Test

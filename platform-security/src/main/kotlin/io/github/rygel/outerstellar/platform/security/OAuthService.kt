@@ -48,20 +48,10 @@ class OAuthService(
                 role = UserRole.USER,
             )
         // Both writes must be atomic — a failure between save(user) and save(connection) leaves an
-        // orphaned User with no OAuth linkage, permanently locking the user out of OAuth login.
-        transactionManager?.inTransaction {
-            userRepository.save(user)
-            repo.save(
-                OAuthConnection(
-                    id = 0L,
-                    userId = user.id,
-                    provider = providerName,
-                    subject = oauthSubject,
-                    email = email,
-                )
-            )
-        }
-            ?: run {
+        // orphaned User with no OAuth linkage. If a concurrent OAuth callback for the same (provider,
+        // subject) wins the race, the second repo.save hits the unique constraint — catch it and re-read.
+        try {
+            transactionManager?.inTransaction {
                 userRepository.save(user)
                 repo.save(
                     OAuthConnection(
@@ -73,6 +63,29 @@ class OAuthService(
                     )
                 )
             }
+                ?: run {
+                    userRepository.save(user)
+                    repo.save(
+                        OAuthConnection(
+                            id = 0L,
+                            userId = user.id,
+                            provider = providerName,
+                            subject = oauthSubject,
+                            email = email,
+                        )
+                    )
+                }
+        } catch (e: Exception) {
+            val msg = e.message ?: ""
+            if (msg.contains("23505") || msg.contains("duplicate key") || msg.contains("unique constraint")) {
+                val winner = repo.findByProviderSubject(providerName, oauthSubject)
+                if (winner != null) {
+                    return userRepository.findById(winner.userId)
+                        ?: error("OAuth user record found but linked user missing: ${winner.userId}")
+                }
+            }
+            throw e
+        }
         logger.info("Created new user {} via OAuth provider {}", sanitize(username), providerName)
         auditRepository?.logAction("OAUTH_USER_CREATED", actor = user, detail = "provider=$providerName")
         return user

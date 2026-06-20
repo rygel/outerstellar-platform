@@ -604,11 +604,9 @@ object Filters {
         }
     }
 
+    @Suppress("UnusedParameter")
     private fun plainTextOriginalErrorResponse(status: Status, originalException: Exception): Response {
-        val message = originalException.message ?: "An unexpected error occurred"
-        return Response(status)
-            .header("content-type", "text/plain; charset=utf-8")
-            .body("Internal Server Error: $message")
+        return Response(status).header("content-type", "text/plain; charset=utf-8").body("Internal Server Error")
     }
 
     private fun logErrorPageRenderFailure(
