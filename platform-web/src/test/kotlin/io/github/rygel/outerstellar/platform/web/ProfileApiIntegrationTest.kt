@@ -265,13 +265,14 @@ class ProfileApiIntegrationTest : WebTest() {
         userRepository.save(
             User(
                 id = adminId,
-                username = "soleadmin",
+                username = "soleadmin@test.com",
                 email = "soleadmin@test.com",
                 passwordHash = BCryptPasswordEncoder(logRounds = 4).encode(password),
                 role = UserRole.ADMIN,
             )
         )
-        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("soleadmin", password)))
+        val loginResp =
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("soleadmin@test.com", password)))
         val adminToken = tokenLens(loginResp).token
 
         val response =
@@ -292,7 +293,7 @@ class ProfileApiIntegrationTest : WebTest() {
         userRepository.save(
             User(
                 id = id1,
-                username = "admin1",
+                username = "admin1@test.com",
                 email = "admin1@test.com",
                 passwordHash = enc.encode("Adm1nP@ss!"),
                 role = UserRole.ADMIN,
@@ -307,7 +308,8 @@ class ProfileApiIntegrationTest : WebTest() {
                 role = UserRole.ADMIN,
             )
         )
-        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1", "Adm1nP@ss!")))
+        val loginResp =
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1@test.com", "Adm1nP@ss!")))
         val token1 = tokenLens(loginResp).token
 
         val response =

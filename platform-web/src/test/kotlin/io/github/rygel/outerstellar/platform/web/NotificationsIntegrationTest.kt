@@ -39,7 +39,7 @@ class NotificationsIntegrationTest : WebTest() {
     }
 
     private fun registerAndLogin(
-        username: String = "notifuser${UUID.randomUUID().toString().take(6)}"
+        username: String = "notifuser${UUID.randomUUID().toString().take(6)}@test.com"
     ): Pair<UUID, String> {
         val password = testPassword()
         val regReq = Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, password))

@@ -33,12 +33,15 @@ class AuthApiIntegrationTest : WebTest() {
                     )
             )
         assertThat(registerResponse, hasStatus(Status.OK))
-        assertEquals("api-user", tokenLens(registerResponse).username)
+        assertEquals("api-user@test.com", tokenLens(registerResponse).username)
 
         val loginResponse =
             app(
                 Request(POST, "/api/v1/auth/login")
-                    .with(loginLens of io.github.rygel.outerstellar.platform.model.LoginRequest("api-user", password))
+                    .with(
+                        loginLens of
+                            io.github.rygel.outerstellar.platform.model.LoginRequest("api-user@test.com", password)
+                    )
             )
         assertThat(loginResponse, hasStatus(Status.OK))
         assertTrue(tokenLens(loginResponse).token.isNotBlank())
