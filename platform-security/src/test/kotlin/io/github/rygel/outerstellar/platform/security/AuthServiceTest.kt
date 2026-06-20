@@ -230,35 +230,35 @@ class AuthServiceTest {
 
     @Test
     fun `register throws on duplicate username`() {
-        every { userRepository.findByUsername("existing") } returns testUser
+        every { userRepository.findByUsername("existing@test.com") } returns testUser
 
         assertThrows<UsernameAlreadyExistsException> {
-            service.register("existing", "ValidP@ss1" + java.util.UUID.randomUUID().toString())
+            service.register("existing@test.com", "ValidP@ss1" + java.util.UUID.randomUUID().toString())
         }
     }
 
     @Test
     fun `register throws on short password`() {
-        every { userRepository.findByUsername("newuser") } returns null
+        every { userRepository.findByUsername("newuser@test.com") } returns null
 
-        assertThrows<WeakPasswordException> { service.register("newuser", "short") }
+        assertThrows<WeakPasswordException> { service.register("newuser@test.com", "short") }
     }
 
     @Test
     fun `register throws on long password`() {
-        every { userRepository.findByUsername("newuser") } returns null
+        every { userRepository.findByUsername("newuser@test.com") } returns null
 
-        assertThrows<WeakPasswordException> { service.register("newuser", "A".repeat(129)) }
+        assertThrows<WeakPasswordException> { service.register("newuser@test.com", "A".repeat(129)) }
     }
 
     @Test
     fun `register trims whitespace before validation`() {
-        every { userRepository.findByUsername("newuser") } returns null
+        every { userRepository.findByUsername("newuser@test.com") } returns null
         every { passwordEncoder.encode("Validp@ss1") } returns "encoded_hash"
 
-        val result = service.register("newuser", "  Validp@ss1  ")
+        val result = service.register("newuser@test.com", "  Validp@ss1  ")
 
-        assertEquals("newuser", result.username)
+        assertEquals("newuser@test.com", result.username)
         assertEquals(UserRole.USER, result.role)
         val userSlot = slot<User>()
         verify { userRepository.save(capture(userSlot)) }
@@ -267,12 +267,12 @@ class AuthServiceTest {
 
     @Test
     fun `register creates user with encoded password`() {
-        every { userRepository.findByUsername("newuser") } returns null
+        every { userRepository.findByUsername("newuser@test.com") } returns null
         every { passwordEncoder.encode("Validp@ss1") } returns "encoded_hash"
 
-        val result = service.register("newuser", "Validp@ss1")
+        val result = service.register("newuser@test.com", "Validp@ss1")
 
-        assertEquals("newuser", result.username)
+        assertEquals("newuser@test.com", result.username)
         assertEquals(UserRole.USER, result.role)
 
         val userSlot = slot<User>()

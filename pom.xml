@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>3.6.17</version>
+    <version>3.6.18</version>
 
     <packaging>pom</packaging>
 
@@ -62,7 +62,7 @@
         <kotlin.version>2.3.10</kotlin.version>
         <http4k.version>6.53.0.0</http4k.version>
         <netty.version>4.2.15.Final</netty.version>
-        <flyway.version>12.8.1</flyway.version>
+        <flyway.version>12.9.0</flyway.version>
         <postgresql.version>42.7.11</postgresql.version>
         <jdbi.version>3.53.0</jdbi.version>
         <testcontainers.version>2.0.5</testcontainers.version>
@@ -73,7 +73,7 @@
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
         <spotbugs.version>4.10.2.0</spotbugs.version>
-        <spotless.version>3.6.0</spotless.version>
+        <spotless.version>3.7.0</spotless.version>
         <ktfmt.version>0.62</ktfmt.version>
         <jacoco.version>0.8.15</jacoco.version>
         <extra-enforcer-rules.version>1.12.0</extra-enforcer-rules.version>
@@ -121,7 +121,7 @@
         <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
         <maven.shade.plugin.version>3.6.2</maven.shade.plugin.version>
         <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
-        <central.publishing.plugin.version>0.10.0</central.publishing.plugin.version>
+        <central.publishing.plugin.version>0.11.0</central.publishing.plugin.version>
         <kotlin.compiler.execution.strategy>in-process</kotlin.compiler.execution.strategy>
         <jacoco.skip>false</jacoco.skip>
         <!-- Surefire tag filters — overridden by the performance profile -->

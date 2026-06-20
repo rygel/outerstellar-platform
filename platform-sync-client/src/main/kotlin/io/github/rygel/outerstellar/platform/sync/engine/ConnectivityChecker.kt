@@ -33,8 +33,8 @@ class HttpConnectivityChecker(
     override val isOnline: Boolean
         get() = _isOnline.get()
 
-    private val observers = mutableListOf<(Boolean) -> Unit>()
-    private var scheduler: ScheduledExecutorService? = null
+    private val observers = java.util.concurrent.CopyOnWriteArrayList<(Boolean) -> Unit>()
+    @Volatile private var scheduler: ScheduledExecutorService? = null
 
     override fun addObserver(fn: (Boolean) -> Unit) {
         observers.add(fn)

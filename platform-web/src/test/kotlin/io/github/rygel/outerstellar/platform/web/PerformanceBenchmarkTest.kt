@@ -192,8 +192,9 @@ class PerformanceBenchmarkTest : WebTest() {
         val loginLens = Body.auto<LoginRequest>().toLens()
         val tokenLens = Body.auto<AuthTokenResponse>().toLens()
         val password = testPassword()
-        app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest("perfuser", password)))
-        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("perfuser", password)))
+        app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest("perfuser@test.com", password)))
+        val loginResp =
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("perfuser@test.com", password)))
         bearerToken = tokenLens(loginResp).token
     }
 
@@ -331,7 +332,8 @@ class PerformanceBenchmarkTest : WebTest() {
                     )
             )
 
-        val req = Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("prodperfuser", "prodpass123!"))
+        val req =
+            Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("prodperfuser@test.com", "prodpass123!"))
 
         val rec = LatencyRecorder("POST /api/v1/auth/login (BCrypt rounds=10)")
         repeat(3) { prodApp(req) }

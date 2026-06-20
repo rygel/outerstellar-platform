@@ -14,6 +14,7 @@ class ApiKeyService(
     private val userRepository: UserRepository,
     private val apiKeyRepository: ApiKeyRepository,
     private val auditRepository: AuditRepository? = null,
+    private val tokenHashing: TokenHashing = TokenHashing(TokenHashing.DEFAULT_PEPPER),
 ) {
     private val logger = LoggerFactory.getLogger(ApiKeyService::class.java)
     private val secureRandom = java.security.SecureRandom()
@@ -22,7 +23,7 @@ class ApiKeyService(
         require(name.isNotBlank()) { "API key name is required" }
         val rawKey = "osk_" + generateRandomHex(API_KEY_HEX_LENGTH)
         val keyPrefix = rawKey.take(API_KEY_PREFIX_LENGTH)
-        val keyHash = TokenHashing.hash(rawKey)
+        val keyHash = tokenHashing.hash(rawKey)
 
         val apiKey = ApiKey(userId = userId, keyHash = keyHash, keyPrefix = keyPrefix, name = name)
         apiKeyRepository.save(apiKey)
@@ -33,7 +34,7 @@ class ApiKeyService(
     }
 
     fun authenticateApiKey(rawKey: String): User? {
-        val keyHash = TokenHashing.hash(rawKey)
+        val keyHash = tokenHashing.hash(rawKey)
         val apiKey = apiKeyRepository.findByKeyHash(keyHash) ?: return null
         if (!apiKey.enabled) return null
 

@@ -62,7 +62,18 @@ class AccountService(
             UrlValidator.validate(sanitizedUrl)
         }
         val updated = user.copy(email = newEmail, username = resolvedUsername, avatarUrl = sanitizedUrl)
-        userRepository.save(updated)
+        try {
+            userRepository.save(updated)
+        } catch (e: Exception) {
+            // Concurrent profile update raced past the findByEmail/findByUsername check and hit the
+            // DB unique constraint. Translate to a user-facing UsernameAlreadyExistsException instead
+            // of a raw 500.
+            val msg = e.message ?: ""
+            if (msg.contains("23505") || msg.contains("duplicate key") || msg.contains("unique constraint")) {
+                throw UsernameAlreadyExistsException(resolvedUsername)
+            }
+            throw e
+        }
         logger.info("Profile updated for user {}", sanitize(updated.username))
     }
 

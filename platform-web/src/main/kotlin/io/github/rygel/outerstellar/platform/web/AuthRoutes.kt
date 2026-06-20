@@ -176,6 +176,9 @@ class AuthRoutes(
             returnTo.isNullOrBlank() -> "/"
             !returnTo.startsWith("/") -> "/"
             returnTo.startsWith("//") -> "/"
+            // Backslash bypass: some browsers normalize /\ to //, yielding a protocol-relative redirect
+            // to an attacker-controlled host (e.g. /\evil.com).
+            returnTo.startsWith("/\\") -> "/"
             else -> returnTo
         }
     }

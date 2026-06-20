@@ -109,7 +109,7 @@ fun analyticsPageViewFilter(analytics: AnalyticsService): Filter = Filter { next
                     analytics.page(userId, request.uri.path)
                 }
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                analyticsLogger.debug("Failed to record page view: {}", e.message)
+                analyticsLogger.warn("Failed to record page view: {}", e.message)
             }
         }
         response
@@ -552,6 +552,27 @@ object Filters {
         errorPageFactory: ErrorPageFactory,
         renderer: TemplateRenderer,
     ): Response {
+        // The OpenAPI spec-rendering endpoints (any path ending in openapi.json) fail on http4k 6.53
+        // because the OpenApi3 renderer is incompatible with the kotlinx.serialization format
+        // (http4k/http4k#750): the spec model contains internal JSON-element types (EmptyArray /
+        // JsonLiteral) that have no registered serializer. Until that's fixed upstream, degrade to a
+        // clear 503 instead of a generic 500 so consumers get an honest, non-alarming response and the
+        // root cause is visible. See issue #558.
+        val isOpenApiSerializationFailure =
+            e is kotlinx.serialization.SerializationException && request.uri.path.endsWith("openapi.json")
+        if (isOpenApiSerializationFailure) {
+            logger.warn(
+                "OpenAPI spec unavailable at {} — http4k OpenApi3/kotlinx.serialization incompatibility (http4k#750): {}",
+                request.uri,
+                e.message,
+            )
+            return jsonErrorResponse(
+                Status.SERVICE_UNAVAILABLE,
+                "OpenAPI spec is unavailable on this platform version (pending an http4k fix; see http4k#750).",
+                request,
+            )
+        }
+
         val status =
             when (e) {
                 is ValidationException -> Status.BAD_REQUEST
@@ -583,11 +604,12 @@ object Filters {
         }
     }
 
+    @Suppress("UnusedParameter")
     private fun plainTextOriginalErrorResponse(status: Status, originalException: Exception): Response {
-        val message = originalException.message ?: "An unexpected error occurred"
-        return Response(status)
-            .header("content-type", "text/plain; charset=utf-8")
-            .body("Internal Server Error: $message")
+        // Do NOT echo originalException.message to the client — it can contain raw SQL/JDBI internal
+        // text, stack details, or file paths. The original message is already logged server-side by
+        // logErrorPageRenderFailure. Return a static body only.
+        return Response(status).header("content-type", "text/plain; charset=utf-8").body("Internal Server Error")
     }
 
     private fun logErrorPageRenderFailure(

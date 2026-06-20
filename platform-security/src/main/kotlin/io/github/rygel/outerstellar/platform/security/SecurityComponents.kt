@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.OAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.SessionRepository
+import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.service.EmailService
 import io.github.rygel.outerstellar.platform.service.NoOpEmailService
@@ -50,6 +51,7 @@ fun createSecurityComponents(
         sessionRepository = sessionRepository,
     )
 
+@Suppress("LongMethod")
 fun createSecurityComponents(
     config: AppConfig,
     userRepository: UserRepository,
@@ -59,8 +61,10 @@ fun createSecurityComponents(
     emailService: EmailService,
     oauthRepository: OAuthRepository? = null,
     sessionRepository: SessionRepository? = null,
+    transactionManager: TransactionManager? = null,
 ): SecurityComponents {
     val passwordEncoder = BCryptPasswordEncoder()
+    val tokenHashing = TokenHashing(config.tokenPepper)
     val jwtService = JwtService(config.jwt)
     val asyncActivityUpdater = AsyncActivityUpdater(userRepository)
     val securityConfig =
@@ -79,6 +83,7 @@ fun createSecurityComponents(
             userRepository = userRepository,
             config = securityConfig,
             activityUpdater = asyncActivityUpdater,
+            tokenHashing = tokenHashing,
         )
     val userAdminService = UserAdminService(userRepository, auditRepository ?: error("AuditRepository required"))
     val authService =
@@ -88,6 +93,7 @@ fun createSecurityComponents(
             auditRepository = auditRepository,
             config = securityConfig,
             totpService = totpService,
+            transactionManager = transactionManager,
         )
 
     val accountService =
@@ -103,6 +109,7 @@ fun createSecurityComponents(
             userRepository = userRepository,
             apiKeyRepository = apiKeyRepository ?: error("ApiKeyRepository required for ApiKeyService"),
             auditRepository = auditRepository,
+            tokenHashing = tokenHashing,
         )
     val passwordResetService =
         PasswordResetService(
@@ -113,6 +120,7 @@ fun createSecurityComponents(
             sessionRepository = sessionRepository,
             emailService = emailService,
             appBaseUrl = config.appBaseUrl,
+            tokenHashing = tokenHashing,
         )
     val oauthService =
         OAuthService(
@@ -120,6 +128,7 @@ fun createSecurityComponents(
             passwordEncoder = passwordEncoder,
             oauthRepository = oauthRepository,
             auditRepository = auditRepository,
+            transactionManager = transactionManager,
         )
     val permissionResolver = RoleBasedPermissionResolver()
     val authRealms = listOf(SessionRealm(sessionService), ApiKeyRealm(apiKeyService))

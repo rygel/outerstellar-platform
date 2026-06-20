@@ -6,9 +6,9 @@ import io.github.rygel.outerstellar.platform.sync.engine.module.AuthState
 import io.github.rygel.outerstellar.platform.sync.engine.module.SyncDataModule
 
 class DefaultSessionLifecycle : SessionLifecycle {
-    private var syncDataModule: SyncDataModule? = null
-    private var authModule: AuthModule? = null
-    private var authClient: AuthClient? = null
+    @Volatile private var syncDataModule: SyncDataModule? = null
+    @Volatile private var authModule: AuthModule? = null
+    @Volatile private var authClient: AuthClient? = null
 
     fun initialize(syncDataModule: SyncDataModule, authModule: AuthModule, authClient: AuthClient) {
         this.syncDataModule = syncDataModule

@@ -99,6 +99,9 @@ private fun registerShutdownHook(
                         }
                     }
                     runStep("stop HTTP server") { server.stop() }
+                    // Close the analytics service (segment executor + HttpClient) before the DB pool so
+                    // queued events are flushed/dropped cleanly (M1: was never closed — leaked on restart).
+                    runStep("close analytics") { components.web.runtime.analyticsService.close() }
                     // Close the DB pool last so connections are released even if an earlier step threw.
                     runStep("close persistence (DB pool)") { components.persistence.close() }
                     logger.info("Shutdown complete")

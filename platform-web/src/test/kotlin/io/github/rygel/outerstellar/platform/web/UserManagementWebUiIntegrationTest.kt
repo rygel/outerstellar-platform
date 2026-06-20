@@ -85,7 +85,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
     @Test
     fun `non-admin cannot access user admin page`() {
-        val userAuth = registerUser("nonadminuser", testPassword())
+        val userAuth = registerUser("nonadminuser@test.com", testPassword())
         val response =
             app(
                 Request(GET, "/admin/users").cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.sessionToken))
@@ -96,24 +96,24 @@ class UserManagementWebUiIntegrationTest : WebTest() {
     @Test
     fun `admin can toggle user enabled via HTML form`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("toggleuser", testPassword())
+        val userAuth = registerUser("toggleuser@test.com", testPassword())
         app(
             Request(POST, "/admin/users/${userAuth.id}/toggle-enabled")
                 .cookie(org.http4k.core.cookie.Cookie("app_session", admin.token))
         )
-        val user = userRepository.findByUsername("toggleuser")!!
+        val user = userRepository.findByUsername("toggleuser@test.com")!!
         assertFalse(user.enabled)
     }
 
     @Test
     fun `admin can toggle user role via HTML form`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("roleuser", testPassword())
+        val userAuth = registerUser("roleuser@test.com", testPassword())
         app(
             Request(POST, "/admin/users/${userAuth.id}/toggle-role")
                 .cookie(org.http4k.core.cookie.Cookie("app_session", admin.token))
         )
-        val user = userRepository.findByUsername("roleuser")!!
+        val user = userRepository.findByUsername("roleuser@test.com")!!
         assertEquals(UserRole.ADMIN, user.role)
     }
 
@@ -151,7 +151,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
 
     @Test
     fun `regular user does not see Users nav link`() {
-        val userAuth = registerUser("navuser", testPassword())
+        val userAuth = registerUser("navuser@test.com", testPassword())
         val response =
             app(Request(GET, "/").cookie(org.http4k.core.cookie.Cookie("app_session", userAuth.sessionToken)))
         assertFalse(response.bodyString().contains("/admin/users"))
@@ -167,7 +167,7 @@ class UserManagementWebUiIntegrationTest : WebTest() {
                 app(
                     Request(POST, "/api/v1/auth/login")
                         .header("X-Forwarded-For", "10.0.0.99")
-                        .with(loginLens of LoginRequest("nobody", "nopass"))
+                        .with(loginLens of LoginRequest("nobody@test.com", "nopass"))
                 )
             if (response.status == Status.TOO_MANY_REQUESTS) {
                 blockedCount++

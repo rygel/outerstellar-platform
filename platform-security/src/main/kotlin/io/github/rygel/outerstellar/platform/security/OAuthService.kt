@@ -5,6 +5,7 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.OAuthConnection
 import io.github.rygel.outerstellar.platform.persistence.OAuthRepository
+import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.util.UUID
 import org.slf4j.LoggerFactory
@@ -14,6 +15,7 @@ class OAuthService(
     private val passwordEncoder: PasswordEncoder,
     private val oauthRepository: OAuthRepository? = null,
     private val auditRepository: AuditRepository? = null,
+    private val transactionManager: TransactionManager? = null,
 ) {
     private val logger = LoggerFactory.getLogger(OAuthService::class.java)
 
@@ -45,11 +47,45 @@ class OAuthService(
                 passwordHash = passwordEncoder.encode(UUID.randomUUID().toString()),
                 role = UserRole.USER,
             )
-        userRepository.save(user)
-
-        repo.save(
-            OAuthConnection(id = 0L, userId = user.id, provider = providerName, subject = oauthSubject, email = email)
-        )
+        // Both writes must be atomic — a failure between save(user) and save(connection) leaves an
+        // orphaned User with no OAuth linkage. If a concurrent OAuth callback for the same (provider,
+        // subject) wins the race, the second repo.save hits the unique constraint — catch it and re-read.
+        try {
+            transactionManager?.inTransaction {
+                userRepository.save(user)
+                repo.save(
+                    OAuthConnection(
+                        id = 0L,
+                        userId = user.id,
+                        provider = providerName,
+                        subject = oauthSubject,
+                        email = email,
+                    )
+                )
+            }
+                ?: run {
+                    userRepository.save(user)
+                    repo.save(
+                        OAuthConnection(
+                            id = 0L,
+                            userId = user.id,
+                            provider = providerName,
+                            subject = oauthSubject,
+                            email = email,
+                        )
+                    )
+                }
+        } catch (e: Exception) {
+            val msg = e.message ?: ""
+            if (msg.contains("23505") || msg.contains("duplicate key") || msg.contains("unique constraint")) {
+                val winner = repo.findByProviderSubject(providerName, oauthSubject)
+                if (winner != null) {
+                    return userRepository.findById(winner.userId)
+                        ?: error("OAuth user record found but linked user missing: ${winner.userId}")
+                }
+            }
+            throw e
+        }
         logger.info("Created new user {} via OAuth provider {}", sanitize(username), providerName)
         auditRepository?.logAction("OAUTH_USER_CREATED", actor = user, detail = "provider=$providerName")
         return user

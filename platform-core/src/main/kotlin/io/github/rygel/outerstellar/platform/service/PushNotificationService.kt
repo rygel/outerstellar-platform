@@ -77,7 +77,7 @@ class FcmPushNotificationService(
         //       .putAllData(notification.data)
         //       .setToken(deviceToken)
         //       .build())
-        logger.warn(
+        logger.error(
             "FcmPushNotificationService not yet implemented — dropping notification to {}",
             deviceToken.take(TOKEN_PREVIEW_LENGTH),
         )
@@ -108,7 +108,7 @@ class ApnsPushNotificationService(
         // TODO: sign a JWT with privateKeyPem/teamId/keyId, then POST to
         //   https://api.push.apple.com/3/device/{deviceToken}
         //   with the apns-topic header set to bundleId.
-        logger.warn(
+        logger.error(
             "ApnsPushNotificationService not yet implemented — dropping notification to {}",
             deviceToken.take(TOKEN_PREVIEW_LENGTH),
         )
