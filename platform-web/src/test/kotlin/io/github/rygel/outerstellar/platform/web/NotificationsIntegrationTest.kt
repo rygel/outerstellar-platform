@@ -160,7 +160,7 @@ class NotificationsIntegrationTest : WebTest() {
 
     @Test
     fun `GET notification bell shows unread count badge`() {
-        val (userId, _) = registerAndLogin("belluser${UUID.randomUUID().toString().take(5)}")
+        val (userId, _) = registerAndLogin("belluser${UUID.randomUUID().toString().take(5)}@test.com")
         notificationService.create(userId, "Unread", "Body")
 
         // The bell fragment counts per-user; anonymous request shows 0
