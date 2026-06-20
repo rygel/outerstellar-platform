@@ -9,6 +9,7 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.model.UsernameAlreadyExistsException
 import io.github.rygel.outerstellar.platform.model.WeakPasswordException
 import io.github.rygel.outerstellar.platform.persistence.AuditRepository
+import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import java.security.SecureRandom
 import java.time.Instant
@@ -24,6 +25,7 @@ class AuthService(
     private val auditRepository: AuditRepository? = null,
     private val config: SecurityConfig = SecurityConfig(),
     private val totpService: TOTPService,
+    private val transactionManager: TransactionManager? = null,
 ) {
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
     private val secureRandom = SecureRandom()
@@ -157,13 +159,27 @@ class AuthService(
     }
 
     fun enableTotp(userId: UUID, secret: String, backupCodes: String) {
-        userRepository.updateTotpSecret(userId, secret, backupCodes)
-        userRepository.enableTotp(userId)
+        // Both writes must be atomic — a partial failure leaves 2FA in an inconsistent state
+        // (secret stored but not enabled, or enabled with no secret).
+        transactionManager?.inTransaction {
+            userRepository.updateTotpSecret(userId, secret, backupCodes)
+            userRepository.enableTotp(userId)
+        }
+            ?: run {
+                userRepository.updateTotpSecret(userId, secret, backupCodes)
+                userRepository.enableTotp(userId)
+            }
     }
 
     fun disableTotp(userId: UUID) {
-        userRepository.updateTotpSecret(userId, null, null)
-        userRepository.disableTotp(userId)
+        transactionManager?.inTransaction {
+            userRepository.updateTotpSecret(userId, null, null)
+            userRepository.disableTotp(userId)
+        }
+            ?: run {
+                userRepository.updateTotpSecret(userId, null, null)
+                userRepository.disableTotp(userId)
+            }
     }
 
     private fun generatePartialAuthToken(userId: UUID): String {

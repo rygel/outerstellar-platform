@@ -89,4 +89,33 @@ class CachingUserRepository(private val delegate: UserRepository, maximumSize: L
         delegate.disableTotp(userId)
         cache.invalidate(userId)
     }
+
+    // --- Lockout / failed-attempt methods: must invalidate cache so security-critical state
+    // (lockedUntil, failedLoginAttempts, failedTotpAttempts) isn't served stale for up to 60s.
+    // Without these overrides, a locked account's stale cached User still has lockedUntil=null.
+
+    override fun incrementFailedLoginAttempts(userId: UUID): Int {
+        cache.invalidate(userId)
+        return delegate.incrementFailedLoginAttempts(userId)
+    }
+
+    override fun resetFailedLoginAttempts(userId: UUID) {
+        cache.invalidate(userId)
+        delegate.resetFailedLoginAttempts(userId)
+    }
+
+    override fun incrementFailedTotpAttempts(userId: UUID): Int {
+        cache.invalidate(userId)
+        return delegate.incrementFailedTotpAttempts(userId)
+    }
+
+    override fun resetFailedTotpAttempts(userId: UUID) {
+        cache.invalidate(userId)
+        delegate.resetFailedTotpAttempts(userId)
+    }
+
+    override fun updateLockedUntil(userId: UUID, lockedUntil: java.time.Instant?) {
+        cache.invalidate(userId)
+        delegate.updateLockedUntil(userId, lockedUntil)
+    }
 }

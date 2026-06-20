@@ -54,6 +54,7 @@ fun createServerComponents(config: AppConfig, extension: PlatformExtension? = nu
             emailService = emailService,
             oauthRepository = persistence.oAuthRepository,
             sessionRepository = persistence.sessionRepository,
+            transactionManager = persistence.transactionManager,
         )
     val syncWebSocket = SyncWebSocket(security.sessionService)
 

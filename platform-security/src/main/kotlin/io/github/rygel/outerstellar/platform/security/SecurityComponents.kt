@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.persistence.AuditRepository
 import io.github.rygel.outerstellar.platform.persistence.OAuthRepository
 import io.github.rygel.outerstellar.platform.persistence.PasswordResetRepository
 import io.github.rygel.outerstellar.platform.persistence.SessionRepository
+import io.github.rygel.outerstellar.platform.persistence.TransactionManager
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.service.EmailService
 import io.github.rygel.outerstellar.platform.service.NoOpEmailService
@@ -60,6 +61,7 @@ fun createSecurityComponents(
     emailService: EmailService,
     oauthRepository: OAuthRepository? = null,
     sessionRepository: SessionRepository? = null,
+    transactionManager: TransactionManager? = null,
 ): SecurityComponents {
     val passwordEncoder = BCryptPasswordEncoder()
     val tokenHashing = TokenHashing(config.tokenPepper)
@@ -91,6 +93,7 @@ fun createSecurityComponents(
             auditRepository = auditRepository,
             config = securityConfig,
             totpService = totpService,
+            transactionManager = transactionManager,
         )
 
     val accountService =
@@ -125,6 +128,7 @@ fun createSecurityComponents(
             passwordEncoder = passwordEncoder,
             oauthRepository = oauthRepository,
             auditRepository = auditRepository,
+            transactionManager = transactionManager,
         )
     val permissionResolver = RoleBasedPermissionResolver()
     val authRealms = listOf(SessionRealm(sessionService), ApiKeyRealm(apiKeyService))
