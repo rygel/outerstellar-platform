@@ -95,6 +95,8 @@ class AuthService(
             throw RegistrationDisabledException()
         }
         require(username.isNotBlank()) { "Username is required" }
+        require(username.length <= MAX_USERNAME_LENGTH) { "Username cannot exceed $MAX_USERNAME_LENGTH characters" }
+        require(EMAIL_REGEX.matches(username)) { "Username must be a valid email address" }
         val normalized = password.trim()
         validatePassword(normalized)?.let { throw WeakPasswordException(it) }
         if (userRepository.findByUsername(username) != null) throw UsernameAlreadyExistsException(username)
@@ -188,5 +190,10 @@ class AuthService(
         val token = "pt_" + bytes.joinToString("") { "%02x".format(it) }
         partialAuthStore.put(token, PartialAuth(userId = userId))
         return token
+    }
+
+    companion object {
+        private const val MAX_USERNAME_LENGTH = 50
+        private val EMAIL_REGEX = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
     }
 }

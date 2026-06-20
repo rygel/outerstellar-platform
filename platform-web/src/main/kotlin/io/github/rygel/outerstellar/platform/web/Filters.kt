@@ -109,7 +109,7 @@ fun analyticsPageViewFilter(analytics: AnalyticsService): Filter = Filter { next
                     analytics.page(userId, request.uri.path)
                 }
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                analyticsLogger.debug("Failed to record page view: {}", e.message)
+                analyticsLogger.warn("Failed to record page view: {}", e.message)
             }
         }
         response
@@ -606,6 +606,9 @@ object Filters {
 
     @Suppress("UnusedParameter")
     private fun plainTextOriginalErrorResponse(status: Status, originalException: Exception): Response {
+        // Do NOT echo originalException.message to the client — it can contain raw SQL/JDBI internal
+        // text, stack details, or file paths. The original message is already logged server-side by
+        // logErrorPageRenderFailure. Return a static body only.
         return Response(status).header("content-type", "text/plain; charset=utf-8").body("Internal Server Error")
     }
 

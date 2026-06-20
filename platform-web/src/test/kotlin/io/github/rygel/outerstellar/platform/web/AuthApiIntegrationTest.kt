@@ -29,7 +29,7 @@ class AuthApiIntegrationTest : WebTest() {
                 Request(POST, "/api/v1/auth/register")
                     .with(
                         registerLens of
-                            io.github.rygel.outerstellar.platform.model.RegisterRequest("api-user", password)
+                            io.github.rygel.outerstellar.platform.model.RegisterRequest("api-user@test.com", password)
                     )
             )
         assertThat(registerResponse, hasStatus(Status.OK))

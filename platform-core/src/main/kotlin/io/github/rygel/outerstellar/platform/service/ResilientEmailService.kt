@@ -32,7 +32,7 @@ class ResilientEmailService(private val delegate: EmailService) : EmailService {
         try {
             circuitBreaker.executeRunnable { delegate.send(to, subject, body) }
         } catch (e: io.github.resilience4j.circuitbreaker.CallNotPermittedException) {
-            logger.warn("Email circuit breaker is open — dropping email to {}: {}", to, e.message)
+            logger.error("Email circuit breaker is open — dropping email to {}: {}", to, e.message)
         }
     }
 }
