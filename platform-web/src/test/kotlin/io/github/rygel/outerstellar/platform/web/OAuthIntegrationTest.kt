@@ -336,7 +336,7 @@ class OAuthIntegrationTest : WebTest() {
     @Test
     fun `findOrCreateOAuthUser generates unique username when base is already taken`() {
         // Create a user whose username will collide with the derived OAuth username
-        localAuthService.register("alice", testPassword())
+        localAuthService.register("alice@test.com", testPassword())
 
         val oauthUser = testOAuthService.findOrCreateOAuthUser("apple", "apple.sub.alice", "alice@example.com")
 
