@@ -54,7 +54,7 @@ class AuthHtmlFlowIntegrationTest : WebTest() {
         testUser =
             User(
                 id = UUID.randomUUID(),
-                username = "htmltestuser",
+                username = "htmltestuser@test.com",
                 email = "htmltestuser@test.com",
                 passwordHash = encoder.encode("C0rr3ct-P@ss"),
                 role = UserRole.USER,

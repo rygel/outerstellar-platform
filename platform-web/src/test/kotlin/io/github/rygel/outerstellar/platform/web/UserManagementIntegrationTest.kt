@@ -88,7 +88,7 @@ class UserManagementIntegrationTest : WebTest() {
 
     @Test
     fun `change password via API succeeds with correct current password`() {
-        val auth = registerUser("pwduser", "0ldP@ssw0rd1!")
+        val auth = registerUser("pwduser@test.com", "0ldP@ssw0rd1!")
 
         val response =
             app(
@@ -99,17 +99,19 @@ class UserManagementIntegrationTest : WebTest() {
 
         // Verify old password no longer works
         val failLogin =
-            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("pwduser", "0ldP@ssw0rd1!")))
+            app(
+                Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("pwduser@test.com", "0ldP@ssw0rd1!"))
+            )
         assertThat(failLogin, hasStatus(Status.UNAUTHORIZED))
 
         // Verify new password works
-        val successLogin = loginUser("pwduser", "N3wP@ssw0rd1!")
+        val successLogin = loginUser("pwduser@test.com", "N3wP@ssw0rd1!")
         assertTrue(successLogin.token.isNotBlank())
     }
 
     @Test
     fun `change password fails with wrong current password`() {
-        val auth = registerUser("pwduser2", "C0rr3ctP@ss1!")
+        val auth = registerUser("pwduser2@test.com", "C0rr3ctP@ss1!")
 
         val response =
             app(
@@ -121,7 +123,7 @@ class UserManagementIntegrationTest : WebTest() {
 
     @Test
     fun `change password fails with too short new password`() {
-        val auth = registerUser("pwduser3", "C0rr3ctP@ss1!")
+        val auth = registerUser("pwduser3@test.com", "C0rr3ctP@ss1!")
 
         val response =
             app(
@@ -152,8 +154,8 @@ class UserManagementIntegrationTest : WebTest() {
     @Test
     fun `admin can list all users`() {
         val admin = seedAdmin()
-        registerUser("user1", testPassword())
-        registerUser("user2", testPassword())
+        registerUser("user1@test.com", testPassword())
+        registerUser("user2@test.com", testPassword())
 
         val response = app(bearerRequest(GET, "/api/v1/admin/users", admin.token))
         assertThat(response, hasStatus(Status.OK))
@@ -161,13 +163,13 @@ class UserManagementIntegrationTest : WebTest() {
         val users = userSummaryListLens(response)
         assertTrue(users.size >= 3, "Should have at least admin + 2 users")
         assertNotNull(users.find { it.username == "admin" })
-        assertNotNull(users.find { it.username == "user1" })
-        assertNotNull(users.find { it.username == "user2" })
+        assertNotNull(users.find { it.username == "user1@test.com" })
+        assertNotNull(users.find { it.username == "user2@test.com" })
     }
 
     @Test
     fun `non-admin cannot list users`() {
-        val auth = registerUser("regularuser", testPassword())
+        val auth = registerUser("regularuser@test.com", testPassword())
 
         val response = app(bearerRequest(GET, "/api/v1/admin/users", auth.token))
         assertThat(response, hasStatus(Status.FORBIDDEN))
@@ -177,7 +179,7 @@ class UserManagementIntegrationTest : WebTest() {
     fun `admin can disable a user`() {
         val admin = seedAdmin()
         val password = testPassword()
-        val userAuth = registerUser("disableuser", password)
+        val userAuth = registerUser("disableuser@test.com", password)
 
         val response =
             app(
@@ -188,7 +190,7 @@ class UserManagementIntegrationTest : WebTest() {
 
         // Verify the disabled user cannot log in
         val loginResponse =
-            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("disableuser", password)))
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("disableuser@test.com", password)))
         assertThat(loginResponse, hasStatus(Status.UNAUTHORIZED))
     }
 
@@ -196,7 +198,7 @@ class UserManagementIntegrationTest : WebTest() {
     fun `admin can re-enable a user`() {
         val admin = seedAdmin()
         val password = testPassword()
-        val userAuth = registerUser("reenableuser", password)
+        val userAuth = registerUser("reenableuser@test.com", password)
 
         // Disable
         app(
@@ -213,7 +215,7 @@ class UserManagementIntegrationTest : WebTest() {
         assertThat(response, hasStatus(Status.OK))
 
         // User can log in again
-        val loginResponse = loginUser("reenableuser", password)
+        val loginResponse = loginUser("reenableuser@test.com", password)
         assertTrue(loginResponse.token.isNotBlank())
     }
 
@@ -232,7 +234,7 @@ class UserManagementIntegrationTest : WebTest() {
     @Test
     fun `admin can promote a user to admin`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("promoteuser", testPassword())
+        val userAuth = registerUser("promoteuser@test.com", testPassword())
 
         val response =
             app(
@@ -249,7 +251,7 @@ class UserManagementIntegrationTest : WebTest() {
     @Test
     fun `admin can demote an admin to user`() {
         val admin = seedAdmin()
-        val userAuth = registerUser("demoteuser", testPassword())
+        val userAuth = registerUser("demoteuser@test.com", testPassword())
 
         // Promote first
         app(
@@ -285,14 +287,14 @@ class UserManagementIntegrationTest : WebTest() {
     @Test
     fun `admin user list returns correct fields`() {
         val admin = seedAdmin()
-        registerUser("fieldcheck", testPassword())
+        registerUser("fieldcheck@test.com", testPassword())
 
         val response = app(bearerRequest(GET, "/api/v1/admin/users", admin.token))
         val users = userSummaryListLens(response)
-        val user = users.find { it.username == "fieldcheck" }!!
+        val user = users.find { it.username == "fieldcheck@test.com" }!!
 
-        assertEquals("fieldcheck", user.username)
-        assertEquals("fieldcheck", user.email)
+        assertEquals("fieldcheck@test.com", user.username)
+        assertEquals("fieldcheck@test.com", user.email)
         assertEquals(UserRole.USER, user.role)
         assertTrue(user.enabled)
         assertTrue(user.id.isNotBlank())

@@ -48,7 +48,7 @@ class ProfileApiIntegrationTest : WebTest() {
     // ---- Helpers ----
 
     private fun registerAndLogin(
-        username: String = "profuser${UUID.randomUUID().toString().take(6)}",
+        username: String = "profuser${UUID.randomUUID().toString().take(6)}@test.com",
         password: String = testPassword(),
     ): String {
         app(Request(POST, "/api/v1/auth/register").with(registerLens of RegisterRequest(username, password)))
@@ -67,12 +67,12 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `GET profile returns current user data`() {
-        val token = registerAndLogin("alice")
+        val token = registerAndLogin("alice@test.com")
         val response = app(bearer(GET, "/api/v1/auth/profile", token))
 
         assertThat(response, hasStatus(Status.OK))
         val profile = userProfileLens(response)
-        assertEquals("alice", profile.username)
+        assertEquals("alice@test.com", profile.username)
         assertTrue(profile.email.isNotBlank())
         assertTrue(profile.emailNotificationsEnabled)
         assertTrue(profile.pushNotificationsEnabled)
@@ -89,8 +89,8 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `PUT profile updates email`() {
-        val token = registerAndLogin("bob")
-        val user = userRepository.findByUsername("bob")!!
+        val token = registerAndLogin("bob@test.com")
+        val user = userRepository.findByUsername("bob@test.com")!!
 
         val response =
             app(
@@ -104,8 +104,8 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `PUT profile updates username`() {
-        val token = registerAndLogin("carol")
-        val user = userRepository.findByUsername("carol")!!
+        val token = registerAndLogin("carol@test.com")
+        val user = userRepository.findByUsername("carol@test.com")!!
 
         val response =
             app(
@@ -115,13 +115,13 @@ class ProfileApiIntegrationTest : WebTest() {
 
         assertThat(response, hasStatus(Status.OK))
         assertNotNull(userRepository.findByUsername("carol_v2"))
-        assertNull(userRepository.findByUsername("carol"))
+        assertNull(userRepository.findByUsername("carol@test.com"))
     }
 
     @Test
     fun `PUT profile updates avatar URL`() {
-        val token = registerAndLogin("dave")
-        val user = userRepository.findByUsername("dave")!!
+        val token = registerAndLogin("dave@test.com")
+        val user = userRepository.findByUsername("dave@test.com")!!
 
         val response =
             app(
@@ -138,19 +138,19 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `PUT profile returns 409 when username is already taken`() {
-        val token1 = registerAndLogin("eve")
-        registerAndLogin("frank")
-        val user = userRepository.findByUsername("eve")!!
+        val token1 = registerAndLogin("eve@test.com")
+        registerAndLogin("frank@test.com")
+        val user = userRepository.findByUsername("eve@test.com")!!
 
         val response =
             app(
                 bearer(PUT, "/api/v1/auth/profile", token1)
-                    .with(updateProfileLens of UpdateProfileRequest(email = user.email, username = "frank"))
+                    .with(updateProfileLens of UpdateProfileRequest(email = user.email, username = "frank@test.com"))
             )
 
         assertThat(response, hasStatus(Status.CONFLICT))
         // original username unchanged
-        assertNotNull(userRepository.findByUsername("eve"))
+        assertNotNull(userRepository.findByUsername("eve@test.com"))
     }
 
     @Test
@@ -167,8 +167,8 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `PUT notification-preferences persists both flags`() {
-        val token = registerAndLogin("grace")
-        val user = userRepository.findByUsername("grace")!!
+        val token = registerAndLogin("grace@test.com")
+        val user = userRepository.findByUsername("grace@test.com")!!
 
         val response =
             app(
@@ -187,8 +187,8 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `PUT notification-preferences can enable selectively`() {
-        val token = registerAndLogin("henry")
-        val user = userRepository.findByUsername("henry")!!
+        val token = registerAndLogin("henry@test.com")
+        val user = userRepository.findByUsername("henry@test.com")!!
 
         app(
             bearer(PUT, "/api/v1/auth/notification-preferences", token)
@@ -222,8 +222,8 @@ class ProfileApiIntegrationTest : WebTest() {
     @Test
     fun `DELETE account removes the user`() {
         val password = testPassword()
-        val token = registerAndLogin("ivan", password)
-        val user = userRepository.findByUsername("ivan")!!
+        val token = registerAndLogin("ivan@test.com", password)
+        val user = userRepository.findByUsername("ivan@test.com")!!
 
         val response =
             app(bearer(DELETE, "/api/v1/auth/account", token).with(deleteAccountLens of DeleteAccountRequest(password)))
@@ -234,8 +234,8 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `DELETE account rejects missing current password`() {
-        val token = registerAndLogin("ian")
-        val user = userRepository.findByUsername("ian")!!
+        val token = registerAndLogin("ian@test.com")
+        val user = userRepository.findByUsername("ian@test.com")!!
 
         val response = app(bearer(DELETE, "/api/v1/auth/account", token))
 
@@ -245,8 +245,8 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `DELETE account rejects incorrect current password`() {
-        val token = registerAndLogin("isla")
-        val user = userRepository.findByUsername("isla")!!
+        val token = registerAndLogin("isla@test.com")
+        val user = userRepository.findByUsername("isla@test.com")!!
 
         val response =
             app(
@@ -265,13 +265,14 @@ class ProfileApiIntegrationTest : WebTest() {
         userRepository.save(
             User(
                 id = adminId,
-                username = "soleadmin",
+                username = "soleadmin@test.com",
                 email = "soleadmin@test.com",
                 passwordHash = BCryptPasswordEncoder(logRounds = 4).encode(password),
                 role = UserRole.ADMIN,
             )
         )
-        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("soleadmin", password)))
+        val loginResp =
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("soleadmin@test.com", password)))
         val adminToken = tokenLens(loginResp).token
 
         val response =
@@ -292,7 +293,7 @@ class ProfileApiIntegrationTest : WebTest() {
         userRepository.save(
             User(
                 id = id1,
-                username = "admin1",
+                username = "admin1@test.com",
                 email = "admin1@test.com",
                 passwordHash = enc.encode("Adm1nP@ss!"),
                 role = UserRole.ADMIN,
@@ -307,7 +308,8 @@ class ProfileApiIntegrationTest : WebTest() {
                 role = UserRole.ADMIN,
             )
         )
-        val loginResp = app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1", "Adm1nP@ss!")))
+        val loginResp =
+            app(Request(POST, "/api/v1/auth/login").with(loginLens of LoginRequest("admin1@test.com", "Adm1nP@ss!")))
         val token1 = tokenLens(loginResp).token
 
         val response =
@@ -331,8 +333,8 @@ class ProfileApiIntegrationTest : WebTest() {
 
     @Test
     fun `GET profile after PUT reflects updated values`() {
-        val token = registerAndLogin("karen")
-        val user = userRepository.findByUsername("karen")!!
+        val token = registerAndLogin("karen@test.com")
+        val user = userRepository.findByUsername("karen@test.com")!!
 
         app(
             bearer(PUT, "/api/v1/auth/profile", token)

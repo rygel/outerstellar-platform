@@ -466,6 +466,32 @@ Key rules:
 - Never push directly to `develop` or `main`. Always create feature branches and PRs.
 - Run full reactor `mvn verify` locally before pushing to CI. CI round-trips waste time.
 - Desktop/Swing tests must NEVER run directly on the host machine. Always use the Podman container.
+- **Kill stale Java processes between builds.** Each `mvn verify` forks surefire and SpotBugs JVMs that
+  consume hundreds of MB. If you run multiple builds in sequence without cleaning up, the processes
+  accumulate and cause OOM crashes (SpotBugs `malloc failed`, surefire `forked VM terminated`). Before
+  each build, kill stale Java processes:
+  ```powershell
+  Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force
+  ```
+  Alternatively, use `-T1` (sequential build) instead of `-T4` when running many builds in a session —
+  it avoids the parallel-fork explosion entirely at the cost of ~2x build time.
+
+### Always run tests before pushing — no exceptions
+
+Skipping `-Dspotbugs.skip=true` locally to work around OOM does NOT skip surefire tests, but it
+**masks test failures** that CI will catch, wasting a full CI round-trip (10+ minutes). The
+discipline is:
+
+1. After any code change that touches a service, route, or model, run the **affected module's tests**
+   specifically before attempting a full reactor verify:
+   ```powershell
+   mvn -pl platform-security test -Dtest='AuthServiceTest'
+   ```
+2. Only push when the full reactor verify (step 2 of the commit gate) passes locally. If OOM prevents
+   the full verify from completing, kill stale processes, reduce to `-T1`, and retry — never push with
+   an incomplete verify.
+3. A 30-second module-level test run catches broken test fixtures (wrong usernames, changed APIs)
+   before they waste a 10-minute CI cycle.
 
 ## Branch hygiene
 
