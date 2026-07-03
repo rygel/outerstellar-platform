@@ -62,9 +62,9 @@
         <kotlin.version>2.3.10</kotlin.version>
         <http4k.version>6.53.0.0</http4k.version>
         <netty.version>4.2.15.Final</netty.version>
-        <flyway.version>12.9.0</flyway.version>
-        <postgresql.version>42.7.11</postgresql.version>
-        <jdbi.version>3.53.0</jdbi.version>
+        <flyway.version>12.10.0</flyway.version>
+        <postgresql.version>42.7.12</postgresql.version>
+        <jdbi.version>3.54.0</jdbi.version>
         <testcontainers.version>2.0.5</testcontainers.version>
         <jte.version>3.2.4</jte.version>
         <flatlaf.version>3.7.1</flatlaf.version>
