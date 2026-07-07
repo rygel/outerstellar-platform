@@ -1,6 +1,7 @@
 package io.github.rygel.outerstellar.platform.service
 
 import java.net.URI
+import java.net.URISyntaxException
 
 object UrlValidator {
     private const val MAX_URL_LENGTH = 2048
@@ -33,7 +34,9 @@ object UrlValidator {
         val host =
             try {
                 URI(sanitized).host?.lowercase()
-            } catch (e: Exception) {
+            } catch (e: URISyntaxException) {
+                // Narrowed from `catch (e: Exception)` — URI(...) only throws URISyntaxException; the prior
+                // broad catch swallowed unrelated runtime exceptions and misreported them as parse failures.
                 throw IllegalArgumentException("URL could not be parsed: ${e.message}", e)
             }
         if (host == null) {
