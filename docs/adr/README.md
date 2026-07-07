@@ -25,6 +25,7 @@ Decisions that are **expensive to reverse** or that **constrain future work**. T
 | 0001 | UTC-only timestamps in the database | Accepted |
 | 0002 | Native image Docker build layering | Accepted |
 | 0003 | Move i18n into platform | Accepted |
+| 0004 | Platform Flyway migrations must be namespaced | Accepted |
 
 ## Format
 
