@@ -369,7 +369,10 @@ internal class SyncDialogs(
             val selectedLang = languages[langCombo.selectedIndex].first
             val newLocale = Locale.of(selectedLang)
             Locale.setDefault(newLocale)
-            onRefreshTranslations(I18nService.create("messages").also { it.setLocale(newLocale) })
+            // Pin the bundle to the platform's own classloader (#594); see ShellRenderer for rationale.
+            onRefreshTranslations(
+                I18nService.create("messages", SyncDialogs::class.java.classLoader).also { it.setLocale(newLocale) }
+            )
             onSaveState()
             frame.revalidate()
             frame.repaint()

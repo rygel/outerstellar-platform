@@ -95,4 +95,44 @@ class ShellRendererTest {
         assertNull(extensionShell.profileUrl)
         assertNull(extensionShell.changePasswordUrl)
     }
+
+    /**
+     * Regression for #594: the platform must resolve its own web.* bundle regardless of the host's thread context
+     * classloader. If the bundle load falls back to the TCCL, a host app either can't see platform-core's
+     * messages.properties or hits a host-shipped one first, and translate() returns the raw key. Here we assert that
+     * ShellRenderer.i18n resolves localized text for both English and French rather than echoing the key.
+     */
+    @Test
+    fun `platform i18n bundle resolves web keys for english and french`() {
+        val englishRenderer = ShellRenderer(requestContextForLang("en"))
+        val frenchRenderer = ShellRenderer(requestContextForLang("fr"))
+
+        val englishHeading = englishRenderer.i18n.translate("web.auth.heading")
+        val frenchHeading = frenchRenderer.i18n.translate("web.auth.heading")
+
+        assertEquals("Authentication page examples", englishHeading)
+        assertEquals("Exemples de pages d'authentification", frenchHeading)
+    }
+
+    @Test
+    fun `platform i18n bundle never returns the raw key for known web keys`() {
+        val renderer = ShellRenderer(requestContextForLang("en"))
+
+        val heading = renderer.i18n.translate("web.auth.heading")
+        val navAuth = renderer.i18n.translate("web.nav.auth")
+
+        assertFalse(heading.startsWith("web."), "Expected resolved text, got raw key: $heading")
+        assertFalse(navAuth.startsWith("web."), "Expected resolved text, got raw key: $navAuth")
+    }
+
+    private fun requestContextForLang(lang: String): RequestContext {
+        val sessionService = mockk<SessionService>()
+        every { sessionService.lookupSession("session-token") } returns SessionLookup.Active(user)
+        return RequestContext(
+            Request(GET, "/repoquality?lang=$lang")
+                .cookie(Cookie(RequestContext.SESSION_COOKIE, "session-token"))
+                .cookie(Cookie(RequestContext.SHELL_COOKIE, "sidebar")),
+            sessionService = sessionService,
+        )
+    }
 }
