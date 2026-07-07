@@ -6,7 +6,7 @@
     <groupId>io.github.rygel</groupId>
     <artifactId>outerstellar-platform-parent</artifactId>
 
-    <version>3.6.20</version>
+    <version>3.6.21</version>
 
     <packaging>pom</packaging>
 
