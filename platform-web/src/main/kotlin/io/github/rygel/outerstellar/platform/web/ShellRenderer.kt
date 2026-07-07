@@ -63,7 +63,15 @@ class ShellRenderer(
             Caffeine.newBuilder().maximumSize(500).expireAfterWrite(5, TimeUnit.MINUTES).build()
 
         fun cachedI18n(lang: String): I18nService =
-            i18nCache.computeIfAbsent(lang) { I18nService.create("messages").also { it.setLocale(Locale.of(lang)) } }
+            // Pin the bundle to the platform's own classloader rather than the thread context classloader.
+            // In a host app the TCCL may not see platform-core's messages.properties, or may find a host-shipped
+            // root-level messages.properties first and shadow it — either way every web.* key misses and renders raw
+            // (#594). The platform's classloader always resolves the platform's bundle, independent of host wiring.
+            i18nCache.computeIfAbsent(lang) {
+                I18nService.create("messages", ShellRenderer::class.java.classLoader).also {
+                    it.setLocale(Locale.of(lang))
+                }
+            }
     }
 
     val i18n: I18nService by lazy { cachedI18n(ctx.lang) }
