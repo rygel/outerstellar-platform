@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.infra
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.github.rygel.outerstellar.platform.ExtensionMigrations
 import io.github.rygel.outerstellar.platform.RuntimeConfig
 import java.nio.file.Files
 import javax.sql.DataSource
@@ -58,135 +59,79 @@ fun createDataSource(
         }
     )
 
-fun migrate(dataSource: DataSource, extensionLocation: String? = null, extensionMigrationNames: List<String>? = null) {
-    repairLegacyExtensionHistoryTable(dataSource)
-    val config = Flyway.configure().dataSource(dataSource)
-    val locations = mutableListOf<String>()
-    if (IS_NATIVE_IMAGE) {
-        logger.info("Running in native image mode, extracting migrations to filesystem")
-        val tempDir = extractMigrationsToFilesystem(PLATFORM_MIGRATION_LOCATION, MIGRATION_NAMES)
-        logger.info("Extracted {} migrations to {}", MIGRATION_NAMES.size, tempDir.toAbsolutePath())
-        locations.add("filesystem:${tempDir.toAbsolutePath()}")
-        if (extensionLocation != null) {
-            locations.addAll(resolveExtensionLocationNative(extensionLocation, extensionMigrationNames))
-        }
-    } else {
-        logger.info("Running in JVM mode, using classpath migrations")
-        locations.add("classpath:$PLATFORM_MIGRATION_LOCATION")
-        if (extensionLocation != null) {
-            locations.add(extensionLocation)
-        }
-    }
-    @Suppress("SpreadOperator") config.locations(*locations.toTypedArray())
-    // Honor the standard Flyway out-of-order / ignore flags via system property or env var (#561). Without
-    // this, a platform upgrade that adds migrations to an existing dev DB crashes at startup with
-    // "resolved migration not applied" and no in-config workaround. Out-of-order lets the new migrations
-    // apply; the system-property / env conventions are Flyway's own.
-    val outOfOrder = System.getProperty("flyway.outOfOrder") ?: System.getenv("FLYWAY_OUT_OF_ORDER")
-    if (outOfOrder == "true") {
+/**
+ * Run database migrations as two isolated Flyway passes.
+ *
+ * 1. **Platform pass** — the platform's own migrations under [PLATFORM_MIGRATION_LOCATION] against the default
+ *    `flyway_schema_history`. Scoped to the platform-owned subdirectory (ADR-0004) so Flyway never recurses into
+ *    foreign migration trees.
+ * 2. **Extension pass** (only if [extension] is provided) — a **separate** `Flyway.configure()` against the extension's
+ *    declared [ExtensionMigrations.location] and [ExtensionMigrations.historyTable], baselined at 0. Running it as a
+ *    second pass with its own history table means the extension's `V1` and the platform's `V1` never share a
+ *    `CompositeMigrationResolver`, so they cannot collide (#611).
+ *
+ * Honors the standard Flyway `flyway.outOfOrder` system property / `FLYWAY_OUT_OF_ORDER` env var on both passes (#561).
+ *
+ * @param extension optional extension migration metadata; `null` runs the platform pass only.
+ */
+fun migrate(dataSource: DataSource, extension: ExtensionMigrations? = null) {
+    val outOfOrder = (System.getProperty("flyway.outOfOrder") ?: System.getenv("FLYWAY_OUT_OF_ORDER")) == "true"
+    if (outOfOrder) {
         logger.info("Flyway outOfOrder=true (from flyway.outOfOrder) — pending migrations will be applied")
-        config.outOfOrder(true)
     }
-    config.load().migrate()
+
+    // --- Platform pass: platform-owned migrations against the default history table. ---
+    val platformLocation =
+        if (IS_NATIVE_IMAGE) {
+            logger.info("Running platform migrations in native image mode, extracting to filesystem")
+            val tempDir = extractMigrationsToFilesystem(PLATFORM_MIGRATION_LOCATION, MIGRATION_NAMES)
+            logger.info("Extracted {} platform migrations to {}", MIGRATION_NAMES.size, tempDir.toAbsolutePath())
+            "filesystem:${tempDir.toAbsolutePath()}"
+        } else {
+            logger.info("Running platform migrations in JVM mode, using classpath migrations")
+            "classpath:$PLATFORM_MIGRATION_LOCATION"
+        }
+    val platformConfig = Flyway.configure().dataSource(dataSource).locations(platformLocation)
+    if (outOfOrder) {
+        platformConfig.outOfOrder(true)
+    }
+    platformConfig.load().migrate()
+
+    // --- Extension pass: the extension's migrations against its OWN history table, isolated from the platform. ---
+    if (extension != null) {
+        logger.info(
+            "Running extension migrations from {} against history table {}",
+            extension.location,
+            extension.historyTable,
+        )
+        val extensionLocation =
+            if (IS_NATIVE_IMAGE) {
+                resolveExtensionLocationNative(extension.location, extension.migrationNames)
+            } else {
+                extension.location
+            }
+        val extensionConfig =
+            Flyway.configure()
+                .dataSource(dataSource)
+                .locations(extensionLocation)
+                .table(extension.historyTable)
+                .baselineOnMigrate(true)
+                .baselineVersion("0")
+        if (outOfOrder) {
+            extensionConfig.outOfOrder(true)
+        }
+        extensionConfig.load().migrate()
+    }
 }
 
-private fun resolveExtensionLocationNative(location: String, migrationNames: List<String>?): List<String> {
-    if (!location.startsWith("classpath:") || migrationNames == null) {
-        return listOf(location)
+private fun resolveExtensionLocationNative(location: String, migrationNames: List<String>): String {
+    if (!location.startsWith("classpath:")) {
+        return location
     }
     val classpathDir = location.removePrefix("classpath:")
     val tempDir = extractMigrationsToFilesystem(classpathDir, migrationNames)
-    return listOf("filesystem:${tempDir.toAbsolutePath()}")
+    return "filesystem:${tempDir.toAbsolutePath()}"
 }
-
-private fun repairLegacyExtensionHistoryTable(dataSource: DataSource) {
-    try {
-        dataSource.connection.use { conn ->
-            if (!legacyTableExists(conn)) return@use
-            logger.info("Detected legacy flyway_extension_history table, consolidating into flyway_schema_history")
-            val maxRank = maxInstalledRank(conn)
-            copyExtensionRows(conn, maxRank)
-            conn.prepareStatement("DROP TABLE flyway_extension_history").use { it.executeUpdate() }
-            logger.info("Consolidated extension migration history and dropped flyway_extension_history")
-        }
-    } catch (e: Exception) {
-        logger.warn("Could not check/repair legacy extension history table: {}", e.message)
-    }
-}
-
-private fun legacyTableExists(conn: java.sql.Connection): Boolean {
-    val rs = conn.metaData.getTables(null, "public", "flyway_extension_history", null)
-    return rs.use { it.next() }
-}
-
-private fun maxInstalledRank(conn: java.sql.Connection): Int =
-    conn.prepareStatement("SELECT COALESCE(MAX(installed_rank), 0) FROM flyway_schema_history").use { stmt ->
-        stmt.executeQuery().use { rs -> if (rs.next()) rs.getInt(1) else 0 }
-    }
-
-private fun copyExtensionRows(conn: java.sql.Connection, startRank: Int) {
-    val rows = readExtensionRows(conn)
-    if (rows.isEmpty()) return
-    conn
-        .prepareStatement(
-            "INSERT INTO flyway_schema_history (installed_rank, version, description, type, script, checksum, installed_by, installed_on, execution_time, success) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        )
-        .use { insert ->
-            rows.fold(startRank) { rank, row ->
-                insert.setInt(1, rank + 1)
-                insert.setString(2, row.version)
-                insert.setString(3, row.description)
-                insert.setString(4, row.type)
-                insert.setString(5, row.script)
-                insert.setInt(6, row.checksum)
-                insert.setString(7, row.installedBy)
-                insert.setTimestamp(8, row.installedOn)
-                insert.setInt(9, row.executionTime)
-                insert.setBoolean(10, row.success)
-                insert.executeUpdate()
-                rank + 1
-            }
-        }
-}
-
-private data class ExtensionRow(
-    val version: String,
-    val description: String,
-    val type: String,
-    val script: String,
-    val checksum: Int,
-    val installedBy: String,
-    val installedOn: java.sql.Timestamp,
-    val executionTime: Int,
-    val success: Boolean,
-)
-
-private fun readExtensionRows(conn: java.sql.Connection): List<ExtensionRow> =
-    conn
-        .prepareStatement(
-            "SELECT version, description, type, script, checksum, installed_by, installed_on, execution_time, success FROM flyway_extension_history ORDER BY installed_rank"
-        )
-        .use { select ->
-            select.executeQuery().use { rs ->
-                val rows = mutableListOf<ExtensionRow>()
-                while (rs.next()) {
-                    rows.add(
-                        ExtensionRow(
-                            version = rs.getString("version"),
-                            description = rs.getString("description"),
-                            type = rs.getString("type"),
-                            script = rs.getString("script"),
-                            checksum = rs.getInt("checksum"),
-                            installedBy = rs.getString("installed_by"),
-                            installedOn = rs.getTimestamp("installed_on"),
-                            executionTime = rs.getInt("execution_time"),
-                            success = rs.getBoolean("success"),
-                        )
-                    )
-                }
-                rows
-            }
-        }
 
 private fun extractMigrationsToFilesystem(classpathDir: String, migrationNames: List<String>): java.nio.file.Path {
     val tempDir = Files.createTempDirectory("flyway-migrations")
