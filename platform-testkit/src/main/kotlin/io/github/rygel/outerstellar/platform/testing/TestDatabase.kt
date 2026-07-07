@@ -51,7 +51,9 @@ class TestDatabase(val dbName: String, val jdbcUrl: String, val jdbcUser: String
                     )
                     .also { ds ->
                         _dataSource = ds
-                        Flyway.configure().dataSource(ds).locations("classpath:db/migration").load().migrate()
+                        // Namespaced location (ADR-0004): scan only the platform-owned subtree, never the shared
+                        // db/migration parent, so foreign migration trees can't collide on V1 (#601).
+                        Flyway.configure().dataSource(ds).locations("classpath:db/migration/platform").load().migrate()
                     }
 
     val jdbi: Jdbi by lazy {

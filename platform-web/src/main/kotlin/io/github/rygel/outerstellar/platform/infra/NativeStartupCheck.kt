@@ -18,7 +18,7 @@ object NativeStartupCheck {
         logger.info("Running native-image startup diagnostics...")
         val results = mutableListOf<CheckResult>()
 
-        results += checkResource("db/migration/migrations.index", "Migration manifest")
+        results += checkResource("db/migration/platform/migrations.index", "Migration manifest")
         results += checkResource("application.yaml", "Application config")
         results += checkResource("logback.xml", "Logging config")
         results += checkResource("messages.properties", "i18n English bundle")
@@ -67,7 +67,7 @@ object NativeStartupCheck {
     private fun checkMigrationIndexNonEmpty(): CheckResult {
         val name = "Migration index content"
         val stream =
-            Thread.currentThread().contextClassLoader.getResourceAsStream("db/migration/migrations.index")
+            Thread.currentThread().contextClassLoader.getResourceAsStream("db/migration/platform/migrations.index")
                 ?: return CheckResult(name, false, "migrations.index not found on classpath")
         val content = stream.bufferedReader().readText().trim()
         stream.close()

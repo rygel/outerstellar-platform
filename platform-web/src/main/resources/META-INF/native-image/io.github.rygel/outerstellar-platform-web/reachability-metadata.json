@@ -754,39 +754,39 @@
   }, {
     "glob" : "application.yaml"
   }, {
-    "glob" : "db/migration"
+    "glob" : "db/migration/platform"
   }, {
-    "glob" : "db/migration/V10__add_trgm_search_indexes.sql"
+    "glob" : "db/migration/platform/V10__add_trgm_search_indexes.sql"
   }, {
-    "glob" : "db/migration/V11__add_totp.sql"
+    "glob" : "db/migration/platform/V11__add_totp.sql"
   }, {
-    "glob" : "db/migration/V12__add_polls.sql"
+    "glob" : "db/migration/platform/V12__add_polls.sql"
   }, {
-    "glob" : "db/migration/V13__utc_only_timestamptz.sql"
+    "glob" : "db/migration/platform/V13__utc_only_timestamptz.sql"
   }, {
-    "glob" : "db/migration/V14__add_message_votes.sql"
+    "glob" : "db/migration/platform/V14__add_message_votes.sql"
   }, {
-    "glob" : "db/migration/V15__drop_redundant_reset_token_index.sql"
+    "glob" : "db/migration/platform/V15__drop_redundant_reset_token_index.sql"
   }, {
-    "glob" : "db/migration/V16__add_totp_attempt_counter.sql"
+    "glob" : "db/migration/platform/V16__add_totp_attempt_counter.sql"
   }, {
-    "glob" : "db/migration/V1__initial_schema.sql"
+    "glob" : "db/migration/platform/V1__initial_schema.sql"
   }, {
-    "glob" : "db/migration/V2__user_profile_enhancements.sql"
+    "glob" : "db/migration/platform/V2__user_profile_enhancements.sql"
   }, {
-    "glob" : "db/migration/V3__sessions_table.sql"
+    "glob" : "db/migration/platform/V3__sessions_table.sql"
   }, {
-    "glob" : "db/migration/V4__user_preferences.sql"
+    "glob" : "db/migration/platform/V4__user_preferences.sql"
   }, {
-    "glob" : "db/migration/V5__performance_indexes.sql"
+    "glob" : "db/migration/platform/V5__performance_indexes.sql"
   }, {
-    "glob" : "db/migration/V6__admin_stats_indexes.sql"
+    "glob" : "db/migration/platform/V6__admin_stats_indexes.sql"
   }, {
-    "glob" : "db/migration/V7__account_lockout.sql"
+    "glob" : "db/migration/platform/V7__account_lockout.sql"
   }, {
-    "glob" : "db/migration/V8__query_path_indexes.sql"
+    "glob" : "db/migration/platform/V8__query_path_indexes.sql"
   }, {
-    "glob" : "db/migration/migrations.index"
+    "glob" : "db/migration/platform/migrations.index"
   }, {
     "glob" : "logback.xml"
   }, {
