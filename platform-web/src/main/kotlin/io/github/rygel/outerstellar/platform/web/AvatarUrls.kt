@@ -16,7 +16,8 @@ fun gravatarUrl(email: String, customUrl: String?): String {
         // MD5 is mandated by the Gravatar API spec — the avatar URL is defined as the MD5 hash of the
         // lowercased email (https://gravatar.com/site/implement/hash/). This is an identifier, not a
         // security primitive, so the use of MD5 here is intentional and safe.
-        val md5 = java.security.MessageDigest.getInstance("MD5") // nosemgrep: kotlin.lang.security.use-of-md5.use-of-md5
+        val md5 =
+            java.security.MessageDigest.getInstance("MD5") // nosemgrep: kotlin.lang.security.use-of-md5.use-of-md5
         val hash = md5.digest(it.toByteArray()).joinToString("") { b -> "%02x".format(b) }
         "https://www.gravatar.com/avatar/$hash?d=identicon&s=80"
     }!!
