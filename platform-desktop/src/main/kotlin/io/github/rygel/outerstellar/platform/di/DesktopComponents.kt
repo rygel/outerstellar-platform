@@ -86,7 +86,9 @@ fun createDesktopComponents(): DesktopComponents {
             transactionManager = persistence.transactionManager,
             auditRepository = persistence.auditRepository,
         )
-    val i18nService = I18nService.create("messages")
+    // Pin the bundle to the platform's own classloader, not the thread context classloader — see ShellRenderer
+    // for rationale (#594). Keeps the desktop client consistent with the web/host load path.
+    val i18nService = I18nService.create("messages", DesktopComponents::class.java.classLoader)
     val analyticsService = createAnalyticsService(appConfig)
     val clients = createHttpClients(appConfig)
     val modules =
