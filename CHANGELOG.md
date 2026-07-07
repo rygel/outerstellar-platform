@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.19] – 2026-07-07
+
+### Fixed
+
+- **Platform-rendered pages resolve their own i18n bundle** — `ShellRenderer.cachedI18n` now loads the platform `web.*` message bundle through the platform's own classloader instead of the thread context classloader. When the platform is consumed as a library by a host app, the TCCL may not see `platform-core`'s `messages.properties`, or may find a host-shipped root-level `messages.properties` first and shadow it — either way every `web.*` key rendered raw on platform pages (`/auth` showed `web.auth.heading`, `web.app.title`, …). Pinning to the platform classloader resolves the bundle regardless of host wiring and stays locale-aware (`messages_fr.properties` still resolves). Also aligns the two desktop i18n load sites to the same pattern (#594, #595).
+
+---
+
 ## [Unreleased]
 
 ---
