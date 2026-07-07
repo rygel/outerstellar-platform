@@ -36,6 +36,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Extension migrations run in an isolated Flyway pass with their own history table** *(boot-blocking regression in v3.6.19–v3.6.20)* — `DatabaseInfra.migrate()` previously merged the platform's and the extension's migration locations into a single Flyway pass against the default `flyway_schema_history`, so a platform `V1` and an extension `V1` collided and host apps failed to boot with `Found more than one migration with version 1`. The extension's declared `ExtensionMigrations.historyTable` was ignored. Migrations now run as **two** isolated `Flyway.migrate()` calls: the platform pass against `flyway_schema_history`, the extension pass against the extension's declared history table (baselined at 0). The two V1s never share a resolver. `ExtensionMigrations.historyTable` is no longer deprecated. The legacy `repairLegacyExtensionHistoryTable` consolidation step (added in #453) is removed — it was the opposite of the separate-table design and would destroy an extension's active table (#611).
+
 ---
 
 ## [3.6.18] – 2026-06-20
