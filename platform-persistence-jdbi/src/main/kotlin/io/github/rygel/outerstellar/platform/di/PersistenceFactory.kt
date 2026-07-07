@@ -120,9 +120,5 @@ fun createPersistenceComponents(config: AppConfig, extensionMigrationSource: Str
 
 private fun runMigrations(ds: DataSource, config: AppConfig, extensionMigrations: ExtensionMigrations?) {
     if (!config.runtime.flywayEnabled) return
-    migrate(
-        ds,
-        extensionLocation = extensionMigrations?.location,
-        extensionMigrationNames = extensionMigrations?.migrationNames,
-    )
+    migrate(ds, extension = extensionMigrations)
 }
