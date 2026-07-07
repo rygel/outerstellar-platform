@@ -15,6 +15,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Platform Flyway migrations namespaced under `db/migration/platform/`** — the platform's own migrations moved out of the shared `db/migration/` root into a platform-owned subdirectory, and `DatabaseInfra.migrate()` now scans `classpath:db/migration/platform` instead of the shared parent. Before this, a host app bundling the platform alongside other migration-bearing modules failed to boot with `Found more than one migration with version 1`: Flyway recursed into sibling subtrees (`db/migration/audit/`, `db/migration/<extension>/`, …) and collided on `V1`, and discarded nested extension locations as sub-locations of the parent. Existing databases validate unchanged (history rows are keyed by version + checksum, not path). Enacts ADR-0004 (#601).
+
 ---
 
 ## [3.6.18] – 2026-06-20

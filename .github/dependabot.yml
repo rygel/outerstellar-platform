@@ -6,6 +6,10 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    # Cooldown: avoid surfacing brand-new releases immediately, giving the ecosystem time to publish
+    # follow-up fixes before we pull an update (Semgrep: dependabot-missing-cooldown).
+    cooldown:
+      default-days: 7
     ignore:
       - dependency-name: "org.jetbrains.kotlin:*"
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
@@ -45,6 +49,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns: ["*"]
@@ -55,6 +61,8 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     groups:
       npm-all:
         patterns: ["*"]
