@@ -13,11 +13,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased]
+## [3.6.20] – 2026-07-07
 
 ### Fixed
 
-- **Platform Flyway migrations namespaced under `db/migration/platform/`** — the platform's own migrations moved out of the shared `db/migration/` root into a platform-owned subdirectory, and `DatabaseInfra.migrate()` now scans `classpath:db/migration/platform` instead of the shared parent. Before this, a host app bundling the platform alongside other migration-bearing modules failed to boot with `Found more than one migration with version 1`: Flyway recursed into sibling subtrees (`db/migration/audit/`, `db/migration/<extension>/`, …) and collided on `V1`, and discarded nested extension locations as sub-locations of the parent. Existing databases validate unchanged (history rows are keyed by version + checksum, not path). Enacts ADR-0004 (#601).
+- **Platform Flyway migrations namespaced under `db/migration/platform/`** *(boot-blocking regression in v3.6.19)* — the platform's own migrations moved out of the shared `db/migration/` root into a platform-owned subdirectory, and `DatabaseInfra.migrate()` now scans `classpath:db/migration/platform` instead of the shared parent. Before this, a host app bundling the platform alongside other migration-bearing modules failed to boot with `Found more than one migration with version 1`: Flyway recursed into sibling subtrees (`db/migration/audit/`, `db/migration/<extension>/`, …) and collided on `V1`, and discarded nested extension locations as sub-locations of the parent. Existing databases validate unchanged (history rows are keyed by version + checksum, not path). Enacts ADR-0004 (#601).
+- **`UrlValidator` over-broad catch** — `catch (e: Exception)` narrowed to `catch (e: URISyntaxException)`; `URI(...)` only throws `URISyntaxException`, so the broad catch no longer swallows unrelated runtime exceptions and misreports them as URL parse failures.
+- **`OutboxProcessor` dead local store** — `var batchSize` now initialized at declaration (`= 0`).
+- **`ContactExportProvider` defensive copy** — the exported row's `emails` list is now copied (`.toList()`) at construction.
+
+### Changed
+
+- **SpotBugs exclusion filter documented** — `config/spotbugs-exclude.xml` reorganized into 7 commented sections (generated code, Kotlin idiom false positives, Kotlin-collection exposure, companion false positives, interface contracts, Kotlin `use {}` resource analysis, desktop/JavaFX scaffold) with a per-entry rationale and a policy header. Two stale `AppKt` suppressions (referencing code that no longer exists) removed. The audit found most existing suppressions were legitimate SpotBugs/Kotlin-idiom false positives, not hidden bugs.
+- **Supply-chain hardening** — Dependabot configs gained a 7-day `cooldown` per ecosystem; `.npmrc` adds `min-release-age=7` (npm v11.10.0+); the Gravatar MD5 use in `AvatarUrls.kt` is suppressed with an explicit rule-id (MD5 is spec-mandated by the Gravatar API). The chronic `Semgrep Scan` advisory CI failure is now green.
+- **ADR-0004** added — records the decision that platform Flyway migrations must be namespaced under a platform-owned subdirectory.
+
+### Dependencies
+
+- Bumped `bytebuddy.version`, `junit.version`, `spotless-maven-plugin`, `playwright`, `logback-classic`, graalvm `native-maven-plugin`, and grouped `http4k` / `persistence` / `github-actions` updates via Dependabot.
+
+---
+
+## [Unreleased]
 
 ---
 
