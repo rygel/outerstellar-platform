@@ -18,10 +18,19 @@ private val IS_NATIVE_IMAGE = run {
     result
 }
 
+/**
+ * Classpath location of the platform's own Flyway migrations. Namespaced under `db/migration/platform/` (ADR-0004) so
+ * that Flyway, which scans a `classpath:` location recursively, never picks up a host's or sibling module's migrations
+ * that live under their own `db/migration/<owner>/` subtrees. Before namespacing, registering the shared `db/migration`
+ * parent caused Flyway to recurse into foreign subtrees and collide on `V1` ("Found more than one migration with
+ * version 1") — see #601.
+ */
+private const val PLATFORM_MIGRATION_LOCATION = "db/migration/platform"
+
 private val MIGRATION_NAMES: List<String> by lazy {
     val stream =
-        Thread.currentThread().contextClassLoader.getResourceAsStream("db/migration/migrations.index")
-            ?: error("Migration manifest not found on classpath: db/migration/migrations.index")
+        Thread.currentThread().contextClassLoader.getResourceAsStream("$PLATFORM_MIGRATION_LOCATION/migrations.index")
+            ?: error("Migration manifest not found on classpath: $PLATFORM_MIGRATION_LOCATION/migrations.index")
     stream.bufferedReader().use { it.readLines().filter { line -> line.isNotBlank() } }
 }
 
@@ -55,7 +64,7 @@ fun migrate(dataSource: DataSource, extensionLocation: String? = null, extension
     val locations = mutableListOf<String>()
     if (IS_NATIVE_IMAGE) {
         logger.info("Running in native image mode, extracting migrations to filesystem")
-        val tempDir = extractMigrationsToFilesystem("db/migration", MIGRATION_NAMES)
+        val tempDir = extractMigrationsToFilesystem(PLATFORM_MIGRATION_LOCATION, MIGRATION_NAMES)
         logger.info("Extracted {} migrations to {}", MIGRATION_NAMES.size, tempDir.toAbsolutePath())
         locations.add("filesystem:${tempDir.toAbsolutePath()}")
         if (extensionLocation != null) {
@@ -63,7 +72,7 @@ fun migrate(dataSource: DataSource, extensionLocation: String? = null, extension
         }
     } else {
         logger.info("Running in JVM mode, using classpath migrations")
-        locations.add("classpath:db/migration")
+        locations.add("classpath:$PLATFORM_MIGRATION_LOCATION")
         if (extensionLocation != null) {
             locations.add(extensionLocation)
         }
