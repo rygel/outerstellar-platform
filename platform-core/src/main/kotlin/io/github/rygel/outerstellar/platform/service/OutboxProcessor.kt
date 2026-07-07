@@ -45,7 +45,9 @@ class OutboxProcessor(
     }
 
     fun processPending(): Boolean {
-        var batchSize: Int
+        // Initialized at declaration so SpotBugs (DLS_DEAD_LOCAL_STORE) doesn't flag the uninitialized var;
+        // the real value is assigned inside the do/while body before first use.
+        var batchSize = 0
         do {
             val entries = outboxRepository.listPending(maxBatchSize)
             if (entries.isEmpty()) {

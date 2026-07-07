@@ -132,9 +132,9 @@
                                         <argument>-File</argument>
                                         <argument>${project.basedir}/../scripts/generate-migration-manifest.ps1</argument>
                                         <argument>-MigrationDir</argument>
-                                        <argument>${project.basedir}/src/main/resources/db/migration</argument>
+                                        <argument>${project.basedir}/src/main/resources/db/migration/platform</argument>
                                         <argument>-OutputFile</argument>
-                                        <argument>${project.basedir}/src/main/resources/db/migration/migrations.index</argument>
+                                        <argument>${project.basedir}/src/main/resources/db/migration/platform/migrations.index</argument>
                                     </arguments>
                                 </configuration>
                             </execution>
@@ -166,8 +166,8 @@
                                     <executable>bash</executable>
                                     <arguments>
                                         <argument>${project.basedir}/../scripts/generate-migration-manifest.sh</argument>
-                                        <argument>${project.basedir}/src/main/resources/db/migration</argument>
-                                        <argument>${project.basedir}/src/main/resources/db/migration/migrations.index</argument>
+                                        <argument>${project.basedir}/src/main/resources/db/migration/platform</argument>
+                                        <argument>${project.basedir}/src/main/resources/db/migration/platform/migrations.index</argument>
                                     </arguments>
                                 </configuration>
                             </execution>

@@ -51,13 +51,15 @@ class NativeResourceDriftTest {
     }
 
     private fun scanMigrations(globs: MutableSet<String>) {
-        globs.add("db/migration")
-        globs.add("db/migration/migrations.index")
-        val dir = File("../platform-persistence-jdbi/src/main/resources/db/migration")
+        // ADR-0004: platform migrations are namespaced under db/migration/platform/ so Flyway never scans a
+        // shared parent and collides on V1 with host/sibling migration trees (#601).
+        globs.add("db/migration/platform")
+        globs.add("db/migration/platform/migrations.index")
+        val dir = File("../platform-persistence-jdbi/src/main/resources/db/migration/platform")
         assertTrue(dir.isDirectory, "Migration directory must exist")
         dir.listFiles()
             ?.filter { it.name.endsWith(".sql") && it.name.startsWith("V") }
-            ?.forEach { globs.add("db/migration/${it.name}") }
+            ?.forEach { globs.add("db/migration/platform/${it.name}") }
     }
 
     private fun scanI18nBundles(globs: MutableSet<String>) {

@@ -44,7 +44,14 @@ class ContactExportProvider(private val contactService: ContactService?) : Expor
             val page = contactService.listContacts(limit = pageSize, offset = offset)
             page.forEach { c ->
                 allItems.add(
-                    ContactExportRow(name = c.name, emails = c.emails, company = c.company, department = c.department)
+                    // Defensive copy of the emails list so the export row owns an independent snapshot
+                    // (silences EI_EXPOSE_REP without relying on a SpotBugs exclusion).
+                    ContactExportRow(
+                        name = c.name,
+                        emails = c.emails.toList(),
+                        company = c.company,
+                        department = c.department,
+                    )
                 )
             }
             offset += pageSize
