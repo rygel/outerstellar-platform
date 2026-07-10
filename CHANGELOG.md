@@ -52,6 +52,44 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.6.18] – 2026-06-20
+
+### Security
+
+- **Token hashing upgraded to HMAC-SHA256 with deployment pepper** — session tokens, API keys, and password-reset tokens are now hashed with `HmacSHA256` keyed by a configurable `TOKEN_PEPPER`, not un-keyed SHA-256. A DB-read attacker can no longer use stored hashes directly; the pepper is rotatable (#571).
+- **TOTP enable/disable writes are transactional** — a failure between `updateTotpSecret` and `enableTotp` no longer leaves 2FA in an inconsistent state (C1, #572).
+- **OAuth user creation is transactional** — user + OAuth connection are saved atomically; no more orphaned accounts with no linkage (C2, #572).
+- **CachingUserRepository cache-invalidation on lockout** — 5 lockout/failed-attempt methods now invalidate the cache, closing a 60s window where a locked account could still authenticate (H1, #572).
+- **Registration validates email format + username length** — `register()` now enforces `MAX_USERNAME_LENGTH` (50) and `EMAIL_REGEX`, matching `updateProfile`. No more unbounded non-email usernames stored as emails (H4, #573).
+- **Error-page fallback no longer leaks raw exception messages** — the fallback when the JTE error template itself fails returns a static `"Internal Server Error"` body instead of echoing SQL/JDBI internals (H6, #573).
+- **Open-redirect backslash bypass blocked** — `safeReturnTo` now rejects `/\` prefixes that some browsers normalize to `//` (M4, #574).
+- **Vote race condition guarded** — `VoteService.vote` wraps the check-then-act in a transaction; duplicate-key violations are caught gracefully (H3, #574).
+
+### Changed
+
+- **Duplicate-key handling on profile/OAuth** — `AccountService.updateProfile` and `OAuthService.findOrCreateOAuthUser` catch concurrent unique-constraint violations and translate to user-facing errors or re-read the winner, instead of raw 500s (M1, M2, #574).
+- **Email drops surfaced as ERROR** — `ResilientEmailService` circuit-open drops now log at ERROR instead of WARN (H5, #573).
+- **Analytics errors surfaced as WARN** — the analytics page-view filter logs failures at WARN instead of DEBUG (L1, #573).
+
+### Fixed
+
+- **OpenAPI spec endpoints degrade to 503** — the http4k OpenApi3/kotlinx.serialization incompatibility (http4k#750) now returns a clear 503 instead of a 500 (#558, #566).
+- **Analytics resources closed on shutdown** — `SegmentAnalyticsService` executor + HttpClient are released in the shutdown hook (M1 audit, #567).
+- **ConnectivityChecker thread-safety** — observer list swapped to `CopyOnWriteArrayList`; executor vars marked `@Volatile` (M2, L5, #567).
+- **IN-clause/batch size capped** — `MAX_IN_CLAUSE` (1000) guard on all `bindList`/batch entry points prevents oversized-`IN` DoS (M3 audit, #568).
+- **Dead TokenHashing duplicate removed** from `JdbiApiKeyRepository` (M4 audit, #568).
+- **Outbox SQL uses bound `:status`** instead of enum-name interpolation (L8, #569).
+- **QueryCount ThreadLocal `remove()`** instead of `set(0)` (L9, #569).
+- **Push-notification stub drops logged at ERROR** (L7, #569).
+- **Dev-mode JTE composite renderer** — extension templates from filesystem + platform templates from precompiled registry (no more 500 on platform templates in dev) (#560, #570).
+- **Flyway out-of-order configurable** — `flyway.outOfOrder` system property / `FLYWAY_OUT_OF_ORDER` env var honored (#561, #570).
+
+---
+
+## [3.6.17] – 2026-06-18
+
+---
+
 ## [3.6.17] – 2026-06-18
 
 ### Security
