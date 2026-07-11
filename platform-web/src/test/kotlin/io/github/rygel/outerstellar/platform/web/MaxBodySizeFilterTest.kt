@@ -2,6 +2,7 @@ package io.github.rygel.outerstellar.platform.web
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import org.http4k.core.Method.POST
 import org.http4k.core.Request
 import org.http4k.core.Response
@@ -17,6 +18,22 @@ class MaxBodySizeFilterTest {
         val app = Filters.maxBodySize(100L).then(downstream)
         val resp = app(Request(POST, "/auth"))
         assertEquals(Status.OK, resp.status)
+    }
+
+    @Test
+    fun `buffers an allowed streamed body and preserves it for the handler`() {
+        val app = Filters.maxBodySize(100L).then { request -> Response(Status.OK).body(request.bodyString()) }
+        val resp = app(Request(POST, "/auth").header("Transfer-Encoding", "chunked").body("streamed-body"))
+        assertEquals(Status.OK, resp.status)
+        assertEquals("streamed-body", resp.bodyString())
+    }
+
+    @Test
+    fun `rejects oversized chunked body without Content-Length`() {
+        val app = Filters.maxBodySize(100L).then { Response(Status.OK).body("downstream-called") }
+        val resp = app(Request(POST, "/auth").header("Transfer-Encoding", "chunked").body("x".repeat(101)))
+        assertEquals(Status.REQUEST_ENTITY_TOO_LARGE, resp.status)
+        assert(resp.bodyString().contains("exceeds the limit"))
     }
 
     @Test
@@ -46,10 +63,23 @@ class MaxBodySizeFilterTest {
     }
 
     @Test
-    fun `ignores a malformed Content-Length header`() {
-        // A garbage Content-Length must not crash the filter; treat it as absent and let the handler decide.
+    fun `rejects a malformed Content-Length header`() {
         val app = Filters.maxBodySize(100L).then(downstream)
         val resp = app(Request(POST, "/auth").header("Content-Length", "not-a-number").body("ok"))
-        assertEquals(Status.OK, resp.status)
+        assertEquals(Status.BAD_REQUEST, resp.status)
+        assert(resp.bodyString().contains("Invalid Content-Length"))
+    }
+
+    @Test
+    fun `rejects a body larger than a smaller declared Content-Length`() {
+        val app = Filters.maxBodySize(100L).then(downstream)
+        val resp = app(Request(POST, "/auth").header("Content-Length", "1").body("x".repeat(101)))
+        assertEquals(Status.REQUEST_ENTITY_TOO_LARGE, resp.status)
+    }
+
+    @Test
+    fun `rejects body limits that cannot be safely buffered`() {
+        val error = assertFailsWith<IllegalArgumentException> { Filters.maxBodySize(Int.MAX_VALUE.toLong()) }
+        assert(error.message?.contains("MAX_REQUEST_BODY_BYTES") == true)
     }
 }

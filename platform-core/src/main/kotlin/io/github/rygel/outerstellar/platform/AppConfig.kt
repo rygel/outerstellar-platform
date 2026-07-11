@@ -8,7 +8,6 @@ import org.snakeyaml.engine.v2.api.LoadSettings
 private const val DEFAULT_HTTP_PORT = 8080
 private const val DEFAULT_SMTP_PORT = 587
 private const val DEFAULT_SESSION_TIMEOUT_MINUTES = 30
-private const val DEFAULT_TOKEN_PEPPER = "outerstellar-dev-token-pepper"
 private const val MIN_SESSION_TIMEOUT_MINUTES = 1
 private const val DEFAULT_JWT_EXPIRY_SECONDS = 86400L
 private const val MAX_HTTP_PORT = 65535
@@ -21,7 +20,7 @@ private const val DEFAULT_REGISTRATION_ENABLED = true
 private const val DEFAULT_SESSION_ABSOLUTE_TIMEOUT_MINUTES = 1440
 private const val DEFAULT_CSP_POLICY =
     "default-src 'self'; script-src 'self' {nonce}; " +
-        "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' wss:; img-src 'self' data:; " +
+        "style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self' wss:; img-src 'self' data: https:; " +
         "base-uri 'self'; form-action 'self'"
 
 const val DEFAULT_PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=()"
@@ -116,7 +115,8 @@ data class AppConfig(
     val devMode: Boolean = false,
     val sessionCookieSecure: Boolean = true,
     val sessionTimeoutMinutes: Int = DEFAULT_SESSION_TIMEOUT_MINUTES,
-    val tokenPepper: String = DEFAULT_TOKEN_PEPPER,
+    val tokenPepper: String = "",
+    val managementToken: String = "",
     val corsOrigins: String = "",
     val csrfEnabled: Boolean = true,
     val segment: SegmentConfig = SegmentConfig(),
@@ -146,7 +146,8 @@ data class AppConfig(
     override fun toString(): String =
         "AppConfig(version=$version, port=$port, jdbcUrl=$jdbcUrl, jdbcUser=$jdbcUser, jdbcPassword=${mask(jdbcPassword)}, " +
             "profile=$profile, devDashboardEnabled=$devDashboardEnabled, devMode=$devMode, sessionCookieSecure=$sessionCookieSecure, " +
-            "sessionTimeoutMinutes=$sessionTimeoutMinutes, tokenPepper=${mask(tokenPepper)}, corsOrigins=$corsOrigins, csrfEnabled=$csrfEnabled, segment=$segment, " +
+            "sessionTimeoutMinutes=$sessionTimeoutMinutes, tokenPepper=${mask(tokenPepper)}, managementToken=${mask(managementToken)}, " +
+            "corsOrigins=$corsOrigins, csrfEnabled=$csrfEnabled, segment=$segment, " +
             "email=$email, appBaseUrl=$appBaseUrl, maxFailedLoginAttempts=$maxFailedLoginAttempts, maxRequestBodyBytes=$maxRequestBodyBytes, " +
             "lockoutDurationSeconds=$lockoutDurationSeconds, registrationEnabled=$registrationEnabled, " +
             "sessionAbsoluteTimeoutMinutes=$sessionAbsoluteTimeoutMinutes, jwt=$jwt, cspPolicy=$cspPolicy, staticDir=$staticDir, " +
@@ -214,7 +215,8 @@ data class AppConfig(
                 devMode = yaml.bool("devMode", env, "DEVMODE", false),
                 sessionCookieSecure = yaml.bool("sessionCookieSecure", env, "SESSIONCOOKIESECURE", true),
                 sessionTimeoutMinutes = timeout,
-                tokenPepper = yaml.str("tokenPepper", env, "TOKEN_PEPPER", DEFAULT_TOKEN_PEPPER),
+                tokenPepper = yaml.str("tokenPepper", env, "TOKEN_PEPPER", ""),
+                managementToken = yaml.str("managementToken", env, "MANAGEMENT_TOKEN", ""),
                 corsOrigins = yaml.str("corsOrigins", env, "CORSORIGINS", ""),
                 csrfEnabled = yaml.bool("csrfEnabled", env, "CSRFENABLED", true),
                 segment = buildSegmentConfig(yaml["segment"] as? Map<String, Any>, env),

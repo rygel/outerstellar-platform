@@ -135,10 +135,18 @@ class AppConfigTest {
     }
 
     @Test
+    fun `management token is set from environment`() {
+        val config = AppConfig.fromEnvironment(mapOf("MANAGEMENT_TOKEN" to "probe-token"))
+
+        assert(config.managementToken == "probe-token")
+    }
+
+    @Test
     fun `AppConfig toString masks the JDBC password and nested secrets`() {
         val config =
             AppConfig(
                 jdbcPassword = "super-secret-db-password",
+                managementToken = "management-probe-secret",
                 jwt = JwtConfig(enabled = true, secret = "jwt-hmac-signing-key"),
                 email = EmailConfig(enabled = true, password = "smtp-password"),
                 appleOAuth = AppleOAuthConfig(enabled = true, privateKeyPem = "-----BEGIN PRIVATE KEY-----"),
@@ -153,6 +161,7 @@ class AppConfigTest {
         val rendered = config.toString()
 
         assert(!rendered.contains("super-secret-db-password")) { "JDBC password leaked in toString: $rendered" }
+        assert(!rendered.contains("management-probe-secret")) { "Management token leaked in toString: $rendered" }
         assert(!rendered.contains("jwt-hmac-signing-key")) { "JWT secret leaked in toString: $rendered" }
         assert(!rendered.contains("smtp-password")) { "SMTP password leaked in toString: $rendered" }
         assert(!rendered.contains("BEGIN PRIVATE KEY")) { "Apple OAuth private key leaked in toString: $rendered" }

@@ -90,7 +90,7 @@
                 @for (link in shell.navLinks)
                     <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link@if (link.active) bg-primary text-primary-content shadow-lg shadow-primary/30@endif"
                        href="${link.url}"
-                       onclick="document.getElementById('sidebar-drawer').checked = false">
+                       data-uncheck-target="sidebar-drawer">
                         <i class="${link.icon} text-lg opacity-80 w-5 text-center"></i>
                         ${link.label}
                     </a>

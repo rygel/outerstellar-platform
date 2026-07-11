@@ -93,5 +93,16 @@ java -Xms2g -Xmx4g -XX:+UseParallelGC \
 
 The application is configured entirely through env vars. See [Configuration](configuration.md) for the full reference.
 
-Required: `JDBC_URL`, `JDBC_USER`, `JDBC_PASSWORD`
-Optional but recommended: `ADMIN_PASSWORD`, `APP_PROFILE`
+Required: `JDBC_URL`, `JDBC_USER`, `JDBC_PASSWORD`, `APP_PROFILE`, and a deployment-specific `TOKEN_PEPPER` containing
+at least 32 UTF-8 bytes.
+
+`ADMIN_PASSWORD` is also required on the first boot, when the initial `admin` account does not yet exist. The server
+fails before binding its HTTP port if that password is absent or does not satisfy the platform password policy.
+`TOKEN_PEPPER` remains required on every boot and must be stable across replicas and restarts. Changing it invalidates
+existing sessions, API keys, and outstanding password-reset tokens and prevents decryption of already-encrypted TOTP
+seeds. Restore the prior value before attempting a planned key migration.
+
+Set a stable, randomly generated `MANAGEMENT_TOKEN` of at least 32 UTF-8 bytes when a load balancer or orchestrator
+probes the management endpoints through a non-loopback connection. Configure the probe with
+`Authorization: Bearer <MANAGEMENT_TOKEN>`. Direct in-container loopback probes do not require the token. The provided
+Compose deployment requires it because port-published probes are remote from the application's perspective.

@@ -12,6 +12,9 @@ import io.github.rygel.outerstellar.platform.persistence.QueryCount
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SessionService
+import java.net.InetAddress
+import java.net.URI
+import java.net.UnknownHostException
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -47,15 +50,53 @@ private const val REQUEST_ID_HEADER = "X-Request-Id"
 private const val LOG_ID_LENGTH = 8
 private const val STATIC_ASSET_MAX_AGE = 31536000L
 private const val CSP_NONCE_BYTES = 16
+private const val MAX_NETWORK_PORT = 65535
 private const val DEFAULT_CSP_POLICY =
     "default-src 'self'; " +
         "script-src 'self' {nonce}; " +
         "style-src 'self' 'unsafe-inline'; " +
         "font-src 'self'; " +
         "connect-src 'self' wss:; " +
-        "img-src 'self' data:; " +
+        "img-src 'self' data: https:; " +
         "base-uri 'self'; " +
         "form-action 'self'"
+
+private class CorsPolicy(private val origins: Set<String>) {
+    private val allowsAnyOrigin = "*" in origins
+
+    fun allow(requestOrigin: String?): String? =
+        when {
+            requestOrigin == null -> null
+            allowsAnyOrigin -> "*"
+            requestOrigin in origins -> requestOrigin
+            else -> null
+        }
+
+    companion object {
+        fun parse(name: String, values: List<String>): CorsPolicy {
+            val origins = values.map(String::trim).filter(String::isNotEmpty).toSet()
+            require("*" !in origins || origins.size == 1) { "$name cannot combine '*' with explicit origins" }
+            origins.filterNot { it == "*" }.forEach { origin -> validateOrigin(name, origin) }
+            return CorsPolicy(origins)
+        }
+
+        private fun validateOrigin(name: String, origin: String) {
+            val uri = runCatching { URI(origin) }.getOrNull()
+            require(
+                uri != null &&
+                    uri.scheme?.lowercase() in setOf("http", "https") &&
+                    uri.host != null &&
+                    uri.rawUserInfo == null &&
+                    uri.rawPath.isNullOrEmpty() &&
+                    uri.rawQuery == null &&
+                    uri.rawFragment == null &&
+                    (uri.port == -1 || uri.port in 1..MAX_NETWORK_PORT)
+            ) {
+                "$name contains invalid origin '$origin'; use scheme://host[:port]"
+            }
+        }
+    }
+}
 
 private fun isNonPagePath(path: String): Boolean =
     path.startsWith("/api/") || path.startsWith("/static/") || path.startsWith("/ws/")
@@ -155,6 +196,17 @@ private fun persistUserPreferences(
     )
 }
 
+private fun oversizedBodyResponse(maxBytes: Long, declared: Long? = null): Response =
+    Response(Status.REQUEST_ENTITY_TOO_LARGE)
+        .header("content-type", "text/plain; charset=utf-8")
+        .body(
+            if (declared == null) {
+                "Request body exceeds the limit of $maxBytes bytes."
+            } else {
+                "Request body of $declared bytes exceeds the limit of $maxBytes bytes."
+            }
+        )
+
 object Filters {
     private val logger = LoggerFactory.getLogger(Filters::class.java)
     private val secureRandom = SecureRandom()
@@ -175,47 +227,74 @@ object Filters {
         }
     }
 
-    /**
-     * Rejects requests whose body exceeds [maxBytes] before the body is buffered into memory, returning 413. Defends
-     * against oversized-body DoS (heap exhaustion / GC thrash from a single large POST). The check is on the
-     * Content-Length header so the body is never read for oversized requests. Requests without a Content-Length (e.g.
-     * chunked/streamed) are left to the handler, which is the http4k default; a hard cap on those would require
-     * consuming the stream, which we avoid to keep the filter allocation-free.
-     */
-    fun maxBodySize(maxBytes: Long): Filter = Filter { next: HttpHandler ->
-        { request ->
-            val declared = request.header("Content-Length")?.toLongOrNull()
-            if (declared != null && declared > maxBytes) {
-                Response(Status.REQUEST_ENTITY_TOO_LARGE)
-                    .header("content-type", "text/plain; charset=utf-8")
-                    .body("Request body of $declared bytes exceeds the limit of $maxBytes bytes.")
-            } else {
-                next(request)
+    /** Rejects declared and streamed request bodies larger than [maxBytes], buffering at most one byte over the cap. */
+    fun maxBodySize(maxBytes: Long): Filter {
+        require(maxBytes in 0 until Int.MAX_VALUE.toLong()) {
+            "MAX_REQUEST_BODY_BYTES must be between 0 and ${Int.MAX_VALUE - 1}"
+        }
+        return Filter { next: HttpHandler ->
+            { request ->
+                val contentLength = request.header("Content-Length")
+                val declared = contentLength?.toLongOrNull()
+                when {
+                    contentLength != null && (declared == null || declared < 0) ->
+                        Response(Status.BAD_REQUEST)
+                            .header("content-type", "text/plain; charset=utf-8")
+                            .body("Invalid Content-Length header.")
+                    declared != null && declared > maxBytes -> oversizedBodyResponse(maxBytes, declared)
+                    else -> {
+                        val bytes = request.body.stream.readNBytes((maxBytes + 1).toInt())
+                        if (bytes.size > maxBytes) {
+                            oversizedBodyResponse(maxBytes)
+                        } else {
+                            next(request.body(Body(ByteBuffer.wrap(bytes))))
+                        }
+                    }
+                }
             }
         }
     }
 
-    fun cors(allowedOrigins: String, headerConfig: SecurityHeadersConfig = SecurityHeadersConfig()): Filter =
-        Filter { next: HttpHandler ->
+    fun cors(allowedOrigins: String, headerConfig: SecurityHeadersConfig = SecurityHeadersConfig()): Filter {
+        val defaultPolicy = CorsPolicy.parse("corsOrigins", allowedOrigins.split(','))
+        val overridePolicies =
+            headerConfig.perRouteOverrides.associateWith { override ->
+                override.corsAllowedOrigins?.let { CorsPolicy.parse("corsAllowedOrigins for ${override.pattern}", it) }
+            }
+        return Filter { next: HttpHandler ->
             { request ->
                 val path = request.uri.path
                 val override = headerConfig.findOverride(path)
-                val effectiveOrigins = override?.corsAllowedOrigins?.joinToString(", ") ?: allowedOrigins
-                if (effectiveOrigins.isBlank()) return@Filter next(request)
-                if (request.method == org.http4k.core.Method.OPTIONS) {
+                val policy = override?.let(overridePolicies::get) ?: defaultPolicy
+                val allowedOrigin = policy.allow(request.header("Origin")) ?: return@Filter next(request)
+                if (request.method == Method.OPTIONS && request.header("Access-Control-Request-Method") != null) {
                     Response(Status.NO_CONTENT)
-                        .header("Access-Control-Allow-Origin", effectiveOrigins)
-                        .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-                        .header("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id")
+                        .withCorsOrigin(allowedOrigin)
+                        .header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+                        .header(
+                            "Access-Control-Allow-Headers",
+                            "Authorization, Content-Type, X-CSRF-Token, X-Request-Id",
+                        )
                         .header("Access-Control-Max-Age", "3600")
                 } else {
-                    val response = next(request)
-                    response
-                        .header("Access-Control-Allow-Origin", effectiveOrigins)
+                    next(request)
+                        .withCorsOrigin(allowedOrigin)
                         .header("Access-Control-Expose-Headers", "X-Request-Id, X-Session-Expired")
                 }
             }
         }
+    }
+
+    private fun Response.withCorsOrigin(origin: String): Response {
+        val response = header("Access-Control-Allow-Origin", origin)
+        if (origin == "*") return response
+        val varyValues = response.header("Vary")?.split(',')?.map(String::trim).orEmpty()
+        return if (varyValues.any { it.equals("Origin", ignoreCase = true) }) {
+            response
+        } else {
+            response.header("Vary", (varyValues + "Origin").joinToString(", "))
+        }
+    }
 
     fun securityHeaders(
         cspPolicy: String = DEFAULT_CSP_POLICY,
@@ -313,11 +392,12 @@ object Filters {
         sessionTimeoutMinutes: Int = 30,
     ): Filter = Filter { next ->
         { request ->
-            val host = request.header("Host")
-            val isLoopback =
-                request.header("X-Forwarded-For") == null &&
-                    (host == null || host.startsWith("localhost") || host.startsWith("127.0.0.1"))
-            if (enabled && isLoopback && request.cookie(RequestContext.SESSION_COOKIE) == null) {
+            val isDirectLoopback =
+                isLoopbackAddress(request.source?.address) &&
+                    request.header("Forwarded") == null &&
+                    request.header("X-Forwarded-For") == null &&
+                    request.header("X-Real-IP") == null
+            if (enabled && isDirectLoopback && request.cookie(RequestContext.SESSION_COOKIE) == null) {
                 val admin = userRepository.findByUsername("admin")
                 if (admin != null) {
                     val token = sessionService.createSession(admin.id)
@@ -336,6 +416,16 @@ object Filters {
             } else {
                 next(request)
             }
+        }
+    }
+
+    private fun isLoopbackAddress(address: String?): Boolean {
+        if (address == null) return false
+        return try {
+            InetAddress.getByName(address).isLoopbackAddress
+        } catch (e: UnknownHostException) {
+            logger.warn("Dev auto-login rejected unresolvable request source address: {}", address, e)
+            false
         }
     }
 
@@ -397,7 +487,7 @@ object Filters {
         }
     }
 
-    fun sessionTimeout(sessionCookieSecure: Boolean): Filter = Filter { next: HttpHandler ->
+    fun sessionTimeout(sessionCookieSecure: Boolean, sessionTimeoutMinutes: Int): Filter = Filter { next: HttpHandler ->
         { request ->
             val ctx =
                 try {
@@ -416,7 +506,20 @@ object Filters {
                         .header("Set-Cookie", SessionCookie.clear(sessionCookieSecure))
                 }
             } else {
-                next(request)
+                val response = next(request)
+                val token = request.cookie(RequestContext.SESSION_COOKIE)?.value
+                if (
+                    ctx?.sessionActive == true &&
+                        token != null &&
+                        response.cookies().none { it.name == RequestContext.SESSION_COOKIE }
+                ) {
+                    response.header(
+                        "Set-Cookie",
+                        SessionCookie.create(token, sessionCookieSecure, sessionTimeoutMinutes * 60L),
+                    )
+                } else {
+                    response
+                }
             }
         }
     }

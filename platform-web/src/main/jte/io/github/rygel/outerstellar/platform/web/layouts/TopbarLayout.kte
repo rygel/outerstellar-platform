@@ -26,7 +26,7 @@
             @for(link in shell.navLinks)
                 <a class="flex items-center gap-2 px-4 h-14 text-sm whitespace-nowrap border-b-2 border-transparent transition-colors nav-link@if(link.active) !text-accent !border-accent@endif text-base-content/60 hover:text-base-content"
                    href="${link.url}"
-                   onclick="document.getElementById('topbar-mobile-menu').checked = false">
+                   data-uncheck-target="topbar-mobile-menu">
                     <i class="${link.icon}"></i>
                     ${link.label}
                 </a>

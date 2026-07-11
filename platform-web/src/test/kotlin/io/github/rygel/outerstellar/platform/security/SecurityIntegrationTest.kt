@@ -28,6 +28,7 @@ class SecurityIntegrationTest : WebTest() {
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
                 totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
+                totpSecretEncryption = TotpSecretEncryption(testConfig.tokenPepper),
             )
     }
 

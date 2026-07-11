@@ -41,8 +41,7 @@
         </div>
 
         <div class="flex justify-end gap-3 mt-2">
-            <button type="button" class="btn btn-ghost"
-                    onclick="document.getElementById('contact-form-modal').remove()">
+            <button type="button" class="btn btn-ghost" data-remove-target="contact-form-modal">
                 ${model.cancelLabel}
             </button>
             <button type="submit" class="btn btn-primary">${model.saveLabel}</button>

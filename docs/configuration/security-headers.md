@@ -28,7 +28,11 @@ securityHeaders:
 Set `STRICT_TRANSPORT_SECURITY` to an empty string to suppress HSTS (useful in dev mode).
 
 CSP is configured separately via `cspPolicy` / `CSP_POLICY` (existing, unchanged).
-CORS is configured separately via `corsOrigins` / `CORSORIGINS` (existing, unchanged).
+CORS is configured separately via `corsOrigins` / `CORSORIGINS`. Values are comma-separated exact
+`http[s]://host[:port]` origins. Empty configuration disables CORS; `*` allows any origin and cannot be combined with
+explicit origins. Invalid values fail during application assembly. Per-route lists follow the same rules. For an
+explicit allowlist, the matching request origin is echoed and `Vary: Origin` is added; a comma-separated list is never
+written into `Access-Control-Allow-Origin`.
 
 ## Per-route overrides
 
@@ -75,7 +79,7 @@ Each per-route override has a `pattern` (required) and any combination of option
 | `xContentTypeOptions` | `X-Content-Type-Options` header |
 | `strictTransportSecurity` | `Strict-Transport-Security` header (blank = suppress) |
 | `csp` | `Content-Security-Policy` header (`{nonce}` is substituted) |
-| `corsAllowedOrigins` | CORS `Access-Control-Allow-Origin` (list of strings) |
+| `corsAllowedOrigins` | Exact CORS allowlist for the route (`[]` disables CORS for that route) |
 
 ### Filter chain order
 

@@ -5,6 +5,9 @@ import io.github.rygel.outerstellar.platform.composition.RouteRegistry
 import io.github.rygel.outerstellar.platform.extension.ExtensionContribution
 import io.github.rygel.outerstellar.platform.extension.ExtensionReadinessStatus
 import io.github.rygel.outerstellar.platform.persistence.UserRepository
+import java.net.InetAddress
+import java.net.UnknownHostException
+import java.security.MessageDigest
 import java.time.Instant
 import java.time.LocalDate
 import org.http4k.contract.ContractRoute
@@ -15,13 +18,24 @@ import org.http4k.format.KotlinxSerialization
 import org.http4k.routing.RoutingHttpHandler
 
 internal object StaticRoutes {
-    val localhostOnly = Filter { next ->
-        { request ->
-            val host = request.header("Host")
-            if (host == null || host.isLocalhostHost()) {
-                next(request)
-            } else {
-                Response(Status.FORBIDDEN)
+    fun managementOnly(managementToken: String): Filter {
+        val expectedAuthorization =
+            managementToken
+                .takeIf { it.isNotBlank() }
+                ?.let {
+                    require(it.toByteArray(Charsets.UTF_8).size >= MIN_MANAGEMENT_TOKEN_BYTES) {
+                        "MANAGEMENT_TOKEN must contain at least $MIN_MANAGEMENT_TOKEN_BYTES UTF-8 bytes"
+                    }
+                    require(it.none(Char::isWhitespace)) { "MANAGEMENT_TOKEN must not contain whitespace" }
+                    "Bearer $it".toByteArray(Charsets.UTF_8)
+                }
+        return Filter { next ->
+            { request ->
+                if (request.isDirectLoopback() || request.hasManagementAuthorization(expectedAuthorization)) {
+                    next(request)
+                } else {
+                    Response(Status.FORBIDDEN)
+                }
             }
         }
     }
@@ -167,7 +181,27 @@ internal object StaticRoutes {
             )
         )
     }
-}
 
-private fun String.isLocalhostHost(): Boolean =
-    startsWith("localhost") || startsWith("127.0.0.1") || startsWith("[::1]")
+    private fun org.http4k.core.Request.isDirectLoopback(): Boolean =
+        isLoopbackAddress(source?.address) &&
+            header("Forwarded") == null &&
+            header("X-Forwarded-For") == null &&
+            header("X-Real-IP") == null
+
+    private fun org.http4k.core.Request.hasManagementAuthorization(expected: ByteArray?): Boolean {
+        if (expected == null) return false
+        val supplied = header("Authorization") ?: return false
+        return MessageDigest.isEqual(expected, supplied.toByteArray(Charsets.UTF_8))
+    }
+
+    private fun isLoopbackAddress(address: String?): Boolean {
+        if (address == null) return false
+        return try {
+            InetAddress.getByName(address).isLoopbackAddress
+        } catch (_: UnknownHostException) {
+            false
+        }
+    }
+
+    private const val MIN_MANAGEMENT_TOKEN_BYTES = 32
+}

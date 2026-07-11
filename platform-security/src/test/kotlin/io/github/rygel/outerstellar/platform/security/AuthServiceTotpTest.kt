@@ -8,6 +8,8 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import java.util.UUID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -23,6 +25,7 @@ class AuthServiceTotpTest {
     private lateinit var totpService: TOTPService
     private lateinit var authService: AuthService
     private lateinit var sessionService: SessionService
+    private lateinit var totpSecretEncryption: TotpSecretEncryption
 
     @BeforeEach
     fun setUp() {
@@ -30,14 +33,22 @@ class AuthServiceTotpTest {
         sessionRepository = mockk(relaxed = true)
         passwordEncoder = mockk(relaxed = true)
         totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4))
+        totpSecretEncryption = TotpSecretEncryption(TEST_TOKEN_PEPPER)
         authService =
             AuthService(
                 userRepository = userRepository,
                 passwordEncoder = passwordEncoder,
                 config = SecurityConfig(),
                 totpService = totpService,
+                totpSecretEncryption = totpSecretEncryption,
             )
-        sessionService = SessionService(sessionRepository, userRepository, SecurityConfig())
+        sessionService =
+            SessionService(
+                sessionRepository,
+                userRepository,
+                SecurityConfig(),
+                tokenHashing = TokenHashing(TEST_TOKEN_PEPPER),
+            )
     }
 
     @Test
@@ -83,10 +94,16 @@ class AuthServiceTotpTest {
     @Test
     fun `enableTotp stores secret and enables`() {
         val userId = UUID.randomUUID()
+        val storedSecret = slot<String>()
         every { userRepository.updateTotpSecret(any(), any(), any()) } just Runs
         every { userRepository.enableTotp(any()) } just Runs
 
         authService.enableTotp(userId, "newsecret", "[]")
+
+        verify { userRepository.updateTotpSecret(userId, capture(storedSecret), "[]") }
+        assertTrue(storedSecret.captured.startsWith(TotpSecretEncryption.STORAGE_PREFIX))
+        assertEquals("newsecret", totpSecretEncryption.decrypt(storedSecret.captured))
+        verify { userRepository.enableTotp(userId) }
     }
 
     @Test
@@ -120,5 +137,12 @@ class AuthServiceTotpTest {
         every { userRepository.findById(userId) } returns user
         val result = authService.verifyTotp(partialToken, "000000", sessionService)
         assertEquals("invalid_code", result.status, "Invalid code should return invalid_code")
+        verify {
+            userRepository.updateTotpSecret(userId, match { it.startsWith(TotpSecretEncryption.STORAGE_PREFIX) }, null)
+        }
+    }
+
+    companion object {
+        private const val TEST_TOKEN_PEPPER = "auth-service-totp-test-pepper-32-bytes"
     }
 }

@@ -13,7 +13,7 @@
             <textarea name="content" class="textarea textarea-bordered w-full" style="min-height: 100px;" required>${model.content}</textarea>
         </div>
         <footer class="flex items-center justify-end gap-3 pt-3 border-t border-base-content/5">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="htmx.trigger('#message-list-container', 'refresh')">${model.cancelLabel}</button>
+            <button type="button" class="btn btn-ghost btn-sm" data-htmx-trigger-target="#message-list-container" data-htmx-trigger-event="refresh">${model.cancelLabel}</button>
             <button type="submit" class="btn btn-primary btn-sm">${model.saveLabel}</button>
         </footer>
     </form>

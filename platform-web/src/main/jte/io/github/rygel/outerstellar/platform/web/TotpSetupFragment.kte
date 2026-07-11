@@ -2,6 +2,9 @@
 @param model: TotpSetupFragment
 
 <div id="totp-setup">
+    @if (model.error != null)
+        <div class="alert alert-error mb-4" role="alert">${model.error}</div>
+    @endif
     @if (model.totpEnabled)
         <div class="alert alert-success mb-4">
             <span>${model.enabledLabel}</span>
@@ -16,7 +19,7 @@
         @if (model.totpRemainingBackupCodes > 0)
             <div class="mt-4 flex items-center justify-between">
                 <p class="text-sm">${model.backupCodesRemainingLabel.replace("%s", model.totpRemainingBackupCodes.toString())}</p>
-                <button class="btn btn-ghost btn-xs" onclick="navigator.clipboard.writeText(document.querySelector('#backup-codes-data')?.textContent || '')" type="button">
+                <button class="btn btn-ghost btn-xs" data-copy-target="backup-codes-data" type="button">
                     ${model.copyLabel}
                 </button>
             </div>
@@ -29,6 +32,10 @@
             <p class="text-xs mb-4">${model.manualKeyLabel} <code>${model.totpSecret}</code></p>
             <form hx-post="/auth/components/totp-verify-setup" hx-target="#totp-setup" hx-swap="outerHTML">
                 <input type="hidden" name="secret" value="${model.totpSecret}"/>
+                <label class="form-control w-full mb-3">
+                    <span class="label-text">${model.reauthPasswordLabel}</span>
+                    <input type="password" name="password" class="input input-bordered w-full" autocomplete="current-password" required/>
+                </label>
                 <label class="form-control w-full">
                     <span class="label-text">${model.codeLabel}</span>
                     <input type="text" name="code" class="input input-bordered w-full" placeholder="000000" maxlength="6" pattern="[0-9]{6}" required/>
@@ -40,24 +47,24 @@
                 ${model.setupLabel}
             </button>
         @endif
-        @if (model.totpBackupCodes != null)
-            <div class="alert alert-warning mt-4">
-                <strong>${model.backupCodesLabel}</strong>
-                <p class="text-sm">${model.backupCodesHint}</p>
-                <div class="grid grid-cols-2 gap-2 mt-2" id="backup-codes-list">
-                    @for(code in model.totpBackupCodes)
-                        <code class="block p-1 bg-base-300 rounded text-center select-all">${code}</code>
-                    @endfor
-                </div>
-                <div class="flex gap-2 mt-3">
-                    <button class="btn btn-ghost btn-xs" onclick="navigator.clipboard.writeText('${model.totpBackupCodes.joinToString("\\n")}')" type="button">
-                        ${model.copyLabel}
-                    </button>
-                    <button class="btn btn-ghost btn-xs" onclick="(function(){const blob=new Blob(['${model.totpBackupCodes.joinToString("\\n")}'],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-codes.txt';a.click();URL.revokeObjectURL(a.href)})()" type="button">
-                        ${model.downloadLabel}
-                    </button>
-                </div>
+    @endif
+    @if (model.totpBackupCodes != null)
+        <div class="alert alert-warning mt-4">
+            <strong>${model.backupCodesLabel}</strong>
+            <p class="text-sm">${model.backupCodesHint}</p>
+            <div class="grid grid-cols-2 gap-2 mt-2" id="backup-codes-list">
+                @for(code in model.totpBackupCodes)
+                    <code class="block p-1 bg-base-300 rounded text-center select-all">${code}</code>
+                @endfor
             </div>
-        @endif
+            <div class="flex gap-2 mt-3">
+                <button class="btn btn-ghost btn-xs" data-copy-text="${model.totpBackupCodes.joinToString("\\n")}" type="button">
+                    ${model.copyLabel}
+                </button>
+                <button class="btn btn-ghost btn-xs" data-download-text="${model.totpBackupCodes.joinToString("\\n")}" data-download-filename="backup-codes.txt" type="button">
+                    ${model.downloadLabel}
+                </button>
+            </div>
+        </div>
     @endif
 </div>

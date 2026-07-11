@@ -1,7 +1,6 @@
 package io.github.rygel.outerstellar.platform
 
 import io.github.rygel.outerstellar.platform.infra.NativeStartupCheck
-import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -38,18 +37,9 @@ fun main() {
         System.exit(1)
     }
 
+    components.ensureInitialAdmin(System.getenv("ADMIN_PASSWORD"))
     val server = components.app.asServer(Netty(components.config.port)).start()
     logger.info(elapsed(t0, "Server ready on :${server.port()}"))
-
-    val adminPassword =
-        System.getenv("ADMIN_PASSWORD")
-            ?: java.util.UUID.randomUUID().toString().also {
-                logger.warn("ADMIN_PASSWORD env var not set. A random password was generated for first-boot admin.")
-                logger.warn("Set ADMIN_PASSWORD to a secure value before deploying to production.")
-            }
-    if (components.persistence.userRepository.findByUsername("admin") == null) {
-        components.persistence.userRepository.seedAdminUser(BCryptPasswordEncoder().encode(adminPassword))
-    }
 
     val outboxScheduler = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "outbox-processor").also { it.isDaemon = true }

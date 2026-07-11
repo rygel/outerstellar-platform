@@ -11,7 +11,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-private val tokenHashing = TokenHashing(TokenHashing.DEFAULT_PEPPER)
+private val tokenHashing = TokenHashing("jdbi-session-repository-test-pepper-32-bytes")
 
 class JdbiSessionRepositoryTest : JdbiTest() {
 

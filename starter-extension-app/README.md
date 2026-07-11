@@ -25,12 +25,20 @@ It keeps the same boundary the platform expects in production:
 2. Start the app:
 
    ```powershell
+   $env:APP_PROFILE = "dev"
+   $env:ADMIN_PASSWORD = "choose-a-strong-first-admin-password"
    mvn -pl starter-host exec:java
    ```
 
 3. Open `http://localhost:8080`.
 
-The launcher seeds an `admin` user on first boot. Set `ADMIN_PASSWORD` before startup if you do not want to use the scaffold default.
+The launcher seeds an `admin` user before opening the HTTP port. `ADMIN_PASSWORD` is required on the first boot and
+must satisfy the platform password policy. Later starts do not require the variable once the administrator exists.
+
+`APP_PROFILE=dev` explicitly enables local-only development conveniences. The checked-in default configuration keeps
+development auto-login, the developer dashboard, insecure cookies, and wildcard CORS disabled.
+For any non-development profile, set a deployment-specific `TOKEN_PEPPER` containing at least 32 UTF-8 bytes; the host
+refuses to start without it.
 
 ## Rename checklist
 

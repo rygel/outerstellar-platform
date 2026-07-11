@@ -51,6 +51,7 @@ class RequestContext(
     }
 
     val sessionExpired: Boolean by lazy { sessionLookup is SessionLookup.Expired }
+    val sessionActive: Boolean by lazy { sessionLookup is SessionLookup.Active }
 
     val csrfToken: String by lazy { request.cookie(CSRF_COOKIE)?.value ?: java.util.UUID.randomUUID().toString() }
 

@@ -14,7 +14,7 @@ class SessionService(
     private val userRepository: UserRepository,
     private val config: SecurityConfig,
     private val activityUpdater: AsyncActivityUpdater? = null,
-    private val tokenHashing: TokenHashing = TokenHashing(TokenHashing.DEFAULT_PEPPER),
+    private val tokenHashing: TokenHashing,
 ) {
     private val logger = LoggerFactory.getLogger(SessionService::class.java)
     private val secureRandom = SecureRandom()

@@ -130,6 +130,18 @@ class SessionSecurityIntegrationTest : WebTest() {
         assertThat(response, hasStatus(Status.OK))
     }
 
+    @Test
+    fun `active session refreshes browser cookie for the server sliding window`() {
+        val session = sessionFor(regularUser)
+        val response = app(Request(GET, "/contacts").cookie(session))
+        assertThat(response, hasStatus(Status.OK))
+
+        val setCookie = response.header("Set-Cookie").orEmpty()
+        assertTrue(setCookie.contains("${RequestContext.SESSION_COOKIE}=${session.value}"))
+        assertTrue(setCookie.contains("Max-Age=${testConfig.sessionTimeoutMinutes * 60}"))
+        assertTrue(setCookie.contains("HttpOnly") && setCookie.contains("SameSite=Strict"))
+    }
+
     // ---- Invalid / unknown session ----
 
     @Test
@@ -260,7 +272,7 @@ class SessionSecurityIntegrationTest : WebTest() {
 
     @Test
     fun `normal response includes Access-Control-Expose-Headers with X-Request-Id`() {
-        val response = app(Request(GET, "/health"))
+        val response = app(Request(GET, "/health").header("Origin", "https://example.com"))
         val expose = response.header("Access-Control-Expose-Headers").orEmpty()
         assertTrue(expose.contains("X-Request-Id"), "X-Request-Id must be in Expose-Headers, got: $expose")
     }

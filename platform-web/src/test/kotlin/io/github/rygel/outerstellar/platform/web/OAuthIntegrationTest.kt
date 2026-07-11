@@ -1,5 +1,8 @@
 package io.github.rygel.outerstellar.platform.web
 
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import com.natpryce.hamkrest.assertion.assertThat
 import io.github.rygel.outerstellar.platform.model.User
 import io.github.rygel.outerstellar.platform.model.UserRole
@@ -7,6 +10,7 @@ import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.OAuthService
 import io.github.rygel.outerstellar.platform.security.TOTPService
+import io.github.rygel.outerstellar.platform.security.TotpSecretEncryption
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,6 +26,7 @@ import org.http4k.core.cookie.cookie
 import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.slf4j.LoggerFactory
 
 /**
  * Integration tests for OAuth sign-in routes (Feature 4).
@@ -64,6 +69,7 @@ class OAuthIntegrationTest : WebTest() {
                 encoder,
                 auditRepository,
                 totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
+                totpSecretEncryption = TotpSecretEncryption(testConfig.tokenPepper),
             )
 
         app = buildApp()
@@ -139,6 +145,35 @@ class OAuthIntegrationTest : WebTest() {
             location.contains("oauth_error=true"),
             "State mismatch should redirect to /auth?oauth_error=true, got: $location",
         )
+    }
+
+    @Test
+    fun `OAuth state mismatch log records context without state secrets`() {
+        val expectedState = "expected-state-secret"
+        val returnedState = "returned-state-secret"
+        val logger = LoggerFactory.getLogger(OAuthRoutes::class.java) as Logger
+        val appender = ListAppender<ILoggingEvent>().also { it.start() }
+        logger.addAppender(appender)
+
+        try {
+            val response =
+                app(
+                    Request(GET, "/auth/oauth/apple/callback?code=testcode&state=$returnedState")
+                        .cookie(Cookie("oauth_state", expectedState))
+                )
+            assertThat(response, hasStatus(Status.FOUND))
+
+            val message =
+                assertNotNull(
+                    appender.list.lastOrNull { it.formattedMessage.contains("OAuth state mismatch") }?.formattedMessage
+                )
+            assertTrue(message.contains("expectedPresent=true returnedPresent=true"))
+            assertTrue(!message.contains(expectedState), "Expected state must not be logged")
+            assertTrue(!message.contains(returnedState), "Returned state must not be logged")
+        } finally {
+            logger.detachAppender(appender)
+            appender.stop()
+        }
     }
 
     @Test

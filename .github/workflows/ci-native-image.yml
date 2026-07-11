@@ -43,6 +43,7 @@ jobs:
       contents: read
     env:
       GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      E2E_MANAGEMENT_TOKEN: e2e-management-route-token-32-bytes
 
     services:
       postgres:
@@ -90,6 +91,9 @@ jobs:
             -e "JDBC_URL=jdbc:postgresql://host.docker.internal:5432/outerstellar" \
             -e JDBC_USER=outerstellar \
             -e JDBC_PASSWORD=e2e-test-password \
+            -e ADMIN_PASSWORD=NativeE2eAdmin123! \
+            -e MANAGEMENT_TOKEN="${E2E_MANAGEMENT_TOKEN}" \
+            -e APP_PROFILE=dev \
             -e JTE_PRODUCTION=true \
             -e SESSIONCOOKIESECURE=false \
             -e DEVMODE=true \
@@ -99,7 +103,7 @@ jobs:
         run: |
           echo "Waiting for native binary to start..."
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:8080/health | grep -q '"status":"UP"'; then
+            if curl -sf -H "Authorization: Bearer ${E2E_MANAGEMENT_TOKEN}" http://localhost:8080/health | grep -q '"status":"UP"'; then
               echo "Application is ready after $((i * 5))s"
               exit 0
             fi
@@ -113,7 +117,7 @@ jobs:
       - name: Verify Flyway migrations executed
         run: |
           # Check that migrations ran by querying the flyway_schema_history table via health endpoint
-          HEALTH=$(curl -sf http://localhost:8080/health)
+          HEALTH=$(curl -sf -H "Authorization: Bearer ${E2E_MANAGEMENT_TOKEN}" http://localhost:8080/health)
           echo "Health response: $HEALTH"
           echo "$HEALTH" | grep -q '"status":"UP"' || (echo "FAIL: Health check not UP" && exit 1)
           echo "$HEALTH" | grep -q '"database"' || (echo "FAIL: Database status not reported" && exit 1)

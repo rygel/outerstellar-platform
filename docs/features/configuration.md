@@ -29,14 +29,17 @@ Usage: `APP_PROFILE=small mvn exec:java`
 | `jdbcUser` | `JDBC_USER` | `outerstellar` | Database user |
 | `jdbcPassword` | `JDBC_PASSWORD` | `outerstellar` | Database password |
 | `profile` | `APP_PROFILE` | `default` | Active config profile |
-| `devMode` | `DEVMODE` | false | Dev auto-login (localhost only) |
+| `devMode` | `DEVMODE` | false | Direct-loopback auto-login; valid only with the `dev` or `test` profile |
 | `devDashboardEnabled` | `DEV_DASHBOARD_ENABLED` | false | Admin dev dashboard |
 | `sessionCookieSecure` | `SESSIONCOOKIESECURE` | true | Secure flag on session cookie |
 | `sessionTimeoutMinutes` | `SESSIONTIMEOUTMINUTES` | 30 | Session idle timeout |
-| `corsOrigins` | `CORSORIGINS` | "" | Allowed CORS origins (comma-separated) |
+| `tokenPepper` | `TOKEN_PEPPER` | none | Required HMAC key for stored opaque-token hashes (at least 32 UTF-8 bytes) |
+| `managementToken` | `MANAGEMENT_TOKEN` | none | Optional bearer token for remote health/debug probes (at least 32 UTF-8 bytes, no whitespace) |
+| `corsOrigins` | `CORSORIGINS` | "" | Exact CORS origins (comma-separated; empty disables, `*` allows any) |
 | `csrfEnabled` | `CSRFENABLED` | true | CSRF protection |
 | `appBaseUrl` | `APPBASEURL` | `http://localhost:8080` | External URL for canonical/seo |
 | `maxFailedLoginAttempts` | `MAX_FAILED_LOGIN_ATTEMPTS` | 10 | Account lockout threshold |
+| `maxRequestBodyBytes` | `MAX_REQUEST_BODY_BYTES` | 2097152 | Maximum declared or streamed body; larger requests return 413 |
 | `lockoutDurationSeconds` | `LOCKOUT_DURATION_SECONDS` | 900 | Lockout duration (seconds) |
 | `cspPolicy` | `CSP_POLICY` | (default policy) | Content-Security-Policy |
 | `staticDir` | `STATIC_DIR` (`ASSETS_DIR` alias) | "" | Filesystem directory for static assets before classpath fallback |

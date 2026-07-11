@@ -14,7 +14,7 @@ class ApiKeyService(
     private val userRepository: UserRepository,
     private val apiKeyRepository: ApiKeyRepository,
     private val auditRepository: AuditRepository? = null,
-    private val tokenHashing: TokenHashing = TokenHashing(TokenHashing.DEFAULT_PEPPER),
+    private val tokenHashing: TokenHashing,
 ) {
     private val logger = LoggerFactory.getLogger(ApiKeyService::class.java)
     private val secureRandom = java.security.SecureRandom()

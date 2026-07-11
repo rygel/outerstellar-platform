@@ -71,7 +71,7 @@ internal class FilterChainFactory(
 
         return chain
             .then(analyticsPageViewFilter(analytics))
-            .then(Filters.sessionTimeout(config.sessionCookieSecure))
+            .then(Filters.sessionTimeout(config.sessionCookieSecure, config.sessionTimeoutMinutes))
             .then(Filters.securityFilter)
             .then(Filters.requestLogging)
             .then(Filters.serverMetrics)

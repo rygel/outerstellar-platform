@@ -65,6 +65,7 @@ fun createSecurityComponents(
 ): SecurityComponents {
     val passwordEncoder = BCryptPasswordEncoder()
     val tokenHashing = TokenHashing(config.tokenPepper)
+    val totpSecretEncryption = TotpSecretEncryption(config.tokenPepper)
     val jwtService = JwtService(config.jwt)
     val asyncActivityUpdater = AsyncActivityUpdater(userRepository)
     val securityConfig =
@@ -93,6 +94,7 @@ fun createSecurityComponents(
             auditRepository = auditRepository,
             config = securityConfig,
             totpService = totpService,
+            totpSecretEncryption = totpSecretEncryption,
             transactionManager = transactionManager,
         )
 

@@ -96,7 +96,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
         val response = app(Request(GET, "/?theme=dark").cookie(sessionCookie))
 
         assertThat(response, hasStatus(Status.OK))
-        val setCookie = response.header("Set-Cookie").orEmpty()
+        val setCookie = response.headerValues("Set-Cookie").joinToString("\n")
         assertTrue(
             setCookie.contains("app_theme=dark") || setCookie.contains("app_theme=\"dark\""),
             "Response should set app_theme=dark cookie, got: $setCookie",
@@ -108,7 +108,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
         val response = app(Request(GET, "/?theme=light").cookie(sessionCookie))
 
         assertThat(response, hasStatus(Status.OK))
-        val setCookie = response.header("Set-Cookie").orEmpty()
+        val setCookie = response.headerValues("Set-Cookie").joinToString("\n")
         assertTrue(
             setCookie.contains("app_theme=light") || setCookie.contains("app_theme=\"light\""),
             "Response should set app_theme=light cookie, got: $setCookie",
@@ -118,7 +118,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
     @Test
     fun `theme cookie is persistent (max-age is a full year)`() {
         val response = app(Request(GET, "/?theme=dark").cookie(sessionCookie))
-        val setCookie = response.header("Set-Cookie").orEmpty()
+        val setCookie = response.headerValues("Set-Cookie").joinToString("\n")
 
         // 365 days in seconds = 31536000
         assertTrue(
@@ -131,7 +131,7 @@ class DarkModeToggleIntegrationTest : WebTest() {
     fun `invalid theme value is ignored and cookie is not set`() {
         val response = app(Request(GET, "/?theme=invalid_theme_xyz").cookie(sessionCookie))
 
-        val setCookie = response.header("Set-Cookie").orEmpty()
+        val setCookie = response.headerValues("Set-Cookie").joinToString("\n")
         assertFalse(setCookie.contains("app_theme=invalid_theme_xyz"), "Invalid theme should not be set in cookie")
     }
 

@@ -79,7 +79,8 @@
 
             <button type="button"
                     class="btn btn-error btn-sm"
-                    onclick="document.getElementById('delete-confirm-dialog').showModal()">
+                    data-dialog-action="showModal"
+                    data-dialog-target="delete-confirm-dialog">
                 ${model.data.deleteAccountLabel}
             </button>
 
@@ -93,7 +94,8 @@
                             <button type="submit" class="btn btn-error">${model.data.deleteAccountLabel}</button>
                         </form>
                         <button type="button" class="btn btn-ghost"
-                                onclick="document.getElementById('delete-confirm-dialog').close()">
+                                data-dialog-action="close"
+                                data-dialog-target="delete-confirm-dialog">
                             ${model.data.deleteAccountCancelLabel}
                         </button>
                     </div>

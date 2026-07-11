@@ -7,6 +7,7 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -15,6 +16,8 @@ import org.http4k.core.Method.GET
 import org.http4k.core.Method.OPTIONS
 import org.http4k.core.Request
 import org.http4k.core.Status
+import org.http4k.core.cookie.Cookie
+import org.http4k.core.cookie.cookie
 import org.http4k.hamkrest.hasStatus
 import org.junit.jupiter.api.BeforeEach
 
@@ -141,6 +144,37 @@ class SecurityHeadersIntegrationTest : WebTest() {
     }
 
     @Test
+    fun `default CSP pages use delegated controls instead of inline event handlers`() {
+        val response = app(Request(GET, "/auth/profile").cookie(Cookie(RequestContext.SESSION_COOKIE, sessionToken)))
+        assertThat(response, hasStatus(Status.OK))
+
+        val csp = response.header("Content-Security-Policy")
+        assertNotNull(csp, "CSP should be present on rendered profile pages")
+        assertTrue(
+            !Regex("""script-src[^;]*'unsafe-inline'""").containsMatchIn(csp),
+            "The default script policy must not allow inline JavaScript: $csp",
+        )
+
+        val body = response.bodyString()
+        assertTrue(body.contains("data-dialog-action=\"showModal\""), "Expected delegated dialog control")
+        assertTrue(
+            !Regex("""\s(onclick|onchange|oninput|onsubmit|onerror|onload)\s*=""", RegexOption.IGNORE_CASE)
+                .containsMatchIn(body),
+            "Rendered HTML must not contain inline event handlers",
+        )
+    }
+
+    @Test
+    fun `default CSP permits the HTTPS avatar sources rendered by profile pages`() {
+        val response = app(Request(GET, "/auth/profile").cookie(Cookie(RequestContext.SESSION_COOKIE, sessionToken)))
+        assertThat(response, hasStatus(Status.OK))
+
+        val csp = assertNotNull(response.header("Content-Security-Policy"))
+        assertTrue(csp.contains("img-src 'self' data: https:"), "HTTPS avatar sources must be permitted: $csp")
+        assertTrue(response.bodyString().contains("https://www.gravatar.com/avatar/"), "Expected rendered Gravatar URL")
+    }
+
+    @Test
     fun `API route does NOT have Content-Security-Policy`() {
         val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
         val csp = response.header("Content-Security-Policy")
@@ -161,8 +195,8 @@ class SecurityHeadersIntegrationTest : WebTest() {
 
     @Test
     fun `response includes Access-Control-Allow-Origin header`() {
-        val response = app(Request(GET, "/health"))
-        assertNotNull(response.header("Access-Control-Allow-Origin"), "CORS Allow-Origin should be present")
+        val response = app(Request(GET, "/health").header("Origin", "https://example.com"))
+        assertEquals("*", response.header("Access-Control-Allow-Origin"))
     }
 
     @Test
@@ -174,18 +208,66 @@ class SecurityHeadersIntegrationTest : WebTest() {
                     .header("Access-Control-Request-Method", "POST")
             )
         assertThat(response, hasStatus(Status.NO_CONTENT))
-        assertNotNull(response.header("Access-Control-Allow-Origin"), "CORS preflight should include Allow-Origin")
+        assertEquals("*", response.header("Access-Control-Allow-Origin"))
         assertNotNull(response.header("Access-Control-Allow-Methods"), "CORS preflight should include Allow-Methods")
+        assertTrue(
+            response.header("Access-Control-Allow-Headers")?.contains("X-CSRF-Token") == true,
+            "CORS preflight should permit the CSRF header used by platform.js",
+        )
     }
 
     @Test
     fun `CORS Expose-Headers includes X-Session-Expired`() {
-        val response = app(Request(GET, "/api/v1/sync").header("Authorization", "Bearer $sessionToken"))
+        val response =
+            app(
+                Request(GET, "/api/v1/sync")
+                    .header("Authorization", "Bearer $sessionToken")
+                    .header("Origin", "https://example.com")
+            )
         val exposeHeaders = response.header("Access-Control-Expose-Headers") ?: ""
         assertTrue(
             exposeHeaders.contains("X-Session-Expired"),
             "X-Session-Expired should be exposed for client session handling, got: $exposeHeaders",
         )
+    }
+
+    @Test
+    fun `configured CORS list echoes only the matching request origin`() {
+        val corsApp =
+            buildApp(config = testConfig.copy(corsOrigins = "https://app.example.com, https://admin.example.com"))
+
+        val response = corsApp(Request(GET, "/health").header("Origin", "https://admin.example.com"))
+        assertThat(response, hasStatus(Status.OK))
+        assertEquals("https://admin.example.com", response.header("Access-Control-Allow-Origin"))
+        assertEquals("Origin", response.header("Vary"))
+        assertTrue(response.bodyString().contains("\"status\""), "Expected the health response body")
+    }
+
+    @Test
+    fun `disallowed CORS origin receives no access-control headers`() {
+        val corsApp = buildApp(config = testConfig.copy(corsOrigins = "https://app.example.com"))
+
+        val response = corsApp(Request(GET, "/health").header("Origin", "https://attacker.example"))
+        assertThat(response, hasStatus(Status.OK))
+        assertNull(response.header("Access-Control-Allow-Origin"))
+        assertTrue(response.bodyString().contains("\"status\""), "Expected the health response body")
+    }
+
+    @Test
+    fun `same-origin request without Origin receives no CORS headers`() {
+        val response = app(Request(GET, "/health"))
+        assertThat(response, hasStatus(Status.OK))
+        assertNull(response.header("Access-Control-Allow-Origin"))
+        assertTrue(response.bodyString().contains("\"status\""), "Expected the health response body")
+    }
+
+    @Test
+    fun `invalid configured CORS origin fails application assembly`() {
+        val error =
+            assertFailsWith<IllegalArgumentException> {
+                buildApp(config = testConfig.copy(corsOrigins = "https://example.com/path"))
+            }
+        assertTrue(error.message?.contains("scheme://host[:port]") == true, "Expected actionable validation error")
     }
 
     // ---- Correlation ID ----

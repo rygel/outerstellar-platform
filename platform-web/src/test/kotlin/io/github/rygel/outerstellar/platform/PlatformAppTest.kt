@@ -25,6 +25,7 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 import org.http4k.core.Method
 import org.http4k.core.Request
+import org.http4k.core.RequestSource
 import org.http4k.core.Status
 import org.http4k.hamkrest.hasStatus
 
@@ -52,7 +53,7 @@ class PlatformAppTest {
         val handler = app(config = config, persistence = persistence, security = security, core = core, web = web).http
         assertNotNull(handler)
 
-        val healthResponse = handler(Request(Method.GET, "/health"))
+        val healthResponse = handler(Request(Method.GET, "/health").source(RequestSource("127.0.0.1")))
         assertThat(healthResponse, hasStatus(Status.OK))
         assertThat(healthResponse, bodyContains("UP"))
     }

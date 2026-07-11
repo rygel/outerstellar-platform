@@ -277,7 +277,10 @@ The `/logout` route was bound to `GET`, making it vulnerable to cross-site logou
 
 `Main.kt` hardcoded `"admin123"` as the password for the seeded admin user. Anyone who cloned the platform and deployed it without reading `Main.kt` would have a known credential in production.
 
-**What changed:** `Main.kt` now reads `ADMIN_PASSWORD` from the environment. If the variable is not set, a random UUID is generated and logged at WARN level as the first-boot password, with a reminder to set the variable before going to production. Because `seedAdminUser` only creates the admin user when none exists, the generated password is only meaningful on first boot.
+**Current behavior:** `Main.kt` reads `ADMIN_PASSWORD` from the environment when the initial administrator does not yet
+exist. Missing or policy-invalid credentials fail startup before the HTTP port is opened. Once the administrator exists,
+later starts do not require the variable. Generated starter applications use the same bootstrap path and do not ship a
+known or hidden random password.
 
 ### Moved seedAdminUser onto the UserRepository interface
 

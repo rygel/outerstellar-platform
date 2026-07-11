@@ -770,6 +770,8 @@
   }, {
     "glob" : "db/migration/platform/V16__add_totp_attempt_counter.sql"
   }, {
+    "glob" : "db/migration/platform/V17__expand_totp_secret_for_encryption.sql"
+  }, {
     "glob" : "db/migration/platform/V1__initial_schema.sql"
   }, {
     "glob" : "db/migration/platform/V2__user_profile_enhancements.sql"

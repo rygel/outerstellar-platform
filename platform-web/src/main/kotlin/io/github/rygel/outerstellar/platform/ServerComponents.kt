@@ -9,10 +9,14 @@ import io.github.rygel.outerstellar.platform.di.createWebComponents
 import io.github.rygel.outerstellar.platform.di.loadPersistenceBootstrap
 import io.github.rygel.outerstellar.platform.extension.ExtensionContribution
 import io.github.rygel.outerstellar.platform.extension.PlatformExtension
+import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.createSecurityComponents
+import io.github.rygel.outerstellar.platform.security.validatePassword
 import io.github.rygel.outerstellar.platform.web.SyncWebSocket
 import org.http4k.core.PolyHandler
+
+private val LOCAL_SERVER_PROFILES = setOf("dev", "test")
 
 class ServerComponents(
     val config: AppConfig,
@@ -41,6 +45,9 @@ fun createServerComponents(extension: PlatformExtension? = null): ServerComponen
  * argument.
  */
 fun createServerComponents(config: AppConfig, extension: PlatformExtension? = null): ServerComponents {
+    require(!config.devMode || config.profile in LOCAL_SERVER_PROFILES) {
+        "DEVMODE may only be enabled with the dev or test profile"
+    }
     val persistence = loadPersistenceBootstrap().create(config = config, extensionMigrations = extension?.migrations)
     val emailService = createConfiguredEmailService(config)
 
@@ -106,4 +113,14 @@ fun createServerComponents(config: AppConfig, extension: PlatformExtension? = nu
         web = web,
         app = polyHandler,
     )
+}
+
+fun ServerComponents.ensureInitialAdmin(adminPassword: String?) {
+    if (persistence.userRepository.findByUsername("admin") != null) return
+
+    require(!adminPassword.isNullOrBlank()) {
+        "ADMIN_PASSWORD is required when the initial administrator account does not exist"
+    }
+    validatePassword(adminPassword)?.let { error -> throw IllegalArgumentException("Invalid ADMIN_PASSWORD: $error") }
+    persistence.userRepository.seedAdminUser(BCryptPasswordEncoder().encode(adminPassword))
 }
