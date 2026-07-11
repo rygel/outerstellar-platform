@@ -123,6 +123,7 @@ data class TotpSetupFragment(
     val totpRemainingBackupCodes: Int = 0,
     val enabledLabel: String = "Two-factor authentication is enabled.",
     val passwordLabel: String = "Enter your password to disable",
+    val reauthPasswordLabel: String = "Confirm your password",
     val disableLabel: String = "Disable Two-Factor Auth",
     val backupCodesLabel: String = "Backup Codes",
     val backupCodesHint: String = "Save these codes in a safe place. Each code can be used once.",
@@ -134,6 +135,7 @@ data class TotpSetupFragment(
     val codeLabel: String = "Authentication Code",
     val setupLabel: String = "Enable Two-Factor Auth",
     val verifyLabel: String = "Verify and Enable",
+    val error: String? = null,
 ) : ViewModel
 
 data class ErrorPage(

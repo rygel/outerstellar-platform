@@ -69,6 +69,7 @@ class PasswordResetFlowIntegrationTest : WebTest() {
             auditRepository = auditRepository,
             sessionRepository = sessionRepository,
             emailService = NoOpEmailService(),
+            tokenHashing = tokenHashing,
         )
     }
 
@@ -176,6 +177,31 @@ class PasswordResetFlowIntegrationTest : WebTest() {
             )
 
         assertThat(response, hasStatus(Status.BAD_REQUEST))
+    }
+
+    @Test
+    fun `weak replacement password does not consume the reset token`() {
+        val rawToken = assertNotNull(requestRawToken(testUser.email))
+
+        val weakResponse =
+            app(
+                Request(POST, "/api/v1/auth/reset-confirm")
+                    .header("content-type", "application/json")
+                    .body("""{"token":"$rawToken","newPassword":"weak"}""")
+            )
+        assertThat(weakResponse, hasStatus(Status.BAD_REQUEST))
+
+        val retryResponse =
+            app(
+                Request(POST, "/api/v1/auth/reset-confirm")
+                    .header("content-type", "application/json")
+                    .body("""{"token":"$rawToken","newPassword":"ValidRetryP@ss1"}""")
+            )
+        assertThat(retryResponse, hasStatus(Status.OK))
+        assertTrue(
+            encoder.matches("ValidRetryP@ss1", assertNotNull(userRepository.findById(testUser.id)).passwordHash),
+            "The same token should remain usable after client-correctable validation errors",
+        )
     }
 
     @Test

@@ -6,7 +6,6 @@ import io.github.rygel.outerstellar.platform.model.TotpDisableRequest
 import io.github.rygel.outerstellar.platform.model.TotpSetupResponse
 import io.github.rygel.outerstellar.platform.model.TotpVerifyRequest
 import io.github.rygel.outerstellar.platform.model.TotpVerifyResponse
-import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.SecurityRules
 import io.github.rygel.outerstellar.platform.security.SessionService
@@ -60,6 +59,10 @@ class TOTPApiRoutes(
                 { request ->
                     val user = SecurityRules.USER_KEY(request) ?: return@to Response(UNAUTHORIZED)
                     val body = totpConfirmRequest(request)
+                    if (!authService.reauthenticate(user.id, body.password)) {
+                        return@to Response(UNAUTHORIZED)
+                            .with(totpConfirmResponse of TotpConfirmResponse("invalid_password"))
+                    }
                     if (!totpService.verifyCode(body.secret, body.code)) {
                         return@to Response(OK).with(totpConfirmResponse of TotpConfirmResponse("invalid_code"))
                     }
@@ -72,8 +75,7 @@ class TOTPApiRoutes(
                 { request ->
                     val user = SecurityRules.USER_KEY(request) ?: return@to Response(UNAUTHORIZED)
                     val body = totpDisableRequest(request)
-                    val authResult = authService.authenticate(user.username, body.password)
-                    if (authResult !is AuthResult.Authenticated) {
+                    if (!authService.reauthenticate(user.id, body.password)) {
                         return@to Response(UNAUTHORIZED)
                     }
                     authService.disableTotp(user.id)

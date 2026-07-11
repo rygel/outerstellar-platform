@@ -47,6 +47,7 @@ class AuthServiceTest {
                 passwordEncoder = passwordEncoder,
                 auditRepository = auditRepository,
                 totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
+                totpSecretEncryption = TotpSecretEncryption(TEST_TOKEN_PEPPER),
             )
     }
 
@@ -223,6 +224,7 @@ class AuthServiceTest {
                 auditRepository = auditRepository,
                 config = SecurityConfig(registrationEnabled = false),
                 totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
+                totpSecretEncryption = TotpSecretEncryption(TEST_TOKEN_PEPPER),
             )
 
         assertThrows<RegistrationDisabledException> { disabledService.register("new@test.com", "ValidP@ss1") }
@@ -244,6 +246,10 @@ class AuthServiceTest {
         assertThrows<WeakPasswordException> { service.register("newuser@test.com", "short") }
     }
 
+    companion object {
+        private const val TEST_TOKEN_PEPPER = "auth-service-test-token-pepper-32-bytes"
+    }
+
     @Test
     fun `register throws on long password`() {
         every { userRepository.findByUsername("newuser@test.com") } returns null
@@ -252,9 +258,9 @@ class AuthServiceTest {
     }
 
     @Test
-    fun `register trims whitespace before validation`() {
+    fun `register preserves password whitespace exactly`() {
         every { userRepository.findByUsername("newuser@test.com") } returns null
-        every { passwordEncoder.encode("Validp@ss1") } returns "encoded_hash"
+        every { passwordEncoder.encode("  Validp@ss1  ") } returns "encoded_hash"
 
         val result = service.register("newuser@test.com", "  Validp@ss1  ")
 

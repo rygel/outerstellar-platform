@@ -6,14 +6,14 @@
     <p class="opacity-70 mb-6">${model.message}</p>
 
     <div class="flex justify-end gap-3">
-        <button class="btn btn-ghost" onclick="document.getElementById('${model.id}').remove()">
+        <button type="button" class="btn btn-ghost" data-remove-target="${model.id}">
             ${model.cancelLabel}
         </button>
-        <button class="btn btn-error"
+        <button type="button" class="btn btn-error"
                 hx-delete="${model.actionUrl}"
                 hx-target="${model.targetId}"
                 hx-swap="outerHTML"
-                onclick="document.getElementById('${model.id}').remove()">
+                data-remove-target="${model.id}">
             ${model.confirmLabel}
         </button>
     </div>

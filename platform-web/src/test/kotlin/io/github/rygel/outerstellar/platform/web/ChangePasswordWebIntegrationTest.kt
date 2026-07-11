@@ -6,6 +6,7 @@ import io.github.rygel.outerstellar.platform.model.UserRole
 import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.security.TOTPService
+import io.github.rygel.outerstellar.platform.security.TotpSecretEncryption
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -58,6 +59,7 @@ class ChangePasswordWebIntegrationTest : WebTest() {
                 encoder,
                 auditRepository,
                 totpService = TOTPService(BCryptPasswordEncoder(logRounds = 4)),
+                totpSecretEncryption = TotpSecretEncryption(testConfig.tokenPepper),
             )
 
         testToken = sessionSvc.createSession(testUser.id)

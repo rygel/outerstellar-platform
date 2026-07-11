@@ -26,10 +26,9 @@ class AccountService(
         if (!passwordEncoder.matches(currentPassword, user.passwordHash)) {
             throw WeakPasswordException("Current password is incorrect")
         }
-        val normalized = newPassword.trim()
-        validatePassword(normalized)?.let { throw WeakPasswordException(it) }
+        validatePassword(newPassword)?.let { throw WeakPasswordException(it) }
 
-        val updated = user.copy(passwordHash = passwordEncoder.encode(normalized))
+        val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
         sessionRepository?.deleteByUserId(userId)
         logger.info("Password changed for user {}", sanitize(user.username))

@@ -179,7 +179,7 @@ class MdcLoggingIntegrationTest : WebTest() {
 
     @Test
     fun `X-Request-Id is exposed in CORS headers`() {
-        val response = app(Request(GET, "/health"))
+        val response = app(Request(GET, "/health").header("Origin", "https://example.com"))
         val exposeHeader = response.header("Access-Control-Expose-Headers")
 
         assertNotNull(exposeHeader)

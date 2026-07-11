@@ -19,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
+private const val TEST_TOKEN_PEPPER = "security-service-test-token-pepper-32-bytes"
+
 class SecurityServiceTest {
 
     private lateinit var userRepository: UserRepository
@@ -55,6 +57,7 @@ class SecurityServiceTest {
                 userRepository = userRepository,
                 apiKeyRepository = apiKeyRepository,
                 auditRepository = auditRepository,
+                tokenHashing = TokenHashing(TEST_TOKEN_PEPPER),
             )
         userAdminService = UserAdminService(userRepository, auditRepository)
     }
@@ -178,7 +181,7 @@ class SecurityServiceTest {
     @Test
     fun `authenticateApiKey returns user for valid key`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
-        val expectedHash = TokenHashing(TokenHashing.DEFAULT_PEPPER).hash(rawKey)
+        val expectedHash = TokenHashing(TEST_TOKEN_PEPPER).hash(rawKey)
 
         val apiKey =
             ApiKey(id = 1L, userId = testUser.id, keyHash = expectedHash, keyPrefix = "osk_abcd", name = "test-key")
@@ -196,7 +199,7 @@ class SecurityServiceTest {
     @Test
     fun `authenticateApiKey returns null for disabled key`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
-        val expectedHash = TokenHashing(TokenHashing.DEFAULT_PEPPER).hash(rawKey)
+        val expectedHash = TokenHashing(TEST_TOKEN_PEPPER).hash(rawKey)
 
         val disabledKey =
             ApiKey(
@@ -218,7 +221,7 @@ class SecurityServiceTest {
     @Test
     fun `authenticateApiKey returns null for disabled user`() {
         val rawKey = "osk_abcdef1234567890abcdef1234567890"
-        val expectedHash = TokenHashing(TokenHashing.DEFAULT_PEPPER).hash(rawKey)
+        val expectedHash = TokenHashing(TEST_TOKEN_PEPPER).hash(rawKey)
 
         val apiKey =
             ApiKey(id = 3L, userId = testUser.id, keyHash = expectedHash, keyPrefix = "osk_abcd", name = "test-key")

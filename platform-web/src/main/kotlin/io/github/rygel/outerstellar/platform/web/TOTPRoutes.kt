@@ -1,6 +1,5 @@
 package io.github.rygel.outerstellar.platform.web
 
-import io.github.rygel.outerstellar.platform.security.AuthResult
 import io.github.rygel.outerstellar.platform.security.AuthService
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
@@ -137,6 +136,7 @@ class TOTPRoutes(
                                     disabledLabel = shellRenderer.i18n.translate("web.totp.scanQr"),
                                     manualKeyLabel = shellRenderer.i18n.translate("web.totp.manualKey"),
                                     codeLabel = shellRenderer.i18n.translate("web.totp.codeLabel"),
+                                    reauthPasswordLabel = shellRenderer.i18n.translate("web.totp.reauthPasswordLabel"),
                                     verifyLabel = shellRenderer.i18n.translate("web.totp.verifyAndEnable"),
                                 )
                             )
@@ -147,11 +147,13 @@ class TOTPRoutes(
                 { request ->
                     val secret = request.form("secret") ?: return@to Response(OK).body("Missing secret")
                     val code = request.form("code") ?: return@to Response(OK).body("Missing code")
+                    val password = request.form("password") ?: return@to Response(OK).body("Missing password")
                     val ctx = RequestContext.KEY(request)
                     val shellRenderer = ShellRenderer.KEY(request)
                     val user = ctx.user ?: return@to Response(OK).body("Not authenticated")
 
-                    if (!totpService.verifyCode(secret, code)) {
+                    val invalidPassword = !authService.reauthenticate(user.id, password)
+                    if (invalidPassword || !totpService.verifyCode(secret, code)) {
                         val qrDataUri = totpService.generateQrDataUri(secret, user.email)
                         return@to Response(OK)
                             .body(
@@ -162,7 +164,14 @@ class TOTPRoutes(
                                         disabledLabel = shellRenderer.i18n.translate("web.totp.scanQr"),
                                         manualKeyLabel = shellRenderer.i18n.translate("web.totp.manualKey"),
                                         codeLabel = shellRenderer.i18n.translate("web.totp.codeLabel"),
+                                        reauthPasswordLabel =
+                                            shellRenderer.i18n.translate("web.totp.reauthPasswordLabel"),
                                         verifyLabel = shellRenderer.i18n.translate("web.totp.verifyAndEnable"),
+                                        error =
+                                            shellRenderer.i18n.translate(
+                                                if (invalidPassword) "web.totp.invalidPassword"
+                                                else "web.totp.invalidCode"
+                                            ),
                                     )
                                 )
                             )
@@ -196,8 +205,7 @@ class TOTPRoutes(
                     val ctx = RequestContext.KEY(request)
                     val shellRenderer = ShellRenderer.KEY(request)
                     val user = ctx.user ?: return@to Response(OK).body("Not authenticated")
-                    val authResult = authService.authenticate(user.username, password)
-                    if (authResult !is AuthResult.Authenticated) {
+                    if (!authService.reauthenticate(user.id, password)) {
                         return@to Response(OK)
                             .body(
                                 renderer(

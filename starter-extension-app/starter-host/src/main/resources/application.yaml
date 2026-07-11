@@ -4,9 +4,9 @@ jdbcUrl: "jdbc:postgresql://localhost:5432/outerstellar"
 jdbcUser: "outerstellar"
 jdbcPassword: "outerstellar"
 appBaseUrl: "http://localhost:8080"
-devDashboardEnabled: true
-devMode: true
-sessionCookieSecure: false
-sessionTimeoutMinutes: 120
+devDashboardEnabled: false
+devMode: false
+sessionCookieSecure: true
+sessionTimeoutMinutes: 30
 registrationEnabled: true
-corsOrigins: "*"
+corsOrigins: ""

@@ -38,6 +38,7 @@ jobs:
     env:
       GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       E2E_ADMIN_PASSWORD: e2eTestPassword123
+      E2E_MANAGEMENT_TOKEN: e2e-management-route-token-32-bytes
 
     services:
       postgres:
@@ -97,6 +98,8 @@ jobs:
             --add-host=host.docker.internal:host-gateway \
             -p 8080:8080 \
             -e ADMIN_PASSWORD="${E2E_ADMIN_PASSWORD}" \
+            -e MANAGEMENT_TOKEN="${E2E_MANAGEMENT_TOKEN}" \
+            -e APP_PROFILE=dev \
             -e DEVMODE=true \
             -e SESSIONCOOKIESECURE=false \
             -e "JDBC_URL=jdbc:postgresql://host.docker.internal:5432/outerstellar" \
@@ -108,7 +111,7 @@ jobs:
         run: |
           echo "Waiting for application to start..."
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:8080/health | grep -q '"status":"UP"'; then
+            if curl -sf -H "Authorization: Bearer ${E2E_MANAGEMENT_TOKEN}" http://localhost:8080/health | grep -q '"status":"UP"'; then
               echo "Application is ready after $((i * 5))s"
               exit 0
             fi

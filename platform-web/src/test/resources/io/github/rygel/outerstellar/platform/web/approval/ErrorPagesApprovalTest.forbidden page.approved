@@ -108,28 +108,28 @@
                 
                     <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link"
                        href="/"
-                       onclick="document.getElementById('sidebar-drawer').checked = false">
+                       data-uncheck-target="sidebar-drawer">
                         <i class="ri-home-5-line text-lg opacity-80 w-5 text-center"></i>
                         Home
                     </a>
                 
                     <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link"
                        href="/search"
-                       onclick="document.getElementById('sidebar-drawer').checked = false">
+                       data-uncheck-target="sidebar-drawer">
                         <i class="ri-search-line text-lg opacity-80 w-5 text-center"></i>
                         Search
                     </a>
                 
                     <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link"
                        href="/contacts"
-                       onclick="document.getElementById('sidebar-drawer').checked = false">
+                       data-uncheck-target="sidebar-drawer">
                         <i class="ri-user-3-line text-lg opacity-80 w-5 text-center"></i>
                         Contacts
                     </a>
                 
                     <a class="flex items-center gap-2 px-3 py-2 text-sm rounded font-semibold nav-link"
                        href="/messages/trash"
-                       onclick="document.getElementById('sidebar-drawer').checked = false">
+                       data-uncheck-target="sidebar-drawer">
                         <i class="ri-delete-bin-7-line text-lg opacity-80 w-5 text-center"></i>
                         Trash
                     </a>
@@ -142,7 +142,7 @@
 <div>
     <h3 class="text-[0.65rem] uppercase tracking-widest font-extrabold opacity-50 mb-2">Themes</h3>
     <form hx-get="/components/navigation/page" hx-target="body" hx-push-url="true">
-        <select id="theme-selector" name="theme" class="select select-bordered select-sm w-full" onchange="htmx.trigger(this.form, 'submit')" aria-label="Choose your theme">
+        <select id="theme-selector" name="theme" class="select select-bordered select-sm w-full" data-submit-on-change aria-label="Choose your theme">
             
                 <option value="dark" selected>Dark</option>
             
@@ -227,7 +227,7 @@
 <div>
     <h3 class="text-[0.65rem] uppercase tracking-widest font-extrabold opacity-50 mb-2">Language</h3>
     <form hx-get="/components/navigation/page" hx-target="body" hx-push-url="true">
-        <select id="language-selector" name="lang" class="select select-bordered select-sm w-full" onchange="htmx.trigger(this.form, 'submit')" aria-label="Choose your language">
+        <select id="language-selector" name="lang" class="select select-bordered select-sm w-full" data-submit-on-change aria-label="Choose your language">
             
                 <option value="en" selected>English</option>
             
@@ -252,7 +252,7 @@
 <div>
     <h3 class="text-[0.65rem] uppercase tracking-widest font-extrabold opacity-50 mb-2">Layout</h3>
     <form hx-get="/components/navigation/page" hx-target="body" hx-push-url="true">
-        <select id="layout-selector" name="layout" class="select select-bordered select-sm w-full" onchange="htmx.trigger(this.form, 'submit')" aria-label="Choose your layout">
+        <select id="layout-selector" name="layout" class="select select-bordered select-sm w-full" data-submit-on-change aria-label="Choose your layout">
             
                 <option value="nice" selected>Nice</option>
             
@@ -280,5 +280,4 @@
 <script nonce="[CSP-NONCE]" src="/platform.js?v=[CACHE-BUSTER]"></script>
 </body>
 </html>
-
 

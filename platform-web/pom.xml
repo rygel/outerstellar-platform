@@ -206,6 +206,35 @@
         <testSourceDirectory>src/test/kotlin</testSourceDirectory>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>reject-inline-template-event-handlers</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <resourcecount property="inline.template.handler.count">
+                                    <fileset dir="${project.basedir}/src/main/jte" includes="**/*.kte">
+                                        <containsregexp expression="\s(onclick|onchange|oninput|onsubmit|onerror|onload)\s*="/>
+                                    </fileset>
+                                </resourcecount>
+                                <fail message="Inline event handlers violate the default CSP; use delegated controls in platform.js">
+                                    <condition>
+                                        <not>
+                                            <equals arg1="${inline.template.handler.count}" arg2="0"/>
+                                        </not>
+                                    </condition>
+                                </fail>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <executions>

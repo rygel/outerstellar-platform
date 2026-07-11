@@ -5,8 +5,12 @@ import com.natpryce.hamkrest.equalTo
 import io.github.rygel.outerstellar.platform.composition.PlatformMode
 import io.github.rygel.outerstellar.platform.extension.ExtensionContributionContext
 import io.github.rygel.outerstellar.platform.extension.PlatformExtension
+import io.github.rygel.outerstellar.platform.security.BCryptPasswordEncoder
 import io.github.rygel.outerstellar.platform.web.WebTest
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import org.http4k.contract.bindContract
 import org.http4k.contract.div
 import org.http4k.contract.meta
@@ -19,6 +23,76 @@ import org.http4k.lens.Path
 import org.http4k.lens.string
 
 class ServerComponentsIntegrationTest : WebTest() {
+    @Test
+    fun `server startup rejects a missing deployment token pepper`() {
+        val error =
+            assertFailsWith<IllegalArgumentException> {
+                createServerComponents(config = testConfig.copy(tokenPepper = ""))
+            }
+
+        assertThat(error.message, equalTo("TOKEN_PEPPER must contain at least 32 UTF-8 bytes"))
+    }
+
+    @Test
+    fun `server startup rejects dev mode outside explicit local profiles`() {
+        val error =
+            assertFailsWith<IllegalArgumentException> {
+                createServerComponents(config = testConfig.copy(devMode = true, profile = "default"))
+            }
+
+        assertThat(error.message, equalTo("DEVMODE may only be enabled with the dev or test profile"))
+    }
+
+    @Test
+    fun `initial administrator requires an explicit valid password`() {
+        val components = createServerComponents(config = testConfig.copy(profile = "test"))
+
+        try {
+            val error = assertFailsWith<IllegalArgumentException> { components.ensureInitialAdmin(null) }
+
+            assertThat(
+                error.message,
+                equalTo("ADMIN_PASSWORD is required when the initial administrator account does not exist"),
+            )
+            assertNull(components.persistence.userRepository.findByUsername("admin"))
+        } finally {
+            components.persistence.close()
+        }
+    }
+
+    @Test
+    fun `initial administrator is seeded before server startup`() {
+        val components = createServerComponents(config = testConfig.copy(profile = "test"))
+
+        try {
+            components.ensureInitialAdmin("ValidAdmin123!")
+
+            val admin = components.persistence.userRepository.findByUsername("admin")
+            assertNotNull(admin)
+            assertThat(admin.role.name, equalTo("ADMIN"))
+            assertThat(BCryptPasswordEncoder().matches("ValidAdmin123!", admin.passwordHash), equalTo(true))
+        } finally {
+            components.persistence.close()
+        }
+    }
+
+    @Test
+    fun `existing administrator does not require the bootstrap password again`() {
+        val components = createServerComponents(config = testConfig.copy(profile = "test"))
+
+        try {
+            components.persistence.userRepository.seedAdminUser(testPasswordHash)
+
+            components.ensureInitialAdmin(null)
+
+            val admin = components.persistence.userRepository.findByUsername("admin")
+            assertNotNull(admin)
+            assertThat(admin.passwordHash, equalTo(testPasswordHash))
+        } finally {
+            components.persistence.close()
+        }
+    }
+
     @Test
     fun `server components can boot extension with explicit test config`() {
         val config = testConfig.copy(version = "test-config-version", platformMode = PlatformMode.ExtensionHost)

@@ -25,7 +25,9 @@ mvn clean install -DskipTests
 ./scripts/stop-web.ps1
 ```
 
-The web app starts on `http://localhost:8080`. A first-boot admin user is created with a random password (logged to console). Set `ADMIN_PASSWORD` env var to control this.
+The web app starts on `http://localhost:8080`. On a fresh database, set `ADMIN_PASSWORD` to a policy-compliant value;
+the application creates the initial administrator before opening the HTTP port. The variable is optional after that
+account exists.
 
 ## Module Structure
 
@@ -75,11 +77,13 @@ Set `APP_PROFILE` to select a profile. The loader first tries `/application-{pro
 | `jdbcUrl` | `JDBC_URL` | `jdbc:postgresql://localhost:5432/outerstellar` | Database JDBC URL |
 | `jdbcUser` | `JDBC_USER` | `outerstellar` | Database user |
 | `jdbcPassword` | `JDBC_PASSWORD` | `outerstellar` | Database password |
-| `devMode` | `DEVMODE` | `false` | Enables dev auto-login, relaxed security |
+| `devMode` | `DEVMODE` | `false` | Enables direct-loopback auto-login in the `dev` or `test` profile only |
 | `devDashboardEnabled` | `DEV_DASHBOARD_ENABLED` | `false` | Admin diagnostics page |
 | `sessionTimeoutMinutes` | `SESSIONTIMEOUTMINUTES` | `30` | Session expiry in minutes |
 | `sessionCookieSecure` | `SESSIONCOOKIESECURE` | `false` | Set `true` in production with HTTPS |
-| `corsOrigins` | `CORSORIGINS` | `*` | Allowed CORS origins (empty = disabled) |
+| `tokenPepper` | `TOKEN_PEPPER` | none | Required HMAC key for opaque tokens; at least 32 UTF-8 bytes |
+| `managementToken` | `MANAGEMENT_TOKEN` | none | Optional bearer token for remote health/debug probes; at least 32 UTF-8 bytes, no whitespace |
+| `corsOrigins` | `CORSORIGINS` | `""` | Exact CORS origins (empty disables; the `dev` profile sets `*`) |
 | `csrfEnabled` | `CSRFENABLED` | `true` | CSRF double-submit cookie protection |
 | `appBaseUrl` | `APPBASEURL` | `http://localhost:8080` | Base URL for email links and OAuth |
 | `email.enabled` | `EMAIL_ENABLED` | `false` | Enable email delivery |
@@ -379,7 +383,10 @@ mvn spotless:check checkstyle:check pmd:check spotbugs:check detekt:check
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/health` | Health check (DB status) |
+| `GET` | `/health/live` | Process liveness (management access required) |
+| `GET` | `/health/ready` | Database and extension readiness (management access required) |
+| `GET` | `/health` | Compatibility alias for readiness (management access required) |
+| `GET` | `/debug/routes` | Route diagnostics (management access required) |
 | `GET` | `/metrics` | Prometheus metrics (requires auth) |
 | `GET` | `/api/v1/notifications` | User notifications |
 | `POST` | `/api/v1/notifications/{id}/read` | Mark notification read |
@@ -463,10 +470,12 @@ runtime:
 | `jdbcPassword` | `JDBC_PASSWORD` | `outerstellar` | Database password |
 | `profile` | `APP_PROFILE` | `default` | Active configuration profile |
 | `devDashboardEnabled` | `DEV_DASHBOARD_ENABLED` | false | Enable `/admin/dev` dashboard |
-| `devMode` | `DEVMODE` | false | Enable dev auto-login |
+| `devMode` | `DEVMODE` | false | Enable direct-loopback auto-login in `dev`/`test` only |
 | `sessionCookieSecure` | `SESSIONCOOKIESECURE` | true | Set Secure flag on session cookie |
 | `sessionTimeoutMinutes` | `SESSIONTIMEOUTMINUTES` | 30 | Session idle timeout |
-| `corsOrigins` | `CORSORIGINS` | "" | Allowed CORS origins (comma-separated) |
+| `tokenPepper` | `TOKEN_PEPPER` | none | Required HMAC key for opaque tokens; at least 32 UTF-8 bytes |
+| `managementToken` | `MANAGEMENT_TOKEN` | none | Optional bearer token for remote health/debug probes; at least 32 UTF-8 bytes, no whitespace |
+| `corsOrigins` | `CORSORIGINS` | "" | Exact CORS origins (comma-separated; empty disables, `*` allows any) |
 | `csrfEnabled` | `CSRFENABLED` | true | Enable CSRF protection |
 | `appBaseUrl` | `APPBASEURL` | http://localhost:8080 | External URL for canonical links |
 | `maxFailedLoginAttempts` | `MAX_FAILED_LOGIN_ATTEMPTS` | 10 | Account lockout threshold |

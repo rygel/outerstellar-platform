@@ -15,10 +15,15 @@ import javax.crypto.spec.SecretKeySpec
  * The hash is deterministic for a given pepper+token (so it remains a usable DB index), but not without the pepper.
  * Tokens are high-entropy, so brute-force of the token from a known pepper+hash is infeasible.
  *
- * @param pepper a deployment-specific secret key. Must be non-blank in non-dev profiles; a fixed default is used only
- *   so dev/test boots without configuration.
+ * @param pepper a deployment-specific secret key of at least 32 UTF-8 bytes.
  */
 class TokenHashing(pepper: String) {
+    init {
+        require(pepper.toByteArray(Charsets.UTF_8).size >= MIN_PEPPER_BYTES) {
+            "TOKEN_PEPPER must contain at least $MIN_PEPPER_BYTES UTF-8 bytes"
+        }
+    }
+
     private val key = SecretKeySpec(pepper.toByteArray(Charsets.UTF_8), "HmacSHA256")
 
     fun hash(token: String): String {
@@ -29,7 +34,6 @@ class TokenHashing(pepper: String) {
     }
 
     companion object {
-        /** Default pepper used only when none is configured (dev/test). Never use in production. */
-        const val DEFAULT_PEPPER: String = "outerstellar-dev-token-pepper"
+        private const val MIN_PEPPER_BYTES = 32
     }
 }

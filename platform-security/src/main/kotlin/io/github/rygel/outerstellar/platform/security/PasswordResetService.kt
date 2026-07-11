@@ -20,7 +20,7 @@ class PasswordResetService(
     private val sessionRepository: SessionRepository? = null,
     private val emailService: EmailService,
     private val appBaseUrl: String = io.github.rygel.outerstellar.platform.AppConfig.DEFAULT_APP_BASE_URL,
-    private val tokenHashing: TokenHashing = TokenHashing(TokenHashing.DEFAULT_PEPPER),
+    private val tokenHashing: TokenHashing,
 ) {
     private val logger = LoggerFactory.getLogger(PasswordResetService::class.java)
 
@@ -56,6 +56,7 @@ class PasswordResetService(
 
     fun resetPassword(token: String, newPassword: String) {
         val repository = resetRepository ?: throw IllegalArgumentException("Invalid reset token")
+        validatePassword(newPassword)?.let { throw WeakPasswordException(it) }
         // Atomic claim: a single UPDATE ... WHERE used = false AND expires_at > now() RETURNING user_id
         // marks the token used and returns the owner in one statement, so two concurrent reset requests
         // with the same token cannot both pass the guard (only one UPDATE matches). Replaces the old
@@ -63,12 +64,9 @@ class PasswordResetService(
         val userId =
             repository.claimToken(tokenHashing.hash(token)) ?: throw IllegalArgumentException("Invalid reset token")
 
-        val normalized = newPassword.trim()
-        validatePassword(normalized)?.let { throw WeakPasswordException(it) }
-
         val user = userRepository.findById(userId) ?: throw UserNotFoundException(userId.toString())
 
-        val updated = user.copy(passwordHash = passwordEncoder.encode(normalized))
+        val updated = user.copy(passwordHash = passwordEncoder.encode(newPassword))
         userRepository.save(updated)
         sessionRepository?.deleteByUserId(user.id)
         logger.info("Password reset completed for user {}", sanitize(user.username))

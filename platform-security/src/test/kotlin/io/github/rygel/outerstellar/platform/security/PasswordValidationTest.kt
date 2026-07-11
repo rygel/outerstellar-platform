@@ -67,15 +67,13 @@ class PasswordValidationTest {
     }
 
     @Test
-    fun `trims whitespace before validation`() {
+    fun `allows leading and trailing whitespace as password characters`() {
         assertNull(validatePassword("  Abc123!@  "))
     }
 
     @Test
-    fun `returns error for password that is short after trimming`() {
-        val error = validatePassword("  Ab1  ")
-        assertNotNull(error)
-        assertEquals("Password must be at least 8 characters", error)
+    fun `counts leading and trailing whitespace toward password length`() {
+        assertNull(validatePassword("  Ab1!  "))
     }
 
     @Test

@@ -6,6 +6,7 @@ V13__utc_only_timestamptz
 V14__add_message_votes
 V15__drop_redundant_reset_token_index
 V16__add_totp_attempt_counter
+V17__expand_totp_secret_for_encryption
 V2__user_profile_enhancements
 V3__sessions_table
 V4__user_preferences

@@ -58,7 +58,67 @@ Fallbacks are almost always counterproductive in this codebase. Do not implement
 
 The default stance is: show a clear error and fix the root cause. A fallback needs a written justification and a regression test proving it is an intentional boundary behavior, not error hiding.
 
+### CSP-safe browser behavior
+
+- The default CSP must not add `'unsafe-inline'` to `script-src`.
+- Never add inline event attributes (`onclick`, `onchange`, `onsubmit`, and similar) to JTE templates.
+- Add browser behavior through delegated `data-*` controls in `platform.js` so HTMX-inserted fragments work too.
+- Maven validation rejects inline event attributes in production JTE templates; do not bypass or weaken that guard.
+
+### CORS configuration
+
+- Treat configured origins as an allowlist of exact origins, never as a value to copy directly into a response header.
+- Explicit origins must be `http[s]://host[:port]`; fail startup for paths, queries, fragments, credentials, or invalid ports.
+- Echo only a matching request `Origin` and add `Vary: Origin`; omit CORS headers when `Origin` is absent or disallowed.
+- `*` must be the only configured entry when used. An empty list disables CORS, including for per-route overrides.
+- Regression coverage must include multiple allowed origins, a disallowed origin, requests without `Origin`, and CSRF preflight headers.
+
+### Token hashing keys
+
+- Never add a production default or fallback for `TOKEN_PEPPER`; production assembly must fail before binding a port.
+- Require at least 32 UTF-8 bytes and inject one `TokenHashing` instance into sessions, API keys, and password resets.
+- Tests must provide an explicit test-only pepper. Do not expose a reusable default pepper from production code.
+- TOTP seeds must be stored with authenticated encryption. Legacy plaintext seeds are rewritten through the explicit
+  login migration path; never add plaintext decryption fallback for values marked as encrypted.
+
+### Request and credential boundaries
+
+- Enforce `maxRequestBodyBytes` for both declared and streamed/chunked bodies; never trust `Content-Length` alone.
+- Preserve password bytes exactly across validation, hashing, reset, change, and authentication. Never trim passwords.
+- Validate a replacement password before claiming its one-time reset token.
+- Sliding sessions must refresh the browser session cookie and the database idle deadline together.
+
+### Security-sensitive request and startup rules
+
+- Locality checks must use the server-provided request source address. Never infer locality from `Host`, `Origin`,
+  forwarding headers, or other client-controlled values.
+- Development auto-login must fail closed when the request source is absent and must reject proxied requests.
+- Management routes (`/health`, `/health/live`, `/health/ready`, `/debug/routes`) allow only direct loopback requests or
+  a constant-time checked `Authorization: Bearer <MANAGEMENT_TOKEN>` credential. Never authorize them from `Host`.
+- Never ship generated, starter, test-host, or production launchers with a known privileged password.
+- Initial administrator bootstrap must finish before the HTTP server binds its port and must fail clearly when the
+  required credential is absent or invalid.
+- Changes to authentication filters or bootstrap behavior require a full-stack `WebTest` regression covering both the
+  accepted and rejected boundary paths.
+
 ## Build and run
+
+### Shared-machine resource limit (MANDATORY)
+
+- Never use CPU-derived concurrency such as Maven `-T 1C`; it can saturate the workstation and destabilize other
+  applications.
+- Use a sequential Maven reactor (`-T1`) by default, especially while the machine owner is gaming or doing other
+  resource-intensive work.
+- Never exceed four aggregate build/test workers. Maven reactor concurrency and Surefire test concurrency compound;
+  do not run a multi-module parallel reactor while Surefire is also running test classes in parallel.
+- Set `JAVA_TOOL_OPTIONS=-XX:ActiveProcessorCount=4` for local Maven/test commands so Maven forks, test JVMs, compiler
+  helpers, and agent-attachment helpers all observe the same four-core ceiling. Add an appropriate `-Xmx` cap when the
+  workstation has limited commit/page-file capacity. Do not put a large heap cap in `JAVA_TOOL_OPTIONS`: test forks inherit
+  it and can exhaust the shared machine's commit limit. Keep Maven and fork memory limits explicit, run only one build at a
+  time, and stop instead of retrying when the host reports low native or virtual memory.
+- Do not launch overlapping Maven, Gradle, test, compiler, or analysis jobs. Finish or stop one before starting another.
+- If a documented command conflicts with this limit, reduce its concurrency rather than following the conflicting
+  command literally.
 
 - Run Maven commands from the repository root unless a task explicitly requires module-local execution.
 - Use existing scripts for local workflows:
@@ -144,7 +204,7 @@ pwsh scripts/test.ps1 -TimeoutMinutes 10 -Modules platform-core
 ```powershell
 # Full build excluding desktop modules
 # NOTE: `--%` tells PowerShell to pass remaining args literally (stops ! from breaking)
-mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
+mvn --% clean verify -T1 -pl !platform-desktop,!platform-desktop-javafx
 
 # Run a specific test in a specific module (ALWAYS use -am to rebuild upstream modules)
 mvn -pl platform-web -am test -Dtest=HealthCheckIntegrationTest
@@ -170,7 +230,7 @@ mvn -pl platform-web test
 mvn -pl platform-web -am test
 
 # Full reactor build (always safe, no -am needed)
-mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
+mvn --% clean verify -T1 -pl !platform-desktop,!platform-desktop-javafx
 ```
 
 ### Desktop Tests in Podman
@@ -271,6 +331,8 @@ All configuration is read from `application.yaml` (or `application-{profile}.yam
 | `platformMode` | `PLATFORM_MODE` | `FullPlatform` | Composition mode (`FullPlatform`, `ExtensionHost`, `Headless`) |
 | `devMode` | `DEVMODE` | false | Dev auto-login |
 | `sessionTimeoutMinutes` | `SESSIONTIMEOUTMINUTES` | 30 | Session timeout |
+| `tokenPepper` | `TOKEN_PEPPER` | none | Required HMAC key for opaque-token hashes (at least 32 UTF-8 bytes) |
+| `managementToken` | `MANAGEMENT_TOKEN` | none | Optional bearer token for remote health/debug probes (at least 32 UTF-8 bytes) |
 | `registrationEnabled` | `REGISTRATION_ENABLED` | true | Enable or disable public user registration |
 | `sessionAbsoluteTimeoutMinutes` | `SESSION_ABSOLUTE_TIMEOUT_MINUTES` | 1440 | Absolute max session lifetime in minutes (cannot be extended by sliding window) |
 | `cspPolicy` | `CSP_POLICY` | (default policy) | Content-Security-Policy |
@@ -326,7 +388,7 @@ Full test architecture and patterns: **[docs/testing.md](docs/testing.md)**.
   - `mvn -pl platform-web test -Dexec.skip=true`
 - **Full reactor must exclude desktop modules** when running locally:
   ```bash
-  mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
+  mvn --% clean verify -T1 -pl !platform-desktop,!platform-desktop-javafx
   ```
 - Desktop tests via Podman (see Podman section above).
 - Playwright E2E tests are tagged `@Tag("e2e")` and run in CI via Docker E2E workflow.
@@ -428,7 +490,7 @@ Before every commit, the following MUST be true:
 
 1. **CI build and quality checks pass locally with checks enabled.** Run the same build shape as GitHub Actions:
    ```powershell
-   mvn install -T 1C -DskipTests "-Djacoco.skip=true" "-Denforcer.skip=true"
+   mvn install -T1 -DskipTests "-Djacoco.skip=true" "-Denforcer.skip=true"
    ```
    Do not add `-Ddetekt.skip=true`, `-Dspotbugs.skip=true`, `-Dspotless.check.skip=true`, or any equivalent quality-check
    skip flag to this command. Detekt, SpotBugs, Checkstyle, PMD/CPD, Spotless, and i18n validation must run before pushing.
@@ -436,7 +498,7 @@ Before every commit, the following MUST be true:
 
 2. **All non-desktop tests pass locally.** Run the full reactor build:
    ```powershell
-   mvn --% clean verify -T4 -pl !platform-desktop,!platform-desktop-javafx
+   mvn --% clean verify -T1 -pl !platform-desktop,!platform-desktop-javafx
    ```
    If any test fails, fix it before committing. Do not commit failing tests.
 
@@ -473,8 +535,7 @@ Key rules:
   ```powershell
   Get-Process java -ErrorAction SilentlyContinue | Stop-Process -Force
   ```
-  Alternatively, use `-T1` (sequential build) instead of `-T4` when running many builds in a session —
-  it avoids the parallel-fork explosion entirely at the cost of ~2x build time.
+  Use `-T1` (sequential build); it avoids parallel-fork resource spikes and complies with the shared-machine limit.
 
 ### Always run tests before pushing — no exceptions
 

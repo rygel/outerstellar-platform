@@ -520,7 +520,9 @@ The `/api/v1/auth/login` and `/api/v1/auth/register` endpoints are rate-limited 
 
 ### CORS
 
-Configurable via `corsOrigins` in `AppConfig` (default `*` for dev, empty for prod).
+Configurable via `corsOrigins` in `AppConfig` (default empty; the `dev` profile uses `*`). Explicit allowlists are
+validated as `http[s]://host[:port]` origins and the server echoes only the requesting origin, with `Vary: Origin`.
+Requests without an `Origin` header and requests from disallowed origins receive no CORS headers.
 
 ### WebSocket authentication
 
@@ -530,7 +532,9 @@ The `/ws/sync` WebSocket endpoint validates the session cookie and rejects unaut
 
 ### Health check
 
-`GET /health` returns JSON with database connectivity status, user count, and timestamp. Returns 503 when the database is unreachable.
+`GET /health/live` reports process liveness. `GET /health/ready` and its `/health` compatibility alias report database
+and extension readiness, returning 503 when required dependencies are unavailable. Management routes accept only a
+direct, unforwarded loopback connection or a valid `MANAGEMENT_TOKEN` bearer credential; `Host` is not trusted.
 
 ### Connection pooling
 

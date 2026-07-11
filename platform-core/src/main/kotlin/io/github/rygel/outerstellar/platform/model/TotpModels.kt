@@ -14,7 +14,7 @@ data class TotpVerifyResponse(
 
 @Serializable data class TotpSetupResponse(val secret: String, val qrDataUri: String)
 
-@Serializable data class TotpConfirmRequest(val secret: String, val code: String)
+@Serializable data class TotpConfirmRequest(val secret: String, val code: String, val password: String)
 
 @Serializable data class TotpConfirmResponse(val status: String, val backupCodes: List<String>? = null)
 

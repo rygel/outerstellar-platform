@@ -25,6 +25,7 @@ class AuthService(
     private val auditRepository: AuditRepository? = null,
     private val config: SecurityConfig = SecurityConfig(),
     private val totpService: TOTPService,
+    private val totpSecretEncryption: TotpSecretEncryption,
     private val transactionManager: TransactionManager? = null,
 ) {
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
@@ -58,36 +59,17 @@ class AuthService(
                     )
                     return null
                 }
-        if (!user.enabled) {
-            logger.warn("Authentication failed: User ${sanitize(username)} is disabled")
-            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
-            return null
+        if (!verifyCredentials(user, password)) return null
+        return if (user.totpEnabled) {
+            AuthResult.TotpRequired(generatePartialAuthToken(user.id))
+        } else {
+            AuthResult.Authenticated(user)
         }
-        val lockedUntil = user.lockedUntil
-        if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
-            logger.warn("Authentication failed: User ${sanitize(username)} is locked until $lockedUntil")
-            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
-            return null
-        }
-        if (passwordEncoder.matches(password, user.passwordHash)) {
-            if (user.failedLoginAttempts > 0) {
-                userRepository.resetFailedLoginAttempts(user.id)
-            }
-            logger.info("Authentication successful for user ${sanitize(username)}")
-            if (user.totpEnabled) {
-                return AuthResult.TotpRequired(generatePartialAuthToken(user.id))
-            }
-            return AuthResult.Authenticated(user)
-        }
-        val attempts = userRepository.incrementFailedLoginAttempts(user.id)
-        logger.warn("Authentication failed: Invalid password for user ${sanitize(username)} (attempt $attempts)")
-        auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
-        if (attempts >= config.maxFailedLoginAttempts) {
-            val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
-            userRepository.updateLockedUntil(user.id, until)
-            logger.warn("User ${sanitize(username)} locked until $until after $attempts failed attempts")
-        }
-        return null
+    }
+
+    fun reauthenticate(userId: UUID, password: String): Boolean {
+        val user = userRepository.findById(userId) ?: return false
+        return verifyCredentials(user, password)
     }
 
     fun register(username: String, password: String): User {
@@ -97,8 +79,7 @@ class AuthService(
         require(username.isNotBlank()) { "Username is required" }
         require(username.length <= MAX_USERNAME_LENGTH) { "Username cannot exceed $MAX_USERNAME_LENGTH characters" }
         require(EMAIL_REGEX.matches(username)) { "Username must be a valid email address" }
-        val normalized = password.trim()
-        validatePassword(normalized)?.let { throw WeakPasswordException(it) }
+        validatePassword(password)?.let { throw WeakPasswordException(it) }
         if (userRepository.findByUsername(username) != null) throw UsernameAlreadyExistsException(username)
 
         val created =
@@ -106,7 +87,7 @@ class AuthService(
                 id = UUID.randomUUID(),
                 username = username,
                 email = username,
-                passwordHash = passwordEncoder.encode(normalized),
+                passwordHash = passwordEncoder.encode(password),
                 role = UserRole.USER,
             )
         userRepository.save(created)
@@ -124,7 +105,7 @@ class AuthService(
             } ?: return TotpVerifyResponse("expired")
 
         val user = userRepository.findById(partial.userId) ?: return TotpVerifyResponse("expired")
-        val secret = user.totpSecret ?: return TotpVerifyResponse("expired")
+        val (secret, storedSecret) = resolveTotpSecret(user) ?: return TotpVerifyResponse("expired")
 
         if (totpService.verifyCode(secret, code)) {
             partialAuthStore.invalidate(partialToken)
@@ -137,7 +118,7 @@ class AuthService(
         if (backupCodes != null) {
             val updatedCodes = totpService.verifyBackupCode(code, backupCodes)
             if (updatedCodes != null) {
-                userRepository.updateTotpSecret(user.id, user.totpSecret, updatedCodes.ifEmpty { null })
+                userRepository.updateTotpSecret(user.id, storedSecret, updatedCodes.ifEmpty { null })
                 partialAuthStore.invalidate(partialToken)
                 userRepository.resetFailedTotpAttempts(user.id)
                 val token = sessionService.createSession(user.id)
@@ -161,14 +142,15 @@ class AuthService(
     }
 
     fun enableTotp(userId: UUID, secret: String, backupCodes: String) {
+        val encryptedSecret = totpSecretEncryption.encrypt(secret)
         // Both writes must be atomic — a partial failure leaves 2FA in an inconsistent state
         // (secret stored but not enabled, or enabled with no secret).
         transactionManager?.inTransaction {
-            userRepository.updateTotpSecret(userId, secret, backupCodes)
+            userRepository.updateTotpSecret(userId, encryptedSecret, backupCodes)
             userRepository.enableTotp(userId)
         }
             ?: run {
-                userRepository.updateTotpSecret(userId, secret, backupCodes)
+                userRepository.updateTotpSecret(userId, encryptedSecret, backupCodes)
                 userRepository.enableTotp(userId)
             }
     }
@@ -190,6 +172,46 @@ class AuthService(
         val token = "pt_" + bytes.joinToString("") { "%02x".format(it) }
         partialAuthStore.put(token, PartialAuth(userId = userId))
         return token
+    }
+
+    private fun resolveTotpSecret(user: User): Pair<String, String>? {
+        val storedSecret = user.totpSecret ?: return null
+        if (totpSecretEncryption.isEncrypted(storedSecret)) {
+            return totpSecretEncryption.decrypt(storedSecret) to storedSecret
+        }
+
+        logger.warn("Migrating legacy plaintext TOTP secret for user {}", user.id)
+        val encryptedSecret = totpSecretEncryption.encrypt(storedSecret)
+        userRepository.updateTotpSecret(user.id, encryptedSecret, user.totpBackupCodes)
+        return storedSecret to encryptedSecret
+    }
+
+    private fun verifyCredentials(user: User, password: String): Boolean {
+        if (!user.enabled) {
+            logger.warn("Authentication failed: User ${sanitize(user.username)} is disabled")
+            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
+            return false
+        }
+        val lockedUntil = user.lockedUntil
+        if (lockedUntil != null && lockedUntil.isAfter(Instant.now())) {
+            logger.warn("Authentication failed: User ${sanitize(user.username)} is locked until $lockedUntil")
+            auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
+            return false
+        }
+        if (passwordEncoder.matches(password, user.passwordHash)) {
+            if (user.failedLoginAttempts > 0) userRepository.resetFailedLoginAttempts(user.id)
+            logger.info("Authentication successful for user ${sanitize(user.username)}")
+            return true
+        }
+        val attempts = userRepository.incrementFailedLoginAttempts(user.id)
+        logger.warn("Authentication failed: Invalid password for user ${sanitize(user.username)} (attempt $attempts)")
+        auditRepository?.logAction("AUTHENTICATION_FAILED", actor = user, detail = "Invalid credentials")
+        if (attempts >= config.maxFailedLoginAttempts) {
+            val until = Instant.now().plusSeconds(config.lockoutDurationSeconds)
+            userRepository.updateLockedUntil(user.id, until)
+            logger.warn("User ${sanitize(user.username)} locked until $until after $attempts failed attempts")
+        }
+        return false
     }
 
     companion object {

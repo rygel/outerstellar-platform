@@ -56,6 +56,78 @@ document.addEventListener('htmx:configRequest', function (event) {
     }
 });
 
+document.addEventListener('submit', function (event) {
+    var form = event.target.closest('form[data-confirm-submit]');
+    if (form && !window.confirm(form.dataset.confirmSubmit)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }
+}, true);
+
+document.addEventListener('change', function (event) {
+    var control = event.target.closest('[data-submit-on-change]');
+    if (control && control.form) {
+        control.form.requestSubmit();
+    }
+});
+
+document.addEventListener('click', function (event) {
+    var action = event.target.closest('[data-remove-target], [data-dismiss-overlay], [data-dialog-action], [data-copy-target], [data-copy-text], [data-download-text], [data-uncheck-target], [data-htmx-trigger-target]');
+    if (!action) {
+        return;
+    }
+
+    if (action.dataset.dismissOverlay !== undefined) {
+        if (event.target === action) {
+            action.remove();
+        }
+        return;
+    }
+
+    if (action.dataset.removeTarget) {
+        var removeTarget = document.getElementById(action.dataset.removeTarget);
+        if (removeTarget) {
+            removeTarget.remove();
+        }
+    }
+
+    if (action.dataset.dialogAction) {
+        var dialog = document.getElementById(action.dataset.dialogTarget);
+        if (dialog) {
+            dialog[action.dataset.dialogAction]();
+        }
+    }
+
+    if (action.dataset.copyTarget) {
+        var copyTarget = document.getElementById(action.dataset.copyTarget);
+        if (copyTarget) {
+            void navigator.clipboard.writeText(copyTarget.textContent || '');
+        }
+    } else if (action.dataset.copyText !== undefined) {
+        void navigator.clipboard.writeText(action.dataset.copyText);
+    }
+
+    if (action.dataset.downloadText !== undefined) {
+        var blob = new Blob([action.dataset.downloadText], { type: 'text/plain' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = action.dataset.downloadFilename;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    if (action.dataset.uncheckTarget) {
+        var checkbox = document.getElementById(action.dataset.uncheckTarget);
+        if (checkbox) {
+            checkbox.checked = false;
+        }
+    }
+
+    if (action.dataset.htmxTriggerTarget) {
+        htmx.trigger(action.dataset.htmxTriggerTarget, action.dataset.htmxTriggerEvent);
+    }
+}, true);
+
 (function () {
     var hasCookie = document.cookie.split(';').some(function (c) {
         return c.trim().startsWith('app_theme=');

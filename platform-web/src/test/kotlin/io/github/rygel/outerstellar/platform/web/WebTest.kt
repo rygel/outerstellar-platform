@@ -31,6 +31,8 @@ import io.github.rygel.outerstellar.platform.security.SecurityComponents
 import io.github.rygel.outerstellar.platform.security.SecurityConfig
 import io.github.rygel.outerstellar.platform.security.SessionService
 import io.github.rygel.outerstellar.platform.security.TOTPService
+import io.github.rygel.outerstellar.platform.security.TokenHashing
+import io.github.rygel.outerstellar.platform.security.TotpSecretEncryption
 import io.github.rygel.outerstellar.platform.security.UserAdminService
 import io.github.rygel.outerstellar.platform.service.ConsolePushNotificationService
 import io.github.rygel.outerstellar.platform.service.ContactService
@@ -45,6 +47,7 @@ import io.github.rygel.outerstellar.platform.testing.SharedPostgres
 import io.github.rygel.outerstellar.platform.testing.sanitizeDbName
 import java.util.UUID
 import org.http4k.core.HttpHandler
+import org.http4k.core.RequestSource
 import org.jdbi.v3.core.Jdbi
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
@@ -73,6 +76,7 @@ abstract class WebTest {
             devDashboardEnabled = true,
             csrfEnabled = false,
             corsOrigins = "*",
+            tokenPepper = "platform-web-integration-test-token-pepper",
             runtime = RuntimeConfig(hikariMaximumPoolSize = 2, hikariMinimumIdle = 0),
             appleOAuth =
                 AppleOAuthConfig(
@@ -108,9 +112,12 @@ abstract class WebTest {
     val pollService by lazy { PollService(pollRepository) }
 
     val userAdminService by lazy { UserAdminService(userRepository, auditRepository) }
-    val sessionSvc by lazy { SessionService(sessionRepository, userRepository, SecurityConfig()) }
+    val tokenHashing by lazy { TokenHashing(testConfig.tokenPepper) }
+    val sessionSvc by lazy {
+        SessionService(sessionRepository, userRepository, SecurityConfig(), tokenHashing = tokenHashing)
+    }
 
-    val apiKeyService by lazy { ApiKeyService(userRepository, apiKeyRepository, auditRepository) }
+    val apiKeyService by lazy { ApiKeyService(userRepository, apiKeyRepository, auditRepository, tokenHashing) }
     val passwordResetService by lazy {
         PasswordResetService(
             userRepository,
@@ -119,6 +126,7 @@ abstract class WebTest {
             auditRepository,
             sessionRepository,
             NoOpEmailService(),
+            tokenHashing = tokenHashing,
         )
     }
     val oauthService by lazy { OAuthService(userRepository, encoder, oauthRepository, auditRepository) }
@@ -146,6 +154,7 @@ abstract class WebTest {
         config: AppConfig = testConfig,
         overrides: TestOverrides = TestOverrides(),
         extension: PlatformExtension? = null,
+        defaultRequestSource: RequestSource? = RequestSource(TEST_LOOPBACK_ADDRESS),
     ): HttpHandler {
         val resolvedUserRepo = overrides.userRepository ?: this.userRepository
         val resolvedMessageCache = overrides.messageCache ?: StubMessageCache()
@@ -171,7 +180,7 @@ abstract class WebTest {
         val contactsPageFactory = ContactsPageFactory(resolvedContactService, contactTrashListFactory)
         val homePageFactory = HomePageFactory(messageService, contactTrashListFactory)
         val infraPageFactory = InfraPageFactory(messageRepository)
-        val authService = AuthService(userRepository, encoder, auditRepository, totpService = TOTPService(encoder))
+        val authService = buildAuthService()
         val accountService = AccountService(userRepository, encoder, sessionRepository, auditRepository)
 
         val persistence = buildPersistence(resolvedUserRepo, outbox, txManager, overrides)
@@ -209,16 +218,33 @@ abstract class WebTest {
                 syncWebSocket,
             )
 
-        return app(
-                config = config,
-                persistence = persistence,
-                security = security,
-                core = core,
-                web = web,
-                extension = extension,
-            )
-            .http!!
+        return withDefaultRequestSource(
+            app(
+                    config = config,
+                    persistence = persistence,
+                    security = security,
+                    core = core,
+                    web = web,
+                    extension = extension,
+                )
+                .http!!,
+            defaultRequestSource,
+        )
     }
+
+    private fun withDefaultRequestSource(handler: HttpHandler, defaultRequestSource: RequestSource?): HttpHandler {
+        if (defaultRequestSource == null) return handler
+        return { request -> handler(if (request.source == null) request.source(defaultRequestSource) else request) }
+    }
+
+    private fun buildAuthService(): AuthService =
+        AuthService(
+            userRepository,
+            encoder,
+            auditRepository,
+            totpService = TOTPService(encoder),
+            totpSecretEncryption = TotpSecretEncryption(testConfig.tokenPepper),
+        )
 
     private fun buildPersistence(
         resolvedUserRepo: UserRepository,
@@ -244,6 +270,10 @@ abstract class WebTest {
             override val notificationRepository = this@WebTest.notificationRepository
         }
 
+    companion object {
+        private const val TEST_LOOPBACK_ADDRESS = "127.0.0.1"
+    }
+
     private fun buildSecurity(
         resolvedUserRepo: UserRepository,
         authService: AuthService,
@@ -268,6 +298,7 @@ abstract class WebTest {
                     auditRepository,
                     sessionRepository,
                     emailService,
+                    tokenHashing = tokenHashing,
                 ),
             oauthService = oauthService,
             authRealms = emptyList(),

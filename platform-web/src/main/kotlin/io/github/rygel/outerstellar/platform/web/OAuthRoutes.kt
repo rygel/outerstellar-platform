@@ -119,10 +119,10 @@ class OAuthRoutes(
 
         if (!stateValid) {
             logger.warn(
-                "OAuth state mismatch for provider={}: expected={} got={}",
+                "OAuth state mismatch for provider={}: expectedPresent={} returnedPresent={}",
                 providerName,
-                expectedState,
-                returnedState,
+                expectedState != null,
+                returnedState != null,
             )
         }
         return if (code != null && stateValid) ValidatedCallback(code, returnedState!!) else null

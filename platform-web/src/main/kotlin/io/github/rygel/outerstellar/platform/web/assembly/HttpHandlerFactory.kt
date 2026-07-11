@@ -36,6 +36,7 @@ internal class HttpHandlerFactory(
         val sec = security
         val userRepository = persistence.userRepository
         val authenticatedFilter = Filter { next -> SecurityRules.authenticated(next) }
+        val managementOnly = StaticRoutes.managementOnly(config.managementToken)
 
         val publicUiHandlers = registry.handlers(RouteGroup.PublicUi)
         val protectedUiHandlers = registry.handlers(RouteGroup.ProtectedUi)
@@ -54,30 +55,28 @@ internal class HttpHandlerFactory(
                     GET to
                     {
                         // Liveness: process up, no dependency probes (avoids restart loops on transient blips).
-                        StaticRoutes.localhostOnly.then { StaticRoutes.buildLivenessResponse() }(it)
+                        managementOnly.then { StaticRoutes.buildLivenessResponse() }(it)
                     },
                 "/health/ready" bind
                     GET to
                     {
                         // Readiness: probes DB + extension readiness — traffic should be withheld if DOWN.
-                        StaticRoutes.localhostOnly.then {
-                            StaticRoutes.buildHealthResponse(userRepository, extensionContribution)
-                        }(it)
+                        managementOnly.then { StaticRoutes.buildHealthResponse(userRepository, extensionContribution) }(
+                            it
+                        )
                     },
                 "/health" bind
                     GET to
                     {
                         // Backward-compatible alias for /health/ready (the pre-existing behaviour).
-                        StaticRoutes.localhostOnly.then {
-                            StaticRoutes.buildHealthResponse(userRepository, extensionContribution)
-                        }(it)
+                        managementOnly.then { StaticRoutes.buildHealthResponse(userRepository, extensionContribution) }(
+                            it
+                        )
                     },
                 "/debug/routes" bind
                     GET to
                     {
-                        StaticRoutes.localhostOnly.then {
-                            StaticRoutes.buildRouteDiagnostics(registry, extensionContribution)
-                        }(it)
+                        managementOnly.then { StaticRoutes.buildRouteDiagnostics(registry, extensionContribution) }(it)
                     },
                 "/metrics" bind GET to metricsHandler,
                 "/robots.txt" bind GET to { StaticRoutes.buildRobotsTxtResponse() },

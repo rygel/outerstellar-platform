@@ -221,6 +221,7 @@ podman rm -f rq-test-app 2>$null
 podman run -d --name rq-test-app --network rq-test `
   -e JDBC_URL=jdbc:postgresql://rq-test-db:5432/outerstellar `
   -e JDBC_USER=outerstellar -e JDBC_PASSWORD=outerstellar `
+  -e ADMIN_PASSWORD=NativeTestAdmin123! -e APP_PROFILE=dev `
   -e DEVMODE=true -e SESSIONCOOKIESECURE=false `
   outerstellar-native
 
@@ -255,7 +256,7 @@ The final image is ~203 MB. The binary runs as a non-root user (`appuser`).
 | `APP_PROFILE` | `default` | Config profile (`dev`, `prod`, `postgres`) |
 | `SESSIONCOOKIESECURE` | `false` | Set `true` behind HTTPS |
 | `DEVMODE` | `false` | Enables dev auto-login (never in production) |
-| `ADMIN_PASSWORD` | (random) | Initial admin password |
+| `ADMIN_PASSWORD` | none | Required on first boot; must satisfy the password policy |
 | `CSRFENABLED` | `true` | CSRF double-submit cookie |
 
 ### Runtime Behavior
