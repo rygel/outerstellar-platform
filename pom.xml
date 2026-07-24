@@ -72,7 +72,7 @@
         <enforcer.version>3.6.3</enforcer.version>
         <checkstyle.version>3.6.0</checkstyle.version>
         <pmd.version>3.28.0</pmd.version>
-        <spotbugs.version>4.10.2.0</spotbugs.version>
+        <spotbugs.version>4.10.3.0</spotbugs.version>
         <spotless.version>3.8.0</spotless.version>
         <ktfmt.version>0.62</ktfmt.version>
         <jacoco.version>0.8.15</jacoco.version>
