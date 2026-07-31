@@ -17,12 +17,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: PCF readiness check
-        uses: VrtxOmega/premature-contribution-firewall@ee022516a5aaf134b9633322537300bb8483713c # v0.1.3
+        uses: VrtxOmega/premature-contribution-firewall@f12b0e8f0d70473a6cbf3f267cb68b7363637c09 # v0.1.3
         with:
           mode: pr-gate
           fail-on: never
