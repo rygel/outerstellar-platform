@@ -72,6 +72,12 @@ class ShellRenderer(
                     it.setLocale(Locale.of(lang))
                 }
             }
+
+        /**
+         * Test-only seam to drop the shared i18n cache so the #594 regression test can force a fresh bundle load
+         * against a hostile thread context classloader, regardless of prior test execution order.
+         */
+        internal fun resetI18nCacheForTesting() = i18nCache.clear()
     }
 
     val i18n: I18nService by lazy { cachedI18n(ctx.lang) }

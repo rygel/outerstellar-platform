@@ -15,6 +15,7 @@ node_modules/
 .junie/
 package-lock.json
 .claude/worktrees/
+.zcode/
 mcp.json
 *.dll
 META-INF/services/

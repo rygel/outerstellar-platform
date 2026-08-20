@@ -125,6 +125,42 @@ class ShellRendererTest {
         assertFalse(navAuth.startsWith("web."), "Expected resolved text, got raw key: $navAuth")
     }
 
+    /**
+     * Faithful regression for #594. The bug only manifests when the thread context classloader cannot see the
+     * platform's messages bundle — exactly the host-app scenario from the issue. The two tests above resolve under the
+     * default test classloader and would pass even with the old buggy (TCCL-based) code, so they don't actually guard
+     * the fix. Here we install a TCCL that masks the messages resource and assert cachedI18n still resolves, which only
+     * holds while it pins to the platform's own classloader.
+     */
+    @Test
+    fun `platform i18n bundle resolves even when the thread context classloader hides it`() {
+        val originalTccl = Thread.currentThread().contextClassLoader
+        Thread.currentThread().contextClassLoader = BundleMaskingClassLoader(originalTccl)
+        ShellRenderer.resetI18nCacheForTesting()
+        try {
+            val resolved = ShellRenderer(requestContextForLang("en")).i18n.translate("web.auth.heading")
+
+            assertEquals("Authentication page examples", resolved)
+            assertFalse(resolved.startsWith("web."), "Expected resolved text, got raw key: $resolved")
+        } finally {
+            Thread.currentThread().contextClassLoader = originalTccl
+            ShellRenderer.resetI18nCacheForTesting()
+        }
+    }
+
+    /**
+     * A classloader that hides any resource whose name starts with "messages" — simulating a host app whose TCCL cannot
+     * see platform-core's messages.properties. Everything else delegates to the wrapped loader.
+     */
+    private class BundleMaskingClassLoader(delegate: ClassLoader) : ClassLoader(delegate) {
+        override fun getResource(name: String?): java.net.URL? =
+            if (name != null && name.startsWith("messages")) null else super.getResource(name)
+
+        override fun getResources(name: String?): java.util.Enumeration<java.net.URL> =
+            if (name != null && name.startsWith("messages")) java.util.Collections.enumeration(emptyList())
+            else super.getResources(name)
+    }
+
     private fun requestContextForLang(lang: String): RequestContext {
         val sessionService = mockk<SessionService>()
         every { sessionService.lookupSession("session-token") } returns SessionLookup.Active(user)
