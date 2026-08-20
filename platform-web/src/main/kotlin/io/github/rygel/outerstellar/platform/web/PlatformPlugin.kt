@@ -60,8 +60,8 @@ data class PluginContext(
 
     companion object {
         /**
-         * Creates a [PluginContext] with sensible defaults for testing. Only the three services that cannot be
-         * stubbed without a mocking library are required — use `mockk(relaxed = true)` for them.
+         * Creates a [PluginContext] with sensible defaults for testing. Only the three services that cannot be stubbed
+         * without a mocking library are required — use `mockk(relaxed = true)` for them.
          *
          * To override other defaults, use `.copy()` on the returned instance:
          * ```kotlin
